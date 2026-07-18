@@ -5,6 +5,11 @@ COPY package*.json ./
 RUN npm ci
 
 COPY . .
+
+# Build-time environment variables (NEXT_PUBLIC_* must be available at build time)
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+
 RUN npm run build
 
 FROM node:20-alpine AS runner

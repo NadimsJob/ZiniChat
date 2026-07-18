@@ -32,6 +32,8 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://76.13.187.85:8100
     container_name: zinichat_frontend
     restart: always
     env_file:
