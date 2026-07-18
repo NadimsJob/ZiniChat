@@ -65,6 +65,44 @@ export default function SubscriptionSettingsPage() {
     setSelectedPlan(plan);
   };
 
+  const handleApplyCoupon = async () => {
+    if (!couponCode) return;
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/payments/validate-coupon`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${Cookies.get('access_token')}`
+        },
+        body: JSON.stringify({ code: couponCode, planId: selectedPlan?.id })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAppliedCoupon(data);
+        setCouponError('');
+      } else {
+        const errData = await res.json();
+        setCouponError(errData.message || 'Invalid coupon');
+        setAppliedCoupon(null);
+      }
+    } catch (err) {
+      setCouponError('Error validating coupon');
+    }
+  };
+
+  const calculateFinalPrice = () => {
+    if (!selectedPlan) return 0;
+    let price = billingCycle === 'yearly' ? selectedPlan.priceYearlyBdt : selectedPlan.priceMonthlyBdt;
+    if (appliedCoupon) {
+      if (appliedCoupon.discountType === 'percentage') {
+        price = price - (price * appliedCoupon.discountValue / 100);
+      } else {
+        price = price - appliedCoupon.discountValue;
+      }
+    }
+    return price > 0 ? price : 0;
+  };
+
   const handleManualPayment = async () => {
     if (!selectedPlan || !trxId) return;
     setIsProcessing(true);
