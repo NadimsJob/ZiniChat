@@ -22,6 +22,7 @@ services:
       - "8100:3000"
     networks:
       - zinichat_network
+      - supabase_test_network
     depends_on:
       - redis
     extra_hosts:
@@ -45,6 +46,10 @@ services:
 networks:
   zinichat_network:
     driver: bridge
+  supabase_test_network:
+    external: true
+    name: supabase-test_default
 
 volumes:
   zinichat_redis_data:
+
