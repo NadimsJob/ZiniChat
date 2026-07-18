@@ -1,0 +1,46 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Testing
+coverage/
+
+# Next.js
+.next/
+out/
+build/
+
+# NestJS
+dist/
+
+# Misc
+.DS_Store
+*.pem
+
+# Environment variables (SECURITY CRITICAL)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*
+
+# Local Database Dumps (SECURITY CRITICAL)
+cloud_schema.sql
+cloud_data.sql
+dump.rdb
+
+# Large Archives
+Redis/
+Redis.zip
+
+# IDEs and Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Project specific
+supabase/.temp/
+supabase/db/

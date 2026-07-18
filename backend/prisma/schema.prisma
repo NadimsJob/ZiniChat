@@ -1,0 +1,787 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  directUrl  = env("DIRECT_URL")
+  extensions = [vector]
+}
+
+// Tenancy & Auth
+model Tenant {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  businessName   String
+  brandName      String?
+  address        String?
+  phoneNo        String?
+  ownerName      String?
+  employeeCount  String?
+  businessNature String?
+  isOnboarded    Boolean   @default(false)
+  planId         String?   @db.Uuid
+  status         String    @default("active") // active, suspended
+  trialEndsAt    DateTime?
+
+  // Custom Plan Overrides & Usage Tracking
+  storageUsedBytes     BigInt   @default(0)
+  messageCount         Int      @default(0)
+  customPlanName       String?
+  customPriceUsd       Decimal? @db.Decimal(10, 2)
+  customMessageQuota   Int?
+  customAiQuota        Int?
+  customSeatLimit      Int?
+  customStorageLimitMb Int?
+  customFeatures       Json?
+
+  createdAt DateTime @default(now())
+
+  users         User[]
+  channelConns  ChannelConnection[]
+  contacts      Contact[]
+  conversations Conversation[]
+  assistants    AiAssistant[]
+  automations   Automation[]
+  templates     Template[]
+  broadcasts    Broadcast[]
+  products      Product[]
+  orders        Order[]
+  subscriptions Subscription[]
+  payments      Payment[]
+  knowledgeDocs KnowledgeDocument[]
+  qnaItems      QnAKnowledgeBase[]
+  usageLogs     AiUsageLog[]
+  auditLogs     AuditLog[] // Audit logs targeting this tenant
+  labels        Label[]
+  kanbanStages  KanbanStage[]
+  Ticket        Ticket[]
+
+  @@map("tenants")
+}
+
+model User {
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId             String?   @db.Uuid // null for superadmin
+  name                 String
+  email                String    @unique
+  passwordHash         String
+  role                 String    @default("agent") // superadmin, owner, admin, agent
+  profilePicUrl        String?
+  permissions          String[]  @default([]) // e.g. ["manage:tenants", "manage:billing"]
+  agentAccessMode      String    @default("ALL_CHANNELS") // ALL_CHANNELS, ASSIGNED_CHANNELS
+  resetPasswordToken   String?
+  resetPasswordExpires DateTime?
+  createdAt            DateTime  @default(now())
+
+  tenant             Tenant?                  @relation(fields: [tenantId], references: [id])
+  auditLogs          AuditLog[] // Audit logs performed by this user
+  assignedConvs      Conversation[]
+  notifications      Notification[]
+  contactNotes       ContactNote[]
+  assignedContacts   Contact[]                @relation("AssignedContacts")
+  channelAssignments AgentChannelAssignment[]
+  Ticket             Ticket[]
+  TicketMessage      TicketMessage[]
+
+  @@map("users")
+}
+
+model AuditLog {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  actorUserId    String   @db.Uuid
+  targetTenantId String?  @db.Uuid
+  action         String
+  metadataJson   Json?
+  createdAt      DateTime @default(now())
+
+  actorUser    User    @relation(fields: [actorUserId], references: [id])
+  targetTenant Tenant? @relation(fields: [targetTenantId], references: [id])
+
+  @@map("audit_logs")
+}
+
+// Channels
+enum WhatsappProvider {
+  CLOUD_API
+  WEB_QR
+}
+
+model ChannelConnection {
+  id                   String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId             String           @db.Uuid
+  channelType          String // whatsapp, messenger, instagram
+  externalAccountId    String
+  accessTokenEncrypted String
+  status               String           @default("active") // active, disconnected
+  expiresAt            DateTime?
+  displayName          String? // WhatsApp display name or label
+  phoneNumber          String? // +880xxxxxxxxx
+  phoneNumberId        String? // Meta Phone Number ID
+  wabaId               String? // WhatsApp Business Account ID
+  verifyToken          String? // Webhook verify token for this connection
+  connectionMethod     String? // "manual" or "facebook_login"
+  provider             WhatsappProvider @default(CLOUD_API)
+  qrSessionId          String? // Unique session ID for Baileys
+  qrStatus             String? // CONNECTING, CONNECTED, DISCONNECTED
+  createdAt            DateTime         @default(now())
+
+  tenant           Tenant                   @relation(fields: [tenantId], references: [id])
+  agentAssignments AgentChannelAssignment[]
+  conversations    Conversation[]
+
+  @@map("channel_connections")
+}
+
+model AgentChannelAssignment {
+  userId              String @db.Uuid
+  channelConnectionId String @db.Uuid
+
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channelConnection ChannelConnection @relation(fields: [channelConnectionId], references: [id], onDelete: Cascade)
+
+  @@id([userId, channelConnectionId])
+  @@map("agent_channel_assignments")
+}
+
+model WhatsappAuthState {
+  sessionId String @id
+  stateData Json
+
+  @@map("whatsapp_auth_states")
+}
+
+// Messaging
+// CRM & Leads
+model KanbanStage {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String   @db.Uuid
+  name      String
+  order     Int      @default(0)
+  color     String   @default("#9ca3af")
+  createdAt DateTime @default(now())
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id])
+  contacts Contact[]
+
+  @@map("kanban_stages")
+}
+
+model ContactNote {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  contactId String   @db.Uuid
+  content   String   @db.Text
+  createdBy String?  @db.Uuid // Optional user who created it
+  createdAt DateTime @default(now())
+
+  contact Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  user    User?   @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@map("contact_notes")
+}
+
+model Contact {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId          String    @db.Uuid
+  channel           String
+  externalContactId String
+  name              String?
+  tags              String[]
+  lastSeenAt        DateTime  @default(now())
+  stageId           String?   @db.Uuid
+  followUpAt        DateTime?
+  followUpNotified  Boolean   @default(false)
+
+  phone          String?
+  email          String?
+  company        String?
+  address        String?
+  assignedUserId String? @db.Uuid
+
+  tenant              Tenant               @relation(fields: [tenantId], references: [id])
+  conversations       Conversation[]
+  broadcastRecipients BroadcastRecipient[]
+  orders              Order[]
+  stage               KanbanStage?         @relation(fields: [stageId], references: [id], onDelete: SetNull)
+  assignedUser        User?                @relation("AssignedContacts", fields: [assignedUserId], references: [id], onDelete: SetNull)
+  notes               ContactNote[]
+
+  @@map("contacts")
+}
+
+model Conversation {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId            String   @db.Uuid
+  contactId           String   @db.Uuid
+  channel             String
+  channelConnectionId String?  @db.Uuid
+  assignedAgentId     String?  @db.Uuid
+  status              String   @default("open") // open, closed, bot
+  lastMessageAt       DateTime @default(now())
+
+  tenant            Tenant              @relation(fields: [tenantId], references: [id])
+  contact           Contact             @relation(fields: [contactId], references: [id])
+  channelConnection ChannelConnection?  @relation(fields: [channelConnectionId], references: [id], onDelete: SetNull)
+  assignedAgent     User?               @relation(fields: [assignedAgentId], references: [id])
+  messages          Message[]
+  orders            Order[]
+  labels            ConversationLabel[]
+
+  @@map("conversations")
+}
+
+model Label {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String   @db.Uuid
+  name      String
+  color     String   @default("#3b82f6")
+  aiPrompt  String?  @db.Text
+  createdAt DateTime @default(now())
+
+  tenant        Tenant              @relation(fields: [tenantId], references: [id])
+  conversations ConversationLabel[]
+
+  @@map("labels")
+}
+
+model ConversationLabel {
+  conversationId String @db.Uuid
+  labelId        String @db.Uuid
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  label        Label        @relation(fields: [labelId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, labelId])
+  @@map("conversation_labels")
+}
+
+model Message {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  conversationId    String   @db.Uuid
+  externalMessageId String?
+  direction         String // inbound, outbound
+  type              String // text, image, document, button
+  content           Json
+  status            String // sent, delivered, read, failed
+  createdAt         DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id])
+
+  @@map("messages")
+}
+
+// AI Assistant
+model AiAssistant {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId            String   @db.Uuid
+  systemPrompt        String?
+  modelProvider       String // openai, anthropic
+  modelName           String
+  apiKeyMode          String // Deprecated: kept for backwards compatibility
+  routingMode         String   @default("system_only") // system_only, custom_only, hybrid
+  byokApiKeyEncrypted String?
+  aiOrderEnabled      Boolean  @default(true)
+  isActive            Boolean  @default(true)
+  replyWhenAssigned   Boolean  @default(false)
+  createdAt           DateTime @default(now())
+
+  tenant    Tenant            @relation(fields: [tenantId], references: [id])
+  tools     AiAssistantTool[]
+  usageLogs AiUsageLog[]
+
+  @@map("ai_assistants")
+}
+
+model AiAssistantTool {
+  id          String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  assistantId String  @db.Uuid
+  toolType    String
+  configJson  Json?
+  isEnabled   Boolean @default(true)
+
+  assistant AiAssistant @relation(fields: [assistantId], references: [id])
+
+  @@map("ai_assistant_tools")
+}
+
+model KnowledgeDocument {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId   String   @db.Uuid
+  filename   String
+  status     String // processing, completed, failed
+  uploadedAt DateTime @default(now())
+
+  tenant Tenant           @relation(fields: [tenantId], references: [id])
+  chunks KnowledgeChunk[]
+
+  @@map("knowledge_documents")
+}
+
+model KnowledgeChunk {
+  id         String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  documentId String                       @db.Uuid
+  content    String
+  embedding  Unsupported("vector(1536)")?
+  chunkIndex Int
+
+  document KnowledgeDocument @relation(fields: [documentId], references: [id])
+
+  @@map("knowledge_chunks")
+}
+
+model QnAKnowledgeBase {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String   @db.Uuid
+  question  String
+  answer    String   @db.Text
+  isDefault Boolean  @default(false) // True if it's a pre-set business question
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("qna_knowledge_base")
+}
+
+model AiUsageLog {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String   @db.Uuid
+  assistantId String   @db.Uuid
+  tokensUsed  Int
+  costUsd     Decimal  @db.Decimal(10, 4)
+  createdAt   DateTime @default(now())
+
+  tenant    Tenant      @relation(fields: [tenantId], references: [id])
+  assistant AiAssistant @relation(fields: [assistantId], references: [id])
+
+  @@map("ai_usage_logs")
+}
+
+// Automation
+model Automation {
+  id          String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String  @db.Uuid
+  name        String
+  triggerType String
+  flowJson    Json
+  isActive    Boolean @default(true)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@map("automations")
+}
+
+// Broadcast
+model Template {
+  id                 String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId           String  @db.Uuid
+  name               String
+  category           String
+  body               String
+  status             String
+  externalTemplateId String?
+
+  tenant     Tenant      @relation(fields: [tenantId], references: [id])
+  broadcasts Broadcast[]
+
+  @@map("templates")
+}
+
+model Broadcast {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String    @db.Uuid
+  templateId    String    @db.Uuid
+  segmentFilter Json?
+  scheduledAt   DateTime?
+  status        String // scheduled, processing, completed
+
+  tenant     Tenant               @relation(fields: [tenantId], references: [id])
+  template   Template             @relation(fields: [templateId], references: [id])
+  recipients BroadcastRecipient[]
+
+  @@map("broadcasts")
+}
+
+model BroadcastRecipient {
+  id          String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  broadcastId String @db.Uuid
+  contactId   String @db.Uuid
+  status      String // pending, sent, failed
+
+  broadcast Broadcast @relation(fields: [broadcastId], references: [id])
+  contact   Contact   @relation(fields: [contactId], references: [id])
+
+  @@map("broadcast_recipients")
+}
+
+// Commerce
+model Product {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String   @db.Uuid
+  name           String
+  description    String?  @db.Text
+  price          Decimal  @db.Decimal(10, 2)
+  currency       String   @default("BDT")
+  sku            String?
+  imageUrl       String?
+  trackInventory Boolean  @default(false)
+  stockCount     Int      @default(0)
+  attributes     Json?    @default("{}") // Custom key-value pairs
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+
+  @@map("products")
+}
+
+model Order {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String   @db.Uuid
+  conversationId String?  @db.Uuid
+  contactId      String   @db.Uuid
+  status         String   @default("pending") // pending, confirmed, processing, shipped, delivered, cancelled, refunded
+  totalAmount    Decimal  @db.Decimal(10, 2)
+  currency       String   @default("BDT")
+  notes          String?  @db.Text
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  conversation Conversation? @relation(fields: [conversationId], references: [id])
+  contact      Contact       @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  items        OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id          String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId     String  @db.Uuid
+  productId   String  @db.Uuid
+  quantity    Int     @default(1)
+  priceAtTime Decimal @db.Decimal(10, 2)
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+}
+
+// Billing & Subscription Packages
+model Plan {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name            String
+  nameBn          String?
+  description     String?
+  descriptionBn   String?
+  priceMonthlyBdt Decimal  @db.Decimal(10, 2)
+  priceYearlyBdt  Decimal  @db.Decimal(10, 2)
+  messageQuota    Int
+  aiQuota         Int
+  seatLimit       Int
+  channelLimit    Int      @default(1)
+  storageLimitMb  Int      @default(500)
+  trialDays       Int      @default(0)
+  allowByok       Boolean  @default(false)
+  features        Json     @default("[]") // Array of feature keys like 'orders', 'leads'
+  featuresJson    Json     @default("[]") // Array of {en, bn} strings
+  isActive        Boolean  @default(true)
+  isPopular       Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  subscriptions Subscription[]
+
+  @@map("plans")
+}
+
+model Addon {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name          String
+  nameBn        String?
+  description   String?
+  descriptionBn String?
+  priceBdt      Decimal  @db.Decimal(10, 2)
+  type          String // ai_responses, extra_storage, extra_seats, extra_messages
+  value         Int // e.g., 1000 responses, 500 MB storage, 1 seat
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  @@map("addons")
+}
+
+model Subscription {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId         String   @db.Uuid
+  planId           String   @db.Uuid
+  status           String // active, past_due, canceled
+  billingCycle     String   @default("monthly") // monthly, yearly
+  currentPeriodEnd DateTime
+  couponId         String?  @db.Uuid
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id])
+  plan     Plan      @relation(fields: [planId], references: [id])
+  coupon   Coupon?   @relation(fields: [couponId], references: [id])
+  payments Payment[]
+
+  @@map("subscriptions")
+}
+
+model Coupon {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code           String    @unique
+  discountType   String // 'percentage' or 'fixed'
+  discountAmount Decimal   @db.Decimal(10, 2)
+  maxUses        Int?
+  usedCount      Int       @default(0)
+  validUntil     DateTime?
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+
+  subscriptions Subscription[]
+
+  @@map("coupons")
+}
+
+model Payment {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String   @db.Uuid
+  subscriptionId  String   @db.Uuid
+  amountBdt       Decimal  @db.Decimal(10, 2)
+  provider        String // sslcommerz, bkash, manual
+  status          String // success, pending, failed
+  trxId           String? // For manual payments
+  gatewayResponse Json? // For automated gateway logs
+  createdAt       DateTime @default(now())
+
+  tenant       Tenant       @relation(fields: [tenantId], references: [id])
+  subscription Subscription @relation(fields: [subscriptionId], references: [id])
+
+  @@map("payments")
+}
+
+// Site Configuration
+model LandingPageConfig {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  heroTitle      String
+  heroTitleBn    String?
+  heroSubtitle   String
+  heroSubtitleBn String?
+  featuresJson   Json // Array of feature objects with {en, bn}
+  pricingJson    Json // Array of pricing tiers with {en, bn}
+  faqsJson       Json // Array of FAQs
+  contactInfo    Json? // Contact details
+  aboutText      String?
+  updatedAt      DateTime @updatedAt
+
+  @@map("landing_page_config")
+}
+
+// Currency Exchange Rates (Platform-wide, immutable)
+model ExchangeRate {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  fromCurrency  String   @default("USD")
+  toCurrency    String   @default("BDT")
+  rate          Decimal  @db.Decimal(10, 4)
+  effectiveDate DateTime
+  createdAt     DateTime @default(now())
+  createdBy     String?  @db.Uuid
+
+  @@map("exchange_rates")
+}
+
+model SmtpConfig {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  host      String
+  port      Int
+  secure    Boolean  @default(false)
+  username  String?
+  password  String?
+  fromEmail String
+  fromName  String?
+  updatedAt DateTime @updatedAt
+
+  // Welcome Email
+  sendWelcomeEmail Boolean @default(false)
+  welcomeSubject   String?
+  welcomeBody      String? @db.Text
+
+  // Payment Submitted (Tenant confirmation)
+  paymentSubmittedEnabled Boolean @default(true)
+  paymentSubmittedSubject String?
+  paymentSubmittedBody    String? @db.Text
+
+  // Pending Payment Alert (Admin notification)
+  paymentPendingAdminEnabled Boolean @default(true)
+  paymentPendingAdminSubject String?
+  paymentPendingAdminBody    String? @db.Text
+
+  // Payment Approved (Tenant confirmation)
+  paymentApprovedEnabled Boolean @default(true)
+  paymentApprovedSubject String?
+  paymentApprovedBody    String? @db.Text
+
+  // Addon Purchased (Tenant confirmation)
+  addonPurchasedEnabled Boolean @default(true)
+  addonPurchasedSubject String?
+  addonPurchasedBody    String? @db.Text
+
+  // Subscription Expiry Reminder - 7 days
+  expiryReminder7dEnabled Boolean @default(true)
+  expiryReminder7dSubject String?
+  expiryReminder7dBody    String? @db.Text
+
+  // Subscription Expiry Reminder - 2 days
+  expiryReminder2dEnabled Boolean @default(true)
+  expiryReminder2dSubject String?
+  expiryReminder2dBody    String? @db.Text
+
+  // Agent Created (Email with login credentials)
+  agentCreatedEnabled Boolean @default(true)
+  agentCreatedSubject String?
+  agentCreatedBody    String? @db.Text
+
+  // Password Reset
+  passwordResetEnabled Boolean @default(true)
+  passwordResetSubject String? @db.Text
+  passwordResetBody    String? @db.Text
+
+  newInquiryEnabled Boolean @default(true)
+  newInquirySubject String? @db.Text
+  newInquiryBody    String? @db.Text
+
+  // Support Tickets
+  ticketCreatedEnabled Boolean @default(true)
+  ticketCreatedSubject String? @db.Text
+  ticketCreatedBody    String? @db.Text
+
+  ticketRepliedEnabled Boolean @default(true)
+  ticketRepliedSubject String? @db.Text
+  ticketRepliedBody    String? @db.Text
+
+  ticketStatusEnabled Boolean @default(true)
+  ticketStatusSubject String? @db.Text
+  ticketStatusBody    String? @db.Text
+
+  ticketAssignedEnabled Boolean @default(true)
+  ticketAssignedSubject String? @db.Text
+  ticketAssignedBody    String? @db.Text
+
+  createdAt DateTime @default(now())
+
+  @@map("smtp_config")
+}
+
+model Ticket {
+  id           String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String          @db.Uuid
+  tenant       Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  assignedToId String?         @db.Uuid
+  assignedTo   User?           @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
+  subject      String
+  type         String          @default("General") // Ticket category/type
+  status       String          @default("open") // open, answered, closed
+  priority     String          @default("medium") // low, medium, high
+  messages     TicketMessage[]
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@map("tickets")
+}
+
+model TicketMessage {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ticketId      String   @db.Uuid
+  ticket        Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  senderType    String // 'tenant' or 'admin'
+  senderId      String   @db.Uuid
+  sender        User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  message       String   @db.Text
+  attachmentUrl String?
+  createdAt     DateTime @default(now())
+
+  @@map("ticket_messages")
+}
+
+model Notification {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @db.Uuid
+  title     String
+  message   String
+  type      String   @default("info") // info, billing, signup, inbox
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model AiConfig {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String
+  provider    String // openai, anthropic, gemini, custom
+  modelName   String
+  apiKey      String
+  apiEndpoint String? // Optional custom proxy endpoint
+  isActive    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("ai_configs")
+}
+
+model GoogleAuthConfig {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clientId     String
+  clientSecret String?
+  isEnabled    Boolean  @default(false)
+  updatedAt    DateTime @updatedAt
+
+  @@map("google_auth_config")
+}
+
+model FacebookAuthConfig {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  appId     String
+  appSecret String?
+  isEnabled Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+
+  @@map("facebook_auth_config")
+}
+
+model PaymentGatewayConfig {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  isManualEnabled    Boolean  @default(true)
+  manualInstructions String?  @db.Text // e.g. "Send bKash to 01xxx and enter TrxID"
+  isSandboxEnabled   Boolean  @default(false)
+  sandboxProvider    String   @default("bkash") // e.g. bkash, sslcommerz
+  updatedAt          DateTime @updatedAt
+
+  @@map("payment_gateway_config")
+}
+
+model BusinessNature {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String
+  nameBn    String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@map("business_natures")
+}
+
+model SiteInquiry {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String
+  email     String
+  message   String
+  status    String   @default("unread")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
