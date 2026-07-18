@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: zinichat_backend
+    restart: always
+    env_file:
+      - ./backend/.env
+    ports:
+      - "8100:3000"
+    networks:
+      - zinichat_network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: zinichat_frontend
+    restart: always
+    env_file:
+      - ./frontend/.env.local
+    ports:
+      - "8101:3000"
+    networks:
+      - zinichat_network
+    depends_on:
+      - backend
+
+networks:
+  zinichat_network:
+    driver: bridge
