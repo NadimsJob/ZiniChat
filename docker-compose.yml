@@ -3,7 +3,7 @@ version: '3.8'
 services:
   redis:
     image: redis:alpine
-    container_name: zinichat_redis
+    container_name: zinichat_redis_${ENV_NAME:-test}
     restart: always
     networks:
       - zinichat_network
@@ -14,15 +14,15 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: zinichat_backend
+    container_name: zinichat_backend_${ENV_NAME:-test}
     restart: always
     env_file:
       - ./backend/.env
     ports:
-      - "8100:3000"
+      - "${BACKEND_PORT:-8100}:3000"
     networks:
       - zinichat_network
-      - supabase_test_network
+      - supabase_network
     depends_on:
       - redis
     extra_hosts:
@@ -33,13 +33,13 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: http://76.13.187.85:8100
-    container_name: zinichat_frontend
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://76.13.187.85:8100}
+    container_name: zinichat_frontend_${ENV_NAME:-test}
     restart: always
     env_file:
       - ./frontend/.env.local
     ports:
-      - "8101:3000"
+      - "${FRONTEND_PORT:-8101}:3000"
     networks:
       - zinichat_network
     depends_on:
@@ -48,10 +48,9 @@ services:
 networks:
   zinichat_network:
     driver: bridge
-  supabase_test_network:
+  supabase_network:
     external: true
-    name: supabase-test_default
+    name: ${SUPABASE_NETWORK_NAME:-supabase-test_default}
 
 volumes:
   zinichat_redis_data:
-
