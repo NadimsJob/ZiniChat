@@ -24,6 +24,8 @@ services:
       - zinichat_network
     depends_on:
       - redis
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   frontend:
     build:
