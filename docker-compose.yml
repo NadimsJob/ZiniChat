@@ -1,6 +1,15 @@
 version: '3.8'
 
 services:
+  redis:
+    image: redis:alpine
+    container_name: zinichat_redis
+    restart: always
+    networks:
+      - zinichat_network
+    volumes:
+      - zinichat_redis_data:/data
+
   backend:
     build:
       context: ./backend
@@ -13,6 +22,8 @@ services:
       - "8100:3000"
     networks:
       - zinichat_network
+    depends_on:
+      - redis
 
   frontend:
     build:
@@ -32,3 +43,6 @@ services:
 networks:
   zinichat_network:
     driver: bridge
+
+volumes:
+  zinichat_redis_data:
