@@ -2,6 +2,15 @@
 
 অফিসের বা নতুন কোনো পিসিতে কাজ শুরু করার জন্য নিচের স্টেপগুলো সিরিয়ালি ফলো করুন:
 
+### ⚠️ Pre-requisites (যে সফটওয়্যারগুলো ইনস্টল থাকতে হবে):
+নতুন পিসিতে প্রজেক্ট ক্লোন করার আগে নিশ্চিত করুন নিচের সফটওয়্যারগুলো ইনস্টল করা আছে:
+1. **Node.js (v18 বা v20 LTS)** - [Download Node.js](https://nodejs.org/)
+2. **Git** - [Download Git](https://git-scm.com/)
+3. **Docker Desktop** (Redis রান করার জন্য) - [Download Docker](https://www.docker.com/products/docker-desktop/)
+4. **Antigravity IDE** - (যেটাতে আপনি এখন কাজ করছেন)
+
+---
+
 ### Step 1: কোড আপডেট করা
 প্রজেক্ট ওপেন করে টার্মিনালে রান করুন:
 ```bash
