@@ -98,7 +98,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   switch (request.params.name) {
     case 'deploy_test_server': {
       try {
-        const result = await executeDeployment('~/zinichat-test', 'staging');
+        const result = await executeDeployment('/var/www/zinichat-test', 'staging');
         return {
           content: [
             {
@@ -122,7 +122,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
     case 'deploy_live_server': {
       try {
-        const result = await executeDeployment('~/zinichat-live', 'main');
+        const result = await executeDeployment('/var/www/zinichat-live', 'main');
         return {
           content: [
             {
