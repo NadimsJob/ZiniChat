@@ -1,17 +1,13 @@
 #!/usr/bin/env node
 
-require('dotenv').config({ path: '../backend/.env' });
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../backend/.env') });
 const { Server } = require('@modelcontextprotocol/sdk/server/index.js');
 const { StdioServerTransport } = require('@modelcontextprotocol/sdk/server/stdio.js');
 const { CallToolRequestSchema, ListToolsRequestSchema } = require('@modelcontextprotocol/sdk/types.js');
 const { NodeSSH } = require('node-ssh');
 
 const ssh = new NodeSSH();
-
-// Retrieve environment variables
-const host = process.env.VPS_HOST;
-const username = process.env.VPS_USERNAME || 'root';
-const privateKeyPath = process.env.VPS_PRIVATE_KEY_PATH;
 
 const server = new Server(
   {
@@ -53,6 +49,12 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 
 // Helper function to connect and execute commands
 async function executeDeployment(targetDir, branch) {
+  // Reload env in case it changed
+  require('dotenv').config({ path: path.join(__dirname, '../backend/.env') });
+  const host = process.env.VPS_HOST;
+  const username = process.env.VPS_USERNAME || 'root';
+  const privateKeyPath = process.env.VPS_PRIVATE_KEY_PATH;
+
   if (!host || !privateKeyPath) {
     throw new Error('VPS_HOST or VPS_PRIVATE_KEY_PATH is not set in the environment variables.');
   }
