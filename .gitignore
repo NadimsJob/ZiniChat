@@ -44,3 +44,9 @@ Redis.zip
 # Project specific
 supabase/.temp/
 supabase/db/
+
+# Local Redis
+redis-local/
+
+# Logs
+*.log
