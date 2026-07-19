@@ -107,3 +107,10 @@ This document contains rules and behavioral guidelines specific to this workspac
 ## 14. Database Migrations
 * **Rule**: Whenever any change is made to the database structure (e.g., modifying `schema.prisma` or adding tables), the agent MUST proactively generate the migration script (e.g., running `npx prisma migrate dev --name <migration_name>` or equivalent) without waiting for the user to ask.
 * **Why**: This ensures that structural changes are immediately recorded in source control, preventing deployment failures on staging/live servers caused by forgotten database migrations.
+
+---
+
+## 15. Local MCP Deployment & Monitoring Server
+* **Architecture Shift**: This project DOES NOT use standard CI/CD pipelines (like GitHub Actions). Instead, deployment and server monitoring are handled entirely via a custom local MCP server (`scripts/mcp-deploy-server.js`).
+* **Tool Usage**: When the user asks to deploy code, check server health, or read server logs, ALWAYS use the provided MCP tools (`deploy_test_server`, `deploy_live_server`, `check_server_health`, `get_docker_logs`, `restart_services`). Do not attempt to write manual SSH terminal commands or propose creating new CI/CD pipelines.
+* **Authentication**: The MCP server connects to the VPS using the local machine's SSH Private Key. The path is configured in `backend/.env` via the `VPS_PRIVATE_KEY_PATH` variable. The VPS targets are `/var/www/zinichat-test` and `/var/www/zinichat-live`.

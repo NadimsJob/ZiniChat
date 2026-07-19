@@ -24,10 +24,10 @@ A multi-tenant SaaS platform where businesses (tenants) manage customer communic
 * **Status**: **Current Status:**  
 - The core platform handles basic user auth, AI agent responses across WhatsApp/Messenger, dynamic training (knowledge base/website scraping), and a unified UI for tenants.
 - Subscription logic, quotas (messages, AI tokens, storage), and superadmin customizations have been strictly enforced on the backend via `QuotaService` and `FeatureGuard`.
+- The MCP Local Deployment & Monitoring Server (`scripts/mcp-deploy-server.js`) is fully active. Code is deployed to VPS over SSH using local PC keys, bypassing the need for GitHub Actions.
 
 **Active Focus:**  
 - Payment Gateway Integrations (Stripe/bKash/SSLCommerz)
-- Production Deployment & Monitoring Setup
 - Further UI polish and bug fixes on Superadmin panels
 
 ---
@@ -37,6 +37,7 @@ This log lists all features and modules implemented, ordered chronologically.
 
 | Date | Feature / Change | Key Files Modified | Status / Notes |
 | :--- | :--- | :--- | :--- |
+| **2026-07-19** | **MCP Deployment & Monitoring Server** | `scripts/mcp-deploy-server.js`, `mcp-config.json`, `backend/.env` | Built a local MCP server that uses `node-ssh` to deploy code and monitor server health without GitHub Actions. Includes tools: `deploy_test_server`, `deploy_live_server`, `check_server_health`, `get_docker_logs`, `restart_services`. Switched from password auth to SSH Key auth (`VPS_PRIVATE_KEY_PATH`). Target directories on VPS are `/var/www/zinichat-test` and `/var/www/zinichat-live`. |
 | **2026-07-15** | **Security Hardening (Phase 2)** | `main.ts`, `app.module.ts`, `storage.controller.ts`, `login/page.tsx` | Implemented strict CORS, Helmet, Throttler rate limiting, strict ValidationPipe, FileInterceptor file filtering, and secure SameSite cookies for JWT. |
 | **2026-07-15** | **Support Ticketing System** | `schema.prisma`, `TicketsModule`, `smtp.service.ts`, `superadmin/tickets/page.tsx`, `dashboard/support/page.tsx`, `superadmin/layout.tsx`, `(tenant)/dashboard/layout.tsx` | Implemented end-to-end ticketing system for tenants to contact superadmins, with assignment functionality, dynamic email notifications, and web notifications. |
 | **2026-07-15** | **Public Site Inquiries CRM** | `schema.prisma`, `InquiriesModule`, `smtp.service.ts`, `superadmin/inquiries/page.tsx`, `marketing/contact/page.tsx` | Implemented public contact form, DB storage, superadmin UI for inquiries, and dynamic SMTP email notifications for new inquiries. |
@@ -107,6 +108,7 @@ This log lists all features and modules implemented, ordered chronologically.
 * `.agents/AGENTS.md`: Workspace rules ensuring the agent maintains this context file.
 * `backend/`: NestJS monolithic backend application.
 * `frontend/`: Next.js frontend application containing Tenant and Superadmin apps.
+* `scripts/`: Contains the local MCP Deployment & Monitoring server (`mcp-deploy-server.js`).
 
 ---
 
