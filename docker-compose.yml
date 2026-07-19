@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   redis:
     image: redis:alpine
@@ -30,13 +28,13 @@ services:
     labels:
       - "traefik.enable=${TRAEFIK_ENABLE:-false}"
       - "traefik.docker.network=${ZINICHAT_NETWORK_NAME:-zinichat-test_zinichat_network}"
-      - "traefik.http.routers.zinichat-backend.rule=Host(`api.zinichat.com`)"
-      - "traefik.http.routers.zinichat-backend.entrypoints=websecure"
-      - "traefik.http.routers.zinichat-backend.tls.certresolver=letsencrypt"
-      - "traefik.http.services.zinichat-backend.loadbalancer.server.port=3000"
+      - "traefik.http.routers.zinichat-backend-${ENV_NAME:-test}.rule=Host(`${API_DOMAIN:-api-test.zinichat.com}`)"
+      - "traefik.http.routers.zinichat-backend-${ENV_NAME:-test}.entrypoints=websecure"
+      - "traefik.http.routers.zinichat-backend-${ENV_NAME:-test}.tls.certresolver=letsencrypt"
+      - "traefik.http.services.zinichat-backend-${ENV_NAME:-test}.loadbalancer.server.port=3000"
       # WebSocket support for Socket.io
-      - "traefik.http.middlewares.zinichat-backend-ws.headers.customrequestheaders.X-Forwarded-Proto=https"
-      - "traefik.http.routers.zinichat-backend.middlewares=zinichat-backend-ws"
+      - "traefik.http.middlewares.zinichat-backend-ws-${ENV_NAME:-test}.headers.customrequestheaders.X-Forwarded-Proto=https"
+      - "traefik.http.routers.zinichat-backend-${ENV_NAME:-test}.middlewares=zinichat-backend-ws-${ENV_NAME:-test}"
 
   frontend:
     build:
@@ -56,10 +54,10 @@ services:
       - backend
     labels:
       - "traefik.enable=${TRAEFIK_ENABLE:-false}"
-      - "traefik.http.routers.zinichat-frontend.rule=Host(`zinichat.com`) || Host(`www.zinichat.com`)"
-      - "traefik.http.routers.zinichat-frontend.entrypoints=websecure"
-      - "traefik.http.routers.zinichat-frontend.tls.certresolver=letsencrypt"
-      - "traefik.http.services.zinichat-frontend.loadbalancer.server.port=3000"
+      - "traefik.http.routers.zinichat-frontend-${ENV_NAME:-test}.rule=Host(`${FRONTEND_DOMAIN:-test.zinichat.com}`)"
+      - "traefik.http.routers.zinichat-frontend-${ENV_NAME:-test}.entrypoints=websecure"
+      - "traefik.http.routers.zinichat-frontend-${ENV_NAME:-test}.tls.certresolver=letsencrypt"
+      - "traefik.http.services.zinichat-frontend-${ENV_NAME:-test}.loadbalancer.server.port=3000"
 
 networks:
   zinichat_network:
