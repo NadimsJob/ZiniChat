@@ -101,3 +101,9 @@ This document contains rules and behavioral guidelines specific to this workspac
   6. Once verified, merge the hotfix into `main` and deploy to Live.
   7. Return to the original feature branch and resume work (`git checkout feature-branch`, `git stash pop`).
 * **Never** commit directly to `main` or hot-patch live servers without testing on a separate branch first.
+
+---
+
+## 14. Database Migrations
+* **Rule**: Whenever any change is made to the database structure (e.g., modifying `schema.prisma` or adding tables), the agent MUST proactively generate the migration script (e.g., running `npx prisma migrate dev --name <migration_name>` or equivalent) without waiting for the user to ask.
+* **Why**: This ensures that structural changes are immediately recorded in source control, preventing deployment failures on staging/live servers caused by forgotten database migrations.
