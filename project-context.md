@@ -25,6 +25,8 @@ A multi-tenant SaaS platform where businesses (tenants) manage customer communic
 - The core platform handles basic user auth, AI agent responses across WhatsApp/Messenger, dynamic training (knowledge base/website scraping), and a unified UI for tenants.
 - Subscription logic, quotas (messages, AI tokens, storage), and superadmin customizations have been strictly enforced on the backend via `QuotaService` and `FeatureGuard`.
 - The MCP Local Deployment & Monitoring Server (`scripts/mcp-deploy-server.js`) is fully active. Code is deployed to VPS over SSH using local PC keys, bypassing the need for GitHub Actions.
+  - **VPS IP:** `76.13.187.85`
+  - **Auth:** SSH Key (`VPS_PRIVATE_KEY_PATH` in `.env`)
 
 **Active Focus:**  
 - Payment Gateway Integrations (Stripe/bKash/SSLCommerz)
