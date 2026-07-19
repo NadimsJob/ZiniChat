@@ -110,7 +110,6 @@ This document contains rules and behavioral guidelines specific to this workspac
 
 ---
 
-## 15. Local MCP Deployment & Monitoring Server
-* **Architecture Shift**: This project DOES NOT use standard CI/CD pipelines (like GitHub Actions). Instead, deployment and server monitoring are handled entirely via a custom local MCP server (`scripts/mcp-deploy-server.js`).
-* **Tool Usage**: When the user asks to deploy code, check server health, or read server logs, ALWAYS use the provided MCP tools (`deploy_test_server`, `deploy_live_server`, `check_server_health`, `get_docker_logs`, `restart_services`). Do not attempt to write manual SSH terminal commands or propose creating new CI/CD pipelines.
-* **Authentication**: The MCP server connects to the VPS using the local machine's SSH Private Key. The path is configured in `backend/.env` via the `VPS_PRIVATE_KEY_PATH` variable. The VPS targets are `/var/www/zinichat-test` and `/var/www/zinichat-live`.
+## 15. Deployment Workflow & Constraints
+* **Architecture Shift**: This project DOES NOT use direct PC-to-server deployments via SSH scripts or local MCP tools. All such local deploy scripts have been permanently deleted.
+* **Rule**: All deployments MUST happen via Git. The local PC should only push changes to GitHub (`git push`). The server will then pull the changes securely from Git. NEVER attempt to create or run direct deployment scripts from the PC to the server again.

@@ -24,7 +24,7 @@ A multi-tenant SaaS platform where businesses (tenants) manage customer communic
 * **Status**: **Current Status:**  
 - The core platform handles basic user auth, AI agent responses across WhatsApp/Messenger, dynamic training (knowledge base/website scraping), and a unified UI for tenants.
 - Subscription logic, quotas (messages, AI tokens, storage), and superadmin customizations have been strictly enforced on the backend via `QuotaService` and `FeatureGuard`.
-- The MCP Local Deployment & Monitoring Server (`scripts/mcp-deploy-server.js`) is fully active. Code is deployed to VPS over SSH using local PC keys, bypassing the need for GitHub Actions.
+- Direct PC-to-Server deployment scripts (MCP Server) have been deprecated and deleted to enforce Git-only deployment constraints.
 - **Live and Staging Environments are fully deployed with Traefik routing, reverse proxy networking, and SSL certificates.**
 
 **Active Focus:**  
@@ -38,6 +38,7 @@ This log lists all features and modules implemented, ordered chronologically.
 
 | Date | Feature / Change | Key Files Modified | Status / Notes |
 | :--- | :--- | :--- | :--- |
+| **2026-07-19** | **Deployment Workflow Shift** | `scripts/`, `AGENTS.md` | Deleted all local PC-to-Server deployment scripts (`mcp-deploy-server.js`, `trigger-live.js`, etc.) and updated Workspace rules to strictly enforce Git-only deployments for maximum security. |
 | **2026-07-19** | **MCP Deployment & Monitoring Server** | `scripts/mcp-deploy-server.js`, `mcp-config.json`, `backend/.env` | Built a local MCP server that uses `node-ssh` to deploy code and monitor server health without GitHub Actions. Includes tools: `deploy_test_server`, `deploy_live_server`, `check_server_health`, `get_docker_logs`, `restart_services`. Switched from password auth to SSH Key auth (`VPS_PRIVATE_KEY_PATH`). Target directories on VPS are `/var/www/zinichat-test` and `/var/www/zinichat-live`. |
 | **2026-07-19** | **Live & Staging Traefik Deployment & Supabase Fixes** | `docker-compose.yml`, `.env.live`, `.env.test` | Deployed live (`zinichat.com`, `api.zinichat.com`) and staging (`test.zinichat.com`, `api-test.zinichat.com`) environments behind Traefik reverse proxy. Fixed Supabase networking (Supavisor tenant config) and Hostinger firewall ports for maximum security. Configured dynamic domain env vars in Compose. |
 | **2026-07-19** | **Live Nginx Proxy & Rebuild Config** | `nginx/zinichat.com.conf`, `.env.live` | Created Nginx configuration file for reverse proxy and `.env.live` to correctly inject `NEXT_PUBLIC_API_URL` during live frontend build on port 8200/8201. |
