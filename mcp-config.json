@@ -16,6 +16,10 @@
         "--connection-string",
         "postgresql://postgres:postgres@localhost:54322/postgres"
       ]
+    },
+    "deploy-server": {
+      "command": "node",
+      "args": ["scripts/mcp-deploy-server.js"]
     }
   }
 }
