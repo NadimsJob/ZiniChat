@@ -29,6 +29,7 @@ services:
       - "host.docker.internal:host-gateway"
     labels:
       - "traefik.enable=${TRAEFIK_ENABLE:-false}"
+      - "traefik.docker.network=${ZINICHAT_NETWORK_NAME:-zinichat-test_zinichat_network}"
       - "traefik.http.routers.zinichat-backend.rule=Host(`api.zinichat.com`)"
       - "traefik.http.routers.zinichat-backend.entrypoints=websecure"
       - "traefik.http.routers.zinichat-backend.tls.certresolver=letsencrypt"
