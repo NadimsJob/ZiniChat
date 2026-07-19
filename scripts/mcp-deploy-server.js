@@ -11,7 +11,7 @@ const ssh = new NodeSSH();
 // Retrieve environment variables
 const host = process.env.VPS_HOST;
 const username = process.env.VPS_USERNAME || 'root';
-const password = process.env.VPS_PASSWORD;
+const privateKeyPath = process.env.VPS_PRIVATE_KEY_PATH;
 
 const server = new Server(
   {
@@ -53,15 +53,15 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 
 // Helper function to connect and execute commands
 async function executeDeployment(targetDir, branch) {
-  if (!host || !password) {
-    throw new Error('VPS_HOST or VPS_PASSWORD is not set in the environment variables.');
+  if (!host || !privateKeyPath) {
+    throw new Error('VPS_HOST or VPS_PRIVATE_KEY_PATH is not set in the environment variables.');
   }
 
   try {
     await ssh.connect({
       host: host,
       username: username,
-      password: password,
+      privateKeyPath: privateKeyPath,
     });
 
     const commands = [
