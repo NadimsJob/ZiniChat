@@ -33,7 +33,7 @@ export class SubscriptionReminderService {
           currentPeriodEnd: { gte: startOfDay, lte: endOfDay }
         },
         include: {
-          tenant: { include: { users: { where: { role: 'owner' } } } },
+          tenant: { include: { users: { where: { role: { in: ['owner', 'admin'] } } } } },
           plan: true
         }
       });

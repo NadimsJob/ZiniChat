@@ -30,6 +30,17 @@ export class TicketsService {
       include: { tenant: true }
     });
 
+    // Notify tenant
+    const owner = await this.prisma.user.findFirst({ where: { tenantId, role: { in: ['owner', 'admin'] } } });
+    if (owner) {
+      this.notificationsService.createNotification(
+        owner.id,
+        'Ticket Created',
+        `Your support ticket '${subject}' has been successfully submitted.`,
+        'system'
+      );
+    }
+
     // Notify superadmins
     await this.notificationsService.createSystemNotificationForSuperadmins(
       `New Ticket: ${subject}`,
@@ -88,7 +99,7 @@ export class TicketsService {
   }
 
   async updateStatus(id: string, status: string, user: any) {
-    const ticket = await this.prisma.ticket.findUnique({ where: { id }, include: { tenant: { include: { users: { where: { role: 'owner' } } } } } });
+    const ticket = await this.prisma.ticket.findUnique({ where: { id }, include: { tenant: { include: { users: { where: { role: { in: ['owner', 'admin'] } } } } } } });
     if (!ticket) throw new NotFoundException();
 
     if (user.role !== 'superadmin') throw new ForbiddenException('Only superadmins can change ticket status');
@@ -126,7 +137,7 @@ export class TicketsService {
   }
 
   async addMessage(id: string, user: any, message: string, attachmentUrl?: string) {
-    const ticket = await this.prisma.ticket.findUnique({ where: { id }, include: { tenant: { include: { users: { where: { role: 'owner' } } } } } });
+    const ticket = await this.prisma.ticket.findUnique({ where: { id }, include: { tenant: { include: { users: { where: { role: { in: ['owner', 'admin'] } } } } } } });
     if (!ticket) throw new NotFoundException();
     if (user.role !== 'superadmin' && ticket.tenantId !== user.tenantId) throw new ForbiddenException();
 

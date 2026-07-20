@@ -3,11 +3,10 @@
 import Link from 'next/link';
 import { useTheme } from 'next-themes';
 import { useLanguage } from '@/components/LanguageProvider';
-import { Moon, Sun, Globe, MessageSquare } from 'lucide-react';
+import { Globe, MessageSquare } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
-  const { theme, setTheme } = useTheme();
   const { language, setLanguage } = useLanguage();
   const [mounted, setMounted] = useState(false);
 
@@ -53,18 +52,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
               {language === 'en' ? 'EN' : 'BN'}
             </button>
 
-            {/* Theme Toggle */}
-            {mounted && (
-              <button
-                onClick={() => {
-                  const currentTheme = theme === 'system' ? 'light' : theme;
-                  setTheme(currentTheme === 'dark' ? 'light' : 'dark');
-                }}
-                className="flex items-center justify-center w-8 h-8 rounded-full border border-surface-hover bg-background hover:bg-surface text-zinc-500 hover:text-foreground transition-all"
-              >
-                {theme === 'dark' || (theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches) ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
-              </button>
-            )}
+
 
             <Link href="/login" className="flex items-center justify-center h-8 px-4 rounded-full bg-gradient-to-r from-primary to-secondary text-white text-xs font-bold hover:opacity-90 transition-all shadow-glow">
               {language === 'en' ? 'Login →' : 'লগইন →'}

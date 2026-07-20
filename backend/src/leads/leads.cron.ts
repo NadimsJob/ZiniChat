@@ -35,10 +35,19 @@ export class LeadsCronService {
       for (const lead of pendingLeads) {
         let targetUserId = lead.assignedUserId;
 
-        // If no user is explicitly assigned, notify the tenant owner/superadmins
+        if (targetUserId) {
+          // Verify if the explicitly assigned user actually belongs to this tenant
+          // Prevents superadmins who created test leads from receiving notifications
+          const user = await this.prisma.user.findUnique({ where: { id: targetUserId } });
+          if (!user || user.tenantId !== lead.tenantId) {
+             targetUserId = null; // Fallback to notifying the tenant owner
+          }
+        }
+
+        // If no user is explicitly assigned (or invalid), notify the tenant owner/admin
         if (!targetUserId) {
           const owner = await this.prisma.user.findFirst({
-            where: { tenantId: lead.tenantId, role: 'owner' }
+            where: { tenantId: lead.tenantId, role: { in: ['owner', 'admin'] } }
           });
           targetUserId = owner?.id || null;
         }

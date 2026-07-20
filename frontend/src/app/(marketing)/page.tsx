@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { useLanguage } from '@/components/LanguageProvider';
 import { useCurrency } from '@/components/CurrencyProvider';
 import Link from 'next/link';
+import { Bot, ShieldCheck, ArrowRight, CheckCircle2, MessageSquare, Zap, Globe, Users, ShoppingCart, Star } from 'lucide-react';
+import { InteractiveFeatureTabs, processFeatures } from '@/components/InteractiveFeatureTabs';
 
 function WhatsAppBotMockup({ language }: { language: string }) {
   return (
@@ -11,10 +13,10 @@ function WhatsAppBotMockup({ language }: { language: string }) {
       {/* Chat Header */}
       <div className="bg-surface-hover px-4 py-3 border-b border-surface-hover flex items-center gap-3">
         <div className="w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center">
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
+          <Bot className="w-5 h-5" />
         </div>
         <div>
-          <h4 className="font-bold text-sm">ZiniChat Business Bot</h4>
+          <h4 className="font-bold text-sm">ZiniChat AI Assistant</h4>
           <p className="text-xs text-primary font-medium flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-primary"></span> {language === 'en' ? 'Online • Automated' : 'অনলাইন • স্বয়ংক্রিয়'}
           </p>
@@ -22,7 +24,7 @@ function WhatsAppBotMockup({ language }: { language: string }) {
       </div>
       
       {/* Chat Body */}
-      <div className="bg-[#f0f2f5] dark:bg-[#0c0c0e] p-4 space-y-4 h-[320px] overflow-hidden flex flex-col justify-end relative">
+      <div className="bg-[#EFEAE2]/80 backdrop-blur-md p-4 space-y-4 h-[320px] overflow-hidden flex flex-col justify-end relative">
         
         <div className="flex flex-col gap-1 w-full max-w-[85%] self-end">
           <span className="text-[10px] text-zinc-400 self-end mr-1 mb-0.5">{language === 'en' ? 'Customer' : 'গ্রাহক'}</span>
@@ -33,13 +35,13 @@ function WhatsAppBotMockup({ language }: { language: string }) {
 
         <div className="flex flex-col gap-1 w-full max-w-[85%] self-start animate-in fade-in slide-in-from-left-4 duration-500 delay-300 fill-mode-both">
           <span className="text-[10px] text-zinc-400 self-start ml-1 mb-0.5 text-primary font-medium">{language === 'en' ? 'Auto Reply' : 'অটো রিপ্লাই'}</span>
-          <div className="bg-white dark:bg-surface border border-surface-hover p-3 rounded-2xl rounded-tl-sm text-sm shadow-sm relative z-10">
+          <div className="bg-white border border-surface-hover p-3 rounded-2xl rounded-tl-sm text-sm shadow-sm relative z-10 text-zinc-800">
             {language === 'en' ? 'Hello! I found your order #12345. It is currently out for delivery and will arrive by 5 PM today. 🚚' : 'হ্যালো! আমি আপনার অর্ডার #12345 খুঁজে পেয়েছি। এটি ডেলিভারির জন্য বের হয়েছে এবং আজ বিকাল ৫ টার মধ্যে পৌঁছে যাবে। 🚚'}
           </div>
         </div>
 
         <div className="flex flex-col gap-1 w-full max-w-[85%] self-start animate-in fade-in slide-in-from-left-4 duration-500 delay-1000 fill-mode-both">
-          <div className="bg-white dark:bg-surface border border-surface-hover p-3 rounded-2xl rounded-tl-sm text-sm shadow-sm relative z-10 flex flex-col gap-2">
+          <div className="bg-white border border-surface-hover p-3 rounded-2xl rounded-tl-sm text-sm shadow-sm relative z-10 flex flex-col gap-2 text-zinc-800">
             <span>{language === 'en' ? 'Would you like to track the driver live?' : 'আপনি কি রাইডারকে লাইভ ট্র্যাক করতে চান?'}</span>
             <button className="bg-primary/10 text-primary font-medium py-1.5 rounded-lg text-xs hover:bg-primary/20 transition-colors">
               {language === 'en' ? 'Yes, track order' : 'হ্যাঁ, ট্র্যাক করুন'}
@@ -66,10 +68,10 @@ function WhatsAppBotMockup({ language }: { language: string }) {
 
 export default function HomePage() {
   const { language } = useLanguage();
-  const { formatBDT, formatNumber } = useCurrency();
+  const { formatBDT } = useCurrency();
+  const [activeFeature, setActiveFeature] = useState(0);
   const [config, setConfig] = useState<any>(null);
   const [plans, setPlans] = useState<any[]>([]);
-  const [addons, setAddons] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
@@ -80,18 +82,15 @@ export default function HomePage() {
         if (!res.ok) throw new Error('API Error');
         return res.json();
       }),
-      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/packages/plans`).then(res => res.ok ? res.json() : []),
-      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/packages/addons`).then(res => res.ok ? res.json() : [])
+      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/packages/plans`).then(res => res.ok ? res.json() : [])
     ])
-    .then(([configData, plansData, addonsData]) => {
+    .then(([configData, plansData]) => {
       setConfig(configData);
-      setPlans(plansData || []);
-      setAddons(addonsData || []);
+      setPlans((plansData || []).sort((a: any, b: any) => a.priceMonthlyBdt - b.priceMonthlyBdt));
       setLoading(false);
     })
     .catch(err => {
-      // Instead of console.error which triggers Next.js dev overlay, we set error state
-      console.warn("Could not fetch data from backend. Is the server running?", err.message);
+      console.warn("Could not fetch data from backend.", err.message);
       setError(true);
       setLoading(false);
     });
@@ -129,22 +128,29 @@ export default function HomePage() {
     );
   }
 
+
+
   return (
     <div className="flex flex-col items-center overflow-hidden relative">
       
+      {/* Decorative Background Blobs for Professional Colorful Tech Feel */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40rem] h-[40rem] bg-purple-500/10 rounded-full blur-[120px] pointer-events-none z-0" />
+      <div className="absolute top-[20%] right-[-10%] w-[35rem] h-[35rem] bg-blue-500/10 rounded-full blur-[100px] pointer-events-none z-0" />
+      <div className="absolute top-[60%] left-[10%] w-[30rem] h-[30rem] bg-primary/10 rounded-full blur-[120px] pointer-events-none z-0" />
+
       {/* Interactive Mouse Glow */}
       <div 
-        className="fixed top-0 left-0 w-96 h-96 bg-primary/20 rounded-full blur-[120px] pointer-events-none transition-transform duration-700 ease-out z-0"
+        className="fixed top-0 left-0 w-96 h-96 bg-secondary/15 rounded-full blur-[120px] pointer-events-none transition-transform duration-700 ease-out z-0"
         style={{ transform: `translate(${mousePos.x - 192}px, ${mousePos.y - 192}px)` }}
       />
       
       {/* Hero Section */}
-      <section className="w-full max-w-7xl mx-auto py-20 lg:py-32 px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-12 items-center relative z-10">
+      <section className="w-full max-w-7xl mx-auto py-12 lg:py-20 px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-12 items-center relative z-10">
 
         <div className="flex flex-col items-start text-left z-10">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-secondary/30 bg-secondary/10 text-secondary text-xs font-bold mb-6 shadow-[0_0_15px_-3px_var(--secondary)]">
             <span className="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
-            WhatsApp Business API Platform →
+            {language === 'en' ? 'Omnichannel AI Assistant Platform →' : 'ওমনিচ্যানেল এআই অ্যাসিস্ট্যান্ট প্ল্যাটফর্ম →'}
           </div>
           <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight leading-[1.1] mb-6">
             {language === 'en' ? config.heroTitle : (config.heroTitleBn || config.heroTitle)}
@@ -161,153 +167,220 @@ export default function HomePage() {
             </Link>
             <Link
               href="/contact"
-              className="rounded-full bg-surface/50 backdrop-blur-sm border border-surface-hover px-8 py-4 text-sm font-semibold text-foreground hover:bg-surface-hover transition-all"
+              className="rounded-full bg-surface border border-surface-hover px-8 py-4 text-sm font-semibold text-foreground hover:bg-surface-hover transition-all"
             >
               {language === 'en' ? 'View Demo' : 'ডেমো দেখুন'}
             </Link>
           </div>
-          <p className="mt-4 text-xs text-zinc-500 font-medium">
-            {language === 'en' ? 'No Credit Card Required • Trusted by 500+ businesses' : 'কোনো ক্রেডিট কার্ডের প্রয়োজন নেই • ৫০০+ ব্যবসার আস্থার প্রতীক'}
+          <p className="mt-4 text-xs text-zinc-500 font-medium flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-green-500" />
+            {language === 'en' ? 'No Credit Card Required • Setup in 10 minutes' : 'কোনো ক্রেডিট কার্ডের প্রয়োজন নেই • ১০ মিনিটে সেটআপ'}
           </p>
         </div>
 
-        <div className="relative z-10 flex justify-center lg:justify-end">
+        <div className="relative z-10 flex justify-center lg:justify-end lg:-translate-y-12">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-gradient-to-tr from-primary via-purple-500 to-secondary rounded-full blur-[120px] opacity-40 pointer-events-none" />
           <WhatsAppBotMockup language={language} />
         </div>
       </section>
 
-      {/* Key Metrics Strip */}
-      <section className="w-full border-y border-surface-hover bg-surface/30 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-4 py-8 grid grid-cols-2 md:grid-cols-4 gap-8 text-center divide-x divide-surface-hover/50">
-          <div>
-            <div className="text-3xl font-extrabold text-foreground mb-1">{language === 'en' ? '10M+' : '১ কোটি+'}</div>
-            <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">{language === 'en' ? 'Messages Sent' : 'মেসেজ পাঠানো হয়েছে'}</div>
-          </div>
-          <div>
-            <div className="text-3xl font-extrabold text-foreground mb-1">{language === 'en' ? '500+' : '৫০০+'}</div>
-            <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">{language === 'en' ? 'Active Clients' : 'অ্যাক্টিভ ক্লায়েন্ট'}</div>
-          </div>
-          <div>
-            <div className="text-3xl font-extrabold text-foreground mb-1">{language === 'en' ? '99.9%' : '৯৯.৯%'}</div>
-            <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">{language === 'en' ? 'Uptime SLA' : 'আপটাইম এসএলএ'}</div>
-          </div>
-          <div>
-            <div className="text-3xl font-extrabold text-foreground mb-1">{language === 'en' ? '98.5%' : '৯৮.৫%'}</div>
-            <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">{language === 'en' ? 'Delivery Rate' : 'ডেলিভারি রেট'}</div>
+      {/* Logos & Social Proof */}
+      <section className="w-full border-y border-surface-hover bg-surface/30 backdrop-blur-md py-12">
+        <div className="max-w-7xl mx-auto px-4 text-center">
+          <p className="text-sm font-bold text-zinc-500 uppercase tracking-wider mb-8">
+            {language === 'en' ? 'Trusted by 500+ innovative businesses worldwide' : 'বিশ্বব্যাপী ৫০০+ উদ্ভাবনী ব্যবসার আস্থার প্রতীক'}
+          </p>
+          <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16 opacity-50 grayscale hover:grayscale-0 transition-all duration-500">
+            {/* Using text logos for now since actual images might be missing */}
+            <div className="text-2xl font-black font-serif">Acme Corp</div>
+            <div className="text-xl font-bold tracking-tighter">TechFlow</div>
+            <div className="text-2xl font-extrabold italic">Globex</div>
+            <div className="text-2xl font-bold uppercase tracking-widest">Stark</div>
+            <div className="text-xl font-bold rounded bg-zinc-800 px-2 py-1 text-white">UMBRELLA</div>
           </div>
         </div>
       </section>
 
-      {/* Features List */}
+      {/* How it Works Section */}
       <section className="w-full max-w-7xl mx-auto py-24 px-4 sm:px-6 lg:px-8">
-        <div className="mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold tracking-tight">
-            {language === 'en' ? 'Everything in one platform' : 'সবকিছু এক প্ল্যাটফর্মে'}
+        <div className="text-center mb-16">
+          <h2 className="text-4xl font-bold tracking-tight mb-4">
+            {language === 'en' ? 'How it Works' : 'এটি কীভাবে কাজ করে'}
           </h2>
-          <p className="mt-4 text-lg text-zinc-500 max-w-2xl">
-            {language === 'en' ? 'Built for scale, designed for simplicity. Engage your customers across every channel.' : 'স্কেলের জন্য তৈরি, সহজে ব্যবহারের জন্য ডিজাইন করা।'}
+          <p className="text-lg text-zinc-500 max-w-2xl mx-auto">
+            {language === 'en' ? 'Get your AI assistant up and running in three simple steps.' : 'তিনটি সহজ ধাপে আপনার এআই অ্যাসিস্ট্যান্ট চালু করুন।'}
           </p>
         </div>
         
-        <div className="grid md:grid-cols-2 gap-x-12 gap-y-16">
-          {config.featuresJson?.map((feature: any, idx: number) => (
-            <div key={idx} className="flex gap-6 group">
-              <div className="text-4xl font-black text-surface-hover group-hover:text-secondary transition-colors duration-500">
-                {(idx + 1).toString().padStart(2, '0')}
-              </div>
-              <div>
-                <h3 className="text-xl font-bold mb-2 group-hover:text-primary transition-colors">{language === 'en' ? feature.title?.en || feature.title : feature.title?.bn || feature.title}</h3>
-                <p className="text-zinc-500 leading-relaxed text-sm">{language === 'en' ? feature.description?.en || feature.description : feature.description?.bn || feature.description}</p>
-              </div>
-            </div>
-          ))}
+        <div className="grid md:grid-cols-3 gap-8 relative">
+          <div className="hidden md:block absolute top-1/2 left-[10%] right-[10%] h-0.5 bg-gradient-to-r from-primary/10 via-purple-500/30 to-secondary/10 -translate-y-1/2 -z-10" />
+          
+          <div className="bg-surface border border-surface-hover hover:border-primary/50 hover:shadow-[0_0_30px_-10px_var(--primary)] transition-all duration-300 p-8 rounded-3xl text-center relative shadow-lg group">
+            <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+            <div className="w-16 h-16 bg-primary text-white rounded-full flex items-center justify-center text-2xl font-black mx-auto mb-6 shadow-glow relative z-10 border-4 border-background group-hover:scale-110 transition-transform">1</div>
+            <h3 className="text-xl font-bold mb-3">{language === 'en' ? 'Connect Channels' : 'চ্যানেল কানেক্ট করুন'}</h3>
+            <p className="text-zinc-500 text-sm">
+              {language === 'en' ? 'Link your WhatsApp Business, Facebook Page, or Instagram account with a single click.' : 'আপনার হোয়াটসঅ্যাপ, ফেসবুক পেজ বা ইনস্টাগ্রাম অ্যাকাউন্ট এক ক্লিকে লিঙ্ক করুন।'}
+            </p>
+          </div>
+          
+          <div className="bg-surface border border-surface-hover hover:border-purple-500/50 hover:shadow-[0_0_30px_-10px_rgba(168,85,247,0.5)] transition-all duration-300 p-8 rounded-3xl text-center relative shadow-lg group">
+            <div className="absolute inset-0 bg-gradient-to-b from-purple-500/5 to-transparent rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+            <div className="w-16 h-16 bg-purple-500 text-white rounded-full flex items-center justify-center text-2xl font-black mx-auto mb-6 shadow-[0_0_15px_-3px_rgba(168,85,247,0.5)] relative z-10 border-4 border-background group-hover:scale-110 transition-transform">2</div>
+            <h3 className="text-xl font-bold mb-3">{language === 'en' ? 'Train the AI' : 'এআই ট্রেইন করুন'}</h3>
+            <p className="text-zinc-500 text-sm">
+              {language === 'en' ? 'Upload your products, services, and FAQs. The AI learns your business inside out instantly.' : 'আপনার প্রোডাক্ট, সার্ভিস এবং FAQ আপলোড করুন। এআই সাথে সাথেই আপনার ব্যবসা শিখে নেয়।'}
+            </p>
+          </div>
+          
+          <div className="bg-surface border border-surface-hover hover:border-secondary/50 hover:shadow-[0_0_30px_-10px_var(--secondary)] transition-all duration-300 p-8 rounded-3xl text-center relative shadow-lg group">
+            <div className="absolute inset-0 bg-gradient-to-b from-secondary/5 to-transparent rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+            <div className="w-16 h-16 bg-secondary text-white rounded-full flex items-center justify-center text-2xl font-black mx-auto mb-6 shadow-[0_0_15px_-3px_var(--secondary)] relative z-10 border-4 border-background group-hover:scale-110 transition-transform">3</div>
+            <h3 className="text-xl font-bold mb-3">{language === 'en' ? 'Automate & Grow' : 'স্বয়ংক্রিয় করুন এবং বাড়ান'}</h3>
+            <p className="text-zinc-500 text-sm">
+              {language === 'en' ? 'Watch as the AI answers questions, qualifies leads, and closes sales 24/7 on autopilot.' : 'এআই কীভাবে স্বয়ংক্রিয়ভাবে উত্তর দেয়, লিড কোয়ালিফাই করে এবং সেলস ক্লোজ করে তা দেখুন।'}
+            </p>
+          </div>
         </div>
       </section>
 
-      {/* Pricing Cards */}
-      <section className="w-full py-24 px-4 relative">
-        <div className="absolute inset-0 bg-surface-hover/30 -skew-y-3 z-0" />
-        
-        <div className="max-w-7xl mx-auto relative z-10 flex flex-col items-center">
-          <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-16 text-center">
-            {language === 'en' ? 'Simple, transparent pricing' : 'সহজ ও স্বচ্ছ প্রাইসিং'}
+      {/* Features Section */}
+      <section className="w-full bg-surface-hover/30 border-y border-surface-hover py-16 mt-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-12 text-center">
+          <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-4 bg-gradient-to-r from-primary via-purple-600 to-secondary bg-clip-text text-transparent pb-1">
+            {language === 'en' ? 'Everything you need to scale' : 'স্কেল করার জন্য প্রয়োজনীয় সবকিছু'}
           </h2>
+          <p className="text-lg text-zinc-500 max-w-2xl mx-auto">
+            {language === 'en' ? 'A complete suite of tools designed to replace multiple expensive software subscriptions.' : 'একাধিক ব্যয়বহুল সফটওয়্যার সাবস্ক্রিপশন প্রতিস্থাপনের জন্য ডিজাইন করা সম্পূর্ণ টুলস।'}
+          </p>
+        </div>
+        <InteractiveFeatureTabs activeFeature={activeFeature} setActiveFeature={setActiveFeature} features={processFeatures(config.featuresJson || [])} />
+        <div className="text-center mt-12">
+          <Link href="/features" className="inline-flex items-center gap-2 text-primary font-bold hover:gap-3 transition-all">
+            {language === 'en' ? 'View all features' : 'সব ফিচার দেখুন'} <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
+      </section>
+
+      {/* Testimonial Section */}
+      <section className="w-full max-w-5xl mx-auto py-24 px-4 text-center">
+        <div className="flex justify-center mb-6 text-orange-500">
+          <Star className="w-6 h-6 fill-current" />
+          <Star className="w-6 h-6 fill-current" />
+          <Star className="w-6 h-6 fill-current" />
+          <Star className="w-6 h-6 fill-current" />
+          <Star className="w-6 h-6 fill-current" />
+        </div>
+        <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight mb-8 leading-tight">
+          {language === 'en' 
+            ? `"ZiniChat completely transformed our customer support. We went from answering the same questions 100 times a day to having AI handle 80% of our inquiries instantly."` 
+            : `"ZiniChat আমাদের কাস্টমার সাপোর্টকে সম্পূর্ণ বদলে দিয়েছে। দিনে ১০০ বার একই প্রশ্নের উত্তর দেওয়ার বদলে এখন AI তাৎক্ষণিকভাবে ৮০% অনুসন্ধানের উত্তর দেয়।"`}
+        </h2>
+        <div className="flex items-center justify-center gap-4">
+          <div className="w-12 h-12 rounded-full bg-zinc-800 border-2 border-primary overflow-hidden">
+            <img src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt="Avatar" className="w-full h-full object-cover" />
+          </div>
+          <div className="text-left">
+            <div className="font-bold">Sarah Rahman</div>
+            <div className="text-sm text-zinc-500">Founder, E-Shop BD</div>
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Preview */}
+      <section className="w-full py-24 px-4 relative overflow-hidden bg-surface-hover/30 border-y border-surface-hover">
+        <div className="max-w-7xl mx-auto relative z-10 flex flex-col items-center">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">
+              {language === 'en' ? 'Simple, transparent pricing' : 'সহজ ও স্বচ্ছ প্রাইসিং'}
+            </h2>
+            <p className="text-lg text-zinc-500">
+              {language === 'en' ? 'Start for free, upgrade when you need more power.' : 'বিনামূল্যে শুরু করুন, বেশি পাওয়ার দরকার হলে আপগ্রেড করুন।'}
+            </p>
+          </div>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 w-full max-w-5xl">
             {plans.map((plan: any, idx: number) => (
-              <div key={plan.id} className={`p-8 rounded-3xl bg-background border flex flex-col shadow-xl transition-all duration-300 hover:-translate-y-2 ${plan.isPopular ? 'border-primary/50 shadow-glow relative' : 'border-surface-hover'}`}>
+              <div key={plan.id} className={`p-8 rounded-3xl bg-background border flex flex-col shadow-xl transition-all duration-300 hover:-translate-y-2 ${plan.isPopular ? 'border-primary/50 shadow-[0_0_40px_-15px_var(--primary)] relative md:-translate-y-4 hover:!translate-y-[-24px]' : 'border-surface-hover'}`}>
                 {plan.isPopular && (
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-primary to-secondary text-white text-xs font-bold py-1.5 px-4 rounded-full uppercase tracking-wider shadow-md">
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-primary to-secondary text-white text-xs font-bold py-1.5 px-6 rounded-full uppercase tracking-wider shadow-md whitespace-nowrap">
                     {language === 'en' ? 'Most Popular' : 'জনপ্রিয়'}
                   </div>
                 )}
                 
-                <h3 className="text-lg font-bold text-zinc-500 mb-4">{language === 'en' ? plan.name : (plan.nameBn || plan.name)}</h3>
-                <div className="my-6">
-                  <span className="text-5xl font-extrabold">{formatBDT(plan.priceMonthlyBdt)}</span>
-                  <span className="text-zinc-500 text-sm ml-1">/ {language === 'en' ? 'mo' : 'মাস'}</span>
+                <h3 className="text-lg font-bold text-zinc-500 mb-2">{language === 'en' ? plan.name : (plan.nameBn || plan.name)}</h3>
+                <div className="mb-6 flex items-baseline gap-1">
+                  <span className="text-5xl font-extrabold tracking-tight">{formatBDT(plan.priceMonthlyBdt)}</span>
+                  <span className="text-zinc-500 font-medium">/ {language === 'en' ? 'mo' : 'মাস'}</span>
                 </div>
                 
-                <Link href="/signup" className={`w-full py-3 rounded-full text-sm font-bold text-center transition-all mb-8 ${plan.isPopular ? 'bg-gradient-to-r from-primary to-secondary text-white hover:opacity-90 shadow-glow' : 'bg-surface-hover hover:bg-surface text-foreground'}`}>
+                <ul className="space-y-4 mb-8 flex-1">
+                  <li className="flex items-start gap-3 text-sm">
+                    <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />
+                    <span className="text-zinc-300">{language === 'en' ? 'Full Omnichannel Inbox' : 'পূর্ণ অমনিচ্যানেল ইনবক্স'}</span>
+                  </li>
+                  <li className="flex items-start gap-3 text-sm">
+                    <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />
+                    <span className="text-zinc-300">{language === 'en' ? 'Unlimited Contacts' : 'আনলিমিটেড কন্টাক্টস'}</span>
+                  </li>
+                  <li className="flex items-start gap-3 text-sm">
+                    <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />
+                    <span className="text-zinc-300">{plan.messageQuota === -1 ? 'Unlimited' : plan.messageQuota} {language === 'en' ? 'Messages/mo' : 'মেসেজ/মাস'}</span>
+                  </li>
+                </ul>
+
+                <Link 
+                  href="/signup" 
+                  className={`w-full py-4 rounded-xl font-bold text-sm text-center transition-all ${
+                    plan.isPopular 
+                      ? 'bg-gradient-to-r from-primary to-secondary text-white hover:opacity-90 shadow-glow' 
+                      : 'bg-surface-hover text-foreground hover:bg-zinc-800'
+                  }`}
+                >
                   {language === 'en' ? 'Get Started' : 'শুরু করুন'}
                 </Link>
-
-                <div className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-4">{language === 'en' ? "What's included" : "যা যা থাকছে"}</div>
-                <ul className="space-y-4 w-full text-left text-sm font-medium">
-                  <li className="flex items-start gap-3 text-zinc-300">
-                    <div className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
-                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
-                    </div>
-                    {formatNumber(plan.seatLimit)} {language === 'en' ? 'Team Members' : 'টিম মেম্বার'}
-                  </li>
-                  <li className="flex items-start gap-3 text-zinc-300">
-                    <div className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
-                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
-                    </div>
-                    {formatNumber(plan.messageQuota)} {language === 'en' ? 'Messages/mo' : 'মেসেজ/মাস'}
-                  </li>
-                  <li className="flex items-start gap-3 text-zinc-300">
-                    <div className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
-                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
-                    </div>
-                    {formatNumber(plan.aiQuota)} {language === 'en' ? 'AI Responses/mo' : 'এআই রেসপন্স/মাস'}
-                  </li>
-                  {plan.featuresJson?.map((f: any, i: number) => (
-                    <li key={i} className="flex items-start gap-3 text-zinc-300">
-                      <div className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
-                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
-                      </div>
-                      {language === 'en' ? f.en : (f.bn || f.en)}
-                    </li>
-                  ))}
-                </ul>
               </div>
             ))}
           </div>
-
-          {addons.length > 0 && (
-            <div className="mt-24 w-full max-w-4xl">
-              <div className="text-center mb-12">
-                <h3 className="text-2xl font-bold tracking-tight">
-                  {language === 'en' ? 'Available Add-ons' : 'অ্যাড-অন সমূহ'}
-                </h3>
-                <p className="mt-2 text-zinc-500 text-sm">
-                  {language === 'en' ? 'Need more limits? Purchase add-ons anytime.' : 'আরও লিমিট প্রয়োজন? যেকোনো সময় অ্যাড-অন কিনতে পারবেন।'}
-                </p>
-              </div>
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {addons.map((addon) => (
-                  <div key={addon.id} className="bg-surface border border-surface-hover p-6 rounded-2xl text-center">
-                    <h4 className="font-bold text-lg">{language === 'en' ? addon.name : (addon.nameBn || addon.name)}</h4>
-                    <p className="text-xs text-zinc-500 mt-1 uppercase tracking-wider">{formatNumber(addon.value)} {addon.type.replace('_', ' ')}</p>
-                    <div className="text-2xl font-black mt-4 text-secondary">{formatBDT(addon.priceBdt)}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          
+          <div className="mt-12 text-center">
+            <Link href="/pricing" className="text-primary font-bold hover:underline inline-flex items-center gap-1">
+              {language === 'en' ? 'View full feature comparison' : 'সম্পূর্ণ ফিচার তুলনা দেখুন'} <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
         </div>
       </section>
+
+      {/* Bottom CTA */}
+      <section className="w-full max-w-5xl mx-auto px-4 py-32 text-center">
+        <div className="relative p-12 md:p-20 rounded-3xl bg-gradient-to-br from-primary/10 via-surface to-secondary/10 border border-surface-hover overflow-hidden">
+          <div className="absolute top-0 left-0 w-64 h-64 bg-primary/20 rounded-full blur-[100px] pointer-events-none" />
+          <div className="absolute bottom-0 right-0 w-64 h-64 bg-secondary/20 rounded-full blur-[100px] pointer-events-none" />
+          
+          <div className="relative z-10">
+            <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-6">
+              {language === 'en' ? 'Ready to automate your business?' : 'আপনার ব্যবসা স্বয়ংক্রিয় করতে প্রস্তুত?'}
+            </h2>
+            <p className="text-lg text-zinc-500 mb-10 max-w-xl mx-auto">
+              {language === 'en' 
+                ? 'Join 500+ businesses saving time and growing sales with ZiniChat.' 
+                : 'ZiniChat-এর মাধ্যমে সময় বাঁচাতে এবং বিক্রি বাড়াতে ৫০০+ ব্যবসার সাথে যোগ দিন।'}
+            </p>
+            <div className="flex justify-center">
+              <Link
+                href="/signup"
+                className="rounded-full bg-gradient-to-r from-primary to-secondary px-10 py-5 text-base font-bold text-white hover:opacity-90 transition-all hover:scale-105 shadow-glow inline-flex items-center gap-2"
+              >
+                {language === 'en' ? 'Start your 14-day free trial' : 'আপনার ১৪ দিনের ফ্রি ট্রায়াল শুরু করুন'} <Zap className="w-5 h-5 fill-current" />
+              </Link>
+            </div>
+            <p className="mt-4 text-xs text-zinc-500 font-medium">
+              {language === 'en' ? 'No Credit Card Required • Cancel Anytime' : 'কোনো ক্রেডিট কার্ডের প্রয়োজন নেই • যেকোনো সময় বাতিল করুন'}
+            </p>
+          </div>
+        </div>
+      </section>
+      
     </div>
   );
 }

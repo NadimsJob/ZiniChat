@@ -65,7 +65,7 @@ export class PaymentsService {
     });
 
     // 4. Get tenant owner info
-    const owner = await this.prisma.user.findFirst({ where: { tenantId, role: 'owner' } });
+    const owner = await this.prisma.user.findFirst({ where: { tenantId, role: { in: ['owner', 'admin'] } } });
     const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
 
     // 5. Send emails (fire & forget)
@@ -134,7 +134,7 @@ export class PaymentsService {
     });
 
     // Notify tenant
-    const owner = await this.prisma.user.findFirst({ where: { tenantId, role: 'owner' } });
+    const owner = await this.prisma.user.findFirst({ where: { tenantId, role: { in: ['owner', 'admin'] } } });
     const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
     if (owner) {
       this.smtpService.triggerPaymentApprovedEmail(
@@ -173,7 +173,7 @@ export class PaymentsService {
     });
 
     // Get tenant owner
-    const owner = await this.prisma.user.findFirst({ where: { tenantId: payment.tenantId, role: 'owner' } });
+    const owner = await this.prisma.user.findFirst({ where: { tenantId: payment.tenantId, role: { in: ['owner', 'admin'] } } });
     const tenant = await this.prisma.tenant.findUnique({ where: { id: payment.tenantId } });
 
     if (owner) {

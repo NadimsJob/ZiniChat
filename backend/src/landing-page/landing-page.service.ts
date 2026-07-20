@@ -17,27 +17,57 @@ export class LandingPageService {
           heroSubtitleBn: 'হোয়াটসঅ্যাপ, মেসেঞ্জার এবং ইনস্টাগ্রামের জন্য সেরা অমনিচ্যানেল প্ল্যাটফর্ম।',
           featuresJson: [
             { 
-              title: { en: 'Omnichannel Inbox', bn: 'অমনিচ্যানেল ইনবক্স' }, 
-              description: { en: 'Manage all channels in one place.', bn: 'এক জায়গা থেকে সব চ্যানেল পরিচালনা করুন।' } 
+              id: 'ai',
+              iconName: 'Bot',
+              colorTheme: 'green',
+              title: { en: 'AI-Powered Auto Reply', bn: 'এআই অটো রিপ্লাই' }, 
+              description: { 
+                en: 'Train your own custom AI assistant on your product catalog, FAQs, and business knowledge. Automatically handle customer inquiries 24/7 without human intervention.', 
+                bn: 'আপনার পণ্য ক্যাটালগ, FAQ এবং ব্যবসার তথ্য দিয়ে নিজস্ব AI অ্যাসিস্ট্যান্ট ট্রেইন করুন। ২৪/৭ স্বয়ংক্রিয়ভাবে গ্রাহকদের প্রশ্নের উত্তর দিন।' 
+              },
+              bullets: {
+                en: ['Custom knowledge base training', 'Smart handoff to human agents'],
+                bn: ['কাস্টম নলেজ বেস ট্রেনিং', 'মানব এজেন্টকে স্মার্ট হ্যান্ডঅফ']
+              }
             },
             { 
-              title: { en: 'AI Assistant', bn: 'এআই অ্যাসিস্ট্যান্ট' }, 
-              description: { en: '24/7 automated replies.', bn: '২৪/৭ অটোমেটেড রিপ্লাই।' } 
+              id: 'inbox',
+              iconName: 'MessageSquare',
+              colorTheme: 'blue',
+              title: { en: 'Unified Omnichannel Inbox', bn: 'ইউনিফাইড অমনিচ্যানেল ইনবক্স' }, 
+              description: { 
+                en: 'Manage all customer conversations from WhatsApp, Meta Messenger, and Instagram DM in a single, powerful inbox. No more tab switching.', 
+                bn: 'WhatsApp, Meta Messenger, এবং Instagram DM থেকে সব গ্রাহকের কথোপকথন একটি শক্তিশালী ইনবক্সে পরিচালনা করুন।' 
+              },
+              bullets: {
+                en: ['WhatsApp Business API & QR', 'Meta Messenger integration'],
+                bn: ['WhatsApp Business API ও QR', 'Meta Messenger ইন্টিগ্রেশন']
+              }
             }
           ],
-          pricingJson: [
-            { 
-              name: { en: 'Starter', bn: 'স্টার্টার' }, 
-              price: { en: '৳1000/mo', bn: '৳১০০০/মাস' }, 
-              features: [{ en: '1 Seat', bn: '১ টি সিট' }, { en: '1000 Messages', bn: '১০০০ মেসেজ' }] 
-            }
-          ],
-          faqsJson: [
-            { 
-              question: { en: 'Is it secure?', bn: 'এটি কি নিরাপদ?' }, 
-              answer: { en: 'Yes, fully encrypted.', bn: 'হ্যাঁ, সম্পূর্ণ এনক্রিপ্টেড।' } 
-            }
-          ]
+          pricingJson: {
+            compareFeatures: [
+              { id: 'channels', type: 'header', en: 'Channels', bn: 'চ্যানেলসমূহ' },
+              { id: 'whatsapp', type: 'boolean', featureKey: 'whatsapp', en: 'WhatsApp Business API', bn: 'হোয়াটসঅ্যাপ API' },
+              { id: 'messenger', type: 'boolean', featureKey: 'messenger', en: 'Meta Messenger', bn: 'মেটা মেসেঞ্জার' },
+              { id: 'limits', type: 'header', en: 'Limits', bn: 'লিমিটস' },
+              { id: 'seats', type: 'value', featureKey: 'seatLimit', en: 'Team Members', bn: 'টিম মেম্বার' }
+            ]
+          },
+          faqsJson: {
+            categories: [
+              { id: 'all', icon: 'Search', en: 'All Questions', bn: 'সব প্রশ্ন' },
+              { id: 'general', icon: 'MessageCircleQuestion', en: 'General', bn: 'সাধারণ' },
+              { id: 'ai', icon: 'Bot', en: 'AI Assistant', bn: 'এআই অ্যাসিস্ট্যান্ট' }
+            ],
+            faqs: [
+              { 
+                categoryId: 'general',
+                question: { en: 'What is ZiniChat?', bn: 'ZiniChat কী?' }, 
+                answer: { en: 'ZiniChat is an omnichannel AI platform.', bn: 'ZiniChat একটি অমনিচ্যানেল এআই প্ল্যাটফর্ম।' } 
+              }
+            ]
+          }
         }
       });
     }
