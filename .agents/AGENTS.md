@@ -113,3 +113,15 @@ This document contains rules and behavioral guidelines specific to this workspac
 ## 15. Deployment Workflow & Constraints
 * **Architecture Shift**: This project DOES NOT use direct PC-to-server deployments via SSH scripts or local MCP tools. All such local deploy scripts have been permanently deleted.
 * **Rule**: All deployments MUST happen via Git. The local PC should only push changes to GitHub (`git push`). The server will then pull the changes securely from Git. NEVER attempt to create or run direct deployment scripts from the PC to the server again.
+
+---
+
+## 16. Strict Deployment Agent Protocol (MCP Level Enforcement)
+* **Scope Lock ("No matubbori")**: When triggered for a deployment task, the agent is strictly bound to the deployment workflow. It must not perform any unprompted changes, side tasks, or unrelated file modifications.
+* **Interactive Server Selection**: If the user says "deploy", the agent MUST halt and ask: *"Which server do you want to deploy to? (e.g., test or live)"* before proceeding.
+* **Local-First Bug Fixing (Git Flow)**: If an error occurs during a server deployment (e.g., on the `test` server):
+  1. The agent MUST NOT try to hot-patch or edit code directly on the remote server.
+  2. The agent MUST analyze and fix the code on the **local PC codebase**.
+  3. The agent MUST commit and push the fix to Git (`git push`).
+  4. Finally, the agent MUST instruct the remote server to pull the new code from Git (`git pull`).
+* **Read-Only Server Access**: If the user requests to investigate a server issue, the agent is permitted to *check* logs and read files on the server to diagnose the problem, but any resulting code changes MUST be made locally and deployed via Git.
