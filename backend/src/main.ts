@@ -13,7 +13,7 @@ async function bootstrap() {
   app.use(helmet());
 
   app.enableCors({
-    origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'], 
+    origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000', 'https://test.zinichat.com', 'https://zinichat.com', 'https://www.zinichat.com'], 
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
