@@ -22,7 +22,7 @@ A multi-tenant SaaS platform where businesses (tenants) manage customer communic
 
 ## 3. Current Status & Active Focus
 * **Status**: **Current Focus:** Universal AI integrations, BYOK (Bring Your Own Key) capabilities, and an internal AI Support Chat.
-- **Latest Achievement:** Refactored `AiService` for dynamic provider switching and implemented a Tenant-side AI Support Widget that creates Support Tickets.
+- **Latest Achievement:** Refactored `AiService` for dynamic provider switching and implemented a Tenant-side AI Support Widget that creates Support Tickets. Implemented strict feature gating for Support AI, Team Management, and Contact Labels via Superadmin Plan settings. Extracted and animated the 2-Minute Setup Widget on the marketing pages.
 - **Next Up:** Extensive E2E testing of the UI flows, onboarding optimizations, and live deployment.
 - Subscription logic, quotas (messages, AI tokens, storage), and superadmin customizations have been strictly enforced on the backend via `QuotaService` and `FeatureGuard`.
 - Direct PC-to-Server deployment scripts (MCP Server) have been deprecated and deleted to enforce Git-only deployment constraints.
@@ -40,6 +40,7 @@ This log lists all features and modules implemented, ordered chronologically.
 
 | Date | Feature / Change | Key Files Modified | Status / Notes |
 | :--- | :--- | :--- | :--- |
+| **2026-07-21** | **Dynamic Feature Gating & Animated Mockups** | `ClientLayout.tsx`, `SetupJourneyWidget.tsx`, `packages/page.tsx`, `SetupWidgetMockup.tsx`, `(marketing)/page.tsx` | Implemented strict feature gating for Support AI, Team, and Labels based on active plan's allowedFeatures array. Extracted `SetupWidgetMockup` into a shared component with a video-like animated cursor and checklist progression. Fixed backend TS build issues and executed live/test DB migrations. |
 | **2026-07-21** | **Pricing Page & Compare Plans Redesign** | `PricingSection.tsx`, `pricing/page.tsx` | Completely redesigned the pricing cards to match a modern aesthetic with a solid yellow popular package, large fonts, and green checkmarks. Fixed the `Compare Plans` table to dynamically map from the Superadmin's Site Editor `pricingJson.compareFeatures` config and ensured it is scrollable and visible on mobile devices. |
 | **2026-07-21** | **Promotional Pricing & Discounts** | `schema.prisma`, `payments.service.ts`, `superadmin/packages/page.tsx`, `PricingSection.tsx` | Added dynamic promotional introductory pricing logic to packages. Allows Superadmin to configure `promoPriceMonthlyBdt`, `promoMonths`, and `yearlyDiscountPercent`. Billing engine auto-calculates discounts based on tenant's past successful payments count. Overhauled frontend pricing UI to highlight promotional periods and dynamic yearly save badges. Fixed `priceUsd` to `priceMonthlyBdt` bug in Superadmin packages editor. |
 | **2026-07-21** | **Dynamic Legal Pages & Social Links** | `schema.prisma`, `site-editor/page.tsx`, `marketing/privacy/page.tsx`, `marketing/terms/page.tsx`, `marketing/layout.tsx` | Added JSON fields to `LandingPageConfig` for bilingual Privacy Policy, Terms & Conditions, Contact info, and Social Media links. Updated Superadmin Site Editor to manage these fields. Created public dynamic pages and updated footer with togglable social icons. |
