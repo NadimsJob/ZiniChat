@@ -117,8 +117,8 @@ Always communicate in Bengali unless the user speaks in English. Be polite and c
 
       if (responseMessage.tool_calls) {
         // Handle tool call
-        const toolCall = responseMessage.tool_calls[0];
-        if (toolCall.function.name === 'create_support_ticket') {
+        const toolCall: any = responseMessage.tool_calls[0];
+        if (toolCall.function?.name === 'create_support_ticket') {
           const args = JSON.parse(toolCall.function.arguments);
           
           // Create ticket
@@ -132,7 +132,7 @@ Always communicate in Bengali unless the user speaks in English. Be polite and c
               messages: {
                 create: {
                   senderType: 'tenant',
-                  senderId: (await this.prisma.user.findFirst({ where: { tenantId } })).id, // Fallback to first user of tenant
+                  senderId: (await this.prisma.user.findFirst({ where: { tenantId } }))?.id || 'system',
                   message: `Phone: ${args.phone}\nIssue: ${args.issue_summary}`
                 }
               }
@@ -168,7 +168,7 @@ Always communicate in Bengali unless the user speaks in English. Be polite and c
     return this.prisma.supportConversation.findMany({
       include: {
         tenant: {
-          select: { id: true, businessName: true, email: true, phone: true }
+          select: { id: true, businessName: true, phoneNo: true }
         },
         _count: { select: { messages: true } }
       },
