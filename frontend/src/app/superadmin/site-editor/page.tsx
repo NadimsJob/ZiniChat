@@ -342,6 +342,8 @@ export default function SiteEditorPage() {
           </div>
         </div>
 
+      </div>
+
       {/* LEGAL & FOOTER */}
       <div className="bg-surface border border-surface-hover p-4 rounded-xl space-y-6">
         <h2 className="font-bold border-b border-surface-hover pb-2">5. Footer & Legal Pages</h2>
