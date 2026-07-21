@@ -1,0 +1,16 @@
+config:
+  target: 'http://localhost:8100'
+  engines:
+    socketio: {}
+  phases:
+    - duration: 60
+      arrivalRate: 50
+      name: "Socket Flooding"
+scenarios:
+  - name: "Connect and wait"
+    engine: "socketio"
+    flow:
+      - emit:
+          channel: "auth"
+          data: "test"
+      - think: 5

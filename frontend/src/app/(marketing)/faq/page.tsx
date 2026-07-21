@@ -51,27 +51,40 @@ export default function FAQPage() {
   }, [allFaqs, activeCategory, searchQuery, language]);
 
   return (
-    <div className="flex flex-col items-center overflow-hidden min-h-screen">
+    <div className="flex flex-col items-center w-full overflow-hidden bg-background min-h-screen">
       {/* Hero */}
-      <section className="w-full bg-surface-hover/30 border-b border-surface-hover py-16 px-4">
-        <div className="max-w-3xl mx-auto text-center relative z-10">
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-4">
+      <section className="relative w-full bg-muted pb-16 pt-12 lg:pb-24 lg:pt-16 border-b border-border/40">
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute left-1/4 top-0 w-[40rem] h-[40rem] -translate-y-1/2 rounded-full bg-primary/10 blur-[120px]"></div>
+          <div className="absolute right-1/4 bottom-0 w-[30rem] h-[30rem] translate-y-1/2 rounded-full bg-secondary/10 blur-[100px]"></div>
+        </div>
+        
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+          <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-semibold text-primary sm:text-sm mb-6">
+            <span className="relative flex w-2 h-2">
+              <span className="absolute inline-flex w-full h-full animate-ping rounded-full bg-primary opacity-75"></span>
+              <span className="inline-flex w-2 h-2 rounded-full bg-primary"></span>
+            </span>
+            {language === 'en' ? 'Support Center' : 'সাপোর্ট সেন্টার'}
+          </div>
+          
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-4 text-foreground">
             {language === 'en' ? 'Frequently Asked Questions' : 'সাধারণ জিজ্ঞাসা'}
           </h1>
-          <p className="text-lg text-zinc-500 mb-8 max-w-xl mx-auto">
+          <p className="text-lg text-muted-foreground mb-8 max-w-xl mx-auto">
             {language === 'en' 
               ? 'Everything you need to know about the product, integrations, and billing.' 
               : 'প্রোডাক্ট, ইন্টিগ্রেশন এবং বিলিং সম্পর্কে আপনার যা জানা প্রয়োজন।'}
           </p>
           
           {/* Search Bar */}
-          <div className="relative max-w-xl mx-auto">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-zinc-400">
+          <div className="relative max-w-xl mx-auto shadow-sm group">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-muted-foreground group-focus-within:text-primary transition-colors">
               <LucideIcons.Search className="w-5 h-5" />
             </div>
             <input
               type="text"
-              className="w-full bg-background border border-surface-hover rounded-full py-4 pl-12 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all shadow-sm"
+              className="w-full bg-card border border-border rounded-2xl py-4 pl-12 pr-4 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all placeholder:text-muted-foreground"
               placeholder={language === 'en' ? 'Search for answers...' : 'উত্তর খুঁজুন...'}
               value={searchQuery}
               onChange={(e) => {
@@ -84,12 +97,12 @@ export default function FAQPage() {
       </section>
 
       {/* Main Content */}
-      <section className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid lg:grid-cols-4 gap-8 items-start">
+      <section className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-20">
+        <div className="grid lg:grid-cols-4 gap-8 lg:gap-12 items-start relative z-10">
           
           {/* Sidebar / Categories */}
-          <div className="lg:col-span-1 flex flex-col gap-2 sticky top-28">
-            <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2 px-2">
+          <div className="lg:col-span-1 flex flex-col gap-2 sticky top-28 bg-card/50 backdrop-blur-sm border border-border/50 rounded-3xl p-4 shadow-sm">
+            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 px-3 pt-2">
               {language === 'en' ? 'Categories' : 'ক্যাটাগরি'}
             </h3>
             {dynamicCategories.map((cat: any) => {
@@ -101,13 +114,13 @@ export default function FAQPage() {
                     setActiveCategory(cat.id);
                     setOpenIdx(null);
                   }}
-                  className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+                  className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded-2xl text-sm font-semibold transition-all duration-200 ${
                     activeCategory === cat.id
-                      ? 'bg-primary/10 text-primary border border-primary/20 shadow-sm'
-                      : 'bg-transparent text-zinc-400 hover:bg-surface hover:text-foreground border border-transparent'
+                      ? 'bg-primary text-primary-foreground shadow-md'
+                      : 'bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground'
                   }`}
                 >
-                  <IconComp className="w-4 h-4 shrink-0" />
+                  <IconComp className={`w-4 h-4 shrink-0 ${activeCategory === cat.id ? 'text-primary-foreground' : 'text-primary'}`} />
                   {language === 'en' ? cat.en : cat.bn}
                 </button>
               );
@@ -125,39 +138,39 @@ export default function FAQPage() {
                   return (
                     <div 
                       key={idx} 
-                      className={`bg-surface border rounded-2xl overflow-hidden transition-all duration-300 ${
-                        openIdx === idx ? 'border-primary/40 shadow-glow' : 'border-surface-hover hover:border-zinc-700'
+                      className={`bg-card border rounded-2xl overflow-hidden transition-all duration-300 ${
+                        openIdx === idx ? 'border-primary/40 shadow-lg shadow-primary/5' : 'border-border hover:border-primary/30'
                       }`}
                     >
                       <button
                         onClick={() => setOpenIdx(openIdx === idx ? null : idx)}
                         className="w-full text-left px-6 py-5 flex justify-between items-center focus:outline-none group"
                       >
-                        <span className={`font-semibold text-base md:text-lg pr-4 transition-colors ${openIdx === idx ? 'text-primary' : 'group-hover:text-primary/80'}`}>
+                        <span className={`font-bold text-base md:text-lg pr-4 transition-colors ${openIdx === idx ? 'text-primary' : 'text-foreground group-hover:text-primary/80'}`}>
                           {qText}
                         </span>
-                        <span className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 ${openIdx === idx ? 'bg-primary text-white rotate-180' : 'bg-surface-hover text-zinc-400'}`}>
+                        <span className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 ${openIdx === idx ? 'bg-primary text-primary-foreground rotate-180' : 'bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary'}`}>
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
                           </svg>
                         </span>
                       </button>
-                      <div className={`px-6 text-zinc-400 text-sm md:text-base leading-relaxed transition-all duration-300 ease-in-out ${
+                      <div className={`px-6 text-muted-foreground text-sm md:text-base leading-relaxed transition-all duration-300 ease-in-out ${
                         openIdx === idx ? 'pb-6 pt-2 opacity-100' : 'max-h-0 opacity-0 overflow-hidden py-0'
                       }`}>
-                        {aText}
+                        <div dangerouslySetInnerHTML={{ __html: aText }} />
                       </div>
                     </div>
                   );
                 })}
               </div>
             ) : (
-              <div className="text-center py-20 bg-surface/50 border border-surface-hover rounded-3xl">
-                <div className="w-16 h-16 bg-surface border border-surface-hover text-zinc-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="text-center py-20 bg-card border border-border rounded-3xl shadow-sm">
+                <div className="w-16 h-16 bg-muted border border-border text-muted-foreground rounded-2xl flex items-center justify-center mx-auto mb-5">
                   <LucideIcons.Search className="w-6 h-6" />
                 </div>
-                <h3 className="text-xl font-bold mb-2">{language === 'en' ? 'No results found' : 'কোনো ফলাফল পাওয়া যায়নি'}</h3>
-                <p className="text-zinc-500 mb-6">
+                <h3 className="text-xl font-bold mb-2 text-foreground">{language === 'en' ? 'No results found' : 'কোনো ফলাফল পাওয়া যায়নি'}</h3>
+                <p className="text-muted-foreground mb-6 max-w-md mx-auto">
                   {language === 'en' 
                     ? `We couldn't find any FAQs matching "${searchQuery}"` 
                     : `আমরা "${searchQuery}" এর সাথে মিলে এমন কোনো FAQ খুঁজে পাইনি`}
@@ -167,7 +180,7 @@ export default function FAQPage() {
                     setSearchQuery('');
                     setActiveCategory('all');
                   }}
-                  className="px-6 py-2 bg-primary text-white rounded-full text-sm font-bold shadow-glow"
+                  className="px-6 py-3 bg-primary text-primary-foreground rounded-xl text-sm font-bold hover:bg-primary/90 transition-colors shadow-sm"
                 >
                   {language === 'en' ? 'Clear Search' : 'সার্চ মুছুন'}
                 </button>
@@ -175,12 +188,13 @@ export default function FAQPage() {
             )}
 
             {/* Still have questions CTA */}
-            <div className="mt-16 p-8 rounded-3xl bg-gradient-to-r from-surface to-background border border-surface-hover flex flex-col md:flex-row items-center justify-between gap-6">
-              <div>
-                <h4 className="text-lg font-bold mb-1">{language === 'en' ? 'Still have questions?' : 'এখনও প্রশ্ন আছে?'}</h4>
-                <p className="text-zinc-500 text-sm">{language === 'en' ? 'Can\'t find the answer you\'re looking for? Please chat to our friendly team.' : 'আপনি যে উত্তরটি খুঁজছেন তা পাচ্ছেন না? অনুগ্রহ করে আমাদের টিমের সাথে কথা বলুন।'}</p>
+            <div className="mt-12 p-8 md:p-10 rounded-3xl bg-muted border border-border flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-2xl pointer-events-none" />
+              <div className="relative z-10 text-center md:text-left">
+                <h4 className="text-xl font-extrabold mb-2 text-foreground">{language === 'en' ? 'Still have questions?' : 'এখনও প্রশ্ন আছে?'}</h4>
+                <p className="text-muted-foreground text-sm md:text-base">{language === 'en' ? 'Can\'t find the answer you\'re looking for? Please chat to our friendly team.' : 'আপনি যে উত্তরটি খুঁজছেন তা পাচ্ছেন না? অনুগ্রহ করে আমাদের টিমের সাথে কথা বলুন।'}</p>
               </div>
-              <Link href="/contact" className="px-6 py-3 bg-surface-hover hover:bg-zinc-800 border border-surface-hover hover:border-zinc-700 rounded-full text-sm font-bold transition-all whitespace-nowrap">
+              <Link href="/contact" className="relative z-10 px-6 py-3.5 bg-background hover:bg-card border border-border hover:border-primary/30 text-foreground rounded-xl text-sm font-bold transition-all whitespace-nowrap shadow-sm hover:shadow-md">
                 {language === 'en' ? 'Get in touch' : 'যোগাযোগ করুন'}
               </Link>
             </div>

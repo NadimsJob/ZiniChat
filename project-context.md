@@ -26,10 +26,11 @@ A multi-tenant SaaS platform where businesses (tenants) manage customer communic
 - Subscription logic, quotas (messages, AI tokens, storage), and superadmin customizations have been strictly enforced on the backend via `QuotaService` and `FeatureGuard`.
 - Direct PC-to-Server deployment scripts (MCP Server) have been deprecated and deleted to enforce Git-only deployment constraints.
 - **Live and Staging Environments are fully deployed with Traefik routing, reverse proxy networking, and SSL certificates.**
+- **Performance & Load Testing has been completed directly on VPS. Capacity projections indicate 1,500+ Tenants (Official API) or 50+ (Unofficial Baileys QR) per 8GB RAM node.**
+- **Database vector search is optimized with HNSW indexes to eliminate SSD Sequential Scans and minimize Disk I/O.**
 
 **Active Focus:**  
 - Payment Gateway Integrations (Stripe/bKash/SSLCommerz)
-- Further UI polish and bug fixes on Superadmin panels
 
 ---
 
@@ -37,6 +38,12 @@ A multi-tenant SaaS platform where businesses (tenants) manage customer communic
 This log lists all features and modules implemented, ordered chronologically.
 
 | Date | Feature / Change | Key Files Modified | Status / Notes |
+| :--- | :--- | :--- | :--- |
+| **2026-07-21** | **Pricing Page & Compare Plans Redesign** | `PricingSection.tsx`, `pricing/page.tsx` | Completely redesigned the pricing cards to match a modern aesthetic with a solid yellow popular package, large fonts, and green checkmarks. Fixed the `Compare Plans` table to dynamically map from the Superadmin's Site Editor `pricingJson.compareFeatures` config and ensured it is scrollable and visible on mobile devices. |
+| **2026-07-21** | **Promotional Pricing & Discounts** | `schema.prisma`, `payments.service.ts`, `superadmin/packages/page.tsx`, `PricingSection.tsx` | Added dynamic promotional introductory pricing logic to packages. Allows Superadmin to configure `promoPriceMonthlyBdt`, `promoMonths`, and `yearlyDiscountPercent`. Billing engine auto-calculates discounts based on tenant's past successful payments count. Overhauled frontend pricing UI to highlight promotional periods and dynamic yearly save badges. Fixed `priceUsd` to `priceMonthlyBdt` bug in Superadmin packages editor. |
+| **2026-07-21** | **Dynamic Legal Pages & Social Links** | `schema.prisma`, `site-editor/page.tsx`, `marketing/privacy/page.tsx`, `marketing/terms/page.tsx`, `marketing/layout.tsx` | Added JSON fields to `LandingPageConfig` for bilingual Privacy Policy, Terms & Conditions, Contact info, and Social Media links. Updated Superadmin Site Editor to manage these fields. Created public dynamic pages and updated footer with togglable social icons. |
+| **2026-07-21** | **HNSW Index Implementation** | `schema.prisma`, `migrations` | Implemented HNSW index on `knowledge_chunks` vector column to optimize vector similarity search performance and disk I/O. |
+| **2026-07-21** | **Performance & Load Testing** | N/A | Executed 5 Advanced Load/Stress Tests directly on VPS, generated capacity report, and analyzed Traefik ingress limits for high-concurrency scenarios. |
 | **2026-07-20** | **Live/Test Deployment & Traefik Routing Fix** | `scripts/.env.deploy` | Fixed a critical deployment bug where Traefik was returning a 404 for test and live servers. Updated `TEST_RESTART_CMD` and `LIVE_RESTART_CMD` to explicitly pass `--env-file .env.test` and `.env.live`, enabling proper Docker label processing for Traefik. Executed programmatic DB migration to push local Site Editor `LandingPageConfig` data to test/live without wiping tenant data. |
 | **2026-07-20** | **Web Notification System Fixes** | `leads.cron.ts`, `tickets.service.ts`, `payments.service.ts`, `subscription-reminder.service.ts` | Fixed a major bug where Superadmins were receiving Tenant CRM follow-up alerts due to test-lead assignments. Added strict tenant validation. Updated all background services to target both `owner` and `admin` roles, ensuring Google OAuth tenants receive their alerts. Added missing web notification for Tenant upon ticket creation. |
 | **2026-07-20** | **Marketing Pages Full Redesign** | `(marketing)/features/page.tsx`, `about/page.tsx`, `contact/page.tsx`, `faq/page.tsx`, `pricing/page.tsx`, `page.tsx` | Completely redesigned all public marketing pages with unified glassmorphism theme, dynamic interactive elements, responsive tables, categorized accordions, and fully localized Bengali/English copy. Replaced sparse layouts with high-density information architecture and embedded interactive UI mockups. |

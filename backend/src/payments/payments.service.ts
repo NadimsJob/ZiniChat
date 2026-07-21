@@ -29,7 +29,17 @@ export class PaymentsService {
     const plan = await this.prisma.plan.findUnique({ where: { id: planId } });
     if (!plan) throw new BadRequestException('Plan not found');
 
+    const successfulPaymentsCount = await this.prisma.payment.count({
+      where: { tenantId, subscription: { planId }, status: 'success' }
+    });
+
     let amount = billingCycle === 'yearly' ? Number(plan.priceYearlyBdt) : Number(plan.priceMonthlyBdt);
+    
+    if (billingCycle === 'monthly' && plan.promoPriceMonthlyBdt && plan.promoMonths) {
+      if (successfulPaymentsCount < plan.promoMonths) {
+        amount = Number(plan.promoPriceMonthlyBdt);
+      }
+    }
     let couponId = null;
 
     if (couponCode) {
@@ -100,7 +110,17 @@ export class PaymentsService {
     const plan = await this.prisma.plan.findUnique({ where: { id: planId } });
     if (!plan) throw new BadRequestException('Plan not found');
 
+    const successfulPaymentsCount = await this.prisma.payment.count({
+      where: { tenantId, subscription: { planId }, status: 'success' }
+    });
+
     let amount = billingCycle === 'yearly' ? Number(plan.priceYearlyBdt) : Number(plan.priceMonthlyBdt);
+    
+    if (billingCycle === 'monthly' && plan.promoPriceMonthlyBdt && plan.promoMonths) {
+      if (successfulPaymentsCount < plan.promoMonths) {
+        amount = Number(plan.promoPriceMonthlyBdt);
+      }
+    }
     let couponId = null;
 
     if (couponCode) {

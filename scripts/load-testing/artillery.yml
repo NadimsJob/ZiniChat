@@ -1,0 +1,18 @@
+config:
+  target: 'https://api-test.zinichat.com'
+  phases:
+    - duration: 10
+      arrivalRate: 50
+      name: "Warm up"
+    - duration: 30
+      arrivalRate: 50
+      rampTo: 500
+      name: "Ramp up load"
+    - duration: 60
+      arrivalRate: 500
+      name: "Sustained load"
+scenarios:
+  - name: "Test public route"
+    flow:
+      - get:
+          url: "/"

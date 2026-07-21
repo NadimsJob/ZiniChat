@@ -1,0 +1,11 @@
+config:
+  target: 'http://localhost:8100'
+  phases:
+    - duration: 60
+      arrivalRate: 200
+      name: "DB Read Load"
+scenarios:
+  - name: "Fetch Public Landing Page Config"
+    flow:
+      - get:
+          url: "/api/public/landing-page"

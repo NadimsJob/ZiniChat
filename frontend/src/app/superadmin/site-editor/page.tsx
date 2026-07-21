@@ -30,7 +30,17 @@ export default function SiteEditorPage() {
           ...data,
           featuresJson,
           pricingJson,
-          faqsJson
+          faqsJson,
+          privacyPolicyJson: data.privacyPolicyJson || { en: '', bn: '' },
+          termsConditionsJson: data.termsConditionsJson || { en: '', bn: '' },
+          contactInfo: data.contactInfo || { address: { en: '', bn: '' }, email: '', phone: '' },
+          socialLinksJson: data.socialLinksJson || {
+            facebook: { url: '', enabled: false },
+            twitter: { url: '', enabled: false },
+            linkedin: { url: '', enabled: false },
+            instagram: { url: '', enabled: false },
+            whatsapp: { url: '', enabled: false }
+          }
         });
         setLoading(false);
       })
@@ -48,6 +58,10 @@ export default function SiteEditorPage() {
         featuresJson: config.featuresJson,
         pricingJson: config.pricingJson,
         faqsJson: config.faqsJson,
+        privacyPolicyJson: config.privacyPolicyJson,
+        termsConditionsJson: config.termsConditionsJson,
+        contactInfo: config.contactInfo,
+        socialLinksJson: config.socialLinksJson,
       };
 
       const token = Cookies.get('access_token');
@@ -325,6 +339,79 @@ export default function SiteEditorPage() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+
+      {/* LEGAL & FOOTER */}
+      <div className="bg-surface border border-surface-hover p-4 rounded-xl space-y-6">
+        <h2 className="font-bold border-b border-surface-hover pb-2">5. Footer & Legal Pages</h2>
+        
+        {/* Contact Info */}
+        <div className="space-y-3">
+          <h3 className="text-sm font-bold text-muted-foreground">Contact Information</h3>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium mb-1">Address (EN)</label>
+              <textarea rows={2} value={config.contactInfo?.address?.en || ''} onChange={e => setConfig({...config, contactInfo: {...config.contactInfo, address: {...config.contactInfo?.address, en: e.target.value}}})} className="w-full bg-background border border-surface-hover rounded-lg px-3 py-2 text-sm focus:border-primary" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1 text-primary">Address (BN)</label>
+              <textarea rows={2} value={config.contactInfo?.address?.bn || ''} onChange={e => setConfig({...config, contactInfo: {...config.contactInfo, address: {...config.contactInfo?.address, bn: e.target.value}}})} className="w-full bg-background border border-surface-hover rounded-lg px-3 py-2 text-sm focus:border-primary text-primary" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1">Email</label>
+              <input type="email" value={config.contactInfo?.email || ''} onChange={e => setConfig({...config, contactInfo: {...config.contactInfo, email: e.target.value}})} className="w-full bg-background border border-surface-hover rounded-lg px-3 py-2 text-sm focus:border-primary" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1">Phone</label>
+              <input type="text" value={config.contactInfo?.phone || ''} onChange={e => setConfig({...config, contactInfo: {...config.contactInfo, phone: e.target.value}})} className="w-full bg-background border border-surface-hover rounded-lg px-3 py-2 text-sm focus:border-primary" />
+            </div>
+          </div>
+        </div>
+
+        {/* Social Links */}
+        <div className="space-y-3 pt-4 border-t border-surface-hover">
+          <h3 className="text-sm font-bold text-muted-foreground">Social Media Links</h3>
+          <div className="grid md:grid-cols-2 gap-4">
+            {['facebook', 'twitter', 'linkedin', 'instagram', 'whatsapp'].map(platform => (
+              <div key={platform} className="flex items-center gap-3 p-3 bg-background border border-surface-hover rounded-lg">
+                <input type="checkbox" checked={config.socialLinksJson?.[platform]?.enabled || false} onChange={e => setConfig({...config, socialLinksJson: {...config.socialLinksJson, [platform]: {...config.socialLinksJson?.[platform], enabled: e.target.checked}}})} className="w-4 h-4 rounded text-primary border-surface-hover focus:ring-primary" />
+                <div className="flex-1">
+                  <label className="block text-xs font-medium capitalize mb-1">{platform}</label>
+                  <input type="text" placeholder="URL" value={config.socialLinksJson?.[platform]?.url || ''} onChange={e => setConfig({...config, socialLinksJson: {...config.socialLinksJson, [platform]: {...config.socialLinksJson?.[platform], url: e.target.value}}})} className="w-full bg-surface border border-surface-hover rounded px-2 py-1 text-xs" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Privacy Policy */}
+        <div className="space-y-3 pt-4 border-t border-surface-hover">
+          <h3 className="text-sm font-bold text-muted-foreground">Privacy Policy Page</h3>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium mb-1">Content (EN) - Supports basic HTML/Markdown</label>
+              <textarea rows={6} value={config.privacyPolicyJson?.en || ''} onChange={e => setConfig({...config, privacyPolicyJson: {...config.privacyPolicyJson, en: e.target.value}})} className="w-full bg-background border border-surface-hover rounded-lg px-3 py-2 text-sm focus:border-primary" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1 text-primary">Content (BN)</label>
+              <textarea rows={6} value={config.privacyPolicyJson?.bn || ''} onChange={e => setConfig({...config, privacyPolicyJson: {...config.privacyPolicyJson, bn: e.target.value}})} className="w-full bg-background border border-surface-hover rounded-lg px-3 py-2 text-sm focus:border-primary text-primary" />
+            </div>
+          </div>
+        </div>
+
+        {/* Terms & Conditions */}
+        <div className="space-y-3 pt-4 border-t border-surface-hover">
+          <h3 className="text-sm font-bold text-muted-foreground">Terms & Conditions Page</h3>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium mb-1">Content (EN) - Supports basic HTML/Markdown</label>
+              <textarea rows={6} value={config.termsConditionsJson?.en || ''} onChange={e => setConfig({...config, termsConditionsJson: {...config.termsConditionsJson, en: e.target.value}})} className="w-full bg-background border border-surface-hover rounded-lg px-3 py-2 text-sm focus:border-primary" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1 text-primary">Content (BN)</label>
+              <textarea rows={6} value={config.termsConditionsJson?.bn || ''} onChange={e => setConfig({...config, termsConditionsJson: {...config.termsConditionsJson, bn: e.target.value}})} className="w-full bg-background border border-surface-hover rounded-lg px-3 py-2 text-sm focus:border-primary text-primary" />
+            </div>
           </div>
         </div>
 

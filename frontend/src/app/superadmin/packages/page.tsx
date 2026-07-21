@@ -22,7 +22,8 @@ export default function PackagesPage() {
   // Plan form
   const [planForm, setPlanForm] = useState({
     name: '', nameBn: '', description: '', descriptionBn: '',
-    priceUsd: 0, billingCycle: 'monthly',
+    priceMonthlyBdt: 0, priceYearlyBdt: 0,
+    promoPriceMonthlyBdt: 0, promoMonths: 0, yearlyDiscountPercent: 0,
     messageQuota: 1000, aiQuota: 500, seatLimit: 1, trialDays: 0,
     allowByok: false,
     features: [] as string[],
@@ -128,7 +129,11 @@ export default function PackagesPage() {
     if (plan) {
       setPlanForm({
         name: plan.name, nameBn: plan.nameBn || '', description: plan.description || '', descriptionBn: plan.descriptionBn || '',
-        priceUsd: Number(plan.priceUsd), billingCycle: plan.billingCycle,
+        priceMonthlyBdt: Number(plan.priceMonthlyBdt) || 0, 
+        priceYearlyBdt: Number(plan.priceYearlyBdt) || 0,
+        promoPriceMonthlyBdt: Number(plan.promoPriceMonthlyBdt) || 0, 
+        promoMonths: Number(plan.promoMonths) || 0, 
+        yearlyDiscountPercent: Number(plan.yearlyDiscountPercent) || 0,
         messageQuota: plan.messageQuota, aiQuota: plan.aiQuota, seatLimit: plan.seatLimit, trialDays: plan.trialDays || 0,
         allowByok: plan.allowByok || false,
         features: Array.isArray(plan.features) ? plan.features : [],
@@ -138,7 +143,9 @@ export default function PackagesPage() {
       setEditingId(plan.id);
     } else {
       setPlanForm({
-        name: '', nameBn: '', description: '', descriptionBn: '', priceUsd: 0, billingCycle: 'monthly',
+        name: '', nameBn: '', description: '', descriptionBn: '', 
+        priceMonthlyBdt: 0, priceYearlyBdt: 0,
+        promoPriceMonthlyBdt: 0, promoMonths: 0, yearlyDiscountPercent: 0,
         messageQuota: 1000, aiQuota: 500, seatLimit: 1, trialDays: 0, allowByok: false,
         features: [],
         featuresJson: [], 
@@ -202,7 +209,7 @@ export default function PackagesPage() {
                 {plan.isPopular && <div className="absolute top-2.5 right-4 text-xs font-bold bg-primary/10 text-primary px-2 py-1 rounded">Popular</div>}
                 
                 <h3 className="text-[15px] font-bold">{plan.name}</h3>
-                <div className="text-[13px] font-black mt-2 text-primary">{formatBDT(plan.priceUsd)}<span className="text-[12px] text-zinc-500 font-normal"> / {plan.billingCycle}</span></div>
+                <div className="text-[13px] font-black mt-2 text-primary">{formatBDT(plan.priceMonthlyBdt)}<span className="text-[12px] text-zinc-500 font-normal"> / monthly</span></div>
                 
                 <div className="mt-2 space-y-2 text-[12px] text-zinc-400">
                   <div className="flex justify-between"><span>Team Members:</span> <span className="font-medium text-zinc-200">{plan.seatLimit}</span></div>
@@ -273,17 +280,30 @@ export default function PackagesPage() {
             <div className="space-y-2">
               <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label className="block text-[12px] font-medium mb-1 text-zinc-400">Base Price (USD)</label>
-                  <input type="number" step="0.01" value={planForm.priceUsd} onChange={e => setPlanForm({...planForm, priceUsd: Number(e.target.value)})} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none" />
-                  <p className="text-xs text-zinc-500 mt-1">Converts to {formatBDT(planForm.priceUsd)}</p>
+                  <label className="block text-[12px] font-medium mb-1 text-zinc-400">Monthly Price (BDT)</label>
+                  <input type="number" step="1" value={planForm.priceMonthlyBdt} onChange={e => setPlanForm({...planForm, priceMonthlyBdt: Number(e.target.value)})} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none" />
                 </div>
                 <div>
-                  <label className="block text-[12px] font-medium mb-1 text-zinc-400">Billing Cycle</label>
-                  <select value={planForm.billingCycle} onChange={e => setPlanForm({...planForm, billingCycle: e.target.value})} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none">
-                    <option value="monthly">Monthly</option>
-                    <option value="yearly">Yearly</option>
-                    <option value="one_time">One-time</option>
-                  </select>
+                  <label className="block text-[12px] font-medium mb-1 text-zinc-400">Yearly Price (BDT)</label>
+                  <input type="number" step="1" value={planForm.priceYearlyBdt} onChange={e => setPlanForm({...planForm, priceYearlyBdt: Number(e.target.value)})} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2.5 bg-primary/5 p-3 rounded-xl border border-primary/20 mt-3">
+                <div className="col-span-3 mb-1">
+                  <h4 className="text-[13px] font-bold text-primary">Promotional Discounts</h4>
+                </div>
+                <div>
+                  <label className="block text-[12px] font-medium mb-1 text-zinc-400">Promo Price (BDT/mo)</label>
+                  <input type="number" step="1" value={planForm.promoPriceMonthlyBdt} onChange={e => setPlanForm({...planForm, promoPriceMonthlyBdt: Number(e.target.value)})} className="w-full bg-background border border-primary/20 rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none" />
+                </div>
+                <div>
+                  <label className="block text-[12px] font-medium mb-1 text-zinc-400">Promo Duration (Months)</label>
+                  <input type="number" step="1" value={planForm.promoMonths} onChange={e => setPlanForm({...planForm, promoMonths: Number(e.target.value)})} className="w-full bg-background border border-primary/20 rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none" />
+                </div>
+                <div>
+                  <label className="block text-[12px] font-medium mb-1 text-zinc-400">Yearly Discount (%)</label>
+                  <input type="number" step="0.1" value={planForm.yearlyDiscountPercent} onChange={e => setPlanForm({...planForm, yearlyDiscountPercent: Number(e.target.value)})} className="w-full bg-background border border-primary/20 rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none" />
                 </div>
               </div>
 

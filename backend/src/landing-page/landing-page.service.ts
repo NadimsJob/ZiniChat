@@ -67,6 +67,26 @@ export class LandingPageService {
                 answer: { en: 'ZiniChat is an omnichannel AI platform.', bn: 'ZiniChat একটি অমনিচ্যানেল এআই প্ল্যাটফর্ম।' } 
               }
             ]
+          },
+          privacyPolicyJson: {
+            en: 'Your Privacy Policy goes here. Edit this from the Superadmin dashboard.',
+            bn: 'আপনার প্রাইভেসি পলিসি এখানে থাকবে। সুপারঅ্যাডমিন ড্যাশবোর্ড থেকে এটি এডিট করুন।'
+          },
+          termsConditionsJson: {
+            en: 'Your Terms & Conditions go here. Edit this from the Superadmin dashboard.',
+            bn: 'আপনার শর্তাবলী এখানে থাকবে। সুপারঅ্যাডমিন ড্যাশবোর্ড থেকে এটি এডিট করুন।'
+          },
+          contactInfo: {
+            address: { en: '123 AI Street, Tech Valley, Dhaka', bn: '১২৩ এআই স্ট্রিট, টেক ভ্যালি, ঢাকা' },
+            email: 'hello@zinichat.com',
+            phone: '+880 1234 567 890'
+          },
+          socialLinksJson: {
+            facebook: { url: 'https://facebook.com', enabled: true },
+            twitter: { url: 'https://twitter.com', enabled: true },
+            linkedin: { url: 'https://linkedin.com', enabled: true },
+            instagram: { url: 'https://instagram.com', enabled: true },
+            whatsapp: { url: 'https://wa.me/1234567890', enabled: true }
           }
         }
       });

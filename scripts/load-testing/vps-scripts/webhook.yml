@@ -1,0 +1,32 @@
+config:
+  target: 'http://localhost:8100'
+  phases:
+    - duration: 60
+      arrivalRate: 200
+      name: "High Load Webhooks"
+scenarios:
+  - name: "Meta Webhook"
+    flow:
+      - post:
+          url: "/webhooks/whatsapp"
+          json:
+            object: "whatsapp_business_account"
+            entry:
+              - id: "123"
+                changes:
+                  - value:
+                      messaging_product: "whatsapp"
+                      metadata:
+                        display_phone_number: "16505551111"
+                        phone_number_id: "01859196307"
+                      contacts:
+                        - profile:
+                            name: "LoadTester"
+                          wa_id: "8801911111111"
+                      messages:
+                        - from: "8801911111111"
+                          id: "wamid.loadtest_{{ $randomString() }}"
+                          timestamp: "{{ $timestamp }}"
+                          text:
+                            body: "Test message {{ $randomString() }}"
+                          type: "text"

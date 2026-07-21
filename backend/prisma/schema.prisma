@@ -487,6 +487,12 @@ model Plan {
   channelLimit    Int      @default(1)
   storageLimitMb  Int      @default(500)
   trialDays       Int      @default(0)
+  
+  // Promotional & Discount Fields
+  promoPriceMonthlyBdt Decimal? @db.Decimal(10, 2)
+  promoMonths          Int?
+  yearlyDiscountPercent Decimal? @db.Decimal(5, 2)
+
   allowByok       Boolean  @default(false)
   features        Json     @default("[]") // Array of feature keys like 'orders', 'leads'
   featuresJson    Json     @default("[]") // Array of {en, bn} strings
@@ -566,17 +572,20 @@ model Payment {
 
 // Site Configuration
 model LandingPageConfig {
-  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  heroTitle      String
-  heroTitleBn    String?
-  heroSubtitle   String
-  heroSubtitleBn String?
-  featuresJson   Json // Array of feature objects with {en, bn}
-  pricingJson    Json // Array of pricing tiers with {en, bn}
-  faqsJson       Json // Array of FAQs
-  contactInfo    Json? // Contact details
-  aboutText      String?
-  updatedAt      DateTime @updatedAt
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  heroTitle           String
+  heroTitleBn         String?
+  heroSubtitle        String
+  heroSubtitleBn      String?
+  featuresJson        Json // Array of feature objects with {en, bn}
+  pricingJson         Json // Array of pricing tiers with {en, bn}
+  faqsJson            Json // Array of FAQs
+  contactInfo         Json? // Contact details
+  aboutText           String?
+  privacyPolicyJson   Json? // Privacy Policy contents {en, bn}
+  termsConditionsJson Json? // Terms and Conditions contents {en, bn}
+  socialLinksJson     Json? // Social media links and toggles
+  updatedAt           DateTime @updatedAt
 
   @@map("landing_page_config")
 }

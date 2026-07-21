@@ -12,6 +12,9 @@ interface CurrencyContextType {
   effectiveDate: string | null;
   isFallback: boolean;
   loading: boolean;
+  displayCurrency: 'BDT' | 'USD';
+  setDisplayCurrency: (currency: 'BDT' | 'USD') => void;
+  formatPrice: (bdtAmount: number) => string;
   formatBDT: (usdAmount: number) => string;
   convertToBDT: (usdAmount: number) => number;
   formatNumber: (num: number) => string;
@@ -25,6 +28,9 @@ const CurrencyContext = createContext<CurrencyContextType>({
   effectiveDate: null,
   isFallback: true,
   loading: true,
+  displayCurrency: 'BDT',
+  setDisplayCurrency: () => {},
+  formatPrice: () => '৳0',
   formatBDT: () => '৳0',
   convertToBDT: () => 0,
   formatNumber: (num) => String(num),
@@ -38,6 +44,7 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
   const [effectiveDate, setEffectiveDate] = useState<string | null>(null);
   const [isFallback, setIsFallback] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [displayCurrency, setDisplayCurrency] = useState<'BDT' | 'USD'>('BDT');
 
   const fetchCurrentRate = async () => {
     try {
@@ -86,6 +93,16 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
     return `৳${formattedNum}`;
   };
 
+  const formatPrice = (bdtAmount: number): string => {
+    if (displayCurrency === 'USD') {
+      const usdAmount = bdtAmount / rate;
+      const formattedUsd = usdAmount % 1 === 0 ? usdAmount.toLocaleString('en-US') : usdAmount.toFixed(2);
+      return `$${formattedUsd}`;
+    }
+    const formattedNum = bdtAmount.toLocaleString('en-IN');
+    return language === 'bn' ? `৳${toBengaliNumerals(formattedNum)}` : `৳${formattedNum}`;
+  };
+
   const formatNumber = (num: number): string => {
     const formatted = num.toLocaleString('en-IN');
     if (language === 'bn') {
@@ -103,6 +120,9 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
         effectiveDate,
         isFallback,
         loading,
+        displayCurrency,
+        setDisplayCurrency,
+        formatPrice,
         formatBDT,
         convertToBDT,
         formatNumber,

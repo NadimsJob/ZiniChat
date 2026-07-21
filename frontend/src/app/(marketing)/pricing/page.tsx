@@ -3,12 +3,12 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useLanguage } from '@/components/LanguageProvider';
 import { useCurrency } from '@/components/CurrencyProvider';
-import { Check, X } from 'lucide-react';
+import { Check, X, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
 export default function PricingPage() {
   const { language } = useLanguage();
-  const { formatBDT, formatNumber } = useCurrency();
+  const { formatBDT, formatNumber, displayCurrency, setDisplayCurrency, formatPrice } = useCurrency();
   const [plans, setPlans] = useState<any[]>([]);
   const [addons, setAddons] = useState<any[]>([]);
   const [config, setConfig] = useState<any>(null);
@@ -28,34 +28,52 @@ export default function PricingPage() {
       setConfig(configData);
     })
     .catch(console.error)
-    .finally(() => setLoading(false));
+    .finally(() => {
+      setLoading(false);
+      // Ensure page starts at the top after rendering
+      setTimeout(() => window.scrollTo(0, 0), 10);
+    });
   }, []);
 
   const tableRows = useMemo(() => {
     const rows: any[] = [];
-    if (config?.pricingComparisonJson?.categories && config.pricingComparisonJson.categories.length > 0) {
-      config.pricingComparisonJson.categories.forEach((cat: any) => {
-        rows.push({
-          isHeader: true,
-          en: cat.title?.en || 'Features',
-          bn: cat.title?.bn || 'ফিচারসমূহ'
-        });
-        (cat.items || []).forEach((item: any) => {
+    if (config?.pricingJson?.compareFeatures && config.pricingJson.compareFeatures.length > 0) {
+      config.pricingJson.compareFeatures.forEach((item: any) => {
+        if (item.type === 'header') {
+          rows.push({
+            isHeader: true,
+            en: item.en,
+            bn: item.bn
+          });
+        } else {
           rows.push({
             isHeader: false,
-            en: item.name?.en || item.id,
-            bn: item.name?.bn || item.id,
+            en: item.en,
+            bn: item.bn,
             get: (plan: any) => {
-              if (item.type === 'quota') {
-                const val = plan[item.field];
-                return val === -1 ? 'Unlimited' : formatNumber(val);
-              } else if (item.type === 'boolean') {
-                return plan.features?.includes(item.featureKey) ? 'yes' : 'no';
+              if (item.type === 'boolean') {
+                 // Check if it's in the features array or if the DB field itself is true
+                 if (item.featureKey) {
+                    if (plan[item.featureKey] === true) return 'yes';
+                    
+                    let feats = plan.features;
+                    if (typeof feats === 'string') {
+                      try { feats = JSON.parse(feats); } catch (e) { feats = []; }
+                    }
+                    if (Array.isArray(feats) && feats.includes(item.featureKey)) return 'yes';
+                 }
+                 return 'no';
+              } else if (item.type === 'value') {
+                 const val = plan[item.featureKey];
+                 if (val === undefined || val === null) return '-';
+                 if (val === -1) return 'Unlimited';
+                 if (typeof val === 'number') return formatNumber(val);
+                 return String(val);
               }
               return 'no';
             }
           });
-        });
+        }
       });
     } else {
       // Fallback
@@ -80,126 +98,179 @@ export default function PricingPage() {
   }
 
   return (
-    <div className="flex flex-col items-center overflow-hidden min-h-screen">
+    <div className="flex flex-col items-center w-full overflow-hidden bg-background min-h-screen">
       {/* Hero */}
-      <section className="w-full relative py-20 px-4 text-center">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5 pointer-events-none" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-primary/5 rounded-[100%] blur-[120px] pointer-events-none" />
+      <section className="relative w-full overflow-hidden bg-muted py-20 px-4 text-center lg:py-28">
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[40rem] h-[40rem] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
+        </div>
         
-        <div className="relative z-10 max-w-3xl mx-auto">
-          <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-6">
+        <div className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary mb-6">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
+            {language === 'en' ? 'Pricing & Plans' : 'প্যাকেজ ও প্রাইসিং'}
+          </div>
+          <h1 className="mb-6 text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl text-foreground">
             {language === 'en' ? 'Simple, transparent pricing' : 'সহজ ও স্বচ্ছ প্রাইসিং'}
           </h1>
-          <p className="text-lg md:text-xl text-zinc-500 mb-10">
+          <p className="mx-auto mb-8 max-w-2xl text-lg leading-relaxed text-muted-foreground sm:text-xl">
             {language === 'en' 
               ? 'No hidden fees, no surprise charges. Choose the plan that fits your business scale.' 
               : 'কোনো লুকানো চার্জ নেই। আপনার ব্যবসার জন্য মানানসই প্ল্যান বেছে নিন।'}
           </p>
 
+          {/* Currency Toggle */}
+          <div className="flex justify-center mb-6">
+            <div className="inline-flex bg-card border border-primary/20 rounded-full p-1 shadow-inner relative z-20">
+              <button
+                onClick={() => setDisplayCurrency('BDT')}
+                className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${displayCurrency === 'BDT' ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                BDT
+              </button>
+              <button
+                onClick={() => setDisplayCurrency('USD')}
+                className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${displayCurrency === 'USD' ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                USD
+              </button>
+            </div>
+          </div>
+
           {/* Monthly/Yearly Toggle */}
-          <div className="flex items-center justify-center gap-4 mb-16">
-            <span className={`text-sm font-semibold transition-colors ${!isYearly ? 'text-foreground' : 'text-zinc-500'}`}>
+          <div className="flex items-center justify-center gap-4 mb-8">
+            <span className={`text-sm font-bold transition-colors ${!isYearly ? 'text-foreground' : 'text-muted-foreground'}`}>
               {language === 'en' ? 'Monthly' : 'মাসিক'}
             </span>
             
             <button 
               onClick={() => setIsYearly(!isYearly)}
-              className="relative w-16 h-8 rounded-full bg-surface border border-surface-hover transition-colors p-1 flex items-center"
+              className="relative w-16 h-8 rounded-full bg-card border border-border transition-colors p-1 flex items-center shadow-inner"
             >
-              <div className={`w-6 h-6 rounded-full bg-gradient-to-r from-primary to-secondary shadow-md transition-transform duration-300 ${isYearly ? 'translate-x-8' : 'translate-x-0'}`} />
+              <div className={`w-6 h-6 rounded-full bg-primary shadow-md transition-transform duration-300 ${isYearly ? 'translate-x-8' : 'translate-x-0'}`} />
             </button>
             
             <div className="flex items-center gap-2">
-              <span className={`text-sm font-semibold transition-colors ${isYearly ? 'text-foreground' : 'text-zinc-500'}`}>
+              <span className={`text-sm font-bold transition-colors ${isYearly ? 'text-foreground' : 'text-muted-foreground'}`}>
                 {language === 'en' ? 'Yearly' : 'বার্ষিক'}
               </span>
-              <span className="bg-green-500/10 text-green-500 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+              <span className="bg-emerald-500/10 text-emerald-600 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
                 {language === 'en' ? 'Save 20%' : '২০% ছাড়'}
               </span>
             </div>
           </div>
         </div>
+      </section>
 
-        {/* Pricing Cards */}
-        <div className="max-w-6xl mx-auto relative z-10 grid md:grid-cols-3 gap-8 px-4">
+      {/* Pricing Cards */}
+      <section className="relative w-full -mt-10 px-4 sm:px-6 lg:px-8 pb-20">
+        <div className="max-w-6xl mx-auto relative z-10 grid md:grid-cols-3 gap-6 lg:gap-8">
           {plans.map((plan: any) => {
             const price = isYearly && plan.priceYearlyBdt ? plan.priceYearlyBdt : plan.priceMonthlyBdt;
             const displayPrice = isYearly && plan.priceYearlyBdt ? price / 12 : price;
             
+            const isPop = plan.isPopular;
+            const textColor = isPop ? 'text-zinc-900' : 'text-foreground';
+            const mutedColor = isPop ? 'text-zinc-800' : 'text-muted-foreground';
+            const borderColor = isPop ? 'border-black/10' : 'border-border';
+            
             return (
               <div 
                 key={plan.id} 
-                className={`flex flex-col p-8 rounded-3xl bg-surface border transition-all duration-300 hover:-translate-y-2 ${
-                  plan.isPopular 
-                    ? 'border-primary shadow-[0_0_40px_-15px_var(--primary)] relative transform md:-translate-y-4 hover:!translate-y-[-24px]' 
-                    : 'border-surface-hover hover:border-zinc-700 shadow-xl'
+                className={`group flex flex-col p-8 sm:p-10 rounded-[32px] border transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl ${
+                  isPop 
+                    ? 'border-transparent shadow-xl relative transform md:-translate-y-4 hover:!translate-y-[-24px] bg-[#FFC527]' 
+                    : 'bg-card border-border hover:border-primary/30 shadow-sm'
                 }`}
               >
-                {plan.isPopular && (
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-primary to-secondary text-white text-xs font-bold py-1.5 px-6 rounded-full uppercase tracking-wider shadow-lg">
-                    {language === 'en' ? 'Most Popular' : 'জনপ্রিয়'}
+                {isPop && (
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-white text-zinc-900 text-[12px] font-bold py-1.5 px-6 rounded-full shadow-md whitespace-nowrap border border-zinc-200">
+                    {language === 'en' ? 'Most Popular' : 'সবচেয়ে জনপ্রিয়'}
                   </div>
                 )}
                 
-                <h3 className="text-2xl font-bold mb-2">
+                <h3 className={`text-3xl font-extrabold mb-2 ${textColor}`}>
                   {language === 'en' ? plan.name : (plan.nameBn || plan.name)}
                 </h3>
-                <p className="text-sm text-zinc-500 h-10 mb-6 line-clamp-2">
+                <p className={`text-[15px] h-12 mb-6 line-clamp-2 ${mutedColor}`}>
                   {language === 'en' ? plan.description : (plan.descriptionBn || plan.description)}
                 </p>
                 
                 <div className="mb-6 flex flex-col">
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-5xl font-extrabold tracking-tight">{formatBDT(displayPrice)}</span>
-                    <span className="text-zinc-500 font-medium">/mo</span>
+                  <div className={`flex items-start gap-1 ${textColor}`}>
+                    <span className="text-2xl font-bold mt-2">{displayCurrency === 'BDT' ? '৳' : '$'}</span>
+                    <span className="text-6xl font-black tracking-tighter">
+                      {formatNumber(!isYearly && plan.promoPriceMonthlyBdt ? plan.promoPriceMonthlyBdt : displayPrice)}
+                    </span>
                   </div>
-                  {isYearly && plan.priceYearlyBdt && (
-                    <div className="text-sm text-green-500 font-medium mt-1">
-                      {language === 'en' ? `Billed ${formatBDT(plan.priceYearlyBdt)} yearly` : `বছরে ${formatBDT(plan.priceYearlyBdt)} বিল করা হবে`}
+                  
+                  <div className={`text-sm mt-2 font-medium ${mutedColor}`}>
+                     {language === 'en' ? 'per month' : 'প্রতি মাসে'}
+                  </div>
+                  
+                  {!isYearly && plan.promoPriceMonthlyBdt ? (
+                    <div className={`text-sm font-bold mt-3 inline-block self-start px-2 py-1 rounded ${isPop ? 'bg-black/10 text-zinc-900' : 'bg-primary/10 text-primary'}`}>
+                      {language === 'en' ? `For the first ${plan.promoMonths} months, then ${displayCurrency === 'BDT' ? '৳' : '$'}${formatNumber(displayPrice)}/mo` : `প্রথম ${plan.promoMonths} মাসের জন্য, তারপর ${displayCurrency === 'BDT' ? '৳' : '$'}${formatNumber(displayPrice)}/মাস`}
                     </div>
-                  )}
-                  {isYearly && !plan.priceYearlyBdt && (
-                    <div className="text-sm text-zinc-500 font-medium mt-1">
-                      {language === 'en' ? 'Billed monthly' : 'মাসিক বিল'}
+                  ) : null}
+
+                  {isYearly && plan.priceYearlyBdt ? (
+                    <div className="flex flex-col gap-1.5 mt-3">
+                      <div className={`text-sm font-semibold inline-block self-start px-2 py-0.5 rounded ${isPop ? 'bg-black/10 text-zinc-900' : 'bg-emerald-500/10 text-emerald-600'}`}>
+                        {language === 'en' ? `Billed ${displayCurrency === 'BDT' ? '৳' : '$'}${formatNumber(plan.priceYearlyBdt)} yearly` : `বছরে ${displayCurrency === 'BDT' ? '৳' : '$'}${formatNumber(plan.priceYearlyBdt)} বিল করা হবে`}
+                      </div>
+                      {plan.yearlyDiscountPercent ? (
+                        <div className={`text-xs font-extrabold uppercase tracking-wider ${isPop ? 'text-zinc-900' : 'text-emerald-600'}`}>
+                          {language === 'en' ? `Save ${plan.yearlyDiscountPercent}%` : `${plan.yearlyDiscountPercent}% সাশ্রয়`}
+                        </div>
+                      ) : null}
                     </div>
-                  )}
+                  ) : null}
                 </div>
 
-                <Link 
-                  href="/signup" 
-                  className={`w-full py-4 rounded-xl font-bold text-sm text-center transition-all mb-8 ${
-                    plan.isPopular 
-                      ? 'bg-gradient-to-r from-primary to-secondary text-white hover:opacity-90 shadow-glow' 
-                      : 'bg-surface-hover text-foreground hover:bg-zinc-800'
-                  }`}
-                >
-                  {language === 'en' ? 'Start Free Trial' : 'ফ্রি ট্রায়াল শুরু করুন'}
-                </Link>
+                <div className={`w-full h-px my-6 ${borderColor}`} />
 
-                <div className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-4">
+                <div className={`text-[13px] font-bold uppercase tracking-wider mb-5 ${mutedColor}`}>
                   {language === 'en' ? 'Top Features' : 'প্রধান ফিচারসমূহ'}
                 </div>
                 
-                <ul className="space-y-4 mb-2 flex-1">
-                  <li className="flex items-start gap-3 text-sm">
-                    <Check className="w-5 h-5 text-green-500 shrink-0" />
-                    <span><strong className="text-foreground">{plan.seatLimit === -1 ? 'Unlimited' : formatNumber(plan.seatLimit)}</strong> {language === 'en' ? 'Team Members' : 'টিম মেম্বার'}</span>
+                <ul className={`space-y-4 mb-8 flex-1 ${mutedColor}`}>
+                  <li className="flex items-start gap-3 text-[15px] font-medium">
+                    <div className="mt-0.5 bg-green-500 rounded-full p-0.5"><Check className="w-4 h-4 shrink-0 text-white" strokeWidth={3} /></div>
+                    <span><strong className={`font-extrabold ${textColor}`}>{plan.seatLimit === -1 ? 'Unlimited' : formatNumber(plan.seatLimit)}</strong> {language === 'en' ? 'Team Members' : 'টিম মেম্বার'}</span>
                   </li>
-                  <li className="flex items-start gap-3 text-sm">
-                    <Check className="w-5 h-5 text-green-500 shrink-0" />
-                    <span><strong className="text-foreground">{plan.messageQuota === -1 ? 'Unlimited' : formatNumber(plan.messageQuota)}</strong> {language === 'en' ? 'Messages/mo' : 'মেসেজ/মাস'}</span>
+                  <li className="flex items-start gap-3 text-[15px] font-medium">
+                    <div className="mt-0.5 bg-green-500 rounded-full p-0.5"><Check className="w-4 h-4 shrink-0 text-white" strokeWidth={3} /></div>
+                    <span><strong className={`font-extrabold ${textColor}`}>{plan.messageQuota === -1 ? 'Unlimited' : formatNumber(plan.messageQuota)}</strong> {language === 'en' ? 'Messages/mo' : 'মেসেজ/মাস'}</span>
                   </li>
-                  <li className="flex items-start gap-3 text-sm">
-                    <Check className="w-5 h-5 text-green-500 shrink-0" />
-                    <span><strong className="text-foreground">{plan.aiQuota === -1 ? 'Unlimited' : formatNumber(plan.aiQuota)}</strong> {language === 'en' ? 'AI Responses/mo' : 'এআই রেসপন্স/মাস'}</span>
+                  <li className="flex items-start gap-3 text-[15px] font-medium">
+                    <div className="mt-0.5 bg-green-500 rounded-full p-0.5"><Check className="w-4 h-4 shrink-0 text-white" strokeWidth={3} /></div>
+                    <span><strong className={`font-extrabold ${textColor}`}>{plan.aiQuota === -1 ? 'Unlimited' : formatNumber(plan.aiQuota)}</strong> {language === 'en' ? 'AI Responses/mo' : 'এআই রেসপন্স/মাস'}</span>
                   </li>
                   {plan.featuresJson?.slice(0, 3).map((f: any, i: number) => (
-                    <li key={i} className="flex items-start gap-3 text-sm text-zinc-400">
-                      <Check className="w-5 h-5 text-green-500/50 shrink-0" />
+                    <li key={i} className="flex items-start gap-3 text-[15px] font-medium">
+                      <div className="mt-0.5 bg-green-500 rounded-full p-0.5"><Check className="w-4 h-4 shrink-0 text-white" strokeWidth={3} /></div>
                       <span>{language === 'en' ? f.en : (f.bn || f.en)}</span>
                     </li>
                   ))}
                 </ul>
+
+                <div className="mt-auto">
+                  <Link 
+                    href="/signup" 
+                    className={`block w-full py-4 rounded-[16px] font-extrabold text-[16px] text-center transition-all ${
+                      isPop 
+                        ? 'bg-white text-zinc-900 hover:bg-zinc-50 shadow-md border-2 border-white' 
+                        : 'bg-transparent border-2 border-primary/20 text-foreground hover:border-primary hover:bg-primary/5'
+                    }`}
+                  >
+                    {Number(plan.priceMonthlyBdt) === 0 
+                      ? (language === 'en' ? 'Get Started for Free' : 'শুরু করুন')
+                      : plan.trialDays > 0
+                        ? (language === 'en' ? `Start ${plan.trialDays}-Day Free Trial` : 'শুরু করুন')
+                        : (language === 'en' ? 'Subscribe Now' : 'শুরু করুন')}
+                  </Link>
+                </div>
               </div>
             );
           })}
@@ -207,23 +278,29 @@ export default function PricingPage() {
       </section>
 
       {/* Feature Comparison Table */}
-      <section className="w-full max-w-6xl mx-auto px-4 py-24 hidden md:block">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold tracking-tight mb-4">
+      <section className="relative w-full max-w-6xl mx-auto px-4 py-16 border-t border-border/40">
+        <div className="pointer-events-none absolute left-0 bottom-0 w-[40rem] h-[40rem] bg-secondary/10 rounded-full blur-[120px]" />
+        
+        <div className="text-center mb-12 relative z-10">
+          <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-foreground mb-4">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
+            {language === 'en' ? 'Comparison' : 'তুলনা'}
+          </span>
+          <h2 className="text-3xl font-extrabold tracking-tight mb-4 text-foreground">
             {language === 'en' ? 'Compare Plans' : 'প্ল্যান তুলনা করুন'}
           </h2>
         </div>
 
-        <div className="w-full overflow-x-auto bg-surface border border-surface-hover rounded-3xl p-6">
+        <div className="w-full overflow-x-auto bg-card border border-border rounded-3xl p-6 shadow-sm relative z-10">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr>
-                <th className="w-1/3 p-4 border-b border-surface-hover bg-surface sticky left-0 z-10"></th>
+                <th className="w-1/3 p-5 border-b border-border bg-card sticky left-0 z-10"></th>
                 {plans.map((plan: any) => (
-                  <th key={plan.id} className="p-4 border-b border-surface-hover text-center w-1/4">
-                    <div className="text-lg font-bold mb-1">{language === 'en' ? plan.name : (plan.nameBn || plan.name)}</div>
-                    <div className="text-sm text-zinc-500 font-normal">
-                      {formatBDT(isYearly && plan.priceYearlyBdt ? plan.priceYearlyBdt / 12 : plan.priceMonthlyBdt)}/mo
+                  <th key={plan.id} className="p-5 border-b border-border text-center w-1/4">
+                    <div className="text-lg font-bold mb-1 text-foreground">{language === 'en' ? plan.name : (plan.nameBn || plan.name)}</div>
+                    <div className="text-sm text-muted-foreground font-medium">
+                      {formatPrice(isYearly && plan.priceYearlyBdt ? plan.priceYearlyBdt / 12 : plan.priceMonthlyBdt)}/mo
                     </div>
                   </th>
                 ))}
@@ -232,23 +309,25 @@ export default function PricingPage() {
             <tbody>
               {tableRows.map((row, idx) => {
                 return (
-                  <tr key={idx} className={row.isHeader ? 'bg-surface-hover/30' : 'hover:bg-surface-hover/10 transition-colors'}>
-                    <td className={`p-4 border-b border-surface-hover/50 sticky left-0 bg-surface ${row.isHeader ? 'font-bold text-sm uppercase tracking-wider text-primary pt-8 pb-4' : 'text-sm font-medium text-zinc-300'}`}>
+                  <tr key={idx} className={row.isHeader ? 'bg-muted/50' : 'hover:bg-muted transition-colors group'}>
+                    <td className={`p-4 border-b border-border sticky left-0 bg-card group-hover:bg-muted transition-colors ${row.isHeader ? 'font-bold text-sm uppercase tracking-wider text-primary pt-8 pb-4 bg-muted/50' : 'text-sm font-medium text-foreground'}`}>
                       {language === 'en' ? row.en : row.bn}
                     </td>
                     {row.isHeader ? (
-                      plans.map((p: any) => <td key={p.id} className="border-b border-surface-hover/50"></td>)
+                      plans.map((p: any) => <td key={p.id} className="border-b border-border bg-muted/50"></td>)
                     ) : (
                       plans.map((plan: any) => {
                         const val = row.get!(plan);
                         return (
-                          <td key={plan.id} className="p-4 border-b border-surface-hover/50 text-center text-sm">
+                          <td key={plan.id} className="p-4 border-b border-border text-center text-sm">
                             {val === 'yes' ? (
-                              <Check className="w-5 h-5 text-green-500 mx-auto" />
+                              <div className="mx-auto w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                                <Check className="w-4 h-4 text-white" strokeWidth={3} />
+                              </div>
                             ) : val === 'no' ? (
-                              <X className="w-5 h-5 text-zinc-600 mx-auto" />
+                              <X className="w-5 h-5 text-muted-foreground/50 mx-auto" />
                             ) : (
-                              <span className="font-semibold text-zinc-300">{val}</span>
+                              <span className="font-semibold text-muted-foreground">{val}</span>
                             )}
                           </td>
                         );
@@ -264,34 +343,40 @@ export default function PricingPage() {
 
       {/* Add-ons Section */}
       {addons.length > 0 && (
-        <section className="w-full bg-surface-hover/30 border-y border-surface-hover py-24">
-          <div className="max-w-5xl mx-auto px-4 text-center">
-            <h2 className="text-3xl font-bold tracking-tight mb-4">
-              {language === 'en' ? 'Need more power? Get Add-ons' : 'আরও বেশি লিমিট প্রয়োজন? অ্যাড-অন নিন'}
-            </h2>
-            <p className="text-zinc-500 mb-12 max-w-xl mx-auto">
-              {language === 'en' 
-                ? 'Scale your business seamlessly. Add extra limits to your active subscription anytime.' 
-                : 'আপনার সাবস্ক্রিপশনে যেকোনো সময় অতিরিক্ত লিমিট যুক্ত করুন।'}
-            </p>
+        <section className="relative w-full bg-muted border-y border-border/40 py-24">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-16">
+              <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-foreground mb-4">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                {language === 'en' ? 'Add-ons' : 'অ্যাড-অন'}
+              </span>
+              <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4 text-foreground">
+                {language === 'en' ? 'Need more power?' : 'আরও বেশি লিমিট প্রয়োজন?'}
+              </h2>
+              <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+                {language === 'en' 
+                  ? 'Scale your business seamlessly. Add extra limits to your active subscription anytime without upgrading your base plan.' 
+                  : 'আপনার সাবস্ক্রিপশনে যেকোনো সময় অতিরিক্ত লিমিট যুক্ত করুন।'}
+              </p>
+            </div>
             
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {addons.map((addon) => (
-                <div key={addon.id} className="bg-background border border-surface-hover p-8 rounded-3xl text-left hover:border-secondary/50 transition-colors">
-                  <div className="w-12 h-12 bg-secondary/10 text-secondary rounded-2xl flex items-center justify-center mb-6">
+                <div key={addon.id} className="group bg-card border border-border p-8 rounded-3xl text-left hover:border-primary/50 hover:shadow-xl transition-all duration-300">
+                  <div className="w-12 h-12 bg-primary/10 text-primary rounded-xl flex items-center justify-center mb-6 transition-transform duration-300 group-hover:scale-110">
                     <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
                   </div>
-                  <h3 className="text-xl font-bold mb-1 text-foreground">
+                  <h3 className="text-xl font-bold mb-2 text-foreground group-hover:text-primary transition-colors">
                     {language === 'en' ? addon.name : (addon.nameBn || addon.name)}
                   </h3>
-                  <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-6">
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-8 bg-muted inline-block px-2.5 py-1 rounded-md">
                     +{formatNumber(addon.value)} {addon.type.replace('_', ' ')}
                   </p>
-                  <div className="flex items-center justify-between">
-                    <div className="text-3xl font-black text-secondary">{formatBDT(addon.priceBdt)}</div>
-                    <div className="text-xs text-zinc-500 font-medium bg-surface-hover px-2 py-1 rounded">One-time</div>
+                  <div className="flex items-center justify-between border-t border-border pt-4">
+                    <div className="text-3xl font-black text-foreground">{formatPrice(addon.priceBdt)}</div>
+                    <div className="text-xs text-muted-foreground font-semibold px-2 py-1">One-time</div>
                   </div>
                 </div>
               ))}
@@ -302,14 +387,14 @@ export default function PricingPage() {
 
       {/* Mini FAQ */}
       <section className="w-full max-w-3xl mx-auto px-4 py-24 text-center">
-        <h2 className="text-2xl font-bold mb-8">
+        <h2 className="text-2xl font-bold mb-6 text-foreground">
           {language === 'en' ? 'Billing Questions?' : 'বিলিং সংক্রান্ত প্রশ্ন?'}
         </h2>
-        <p className="text-zinc-500 mb-6">
+        <p className="text-muted-foreground mb-8 text-lg">
           {language === 'en' ? 'Can I upgrade or downgrade anytime? Yes, you can change your plan anytime from your dashboard. The pricing difference will be prorated.' : 'আমি কি যেকোনো সময় আপগ্রেড বা ডাউনগ্রেড করতে পারি? হ্যাঁ, আপনি ড্যাশবোর্ড থেকে যেকোনো সময় প্ল্যান পরিবর্তন করতে পারবেন।'}
         </p>
-        <Link href="/faq" className="text-primary font-bold hover:underline">
-          {language === 'en' ? 'Read all FAQs →' : 'সব FAQ পড়ুন →'}
+        <Link href="/faq" className="inline-flex items-center gap-2 text-primary font-bold hover:underline px-6 py-3 rounded-xl bg-primary/10 hover:bg-primary/20 transition-colors">
+          {language === 'en' ? 'Read all FAQs' : 'সব FAQ পড়ুন'} <ArrowRight className="w-4 h-4" />
         </Link>
       </section>
     </div>
