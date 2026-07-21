@@ -127,3 +127,13 @@ This document contains rules and behavioral guidelines specific to this workspac
   3. The agent MUST commit and push the fix to Git (`git push`).
   4. Finally, the agent MUST instruct the remote server to pull the new code from Git using the deployment MCP tool.
 * **Read-Only Server Access**: If the user requests to investigate a server issue, the agent is permitted to *check* logs and read files on the server to diagnose the problem, but any resulting code changes MUST be made locally and deployed via Git.
+
+---
+
+## 17. MCP Server Deployment & Troubleshooting Learnings
+This rule documents the exact workflow discovered during a live test server deployment session to ensure future agents can seamlessly deploy and fix issues on this PC.
+
+* **Invoking the MCP Deploy Server:** Instead of relying on a native injected tool, deployments on this PC are triggered by modifying and running the scratch script `c:\Users\ASUS\.gemini\antigravity-ide\scratch\invoke-mcp.js`. Update the `target` ("test" or "live") and `branch` (e.g., "main" or "hotfix/...") in this script, then execute it via `node c:\Users\ASUS\.gemini\antigravity-ide\scratch\invoke-mcp.js`.
+* **SSH Key Parsing Fix (`Unsupported key format`):** The `node-ssh` library in `scripts/mcp-deploy-server.js` fails to parse newer Windows `id_rsa` keys if passed as an absolute file path. The script has been fixed to read the key explicitly via `fs.readFileSync`. If an SSH error occurs, ensure the script is still reading the key as a string (utf8) and that `.env.deploy` has the `_SSH_PASSPHRASE` variable if the key is encrypted.
+* **Remote Database Migrations:** Remote migrations are automated by appending the command directly to the restart command in `scripts/.env.deploy` (e.g., `TEST_RESTART_CMD=... && docker compose exec -T backend npx prisma db push`).
+* **Handling Deployment Build Failures:** If a Docker build fails on the remote server (e.g., Next.js JSX syntax error), **do not edit code on the server**. Instead, trace the error locally, fix the syntax (e.g. missing closing tags), commit the fix to the active feature/hotfix branch, push it to GitHub, and then run `invoke-mcp.js` again to pull the new code onto the server.

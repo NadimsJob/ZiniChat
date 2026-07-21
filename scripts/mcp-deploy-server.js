@@ -58,17 +58,22 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     try {
       const ssh = new NodeSSH();
       const sshConfig = { host, username };
+      const fs = require('fs');
       if (privateKeyPath) {
-        sshConfig.privateKey = privateKeyPath;
+        sshConfig.privateKey = fs.readFileSync(privateKeyPath, 'utf8');
       } else if (password) {
         sshConfig.password = password;
       } else {
         // Fallback to PC's default SSH key
         const os = require('os');
         const path = require('path');
-        sshConfig.privateKey = path.join(os.homedir(), '.ssh', 'id_rsa');
+        sshConfig.privateKey = fs.readFileSync(path.join(os.homedir(), '.ssh', 'id_rsa'), 'utf8');
       }
-
+      
+      const passphrase = process.env[`${prefix}_SSH_PASSPHRASE`];
+      if (passphrase) {
+        sshConfig.passphrase = passphrase;
+      }
       await ssh.connect(sshConfig);
       
       const commands = [
