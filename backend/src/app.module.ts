@@ -44,7 +44,7 @@ import { TicketsModule } from './tickets/tickets.module';
   imports: [
     ThrottlerModule.forRoot([{
       ttl: 60000,
-      limit: 100000,
+      limit: 100,
     }]),
     ScheduleModule.forRoot(),
     BullModule.forRoot({
