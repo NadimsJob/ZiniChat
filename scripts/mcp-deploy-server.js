@@ -80,6 +80,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         `cd ${projectPath}`,
         `git fetch origin`,
         `git checkout ${branch}`,
+        `git reset --hard origin/${branch}`,
+        `git clean -fd`,
         `git pull origin ${branch}`,
         restartCmd
       ].join(" && ");
