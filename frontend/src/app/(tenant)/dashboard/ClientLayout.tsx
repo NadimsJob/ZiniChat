@@ -37,6 +37,7 @@ import {
   Tag
 } from 'lucide-react';
 import NotificationBell from '@/components/NotificationBell';
+import SupportWidget from '@/components/SupportWidget';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -144,6 +145,9 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
     '/dashboard/settings/whatsapp': ['whatsapp'],
     '/dashboard/settings/messenger': ['messenger'],
     '/dashboard/settings/ai-training': ['ai_assistant'],
+    '/dashboard/support': ['platform_support_ai'],
+    '/dashboard/team': ['team_management'],
+    '/dashboard/settings/labels': ['contact_labels'],
   };
 
   const hasAccess = (href: string) => {
@@ -409,6 +413,10 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
           </div>
         </div>
       )}
+
+      {/* Floating Action Buttons or Modals */}
+      {allowedFeatures.includes('platform_support_ai') && <SupportWidget />}
+
     </div>
   );
 }

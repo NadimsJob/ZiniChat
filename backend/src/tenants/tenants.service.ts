@@ -27,6 +27,9 @@ export class TenantsService {
         usageLogs: {
           where: { createdAt: { gte: startOfMonth } },
           select: { id: true }
+        },
+        assistants: {
+          select: { byokApiKeyEncrypted: true }
         }
       },
     });
@@ -44,6 +47,8 @@ export class TenantsService {
         createdAt: t.createdAt,
         status: t.status,
         _count: t._count,
+        customAiConfigId: t.customAiConfigId,
+        hasByok: t.assistants.some(a => a.byokApiKeyEncrypted !== null),
         aiQuota: {
           limit: aiLimit,
           used: aiUsed
@@ -94,6 +99,24 @@ export class TenantsService {
         targetTenantId: id,
         action: 'CUSTOMIZED_TENANT_PLAN',
         metadataJson: data,
+      },
+    });
+
+    return tenant;
+  }
+
+  async updateAiConfig(id: string, customAiConfigId: string | null, actorUserId: string) {
+    const tenant = await this.prisma.tenant.update({
+      where: { id },
+      data: { customAiConfigId },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        actorUserId,
+        targetTenantId: id,
+        action: 'UPDATED_TENANT_AI_CONFIG',
+        metadataJson: { customAiConfigId },
       },
     });
 

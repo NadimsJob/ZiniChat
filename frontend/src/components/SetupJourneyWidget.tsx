@@ -137,6 +137,24 @@ export default function SetupJourneyWidget({ allowedFeatures }: { allowedFeature
             </div>
           </div>
         </div>
+        
+        {allowedFeatures.includes('platform_support_ai') && (
+          <div className="mt-4 pt-4 border-t border-border flex items-center justify-between">
+            <p className="text-[12px] text-slate-500 font-medium flex items-center gap-2">
+              <Bot className="w-4 h-4 text-primary" />
+              {language === 'en' ? 'Need help setting up?' : 'সেটআপ করতে এআই এর সাহায্য নিতে চান?'}
+            </p>
+            <button 
+              onClick={(e) => {
+                e.preventDefault();
+                window.dispatchEvent(new CustomEvent('open-support-widget'));
+              }}
+              className="text-[11px] font-bold px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg transition-colors"
+            >
+              {language === 'en' ? 'Ask AI' : 'এআই কে জিজ্ঞাসা করুন'}
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="divide-y divide-slate-100 dark:divide-zinc-800/50">

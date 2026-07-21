@@ -4,6 +4,17 @@ This document contains rules and behavioral guidelines specific to this workspac
 
 ---
 
+## 0. Git Push — Requires Explicit User Approval (CRITICAL)
+
+**This is the highest priority rule and overrides all other workflow rules.**
+
+* **NEVER run `git push` or `git push origin <branch>` without the user explicitly saying so.** Phrases like "deploy", "push it", "send it to git", "github e dao" count as explicit approval.
+* **Local commits (`git commit`) are allowed** during development to save progress — but pushing to remote is strictly forbidden without user approval.
+* **Deployment via MCP (`invoke-mcp.js`) also counts as a push-equivalent action** and requires explicit user confirmation before triggering.
+* **Why**: The user wants full control over what goes to GitHub and when. Never auto-push as part of a development or fix workflow.
+
+---
+
 ## 1. Automatic Context Tracking & Maintenance
 
 ### Rule: You must maintain the `project-context.md` file.
@@ -137,3 +148,12 @@ This rule documents the exact workflow discovered during a live test server depl
 * **SSH Key Parsing Fix (`Unsupported key format`):** The `node-ssh` library in `scripts/mcp-deploy-server.js` fails to parse newer Windows `id_rsa` keys if passed as an absolute file path. The script has been fixed to read the key explicitly via `fs.readFileSync`. If an SSH error occurs, ensure the script is still reading the key as a string (utf8) and that `.env.deploy` has the `_SSH_PASSPHRASE` variable if the key is encrypted.
 * **Remote Database Migrations:** Remote migrations are automated by appending the command directly to the restart command in `scripts/.env.deploy` (e.g., `TEST_RESTART_CMD=... && docker compose exec -T backend npx prisma db push`).
 * **Handling Deployment Build Failures:** If a Docker build fails on the remote server (e.g., Next.js JSX syntax error), **do not edit code on the server**. Instead, trace the error locally, fix the syntax (e.g. missing closing tags), commit the fix to the active feature/hotfix branch, push it to GitHub, and then run `invoke-mcp.js` again to pull the new code onto the server.
+* **`docker compose restart` vs `docker compose up -d`:** `docker compose restart` does NOT reload the `env_file`. If you update a `.env` file on the server (e.g., fixing `DIRECT_URL` in `backend/.env`), you MUST run `docker compose --env-file .env.live up -d backend` to recreate the container and pick up the new environment variables. Using `restart` will keep the old, cached env vars.
+* **Live Server Prisma `DIRECT_URL` Config:** The live server's `backend/.env` must have `DIRECT_URL` pointing to `supabase-live-supavisor-1:5432` (NOT `supabase-pooler`). `prisma db push` and migrations use `DIRECT_URL`, not `DATABASE_URL`. If migrations fail with `P1001: Can't reach database server at supabase-pooler:5432`, it means `DIRECT_URL` is misconfigured on the live server. Fix it with `sed` on the server, then run `docker compose up -d` to reload, then retry `prisma db push` via `docker exec`.
+* **Diagnostic Scripts:** The following helper scripts exist in `scripts/` for live server troubleshooting (run from `f:\AI Assistant SAAS\scripts\`):
+  - `node check-live-logs.js` — View running containers + backend logs
+  - `node check-live-network.js` — Inspect supabase network attachment
+  - `node check-live-env.js` — Check `DATABASE_URL` and `DIRECT_URL` inside the container
+  - `node run-live-migration.js` — Run `prisma db push` directly inside the live backend container
+  - `node fix-live-direct-url.js` — Auto-fix `DIRECT_URL`, recreate container, and run migration
+

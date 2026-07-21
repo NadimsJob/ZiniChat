@@ -21,8 +21,9 @@ A multi-tenant SaaS platform where businesses (tenants) manage customer communic
 ---
 
 ## 3. Current Status & Active Focus
-* **Status**: **Current Status:**  
-- The core platform handles basic user auth, AI agent responses across WhatsApp/Messenger, dynamic training (knowledge base/website scraping), and a unified UI for tenants.
+* **Status**: **Current Focus:** Universal AI integrations, BYOK (Bring Your Own Key) capabilities, and an internal AI Support Chat.
+- **Latest Achievement:** Refactored `AiService` for dynamic provider switching and implemented a Tenant-side AI Support Widget that creates Support Tickets.
+- **Next Up:** Extensive E2E testing of the UI flows, onboarding optimizations, and live deployment.
 - Subscription logic, quotas (messages, AI tokens, storage), and superadmin customizations have been strictly enforced on the backend via `QuotaService` and `FeatureGuard`.
 - Direct PC-to-Server deployment scripts (MCP Server) have been deprecated and deleted to enforce Git-only deployment constraints.
 - **Live and Staging Environments are fully deployed with Traefik routing, reverse proxy networking, and SSL certificates.**
@@ -44,6 +45,8 @@ This log lists all features and modules implemented, ordered chronologically.
 | **2026-07-21** | **Dynamic Legal Pages & Social Links** | `schema.prisma`, `site-editor/page.tsx`, `marketing/privacy/page.tsx`, `marketing/terms/page.tsx`, `marketing/layout.tsx` | Added JSON fields to `LandingPageConfig` for bilingual Privacy Policy, Terms & Conditions, Contact info, and Social Media links. Updated Superadmin Site Editor to manage these fields. Created public dynamic pages and updated footer with togglable social icons. |
 | **2026-07-21** | **HNSW Index Implementation** | `schema.prisma`, `migrations` | Implemented HNSW index on `knowledge_chunks` vector column to optimize vector similarity search performance and disk I/O. |
 | **2026-07-21** | **Performance & Load Testing** | N/A | Executed 5 Advanced Load/Stress Tests directly on VPS, generated capacity report, and analyzed Traefik ingress limits for high-concurrency scenarios. |
+| 2026-07-21 | AI Agent | Support AI | Implemented AI-driven Platform Support Chat widget for tenants, with `SupportConversation`, `SupportMessage` models. Superadmin UI to assign model & view chats. Function calling for automatic ticket creation. |
+| 2026-07-21 | AI Agent | AI Config Overrides | Allowed superadmins to change global default AI model with permission modal, and tenants to be assigned specific BYOK/Custom models. Updated Orchestrator to resolve `customAiConfigId`. |
 | **2026-07-20** | **Live/Test Deployment & Traefik Routing Fix** | `scripts/.env.deploy` | Fixed a critical deployment bug where Traefik was returning a 404 for test and live servers. Updated `TEST_RESTART_CMD` and `LIVE_RESTART_CMD` to explicitly pass `--env-file .env.test` and `.env.live`, enabling proper Docker label processing for Traefik. Executed programmatic DB migration to push local Site Editor `LandingPageConfig` data to test/live without wiping tenant data. |
 | **2026-07-20** | **Web Notification System Fixes** | `leads.cron.ts`, `tickets.service.ts`, `payments.service.ts`, `subscription-reminder.service.ts` | Fixed a major bug where Superadmins were receiving Tenant CRM follow-up alerts due to test-lead assignments. Added strict tenant validation. Updated all background services to target both `owner` and `admin` roles, ensuring Google OAuth tenants receive their alerts. Added missing web notification for Tenant upon ticket creation. |
 | **2026-07-20** | **Marketing Pages Full Redesign** | `(marketing)/features/page.tsx`, `about/page.tsx`, `contact/page.tsx`, `faq/page.tsx`, `pricing/page.tsx`, `page.tsx` | Completely redesigned all public marketing pages with unified glassmorphism theme, dynamic interactive elements, responsive tables, categorized accordions, and fully localized Bengali/English copy. Replaced sparse layouts with high-density information architecture and embedded interactive UI mockups. |

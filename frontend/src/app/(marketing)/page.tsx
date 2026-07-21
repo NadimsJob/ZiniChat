@@ -4,9 +4,10 @@ import { useEffect, useState } from 'react';
 import { useLanguage } from '@/components/LanguageProvider';
 import { useCurrency } from '@/components/CurrencyProvider';
 import Link from 'next/link';
-import { Bot, ShieldCheck, ArrowRight, CheckCircle2, MessageSquare, Zap, Globe, Users, ShoppingCart, Star, Send, CheckCheck } from 'lucide-react';
+import { Bot, ShieldCheck, ArrowRight, CheckCircle2, MessageSquare, Zap, Globe, Users, ShoppingCart, Star, Send, CheckCheck, PlayCircle, Timer } from 'lucide-react';
 import { InteractiveFeatureTabs, processFeatures } from '@/components/InteractiveFeatureTabs';
 import { PricingSection } from '@/components/PricingSection';
+import SetupWidgetMockup from '@/components/SetupWidgetMockup';
 
 function WhatsAppBotMockup({ language }: { language: string }) {
   return (
@@ -196,6 +197,11 @@ export default function HomePage() {
             
             <WhatsAppBotMockup language={language} />
           </div>
+        </div>
+
+        {/* 2-Minute Setup Highlight */}
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mt-4 sm:mt-12">
+          <SetupWidgetMockup language={language} />
         </div>
       </section>
 

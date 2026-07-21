@@ -304,16 +304,9 @@ export class SmtpService {
       ? process.env.NEXT_PUBLIC_API_URL.replace(':3001', ':3000') 
       : 'https://zinichat.com';
 
-    const logoUrl = `${platformUrl}/logo.png`;
-
     return `
 <div style="font-family:'Inter', sans-serif; background-color:#f4f4f5; padding:40px 20px; min-height:100vh;">
   <div style="max-width:550px; margin:0 auto; background-color:#ffffff; border-radius:16px; overflow:hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); border: 1px solid #e4e4e7;">
-    
-    <!-- Header with Logo -->
-    <div style="padding:32px 32px 24px; text-align:center; border-bottom:1px solid #f4f4f5; background: linear-gradient(to right, #ffffff, #fafafa);">
-      <img src="${logoUrl}" alt="ZiniChat" style="height:48px; width:auto; margin:0 auto;" />
-    </div>
     
     <!-- Body Content -->
     <div style="padding:32px; color:#3f3f46; font-size:15px; line-height:1.7;">

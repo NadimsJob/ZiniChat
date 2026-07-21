@@ -4,7 +4,8 @@ import { useLanguage } from '@/components/LanguageProvider';
 import Link from 'next/link';
 import { InteractiveFeatureTabs, processFeatures } from '@/components/InteractiveFeatureTabs';
 import { useEffect, useState } from 'react';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, CheckCircle2, PlayCircle, Timer } from 'lucide-react';
+import SetupWidgetMockup from '@/components/SetupWidgetMockup';
 
 const integrations = [
   { name: 'WhatsApp Business', icon: '💬', desc: { en: 'Official API + QR Web', bn: 'অফিসিয়াল API + QR Web' }, color: 'bg-green-500/10 border-green-500/30 text-green-500' },
@@ -69,6 +70,8 @@ export default function FeaturesPage() {
               <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
           </div>
+
+          <SetupWidgetMockup language={language} />
         </div>
       </section>
 

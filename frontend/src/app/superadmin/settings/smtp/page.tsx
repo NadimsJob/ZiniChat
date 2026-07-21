@@ -7,105 +7,165 @@ import { Mail, Send, Save, CheckCircle, AlertCircle, ChevronDown, ChevronUp, Bel
 
 const DEFAULT_TEMPLATES: Record<string, { subject: string; body: string }> = {
   welcome: {
-    subject: '🎉 ZiniChat-এ আপনাকে স্বাগতম, {{tenantName}}!',
-    body: `প্রিয় {{tenantName}},
+    subject: '🎉 Welcome to ZiniChat, {{tenantName}}!',
+    body: `<div style="text-align: center; margin-bottom: 20px;">
+  <img src="https://zinichat.com/logo.png" alt="ZiniChat Logo" style="height: 48px; width: auto;" />
+</div>
 
-ZiniChat প্ল্যাটফর্মে আপনাকে স্বাগতম! আপনার অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে।
+Dear {{tenantName}},
 
-এখনই আপনার ড্যাশবোর্ডে লগইন করে আপনার কাস্টমারদের সাথে যুক্ত হওয়া শুরু করুন।
+Welcome to ZiniChat! Your account has been created successfully.
 
-ধন্যবাদ,
-ZiniChat টিম`,
+Get started by logging into your dashboard and connecting with your customers today.
+
+Thank you,
+ZiniChat Team
+support@zinichat.com`,
   },
   paymentSubmitted: {
-    subject: '✅ পেমেন্ট সাবমিট সফল হয়েছে – {{tenantName}}',
-    body: `প্রিয় {{tenantName}},
+    subject: '✅ Payment Received Successfully – {{tenantName}}',
+    body: `<div style="text-align: center; margin-bottom: 20px;">
+  <img src="https://zinichat.com/logo.png" alt="ZiniChat Logo" style="height: 48px; width: auto;" />
+</div>
 
-আপনার পেমেন্ট সাবমিট সফলভাবে গ্রহণ করা হয়েছে। আমাদের টিম শীঘ্রই এটি ভেরিফাই করবে।
+Dear {{tenantName}},
+
+Your payment submission has been received successfully. Our team will verify it shortly.
 
 TrxID: {{trxId}}
-পরিমাণ: {{amount}} BDT
+Amount: {{amount}} BDT
 
-ভেরিফিকেশনে সাধারণত ১–২ কার্যদিবস সময় লাগে। অ্যাপ্রুভ হলে আপনাকে ইমেইলে জানানো হবে।`,
+Verification typically takes 1–2 business days. You will be notified via email once approved.
+
+ZiniChat Billing Team
+billing@zinichat.com`,
   },
   paymentPendingAdmin: {
-    subject: '🔔 নতুন পেমেন্ট ভেরিফিকেশন প্রয়োজন – {{tenantName}}',
-    body: `অ্যাডমিন সতর্কতা:
-একটি নতুন ম্যানুয়াল পেমেন্ট সাবমিট হয়েছে। অনুগ্রহ করে ভেরিফাই করুন।
+    subject: '🔔 New Payment Requires Verification – {{tenantName}}',
+    body: `<div style="text-align: center; margin-bottom: 20px;">
+  <img src="https://zinichat.com/logo.png" alt="ZiniChat Logo" style="height: 48px; width: auto;" />
+</div>
 
-টেন্যান্ট: {{tenantName}}
+Admin Alert:
+A new manual payment has been submitted. Please verify and approve.
+
+Tenant: {{tenantName}}
 TrxID: {{trxId}}
-পরিমাণ: {{amount}} BDT
+Amount: {{amount}} BDT
 
-দয়া করে Superadmin প্যানেলে গিয়ে পেমেন্টটি অ্যাপ্রুভ করুন।`,
+Please navigate to the Superadmin panel to approve the payment.
+
+ZiniChat System Notification`,
   },
   paymentApproved: {
-    subject: '🎉 পেমেন্ট অনুমোদিত হয়েছে – {{planName}} প্ল্যান সক্রিয়!',
-    body: `প্রিয় {{tenantName}},
+    subject: '🎉 Payment Approved – {{planName}} Plan Active!',
+    body: `<div style="text-align: center; margin-bottom: 20px;">
+  <img src="https://zinichat.com/logo.png" alt="ZiniChat Logo" style="height: 48px; width: auto;" />
+</div>
 
-আপনার পেমেন্ট সফলভাবে অনুমোদিত হয়েছে। 
-আপনার সাবস্ক্রিপশন এখন সক্রিয়!
+Dear {{tenantName}},
 
-সক্রিয় প্ল্যান: {{planName}}
+Your payment has been successfully approved. 
+Your subscription is now active!
 
-এখনই আপনার ড্যাশবোর্ডে লগইন করে সব ফিচার উপভোগ করুন!`,
+Active Plan: {{planName}}
+
+Log in to your dashboard now to enjoy all features!
+
+ZiniChat Team
+support@zinichat.com`,
   },
   addonPurchased: {
-    subject: '🧩 অ্যাড-অন সক্রিয় হয়েছে – {{addonName}}',
-    body: `প্রিয় {{tenantName}},
+    subject: '🧩 Add-on Activated – {{addonName}}',
+    body: `<div style="text-align: center; margin-bottom: 20px;">
+  <img src="https://zinichat.com/logo.png" alt="ZiniChat Logo" style="height: 48px; width: auto;" />
+</div>
 
-আপনার কেনা অ্যাড-অনটি সফলভাবে আপনার অ্যাকাউন্টে যোগ করা হয়েছে এবং এখনই ব্যবহারযোগ্য।
+Dear {{tenantName}},
 
-অ্যাড-অন: {{addonName}}
-পরিমাণ: {{amount}} BDT
+The add-on you purchased has been successfully added to your account and is ready to use.
 
-যেকোনো প্রয়োজনে আমাদের সাথে যোগাযোগ করুন।`,
+Add-on: {{addonName}}
+Amount: {{amount}} BDT
+
+If you need any assistance, feel free to contact us.
+
+ZiniChat Team
+support@zinichat.com`,
   },
   expiryReminder7d: {
-    subject: '⚠️ সাবস্ক্রিপশনের মেয়াদ ৭ দিনে শেষ হবে – {{tenantName}}',
-    body: `প্রিয় {{tenantName}},
+    subject: '⚠️ Subscription Expiring in 7 Days – {{tenantName}}',
+    body: `<div style="text-align: center; margin-bottom: 20px;">
+  <img src="https://zinichat.com/logo.png" alt="ZiniChat Logo" style="height: 48px; width: auto;" />
+</div>
 
-আপনার সাবস্ক্রিপশনের মেয়াদ মাত্র ৭ দিন পরে শেষ হবে।
+Dear {{tenantName}},
 
-মেয়াদ শেষের তারিখ: {{expiryDate}}
+Your ZiniChat subscription will expire in exactly 7 days.
 
-আপনার প্ল্যাটফর্মের সার্ভিস নিরবচ্ছিন্ন রাখতে এখনই রিনিউ করুন।`,
+Expiry Date: {{expiryDate}}
+
+Please renew your subscription now to ensure uninterrupted service for your platform.
+
+ZiniChat Team
+support@zinichat.com`,
   },
   expiryReminder2d: {
-    subject: '🚨 শেষ সতর্কতা – সাবস্ক্রিপশনের মেয়াদ মাত্র ২ দিন বাকি!',
-    body: `প্রিয় {{tenantName}},
+    subject: '🚨 URGENT: Subscription Expiring in 2 Days!',
+    body: `<div style="text-align: center; margin-bottom: 20px;">
+  <img src="https://zinichat.com/logo.png" alt="ZiniChat Logo" style="height: 48px; width: auto;" />
+</div>
 
-আপনার সাবস্ক্রিপশনের মেয়াদ মাত্র ২ দিন পরে শেষ হবে! 
-মেয়াদ শেষ হলে আপনার সকল সার্ভিস সাময়িকভাবে বন্ধ হয়ে যেতে পারে।
+Dear {{tenantName}},
 
-মেয়াদ শেষের তারিখ: {{expiryDate}}
+Your ZiniChat subscription will expire in just 2 days!
+If not renewed, all services will be temporarily suspended.
 
-অনুগ্রহ করে দ্রুত আপনার সাবস্ক্রিপশনটি রিনিউ করুন।`,
+Expiry Date: {{expiryDate}}
+
+Please renew your subscription immediately.
+
+ZiniChat Team
+support@zinichat.com`,
   },
   agentCreated: {
-    subject: '🔐 ZiniChat-এ আপনাকে এজেন্ট হিসেবে যুক্ত করা হয়েছে',
-    body: `প্রিয় {{agentName}},
+    subject: '🔐 You have been added as an Agent on ZiniChat',
+    body: `<div style="text-align: center; margin-bottom: 20px;">
+  <img src="https://zinichat.com/logo.png" alt="ZiniChat Logo" style="height: 48px; width: auto;" />
+</div>
 
-{{tenantName}} আপনাকে ZiniChat সিস্টেমে এজেন্ট হিসেবে যুক্ত করেছে।
-নিচের ক্রেডেনশিয়াল ব্যবহার করে সিস্টেমে লগইন করুন:
+Dear {{agentName}},
+
+{{tenantName}} has added you as an agent to the ZiniChat system.
+Please log in using the credentials below:
 
 Email: {{email}}
 Password: {{password}}
 
-লগইন লিংক: {{loginUrl}}
+Login Link: {{loginUrl}}
 
-⚠️ নিরাপত্তার স্বার্থে লগইন করার পর অবশ্যই আপনার পাসওয়ার্ড পরিবর্তন করে নিবেন।`,
+⚠️ For your security, please ensure you change your password immediately after logging in.
+
+ZiniChat Team
+support@zinichat.com`,
   },
   passwordReset: {
-    subject: '🔐 পাসওয়ার্ড রিসেট করুন – ZiniChat',
-    body: `প্রিয় {{userName}},
+    subject: '🔐 Password Reset Request – ZiniChat',
+    body: `<div style="text-align: center; margin-bottom: 20px;">
+  <img src="https://zinichat.com/logo.png" alt="ZiniChat Logo" style="height: 48px; width: auto;" />
+</div>
 
-আমরা আপনার অ্যাকাউন্টের জন্য একটি পাসওয়ার্ড রিসেট করার অনুরোধ পেয়েছি। 
-অনুগ্রহ করে নিচের লিংকে ক্লিক করে নতুন পাসওয়ার্ড সেট করুন:
+Dear {{userName}},
+
+We received a request to reset the password for your account.
+Please click the link below to set a new password:
 
 {{resetLink}}
 
-⚠️ এই লিংকটি আগামী ১ ঘণ্টার জন্য কাজ করবে। আপনি যদি এই অনুরোধটি না করে থাকেন, তাহলে এই ইমেইলটি এড়িয়ে যান।`,
+⚠️ This link will remain active for 1 hour. If you did not make this request, please ignore this email.
+
+ZiniChat Security Team
+security@zinichat.com`,
   },
 };
 
@@ -435,47 +495,79 @@ export default function SmtpSettingsPage() {
 
               {/* Expanded Content */}
               {isOpen && (
-                <div className="border-t border-zinc-800 p-5 space-y-2">
-                  {/* Enable Toggle */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-[12px] font-medium">এই ক্যাটাগরির ইমেইল সক্রিয় করুন</span>
-                    <button
-                      onClick={() => update(cat.enabledField, !isEnabled)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isEnabled ? 'bg-primary' : 'bg-zinc-700'}`}
-                    >
-                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
-                    </button>
+                <div className="border-t border-zinc-800 p-4 space-y-4">
+
+                  {/* Top bar: Enable Toggle + Variables */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-800/60">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-[11px] text-zinc-500 font-medium uppercase tracking-wide">Variables:</span>
+                      {cat.vars.map((v) => (
+                        <code key={v} className="text-[10px] bg-zinc-800/80 text-primary px-2 py-0.5 rounded-md border border-zinc-700 cursor-default select-all">{v}</code>
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-[11px] text-zinc-400">
+                        {isEnabled ? (language === 'en' ? 'Enabled' : 'সক্রিয়') : (language === 'en' ? 'Disabled' : 'নিষ্ক্রিয়')}
+                      </span>
+                      <button
+                        onClick={() => update(cat.enabledField, !isEnabled)}
+                        className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors ${isEnabled ? 'bg-primary' : 'bg-zinc-700'}`}
+                      >
+                        <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform shadow ${isEnabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                      </button>
+                    </div>
                   </div>
 
-                  {/* Available Vars */}
-                  <div className="flex flex-wrap gap-2">
-                    <span className="text-xs text-zinc-500">ব্যবহারযোগ্য ভেরিয়েবল:</span>
-                    {cat.vars.map((v) => (
-                      <code key={v} className="text-xs bg-zinc-800 text-primary px-2 py-0.5 rounded">{v}</code>
-                    ))}
-                  </div>
-
-                  {/* Subject */}
+                  {/* Subject Field */}
                   <div>
-                    <label className="block text-xs text-zinc-400 mb-1">Subject (বিষয়)</label>
+                    <label className="block text-[11px] font-semibold text-zinc-400 mb-1.5 uppercase tracking-wide">Subject Line</label>
                     <input
                       type="text"
                       value={form[cat.subjectField] || ''}
                       onChange={(e) => update(cat.subjectField, e.target.value)}
-                      className="w-full bg-background border border-zinc-800 rounded-lg px-3 py-2 text-[12px] focus:outline-none focus:border-primary"
+                      placeholder="Email subject..."
+                      className="w-full bg-background border border-zinc-700 rounded-lg px-3 py-2 text-[12px] focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
                     />
                   </div>
 
-                  {/* Body */}
-                  <div>
-                    <label className="block text-xs text-zinc-400 mb-1">Body (HTML)</label>
-                    <textarea
-                      value={form[cat.bodyField] || ''}
-                      onChange={(e) => update(cat.bodyField, e.target.value)}
-                      rows={8}
-                      className="w-full bg-background border border-zinc-800 rounded-lg px-3 py-2 text-xs font-mono focus:outline-none focus:border-primary resize-y"
-                    />
+                  {/* Body + Preview Split */}
+                  <div className="grid md:grid-cols-2 gap-3">
+                    {/* Editor */}
+                    <div>
+                      <label className="block text-[11px] font-semibold text-zinc-400 mb-1.5 uppercase tracking-wide">Email Body</label>
+                      <textarea
+                        value={form[cat.bodyField] || ''}
+                        onChange={(e) => update(cat.bodyField, e.target.value)}
+                        rows={12}
+                        placeholder="Write your email content here...\n\nYou can use variables like {{tenantName}} anywhere in the text."
+                        className="w-full bg-background border border-zinc-700 rounded-lg px-3 py-2.5 text-[12px] leading-relaxed focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all resize-none"
+                      />
+                    </div>
+
+                    {/* Live Preview */}
+                    <div>
+                      <label className="block text-[11px] font-semibold text-zinc-400 mb-1.5 uppercase tracking-wide">Live Preview</label>
+                      <div className="border border-zinc-700 rounded-lg overflow-hidden bg-zinc-950 h-full" style={{ minHeight: '250px' }}>
+                        {/* Email Client Header */}
+                        <div className="bg-zinc-900 border-b border-zinc-800 px-3 py-2">
+                          <div className="flex items-center gap-1.5 mb-1.5">
+                            <div className="w-2.5 h-2.5 rounded-full bg-red-500/60" />
+                            <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/60" />
+                            <div className="w-2.5 h-2.5 rounded-full bg-green-500/60" />
+                          </div>
+                          <p className="text-[10px] text-zinc-500">From: <span className="text-zinc-300">{form.fromName || 'Your Platform'} &lt;{form.fromEmail || 'noreply@platform.com'}&gt;</span></p>
+                          <p className="text-[10px] text-zinc-500">Subject: <span className="text-zinc-200 font-medium">{form[cat.subjectField] || '(no subject)'}</span></p>
+                        </div>
+                        {/* Email Body Preview */}
+                        <div className="p-4 overflow-y-auto" style={{ maxHeight: '220px' }}>
+                          <pre className="text-[11px] text-zinc-300 leading-relaxed whitespace-pre-wrap font-sans">
+                            {form[cat.bodyField] || '(empty body)'}
+                          </pre>
+                        </div>
+                      </div>
+                    </div>
                   </div>
+
                 </div>
               )}
             </div>
@@ -514,7 +606,27 @@ export default function SmtpSettingsPage() {
       )}
 
       {/* Save Button */}
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-3">
+        <button
+          onClick={() => {
+            if (confirm(language === 'en' ? 'Are you sure you want to reset all templates to default English text? This will overwrite your current templates.' : 'আপনি কি নিশ্চিত যে সব টেমপ্লেট রিসেট করতে চান? আপনার আগের টেমপ্লেট মুছে যাবে।')) {
+              const resetData = { ...form };
+              EMAIL_CATEGORIES.forEach(cat => {
+                const defaultCat = DEFAULT_TEMPLATES[cat.key];
+                if (defaultCat) {
+                  resetData[cat.subjectField] = defaultCat.subject;
+                  resetData[cat.bodyField] = defaultCat.body;
+                }
+              });
+              setForm(resetData);
+            }
+          }}
+          disabled={saving}
+          className="flex items-center gap-2 px-3 py-2.5 bg-zinc-800 text-zinc-300 font-semibold rounded-xl hover:bg-zinc-700 transition-colors disabled:opacity-50"
+        >
+          {language === 'en' ? 'Reset to Defaults' : 'ডিফল্টে রিসেট করুন'}
+        </button>
+
         <button
           onClick={handleSave}
           disabled={saving}

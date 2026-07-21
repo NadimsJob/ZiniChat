@@ -332,12 +332,15 @@ export default function PackagesPage() {
                   {[
                     { id: 'ai_assistant', label: 'AI Assistant' },
                     { id: 'own_api', label: 'Bring Your Own Key (BYOK)' },
+                    { id: 'platform_support_ai', label: 'Platform Support AI (Widget)' },
                     { id: 'messenger', label: 'Messenger Integration' },
                     { id: 'whatsapp', label: 'WhatsApp API (Official)' },
                     { id: 'whatsapp_qr', label: 'WhatsApp Web (Unofficial QR)' },
                     { id: 'whatsapp_widget', label: 'WhatsApp Website Widget' },
                     { id: 'lead_manage', label: 'Leads CRM' },
-                    { id: 'commerce', label: 'Products & Orders' }
+                    { id: 'commerce', label: 'Products & Orders' },
+                    { id: 'team_management', label: 'Team Members & Roles' },
+                    { id: 'contact_labels', label: 'Custom Contact Labels' }
                   ].map(feature => (
                     <label key={feature.id} className="flex items-center gap-2 cursor-pointer bg-background border border-surface-hover p-3 rounded-xl hover:border-primary/50 transition-colors">
                       <input 

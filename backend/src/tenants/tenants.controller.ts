@@ -37,4 +37,14 @@ export class TenantsController {
     const actorUserId = req.user.userId;
     return this.tenantsService.customizePlan(id, customizationData, actorUserId);
   }
+
+  @Patch(':id/ai-config')
+  updateAiConfig(
+    @Param('id') id: string,
+    @Body('customAiConfigId') customAiConfigId: string | null,
+    @Req() req: any,
+  ) {
+    const actorUserId = req.user.userId;
+    return this.tenantsService.updateAiConfig(id, customAiConfigId, actorUserId);
+  }
 }

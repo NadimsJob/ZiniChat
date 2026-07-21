@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
 import { useLanguage } from '@/components/LanguageProvider';
-import { Bot, Plus, Trash2, Edit2, Play, CheckCircle, AlertCircle, ToggleLeft, ToggleRight, Settings } from 'lucide-react';
+import { Bot, Plus, Trash2, Edit2, Play, CheckCircle, AlertCircle, ToggleLeft, ToggleRight, Settings, RefreshCcw } from 'lucide-react';
 
 export default function AiSettingsPage() {
   const { language } = useLanguage();
@@ -12,11 +12,13 @@ export default function AiSettingsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [testingId, setTestingId] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<{ [id: string]: { type: 'success' | 'error', text: string } }>({});
+  const [loadingModels, setLoadingModels] = useState(false);
+  const [fetchedModels, setFetchedModels] = useState<string[]>([]);
+  const [defaultModal, setDefaultModal] = useState<{isOpen: boolean, config: any}>({ isOpen: false, config: null });
 
   const [form, setForm] = useState({
     id: '',
     name: '',
-    provider: 'openai',
     modelName: '',
     apiKey: '',
     apiEndpoint: '',
@@ -47,22 +49,22 @@ export default function AiSettingsPage() {
       setForm({
         id: config.id,
         name: config.name,
-        provider: config.provider,
         modelName: config.modelName,
         apiKey: config.apiKey,
         apiEndpoint: config.apiEndpoint || '',
         isActive: config.isActive
       });
+      setFetchedModels([]);
     } else {
       setForm({
         id: '',
         name: '',
-        provider: 'openai',
-        modelName: 'gpt-4o',
+        modelName: '',
         apiKey: '',
         apiEndpoint: '',
         isActive: false
       });
+      setFetchedModels([]);
     }
     setModalOpen(true);
   };
@@ -105,18 +107,27 @@ export default function AiSettingsPage() {
     }
   };
 
-  const handleToggleActive = async (config: any) => {
+  const handleToggleActiveClick = (config: any) => {
+    if (config.isActive) return;
+    setDefaultModal({ isOpen: true, config });
+  };
+
+  const submitDefaultConfig = async (overrideAll: boolean) => {
+    if (!defaultModal.config) return;
     try {
       const token = Cookies.get('access_token');
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai-config`, {
-        method: 'POST',
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai-config/${defaultModal.config.id}/set-default`, {
+        method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ ...config, isActive: !config.isActive })
+        body: JSON.stringify({ overrideAllTenants: overrideAll })
       });
-      if (res.ok) fetchConfigs();
+      if (res.ok) {
+        setDefaultModal({ isOpen: false, config: null });
+        fetchConfigs();
+      }
     } catch (err) {
       console.error(err);
     }
@@ -144,6 +155,46 @@ export default function AiSettingsPage() {
       setTestResult(prev => ({ ...prev, [id]: { type: 'error', text: 'Error connecting' } }));
     } finally {
       setTestingId(null);
+    }
+  };
+
+  const handleFetchModels = async () => {
+    if (!form.apiKey) {
+      alert(language === 'en' ? 'Please enter an API Key first.' : 'দয়া করে আগে API Key দিন।');
+      return;
+    }
+    setLoadingModels(true);
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai-config/fetch-models`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          apiKey: form.apiKey,
+          apiEndpoint: form.apiEndpoint
+        })
+      });
+
+      if (res.ok) {
+        const models = await res.json();
+        if (models.length > 0) {
+          setFetchedModels(models);
+          setForm(prev => ({ ...prev, modelName: models[0] }));
+        } else {
+          alert(language === 'en' ? 'No models found.' : 'কোনো মডেল পাওয়া যায়নি।');
+        }
+      } else {
+        const err = await res.json();
+        alert(err.message || 'Failed to fetch models');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error fetching models');
+    } finally {
+      setLoadingModels(false);
     }
   };
 
@@ -179,10 +230,9 @@ export default function AiSettingsPage() {
               <div className="flex justify-between items-start">
                 <div>
                   <h3 className="font-bold text-[13px] text-zinc-100">{config.name}</h3>
-                  <span className="text-xs uppercase tracking-wider text-secondary px-2 py-0.5 bg-secondary/10 rounded font-semibold">{config.provider}</span>
                 </div>
                 <button 
-                  onClick={() => handleToggleActive(config)}
+                  onClick={() => handleToggleActiveClick(config)}
                   className="text-zinc-400 hover:text-zinc-200 transition-colors"
                 >
                   {config.isActive ? (
@@ -262,19 +312,20 @@ export default function AiSettingsPage() {
                 <input required type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none" placeholder="Primary OpenAI GPT-4" />
               </div>
 
-              <div className="grid grid-cols-2 gap-2.5">
-                <div>
-                  <label className="block text-[12px] font-medium mb-1 text-zinc-400">Provider</label>
-                  <select value={form.provider} onChange={e => setForm({...form, provider: e.target.value})} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none">
-                    <option value="openai">OpenAI</option>
-                    <option value="gemini">Google Gemini</option>
-                    <option value="anthropic">Anthropic Claude</option>
-                    <option value="custom">Custom API Proxy</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[12px] font-medium mb-1 text-zinc-400">Model Name</label>
-                  <input required type="text" value={form.modelName} onChange={e => setForm({...form, modelName: e.target.value})} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none" placeholder="gpt-4o" />
+              <div>
+                <label className="block text-[12px] font-medium mb-1 text-zinc-400">Model Name</label>
+                <div className="flex gap-2">
+                  {fetchedModels.length > 0 ? (
+                    <select required value={form.modelName} onChange={e => setForm({...form, modelName: e.target.value})} className="flex-1 bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none">
+                      {fetchedModels.map(m => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                  ) : (
+                    <input required type="text" value={form.modelName} onChange={e => setForm({...form, modelName: e.target.value})} className="flex-1 bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none" placeholder="e.g. gpt-4o" />
+                  )}
+                  <button type="button" onClick={handleFetchModels} disabled={loadingModels} className="px-3 py-2 bg-secondary/10 text-secondary hover:bg-secondary/20 rounded-lg text-[12px] font-semibold transition-colors flex items-center gap-2 whitespace-nowrap">
+                    <RefreshCcw className={`w-3.5 h-3.5 ${loadingModels ? 'animate-spin' : ''}`} />
+                    {language === 'en' ? 'Load Models' : 'মডেল লোড করুন'}
+                  </button>
                 </div>
               </div>
 
@@ -291,7 +342,7 @@ export default function AiSettingsPage() {
               <div className="pt-2">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={form.isActive} onChange={e => setForm({...form, isActive: e.target.checked})} className="w-4 h-4 rounded border-zinc-700 text-primary focus:ring-primary focus:ring-offset-background bg-background" />
-                  <span className="text-[12px] font-medium">Activate configuration immediately</span>
+                  <span className="text-[12px] font-medium">{language === 'en' ? 'Set as Default Configuration' : 'ডিফল্ট হিসেবে সেট করুন'}</span>
                 </label>
               </div>
 
@@ -300,6 +351,38 @@ export default function AiSettingsPage() {
                 <button type="submit" className="px-2.5 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg text-[12px] font-semibold transition-colors shadow-lg shadow-primary/20">Save</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Default Permission Modal */}
+      {defaultModal.isOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-2.5 z-50 animate-in fade-in duration-300">
+          <div className="bg-[#121214] border border-zinc-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <h3 className="text-lg font-bold text-white">Set Default AI Model</h3>
+            <p className="text-sm text-zinc-400">
+              You are setting <strong>{defaultModal.config?.name}</strong> as the new Platform Default. How should this affect existing tenants?
+            </p>
+            <div className="space-y-3 pt-2">
+              <button 
+                onClick={() => submitDefaultConfig(false)}
+                className="w-full text-left px-4 py-3 rounded-xl border border-zinc-700 hover:border-emerald-500 hover:bg-emerald-500/10 transition-colors"
+              >
+                <div className="font-semibold text-emerald-400">Apply Only to Default Users</div>
+                <div className="text-xs text-zinc-400 mt-1">Keeps manual assignments intact. Tenants who are already using the platform default will automatically switch to this new model.</div>
+              </button>
+              
+              <button 
+                onClick={() => submitDefaultConfig(true)}
+                className="w-full text-left px-4 py-3 rounded-xl border border-zinc-700 hover:border-red-500 hover:bg-red-500/10 transition-colors"
+              >
+                <div className="font-semibold text-red-400">Force Apply to ALL Tenants</div>
+                <div className="text-xs text-zinc-400 mt-1">Overrides all manual tenant assignments. Every tenant will be forced to use this new AI model.</div>
+              </button>
+            </div>
+            <div className="flex justify-end pt-2">
+              <button onClick={() => setDefaultModal({ isOpen: false, config: null })} className="px-4 py-2 bg-zinc-800 text-zinc-300 hover:bg-zinc-700 rounded-lg text-sm font-semibold transition-colors">Cancel</button>
+            </div>
           </div>
         </div>
       )}

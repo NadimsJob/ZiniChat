@@ -9,6 +9,7 @@ const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function TenantsPage() {
   const [tenants, setTenants] = useState<any[]>([]);
+  const [aiConfigs, setAiConfigs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingTenant, setEditingTenant] = useState<any>(null);
   const [customData, setCustomData] = useState({
@@ -21,15 +22,23 @@ export default function TenantsPage() {
   });
   const [saving, setSaving] = useState(false);
 
-  const fetchTenants = async () => {
+  const fetchTenantsAndConfigs = async () => {
     try {
       const token = Cookies.get('access_token');
-      const res = await fetch(`${API}/tenants`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
+      
+      const [tenantsRes, configsRes] = await Promise.all([
+        fetch(`${API}/tenants`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API}/ai-config`, { headers: { Authorization: `Bearer ${token}` } })
+      ]);
+
+      if (tenantsRes.ok) {
+        const data = await tenantsRes.json();
         setTenants(data);
+      }
+      
+      if (configsRes.ok) {
+        const data = await configsRes.json();
+        setAiConfigs(data);
       }
     } catch (err) {
       console.error(err);
@@ -39,7 +48,7 @@ export default function TenantsPage() {
   };
 
   useEffect(() => {
-    fetchTenants();
+    fetchTenantsAndConfigs();
   }, []);
 
   const handleStatusChange = async (id: string, currentStatus: string) => {
@@ -56,10 +65,33 @@ export default function TenantsPage() {
       });
       if (res.ok) {
         toast.success(`Tenant ${newStatus} successfully`);
-        fetchTenants();
+        fetchTenantsAndConfigs();
       }
     } catch (err) {
       toast.error('Failed to update status');
+    }
+  };
+
+  const handleAiConfigChange = async (id: string, configId: string) => {
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/tenants/${id}/ai-config`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ customAiConfigId: configId === 'default' ? null : configId })
+      });
+      
+      if (res.ok) {
+        toast.success('AI Model updated successfully');
+        fetchTenantsAndConfigs();
+      } else {
+        toast.error('Failed to update AI Model');
+      }
+    } catch (error) {
+      toast.error('An error occurred');
     }
   };
 
@@ -103,7 +135,7 @@ export default function TenantsPage() {
       if (res.ok) {
         toast.success('Custom plan saved successfully');
         setEditingTenant(null);
-        fetchTenants();
+        fetchTenantsAndConfigs();
       } else {
         toast.error('Failed to save custom plan');
       }
@@ -129,15 +161,17 @@ export default function TenantsPage() {
               <th className="px-3 py-2 font-medium">Email</th>
               <th className="px-3 py-2 font-medium">Created At</th>
               <th className="px-3 py-2 font-medium">AI Responses</th>
+              <th className="px-3 py-2 font-medium">AI Model</th>
+              <th className="px-3 py-2 font-medium">BYOK</th>
               <th className="px-3 py-2 font-medium">Status</th>
               <th className="px-3 py-2 font-medium text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-surface-hover text-[12px]">
             {loading ? (
-              <tr><td colSpan={6} className="px-3 py-2 text-center text-zinc-500">Loading...</td></tr>
+              <tr><td colSpan={8} className="px-3 py-2 text-center text-zinc-500">Loading...</td></tr>
             ) : tenants.length === 0 ? (
-              <tr><td colSpan={6} className="px-3 py-2 text-center text-zinc-500">No tenants found.</td></tr>
+              <tr><td colSpan={8} className="px-3 py-2 text-center text-zinc-500">No tenants found.</td></tr>
             ) : (
               tenants.map(tenant => (
                 <tr key={tenant.id} className="hover:bg-surface-hover/30 transition-colors">
@@ -150,6 +184,25 @@ export default function TenantsPage() {
                         <strong className="text-zinc-100">{tenant.aiQuota.used}</strong> / {tenant.aiQuota.limit}
                       </span>
                     ) : 'N/A'}
+                  </td>
+                  <td className="px-3 py-2">
+                    <select 
+                      value={tenant.customAiConfigId || 'default'} 
+                      onChange={(e) => handleAiConfigChange(tenant.id, e.target.value)}
+                      className="bg-[#09090b] border border-zinc-800 rounded px-2 py-1 text-[11px] text-white focus:outline-none focus:border-emerald-500 max-w-[130px] truncate"
+                    >
+                      <option value="default">Platform Default</option>
+                      {aiConfigs.map(c => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                  </td>
+                  <td className="px-3 py-2">
+                    {tenant.hasByok ? (
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">YES</span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-zinc-800 text-zinc-500 border border-zinc-700">NO</span>
+                    )}
                   </td>
                   <td className="px-3 py-2">
                     <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${

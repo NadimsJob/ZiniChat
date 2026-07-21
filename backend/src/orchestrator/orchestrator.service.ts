@@ -34,9 +34,10 @@ export class OrchestratorService {
 
       const tenantId = message.conversation.tenantId;
 
-      // 2. Check AI Assistant and Routing Mode
+      // 2. Check AI Assistant, Tenant Settings, and Routing Mode
       const assistant = await this.prisma.aiAssistant.findFirst({
-        where: { tenantId }
+        where: { tenantId },
+        include: { tenant: { select: { customAiConfigId: true } } }
       });
 
       if (!assistant || !assistant.isActive || assistant.routingMode === 'custom_only') {
@@ -96,8 +97,8 @@ export class OrchestratorService {
       const fullPrompt = `${prompt}\n\nCustomer: ${userText}`;
 
       // Call AiService (using the tenant's AI config or platform config if BYOK not used/allowed)
-      // For MVP, we just use the platform default or the BYOK logic inside AiService
-      const replyText = await this.aiService.generateCompletion(fullPrompt);
+      const customAiConfigId = assistant.tenant?.customAiConfigId || undefined;
+      const replyText = await this.aiService.generateCompletion(fullPrompt, customAiConfigId);
 
       if (!replyText || replyText.trim() === '') {
         return;

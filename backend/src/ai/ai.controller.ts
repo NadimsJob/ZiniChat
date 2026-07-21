@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param, UseGuards, Patch } from '@nestjs/common';
 import { AiService } from './ai.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -30,9 +30,34 @@ export class AiController {
     return this.aiService.deleteConfig(id);
   }
 
+  @Patch(':id/set-default')
+  @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
+  @Roles('superadmin')
+  @RequirePermissions('manage_platform_settings')
+  setDefaultConfig(
+    @Param('id') id: string,
+    @Body('overrideAllTenants') overrideAllTenants: boolean
+  ) {
+    return this.aiService.setDefaultConfig(id, overrideAllTenants);
+  }
+
+  @Patch(':id/set-support-default')
+  @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
+  @Roles('superadmin')
+  @RequirePermissions('manage_platform_settings')
+  setSupportDefaultConfig(@Param('id') id: string) {
+    return this.aiService.setSupportDefaultConfig(id);
+  }
+
   @Post(':id/test')
   @RequirePermissions('manage:site')
   testConfigConnection(@Param('id') id: string) {
     return this.aiService.testConfigConnection(id);
+  }
+
+  @Post('fetch-models')
+  @RequirePermissions('manage:site')
+  fetchModels(@Body() body: { apiKey: string, apiEndpoint?: string }) {
+    return this.aiService.fetchAvailableModels(body);
   }
 }

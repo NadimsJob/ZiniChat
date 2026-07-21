@@ -37,6 +37,9 @@ import { ScheduleModule } from '@nestjs/schedule';
 
 import { StorageModule } from './storage/storage.module';
 import { PaymentsModule } from './payments/payments.module';
+import { StripeModule } from './stripe/stripe.module';
+import { SetupWizardModule } from './setup-wizard/setup-wizard.module';
+import { SupportChatModule } from './support-chat/support-chat.module';
 import { InquiriesModule } from './inquiries/inquiries.module';
 import { TicketsModule } from './tickets/tickets.module';
 
@@ -85,6 +88,9 @@ import { TicketsModule } from './tickets/tickets.module';
     OrchestratorModule,
     StorageModule,
     PaymentsModule,
+    StripeModule,
+    SetupWizardModule,
+    SupportChatModule,
     LeadsModule,
     InquiriesModule,
     TicketsModule

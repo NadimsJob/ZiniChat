@@ -21,7 +21,7 @@ export class AiService {
         where: { id: data.id },
         data: {
           name: data.name,
-          provider: data.provider,
+          provider: 'universal',
           modelName: data.modelName,
           apiKey: data.apiKey,
           apiEndpoint: data.apiEndpoint || null,
@@ -32,7 +32,7 @@ export class AiService {
       return this.prisma.aiConfig.create({
         data: {
           name: data.name,
-          provider: data.provider,
+          provider: 'universal',
           modelName: data.modelName,
           apiKey: data.apiKey,
           apiEndpoint: data.apiEndpoint || null,
@@ -48,6 +48,82 @@ export class AiService {
     });
   }
 
+  async setDefaultConfig(id: string, overrideAllTenants: boolean) {
+    await this.prisma.$transaction(async (tx) => {
+      // Set all configs to inactive
+      await tx.aiConfig.updateMany({
+        data: { isActive: false }
+      });
+      // Set target config to active
+      await tx.aiConfig.update({
+        where: { id },
+        data: { isActive: true }
+      });
+      
+      // Optionally reset tenant overrides
+      if (overrideAllTenants) {
+        await tx.tenant.updateMany({
+          data: { customAiConfigId: null }
+        });
+      }
+    });
+    
+    return { success: true };
+  }
+
+  async setSupportDefaultConfig(id: string) {
+    await this.prisma.$transaction(async (tx) => {
+      // Set all configs to not support default
+      await tx.aiConfig.updateMany({
+        data: { isSupportDefault: false }
+      });
+      // Set target config to support default
+      await tx.aiConfig.update({
+        where: { id },
+        data: { isSupportDefault: true }
+      });
+    });
+    
+    return { success: true };
+  }
+
+  async fetchAvailableModels(data: { apiKey: string; apiEndpoint?: string }) {
+    const { apiKey, apiEndpoint } = data;
+    if (!apiKey) throw new BadRequestException('API Key is required.');
+
+    const baseUrl = apiEndpoint 
+      ? apiEndpoint.replace('/chat/completions', '').replace('/v1/messages', '') 
+      : 'https://api.openai.com/v1';
+    
+    // Handle trailing slashes
+    const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+    const modelsUrl = `${cleanBaseUrl}/models`;
+    
+    try {
+      const res = await fetch(modelsUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.error?.message || 'Failed to fetch models');
+      }
+      
+      if (json.data && Array.isArray(json.data)) {
+        return json.data.map((m: any) => m.id);
+      }
+      
+      return [];
+    } catch (err) {
+      this.logger.error('Fetch models failed:', err);
+      throw new BadRequestException('Failed to fetch models from the provided endpoint and API key. Ensure they are correct and OpenAI-compatible.');
+    }
+  }
+
   async generateCompletion(prompt: string, configId?: string, imagePaths?: string[]): Promise<string> {
     let config: any;
 
@@ -61,11 +137,9 @@ export class AiService {
       throw new BadRequestException('No active AI model configuration found.');
     }
 
-    const { provider, modelName, apiKey, apiEndpoint } = config;
+    const { modelName, apiKey, apiEndpoint } = config;
 
     const imagePartsOpenAI = [];
-    const imagePartsGemini = [];
-    const imagePartsAnthropic = [];
     
     if (imagePaths && imagePaths.length > 0) {
       for (const imgPath of imagePaths) {
@@ -77,8 +151,6 @@ export class AiService {
           else if (imgPath.endsWith('.webp')) mime = 'image/webp';
           
           imagePartsOpenAI.push({ type: 'image_url', image_url: { url: `data:${mime};base64,${base64}` } });
-          imagePartsGemini.push({ inlineData: { mimeType: mime, data: base64 } });
-          imagePartsAnthropic.push({ type: 'image', source: { type: 'base64', media_type: mime, data: base64 } });
         } catch(e) {
           this.logger.error('Failed to read image for AI: ' + imgPath);
         }
@@ -86,87 +158,24 @@ export class AiService {
     }
 
     try {
-      if (provider === 'openai') {
-        const url = apiEndpoint || 'https://api.openai.com/v1/chat/completions';
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            model: modelName,
-            messages: [{ role: 'user', content: [{ type: 'text', text: prompt }, ...imagePartsOpenAI] }]
-          })
-        });
-
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error?.message || 'OpenAI error');
-        return data.choices?.[0]?.message?.content || '';
-      }
-
-      if (provider === 'gemini') {
-        const url = apiEndpoint || `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }, ...imagePartsGemini] }]
-          })
-        });
-
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error?.message || 'Gemini error');
-        return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      }
-
-      if (provider === 'anthropic') {
-        const url = apiEndpoint || 'https://api.anthropic.com/v1/messages';
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'x-api-key': apiKey,
-            'anthropic-version': '2023-06-01',
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            model: modelName,
-            max_tokens: 1024,
-            messages: [{ role: 'user', content: [...imagePartsAnthropic, { type: 'text', text: prompt }] }]
-          })
-        });
-
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error?.message || 'Anthropic error');
-        return data.content?.[0]?.text || '';
-      }
-
-
-      if (provider === 'custom') {
-        if (!apiEndpoint) throw new Error('API Endpoint is required for custom AI models.');
-        const headers: Record<string, string> = {
+      const url = apiEndpoint || 'https://api.openai.com/v1/chat/completions';
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json'
-        };
-        if (apiKey) {
-          headers['Authorization'] = `Bearer ${apiKey}`;
-        }
-        
-        const res = await fetch(apiEndpoint, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({ prompt })
-        });
+        },
+        body: JSON.stringify({
+          model: modelName,
+          messages: [{ role: 'user', content: [{ type: 'text', text: prompt }, ...imagePartsOpenAI] }]
+        })
+      });
 
-        const data = await res.json();
-        if (!res.ok) throw new Error('Custom provider connection error');
-        return data.completion || data.text || JSON.stringify(data);
-      }
-
-      throw new BadRequestException(`Provider ${provider} is not supported.`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error?.message || 'AI generation error');
+      return data.choices?.[0]?.message?.content || '';
     } catch (err) {
-      this.logger.error(`AI execution failed for ${provider} (${modelName}):`, err);
+      this.logger.error(`AI execution failed for model (${modelName}):`, err);
       throw new InternalServerErrorException(err.message || 'AI request dispatch failed.');
     }
   }
