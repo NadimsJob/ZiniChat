@@ -89,7 +89,8 @@ import { TicketsModule } from './tickets/tickets.module';
     SupportChatModule,
     LeadsModule,
     InquiriesModule,
-    TicketsModule
+    TicketsModule,
+    BusinessNatureModule
   ],
   controllers: [AppController],
   providers: [
