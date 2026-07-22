@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
 import { useLanguage } from '@/components/LanguageProvider';
-import { AlertCircle, Instagram, CheckCircle2, Info, Plus } from 'lucide-react';
+import { AlertCircle, MessageCircle, CheckCircle2, Info, Plus } from 'lucide-react';
 
 export default function InstagramSettingsPage() {
   const { language } = useLanguage();
@@ -91,7 +91,7 @@ export default function InstagramSettingsPage() {
     <div className="max-w-4xl mx-auto space-y-4 animate-in fade-in duration-500">
       <div>
         <h1 className="text-lg font-bold flex items-center gap-2 text-pink-500">
-          <Instagram className="w-5 h-5" /> 
+          <MessageCircle className="w-5 h-5" /> 
           {language === 'en' ? 'Instagram Configuration' : 'ইনস্টাগ্রাম কনফিগারেশন'}
         </h1>
         <p className="text-xs text-zinc-400 mt-1">
