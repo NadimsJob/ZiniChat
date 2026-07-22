@@ -270,8 +270,8 @@ export default function SuperadminPage() {
       {/* ── SECTION 4: TENANT INTELLIGENCE & CHANNELS ── */}
       <div>
         <SectionTitle>{language === 'en' ? '🏢 Tenant Intelligence & Channels' : '🏢 টেনান্ট বিশ্লেষণ ও চ্যানেল'}</SectionTitle>
-        <div className="grid md:grid-cols-5 gap-4">
-          <ChartCard title={language === 'en' ? 'Top Tenants by Messages' : 'মেসেজ অনুযায়ী শীর্ষ টেনান্ট'} className="col-span-3">
+        <div className="grid lg:grid-cols-3 md:grid-cols-2 gap-4">
+          <ChartCard title={language === 'en' ? 'Top Tenants by Messages' : 'মেসেজ অনুযায়ী শীর্ষ টেনান্ট'}>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart
                 data={(stats?.topTenantsByMessages || []).map((t: any) => ({
@@ -290,7 +290,7 @@ export default function SuperadminPage() {
             </ResponsiveContainer>
           </ChartCard>
 
-          <ChartCard title={language === 'en' ? 'Channel Distribution' : 'চ্যানেল বিতরণ'} className="col-span-2">
+          <ChartCard title={language === 'en' ? 'Channel Distribution' : 'চ্যানেল বিতরণ'}>
             <ResponsiveContainer width="100%" height={200}>
               <PieChart>
                 <Pie
@@ -321,6 +321,29 @@ export default function SuperadminPage() {
                 <p className="text-[9px] text-zinc-500">{language === 'en' ? 'Inactive' : 'নিষ্ক্রিয়'}</p>
               </div>
             </div>
+          </ChartCard>
+
+          <ChartCard title={language === 'en' ? 'Tenants by Business Nature' : 'ব্যবসার ধরন অনুযায়ী টেনান্ট'}>
+            <ResponsiveContainer width="100%" height={200}>
+              <PieChart>
+                <Pie
+                  data={stats?.tenantsByBusinessNature?.length > 0 ? stats.tenantsByBusinessNature : [{ name: 'No data', count: 1 }]}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={50}
+                  outerRadius={75}
+                  paddingAngle={4}
+                  dataKey="count"
+                  nameKey="name"
+                >
+                  {(stats?.tenantsByBusinessNature || []).map((_: any, i: number) => (
+                    <Cell key={i} fill={COLORS[(i + 2) % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip content={<CustomTooltip />} />
+                <Legend iconSize={8} wrapperStyle={{ fontSize: '10px' }} />
+              </PieChart>
+            </ResponsiveContainer>
           </ChartCard>
         </div>
       </div>

@@ -138,6 +138,19 @@ export class StatsService {
       count: c._count.id,
     }));
 
+    // ── BUSINESS NATURE ──────────────────────────────────────────────────────
+    const businessNatureCounts = await this.prisma.tenant.groupBy({
+      by: ['businessNature'],
+      _count: { id: true },
+    });
+
+    const tenantsByBusinessNature = businessNatureCounts
+      .map((b) => ({
+        name: b.businessNature || 'Not Specified',
+        count: b._count.id,
+      }))
+      .sort((a, b) => b.count - a.count);
+
     // ── CONTACTS ──────────────────────────────────────────────────────────────
     const totalContacts = await this.prisma.contact.count();
     const newContactsThisMonth = await this.prisma.contact.count({
@@ -233,6 +246,9 @@ export class StatsService {
       totalChannels,
       activeChannels,
       channelDistribution,
+
+      // Business Nature
+      tenantsByBusinessNature,
 
       // Contacts
       totalContacts,
