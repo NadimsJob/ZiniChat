@@ -14,7 +14,8 @@ import {
   Users, 
   ShieldCheck,
   Loader2,
-  Wand2
+  Wand2,
+  ChevronRight
 } from 'lucide-react';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
