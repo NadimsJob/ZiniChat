@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import Cookies from 'js-cookie';
-import { Settings2, X } from 'lucide-react';
+import { Settings2, X, Eye } from 'lucide-react';
 import toast from 'react-hot-toast';
+import Link from 'next/link';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -159,10 +160,10 @@ export default function TenantsPage() {
             <tr>
               <th className="px-3 py-2 font-medium">Business Name</th>
               <th className="px-3 py-2 font-medium">Email</th>
-              <th className="px-3 py-2 font-medium">Created At</th>
+              <th className="px-3 py-2 font-medium">Sub. Status</th>
+              <th className="px-3 py-2 font-medium">Renewal</th>
               <th className="px-3 py-2 font-medium">AI Responses</th>
               <th className="px-3 py-2 font-medium">AI Model</th>
-              <th className="px-3 py-2 font-medium">BYOK</th>
               <th className="px-3 py-2 font-medium">Status</th>
               <th className="px-3 py-2 font-medium text-right">Actions</th>
             </tr>
@@ -177,7 +178,18 @@ export default function TenantsPage() {
                 <tr key={tenant.id} className="hover:bg-surface-hover/30 transition-colors">
                   <td className="px-3 py-2 font-medium text-foreground">{tenant.name}</td>
                   <td className="px-3 py-2 text-zinc-300">{tenant.email}</td>
-                  <td className="px-3 py-2 text-zinc-400">{new Date(tenant.createdAt).toLocaleDateString()}</td>
+                  <td className="px-3 py-2">
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+                      tenant.subscriptionStatus === 'active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 
+                      tenant.subscriptionStatus === 'past_due' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' : 
+                      'bg-zinc-800 text-zinc-500 border-zinc-700'
+                    }`}>
+                      {tenant.subscriptionStatus ? tenant.subscriptionStatus.toUpperCase() : 'NONE'}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2 text-zinc-400">
+                    {tenant.currentPeriodEnd ? new Date(tenant.currentPeriodEnd).toLocaleDateString() : 'N/A'}
+                  </td>
                   <td className="px-3 py-2 text-zinc-300">
                     {tenant.aiQuota ? (
                       <span className="text-xs">
@@ -198,13 +210,6 @@ export default function TenantsPage() {
                     </select>
                   </td>
                   <td className="px-3 py-2">
-                    {tenant.hasByok ? (
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">YES</span>
-                    ) : (
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-zinc-800 text-zinc-500 border border-zinc-700">NO</span>
-                    )}
-                  </td>
-                  <td className="px-3 py-2">
                     <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
                       tenant.status === 'active' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
                     }`}>
@@ -213,6 +218,13 @@ export default function TenantsPage() {
                   </td>
                   <td className="px-3 py-2 text-right">
                     <div className="flex justify-end items-center gap-2">
+                      <Link
+                        href={`/superadmin/tenants/${tenant.id}`}
+                        className="text-xs px-3 py-1.5 rounded-lg font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors flex items-center gap-1.5"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        Report
+                      </Link>
                       <button 
                         onClick={() => openCustomizeModal(tenant)}
                         className="text-xs px-3 py-1.5 rounded-lg font-medium bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors flex items-center gap-1.5"

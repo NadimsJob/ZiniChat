@@ -157,3 +157,15 @@ This rule documents the exact workflow discovered during a live test server depl
   - `node run-live-migration.js` — Run `prisma db push` directly inside the live backend container
   - `node fix-live-direct-url.js` — Auto-fix `DIRECT_URL`, recreate container, and run migration
 
+---
+
+## 18. NestJS & Prisma Unit Testing Best Practices
+This rule documents testing strategies for the platform to prevent recurring TS errors and false failures when writing Jest tests for NestJS services.
+
+* **BullMQ Queue Mocking:** When testing services that inject BullMQ queues via `@InjectQueue('queue-name')`, you MUST provide the queue token using `@nestjs/bullmq`'s `getQueueToken('queue-name')` in the `TestingModule` providers.
+  * *Example Setup:* `{ provide: getQueueToken('whatsapp-outbound'), useValue: { add: jest.fn() } }`
+  * *Example Spy:* `const mockQueue = module.get(getQueueToken('whatsapp-outbound')); expect(mockQueue.add).toHaveBeenCalled();`
+* **Complete Prisma Mocking:** When a service method calls `prisma.tenant.findUnique` to fetch related configurations before triggering an email or external API, NEVER return a partial mock (e.g., `{ id: 'tenant-1' }`). 
+  * If the method expects `tenant.users[0].email` or `tenant.businessName`, the mock MUST provide the full nested object structure to avoid `undefined` reference errors downstream.
+* **HTML String Assertions:** When validating email service outputs (`mockSendMail.toHaveBeenCalledWith`), avoid hardcoding full HTML structures if the service wraps the content in a master template (`generateMasterHtml`). Use `expect.stringContaining('Specific Template Text')` to validate the body.
+* **Legacy Check Elimination:** When refactoring a processor (e.g., migrating a loop to an asynchronous queue processor), verify that legacy conditionals (like checking `isLast` flags) have been removed from the tests if the new queue delegates individual processing away from the batch handler.

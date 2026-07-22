@@ -248,6 +248,17 @@ const EMAIL_CATEGORIES = [
     vars: ['{{tenantName}}', '{{email}}', '{{daysLeft}}', '{{expiryDate}}'],
   },
   {
+    key: 'broadcastCompleted',
+    label: 'Broadcast Completed Alert',
+    labelBn: 'ব্রডকাস্ট সম্পন্ন হওয়ার অ্যালার্ট (টেন্যান্ট)',
+    description: 'টেন্যান্টের কোনো বাল্ক ব্রডকাস্ট সম্পন্ন হলে তাকে নোটিফিকেশন পাঠানো হবে',
+    icon: Mail,
+    enabledField: 'broadcastCompletedEnabled',
+    subjectField: 'broadcastCompletedSubject',
+    bodyField: 'broadcastCompletedBody',
+    vars: ['{{businessName}}', '{{broadcastName}}', '{{totalRecipients}}', '{{timestamp}}'],
+  },
+  {
     key: 'agentCreated',
     label: 'Agent Created',
     labelBn: 'এজেন্ট একাউন্ট তৈরি (টেন্যান্ট)',

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
 import { useLanguage } from '@/components/LanguageProvider';
 import { useCurrency } from '@/components/CurrencyProvider';
-import { Plus, Trash2, Edit, Save, X, Check, Package, Puzzle } from 'lucide-react';
+import { Plus, Trash2, Edit, Save, X, Check, Package, Puzzle, CheckCircle } from 'lucide-react';
 
 export default function PackagesPage() {
   const { language } = useLanguage();
@@ -125,6 +125,20 @@ export default function PackagesPage() {
     }
   };
 
+  const handleSetDefault = async (id: string) => {
+    if (!confirm('Are you sure you want to set this plan as the default for new signups?')) return;
+    const token = Cookies.get('access_token');
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/packages/admin/plans/${id}/default`, {
+        method: 'PATCH',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      fetchData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const openPlanForm = (plan?: any) => {
     if (plan) {
       setPlanForm({
@@ -137,7 +151,7 @@ export default function PackagesPage() {
         messageQuota: plan.messageQuota, aiQuota: plan.aiQuota, seatLimit: plan.seatLimit, trialDays: plan.trialDays || 0,
         allowByok: plan.allowByok || false,
         features: Array.isArray(plan.features) ? plan.features : [],
-        featuresJson: typeof plan.featuresJson === 'string' ? JSON.parse(plan.featuresJson) : (plan.featuresJson || []),
+        featuresJson: Array.isArray(plan.featuresJson) ? plan.featuresJson : (typeof plan.featuresJson === 'string' ? (()=>{ try { const parsed = JSON.parse(plan.featuresJson); return Array.isArray(parsed) ? parsed : []; } catch { return []; } })() : []),
         isActive: plan.isActive, isPopular: plan.isPopular
       });
       setEditingId(plan.id);
@@ -207,6 +221,7 @@ export default function PackagesPage() {
               <div key={plan.id} className="bg-surface border border-surface-hover rounded-xl p-3 relative group">
                 {!plan.isActive && <div className="absolute top-2.5 right-4 text-xs font-bold bg-red-500/10 text-red-500 px-2 py-1 rounded">Inactive</div>}
                 {plan.isPopular && <div className="absolute top-2.5 right-4 text-xs font-bold bg-primary/10 text-primary px-2 py-1 rounded">Popular</div>}
+                {plan.isDefault && <div className="absolute -top-3 -right-3 text-[10px] font-black bg-gradient-to-r from-amber-500 to-orange-500 text-white px-3 py-1 rounded-full shadow-lg border-2 border-surface animate-bounce">🌟 DEFAULT</div>}
                 
                 <h3 className="text-[15px] font-bold">{plan.name}</h3>
                 <div className="text-[13px] font-black mt-2 text-primary">{formatPrice(plan.priceMonthlyBdt)}<span className="text-[12px] text-zinc-500 font-normal"> / monthly</span></div>
@@ -221,6 +236,9 @@ export default function PackagesPage() {
                 <div className="flex items-center gap-2 mt-3 pt-4 border-t border-surface-hover">
                   <button onClick={() => openPlanForm(plan)} className="flex-1 flex justify-center items-center gap-2 px-3 py-2 bg-secondary/10 text-secondary rounded-lg hover:bg-secondary/20 transition-colors text-[12px] font-medium">
                     <Edit className="w-4 h-4" /> Edit
+                  </button>
+                  <button onClick={() => handleSetDefault(plan.id)} className="flex-1 flex justify-center items-center gap-2 px-3 py-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors text-[12px] font-medium" title="Set as Default for new Signups">
+                    <CheckCircle className="w-4 h-4" /> Set Default
                   </button>
                   <button onClick={() => handleDelete('plans', plan.id)} className="p-2 text-zinc-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors">
                     <Trash2 className="w-4 h-4" />
@@ -262,10 +280,6 @@ export default function PackagesPage() {
               </div>
               
               <div className="flex items-center gap-2.5 mt-3">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={planForm.allowByok} onChange={e => setPlanForm({...planForm, allowByok: e.target.checked})} className="w-4 h-4 rounded border-zinc-700 text-primary focus:ring-primary focus:ring-offset-background bg-background" />
-                  <span className="text-[12px] font-medium">Allow BYOK (Custom AI Key)</span>
-                </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={planForm.isActive} onChange={e => setPlanForm({...planForm, isActive: e.target.checked})} className="w-4 h-4 rounded border-zinc-700 text-primary focus:ring-primary focus:ring-offset-background bg-background" />
                   <span className="text-[12px] font-medium">Active Plan</span>
@@ -329,16 +343,26 @@ export default function PackagesPage() {
               <div className="mt-3 border-t border-surface-hover pt-3">
                 <label className="block text-[12px] font-medium mb-3 text-zinc-400">System Features (Access Control)</label>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <label className="flex items-center gap-2 cursor-pointer bg-background border border-surface-hover p-3 rounded-xl hover:border-primary/50 transition-colors">
+                    <input 
+                      type="checkbox" 
+                      checked={planForm.allowByok}
+                      onChange={(e) => setPlanForm({ ...planForm, allowByok: e.target.checked })}
+                      className="w-4 h-4 rounded border-zinc-700 text-primary focus:ring-primary focus:ring-offset-background bg-background" 
+                    />
+                    <span className="text-[12px] font-medium">Bring Your Own Key (BYOK)</span>
+                  </label>
                   {[
                     { id: 'ai_assistant', label: 'AI Assistant' },
-                    { id: 'own_api', label: 'Bring Your Own Key (BYOK)' },
                     { id: 'platform_support_ai', label: 'Platform Support AI (Widget)' },
                     { id: 'messenger', label: 'Messenger Integration' },
                     { id: 'whatsapp', label: 'WhatsApp API (Official)' },
                     { id: 'whatsapp_qr', label: 'WhatsApp Web (Unofficial QR)' },
                     { id: 'whatsapp_widget', label: 'WhatsApp Website Widget' },
+                    { id: 'instagram_dm', label: 'Instagram DM Integration' },
                     { id: 'lead_manage', label: 'Leads CRM' },
                     { id: 'commerce', label: 'Products & Orders' },
+                    { id: 'broadcast', label: 'Broadcast Campaigns' },
                     { id: 'team_management', label: 'Team Members & Roles' },
                     { id: 'contact_labels', label: 'Custom Contact Labels' }
                   ].map(feature => (
@@ -364,19 +388,22 @@ export default function PackagesPage() {
               <div className="mt-3 border-t border-surface-hover pt-3">
                 <label className="block text-[12px] font-medium mb-2 text-zinc-400 flex justify-between items-center">
                   Display Features List (Landing Page)
-                  <button onClick={() => setPlanForm({...planForm, featuresJson: [...planForm.featuresJson, { en: '', bn: '' }]})} className="text-xs text-secondary hover:underline">+ Add Feature</button>
+                  <button type="button" onClick={() => {
+                    const current = Array.isArray(planForm.featuresJson) ? planForm.featuresJson : [];
+                    setPlanForm({...planForm, featuresJson: [...current, { en: '', bn: '' }]});
+                  }} className="text-xs text-secondary hover:underline">+ Add Feature</button>
                 </label>
                 <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-2">
-                  {planForm.featuresJson.map((f, i) => (
+                  {Array.isArray(planForm.featuresJson) && planForm.featuresJson.map((f, i) => (
                     <div key={i} className="flex gap-2 items-start">
                       <div className="flex-1 space-y-2">
-                        <input type="text" placeholder="EN" value={f.en} onChange={e => { const newF = [...planForm.featuresJson]; newF[i].en = e.target.value; setPlanForm({...planForm, featuresJson: newF}); }} className="w-full bg-background border border-surface-hover rounded px-3 py-1.5 text-[12px] focus:border-primary focus:outline-none" />
-                        <input type="text" placeholder="BN" value={f.bn} onChange={e => { const newF = [...planForm.featuresJson]; newF[i].bn = e.target.value; setPlanForm({...planForm, featuresJson: newF}); }} className="w-full bg-background border border-surface-hover rounded px-3 py-1.5 text-[12px] focus:border-primary focus:outline-none" />
+                        <input type="text" placeholder="EN" value={f.en} onChange={e => { const newF = [...planForm.featuresJson]; newF[i] = { ...newF[i], en: e.target.value }; setPlanForm({...planForm, featuresJson: newF}); }} className="w-full bg-background border border-surface-hover rounded px-3 py-1.5 text-[12px] focus:border-primary focus:outline-none" />
+                        <input type="text" placeholder="BN" value={f.bn} onChange={e => { const newF = [...planForm.featuresJson]; newF[i] = { ...newF[i], bn: e.target.value }; setPlanForm({...planForm, featuresJson: newF}); }} className="w-full bg-background border border-surface-hover rounded px-3 py-1.5 text-[12px] focus:border-primary focus:outline-none" />
                       </div>
-                      <button onClick={() => { const newF = [...planForm.featuresJson]; newF.splice(i, 1); setPlanForm({...planForm, featuresJson: newF}); }} className="p-1.5 text-zinc-500 hover:text-red-500 mt-1"><X className="w-4 h-4" /></button>
+                      <button type="button" onClick={() => { const newF = [...planForm.featuresJson]; newF.splice(i, 1); setPlanForm({...planForm, featuresJson: newF}); }} className="p-1.5 text-zinc-500 hover:text-red-500 mt-1"><X className="w-4 h-4" /></button>
                     </div>
                   ))}
-                  {planForm.featuresJson.length === 0 && <p className="text-xs text-zinc-500 italic">No features added.</p>}
+                  {(!Array.isArray(planForm.featuresJson) || planForm.featuresJson.length === 0) && <p className="text-xs text-zinc-500 italic">No features added.</p>}
                 </div>
               </div>
             </div>

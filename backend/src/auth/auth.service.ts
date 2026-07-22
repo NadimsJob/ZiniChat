@@ -60,12 +60,33 @@ export class AuthService {
     // Create Tenant and User in a transaction
     const user = await this.prisma.$transaction(async (prisma) => {
       const trialEndsAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days from now
+
+      // Check for default plan
+      const defaultPlan = await prisma.plan.findFirst({
+        where: { isDefault: true, isActive: true }
+      });
+
       const tenant = await prisma.tenant.create({
         data: {
           businessName,
-          trialEndsAt
+          trialEndsAt,
+          planId: defaultPlan?.id || null
         }
       });
+
+      if (defaultPlan) {
+        // Create an active subscription for the default plan
+        const currentPeriodEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 1 month
+        await prisma.subscription.create({
+          data: {
+            tenantId: tenant.id,
+            planId: defaultPlan.id,
+            status: 'active',
+            billingCycle: 'monthly',
+            currentPeriodEnd
+          }
+        });
+      }
 
       const newUser = await prisma.user.create({
         data: {
@@ -137,7 +158,14 @@ export class AuthService {
             ownerName: true,
             employeeCount: true,
             businessNature: true,
-            isOnboarded: true
+            isOnboarded: true,
+            planId: true,
+            plan: {
+              select: {
+                name: true,
+                nameBn: true
+              }
+            }
           }
         }
       }
@@ -177,10 +205,10 @@ export class AuthService {
   async getSetupStatus(tenantId: string) {
     if (!tenantId) throw new BadRequestException('Tenant ID required');
 
-    const [tenant, channelCount, aiCount, productCount, leadCount, userCount] = await Promise.all([
+    const [tenant, channelCount, aiAssistant, productCount, leadCount, userCount] = await Promise.all([
       this.prisma.tenant.findUnique({ where: { id: tenantId }, select: { isOnboarded: true } }),
       this.prisma.channelConnection.count({ where: { tenantId } }),
-      this.prisma.aiAssistant.count({ where: { tenantId } }),
+      this.prisma.aiAssistant.findFirst({ where: { tenantId } }),
       this.prisma.product.count({ where: { tenantId } }),
       this.prisma.contact.count({ where: { tenantId } }),
       this.prisma.user.count({ where: { tenantId } })
@@ -189,7 +217,8 @@ export class AuthService {
     return {
       hasBusinessProfile: tenant?.isOnboarded || false,
       hasConnectedChannel: channelCount > 0,
-      hasConfiguredAi: aiCount > 0,
+      hasConfiguredAi: !!aiAssistant,
+      hasNamedAgent: !!aiAssistant?.agentName,
       hasCreatedProduct: productCount > 0,
       hasCreatedLead: leadCount > 0,
       hasInvitedTeam: userCount > 1
@@ -366,11 +395,30 @@ export class AuthService {
       let user = await this.usersService.findByEmail(email);
 
       if (!user) {
+        // Check for default plan
+        const defaultPlan = await this.prisma.plan.findFirst({
+          where: { isDefault: true, isActive: true }
+        });
+
         const tenant = await this.prisma.tenant.create({
           data: {
-            businessName: `${name}'s Workspace`
+            businessName: `${name}'s Workspace`,
+            planId: defaultPlan?.id || null
           }
         });
+
+        if (defaultPlan) {
+          const currentPeriodEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 1 month
+          await this.prisma.subscription.create({
+            data: {
+              tenantId: tenant.id,
+              planId: defaultPlan.id,
+              status: 'active',
+              billingCycle: 'monthly',
+              currentPeriodEnd
+            }
+          });
+        }
 
         // Generate a random password hash for OAuth users
         const randomPassword = Math.random().toString(36).slice(-10);

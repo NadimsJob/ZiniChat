@@ -12,9 +12,9 @@ import {
   Bot, 
   Package, 
   Users, 
-  ChevronRight,
   ShieldCheck,
-  Loader2
+  Loader2,
+  Wand2
 } from 'lucide-react';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -68,20 +68,29 @@ export default function SetupJourneyWidget({ allowedFeatures }: { allowedFeature
     {
       id: 'channel',
       title: language === 'en' ? 'Connect a Channel' : 'একটি চ্যানেল কানেক্ট করুন',
-      desc: language === 'en' ? 'Link your WhatsApp or Facebook page to receive messages.' : 'মেসেজ পেতে আপনার হোয়াটসঅ্যাপ বা ফেসবুক পেইজ লিংক করুন।',
+      desc: language === 'en' ? 'Link your WhatsApp, Facebook, or Instagram to receive messages.' : 'মেসেজ পেতে আপনার হোয়াটসঅ্যাপ, ফেসবুক বা ইনস্টাগ্রাম পেইজ লিংক করুন।',
       icon: MessageCircle,
       isDone: status.hasConnectedChannel,
       href: '/dashboard/settings/whatsapp',
-      show: allowedFeatures.includes('whatsapp_qr') || allowedFeatures.includes('facebook_auth')
+      show: allowedFeatures.includes('whatsapp_qr') || allowedFeatures.includes('whatsapp') || allowedFeatures.includes('messenger') || allowedFeatures.includes('instagram_dm')
+    },
+    {
+      id: 'ai_config',
+      title: language === 'en' ? 'Configure AI Agent' : 'এআই এজেন্ট কনফিগার করুন',
+      desc: language === 'en' ? 'Give your AI a human-like name and routing rules.' : 'আপনার এআই এর নাম এবং রাউটিং রুলস সেটআপ করুন।',
+      icon: Wand2,
+      isDone: status.hasNamedAgent,
+      href: '/dashboard/settings/ai-training',
+      show: allowedFeatures.includes('ai_assistant') || allowedFeatures.includes('platform_support_ai')
     },
     {
       id: 'ai',
       title: language === 'en' ? 'Train AI Assistant' : 'এআই অ্যাসিস্ট্যান্ট ট্রেইন করুন',
-      desc: language === 'en' ? 'Set up AI persona and add knowledge base documents.' : 'এআই পার্সোনা সেটআপ করুন এবং নলেজ বেইস ডকুমেন্ট দিন।',
+      desc: language === 'en' ? 'Add Q&A and knowledge base documents.' : 'নলেজ বেইস ডকুমেন্ট এবং প্রশ্নোত্তর দিন।',
       icon: Bot,
-      isDone: status.hasConfiguredAi,
-      href: '/dashboard/ai-training',
-      show: allowedFeatures.includes('ai_assistant')
+      isDone: status.hasConfiguredAi, // Checking if AI assistant row exists is basic, usually it means they clicked save.
+      href: '/dashboard/settings/ai-training',
+      show: allowedFeatures.includes('ai_assistant') || allowedFeatures.includes('platform_support_ai')
     },
     {
       id: 'commerce',

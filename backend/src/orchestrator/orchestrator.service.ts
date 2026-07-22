@@ -81,7 +81,7 @@ export class OrchestratorService {
       }
 
       // 4. Gather Context
-      const prompt = await this.buildContextPrompt(message.conversationId, assistant.systemPrompt || '');
+      const prompt = await this.buildContextPrompt(message.conversationId, assistant);
 
       // 5. LLM Execution
       // Extract the raw text from the message content
@@ -122,13 +122,13 @@ export class OrchestratorService {
     }
   }
 
-  private async buildContextPrompt(conversationId: string, baseSystemPrompt: string): Promise<string> {
+  private async buildContextPrompt(conversationId: string, assistant: any): Promise<string> {
     const conversation = await this.prisma.conversation.findUnique({
       where: { id: conversationId },
       include: { contact: { include: { stage: true } }, tenant: true }
     });
 
-    if (!conversation) return baseSystemPrompt;
+    if (!conversation) return assistant.systemPrompt || '';
 
     // Fetch active products
     const products = await this.prisma.product.findMany({
@@ -144,8 +144,15 @@ export class OrchestratorService {
     });
 
     let prompt = `You are a helpful AI assistant for ${conversation.tenant.businessName}.\n`;
-    if (baseSystemPrompt) {
-      prompt += `\nYour Core Instructions:\n${baseSystemPrompt}\n`;
+    
+    // Inject agent name if configured
+    let systemPrompt = assistant.systemPrompt || '';
+    if (assistant.agentName) {
+      systemPrompt = `Your name is ${assistant.agentName}. ${systemPrompt}`;
+    }
+
+    if (systemPrompt) {
+      prompt += `\nYour Core Instructions:\n${systemPrompt}\n`;
     }
 
     prompt += `\n--- CUSTOMER INFO ---\n`;

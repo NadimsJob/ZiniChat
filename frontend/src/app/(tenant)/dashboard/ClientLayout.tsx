@@ -310,6 +310,19 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
             <h2 className="text-[13px] font-bold text-slate-900 dark:text-white">
               {language === 'en' ? 'Overview' : 'ওভারভিউ'}
             </h2>
+
+            {userProfile?.tenant?.plan && (
+              <div className="hidden md:flex items-center ml-4 gap-2">
+                <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-full border border-zinc-200 dark:border-zinc-700">
+                  {language === 'en' ? userProfile.tenant.plan.name : userProfile.tenant.plan.nameBn || userProfile.tenant.plan.name}
+                </span>
+                <Link href="/dashboard/settings/billing">
+                  <span className="text-[11px] font-black text-white bg-gradient-to-r from-orange-500 to-amber-500 px-3 py-1 rounded-full shadow-lg shadow-orange-500/30 animate-pulse hover:animate-none hover:scale-105 transition-transform cursor-pointer border-2 border-surface">
+                    {language === 'en' ? 'UPGRADE PLAN 🚀' : 'আপগ্রেড করুন 🚀'}
+                  </span>
+                </Link>
+              </div>
+            )}
           </div>
           
           <div className="flex items-center gap-2 md:gap-1.5">

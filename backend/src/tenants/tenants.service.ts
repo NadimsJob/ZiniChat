@@ -20,7 +20,7 @@ export class TenantsService {
           select: { users: true, conversations: true },
         },
         subscriptions: {
-          where: { status: 'active' },
+          orderBy: { currentPeriodEnd: 'desc' },
           include: { plan: true },
           take: 1
         },
@@ -52,9 +52,57 @@ export class TenantsService {
         aiQuota: {
           limit: aiLimit,
           used: aiUsed
-        }
+        },
+        subscriptionStatus: activeSub?.status || 'none',
+        currentPeriodEnd: activeSub?.currentPeriodEnd || null,
+        planName: activeSub?.plan?.name || 'No Plan'
       };
     });
+  }
+
+  async findOne(id: string) {
+    const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id },
+      include: {
+        users: {
+          where: { role: { in: ['owner', 'admin'] } },
+          select: { name: true, email: true, role: true, createdAt: true }
+        },
+        subscriptions: {
+          orderBy: { currentPeriodEnd: 'desc' },
+          include: { plan: true }
+        },
+        payments: {
+          orderBy: { createdAt: 'desc' }
+        },
+        _count: {
+          select: { users: true, conversations: true, contacts: true, orders: true }
+        }
+      }
+    });
+
+    if (!tenant) return null;
+
+    const aiUsage = await this.prisma.aiUsageLog.aggregate({
+      where: { 
+        tenantId: id,
+        createdAt: { gte: startOfMonth }
+      },
+      _count: { _all: true }
+    });
+
+    // Convert BigInt to string/number to avoid JSON serialization errors
+    return {
+      ...tenant,
+      storageUsedBytes: Number(tenant.storageUsedBytes),
+      usage: {
+        messagesUsed: tenant.messageCount,
+        aiUsed: aiUsage._count._all,
+        storageUsedBytes: Number(tenant.storageUsedBytes)
+      }
+    };
   }
 
   async updateStatus(id: string, status: string, actorUserId: string) {

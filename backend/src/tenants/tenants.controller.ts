@@ -18,6 +18,11 @@ export class TenantsController {
     return this.tenantsService.findAll();
   }
 
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.tenantsService.findOne(id);
+  }
+
   @Patch(':id/status')
   updateStatus(
     @Param('id') id: string,

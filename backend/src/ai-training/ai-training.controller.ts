@@ -24,8 +24,8 @@ export class AiTrainingController {
   }
 
   @Post('config/byok')
-  async updateByokConfig(@Request() req: any, @Body() data: { routingMode: string; apiKey?: string; aiOrderEnabled?: boolean; isActive?: boolean; replyWhenAssigned?: boolean }) {
-    return this.aiTrainingService.updateByokConfig(req.user.tenantId, data.routingMode, data.apiKey, data.aiOrderEnabled, data.isActive, data.replyWhenAssigned);
+  async updateByokConfig(@Request() req: any, @Body() data: { routingMode: string; apiKey?: string; aiOrderEnabled?: boolean; isActive?: boolean; replyWhenAssigned?: boolean; agentName?: string }) {
+    return this.aiTrainingService.updateByokConfig(req.user.tenantId, data.routingMode, data.apiKey, data.aiOrderEnabled, data.isActive, data.replyWhenAssigned, data.agentName);
   }
 
   @Get('qna')

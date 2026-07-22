@@ -134,6 +134,17 @@ Password: {{password}}
 বিষয়: {{subject}}
 
 দয়া করে Superadmin প্যানেলে গিয়ে টিকিটটি চেক করুন।`,
+
+  broadcastCompletedSubject: '✅ ব্রডকাস্ট সফলভাবে সম্পন্ন হয়েছে – {{broadcastName}}',
+  broadcastCompletedBody: `প্রিয় {{businessName}},
+
+আপনার ব্রডকাস্ট ক্যাম্পেইনটি সফলভাবে সবার কাছে পাঠানো সম্পন্ন হয়েছে!
+
+ক্যাম্পেইন: {{broadcastName}}
+মোট প্রাপক: {{totalRecipients}}
+সময়: {{timestamp}}
+
+আপনার ড্যাশবোর্ডে লগইন করে বিস্তারিত রিপোর্ট চেক করতে পারেন।`,
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -192,6 +203,9 @@ export class SmtpService {
           ticketAssignedEnabled: true,
           ticketAssignedSubject: TEMPLATES.ticketAssignedSubject,
           ticketAssignedBody: TEMPLATES.ticketAssignedBody,
+          broadcastCompletedEnabled: true,
+          broadcastCompletedSubject: TEMPLATES.broadcastCompletedSubject,
+          broadcastCompletedBody: TEMPLATES.broadcastCompletedBody,
         }
       });
     } else {
@@ -213,6 +227,7 @@ export class SmtpService {
       if (!config.ticketRepliedSubject) { updates.ticketRepliedSubject = TEMPLATES.ticketRepliedSubject; updates.ticketRepliedBody = TEMPLATES.ticketRepliedBody; needsUpdate = true; }
       if (!config.ticketStatusSubject) { updates.ticketStatusSubject = TEMPLATES.ticketStatusSubject; updates.ticketStatusBody = TEMPLATES.ticketStatusBody; needsUpdate = true; }
       if (!config.ticketAssignedSubject) { updates.ticketAssignedSubject = TEMPLATES.ticketAssignedSubject; updates.ticketAssignedBody = TEMPLATES.ticketAssignedBody; needsUpdate = true; }
+      if (!config.broadcastCompletedSubject) { updates.broadcastCompletedSubject = TEMPLATES.broadcastCompletedSubject; updates.broadcastCompletedBody = TEMPLATES.broadcastCompletedBody; needsUpdate = true; }
 
       if (needsUpdate) {
         config = await this.prisma.smtpConfig.update({
@@ -278,6 +293,9 @@ export class SmtpService {
         ticketAssignedEnabled: data.ticketAssignedEnabled !== undefined ? !!data.ticketAssignedEnabled : config.ticketAssignedEnabled,
         ticketAssignedSubject: data.ticketAssignedSubject ?? config.ticketAssignedSubject,
         ticketAssignedBody: data.ticketAssignedBody ?? config.ticketAssignedBody,
+        broadcastCompletedEnabled: data.broadcastCompletedEnabled !== undefined ? !!data.broadcastCompletedEnabled : config.broadcastCompletedEnabled,
+        broadcastCompletedSubject: data.broadcastCompletedSubject ?? config.broadcastCompletedSubject,
+        broadcastCompletedBody: data.broadcastCompletedBody ?? config.broadcastCompletedBody,
       }
     });
   }
@@ -497,6 +515,16 @@ export class SmtpService {
     const vars = { adminName, tenantName, subject: subjectLine };
     const subject = this.replacePlaceholders(config.ticketAssignedSubject || TEMPLATES.ticketAssignedSubject, vars);
     const bodyText = this.replacePlaceholders(config.ticketAssignedBody || TEMPLATES.ticketAssignedBody, vars);
+    await this.sendMail({ to: toEmail, subject, plainText: bodyText });
+  }
+
+  async triggerBroadcastCompletedEmail(toEmail: string, businessName: string, broadcastName: string, totalRecipients: number) {
+    const config = await this.getConfig();
+    if (!config.broadcastCompletedEnabled) return;
+    const timestamp = new Date().toLocaleString();
+    const vars = { businessName, broadcastName, totalRecipients: String(totalRecipients), timestamp };
+    const subject = this.replacePlaceholders(config.broadcastCompletedSubject || TEMPLATES.broadcastCompletedSubject, vars);
+    const bodyText = this.replacePlaceholders(config.broadcastCompletedBody || TEMPLATES.broadcastCompletedBody, vars);
     await this.sendMail({ to: toEmail, subject, plainText: bodyText });
   }
 }

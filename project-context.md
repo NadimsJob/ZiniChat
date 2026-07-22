@@ -21,17 +21,15 @@ A multi-tenant SaaS platform where businesses (tenants) manage customer communic
 ---
 
 ## 3. Current Status & Active Focus
-* **Status**: **Current Focus:** Universal AI integrations, BYOK (Bring Your Own Key) capabilities, and an internal AI Support Chat.
-- **Latest Achievement:** Refactored `AiService` for dynamic provider switching and implemented a Tenant-side AI Support Widget that creates Support Tickets. Implemented strict feature gating for Support AI, Team Management, and Contact Labels via Superadmin Plan settings. Extracted and animated the 2-Minute Setup Widget on the marketing pages.
+- **Active Focus**: Fixing unit testing and expanding Jest coverage across Auth, Packages, Broadcast Processor, and SMTP services. Validated BullMQ async queueing and mock setups.
+- **Recent Issues Fixed**: Fixed test failures caused by partial mock data in Prisma `findUnique` returning undefined values to email triggers. Fixed TS build errors in SMTP HTML generations.
+- **System**: Backend (NestJS), Frontend (Next.js). Bilingual support enabled (English/Bengali) across UI components. Tickets. Implemented strict feature gating for Support AI, Team Management, and Contact Labels via Superadmin Plan settings. Extracted and animated the 2-Minute Setup Widget on the marketing pages.
 - **Next Up:** Extensive E2E testing of the UI flows, onboarding optimizations, and live deployment.
 - Subscription logic, quotas (messages, AI tokens, storage), and superadmin customizations have been strictly enforced on the backend via `QuotaService` and `FeatureGuard`.
 - Direct PC-to-Server deployment scripts (MCP Server) have been deprecated and deleted to enforce Git-only deployment constraints.
 - **Live and Staging Environments are fully deployed with Traefik routing, reverse proxy networking, and SSL certificates.**
 - **Performance & Load Testing has been completed directly on VPS. Capacity projections indicate 1,500+ Tenants (Official API) or 50+ (Unofficial Baileys QR) per 8GB RAM node.**
 - **Database vector search is optimized with HNSW indexes to eliminate SSD Sequential Scans and minimize Disk I/O.**
-
-**Active Focus:**  
-- Payment Gateway Integrations (Stripe/bKash/SSLCommerz)
 
 ---
 
@@ -40,6 +38,8 @@ This log lists all features and modules implemented, ordered chronologically.
 
 | Date | Feature / Change | Key Files Modified | Status / Notes |
 | :--- | :--- | :--- | :--- |
+| **2026-07-22** | **Unit Testing & Test Mocks Fixing** | `smtp.service.spec.ts`, `broadcasts.processor.spec.ts`, `auth.service.spec.ts`, `instagram-auth.service.spec.ts`, `packages.service.spec.ts` | Successfully ran and fixed all 32 unit tests across 7 suites for the day's features. Repaired Prisma mock payload definitions, fixed BullMQ `whatsappQueue` spy assertions by using `getQueueToken`, and corrected string assertions for HTML email templates. |
+| **2026-07-22** | **Detailed Tenant Reports & UI Enhancement** | `tenants.service.ts`, `tenants.controller.ts`, `tenants/page.tsx`, `tenants/[id]/page.tsx` | Upgraded the Superadmin Tenants list to dynamically display subscription status and renewal dates. Built a comprehensive, separate Tenant Report view showing deep statistics, usage progress bars, active limits, and payment history in a unified premium glassmorphism layout. |
 | **2026-07-22** | **Superadmin Business Nature Stats** | `stats.service.ts`, `superadmin/page.tsx` | Added aggregation logic in the backend to count tenants grouped by their business nature. Integrated a new Pie Chart into the Superadmin Dashboard to visualize the distribution of business types across the platform. |
 | **2026-07-22** | **Business Nature API Fix** | `app.module.ts` | Fixed `404 Not Found` error on `POST /business-natures` by properly registering `BusinessNatureModule` in `app.module.ts` imports array. Pushed to remote and triggered server deployment. |
 | **2026-07-21** | **Dynamic Feature Gating & Animated Mockups** | `ClientLayout.tsx`, `SetupJourneyWidget.tsx`, `packages/page.tsx`, `SetupWidgetMockup.tsx`, `(marketing)/page.tsx` | Implemented strict feature gating for Support AI, Team, and Labels based on active plan's allowedFeatures array. Extracted `SetupWidgetMockup` into a shared component with a video-like animated cursor and checklist progression. Fixed backend TS build issues and executed live/test DB migrations. |
@@ -64,7 +64,9 @@ This log lists all features and modules implemented, ordered chronologically.
 | 2026-07-15 | Built 3-Tier BDT Pricing with Monthly/Yearly toggle and Superadmin Coupon System | Schema, Billing, Superadmin UI, Tenant UI | ✅ Completed |
 | 2026-07-15 | Built Frontend Storage Management UI and Superadmin Customize Tenant Plan modal | Frontend, UI/UX, Superadmin | ✅ Completed |
 | 2026-07-15 | Implemented QuotaService for messaging/storage/AI quotas, Superadmin custom plan overrides, and Storage Cleanup APIs | Backend, DB Schema, Quotas | ✅ Completed |
-| 2026-07-15 | Created Subscription/Feature tiering architecture and wiped old data | Backend, Subscription, Planning | ✅ Completed |
+| 2026-07-22 | Implemented BullMQ queue architecture for the Broadcast System. `BroadcastsProcessor` now queues recipients sequentially with delays to prevent system crashes and Meta API rate-limiting during massive multi-tenant broadcasts. | Backend, Queueing, Optimization | ✅ Completed |
+| 2026-07-22 | Implemented Broadcast System and Instagram DM with strict Access Control, integrated new features into `Packages` page, added backend modules, unit tests, and frontend dashboards. | Backend, Subscription, Planning | ✅ Completed |
+| 2026-07-22 | Enhanced Tenants UI to track subscription statuses and display detailed reporting page for individual tenants. | Backend, Subscription, Planning | ✅ Completed |
 | 2026-07-15 | **Unified Premium UI & Compactness** | Redesigned the Tenant Panel into a single unified "Glassmorphism" theme matching the brand colors (Green & Orange). Replaced dark mode with a highly polished frosted glass layout (`bg-surface` and `backdrop-blur`). Minimized padding and font sizes across Dashboard Overview, Leads, and SetupJourney widget for a dense, compact SaaS UI. Wiped DB as requested by user. | `globals.css`, `dashboard/layout.tsx`, `dashboard/page.tsx`, `leads/page.tsx`, `SetupJourneyWidget.tsx` | ✅ Completed |
 | 2026-07-15 | **Leads CRM Pipeline & Default Stages** | Added "Intake" as default Kanban stage. Set inbound WhatsApp messages to auto-assign new contacts to this Intake stage. Implemented full CRUD UI on the `/dashboard/leads` page allowing users to Edit stage names and colors, and Delete stages. | `leads.service.ts`, `inbox.service.ts`, `leads/page.tsx` | ✅ Completed |
 | 2026-07-15 | **AI Master Switch & Agent Routing Logic** | Added `isActive` and `replyWhenAssigned` flags to `AiAssistant` model. Built a gamified master toggle UI on the `/dashboard/settings/ai-training` page to completely pause AI or selectively pause AI when a human agent is assigned. Updated `OrchestratorService` to enforce these routing rules during inbound message processing. | `schema.prisma`, `orchestrator.service.ts`, `ai-training.service.ts`, `ai-training/page.tsx` | ✅ Completed |

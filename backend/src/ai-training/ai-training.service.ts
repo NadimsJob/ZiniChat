@@ -54,6 +54,7 @@ export class AiTrainingService {
       aiOrderEnabled: assistant.aiOrderEnabled,
       isActive: assistant.isActive,
       replyWhenAssigned: assistant.replyWhenAssigned,
+      agentName: assistant.agentName,
       allowByok,
       planName: activeSub?.plan?.name || 'No Active Plan',
       aiQuota: activeSub?.plan?.aiQuota || 0,
@@ -97,7 +98,7 @@ export class AiTrainingService {
     return { prompt };
   }
 
-  async updateByokConfig(tenantId: string, routingMode: string, apiKey?: string, aiOrderEnabled?: boolean, isActive?: boolean, replyWhenAssigned?: boolean) {
+  async updateByokConfig(tenantId: string, routingMode: string, apiKey?: string, aiOrderEnabled?: boolean, isActive?: boolean, replyWhenAssigned?: boolean, agentName?: string) {
     const assistant = await this.ensureAiAssistantExists(tenantId);
     const planInfo = await this.getConfig(tenantId);
 
@@ -125,10 +126,16 @@ export class AiTrainingService {
       dataToUpdate.replyWhenAssigned = replyWhenAssigned;
     }
 
-    await this.prisma.aiAssistant.update({
-      where: { id: assistant.id },
-      data: dataToUpdate
-    });
+    if (agentName !== undefined) {
+      dataToUpdate.agentName = agentName;
+    }
+
+    if (Object.keys(dataToUpdate).length > 0) {
+      await this.prisma.aiAssistant.update({
+        where: { id: assistant.id },
+        data: dataToUpdate
+      });
+    }
 
     return { success: true };
   }

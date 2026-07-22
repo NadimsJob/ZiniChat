@@ -40,6 +40,8 @@ import { PaymentsModule } from './payments/payments.module';
 import { SupportChatModule } from './support-chat/support-chat.module';
 import { InquiriesModule } from './inquiries/inquiries.module';
 import { TicketsModule } from './tickets/tickets.module';
+import { BroadcastsModule } from './broadcasts/broadcasts.module';
+import { InstagramAuthModule } from './channels/instagram/instagram-auth.module';
 
 @Module({
   imports: [
@@ -90,7 +92,9 @@ import { TicketsModule } from './tickets/tickets.module';
     LeadsModule,
     InquiriesModule,
     TicketsModule,
-    BusinessNatureModule
+    BusinessNatureModule,
+    BroadcastsModule,
+    InstagramAuthModule
   ],
   controllers: [AppController],
   providers: [

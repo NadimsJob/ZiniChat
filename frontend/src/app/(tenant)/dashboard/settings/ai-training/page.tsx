@@ -19,7 +19,8 @@ export default function AiTrainingPage() {
     planName: '',
     aiQuota: 0,
     isActive: true,
-    replyWhenAssigned: false
+    replyWhenAssigned: false,
+    agentName: ''
   });
   const [apiKey, setApiKey] = useState('');
   
@@ -66,7 +67,8 @@ export default function AiTrainingPage() {
         routingMode: config.routingMode,
         aiOrderEnabled: config.aiOrderEnabled,
         isActive: config.isActive,
-        replyWhenAssigned: config.replyWhenAssigned
+        replyWhenAssigned: config.replyWhenAssigned,
+        agentName: config.agentName
       };
       if (apiKey) body.apiKey = apiKey;
 
@@ -99,6 +101,7 @@ export default function AiTrainingPage() {
         aiOrderEnabled: config.aiOrderEnabled,
         isActive: config.isActive,
         replyWhenAssigned: config.replyWhenAssigned,
+        agentName: config.agentName,
         ...updates
       };
 
@@ -233,6 +236,31 @@ export default function AiTrainingPage() {
             </label>
           </div>
         )}
+
+        {/* AI Agent Name */}
+        <div className="pt-3 mt-3 border-t border-surface-hover">
+          <label className="block text-[13px] font-bold text-slate-900 dark:text-white mb-1">
+            {language === 'en' ? 'AI Agent Name' : 'এআই এজেন্টের নাম'}
+          </label>
+          <div className="flex gap-2">
+            <input 
+              type="text" 
+              placeholder={language === 'en' ? 'e.g., Zini, Sarah, SupportBot' : 'যেমন: জিনী, সারা, সাপোর্টবট'}
+              value={config.agentName || ''}
+              onChange={(e) => setConfig({ ...config, agentName: e.target.value })}
+              className="w-full bg-surface border border-surface-hover rounded-xl px-3 py-1.5 text-[13px] text-white focus:outline-none focus:border-primary"
+            />
+            <button 
+              onClick={() => handleQuickSave({ agentName: config.agentName })}
+              className="px-4 py-1.5 bg-secondary text-secondary-foreground rounded-xl text-[12px] font-bold hover:bg-secondary/90 transition-all shrink-0"
+            >
+              {language === 'en' ? 'Save Name' : 'নাম সেভ করুন'}
+            </button>
+          </div>
+          <p className="text-[11px] text-zinc-500 mt-1">
+            {language === 'en' ? 'Give your AI assistant a human-like name so it feels more natural to your customers.' : 'আপনার এআই অ্যাসিস্ট্যান্টকে একটি মানুষের মতো নাম দিন যেন কাস্টমারদের কাছে এটি ন্যাচারাল মনে হয়।'}
+          </p>
+        </div>
       </div>
 
       {/* Tabs */}

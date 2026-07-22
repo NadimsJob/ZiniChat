@@ -60,6 +60,7 @@ model Tenant {
   Ticket        Ticket[]
   customAiConfig AiConfig? @relation(fields: [customAiConfigId], references: [id])
   supportConversations SupportConversation[]
+  plan          Plan?    @relation(fields: [planId], references: [id])
 
   @@map("tenants")
 }
@@ -284,6 +285,7 @@ model AiAssistant {
   apiKeyMode          String // Deprecated: kept for backwards compatibility
   routingMode         String   @default("system_only") // system_only, custom_only, hybrid
   byokApiKeyEncrypted String?
+  agentName           String?  // New field to give AI an identity
   aiOrderEnabled      Boolean  @default(true)
   isActive            Boolean  @default(true)
   replyWhenAssigned   Boolean  @default(false)
@@ -501,9 +503,11 @@ model Plan {
   featuresJson    Json     @default("[]") // Array of {en, bn} strings
   isActive        Boolean  @default(true)
   isPopular       Boolean  @default(false)
+  isDefault       Boolean  @default(false)
   createdAt       DateTime @default(now())
 
-  subscriptions Subscription[]
+  subscriptions   Subscription[]
+  tenants         Tenant[]
 
   @@map("plans")
 }
@@ -656,6 +660,11 @@ model SmtpConfig {
   agentCreatedEnabled Boolean @default(true)
   agentCreatedSubject String?
   agentCreatedBody    String? @db.Text
+
+  // Broadcast Completed Alert
+  broadcastCompletedEnabled Boolean @default(true)
+  broadcastCompletedSubject String?
+  broadcastCompletedBody    String? @db.Text
 
   // Password Reset
   passwordResetEnabled Boolean @default(true)

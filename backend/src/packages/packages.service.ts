@@ -35,6 +35,24 @@ export class PackagesService {
     return this.prisma.plan.delete({ where: { id } });
   }
 
+  async setDefaultPlan(id: string) {
+    const plan = await this.prisma.plan.findUnique({ where: { id } });
+    if (!plan) throw new NotFoundException('Plan not found');
+
+    await this.prisma.$transaction([
+      this.prisma.plan.updateMany({
+        where: { isDefault: true },
+        data: { isDefault: false }
+      }),
+      this.prisma.plan.update({
+        where: { id },
+        data: { isDefault: true }
+      })
+    ]);
+
+    return { success: true, message: 'Default plan updated' };
+  }
+
   // --- Addons ---
   async getActiveAddons() {
     return this.prisma.addon.findMany({

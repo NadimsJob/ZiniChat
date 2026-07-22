@@ -46,6 +46,14 @@ export class PackagesController {
     return this.packagesService.updatePlan(id, body);
   }
 
+  @Patch('admin/plans/:id/default')
+  @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
+  @Roles('superadmin')
+  @RequirePermissions('manage:billing')
+  setDefaultPlan(@Param('id') id: string) {
+    return this.packagesService.setDefaultPlan(id);
+  }
+
   @Delete('admin/plans/:id')
   @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
   @Roles('superadmin')
