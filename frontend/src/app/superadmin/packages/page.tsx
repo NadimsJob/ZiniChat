@@ -8,7 +8,7 @@ import { Plus, Trash2, Edit, Save, X, Check, Package, Puzzle } from 'lucide-reac
 
 export default function PackagesPage() {
   const { language } = useLanguage();
-  const { toCurrency, formatBDT } = useCurrency();
+  const { toCurrency, formatBDT, formatPrice } = useCurrency();
   const [activeTab, setActiveTab] = useState<'plans' | 'addons'>('plans');
   
   const [plans, setPlans] = useState<any[]>([]);
@@ -209,7 +209,7 @@ export default function PackagesPage() {
                 {plan.isPopular && <div className="absolute top-2.5 right-4 text-xs font-bold bg-primary/10 text-primary px-2 py-1 rounded">Popular</div>}
                 
                 <h3 className="text-[15px] font-bold">{plan.name}</h3>
-                <div className="text-[13px] font-black mt-2 text-primary">{formatBDT(plan.priceMonthlyBdt)}<span className="text-[12px] text-zinc-500 font-normal"> / monthly</span></div>
+                <div className="text-[13px] font-black mt-2 text-primary">{formatPrice(plan.priceMonthlyBdt)}<span className="text-[12px] text-zinc-500 font-normal"> / monthly</span></div>
                 
                 <div className="mt-2 space-y-2 text-[12px] text-zinc-400">
                   <div className="flex justify-between"><span>Team Members:</span> <span className="font-medium text-zinc-200">{plan.seatLimit}</span></div>
