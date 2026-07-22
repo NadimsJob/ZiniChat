@@ -153,8 +153,8 @@ export default function InstagramSettingsPage() {
             {connections.map((conn) => (
               <div key={conn.id} className="flex justify-between items-center p-4 bg-background/50 border border-surface-hover rounded-xl">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-pink-500/10 rounded-xl flex items-center justify-center text-pink-500">
-                    <Instagram className="w-5 h-5" />
+                  <div className="w-12 h-12 bg-pink-500/10 rounded-full flex items-center justify-center text-pink-500 shrink-0">
+                    <MessageCircle className="w-6 h-6" />
                   </div>
                   <div>
                     <h3 className="text-[14px] font-bold">{conn.displayName || 'Instagram Account'}</h3>
