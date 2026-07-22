@@ -200,7 +200,7 @@ export default function PricingPage() {
                   <div className={`flex items-start gap-1 ${textColor}`}>
                     <span className="text-2xl font-bold mt-2">{displayCurrency === 'BDT' ? '৳' : '$'}</span>
                     <span className="text-6xl font-black tracking-tighter">
-                      {formatNumber(!isYearly && plan.promoPriceMonthlyBdt ? plan.promoPriceMonthlyBdt : displayPrice)}
+                      {formatNumber(!isYearly && Number(plan.promoMonths) > 0 ? plan.promoPriceMonthlyBdt : displayPrice)}
                     </span>
                   </div>
                   
@@ -208,7 +208,7 @@ export default function PricingPage() {
                      {language === 'en' ? 'per month' : 'প্রতি মাসে'}
                   </div>
                   
-                  {!isYearly && plan.promoPriceMonthlyBdt ? (
+                  {!isYearly && Number(plan.promoMonths) > 0 ? (
                     <div className={`text-sm font-bold mt-3 inline-block self-start px-2 py-1 rounded ${isPop ? 'bg-black/10 text-zinc-900' : 'bg-primary/10 text-primary'}`}>
                       {language === 'en' ? `For the first ${plan.promoMonths} months, then ${displayCurrency === 'BDT' ? '৳' : '$'}${formatNumber(displayPrice)}/mo` : `প্রথম ${plan.promoMonths} মাসের জন্য, তারপর ${displayCurrency === 'BDT' ? '৳' : '$'}${formatNumber(displayPrice)}/মাস`}
                     </div>
