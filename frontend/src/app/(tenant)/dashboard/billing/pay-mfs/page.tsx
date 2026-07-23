@@ -43,6 +43,11 @@ function PayMfsContent() {
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [timeLeft, setTimeLeft] = useState(600); // 10 minutes countdown
   const [copiedField, setCopiedField] = useState<string>('');
+
+  const [couponInput, setCouponInput] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
+  const [couponError, setCouponError] = useState('');
+  const [applyingCoupon, setApplyingCoupon] = useState(false);
   
   const timerRef = useRef<any>(null);
   const autoCheckRef = useRef<any>(null);
@@ -57,14 +62,21 @@ function PayMfsContent() {
     trxIdRef.current = trxId;
   }, [trxId]);
 
-  // 1. Create the pending payment invoice on load
+  // 1. Create the pending payment invoice on load (handles pre-applied coupon if present)
   useEffect(() => {
     if (!planId) {
       toast.error('Invalid plan selection');
       router.push('/dashboard/settings/subscription');
       return;
     }
-    initiatePaymentInvoice();
+
+    const preApplied = searchParams.get('coupon');
+    if (preApplied) {
+      setCouponInput(preApplied);
+      handleApplyCouponDirect(preApplied);
+    } else {
+      initiatePaymentInvoice();
+    }
 
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -92,7 +104,64 @@ function PayMfsContent() {
     }
   }, [payment]);
 
-  const initiatePaymentInvoice = async () => {
+  const handleApplyCouponDirect = async (code: string) => {
+    setApplyingCoupon(true);
+    setCouponError('');
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/coupons/validate?code=${code}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAppliedCoupon(data);
+        await initiatePaymentInvoice(code);
+      } else {
+        const err = await res.json();
+        setCouponError(err.message || 'Invalid coupon');
+        await initiatePaymentInvoice();
+      }
+    } catch (err) {
+      setCouponError('Error validating coupon');
+      await initiatePaymentInvoice();
+    } finally {
+      setApplyingCoupon(false);
+    }
+  };
+
+  const handleApplyCouponClick = async () => {
+    const code = couponInput.trim().toUpperCase();
+    if (!code) return;
+    setApplyingCoupon(true);
+    setCouponError('');
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/coupons/validate?code=${code}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAppliedCoupon(data);
+        toast.success(language === 'en' ? 'Coupon applied!' : 'কুপন প্রয়োগ করা হয়েছে!');
+        // Clear old timers before recreate
+        if (timerRef.current) clearInterval(timerRef.current);
+        if (autoCheckRef.current) clearInterval(autoCheckRef.current);
+        setTimeLeft(600);
+        await initiatePaymentInvoice(code);
+      } else {
+        const err = await res.json();
+        setCouponError(err.message || 'Invalid coupon');
+        toast.error(err.message || 'Invalid coupon');
+      }
+    } catch (err) {
+      setCouponError('Error validating coupon');
+      toast.error('Error validating coupon');
+    } finally {
+      setApplyingCoupon(false);
+    }
+  };
+
+  const initiatePaymentInvoice = async (appliedCouponCode?: string) => {
     try {
       const token = Cookies.get('access_token');
       // Create a manual pending payment request with a placeholder TrxID first
@@ -107,7 +176,7 @@ function PayMfsContent() {
           planId,
           trxId: tempTrxId,
           billingCycle,
-          couponCode: couponCode || undefined
+          couponCode: appliedCouponCode || undefined
         })
       });
 
@@ -517,6 +586,61 @@ function PayMfsContent() {
                       </div>
                     </>
                   )}
+
+                  <div className="h-px bg-zinc-800" />
+
+                  {/* Coupon Application Block */}
+                  <div className="space-y-1.5 p-2 bg-zinc-950/40 rounded-xl border border-zinc-850">
+                    <label className="block text-[10px] text-zinc-500 uppercase font-semibold">
+                      {language === 'en' ? 'Have a Coupon Code?' : 'কুপন কোড আছে?'}
+                    </label>
+                    <div className="flex gap-1.5">
+                      <input
+                        type="text"
+                        placeholder={language === 'en' ? 'e.g. DISCOUNT20' : 'যেমন: DISCOUNT20'}
+                        value={couponInput}
+                        onChange={(e) => setCouponInput(e.target.value)}
+                        disabled={applyingCoupon || !!appliedCoupon}
+                        className="flex-1 bg-zinc-900 border border-zinc-850 rounded-lg px-2.5 py-1 text-[11px] font-mono focus:outline-none focus:border-primary text-zinc-200 uppercase placeholder:normal-case"
+                      />
+                      {appliedCoupon ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAppliedCoupon(null);
+                            setCouponInput('');
+                            initiatePaymentInvoice();
+                          }}
+                          className="px-2 py-1 bg-red-600/20 hover:bg-red-650/30 border border-red-500/30 text-red-400 rounded-lg text-[10px] font-bold transition-all"
+                        >
+                          {language === 'en' ? 'Remove' : 'মুছুন'}
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={handleApplyCouponClick}
+                          disabled={applyingCoupon || !couponInput.trim()}
+                          className="px-3 py-1 bg-primary/10 hover:bg-primary/20 border border-primary/30 text-primary rounded-lg text-[10px] font-bold transition-all disabled:opacity-50"
+                        >
+                          {applyingCoupon ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            language === 'en' ? 'Apply' : 'প্রয়োগ করুন'
+                          )}
+                        </button>
+                      )}
+                    </div>
+                    {couponError && (
+                      <span className="text-[10px] text-red-400 block">{couponError}</span>
+                    )}
+                    {appliedCoupon && (
+                      <span className="text-[10px] text-emerald-400 block font-medium">
+                        ✓ {language === 'en' 
+                          ? `Applied: ${appliedCoupon.discountType === 'percentage' ? `${appliedCoupon.discountAmount}% Off` : `${formatBDT(appliedCoupon.discountAmount)} Off`}` 
+                          : `প্রয়োগকৃত: ${appliedCoupon.discountType === 'percentage' ? `${appliedCoupon.discountAmount}% ছাড়` : `${formatBDT(appliedCoupon.discountAmount)} ছাড়`}`}
+                      </span>
+                    )}
+                  </div>
 
                   {qrPayload.baseAmount !== undefined && (
                     <>

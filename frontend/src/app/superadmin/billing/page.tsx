@@ -53,7 +53,7 @@ export default function BillingPage() {
             ) : (
               subscriptions.map(sub => (
                 <tr key={sub.id} className="hover:bg-surface-hover/30 transition-colors">
-                  <td className="px-3 py-2 font-medium text-foreground">{sub.tenant?.name || 'Unknown'}</td>
+                  <td className="px-3 py-2 font-medium text-foreground">{sub.tenant?.businessName || 'Unknown'}</td>
                   <td className="px-3 py-2 text-zinc-300">{sub.plan?.name || 'Custom'}</td>
                   <td className="px-3 py-2">
                     <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
