@@ -6,6 +6,7 @@ import { toast, Toaster } from 'react-hot-toast';
 import { 
   Plus, 
   Trash2, 
+  Edit2,
   Check, 
   X, 
   RefreshCw, 
@@ -28,6 +29,7 @@ export default function MfsSettingsPage() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
   
   // Form fields
@@ -97,6 +99,68 @@ export default function MfsSettingsPage() {
       if (res.ok) {
         toast.success(language === 'en' ? 'Account added successfully' : 'অ্যাকাউন্ট সফলভাবে যুক্ত হয়েছে');
         setShowAddModal(false);
+        setNumber('');
+        setMerchantId('');
+        setBankName('');
+        setRoutingNumber('');
+        setQrCodeUrl('');
+        fetchData();
+      } else {
+        const err = await res.json();
+        toast.error(err.message || 'Error occurred');
+      }
+    } catch (err) {
+      toast.error('API Error');
+    }
+  };
+
+  const handleCloseModal = () => {
+    setShowAddModal(false);
+    setEditingAccount(null);
+    setNumber('');
+    setMerchantId('');
+    setBankName('');
+    setRoutingNumber('');
+    setQrCodeUrl('');
+  };
+
+  const handleEditClick = (acc: any) => {
+    setEditingAccount(acc);
+    setProvider(acc.provider);
+    setAccountType(acc.accountType);
+    setNumber(acc.number);
+    setMerchantId(acc.merchantId || '');
+    setBankName(acc.bankName || '');
+    setRoutingNumber(acc.routingNumber || '');
+    setQrCodeUrl(acc.qrCodeUrl || '');
+    setShowAddModal(true);
+  };
+
+  const handleUpdateAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/mfs-payments/accounts/${editingAccount.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          provider,
+          accountType,
+          number,
+          merchantId: merchantId || null,
+          bankName: bankName || null,
+          routingNumber: routingNumber || null,
+          qrCodeUrl: qrCodeUrl || null
+        })
+      });
+
+      if (res.ok) {
+        toast.success(language === 'en' ? 'Account updated successfully' : 'অ্যাকাউন্ট সফলভাবে আপডেট হয়েছে');
+        setShowAddModal(false);
+        setEditingAccount(null);
         setNumber('');
         setMerchantId('');
         setBankName('');
@@ -259,8 +323,17 @@ export default function MfsSettingsPage() {
                       </button>
                       
                       <button
+                        onClick={() => handleEditClick(acc)}
+                        className="text-zinc-500 hover:text-primary transition-colors p-1"
+                        title={language === 'en' ? 'Edit Account' : 'সম্পাদনা করুন'}
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
                         onClick={() => handleDeleteAccount(acc.id)}
                         className="text-zinc-500 hover:text-red-400 transition-colors p-1"
+                        title={language === 'en' ? 'Delete Account' : 'ডিলিট করুন'}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -493,23 +566,25 @@ export default function MfsSettingsPage() {
         </div>
       )}
 
-      {/* Add Account Modal */}
+      {/* Add / Edit Account Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-3">
           <div className="bg-[#0f0f11] border border-zinc-800 rounded-xl p-4 w-full max-w-md space-y-3 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center border-b border-zinc-800 pb-2">
               <h2 className="text-[14px] font-bold text-primary">
-                {language === 'en' ? 'Add MFS / Bank Account' : 'নতুন অ্যাকাউন্ট যুক্ত করুন'}
+                {editingAccount 
+                  ? (language === 'en' ? 'Edit MFS / Bank Account' : 'অ্যাকাউন্ট সম্পাদনা করুন')
+                  : (language === 'en' ? 'Add MFS / Bank Account' : 'নতুন অ্যাকাউন্ট যুক্ত করুন')}
               </h2>
               <button 
-                onClick={() => setShowAddModal(false)}
+                onClick={handleCloseModal}
                 className="text-zinc-500 hover:text-zinc-300"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleAddAccount} className="space-y-3">
+            <form onSubmit={editingAccount ? handleUpdateAccount : handleAddAccount} className="space-y-3">
               <div>
                 <label className="block text-[11px] text-zinc-400 font-medium mb-1">Provider Type</label>
                 <select
@@ -608,12 +683,17 @@ export default function MfsSettingsPage() {
                   onChange={(e) => setQrCodeUrl(e.target.value)}
                   className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-1.5 focus:outline-none focus:border-primary text-zinc-300"
                 />
+                <span className="text-[10px] text-zinc-500 mt-1 block leading-tight">
+                  {language === 'en' 
+                    ? '* Leave blank to automatically generate dynamic Bangla QR on customer checkout.'
+                    : '* খালি রাখলে পেমেন্ট পেজে স্বয়ংক্রিয়ভাবে ডাইনামিক বাংলা কিউআর তৈরি হবে।'}
+                </span>
               </div>
 
               <div className="flex justify-end gap-2 pt-2 border-t border-zinc-800">
                 <button
                   type="button"
-                  onClick={() => setShowAddModal(false)}
+                  onClick={handleCloseModal}
                   className="px-3 py-1.5 bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 rounded-lg text-zinc-300"
                 >
                   Cancel
@@ -622,7 +702,9 @@ export default function MfsSettingsPage() {
                   type="submit"
                   className="px-3 py-1.5 bg-primary text-black font-semibold rounded-lg hover:bg-primary/90 transition-colors"
                 >
-                  Save Account
+                  {editingAccount 
+                    ? (language === 'en' ? 'Save Changes' : 'পরিবর্তন সংরক্ষণ করুন')
+                    : (language === 'en' ? 'Save Account' : 'সংরক্ষণ করুন')}
                 </button>
               </div>
             </form>
