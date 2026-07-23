@@ -22,7 +22,7 @@ export class TenantStatsService {
     });
     
     const newLeads = await this.prisma.contact.count({
-      where: { tenantId, createdAt: { gte: startOfMonth } }
+      where: { tenantId, lastSeenAt: { gte: startOfMonth } }
     });
 
     // 3. E-commerce Orders & Revenue
@@ -78,7 +78,7 @@ export class TenantStatsService {
       return {
         id: msg.id,
         type: 'message',
-        title: msg.senderType === 'user' ? 'Message received' : 'Message sent',
+        title: msg.direction === 'inbound' ? 'Message received' : 'Message sent',
         description: contentStr.substring(0, 50) + (contentStr.length > 50 ? '...' : ''),
         time: msg.createdAt,
         contactName: msg.conversation?.contact?.name || 'Unknown'
