@@ -831,3 +831,52 @@ model SupportMessage {
   @@map("support_messages")
 }
 
+// MFS & Bank SMS Payment System
+model MfsAccount {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String?  @db.Uuid // Optional, for future multi-tenant capability
+  provider      String   // "BKASH" | "NAGAD" | "ROCKET" | "BANK"
+  accountType   String   // "PERSONAL" | "MERCHANT" | "BANK_ACCOUNT"
+  number        String   // MFS number or Bank A/C number
+  merchantId    String?  // Merchant ID (PAN) for merchant pay / Bangla QR
+  bankName      String?  // Name of the bank (if BANK)
+  routingNumber String?  // Routing number for bank accounts
+  qrCodeUrl     String?  // Static QR code image path if uploaded
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([provider, number])
+  @@map("mfs_accounts")
+}
+
+model MfsTransaction {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  trxId         String    @unique
+  provider      String    // "BKASH" | "NAGAD" | "ROCKET" | "BANK"
+  accountType   String    @default("PERSONAL") // "PERSONAL" | "MERCHANT" | "BANK"
+  amount        Decimal   @db.Decimal(10, 2)
+  senderNumber  String?   // Customer's number if extracted from SMS
+  smsBody       String    @db.Text
+  isUsed        Boolean   @default(false)
+  usedByUserId  String?   @db.Uuid
+  usedAt        DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@map("mfs_transactions")
+}
+
+model MfsPayment {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String    @db.Uuid
+  amount         Decimal   @db.Decimal(10, 2)
+  provider       String    // "BKASH" | "NAGAD" | "ROCKET" | "BANK"
+  status         String    @default("PENDING") // PENDING, COMPLETED, FAILED
+  trxId          String?
+  verifiedAt     DateTime?
+  createdAt      DateTime  @default(now())
+
+  @@map("mfs_payments")
+}
+
+

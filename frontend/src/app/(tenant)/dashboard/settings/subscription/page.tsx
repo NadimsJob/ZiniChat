@@ -1,15 +1,17 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 import { useLanguage } from '@/components/LanguageProvider';
 import { useCurrency } from '@/components/CurrencyProvider';
 import { Crown, Package, Puzzle, Check } from 'lucide-react';
 
 export default function SubscriptionSettingsPage() {
+  const router = useRouter();
   const { language } = useLanguage();
   const { formatBDT, formatNumber } = useCurrency();
-  
+
   const [plans, setPlans] = useState<any[]>([]);
   const [addons, setAddons] = useState<any[]>([]);
   const [currentSubscription, setCurrentSubscription] = useState<any>(null);
@@ -61,8 +63,7 @@ export default function SubscriptionSettingsPage() {
   }, []);
 
   const handleSubscribe = async (planId: string) => {
-    const plan = plans.find(p => p.id === planId);
-    setSelectedPlan(plan);
+    router.push(`/dashboard/billing/pay-mfs?planId=${planId}&billingCycle=${billingCycle}`);
   };
 
   const handleApplyCoupon = async () => {

@@ -21,10 +21,10 @@ A multi-tenant SaaS platform where businesses (tenants) manage customer communic
 ---
 
 ## 3. Current Status & Active Focus
-- **Active Focus**: Fixing unit testing and expanding Jest coverage across Auth, Packages, Broadcast Processor, and SMTP services. Validated BullMQ async queueing and mock setups.
-- **Recent Issues Fixed**: Fixed test failures caused by partial mock data in Prisma `findUnique` returning undefined values to email triggers. Fixed TS build errors in SMTP HTML generations.
-- **System**: Backend (NestJS), Frontend (Next.js). Bilingual support enabled (English/Bengali) across UI components. Tickets. Implemented strict feature gating for Support AI, Team Management, and Contact Labels via Superadmin Plan settings. Extracted and animated the 2-Minute Setup Widget on the marketing pages.
-- **Next Up:** Extensive E2E testing of the UI flows, onboarding optimizations, and live deployment.
+- **Active Focus**: Implemented and unit-tested MFS & Bank SMS-matching automated payment gateway (supporting bKash/Nagad/Rocket/Bank Transfer and dynamic EMVCo Bangla QR codes).
+- **Recent Issues Fixed**: Completed 10 backend unit tests for SMS webhook ingestion, dynamic QR generation, and real-time user verification.
+- **System**: Backend (NestJS), Frontend (Next.js), Mobile (Kotlin Android app). Bilingual support enabled (English/Bengali) across UI components. Tickets. Implemented strict feature gating for Support AI, Team Management, and Contact Labels via Superadmin Plan settings. Extracted and animated the 2-Minute Setup Widget on the marketing pages.
+- **Next Up:** Live testing of the MFS SMS gateway app with physical Android devices, E2E testing of the UI checkout flows.
 - Subscription logic, quotas (messages, AI tokens, storage), and superadmin customizations have been strictly enforced on the backend via `QuotaService` and `FeatureGuard`.
 - Direct PC-to-Server deployment scripts (MCP Server) have been deprecated and deleted to enforce Git-only deployment constraints.
 - **Live and Staging Environments are fully deployed with Traefik routing, reverse proxy networking, and SSL certificates.**
@@ -38,6 +38,7 @@ This log lists all features and modules implemented, ordered chronologically.
 
 | Date | Feature / Change | Key Files Modified | Status / Notes |
 | :--- | :--- | :--- | :--- |
+| **2026-07-23** | **MFS & Bank SMS Payment System** | `schema.prisma`, `app.module.ts`, `mfs-payments/` (Module, Controller, Service, Spec), `pay-mfs/page.tsx`, `settings/mfs/page.tsx`, `subscription/page.tsx`, `android-sms-gateway/` | Implemented end-to-end SMS-matching automated payment gateway supporting bKash, Nagad, Rocket, Bank accounts, and dynamic EMVCo Bangla QR. Created Kotlin Android background listener app. Added 10 Jest unit tests passing successfully. |
 | **2026-07-22** | **Unit Testing & Test Mocks Fixing** | `smtp.service.spec.ts`, `broadcasts.processor.spec.ts`, `auth.service.spec.ts`, `instagram-auth.service.spec.ts`, `packages.service.spec.ts` | Successfully ran and fixed all 32 unit tests across 7 suites for the day's features. Repaired Prisma mock payload definitions, fixed BullMQ `whatsappQueue` spy assertions by using `getQueueToken`, and corrected string assertions for HTML email templates. |
 | **2026-07-22** | **Detailed Tenant Reports & UI Enhancement** | `tenants.service.ts`, `tenants.controller.ts`, `tenants/page.tsx`, `tenants/[id]/page.tsx` | Upgraded the Superadmin Tenants list to dynamically display subscription status and renewal dates. Built a comprehensive, separate Tenant Report view showing deep statistics, usage progress bars, active limits, and payment history in a unified premium glassmorphism layout. |
 | **2026-07-22** | **Superadmin Business Nature Stats** | `stats.service.ts`, `superadmin/page.tsx` | Added aggregation logic in the backend to count tenants grouped by their business nature. Integrated a new Pie Chart into the Superadmin Dashboard to visualize the distribution of business types across the platform. |

@@ -42,6 +42,7 @@ import { InquiriesModule } from './inquiries/inquiries.module';
 import { TicketsModule } from './tickets/tickets.module';
 import { BroadcastsModule } from './broadcasts/broadcasts.module';
 import { InstagramAuthModule } from './channels/instagram/instagram-auth.module';
+import { MfsPaymentsModule } from './mfs-payments/mfs-payments.module';
 
 @Module({
   imports: [
@@ -94,7 +95,8 @@ import { InstagramAuthModule } from './channels/instagram/instagram-auth.module'
     TicketsModule,
     BusinessNatureModule,
     BroadcastsModule,
-    InstagramAuthModule
+    InstagramAuthModule,
+    MfsPaymentsModule
   ],
   controllers: [AppController],
   providers: [

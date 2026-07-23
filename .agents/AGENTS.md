@@ -169,3 +169,13 @@ This rule documents testing strategies for the platform to prevent recurring TS 
   * If the method expects `tenant.users[0].email` or `tenant.businessName`, the mock MUST provide the full nested object structure to avoid `undefined` reference errors downstream.
 * **HTML String Assertions:** When validating email service outputs (`mockSendMail.toHaveBeenCalledWith`), avoid hardcoding full HTML structures if the service wraps the content in a master template (`generateMasterHtml`). Use `expect.stringContaining('Specific Template Text')` to validate the body.
 * **Legacy Check Elimination:** When refactoring a processor (e.g., migrating a loop to an asynchronous queue processor), verify that legacy conditionals (like checking `isLast` flags) have been removed from the tests if the new queue delegates individual processing away from the batch handler.
+
+---
+
+## 19. MFS & Bank SMS Payment Gateway Best Practices
+This rule documents the design patterns and security safeguards implemented for the SMS-matching payment gateway.
+
+* **Transaction-Safe Operations:** When executing `verifyPayment` or `manualClaimTransaction`, you MUST wrap all reads and writes (checking `payment.status`, verifying `smsTx.isUsed`, setting `isUsed = true`, updating `payment`, and updating `subscription`) inside a secure `prisma.$transaction(async (tx) => { ... })` block. This prevents race conditions and double-spending when users fire multiple parallel claim requests for the same TrxID.
+* **EMVCo Bangla QR Payload Structure:** Bangla QR codes are generated dynamically on the fly based on the EMVCo specification. Ensure the payload string ends with Tag 63 (checksum) followed by a 4-character uppercase Hex CRC-16 (calculated using CRC-16-CCITT with polynomial `0x1021`, initial value `0xFFFF`).
+* **SMS Gateway API Key Security:** The `syncSmsTransaction` webhook API (`POST /mfs-payments/sms-webhook`) must require the `X-SMS-GATEWAY-API-KEY` header matching the environment variable `SMS_GATEWAY_API_KEY`. Never allow SMS sync data to bypass this validation to prevent fake payment logging.
+
