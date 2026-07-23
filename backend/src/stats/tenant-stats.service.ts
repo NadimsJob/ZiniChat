@@ -73,14 +73,17 @@ export class TenantStatsService {
       include: { conversation: { include: { contact: true } } }
     });
 
-    const formattedActivity = recentMessages.map(msg => ({
-      id: msg.id,
-      type: 'message',
-      title: msg.senderType === 'user' ? 'Message received' : 'Message sent',
-      description: msg.content.substring(0, 50) + (msg.content.length > 50 ? '...' : ''),
-      time: msg.createdAt,
-      contactName: msg.conversation?.contact?.name || 'Unknown'
-    }));
+    const formattedActivity = recentMessages.map(msg => {
+      const contentStr = String(msg.content || '');
+      return {
+        id: msg.id,
+        type: 'message',
+        title: msg.senderType === 'user' ? 'Message received' : 'Message sent',
+        description: contentStr.substring(0, 50) + (contentStr.length > 50 ? '...' : ''),
+        time: msg.createdAt,
+        contactName: msg.conversation?.contact?.name || 'Unknown'
+      };
+    });
 
     return {
       messages: { 
