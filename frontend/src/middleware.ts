@@ -32,8 +32,15 @@ export function middleware(request: NextRequest) {
   // Protect /dashboard routes (Tenant)
   if (path.startsWith('/dashboard')) {
     const token = request.cookies.get('access_token')?.value;
+    const role = request.cookies.get('user_role')?.value;
+
     if (!token || !isTokenStructurallyValid(token)) {
       return NextResponse.redirect(new URL('/login', request.url));
+    }
+
+    // A pure superadmin session should be in /superadmin, not tenant /dashboard
+    if (role === 'superadmin') {
+      return NextResponse.redirect(new URL('/superadmin', request.url));
     }
   }
 

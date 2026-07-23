@@ -101,27 +101,51 @@ Always communicate in Bengali unless the user speaks in English. Be polite and c
     ];
 
     try {
+      let baseURL = aiConfig.apiEndpoint || undefined;
+      if (aiConfig.provider === 'gemini' && !baseURL) {
+        baseURL = 'https://generativelanguage.googleapis.com/v1beta/openai/';
+      }
+
       const openai = new OpenAI({
         apiKey: aiConfig.apiKey,
-        baseURL: aiConfig.apiEndpoint || undefined
+        baseURL: baseURL
       });
 
+      let modelName = aiConfig.modelName;
       let responseMessage: any;
+
       try {
         const response = await openai.chat.completions.create({
-          model: aiConfig.modelName,
+          model: modelName,
           messages: messages as any,
           tools: tools as any,
           tool_choice: 'auto',
         });
         responseMessage = response.choices[0].message;
       } catch (innerError) {
-        this.logger.warn(`AI model ${aiConfig.modelName} failed with tools. Retrying without tools. Error: ${innerError.message}`);
-        const fallbackResponse = await openai.chat.completions.create({
-          model: aiConfig.modelName,
-          messages: messages as any,
-        });
-        responseMessage = fallbackResponse.choices[0].message;
+        this.logger.warn(`AI model ${modelName} (${aiConfig.provider}) failed: ${innerError.message}. Retrying with fallback...`);
+        
+        if (aiConfig.provider === 'gemini') {
+          try {
+            const fallbackResponse = await openai.chat.completions.create({
+              model: 'gemini-2.0-flash',
+              messages: messages as any,
+            });
+            responseMessage = fallbackResponse.choices[0].message;
+          } catch (e2) {
+            const fallbackResponse2 = await openai.chat.completions.create({
+              model: 'gemini-1.5-flash',
+              messages: messages as any,
+            });
+            responseMessage = fallbackResponse2.choices[0].message;
+          }
+        } else {
+          const fallbackResponse = await openai.chat.completions.create({
+            model: modelName,
+            messages: messages as any,
+          });
+          responseMessage = fallbackResponse.choices[0].message;
+        }
       }
 
       if (responseMessage.tool_calls) {
