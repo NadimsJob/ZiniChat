@@ -223,10 +223,6 @@ export class MfsPaymentsService {
     const cleanTrxId = trxId?.trim().toUpperCase();
     const cleanSenderNumber = senderNumber?.trim();
 
-    if (!cleanTrxId && !cleanSenderNumber) {
-      throw new BadRequestException('Either Transaction ID or Sender Mobile/A/C Number is required');
-    }
-
     // Wrapping in a transaction to prevent race conditions (double claiming)
     return this.prisma.$transaction(async (tx) => {
       // 1. Fetch payment request
@@ -254,7 +250,7 @@ export class MfsPaymentsService {
             amount: expectedAmount,
             isUsed: false,
             createdAt: {
-              gte: new Date(Date.now() - 4 * 60 * 60 * 1000), // Within last 4 hours
+              gte: new Date(Date.now() - 2 * 60 * 60 * 1000), // Within last 2 hours (security restriction)
             },
           },
           orderBy: { createdAt: 'desc' },
@@ -268,13 +264,27 @@ export class MfsPaymentsService {
           const inputOnly = cleanSenderNumber.replace(/\D/g, '');
           return numOnly.endsWith(inputOnly) || inputOnly.endsWith(numOnly);
         });
+      } else {
+        // Zero-Input matching: Find solely by the mathematically unique decimal amount offset
+        smsTx = await tx.mfsTransaction.findFirst({
+          where: {
+            amount: expectedAmount,
+            isUsed: false,
+            createdAt: {
+              gte: new Date(Date.now() - 2 * 60 * 60 * 1000), // Strictly within last 2 hours
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        });
       }
 
       if (!smsTx) {
         throw new BadRequestException(
           cleanTrxId 
             ? 'Transaction ID not found. Please ensure the SMS has arrived and the TrxID is correct.'
-            : 'No matching recent payment found from this number/account. Please wait a few seconds and try again.'
+            : (cleanSenderNumber 
+                ? 'No matching recent payment found from this number/account. Please wait a few seconds and try again.'
+                : 'No matching recent payment with this exact unique amount found. Please wait a few seconds and try again.')
         );
       }
       

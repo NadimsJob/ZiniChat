@@ -14,7 +14,8 @@ import {
   ArrowLeft, 
   Clock,
   ShieldCheck,
-  CheckCircle2
+  CheckCircle2,
+  HelpCircle
 } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageProvider';
 import { useCurrency } from '@/components/CurrencyProvider';
@@ -169,10 +170,7 @@ function PayMfsContent() {
   const startAutoCheck = () => {
     if (autoCheckRef.current) clearInterval(autoCheckRef.current);
     autoCheckRef.current = setInterval(async () => {
-      const cleanTrx = trxIdRef.current.trim();
-      const cleanNum = senderNumberRef.current.trim();
-      // Auto check if TrxID is entered (min 8 chars) or Sender Number is entered (min 4 chars)
-      if ((cleanTrx.length >= 8 || cleanNum.length >= 4) && !verifying && !paymentSuccess) {
+      if (!verifying && !paymentSuccess) {
         silentVerify();
       }
     }, 5000);
@@ -182,7 +180,6 @@ function PayMfsContent() {
     if (!payment) return;
     const cleanTrx = trxIdRef.current.trim();
     const cleanNum = senderNumberRef.current.trim();
-    if (!cleanTrx && !cleanNum) return;
 
     try {
       const token = Cookies.get('access_token');
@@ -536,75 +533,87 @@ function PayMfsContent() {
                   </div>
                 </div>
 
-                {/* Input verification form */}
-                <div className="w-full max-w-md mx-auto pt-3 border-t border-zinc-800/40 space-y-3">
-                  {!showTrxField ? (
-                    <div className="text-left">
-                      <label className="block text-[11px] text-amber-400/80 font-bold mb-1 uppercase tracking-wider flex items-center justify-between">
-                        <span>{language === 'en' ? 'Sender Wallet/Account Number' : 'যে নম্বর/অ্যাকাউন্ট থেকে পে করেছেন'}</span>
-                        <span className="text-[9px] bg-amber-500/10 text-amber-400 px-1 py-0.5 rounded uppercase font-bold tracking-tight">Recommended</span>
-                      </label>
-                      <input
-                        type="text"
-                        placeholder={language === 'en' ? 'e.g. 017XXXXXXXX or Account last 4 digits' : 'উদাঃ ০১৭xxxxxxxx অথবা ব্যাংক অ্যাকাউন্টের শেষ ৪ সংখ্যা'}
-                        value={senderNumber}
-                        onChange={(e) => setSenderNumber(e.target.value)}
-                        className="w-full bg-zinc-950/60 border border-zinc-850 rounded-xl px-3 py-2 text-[13px] font-bold text-zinc-200 focus:outline-none focus:border-amber-500/50 text-center placeholder:font-normal"
-                      />
-                      <span className="text-[9.5px] text-zinc-500 mt-1 block leading-tight">
-                        {language === 'en' 
-                          ? '* The system will automatically scan bank SMS logs matching this number and amount.'
-                          : '* সিস্টেম স্বয়ংক্রিয়ভাবে নোটিফিকেশন এসএমএস থেকে আপনার এই নম্বর ও টাকার পরিমাণ মিলিয়ে অ্যাকাউন্ট সচল করে দেবে।'}
+                {/* Real-time Zero-Input Scanning Loader */}
+                <div className="w-full max-w-md mx-auto pt-3 border-t border-zinc-800/40 space-y-4">
+                  
+                  <div className="bg-zinc-950/30 border border-zinc-850 rounded-2xl p-4 text-center space-y-3 shadow-inner">
+                    <div className="flex items-center justify-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin text-amber-500" />
+                      <span className="text-[12px] text-zinc-300 font-bold tracking-wide animate-pulse">
+                        {language === 'en' ? 'Scanning for Payment (Realtime)...' : 'পেমেন্ট স্ক্যান করা হচ্ছে (রিয়েল-টাইম)...'}
                       </span>
                     </div>
-                  ) : (
-                    <div className="text-left">
-                      <label className="block text-[11px] text-zinc-400 font-semibold mb-1 uppercase tracking-wider">
-                        {qrPayload.provider === 'BANK' ? 'Transaction Reference / Trace ID' : 'MFS Transaction ID (TrxID)'}
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="e.g. 8N7X2C9Y10"
-                        value={trxId}
-                        onChange={(e) => setTrxId(e.target.value)}
-                        className="w-full bg-zinc-950/60 border border-zinc-850 rounded-xl px-3 py-2 text-[13px] font-bold text-zinc-200 focus:outline-none focus:border-primary text-center font-mono placeholder:font-sans uppercase"
-                      />
+                    <div className="w-full bg-zinc-900 rounded-full h-1.5 overflow-hidden">
+                      <div className="bg-gradient-to-r from-amber-500 via-[#1F824A] to-amber-500 h-1.5 rounded-full animate-[shimmer_2s_infinite] w-full" style={{ backgroundSize: '200% 100%' }}></div>
                     </div>
-                  )}
-
-                  <div className="flex justify-center">
-                    <button
-                      type="button"
-                      onClick={() => setShowTrxField(!showTrxField)}
-                      className="text-[10px] text-zinc-400 hover:text-primary transition-all underline"
-                    >
-                      {showTrxField 
-                        ? (language === 'en' ? 'Or verify using Sender Mobile/Account Number' : 'অথবা মোবাইল/অ্যাকাউন্ট নম্বর দিয়ে ভেরিফাই করুন')
-                        : (language === 'en' ? 'Or verify using Transaction ID (TrxID)' : 'অথবা ট্রানজেকশন আইডি (TrxID) দিয়ে ভেরিফাই করুন')}
-                    </button>
+                    <p className="text-[11px] text-zinc-400 leading-relaxed px-1">
+                      {language === 'en'
+                        ? 'Scan and pay the exact amount. The system will automatically detect the payment and activate your subscription in 5-10 seconds.'
+                        : 'মার্চেন্ট কিউআর কোড স্ক্যান করে পয়সাসহ হুবহু এই পরিমাণ টাকা পরিশোধ করুন। পে করার ৫-১০ সেকেন্ডের মধ্যে এটি অটোমেটিক ভেরিফাই হয়ে সাবস্ক্রিপশন সচল হয়ে যাবে!'}
+                    </p>
                   </div>
 
-                  <button
-                    onClick={handleVerify}
-                    disabled={verifying || (!trxId.trim() && !senderNumber.trim())}
-                    className="w-full py-2 bg-primary text-black hover:bg-primary/95 rounded-xl font-bold transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-1.5"
-                  >
-                    {verifying ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin text-black" />
-                        Verifying Transaction...
-                      </>
+                  {/* Manual Backup Collapse Option */}
+                  <div className="space-y-2">
+                    {showTrxField ? (
+                      <div className="bg-zinc-950/20 border border-zinc-850/60 rounded-xl p-3 space-y-2.5">
+                        <div className="text-left">
+                          <label className="block text-[11px] text-zinc-400 font-semibold mb-1 uppercase tracking-wider">
+                            {qrPayload.provider === 'BANK' ? 'Transaction Reference / Trace ID' : 'MFS Transaction ID (TrxID)'}
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="e.g. 8N7X2C9Y10"
+                            value={trxId}
+                            onChange={(e) => setTrxId(e.target.value)}
+                            className="w-full bg-zinc-950/60 border border-zinc-850 rounded-xl px-3 py-2 text-[13px] font-bold text-zinc-200 focus:outline-none focus:border-primary text-center font-mono placeholder:font-sans uppercase"
+                          />
+                        </div>
+                        <button
+                          onClick={handleVerify}
+                          disabled={verifying || !trxId.trim()}
+                          className="w-full py-2 bg-primary text-black hover:bg-primary/95 rounded-xl font-bold transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-1.5 text-[12px]"
+                        >
+                          {verifying ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin text-black" />
+                              Verifying...
+                            </>
+                          ) : (
+                            <>
+                              <ShieldCheck className="w-4 h-4 text-black" />
+                              Verify manually
+                            </>
+                          )}
+                        </button>
+                      </div>
                     ) : (
-                      <>
-                        <ShieldCheck className="w-4 h-4 text-black" />
-                        Verify and Activate Plan
-                      </>
+                      <div className="flex justify-center">
+                        <button
+                          type="button"
+                          onClick={() => setShowTrxField(true)}
+                          className="text-[10px] text-zinc-500 hover:text-zinc-300 transition-all underline"
+                        >
+                          {language === 'en' ? 'Or verify manually using Transaction ID' : 'অথবা ট্রানজেকশন আইডি দিয়ে ম্যানুয়ালি ভেরিফাই করুন'}
+                        </button>
+                      </div>
                     )}
-                  </button>
-                  
-                  <p className="text-[10px] text-zinc-500">
-                    * The system automatically scans your payment and updates in 5-10 seconds. You can also manually verify by clicking the button.
-                  </p>
+                  </div>
+
+                  {/* Contact Support Link */}
+                  <div className="pt-2 border-t border-zinc-900 flex justify-between items-center text-[11px]">
+                    <span className="text-zinc-500">
+                      {language === 'en' ? 'Having payment issues?' : 'পেমেন্ট নিয়ে কোনো সমস্যা হচ্ছে?'}
+                    </span>
+                    <a 
+                      href="/dashboard/settings/support" // Support ticket route
+                      className="text-amber-500 hover:text-amber-400 font-bold hover:underline flex items-center gap-1 transition-colors"
+                    >
+                      <HelpCircle className="w-3.5 h-3.5" />
+                      {language === 'en' ? 'Contact Support' : 'সাপোর্ট টিমের সাথে যোগাযোগ করুন'}
+                    </a>
+                  </div>
+
                 </div>
 
               </div>

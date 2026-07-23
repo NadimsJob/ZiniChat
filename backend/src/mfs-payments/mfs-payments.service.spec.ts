@@ -22,6 +22,7 @@ describe('MfsPaymentsService', () => {
     },
     mfsTransaction: {
       findUnique: jest.fn(),
+      findFirst: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
       findMany: jest.fn(),
@@ -208,6 +209,23 @@ describe('MfsPaymentsService', () => {
       });
       expect(mockNotificationsService.createNotification).toHaveBeenCalled();
       expect(mockNotificationsService.createSystemNotificationForSuperadmins).toHaveBeenCalled();
+    });
+
+    it('should successfully verify using only amount (Zero-Input matching)', async () => {
+      mockPrismaService.payment.findFirst.mockResolvedValue(paymentStub);
+      mockPrismaService.mfsTransaction.findFirst.mockResolvedValue(smsTxStub);
+      mockPrismaService.user.findFirst.mockResolvedValue({ id: 'user-1', email: 'owner@test.com' });
+      mockPrismaService.tenant.findUnique.mockResolvedValue({ id: 'tenant-1', businessName: 'Tech Hub' });
+
+      const result = await service.verifyPayment('user-1', 'tenant-1', 'pay-1', undefined, undefined);
+
+      expect(result.success).toBe(true);
+      expect(mockPrismaService.mfsTransaction.findFirst).toHaveBeenCalledWith(expect.objectContaining({
+        where: expect.objectContaining({
+          amount: 500.0,
+          isUsed: false
+        })
+      }));
     });
   });
 
