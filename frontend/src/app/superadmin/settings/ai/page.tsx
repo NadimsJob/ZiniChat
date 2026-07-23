@@ -19,6 +19,7 @@ export default function AiSettingsPage() {
   const [form, setForm] = useState({
     id: '',
     name: '',
+    provider: 'openai',
     modelName: '',
     apiKey: '',
     apiEndpoint: '',
@@ -49,6 +50,7 @@ export default function AiSettingsPage() {
       setForm({
         id: config.id,
         name: config.name,
+        provider: config.provider || 'openai',
         modelName: config.modelName,
         apiKey: config.apiKey,
         apiEndpoint: config.apiEndpoint || '',
@@ -59,6 +61,7 @@ export default function AiSettingsPage() {
       setForm({
         id: '',
         name: '',
+        provider: 'openai',
         modelName: '',
         apiKey: '',
         apiEndpoint: '',
@@ -174,7 +177,8 @@ export default function AiSettingsPage() {
         },
         body: JSON.stringify({
           apiKey: form.apiKey,
-          apiEndpoint: form.apiEndpoint
+          apiEndpoint: form.apiEndpoint,
+          provider: form.provider
         })
       });
 
@@ -310,6 +314,15 @@ export default function AiSettingsPage() {
               <div>
                 <label className="block text-[12px] font-medium mb-1 text-zinc-400">Configuration Name</label>
                 <input required type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none" placeholder="Primary OpenAI GPT-4" />
+              </div>
+
+              <div>
+                <label className="block text-[12px] font-medium mb-1 text-zinc-400">AI Provider</label>
+                <select value={form.provider} onChange={e => setForm({...form, provider: e.target.value})} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none">
+                  <option value="openai">OpenAI Compatible (OpenRouter, Groq, etc.)</option>
+                  <option value="gemini">Google Gemini</option>
+                  <option value="anthropic">Anthropic Claude</option>
+                </select>
               </div>
 
               <div>

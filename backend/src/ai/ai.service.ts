@@ -21,7 +21,7 @@ export class AiService {
         where: { id: data.id },
         data: {
           name: data.name,
-          provider: 'universal',
+          provider: data.provider || 'openai',
           modelName: data.modelName,
           apiKey: data.apiKey,
           apiEndpoint: data.apiEndpoint || null,
@@ -32,7 +32,7 @@ export class AiService {
       return this.prisma.aiConfig.create({
         data: {
           name: data.name,
-          provider: 'universal',
+          provider: data.provider || 'openai',
           modelName: data.modelName,
           apiKey: data.apiKey,
           apiEndpoint: data.apiEndpoint || null,
@@ -87,9 +87,46 @@ export class AiService {
     return { success: true };
   }
 
-  async fetchAvailableModels(data: { apiKey: string; apiEndpoint?: string }) {
-    const { apiKey, apiEndpoint } = data;
+  async fetchAvailableModels(data: { apiKey: string; apiEndpoint?: string; provider?: string }) {
+    const { apiKey, apiEndpoint, provider } = data;
+    const actualProvider = provider || 'openai';
     if (!apiKey) throw new BadRequestException('API Key is required.');
+
+    if (actualProvider === 'gemini') {
+      try {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error?.message || 'Failed to fetch Gemini models');
+        if (json.models && Array.isArray(json.models)) {
+          return json.models.map((m: any) => m.name.replace('models/', ''));
+        }
+        return [];
+      } catch (err) {
+        this.logger.error('Fetch Gemini models failed:', err);
+        throw new BadRequestException('Failed to fetch models from Gemini API. Check your API key.');
+      }
+    }
+
+    if (actualProvider === 'anthropic') {
+      try {
+        const res = await fetch('https://api.anthropic.com/v1/models', {
+          method: 'GET',
+          headers: {
+            'x-api-key': apiKey,
+            'anthropic-version': '2023-06-01'
+          }
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error?.message || 'Failed to fetch Anthropic models');
+        if (json.data && Array.isArray(json.data)) {
+          return json.data.map((m: any) => m.id);
+        }
+        return [];
+      } catch (err) {
+        this.logger.error('Fetch Anthropic models failed:', err);
+        throw new BadRequestException('Failed to fetch models from Anthropic API. Check your API key.');
+      }
+    }
 
     const baseUrl = apiEndpoint 
       ? apiEndpoint.replace('/chat/completions', '').replace('/v1/messages', '') 
@@ -137,7 +174,85 @@ export class AiService {
       throw new BadRequestException('No active AI model configuration found.');
     }
 
-    const { modelName, apiKey, apiEndpoint } = config;
+    const { modelName, apiKey, apiEndpoint, provider } = config;
+    const actualProvider = provider || 'openai';
+
+    if (actualProvider === 'gemini') {
+      try {
+        const parts = [{ text: prompt }];
+        if (imagePaths && imagePaths.length > 0) {
+          for (const imgPath of imagePaths) {
+            try {
+              const buffer = fs.readFileSync(imgPath);
+              const base64 = buffer.toString('base64');
+              let mime = 'image/jpeg';
+              if (imgPath.endsWith('.png')) mime = 'image/png';
+              else if (imgPath.endsWith('.webp')) mime = 'image/webp';
+              
+              parts.push({
+                inline_data: { mime_type: mime, data: base64 }
+              } as any);
+            } catch(e) {
+              this.logger.error('Failed to read image for AI: ' + imgPath);
+            }
+          }
+        }
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts }] })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error?.message || 'Gemini generation error');
+        return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      } catch (err) {
+        this.logger.error(`Gemini execution failed:`, err);
+        throw new InternalServerErrorException(err.message || 'Gemini request failed.');
+      }
+    }
+
+    if (actualProvider === 'anthropic') {
+      try {
+        const content: any[] = [{ type: 'text', text: prompt }];
+        if (imagePaths && imagePaths.length > 0) {
+          for (const imgPath of imagePaths) {
+            try {
+              const buffer = fs.readFileSync(imgPath);
+              const base64 = buffer.toString('base64');
+              let mime = 'image/jpeg';
+              if (imgPath.endsWith('.png')) mime = 'image/png';
+              else if (imgPath.endsWith('.webp')) mime = 'image/webp';
+              
+              content.push({
+                type: 'image',
+                source: { type: 'base64', media_type: mime, data: base64 }
+              });
+            } catch(e) {
+              this.logger.error('Failed to read image for AI: ' + imgPath);
+            }
+          }
+        }
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'x-api-key': apiKey,
+            'anthropic-version': '2023-06-01',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: modelName,
+            max_tokens: 4096,
+            messages: [{ role: 'user', content }]
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error?.message || 'Anthropic generation error');
+        return data.content?.[0]?.text || '';
+      } catch (err) {
+        this.logger.error(`Anthropic execution failed:`, err);
+        throw new InternalServerErrorException(err.message || 'Anthropic request failed.');
+      }
+    }
 
     const imagePartsOpenAI = [];
     

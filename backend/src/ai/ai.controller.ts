@@ -57,7 +57,7 @@ export class AiController {
 
   @Post('fetch-models')
   @RequirePermissions('manage:site')
-  fetchModels(@Body() body: { apiKey: string, apiEndpoint?: string }) {
+  fetchModels(@Body() body: { apiKey: string, apiEndpoint?: string, provider?: string }) {
     return this.aiService.fetchAvailableModels(body);
   }
 }
