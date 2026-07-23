@@ -59,12 +59,16 @@ export class AuthService {
 
     // Create Tenant and User in a transaction
     const user = await this.prisma.$transaction(async (prisma) => {
-      const trialEndsAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days from now
-
       // Check for default plan
       const defaultPlan = await prisma.plan.findFirst({
         where: { isDefault: true, isActive: true }
       });
+
+      // If the default plan is a paid plan (> 0 BDT), they do not get a free trial and must pay immediately
+      const isPaidDefault = defaultPlan && Number(defaultPlan.priceMonthlyBdt) > 0;
+      const trialEndsAt = isPaidDefault 
+        ? new Date(Date.now() - 1000) // set trial to past (expired)
+        : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days from now
 
       const tenant = await prisma.tenant.create({
         data: {
@@ -75,13 +79,13 @@ export class AuthService {
       });
 
       if (defaultPlan) {
-        // Create an active subscription for the default plan
+        // Create subscription. Status is 'past_due' (requires payment) if paid, or 'active' if free.
         const currentPeriodEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 1 month
         await prisma.subscription.create({
           data: {
             tenantId: tenant.id,
             planId: defaultPlan.id,
-            status: 'active',
+            status: isPaidDefault ? 'past_due' : 'active',
             billingCycle: 'monthly',
             currentPeriodEnd
           }
