@@ -308,14 +308,21 @@ export class SmtpService {
   }
 
   async createTransporter(config: any) {
+    const isPort465 = Number(config.port) === 465;
     return nodemailer.createTransport({
       host: config.host,
-      port: config.port,
-      secure: config.secure,
+      port: Number(config.port),
+      secure: config.secure !== undefined ? config.secure : isPort465,
       auth: config.username && config.password ? {
         user: config.username,
         pass: config.password
-      } : undefined
+      } : undefined,
+      tls: {
+        rejectUnauthorized: false
+      },
+      connectionTimeout: 15000,
+      greetingTimeout: 15000,
+      socketTimeout: 20000
     });
   }
 
