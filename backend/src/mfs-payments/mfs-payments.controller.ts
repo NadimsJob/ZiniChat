@@ -30,6 +30,7 @@ export class MfsPaymentsController {
     bankName?: string;
     routingNumber?: string;
     qrCodeUrl?: string;
+    chargePercent?: number;
     isActive?: boolean;
   }) {
     return this.mfsPaymentsService.createAccount(data);
@@ -48,6 +49,7 @@ export class MfsPaymentsController {
       bankName?: string;
       routingNumber?: string;
       qrCodeUrl?: string;
+      chargePercent?: number;
       isActive?: boolean;
     },
   ) {

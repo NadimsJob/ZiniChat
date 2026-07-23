@@ -81,24 +81,38 @@ export class MfsPaymentsService {
       throw new NotFoundException(`No active payment configuration found for ${providerKey}`);
     }
 
-    // Save/sync provider to the payment invoice
-    if (payment.provider.toUpperCase() !== providerKey) {
-      await this.prisma.payment.update({
-        where: { id: paymentId },
-        data: { provider: providerKey.toLowerCase() },
-      });
-    }
+    // Calculate new total including platform fee percentage
+    const baseAmount = Number(payment.baseAmountBdt || payment.amountBdt);
+    const fraction = payment.baseAmountBdt 
+      ? Number(payment.amountBdt) - Number(payment.baseAmountBdt)
+      : Number(payment.amountBdt) % 1;
+    const chargePercent = Number(account.chargePercent || 0);
+    const chargeAmount = Number((baseAmount * (chargePercent / 100)).toFixed(2));
+    const totalAmount = Number((baseAmount + chargeAmount + fraction).toFixed(2));
+
+    // Save/sync provider and calculated total amount to the payment invoice
+    await this.prisma.payment.update({
+      where: { id: paymentId },
+      data: { 
+        provider: providerKey.toLowerCase(),
+        amountBdt: totalAmount
+      },
+    });
 
     let qrCodeData = '';
     if (account.accountType === 'MERCHANT' || providerKey === 'BANGLA_QR') {
-      qrCodeData = this.generateBanglaQr(account.provider, account.number, Number(payment.amountBdt), account.merchantId || undefined);
+      qrCodeData = this.generateBanglaQr(account.provider, account.number, totalAmount, account.merchantId || undefined);
     } else {
       qrCodeData = account.qrCodeUrl || '';
     }
 
     return {
       paymentId: payment.id,
-      amount: Number(payment.amountBdt),
+      amount: totalAmount,
+      baseAmount,
+      chargePercent,
+      chargeAmount,
+      fraction,
       provider: providerKey,
       number: account.number,
       accountType: account.accountType,
@@ -124,6 +138,7 @@ export class MfsPaymentsService {
     bankName?: string;
     routingNumber?: string;
     qrCodeUrl?: string;
+    chargePercent?: number;
     isActive?: boolean;
   }) {
     return this.prisma.mfsAccount.create({
@@ -141,6 +156,7 @@ export class MfsPaymentsService {
       bankName?: string;
       routingNumber?: string;
       qrCodeUrl?: string;
+      chargePercent?: number;
       isActive?: boolean;
     },
   ) {

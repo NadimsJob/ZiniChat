@@ -565,6 +565,7 @@ model Payment {
   tenantId        String   @db.Uuid
   subscriptionId  String   @db.Uuid
   amountBdt       Decimal  @db.Decimal(10, 2)
+  baseAmountBdt   Decimal? @db.Decimal(10, 2)
   provider        String // sslcommerz, bkash, manual
   status          String // success, pending, failed
   trxId           String? // For manual payments
@@ -842,6 +843,7 @@ model MfsAccount {
   bankName      String?  // Name of the bank (if BANK)
   routingNumber String?  // Routing number for bank accounts
   qrCodeUrl     String?  // Static QR code image path if uploaded
+  chargePercent Decimal  @default(0) @db.Decimal(5, 2)
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt

@@ -92,7 +92,15 @@ export class PaymentsService {
 
     // 4. Create Payment record
     const payment = await this.prisma.payment.create({
-      data: { tenantId, subscriptionId: subscription.id, amountBdt: finalAmount, provider: 'manual', status: 'pending', trxId }
+      data: { 
+        tenantId, 
+        subscriptionId: subscription.id, 
+        amountBdt: finalAmount, 
+        baseAmountBdt: amount, 
+        provider: 'manual', 
+        status: 'pending', 
+        trxId 
+      }
     });
 
     // 4. Get tenant owner info

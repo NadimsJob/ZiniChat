@@ -15,7 +15,8 @@ import {
   Clock,
   ShieldCheck,
   CheckCircle2,
-  HelpCircle
+  HelpCircle,
+  RefreshCw
 } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageProvider';
 import { useCurrency } from '@/components/CurrencyProvider';
@@ -209,12 +210,12 @@ function PayMfsContent() {
   const handleVerify = async () => {
     const cleanTrx = trxId.trim();
     const cleanNum = senderNumber.trim();
-    if (!payment || (!cleanTrx && !cleanNum)) {
-      toast.error(language === 'en' 
-        ? 'Please enter Mobile/A/C number or Transaction ID' 
-        : 'অনুগ্রহ করে মোবাইল/অ্যাকাউন্ট নম্বর অথবা ট্রানজেকশন আইডি দিন');
+    
+    if (showTrxField && !cleanTrx) {
+      toast.error(language === 'en' ? 'Please enter Transaction ID' : 'অনুগ্রহ করে ট্রানজেকশন আইডি দিন');
       return;
     }
+
     setVerifying(true);
     try {
       const token = Cookies.get('access_token');
@@ -517,15 +518,50 @@ function PayMfsContent() {
                     </>
                   )}
 
+                  {qrPayload.baseAmount !== undefined && (
+                    <>
+                      <div className="h-px bg-zinc-800" />
+                      
+                      <div className="text-[11px] space-y-1 text-zinc-400">
+                        <div className="flex justify-between">
+                          <span>{language === 'en' ? 'Package Price' : 'প্যাকেজ মূল্য'}</span>
+                          <span className="font-mono">{formatBDT(qrPayload.baseAmount)}</span>
+                        </div>
+                        {Number(qrPayload.chargePercent) > 0 && (
+                          <div className="flex justify-between text-zinc-400">
+                            <span>
+                              {language === 'en' 
+                                ? `MFS Gateway Charge (${qrPayload.chargePercent}%)` 
+                                : `গেটওয়ে চার্জ (${qrPayload.chargePercent}%)`}
+                            </span>
+                            <span className="font-mono text-zinc-300">+{formatBDT(qrPayload.chargeAmount)}</span>
+                          </div>
+                        )}
+                        {Number(qrPayload.fraction) > 0 && (
+                          <div className="flex justify-between text-zinc-400">
+                            <span>
+                              {language === 'en' ? 'Fraction Offset' : 'অফসেট পয়সা'}
+                            </span>
+                            <span className="font-mono text-amber-500/80">+{formatBDT(qrPayload.fraction)}</span>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+
                   <div className="h-px bg-zinc-800" />
 
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between items-center bg-zinc-900/40 p-2 rounded-lg border border-zinc-850">
                     <div>
-                      <span className="text-[10px] text-zinc-500 uppercase font-semibold">Exact Amount</span>
-                      <div className="font-bold text-primary text-[14px]">{formatBDT(payment.amountBdt)}</div>
+                      <span className="text-[10px] text-zinc-500 uppercase font-semibold block leading-none mb-1">
+                        {language === 'en' ? 'Exact Amount to Pay' : 'পরিশোধের হুবহু পরিমাণ'}
+                      </span>
+                      <div className="font-bold text-amber-400 text-[15px] font-mono leading-none">
+                        {formatBDT(qrPayload.amount)}
+                      </div>
                     </div>
                     <button 
-                      onClick={() => handleCopy(payment.amountBdt.toString(), 'amt')}
+                      onClick={() => handleCopy(qrPayload.amount.toString(), 'amt')}
                       className="p-1 hover:bg-zinc-800 rounded transition-colors text-zinc-400"
                     >
                       {copiedField === 'amt' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
@@ -551,6 +587,24 @@ function PayMfsContent() {
                         ? 'Scan and pay the exact amount. The system will automatically detect the payment and activate your subscription in 5-10 seconds.'
                         : 'মার্চেন্ট কিউআর কোড স্ক্যান করে পয়সাসহ হুবহু এই পরিমাণ টাকা পরিশোধ করুন। পে করার ৫-১০ সেকেন্ডের মধ্যে এটি অটোমেটিক ভেরিফাই হয়ে সাবস্ক্রিপশন সচল হয়ে যাবে!'}
                     </p>
+
+                    <button
+                      onClick={handleVerify}
+                      disabled={verifying}
+                      className="mt-2 w-full py-1.5 px-3 bg-primary/10 border border-primary/30 hover:border-primary/60 text-primary rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 text-[11px]"
+                    >
+                      {verifying ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
+                          {language === 'en' ? 'Checking status...' : 'পেমেন্ট চেক করা হচ্ছে...'}
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5" />
+                          {language === 'en' ? 'Re-Sync Payment Status' : 'পুনরায় চেক করুন'}
+                        </>
+                      )}
+                    </button>
                   </div>
 
                   {/* Manual Backup Collapse Option */}

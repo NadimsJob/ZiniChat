@@ -40,6 +40,7 @@ export default function MfsSettingsPage() {
   const [bankName, setBankName] = useState('');
   const [routingNumber, setRoutingNumber] = useState('');
   const [qrCodeUrl, setQrCodeUrl] = useState('');
+  const [chargePercent, setChargePercent] = useState('0');
   const [gatewayApiKey, setGatewayApiKey] = useState('sms-gateway-secret-token');
   const [uploading, setUploading] = useState(false);
   const [activeRuleTab, setActiveRuleTab] = useState<'BKASH' | 'NAGAD' | 'ROCKET' | 'UPAY' | 'BANGLA_QR'>('BKASH');
@@ -79,53 +80,56 @@ export default function MfsSettingsPage() {
   const handleAddAccount = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const token = Cookies.get('access_token');
-      const finalNumber = number || merchantId;
-      const res = await fetch(`${API}/mfs-payments/accounts`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          provider,
-          accountType,
-          number: finalNumber,
-          merchantId: merchantId || null,
-          bankName: bankName || null,
-          routingNumber: routingNumber || null,
-          qrCodeUrl: qrCodeUrl || null,
-          isActive: true
-        })
-      });
+       const token = Cookies.get('access_token');
+       const finalNumber = number || merchantId;
+       const res = await fetch(`${API}/mfs-payments/accounts`, {
+         method: 'POST',
+         headers: {
+           'Content-Type': 'application/json',
+           'Authorization': `Bearer ${token}`
+         },
+         body: JSON.stringify({
+           provider,
+           accountType,
+           number: finalNumber,
+           merchantId: merchantId || null,
+           bankName: bankName || null,
+           routingNumber: routingNumber || null,
+           qrCodeUrl: qrCodeUrl || null,
+           chargePercent: parseFloat(chargePercent) || 0,
+           isActive: true
+         })
+       });
 
-      if (res.ok) {
-        toast.success(language === 'en' ? 'Account added successfully' : 'অ্যাকাউন্ট সফলভাবে যুক্ত হয়েছে');
-        setShowAddModal(false);
-        setNumber('');
-        setMerchantId('');
-        setBankName('');
-        setRoutingNumber('');
-        setQrCodeUrl('');
-        fetchData();
-      } else {
-        const err = await res.json();
-        toast.error(err.message || 'Error occurred');
-      }
-    } catch (err) {
-      toast.error('API Error');
-    }
-  };
+       if (res.ok) {
+         toast.success(language === 'en' ? 'Account added successfully' : 'অ্যাকাউন্ট সফলভাবে যুক্ত হয়েছে');
+         setShowAddModal(false);
+         setNumber('');
+         setMerchantId('');
+         setBankName('');
+         setRoutingNumber('');
+         setQrCodeUrl('');
+         setChargePercent('0');
+         fetchData();
+       } else {
+         const err = await res.json();
+         toast.error(err.message || 'Error occurred');
+       }
+     } catch (err) {
+       toast.error('API Error');
+     }
+   };
 
-  const handleCloseModal = () => {
-    setShowAddModal(false);
-    setEditingAccount(null);
-    setNumber('');
-    setMerchantId('');
-    setBankName('');
-    setRoutingNumber('');
-    setQrCodeUrl('');
-  };
+   const handleCloseModal = () => {
+     setShowAddModal(false);
+     setEditingAccount(null);
+     setNumber('');
+     setMerchantId('');
+     setBankName('');
+     setRoutingNumber('');
+     setQrCodeUrl('');
+     setChargePercent('0');
+   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -168,6 +172,7 @@ export default function MfsSettingsPage() {
     setBankName(acc.bankName || '');
     setRoutingNumber(acc.routingNumber || '');
     setQrCodeUrl(acc.qrCodeUrl || '');
+    setChargePercent(acc.chargePercent !== undefined ? acc.chargePercent.toString() : '0');
     setShowAddModal(true);
   };
 
@@ -189,7 +194,8 @@ export default function MfsSettingsPage() {
           merchantId: merchantId || null,
           bankName: bankName || null,
           routingNumber: routingNumber || null,
-          qrCodeUrl: qrCodeUrl || null
+          qrCodeUrl: qrCodeUrl || null,
+          chargePercent: parseFloat(chargePercent) || 0
         })
       });
 
@@ -202,6 +208,7 @@ export default function MfsSettingsPage() {
         setBankName('');
         setRoutingNumber('');
         setQrCodeUrl('');
+        setChargePercent('0');
         fetchData();
       } else {
         const err = await res.json();
@@ -393,10 +400,15 @@ export default function MfsSettingsPage() {
                   )}
 
                   {acc.merchantId && (
-                    <div className="mt-2 text-[11px] text-zinc-400">
+                    <div className="mt-1 text-[11px] text-zinc-400">
                       <span className="font-medium text-zinc-500">Merchant ID:</span> {acc.merchantId}
                     </div>
                   )}
+
+                  <div className="mt-1 text-[11px] text-zinc-400 flex items-center gap-1.5">
+                    <span className="font-medium text-zinc-500">Platform Charge:</span> 
+                    <span className="text-amber-400 font-bold">{acc.chargePercent || '0'}%</span>
+                  </div>
 
                   {acc.qrCodeUrl && (
                     <div className="mt-2 flex items-center gap-1.5 text-[11px] text-zinc-400 bg-zinc-950/20 p-1 rounded">
@@ -787,6 +799,21 @@ export default function MfsSettingsPage() {
                   </div>
                 </>
               )}
+
+              <div>
+                <label className="block text-[11px] text-zinc-400 font-medium mb-1">Platform Charge Fee (%)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="100"
+                  required
+                  placeholder="e.g. 1.5"
+                  value={chargePercent}
+                  onChange={(e) => setChargePercent(e.target.value)}
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-1.5 focus:outline-none focus:border-primary text-zinc-300"
+                />
+              </div>
 
               <div>
                 <label className="block text-[11px] text-zinc-400 font-medium mb-1">Static QR Image (Optional)</label>
