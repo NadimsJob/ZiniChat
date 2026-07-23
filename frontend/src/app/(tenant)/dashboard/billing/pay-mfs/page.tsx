@@ -35,6 +35,8 @@ function PayMfsContent() {
   const [qrPayload, setQrPayload] = useState<any>(null);
   const [selectedProvider, setSelectedProvider] = useState<string>(''); // 'BKASH', 'NAGAD', 'ROCKET', 'BANK'
   const [trxId, setTrxId] = useState('');
+  const [senderNumber, setSenderNumber] = useState('');
+  const [showTrxField, setShowTrxField] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [timeLeft, setTimeLeft] = useState(600); // 10 minutes countdown
@@ -42,6 +44,16 @@ function PayMfsContent() {
   
   const timerRef = useRef<any>(null);
   const autoCheckRef = useRef<any>(null);
+  const senderNumberRef = useRef('');
+  const trxIdRef = useRef('');
+
+  useEffect(() => {
+    senderNumberRef.current = senderNumber;
+  }, [senderNumber]);
+
+  useEffect(() => {
+    trxIdRef.current = trxId;
+  }, [trxId]);
 
   // 1. Create the pending payment invoice on load
   useEffect(() => {
@@ -157,15 +169,21 @@ function PayMfsContent() {
   const startAutoCheck = () => {
     if (autoCheckRef.current) clearInterval(autoCheckRef.current);
     autoCheckRef.current = setInterval(async () => {
-      // If user has typed a trxId, we can background verify it
-      if (trxId.length >= 8 && !verifying && !paymentSuccess) {
+      const cleanTrx = trxIdRef.current.trim();
+      const cleanNum = senderNumberRef.current.trim();
+      // Auto check if TrxID is entered (min 8 chars) or Sender Number is entered (min 4 chars)
+      if ((cleanTrx.length >= 8 || cleanNum.length >= 4) && !verifying && !paymentSuccess) {
         silentVerify();
       }
-    }, 6000);
+    }, 5000);
   };
 
   const silentVerify = async () => {
-    if (!payment || !trxId.trim()) return;
+    if (!payment) return;
+    const cleanTrx = trxIdRef.current.trim();
+    const cleanNum = senderNumberRef.current.trim();
+    if (!cleanTrx && !cleanNum) return;
+
     try {
       const token = Cookies.get('access_token');
       const res = await fetch(`${API}/mfs-payments/verify`, {
@@ -176,7 +194,8 @@ function PayMfsContent() {
         },
         body: JSON.stringify({
           paymentId: payment.id,
-          trxId: trxId.trim()
+          trxId: cleanTrx || undefined,
+          senderNumber: cleanNum || undefined
         })
       });
       if (res.ok) {
@@ -191,8 +210,12 @@ function PayMfsContent() {
   };
 
   const handleVerify = async () => {
-    if (!payment || !trxId.trim()) {
-      toast.error(language === 'en' ? 'Please enter Transaction ID' : 'অনুগ্রহ করে ট্রানজেকশন আইডি দিন');
+    const cleanTrx = trxId.trim();
+    const cleanNum = senderNumber.trim();
+    if (!payment || (!cleanTrx && !cleanNum)) {
+      toast.error(language === 'en' 
+        ? 'Please enter Mobile/A/C number or Transaction ID' 
+        : 'অনুগ্রহ করে মোবাইল/অ্যাকাউন্ট নম্বর অথবা ট্রানজেকশন আইডি দিন');
       return;
     }
     setVerifying(true);
@@ -206,7 +229,8 @@ function PayMfsContent() {
         },
         body: JSON.stringify({
           paymentId: payment.id,
-          trxId: trxId.trim()
+          trxId: cleanTrx || undefined,
+          senderNumber: cleanNum || undefined
         })
       });
 
@@ -217,7 +241,7 @@ function PayMfsContent() {
         toast.success(language === 'en' ? 'Payment Verified!' : 'পেমেন্ট সফলভাবে ভেরিফাই করা হয়েছে!');
       } else {
         const err = await res.json();
-        toast.error(err.message || 'Verification failed. Double check your TrxID.');
+        toast.error(err.message || 'Verification failed. Please double check.');
       }
     } catch (err) {
       toast.error('Connection error during verification');
@@ -513,23 +537,56 @@ function PayMfsContent() {
                 </div>
 
                 {/* Input verification form */}
-                <div className="w-full max-w-md mx-auto pt-3 border-t border-zinc-800/40 space-y-2.5">
-                  <div className="text-left">
-                    <label className="block text-[11px] text-zinc-400 font-semibold mb-1 uppercase tracking-wider">
-                      {qrPayload.provider === 'BANK' ? 'Transaction Reference / Trace ID' : 'MFS Transaction ID (TrxID)'}
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. 8N7X2C9Y10"
-                      value={trxId}
-                      onChange={(e) => setTrxId(e.target.value)}
-                      className="w-full bg-zinc-950/60 border border-zinc-850 rounded-xl px-3 py-2 text-[13px] font-bold text-zinc-200 focus:outline-none focus:border-primary text-center font-mono placeholder:font-sans uppercase"
-                    />
+                <div className="w-full max-w-md mx-auto pt-3 border-t border-zinc-800/40 space-y-3">
+                  {!showTrxField ? (
+                    <div className="text-left">
+                      <label className="block text-[11px] text-amber-400/80 font-bold mb-1 uppercase tracking-wider flex items-center justify-between">
+                        <span>{language === 'en' ? 'Sender Wallet/Account Number' : 'যে নম্বর/অ্যাকাউন্ট থেকে পে করেছেন'}</span>
+                        <span className="text-[9px] bg-amber-500/10 text-amber-400 px-1 py-0.5 rounded uppercase font-bold tracking-tight">Recommended</span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder={language === 'en' ? 'e.g. 017XXXXXXXX or Account last 4 digits' : 'উদাঃ ০১৭xxxxxxxx অথবা ব্যাংক অ্যাকাউন্টের শেষ ৪ সংখ্যা'}
+                        value={senderNumber}
+                        onChange={(e) => setSenderNumber(e.target.value)}
+                        className="w-full bg-zinc-950/60 border border-zinc-850 rounded-xl px-3 py-2 text-[13px] font-bold text-zinc-200 focus:outline-none focus:border-amber-500/50 text-center placeholder:font-normal"
+                      />
+                      <span className="text-[9.5px] text-zinc-500 mt-1 block leading-tight">
+                        {language === 'en' 
+                          ? '* The system will automatically scan bank SMS logs matching this number and amount.'
+                          : '* সিস্টেম স্বয়ংক্রিয়ভাবে নোটিফিকেশন এসএমএস থেকে আপনার এই নম্বর ও টাকার পরিমাণ মিলিয়ে অ্যাকাউন্ট সচল করে দেবে।'}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="text-left">
+                      <label className="block text-[11px] text-zinc-400 font-semibold mb-1 uppercase tracking-wider">
+                        {qrPayload.provider === 'BANK' ? 'Transaction Reference / Trace ID' : 'MFS Transaction ID (TrxID)'}
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. 8N7X2C9Y10"
+                        value={trxId}
+                        onChange={(e) => setTrxId(e.target.value)}
+                        className="w-full bg-zinc-950/60 border border-zinc-850 rounded-xl px-3 py-2 text-[13px] font-bold text-zinc-200 focus:outline-none focus:border-primary text-center font-mono placeholder:font-sans uppercase"
+                      />
+                    </div>
+                  )}
+
+                  <div className="flex justify-center">
+                    <button
+                      type="button"
+                      onClick={() => setShowTrxField(!showTrxField)}
+                      className="text-[10px] text-zinc-400 hover:text-primary transition-all underline"
+                    >
+                      {showTrxField 
+                        ? (language === 'en' ? 'Or verify using Sender Mobile/Account Number' : 'অথবা মোবাইল/অ্যাকাউন্ট নম্বর দিয়ে ভেরিফাই করুন')
+                        : (language === 'en' ? 'Or verify using Transaction ID (TrxID)' : 'অথবা ট্রানজেকশন আইডি (TrxID) দিয়ে ভেরিফাই করুন')}
+                    </button>
                   </div>
 
                   <button
                     onClick={handleVerify}
-                    disabled={verifying || !trxId.trim()}
+                    disabled={verifying || (!trxId.trim() && !senderNumber.trim())}
                     className="w-full py-2 bg-primary text-black hover:bg-primary/95 rounded-xl font-bold transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-1.5"
                   >
                     {verifying ? (

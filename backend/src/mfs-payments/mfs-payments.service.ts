@@ -219,8 +219,13 @@ export class MfsPaymentsService {
   }
 
   // 3. User verification and activation flow
-  async verifyPayment(userId: string, tenantId: string, paymentId: string, trxId: string) {
-    const cleanTrxId = trxId.trim().toUpperCase();
+  async verifyPayment(userId: string, tenantId: string, paymentId: string, trxId?: string, senderNumber?: string) {
+    const cleanTrxId = trxId?.trim().toUpperCase();
+    const cleanSenderNumber = senderNumber?.trim();
+
+    if (!cleanTrxId && !cleanSenderNumber) {
+      throw new BadRequestException('Either Transaction ID or Sender Mobile/A/C Number is required');
+    }
 
     // Wrapping in a transaction to prevent race conditions (double claiming)
     return this.prisma.$transaction(async (tx) => {
@@ -234,21 +239,50 @@ export class MfsPaymentsService {
         throw new NotFoundException('Pending payment invoice not found');
       }
 
-      // 2. Fetch SMS transaction from DB matching TrxID and amount
-      const smsTx = await tx.mfsTransaction.findUnique({
-        where: { trxId: cleanTrxId },
-      });
+      const expectedAmount = Number(payment.amountBdt);
+      let smsTx: any = null;
 
-      if (!smsTx) {
-        throw new BadRequestException('Transaction ID not found. Please wait 1-2 minutes or check if it matches the SMS.');
+      if (cleanTrxId) {
+        // Find by TrxID
+        smsTx = await tx.mfsTransaction.findUnique({
+          where: { trxId: cleanTrxId },
+        });
+      } else if (cleanSenderNumber) {
+        // Find by amount and matching sender number (matching full number or last 4 digits)
+        const recentTxs = await tx.mfsTransaction.findMany({
+          where: {
+            amount: expectedAmount,
+            isUsed: false,
+            createdAt: {
+              gte: new Date(Date.now() - 4 * 60 * 60 * 1000), // Within last 4 hours
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        });
+
+        // Filter transaction whose senderNumber matches cleanSenderNumber
+        smsTx = recentTxs.find(tx => {
+          if (!tx.senderNumber) return false;
+          // Match full or last 4 digits
+          const numOnly = tx.senderNumber.replace(/\D/g, '');
+          const inputOnly = cleanSenderNumber.replace(/\D/g, '');
+          return numOnly.endsWith(inputOnly) || inputOnly.endsWith(numOnly);
+        });
       }
 
+      if (!smsTx) {
+        throw new BadRequestException(
+          cleanTrxId 
+            ? 'Transaction ID not found. Please ensure the SMS has arrived and the TrxID is correct.'
+            : 'No matching recent payment found from this number/account. Please wait a few seconds and try again.'
+        );
+      }
+      
       if (smsTx.isUsed) {
         throw new BadRequestException('This Transaction ID has already been verified and claimed.');
       }
 
       // Acknowledge amount match (with double precision safety check)
-      const expectedAmount = Number(payment.amountBdt);
       const actualAmount = Number(smsTx.amount);
 
       if (Math.abs(expectedAmount - actualAmount) > 0.01) {
