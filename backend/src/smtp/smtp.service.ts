@@ -374,7 +374,7 @@ export class SmtpService {
         subject,
         html: finalHtml
       });
-      this.logger.log(`Email sent: ${info.messageId}`);
+      this.logger.log(`Email sent: ${info.messageId} | Server Response: ${info.response} | Accepted: ${JSON.stringify(info.accepted)} | Rejected: ${JSON.stringify(info.rejected)}`);
       return info;
     } catch (err) {
       this.logger.error('Failed to send email:', err);
