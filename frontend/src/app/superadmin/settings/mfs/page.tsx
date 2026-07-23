@@ -41,6 +41,7 @@ export default function MfsSettingsPage() {
   const [routingNumber, setRoutingNumber] = useState('');
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [gatewayApiKey, setGatewayApiKey] = useState('sms-gateway-secret-token');
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -78,6 +79,7 @@ export default function MfsSettingsPage() {
     e.preventDefault();
     try {
       const token = Cookies.get('access_token');
+      const finalNumber = number || merchantId;
       const res = await fetch(`${API}/mfs-payments/accounts`, {
         method: 'POST',
         headers: {
@@ -87,7 +89,7 @@ export default function MfsSettingsPage() {
         body: JSON.stringify({
           provider,
           accountType,
-          number,
+          number: finalNumber,
           merchantId: merchantId || null,
           bankName: bankName || null,
           routingNumber: routingNumber || null,
@@ -124,6 +126,38 @@ export default function MfsSettingsPage() {
     setQrCodeUrl('');
   };
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      const token = Cookies.get('access_token');
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch(`${API}/mfs-payments/accounts/temp/upload-qr`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setQrCodeUrl(data.qrCodeUrl);
+        toast.success(language === 'en' ? 'QR Code uploaded successfully' : 'কিউআর কোড সফলভাবে আপলোড হয়েছে');
+      } else {
+        toast.error('Failed to upload QR image');
+      }
+    } catch (err) {
+      toast.error('Upload error occurred');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleEditClick = (acc: any) => {
     setEditingAccount(acc);
     setProvider(acc.provider);
@@ -140,6 +174,7 @@ export default function MfsSettingsPage() {
     e.preventDefault();
     try {
       const token = Cookies.get('access_token');
+      const finalNumber = number || merchantId;
       const res = await fetch(`${API}/mfs-payments/accounts/${editingAccount.id}`, {
         method: 'PATCH',
         headers: {
@@ -149,7 +184,7 @@ export default function MfsSettingsPage() {
         body: JSON.stringify({
           provider,
           accountType,
-          number,
+          number: finalNumber,
           merchantId: merchantId || null,
           bankName: bankName || null,
           routingNumber: routingNumber || null,
@@ -628,24 +663,27 @@ export default function MfsSettingsPage() {
 
               <div>
                 <label className="block text-[11px] text-zinc-400 font-medium mb-1">
-                  {provider === 'BANK' ? 'Account Number' : 'MFS Mobile Number'}
+                  {provider === 'BANK' ? 'Account Number' : (provider === 'BANGLA_QR' ? 'Settlement Account / Mobile Number (Optional)' : 'MFS Mobile Number')}
                 </label>
                 <input
                   type="text"
-                  required
-                  placeholder="e.g. 017XXXXXXXX"
+                  required={provider !== 'BANGLA_QR'}
+                  placeholder={provider === 'BANGLA_QR' ? 'Optional' : 'e.g. 017XXXXXXXX'}
                   value={number}
                   onChange={(e) => setNumber(e.target.value)}
                   className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-1.5 focus:outline-none focus:border-primary text-zinc-300"
                 />
               </div>
 
-              {accountType === 'MERCHANT' && (
+              {(accountType === 'MERCHANT' || provider === 'BANGLA_QR') && (
                 <div>
-                  <label className="block text-[11px] text-zinc-400 font-medium mb-1">Merchant ID (PAN) (Optional)</label>
+                  <label className="block text-[11px] text-zinc-400 font-medium mb-1">
+                    Merchant ID (PAN) {provider === 'BANGLA_QR' ? '*' : '(Optional)'}
+                  </label>
                   <input
                     type="text"
-                    placeholder="Used for Bangla QR payload"
+                    required={provider === 'BANGLA_QR'}
+                    placeholder={provider === 'BANGLA_QR' ? 'Mandatory for Bangla QR' : 'Used for Bangla QR payload'}
                     value={merchantId}
                     onChange={(e) => setMerchantId(e.target.value)}
                     className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-1.5 focus:outline-none focus:border-primary text-zinc-300"
@@ -681,14 +719,26 @@ export default function MfsSettingsPage() {
               )}
 
               <div>
-                <label className="block text-[11px] text-zinc-400 font-medium mb-1">Static QR Image URL (Optional)</label>
-                <input
-                  type="text"
-                  placeholder="e.g. /uploads/bkash_qr.jpg"
-                  value={qrCodeUrl}
-                  onChange={(e) => setQrCodeUrl(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-1.5 focus:outline-none focus:border-primary text-zinc-300"
-                />
+                <label className="block text-[11px] text-zinc-400 font-medium mb-1">Static QR Image (Optional)</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="e.g. /uploads/bkash_qr.jpg"
+                    value={qrCodeUrl}
+                    onChange={(e) => setQrCodeUrl(e.target.value)}
+                    className="flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-1.5 focus:outline-none focus:border-primary text-zinc-300 text-[12px]"
+                  />
+                  <label className="cursor-pointer bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 px-3 py-1.5 rounded-lg text-[11px] font-medium flex items-center gap-1">
+                    <span>{uploading ? 'Uploading...' : 'Upload'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      disabled={uploading}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
                 <span className="text-[10px] text-zinc-500 mt-1 block leading-tight">
                   {language === 'en' 
                     ? '* Leave blank to automatically generate dynamic Bangla QR on customer checkout.'

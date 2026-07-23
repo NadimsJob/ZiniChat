@@ -1,4 +1,7 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query, Headers, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, Headers, UseGuards, Req, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
 import { MfsPaymentsService } from './mfs-payments.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
@@ -120,5 +123,30 @@ export class MfsPaymentsController {
   ) {
     const userId = req.user.id;
     return this.mfsPaymentsService.manualClaimTransaction(userId, data.trxId, data.paymentId);
+  }
+
+  // 6. Upload QR Code Image (Superadmin Only)
+  @Post('accounts/:id/upload-qr')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions('manage:tenants')
+  @UseInterceptors(FileInterceptor('file', {
+    storage: diskStorage({
+      destination: './public/uploads/mfs',
+      filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+        cb(null, uniqueSuffix + extname(file.originalname));
+      }
+    })
+  }))
+  async uploadQrCode(
+    @Param('id') id: string,
+    @UploadedFile() file: any,
+  ) {
+    if (!file) throw new BadRequestException('QR Image file is required');
+    const qrCodeUrl = `/uploads/mfs/${file.filename}`;
+    if (id === 'temp') {
+      return { qrCodeUrl };
+    }
+    return this.mfsPaymentsService.updateAccount(id, { qrCodeUrl });
   }
 }
