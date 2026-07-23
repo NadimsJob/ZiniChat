@@ -33,13 +33,26 @@ export class PaymentsService {
       where: { tenantId, subscription: { planId }, status: 'success' }
     });
 
+    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+
     let amount = billingCycle === 'yearly' ? Number(plan.priceYearlyBdt) : Number(plan.priceMonthlyBdt);
     
-    if (billingCycle === 'monthly' && plan.promoPriceMonthlyBdt && plan.promoMonths) {
-      if (successfulPaymentsCount < plan.promoMonths) {
-        amount = Number(plan.promoPriceMonthlyBdt);
+    if (tenant?.customPriceUsd) {
+      const currencyRateInfo = await this.prisma.exchangeRate.findFirst({
+        where: { effectiveDate: { lte: new Date() } },
+        orderBy: { effectiveDate: 'desc' }
+      });
+      const rate = currencyRateInfo ? Number(currencyRateInfo.rate) : 121.0;
+      const customMonthlyBdt = Number(tenant.customPriceUsd) * rate;
+      amount = billingCycle === 'yearly' ? customMonthlyBdt * 12 : customMonthlyBdt;
+    } else {
+      if (billingCycle === 'monthly' && plan.promoPriceMonthlyBdt && plan.promoMonths) {
+        if (successfulPaymentsCount < plan.promoMonths) {
+          amount = Number(plan.promoPriceMonthlyBdt);
+        }
       }
     }
+    
     let couponId = null;
 
     if (couponCode) {
@@ -143,11 +156,23 @@ export class PaymentsService {
       where: { tenantId, subscription: { planId }, status: 'success' }
     });
 
+    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+
     let amount = billingCycle === 'yearly' ? Number(plan.priceYearlyBdt) : Number(plan.priceMonthlyBdt);
     
-    if (billingCycle === 'monthly' && plan.promoPriceMonthlyBdt && plan.promoMonths) {
-      if (successfulPaymentsCount < plan.promoMonths) {
-        amount = Number(plan.promoPriceMonthlyBdt);
+    if (tenant?.customPriceUsd) {
+      const currencyRateInfo = await this.prisma.exchangeRate.findFirst({
+        where: { effectiveDate: { lte: new Date() } },
+        orderBy: { effectiveDate: 'desc' }
+      });
+      const rate = currencyRateInfo ? Number(currencyRateInfo.rate) : 121.0;
+      const customMonthlyBdt = Number(tenant.customPriceUsd) * rate;
+      amount = billingCycle === 'yearly' ? customMonthlyBdt * 12 : customMonthlyBdt;
+    } else {
+      if (billingCycle === 'monthly' && plan.promoPriceMonthlyBdt && plan.promoMonths) {
+        if (successfulPaymentsCount < plan.promoMonths) {
+          amount = Number(plan.promoPriceMonthlyBdt);
+        }
       }
     }
     let couponId = null;

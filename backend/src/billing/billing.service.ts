@@ -32,6 +32,7 @@ export class BillingService {
   }
 
   async getTenantQuotas(tenantId: string) {
+    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
     const activeSubscription = await this.prisma.subscription.findFirst({
       where: {
         tenantId,
@@ -42,23 +43,19 @@ export class BillingService {
       orderBy: { currentPeriodEnd: 'desc' }
     });
 
-    if (activeSubscription && activeSubscription.plan) {
-      return {
-        channelLimit: activeSubscription.plan.channelLimit,
-        messageQuota: activeSubscription.plan.messageQuota,
-        aiQuota: activeSubscription.plan.aiQuota,
-        seatLimit: activeSubscription.plan.seatLimit,
-        features: activeSubscription.plan.features,
-      };
-    }
+    const plan = activeSubscription?.plan;
 
-    // Fallback for no active subscription (e.g., Free Tier or expired)
     return {
-      channelLimit: 1,
-      messageQuota: 100,
-      aiQuota: 50,
-      seatLimit: 1,
-      features: [],
+      subscription: activeSubscription,
+      channelLimit: plan?.channelLimit ?? 1,
+      messageQuota: tenant?.customMessageQuota ?? plan?.messageQuota ?? 100,
+      aiQuota: tenant?.customAiQuota ?? plan?.aiQuota ?? 50,
+      seatLimit: tenant?.customSeatLimit ?? plan?.seatLimit ?? 1,
+      storageLimitMb: tenant?.customStorageLimitMb ?? plan?.storageLimitMb ?? 500,
+      features: (tenant?.customFeatures as any) ?? plan?.features ?? [],
+      customPlanName: tenant?.customPlanName,
+      customPriceUsd: tenant?.customPriceUsd,
+      basePlan: plan
     };
   }
 }

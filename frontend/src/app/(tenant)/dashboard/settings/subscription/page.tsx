@@ -39,15 +39,22 @@ export default function SubscriptionSettingsPage() {
         const [plansRes, addonsRes, mySubRes, configRes] = await Promise.all([
           fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/packages/plans`),
           fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/packages/addons`),
-          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/billing/subscriptions`, { headers }),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/billing/quotas`, { headers }),
           fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/payments/config`, { headers })
         ]);
         
         if (plansRes.ok) setPlans(await plansRes.json());
         if (addonsRes.ok) setAddons(await addonsRes.json());
         if (mySubRes.ok) {
-          const subs = await mySubRes.json();
-          if (subs && subs.length > 0) setCurrentSubscription(subs[0]);
+          const quotaData = await mySubRes.json();
+          // We attach custom fields to the current subscription object for UI usage
+          const activeSub = quotaData.subscription || {};
+          setCurrentSubscription({
+            ...activeSub,
+            customPlanName: quotaData.customPlanName,
+            customPriceUsd: quotaData.customPriceUsd,
+            basePlan: quotaData.basePlan
+          });
         }
         if (configRes.ok) {
           setPaymentConfig(await configRes.json());
@@ -193,7 +200,7 @@ export default function SubscriptionSettingsPage() {
             {language === 'en' ? 'Current Plan' : 'বর্তমান প্ল্যান'}
           </h2>
           <div className="text-3xl font-black mt-1">
-            {currentSubscription ? currentSubscription.plan?.name : (language === 'en' ? 'Free Tier' : 'ফ্রি টায়ার')}
+            {currentSubscription?.customPlanName || currentSubscription?.basePlan?.name || (language === 'en' ? 'Free Tier' : 'ফ্রি টায়ার')}
           </div>
           {currentSubscription && (
             <p className="text-[13px] text-zinc-400 mt-2">
