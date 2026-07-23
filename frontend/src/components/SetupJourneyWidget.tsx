@@ -73,7 +73,7 @@ export default function SetupJourneyWidget({ allowedFeatures }: { allowedFeature
       icon: MessageCircle,
       isDone: status.hasConnectedChannel,
       href: '/dashboard/settings/whatsapp',
-      show: allowedFeatures.includes('whatsapp_qr') || allowedFeatures.includes('whatsapp') || allowedFeatures.includes('messenger') || allowedFeatures.includes('instagram_dm')
+      show: true
     },
     {
       id: 'ai_config',
@@ -82,7 +82,7 @@ export default function SetupJourneyWidget({ allowedFeatures }: { allowedFeature
       icon: Wand2,
       isDone: status.hasNamedAgent,
       href: '/dashboard/settings/ai-training',
-      show: allowedFeatures.includes('ai_assistant') || allowedFeatures.includes('platform_support_ai')
+      show: true
     },
     {
       id: 'ai',
@@ -91,7 +91,7 @@ export default function SetupJourneyWidget({ allowedFeatures }: { allowedFeature
       icon: Bot,
       isDone: status.hasConfiguredAi, // Checking if AI assistant row exists is basic, usually it means they clicked save.
       href: '/dashboard/settings/ai-training',
-      show: allowedFeatures.includes('ai_assistant') || allowedFeatures.includes('platform_support_ai')
+      show: true
     },
     {
       id: 'commerce',
@@ -99,8 +99,8 @@ export default function SetupJourneyWidget({ allowedFeatures }: { allowedFeature
       desc: language === 'en' ? 'Create your first product to sell through chat.' : 'চ্যাটের মাধ্যমে বিক্রি করতে আপনার প্রথম প্রোডাক্ট যোগ করুন।',
       icon: Package,
       isDone: status.hasCreatedProduct,
-      href: '/dashboard/ecommerce',
-      show: allowedFeatures.includes('commerce')
+      href: '/dashboard/products',
+      show: true
     },
     {
       id: 'leads',
@@ -109,7 +109,7 @@ export default function SetupJourneyWidget({ allowedFeatures }: { allowedFeature
       icon: Users,
       isDone: status.hasCreatedLead,
       href: '/dashboard/leads',
-      show: allowedFeatures.includes('lead_manage')
+      show: true
     }
   ].filter(item => item.show);
 

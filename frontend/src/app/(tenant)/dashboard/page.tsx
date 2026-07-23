@@ -12,7 +12,8 @@ import {
   ArrowRight,
   Bot,
   Users,
-  ShoppingCart
+  ShoppingCart,
+  Crown
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
@@ -26,6 +27,7 @@ export default function TenantDashboardOverview() {
   const { language } = useLanguage();
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [showSetupBanner, setShowSetupBanner] = useState(true);
 
   useEffect(() => {
     fetchStats();
@@ -54,16 +56,25 @@ export default function TenantDashboardOverview() {
     <div className="max-w-5xl mx-auto space-y-6 px-1.5 py-2.5 animate-in fade-in slide-in-from-bottom-4 duration-500">
       
       {/* Header */}
-      <div>
-        <h1 className="text-xl font-bold tracking-tight">
-          {language === 'en' ? 'Welcome, ' : 'স্বাগতম, '}
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">
-            {userName}
-          </span>
-        </h1>
-        <p className="text-slate-500 text-[12px] mt-0.5">
-          {language === 'en' ? 'Your dashboard overview' : 'আপনার ড্যাশবোর্ড ওভারভিউ'}
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold tracking-tight">
+            {language === 'en' ? 'Welcome, ' : 'স্বাগতম, '}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">
+              {userName}
+            </span>
+          </h1>
+          <p className="text-slate-500 text-[12px] mt-0.5">
+            {language === 'en' ? 'Your dashboard overview' : 'আপনার ড্যাশবোর্ড ওভারভিউ'}
+          </p>
+        </div>
+        <Link 
+          href="/dashboard/settings/subscription"
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-500/10 text-yellow-600 dark:text-yellow-500 hover:bg-yellow-500/20 border border-yellow-500/20 rounded-lg text-[13px] font-bold transition-all shadow-sm"
+        >
+          <Crown className="w-4 h-4" />
+          {language === 'en' ? 'Upgrade Plan' : 'আপগ্রেড করুন'}
+        </Link>
       </div>
 
       {/* Setup Journey Checklist */}
@@ -72,25 +83,33 @@ export default function TenantDashboardOverview() {
       )}
 
       {/* Free Setup Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-5 rounded-2xl bg-gradient-to-r from-primary/10 via-secondary/10 to-primary/5 border border-primary/20 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 blur-3xl -z-10 rounded-full mix-blend-multiply" />
-        <div>
-          <h3 className="font-bold text-slate-800 dark:text-zinc-200">
-            {language === 'en' ? 'Having trouble setting up? We will do it for FREE 🎁' : 'Setup করতে সমস্যা হচ্ছে? আমরা FREE করে দিব 🎁'}
-          </h3>
-          <p className="text-slate-500 dark:text-zinc-400 text-[11px] mt-1">
-            {language === 'en' ? 'New signup? Our team will do your entire Meta + WhatsApp setup for free within the first 7 days.' : 'নতুন signup করেছেন? প্রথম ৭ দিন আমাদের team আপনার পুরো Meta + WhatsApp setup free-তে করে দিবে।'}
-          </p>
+      {showSetupBanner && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-5 rounded-2xl bg-gradient-to-r from-primary/10 via-secondary/10 to-primary/5 border border-primary/20 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 blur-3xl -z-10 rounded-full mix-blend-multiply" />
+          <div>
+            <h3 className="font-bold text-slate-800 dark:text-zinc-200">
+              {language === 'en' ? 'Having trouble setting up? We will do it for FREE 🎁' : 'Setup করতে সমস্যা হচ্ছে? আমরা FREE করে দিব 🎁'}
+            </h3>
+            <p className="text-slate-500 dark:text-zinc-400 text-[11px] mt-1">
+              {language === 'en' ? 'New signup? Our team will do your entire Meta + WhatsApp setup for free within the first 7 days.' : 'নতুন signup করেছেন? প্রথম ৭ দিন আমাদের team আপনার পুরো Meta + WhatsApp setup free-তে করে দিবে।'}
+            </p>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <button 
+              onClick={(e) => { e.preventDefault(); window.dispatchEvent(new CustomEvent('open-support-widget')); }}
+              className="whitespace-nowrap px-1.5 py-2 bg-primary text-white text-[13px] font-medium rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
+            >
+              {language === 'en' ? 'Get Free Setup →' : 'ফ্রি সেটআপ নিন →'}
+            </button>
+            <button 
+              onClick={() => setShowSetupBanner(false)}
+              className="text-slate-400 hover:text-slate-600 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-1.5">
-          <button className="whitespace-nowrap px-1.5 py-2 bg-primary text-white text-[13px] font-medium rounded-lg hover:bg-primary/90 transition-colors shadow-sm">
-            {language === 'en' ? 'Get Free Setup →' : 'ফ্রি সেটআপ নিন →'}
-          </button>
-          <button className="text-slate-400 hover:text-slate-600 transition-colors">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-      </div>
+      )}
 
       {/* Metrics Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">

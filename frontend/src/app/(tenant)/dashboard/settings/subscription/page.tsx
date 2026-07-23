@@ -93,7 +93,7 @@ export default function SubscriptionSettingsPage() {
 
   const calculateFinalPrice = () => {
     if (!selectedPlan) return 0;
-    let price = billingCycle === 'yearly' ? selectedPlan.priceYearlyBdt : selectedPlan.priceMonthlyBdt;
+    let price = Number(billingCycle === 'yearly' ? selectedPlan.priceYearlyBdt : selectedPlan.priceMonthlyBdt);
     if (appliedCoupon) {
       if (appliedCoupon.discountType === 'percentage') {
         price = price - (price * appliedCoupon.discountValue / 100);
@@ -241,7 +241,7 @@ export default function SubscriptionSettingsPage() {
               )}
               <h3 className="text-lg font-bold">{language === 'en' ? plan.name : (plan.nameBn || plan.name)}</h3>
               <div className="text-2xl font-black mt-1 text-primary">
-                {formatBDT(billingCycle === 'yearly' ? plan.priceYearlyBdt : plan.priceMonthlyBdt)}
+                {formatBDT(Number(billingCycle === 'yearly' ? plan.priceYearlyBdt : plan.priceMonthlyBdt))}
               </div>
               <div className="text-[13px] text-zinc-500 mb-3">/ {billingCycle}</div>
               
@@ -369,7 +369,7 @@ export default function SubscriptionSettingsPage() {
                     <div className="text-[13px] text-zinc-400">Total Amount ({billingCycle})</div>
                     {appliedCoupon && (
                       <div className="text-[12px] text-zinc-500 line-through">
-                        {formatBDT(billingCycle === 'yearly' ? selectedPlan.priceYearlyBdt : selectedPlan.priceMonthlyBdt)}
+                        {formatBDT(Number(billingCycle === 'yearly' ? selectedPlan.priceYearlyBdt : selectedPlan.priceMonthlyBdt))}
                       </div>
                     )}
                   </div>
