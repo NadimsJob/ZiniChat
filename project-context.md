@@ -21,10 +21,10 @@ A multi-tenant SaaS platform where businesses (tenants) manage customer communic
 ---
 
 ## 3. Current Status & Active Focus
-- **Active Focus**: Implemented and unit-tested MFS & Bank SMS-matching automated payment gateway (supporting bKash/Nagad/Rocket/Bank Transfer and dynamic EMVCo Bangla QR codes) with unique Paisa/Cents offsets, platform charge percentage configuration, dynamic pricing breakdowns, and real-time Re-Sync checks.
-- **Recent Issues Fixed**: Completed 11 backend unit tests for SMS webhook ingestion, dynamic QR generation, and real-time user verification.
+- **Active Focus**: Completely overhauled the Dynamic Tenant Dashboard with a strict Setup-First onboarding lock screen, hiding metrics until setup is complete. Built modular dynamic blocks for Core Quotas, E-Commerce, and CRM Leads based on active plan features, plus a real-time Recent Activity feed.
+- **Recent Issues Fixed**: Fixed TS2339 JSON length errors and Prisma model queries in backend stats builder. Synced superadmin billing pages and MFS payment coupons.
 - **System**: Backend (NestJS), Frontend (Next.js), Mobile (Kotlin Android app). Bilingual support enabled (English/Bengali) across UI components. Tickets. Implemented strict feature gating for Support AI, Team Management, and Contact Labels via Superadmin Plan settings. Extracted and animated the 2-Minute Setup Widget on the marketing pages.
-- **Next Up:** Live testing of the MFS SMS gateway app with physical Android devices, E2E testing of the UI checkout flows.
+- **Next Up:** Review dashboard behavior with physical test tenants and ensure E2E UI checkout flow works.
 - Subscription logic, quotas (messages, AI tokens, storage), and superadmin customizations have been strictly enforced on the backend via `QuotaService` and `FeatureGuard`.
 - Direct PC-to-Server deployment scripts (MCP Server) have been deprecated and deleted to enforce Git-only deployment constraints.
 - **Live and Staging Environments are fully deployed with Traefik routing, reverse proxy networking, and SSL certificates.**
