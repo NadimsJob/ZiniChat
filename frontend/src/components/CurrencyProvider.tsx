@@ -105,8 +105,13 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
 
   const formatNumber = (num: number): string => {
     if (typeof num !== 'number' || isNaN(num)) return '0';
-    const formatted = num.toLocaleString(displayCurrency === 'USD' ? 'en-US' : 'en-IN');
-    if (language === 'bn' && displayCurrency !== 'USD') {
+    if (displayCurrency === 'USD') {
+      const formatted = num % 1 === 0 ? num.toLocaleString('en-US') : (Math.round(num * 100) / 100).toFixed(2);
+      return formatted;
+    }
+    const rounded = Math.round(num);
+    const formatted = rounded.toLocaleString('en-IN');
+    if (language === 'bn') {
       return toBengaliNumerals(formatted);
     }
     return formatted;

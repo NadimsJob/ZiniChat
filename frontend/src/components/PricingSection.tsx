@@ -114,7 +114,9 @@ export function PricingSection({ isHomepage = false }: { isHomepage?: boolean })
           const baseYearly = displayCurrency === 'USD' ? yUsd : yBdt;
           const promoPrice = displayCurrency === 'USD' ? promoUsd : promoBdt;
 
-          const displayPrice = isYearly && baseYearly > 0 ? Math.round(baseYearly / 12) : baseMonthly;
+          const displayPrice = isYearly && baseYearly > 0 
+            ? (displayCurrency === 'USD' ? Math.round((baseYearly / 12) * 100) / 100 : Math.round(baseYearly / 12)) 
+            : baseMonthly;
           
           let planDiscount = Number(plan.yearlyDiscountPercent) || 0;
           if (!planDiscount && baseMonthly > 0 && baseYearly > 0) {

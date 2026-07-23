@@ -10,13 +10,25 @@ import { Crown, Package, Puzzle, Check } from 'lucide-react';
 export default function SubscriptionSettingsPage() {
   const router = useRouter();
   const { language } = useLanguage();
-  const { formatBDT, formatNumber } = useCurrency();
+  const { rate, formatBDT, formatNumber, displayCurrency, setDisplayCurrency } = useCurrency();
 
   const [plans, setPlans] = useState<any[]>([]);
   const [addons, setAddons] = useState<any[]>([]);
   const [currentSubscription, setCurrentSubscription] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+
+  const maxDiscountPercent = plans.reduce((max: number, p: any) => {
+    let disc = Number(p.yearlyDiscountPercent) || 0;
+    if (!disc) {
+      const m = Number(p.priceMonthlyBdt) || 0;
+      const y = Number(p.priceYearlyBdt) || 0;
+      if (m > 0 && y > 0) {
+        disc = Math.round(((m * 12 - y) / (m * 12)) * 100 * 100) / 100;
+      }
+    }
+    return disc > max ? disc : max;
+  }, 0);
 
   // Payment states
   const [paymentConfig, setPaymentConfig] = useState<any>(null);
@@ -225,32 +237,87 @@ export default function SubscriptionSettingsPage() {
             {language === 'en' ? 'Upgrade Plan' : 'প্ল্যান আপগ্রেড করুন'}
           </h2>
           
-          <div className="bg-surface border border-zinc-200 dark:border-zinc-800 rounded-xl p-1 flex">
-            <button 
-              onClick={() => setBillingCycle('monthly')}
-              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${billingCycle === 'monthly' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-zinc-500 hover:text-foreground'}`}
-            >
-              Monthly
-            </button>
-            <button 
-              onClick={() => setBillingCycle('yearly')}
-              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${billingCycle === 'yearly' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-zinc-500 hover:text-foreground'}`}
-            >
-              Yearly <span className="text-[10px] bg-green-500/20 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded-full">Save ~20%</span>
-            </button>
+          <div className="flex items-center gap-3">
+            {/* Currency Toggle */}
+            <div className="bg-surface border border-zinc-200 dark:border-zinc-800 rounded-xl p-1 flex">
+              <button
+                onClick={() => setDisplayCurrency('BDT')}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${displayCurrency === 'BDT' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-zinc-500 hover:text-foreground'}`}
+              >
+                BDT
+              </button>
+              <button
+                onClick={() => setDisplayCurrency('USD')}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${displayCurrency === 'USD' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-zinc-500 hover:text-foreground'}`}
+              >
+                USD
+              </button>
+            </div>
+
+            {/* Monthly / Yearly Toggle */}
+            <div className="bg-surface border border-zinc-200 dark:border-zinc-800 rounded-xl p-1 flex">
+              <button 
+                onClick={() => setBillingCycle('monthly')}
+                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${billingCycle === 'monthly' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-zinc-500 hover:text-foreground'}`}
+              >
+                Monthly
+              </button>
+              <button 
+                onClick={() => setBillingCycle('yearly')}
+                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${billingCycle === 'yearly' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-zinc-500 hover:text-foreground'}`}
+              >
+                Yearly {maxDiscountPercent > 0 && <span className="text-[10px] bg-green-500/20 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded-full font-bold">Save {formatNumber(maxDiscountPercent)}%</span>}
+              </button>
+            </div>
           </div>
         </div>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {plans.map(plan => (
-            <div key={plan.id} className={`bg-surface border rounded-2xl p-1.5 flex flex-col ${currentSubscription?.planId === plan.id ? 'border-primary ring-1 ring-primary' : 'border-surface-hover'}`}>
-              {currentSubscription?.planId === plan.id && (
-                <div className="text-[11px] font-bold text-primary mb-1 uppercase tracking-wider">Active Plan</div>
-              )}
-              <h3 className="text-lg font-bold">{language === 'en' ? plan.name : (plan.nameBn || plan.name)}</h3>
-              <div className="text-2xl font-black mt-1 text-primary">
-                {formatBDT(Number(billingCycle === 'yearly' ? plan.priceYearlyBdt : plan.priceMonthlyBdt))}
-              </div>
-              <div className="text-[13px] text-zinc-500 mb-3">/ {billingCycle}</div>
+          {plans.map(plan => {
+            const isYearly = billingCycle === 'yearly';
+            const mBdt = Number(plan.priceMonthlyBdt) || 0;
+            const mUsd = Number(plan.priceMonthlyUsd) > 0 ? Number(plan.priceMonthlyUsd) : Math.round((mBdt / (rate || 121)) * 100) / 100;
+
+            const yBdt = Number(plan.priceYearlyBdt) > 0 ? Number(plan.priceYearlyBdt) : Math.round(mBdt * 12 * 0.8334);
+            const yUsd = Number(plan.priceYearlyUsd) > 0 ? Number(plan.priceYearlyUsd) : Math.round(mUsd * 12 * 0.8334);
+
+            const baseMonthly = displayCurrency === 'USD' ? mUsd : mBdt;
+            const baseYearly = displayCurrency === 'USD' ? yUsd : yBdt;
+
+            const displayPrice = isYearly && baseYearly > 0 
+              ? (displayCurrency === 'USD' ? Math.round((baseYearly / 12) * 100) / 100 : Math.round(baseYearly / 12)) 
+              : baseMonthly;
+
+            let planDiscount = Number(plan.yearlyDiscountPercent) || 0;
+            if (!planDiscount && baseMonthly > 0 && baseYearly > 0) {
+              planDiscount = Math.round(((baseMonthly * 12 - baseYearly) / (baseMonthly * 12)) * 100 * 100) / 100;
+            }
+
+            return (
+              <div key={plan.id} className={`bg-surface border rounded-2xl p-4 flex flex-col ${currentSubscription?.planId === plan.id ? 'border-primary ring-1 ring-primary' : 'border-surface-hover'}`}>
+                {currentSubscription?.planId === plan.id && (
+                  <div className="text-[11px] font-bold text-primary mb-1 uppercase tracking-wider">Active Plan</div>
+                )}
+                <h3 className="text-lg font-bold">{language === 'en' ? plan.name : (plan.nameBn || plan.name)}</h3>
+                <div className="flex items-start gap-1 mt-1 text-primary">
+                  <span className="text-lg font-bold mt-1">{displayCurrency === 'BDT' ? '৳' : '$'}</span>
+                  <span className="text-3xl font-black">{formatNumber(displayPrice)}</span>
+                </div>
+                <div className="text-[13px] text-zinc-500 mb-2">/ {language === 'en' ? 'month' : 'মাস'}</div>
+
+                {isYearly && baseYearly > 0 && (
+                  <div className="mb-3 p-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-600 font-bold text-xs">
+                    <div>
+                      {language === 'en' 
+                        ? `Billed ${displayCurrency === 'BDT' ? '৳' : '$'}${formatNumber(baseYearly)} yearly` 
+                        : `বছরে ${displayCurrency === 'BDT' ? '৳' : '$'}${formatNumber(baseYearly)} বিল করা হবে`}
+                    </div>
+                    {planDiscount > 0 && (
+                      <div className="text-[10px] uppercase tracking-wider text-emerald-600 mt-0.5">
+                        {language === 'en' ? `Save ${planDiscount}%` : `${formatNumber(planDiscount)}% সাশ্রয়`}
+                      </div>
+                    )}
+                  </div>
+                )}
               
               <ul className="space-y-2 mb-4 flex-1">
                 <li className="flex items-center gap-1.5 text-[13px] text-zinc-300">
