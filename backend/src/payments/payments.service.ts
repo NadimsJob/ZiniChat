@@ -389,8 +389,8 @@ export class PaymentsService {
       if (addon && tenant) {
         // Apply limits
         const activeSub = tenant.subscriptions?.find(s => s.status === 'active') || tenant.subscriptions?.[0];
-        const currentMessageLimit = tenant.customMessageQuota ?? activeSub?.plan?.messageLimit ?? 0;
-        const currentAiLimit = tenant.customAiQuota ?? activeSub?.plan?.aiResponseLimit ?? 0;
+        const currentMessageLimit = tenant.customMessageQuota ?? activeSub?.plan?.messageQuota ?? 0;
+        const currentAiLimit = tenant.customAiQuota ?? activeSub?.plan?.aiQuota ?? 0;
         const currentStorageLimit = tenant.customStorageLimitMb ?? activeSub?.plan?.storageLimitMb ?? 0;
         
         const updates: any = {};
