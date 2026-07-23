@@ -414,15 +414,25 @@ export class SmtpService {
     await this.sendMail({ to: toEmail, subject, plainText: bodyText });
   }
 
+  private async getAdminNotificationEmails(): Promise<string[]> {
+    const admins = await this.prisma.user.findMany({ where: { role: 'superadmin' } });
+    const emailSet = new Set<string>();
+    emailSet.add('support@zinichat.com');
+    for (const admin of admins) {
+      if (admin.email) emailSet.add(admin.email);
+    }
+    return Array.from(emailSet);
+  }
+
   async triggerPaymentPendingAdminEmail(tenantName: string, amount: string, trxId: string) {
     const config = await this.getConfig();
     if (!config.paymentPendingAdminEnabled) return;
-    const admins = await this.prisma.user.findMany({ where: { role: 'superadmin' } });
+    const recipients = await this.getAdminNotificationEmails();
     const vars = { tenantName, amount, trxId };
     const subject = this.replacePlaceholders(config.paymentPendingAdminSubject || TEMPLATES.paymentPendingAdminSubject, vars);
     const bodyText = this.replacePlaceholders(config.paymentPendingAdminBody || TEMPLATES.paymentPendingAdminBody, vars);
-    for (const admin of admins) {
-      await this.sendMail({ to: admin.email, subject, plainText: bodyText });
+    for (const toEmail of recipients) {
+      await this.sendMail({ to: toEmail, subject, plainText: bodyText });
     }
   }
 
@@ -483,25 +493,25 @@ export class SmtpService {
     const config = await this.getConfig();
     if (!config.newInquiryEnabled) return;
     
-    const admins = await this.prisma.user.findMany({ where: { role: 'superadmin' } });
+    const recipients = await this.getAdminNotificationEmails();
     const vars = { name, email, message };
     const subject = this.replacePlaceholders(config.newInquirySubject || TEMPLATES.newInquirySubject, vars);
     const bodyText = this.replacePlaceholders(config.newInquiryBody || TEMPLATES.newInquiryBody, vars);
     
-    for (const admin of admins) {
-      await this.sendMail({ to: admin.email, subject, plainText: bodyText });
+    for (const toEmail of recipients) {
+      await this.sendMail({ to: toEmail, subject, plainText: bodyText });
     }
   }
 
   async triggerTicketCreatedEmail(tenantName: string, subjectLine: string, priority: string) {
     const config = await this.getConfig();
     if (!config.ticketCreatedEnabled) return;
-    const admins = await this.prisma.user.findMany({ where: { role: 'superadmin' } });
+    const recipients = await this.getAdminNotificationEmails();
     const vars = { tenantName, subject: subjectLine, priority };
     const subject = this.replacePlaceholders(config.ticketCreatedSubject || TEMPLATES.ticketCreatedSubject, vars);
     const bodyText = this.replacePlaceholders(config.ticketCreatedBody || TEMPLATES.ticketCreatedBody, vars);
-    for (const admin of admins) {
-      await this.sendMail({ to: admin.email, subject, plainText: bodyText });
+    for (const toEmail of recipients) {
+      await this.sendMail({ to: toEmail, subject, plainText: bodyText });
     }
   }
 

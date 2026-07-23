@@ -77,25 +77,39 @@ export class LandingPageService {
             bn: 'আপনার শর্তাবলী এখানে থাকবে। সুপারঅ্যাডমিন ড্যাশবোর্ড থেকে এটি এডিট করুন।'
           },
           contactInfo: {
-            address: { en: 'Dhaka, Bangladesh', bn: 'ঢাকা, বাংলাদেশ' },
+            address: { 
+              en: '#386, Uttar Badda, Dhaka-1212, Bangladesh', 
+              bn: '#৩৮৬, উত্তর বাড্ডা, ঢাকা-১২১২, বাংলাদেশ' 
+            },
             email: 'info@zinichat.com',
-            phone: '+880 1700 000 000'
+            phone: '01533894967'
           },
           socialLinksJson: {
             facebook: { url: 'https://facebook.com', enabled: true },
             twitter: { url: 'https://twitter.com', enabled: true },
             linkedin: { url: 'https://linkedin.com', enabled: true },
             instagram: { url: 'https://instagram.com', enabled: true },
-            whatsapp: { url: 'https://wa.me/1234567890', enabled: true }
+            whatsapp: { url: 'https://wa.me/8801533894967', enabled: true }
           }
         }
       });
-    } else if ((config.contactInfo as any)?.email === 'hello@zinichat.com') {
-      const updatedContactInfo = { ...(config.contactInfo as any), email: 'info@zinichat.com' };
-      config = await this.prisma.landingPageConfig.update({
-        where: { id: config.id },
-        data: { contactInfo: updatedContactInfo }
-      });
+    } else {
+      // Ensure latest official contact details are synced in DB
+      const current = (config.contactInfo as any) || {};
+      if (current.email === 'hello@zinichat.com' || current.phone === '+880 1700 000 000' || current.phone === '+880 1234 567 890' || !current.address?.en?.includes('Badda')) {
+        const updatedContactInfo = {
+          address: { 
+            en: '#386, Uttar Badda, Dhaka-1212, Bangladesh', 
+            bn: '#৩৮৬, উত্তর বাড্ডা, ঢাকা-১২১২, বাংলাদেশ' 
+          },
+          email: 'info@zinichat.com',
+          phone: '01533894967'
+        };
+        config = await this.prisma.landingPageConfig.update({
+          where: { id: config.id },
+          data: { contactInfo: updatedContactInfo }
+        });
+      }
     }
     return config;
   }

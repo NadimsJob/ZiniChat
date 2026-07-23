@@ -108,8 +108,8 @@ export default function ContactPage() {
                   <MapPin className="w-5 h-5 text-orange-600" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-sm mb-1 text-foreground">{language === 'en' ? 'Office' : 'অফিস'}</h4>
-                  <p className="text-xs text-muted-foreground">{language === 'en' ? 'Dhaka, Bangladesh' : 'ঢাকা, বাংলাদেশ'}</p>
+                  <h4 className="font-bold text-sm mb-1 text-foreground">{language === 'en' ? 'Office Address' : 'অফিস ঠিকানা'}</h4>
+                  <p className="text-xs text-muted-foreground">{language === 'en' ? '#386, Uttar Badda, Dhaka-1212, Bangladesh' : '#৩৮৬, উত্তর বাড্ডা, ঢাকা-১২১২, বাংলাদেশ'}</p>
                 </div>
               </div>
               <div className="p-6 rounded-3xl bg-muted border border-border/50 flex flex-col gap-4">
@@ -117,8 +117,9 @@ export default function ContactPage() {
                   <Clock className="w-5 h-5 text-teal-600" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-sm mb-1 text-foreground">{language === 'en' ? 'Hours' : 'সময়সূচী'}</h4>
-                  <p className="text-xs text-muted-foreground">{language === 'en' ? '9 AM - 6 PM (Sun-Thu)' : 'সকাল ৯টা - সন্ধ্যা ৬টা (রবি-বৃহস্পতি)'}</p>
+                  <h4 className="font-bold text-sm mb-1 text-foreground">{language === 'en' ? 'Phone & Hours' : 'ফোন ও সময়সূচী'}</h4>
+                  <p className="text-xs text-muted-foreground font-bold text-primary mb-0.5">01533894967</p>
+                  <p className="text-[11px] text-muted-foreground">{language === 'en' ? '9 AM - 6 PM (Sun-Thu)' : 'সকাল ৯টা - সন্ধ্যা ৬টা (রবি-বৃহস্পতি)'}</p>
                 </div>
               </div>
             </div>
