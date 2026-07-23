@@ -118,7 +118,6 @@ export class PaymentsService {
 
     // 4. Get tenant owner info
     const owner = await this.prisma.user.findFirst({ where: { tenantId, role: { in: ['owner', 'admin'] } } });
-    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
 
     // 5. Send emails (fire & forget)
     if (owner) {
@@ -209,7 +208,6 @@ export class PaymentsService {
 
     // Notify tenant
     const owner = await this.prisma.user.findFirst({ where: { tenantId, role: { in: ['owner', 'admin'] } } });
-    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
     if (owner) {
       this.smtpService.triggerPaymentApprovedEmail(
         owner.email, tenant?.businessName || 'Tenant', plan?.name || 'Sandbox Plan'

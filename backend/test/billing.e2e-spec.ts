@@ -23,7 +23,7 @@ describe('BillingController (e2e)', () => {
       .overrideProvider(BillingService)
       .useValue(billingService)
       .overrideGuard(JwtAuthGuard)
-      .useValue({ canActivate: (context) => {
+      .useValue({ canActivate: (context: any) => {
           const req = context.switchToHttp().getRequest();
           req.user = { id: 'u1', role: 'superadmin', tenantId: 't1', permissions: ['manage:billing'] };
           return true;

@@ -11,8 +11,8 @@ describe('MfsPaymentsService', () => {
   let smtp: SmtpService;
   let notifications: NotificationsService;
 
-  const mockPrismaService = {
-    $transaction: jest.fn((callback) => callback(mockPrismaService)),
+  const mockPrismaService: any = {
+    $transaction: jest.fn((callback: any) => callback(mockPrismaService)),
     mfsAccount: {
       findMany: jest.fn(),
       findFirst: jest.fn(),
