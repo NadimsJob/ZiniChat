@@ -179,3 +179,14 @@ This rule documents the design patterns and security safeguards implemented for 
 * **EMVCo Bangla QR Payload Structure:** Bangla QR codes are generated dynamically on the fly based on the EMVCo specification. Ensure the payload string ends with Tag 63 (checksum) followed by a 4-character uppercase Hex CRC-16 (calculated using CRC-16-CCITT with polynomial `0x1021`, initial value `0xFFFF`).
 * **SMS Gateway API Key Security:** The `syncSmsTransaction` webhook API (`POST /mfs-payments/sms-webhook`) must require the `X-SMS-GATEWAY-API-KEY` header matching the environment variable `SMS_GATEWAY_API_KEY`. Never allow SMS sync data to bypass this validation to prevent fake payment logging.
 
+---
+
+## 20. Multi-Provider AI Resolution & Cookie Session Isolation
+This rule documents the architectural safeguards for AI provider routing and authentication cookie isolation.
+
+* **Multi-Provider AI BaseURL Resolution:** When initializing OpenAI SDK instances in AI services (like `SupportChatService`), NEVER assume default OpenAI endpoints (`https://api.openai.com`). Check `aiConfig.provider` and resolve the appropriate base URL:
+  * For `provider === 'gemini'`, set `baseURL = aiConfig.apiEndpoint || 'https://generativelanguage.googleapis.com/v1beta/openai/'`.
+  * Always wrap AI completion requests in a try-catch to handle models that do not support tools/function calling, automatically falling back to standard completion requests or fallback model names (`gemini-2.0-flash`, `gemini-1.5-flash`).
+* **Superadmin vs Tenant Session Isolation:** `middleware.ts` MUST enforce strict role isolation for route protection. If `user_role === 'superadmin'` accesses `/dashboard`, redirect them to `/superadmin`. This prevents superadmin authentication tokens (`access_token`) from bleeding into tenant workspaces and causing cross-tenant notification leaks.
+
+
