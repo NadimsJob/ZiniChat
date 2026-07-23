@@ -354,31 +354,61 @@ export class PaymentsService {
     if (!payment) throw new NotFoundException('Payment not found');
     if (payment.status !== 'pending') throw new BadRequestException('Payment is not pending');
 
-    // Update payment & subscription
+    // Update payment
     await this.prisma.payment.update({ where: { id: paymentId }, data: { status: 'success' } });
-    const subscription = await this.prisma.subscription.update({
-      where: { id: payment.subscriptionId },
-      data: { status: 'active', currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
-      include: { plan: true }
-    });
 
-    // Get tenant owner
     const owner = await this.prisma.user.findFirst({ where: { tenantId: payment.tenantId, role: { in: ['owner', 'admin'] } } });
-    const tenant = await this.prisma.tenant.findUnique({ where: { id: payment.tenantId } });
+    const tenant = await this.prisma.tenant.findUnique({ where: { id: payment.tenantId }, include: { subscription: { include: { plan: true } } } });
 
-    if (owner) {
-      // Send approval email
-      this.smtpService.triggerPaymentApprovedEmail(
-        owner.email, tenant?.businessName || 'Tenant', subscription.plan?.name || 'Plan'
-      ).catch(() => {});
+    if (payment.subscriptionId) {
+      // Subscription Payment
+      const subscription = await this.prisma.subscription.update({
+        where: { id: payment.subscriptionId },
+        data: { status: 'active', currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
+        include: { plan: true }
+      });
 
-      // In-app notification
-      await this.notificationsService.createNotification(
-        owner.id,
-        '🎉 পেমেন্ট অনুমোদিত হয়েছে!',
-        `আপনার "${subscription.plan?.name}" সাবস্ক্রিপশন সক্রিয় হয়েছে।`,
-        'billing'
-      );
+      if (owner) {
+        this.smtpService.triggerPaymentApprovedEmail(
+          owner.email, tenant?.businessName || 'Tenant', subscription.plan?.name || 'Plan'
+        ).catch(() => {});
+
+        await this.notificationsService.createNotification(
+          owner.id,
+          '🎉 পেমেন্ট অনুমোদিত হয়েছে!',
+          `আপনার "${subscription.plan?.name || 'Plan'}" সাবস্ক্রিপশন সক্রিয় হয়েছে।`,
+          'billing'
+        );
+      }
+    } else if (payment.addonId) {
+      // Addon Payment
+      const addon = await this.prisma.addon.findUnique({ where: { id: payment.addonId } });
+      if (addon && tenant) {
+        // Apply limits
+        const currentMessageLimit = tenant.customMessageQuota ?? tenant.subscription?.plan?.messageLimit ?? 0;
+        const currentAiLimit = tenant.customAiResponseQuota ?? tenant.subscription?.plan?.aiResponseLimit ?? 0;
+        const currentStorageLimit = tenant.customStorageLimitMb ?? tenant.subscription?.plan?.storageLimitMb ?? 0;
+        
+        const updates: any = {};
+        if (addon.type === 'messages') updates.customMessageQuota = currentMessageLimit + addon.value;
+        if (addon.type === 'ai_responses') updates.customAiResponseQuota = currentAiLimit + addon.value;
+        if (addon.type === 'storage') updates.customStorageLimitMb = currentStorageLimit + addon.value;
+        
+        await this.prisma.tenant.update({ where: { id: tenant.id }, data: updates });
+
+        if (owner) {
+          this.smtpService.triggerAddonPurchasedEmail(
+            owner.email, tenant.businessName, addon.name, payment.amountBdt.toString()
+          ).catch(() => {});
+
+          await this.notificationsService.createNotification(
+            owner.id,
+            '🧩 অ্যাড-অন সক্রিয় হয়েছে!',
+            `আপনার কেনা অ্যাড-অন (${addon.name}) অ্যাকাউন্টে যোগ করা হয়েছে।`,
+            'billing'
+          );
+        }
+      }
     }
 
     return { message: 'Payment approved' };
