@@ -301,7 +301,9 @@ export default function MfsSettingsPage() {
             accounts.map(acc => (
               <div 
                 key={acc.id} 
-                className="bg-surface/60 backdrop-blur-xl border border-zinc-800 rounded-xl p-3 relative hover:border-zinc-700 transition-all flex flex-col justify-between"
+                className={`bg-surface/60 backdrop-blur-xl border rounded-xl p-3 relative hover:border-zinc-700 transition-all flex flex-col justify-between ${
+                  acc.provider === 'BANGLA_QR' ? 'border-amber-500/40 shadow-md shadow-amber-500/5' : 'border-zinc-800'
+                }`}
               >
                 <div>
                   <div className="flex justify-between items-start mb-2">
@@ -309,9 +311,10 @@ export default function MfsSettingsPage() {
                       acc.provider === 'BKASH' ? 'bg-pink-600/20 text-pink-400' :
                       acc.provider === 'NAGAD' ? 'bg-orange-600/20 text-orange-400' :
                       acc.provider === 'ROCKET' ? 'bg-purple-600/20 text-purple-400' :
+                      acc.provider === 'BANGLA_QR' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
                       'bg-sky-600/20 text-sky-400'
                     }`}>
-                      {acc.provider} ({acc.accountType})
+                      {acc.provider === 'BANGLA_QR' ? 'BANGLA QR (Universal)' : `${acc.provider} (${acc.accountType})`}
                     </span>
                     
                     <div className="flex items-center gap-2">
@@ -593,6 +596,8 @@ export default function MfsSettingsPage() {
                     setProvider(e.target.value);
                     if (e.target.value === 'BANK') {
                       setAccountType('BANK_ACCOUNT');
+                    } else if (e.target.value === 'BANGLA_QR') {
+                      setAccountType('MERCHANT');
                     } else {
                       setAccountType('PERSONAL');
                     }
@@ -603,6 +608,7 @@ export default function MfsSettingsPage() {
                   <option value="NAGAD">Nagad</option>
                   <option value="ROCKET">Rocket</option>
                   <option value="BANK">Bank Transfer</option>
+                  <option value="BANGLA_QR">Bangla QR (Universal)</option>
                 </select>
               </div>
 

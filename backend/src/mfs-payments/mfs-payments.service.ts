@@ -60,7 +60,7 @@ export class MfsPaymentsService {
   }
 
   // Get MFS QR payload for a payment checkout screen
-  async getPaymentQrPayload(paymentId: string) {
+  async getPaymentQrPayload(paymentId: string, provider?: string) {
     const payment = await this.prisma.payment.findUnique({
       where: { id: paymentId },
     });
@@ -68,13 +68,25 @@ export class MfsPaymentsService {
       throw new NotFoundException('Payment invoice not found');
     }
 
-    const providerKey = payment.provider.toUpperCase();
+    let providerKey = provider ? provider.toUpperCase() : payment.provider.toUpperCase();
+    if (providerKey === 'MANUAL') {
+      providerKey = 'BKASH';
+    }
+
     const account = await this.prisma.mfsAccount.findFirst({
       where: { provider: providerKey, isActive: true },
     });
 
     if (!account) {
-      throw new NotFoundException(`No active payment configuration found for ${payment.provider}`);
+      throw new NotFoundException(`No active payment configuration found for ${providerKey}`);
+    }
+
+    // Save/sync provider to the payment invoice
+    if (payment.provider.toUpperCase() !== providerKey) {
+      await this.prisma.payment.update({
+        where: { id: paymentId },
+        data: { provider: providerKey.toLowerCase() },
+      });
     }
 
     let qrCodeData = '';
@@ -87,7 +99,7 @@ export class MfsPaymentsService {
     return {
       paymentId: payment.id,
       amount: Number(payment.amountBdt),
-      provider: payment.provider,
+      provider: providerKey,
       number: account.number,
       accountType: account.accountType,
       bankName: account.bankName,

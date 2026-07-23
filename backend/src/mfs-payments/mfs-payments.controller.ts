@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Headers, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, Headers, UseGuards, Req } from '@nestjs/common';
 import { MfsPaymentsService } from './mfs-payments.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
@@ -69,8 +69,11 @@ export class MfsPaymentsController {
   // Get QR payload for checkout page
   @Get('qr-payload/:paymentId')
   @UseGuards(JwtAuthGuard)
-  async getPaymentQrPayload(@Param('paymentId') paymentId: string) {
-    return this.mfsPaymentsService.getPaymentQrPayload(paymentId);
+  async getPaymentQrPayload(
+    @Param('paymentId') paymentId: string,
+    @Query('provider') provider?: string,
+  ) {
+    return this.mfsPaymentsService.getPaymentQrPayload(paymentId, provider);
   }
 
   // 3. SMS Webhook Endpoint (Public, secured by header token)

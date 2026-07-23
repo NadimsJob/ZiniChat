@@ -113,11 +113,10 @@ function PayMfsContent() {
   const fetchPaymentConfig = async (paymentId: string) => {
     try {
       const token = Cookies.get('access_token');
-      // Try to get bKash first, or any available
-      const providers = ['BKASH', 'NAGAD', 'ROCKET', 'BANK'];
+      // Try to get Bangla QR first, then bKash, or any available
+      const providers = ['BANGLA_QR', 'BKASH', 'NAGAD', 'ROCKET', 'BANK'];
       for (const p of providers) {
-        // We temporarily update payment provider so the backend resolves that account type
-        const res = await fetch(`${API}/mfs-payments/qr-payload/${paymentId}`, {
+        const res = await fetch(`${API}/mfs-payments/qr-payload/${paymentId}?provider=${p}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (res.ok) {
@@ -136,32 +135,15 @@ function PayMfsContent() {
   const handleSelectProvider = async (provider: string) => {
     if (!payment) return;
     try {
-      // First update the payment provider on the backend invoice
       const token = Cookies.get('access_token');
       setSelectedProvider(provider);
       
-      // Update payment entity to the new provider
-      await fetch(`${API}/payments/manual`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          planId,
-          trxId: payment.trxId, // Keep same temp trxId
-          billingCycle,
-          couponCode: couponCode || undefined
-        })
-      });
-
       // Now query the QR payload for the selected provider
-      const res = await fetch(`${API}/mfs-payments/qr-payload/${payment.id}`, {
+      const res = await fetch(`${API}/mfs-payments/qr-payload/${payment.id}?provider=${provider}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
         const payload = await res.json();
-        // Overwrite provider because the payload might return BKASH/NAGAD etc.
         setQrPayload({ ...payload, provider });
       } else {
         setQrPayload(null);
@@ -325,6 +307,7 @@ function PayMfsContent() {
           
           <div className="space-y-2">
             {[
+              { id: 'BANGLA_QR', name: 'Bangla QR (Universal)', color: 'hover:border-amber-500/50 amber-border', desc: language === 'en' ? 'Scan via any Bank or MFS app' : 'যেকোনো ব্যাংক বা বিকাশ/নগদ দিয়ে স্ক্যান করুন', isHighlight: true },
               { id: 'BKASH', name: 'bKash', color: 'hover:border-pink-500/50 pink-border', desc: 'Personal / Merchant' },
               { id: 'NAGAD', name: 'Nagad', color: 'hover:border-orange-500/50 orange-border', desc: 'Personal / Merchant' },
               { id: 'ROCKET', name: 'Rocket', color: 'hover:border-purple-500/50 purple-border', desc: 'Personal' },
@@ -333,17 +316,26 @@ function PayMfsContent() {
               <button
                 key={m.id}
                 onClick={() => handleSelectProvider(m.id)}
-                className={`w-full text-left p-3 rounded-xl border backdrop-blur-xl transition-all ${
+                className={`w-full text-left p-3 rounded-xl border backdrop-blur-xl transition-all relative overflow-hidden ${
                   selectedProvider === m.id 
-                    ? 'bg-primary/10 border-primary shadow-[0_0_12px_rgba(31,130,74,0.1)]' 
-                    : 'bg-surface/50 border-zinc-800/80 hover:bg-surface/75'
+                    ? (m.isHighlight 
+                        ? 'bg-amber-500/5 border-amber-500/80 shadow-[0_0_15px_rgba(245,158,11,0.15)]'
+                        : 'bg-primary/10 border-primary shadow-[0_0_12px_rgba(31,130,74,0.1)]')
+                    : (m.isHighlight
+                        ? 'bg-zinc-950/20 border-amber-500/25 hover:border-amber-500/40 hover:bg-zinc-950/40'
+                        : 'bg-surface/50 border-zinc-800/80 hover:bg-surface/75')
                 }`}
               >
+                {m.isHighlight && (
+                  <span className="absolute top-0 right-0 bg-amber-500 text-black text-[8px] font-extrabold px-1.5 py-0.5 rounded-bl uppercase tracking-wider">
+                    {language === 'en' ? 'Recommended' : 'সুপারিশকৃত'}
+                  </span>
+                )}
                 <div className="flex justify-between items-center">
-                  <span className="font-bold text-zinc-200">{m.name}</span>
-                  {selectedProvider === m.id && <Check className="w-4 h-4 text-primary" />}
+                  <span className={`font-bold ${m.isHighlight ? 'text-amber-400' : 'text-zinc-200'}`}>{m.name}</span>
+                  {selectedProvider === m.id && <Check className={`w-4 h-4 ${m.isHighlight ? 'text-amber-500' : 'text-primary'}`} />}
                 </div>
-                <div className="text-[10px] text-zinc-500 mt-0.5">{m.desc}</div>
+                <div className={`text-[10px] mt-0.5 ${m.isHighlight ? 'text-amber-500/60' : 'text-zinc-500'}`}>{m.desc}</div>
               </button>
             ))}
           </div>
