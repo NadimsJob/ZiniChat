@@ -638,6 +638,8 @@ export default function MfsSettingsPage() {
                           tx.provider === 'BKASH' ? 'bg-pink-600/10 text-pink-400' :
                           tx.provider === 'NAGAD' ? 'bg-orange-600/10 text-orange-400' :
                           tx.provider === 'ROCKET' ? 'bg-purple-600/10 text-purple-400' :
+                          tx.provider === 'UPAY' ? 'bg-yellow-500/10 text-yellow-400' :
+                          tx.provider === 'BANGLA_QR' ? 'bg-amber-500/10 text-amber-400' :
                           'bg-sky-600/10 text-sky-400'
                         }`}>
                           {tx.provider}
