@@ -42,6 +42,7 @@ export default function MfsSettingsPage() {
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [gatewayApiKey, setGatewayApiKey] = useState('sms-gateway-secret-token');
   const [uploading, setUploading] = useState(false);
+  const [activeRuleTab, setActiveRuleTab] = useState<'BKASH' | 'NAGAD' | 'ROCKET' | 'BANGLA_QR'>('BKASH');
 
   useEffect(() => {
     fetchData();
