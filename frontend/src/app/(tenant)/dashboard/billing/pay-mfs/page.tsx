@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 import { toast, Toaster } from 'react-hot-toast';
@@ -21,7 +21,7 @@ import { useCurrency } from '@/components/CurrencyProvider';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-export default function PayMfsPage() {
+function PayMfsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { language } = useLanguage();
@@ -544,6 +544,18 @@ export default function PayMfsPage() {
         </div>
 
       </div>
-    </div>
+  );
+}
+
+export default function PayMfsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-white flex-col gap-2">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <span className="text-[12px] text-zinc-400">Loading payment secure portal...</span>
+      </div>
+    }>
+      <PayMfsContent />
+    </Suspense>
   );
 }
