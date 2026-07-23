@@ -360,7 +360,7 @@ export class PaymentsService {
     const owner = await this.prisma.user.findFirst({ where: { tenantId: payment.tenantId, role: { in: ['owner', 'admin'] } } });
     const tenant = await this.prisma.tenant.findUnique({ 
       where: { id: payment.tenantId }, 
-      include: { subscriptions: { include: { plan: true }, take: 1, orderBy: { createdAt: 'desc' } } } 
+      include: { subscriptions: { include: { plan: true } } } 
     });
 
     if (payment.subscriptionId) {
@@ -388,7 +388,7 @@ export class PaymentsService {
       const addon = await this.prisma.addon.findUnique({ where: { id: payment.addonId } });
       if (addon && tenant) {
         // Apply limits
-        const activeSub = tenant.subscriptions?.[0];
+        const activeSub = tenant.subscriptions?.find(s => s.status === 'active') || tenant.subscriptions?.[0];
         const currentMessageLimit = tenant.customMessageQuota ?? activeSub?.plan?.messageLimit ?? 0;
         const currentAiLimit = tenant.customAiQuota ?? activeSub?.plan?.aiResponseLimit ?? 0;
         const currentStorageLimit = tenant.customStorageLimitMb ?? activeSub?.plan?.storageLimitMb ?? 0;
