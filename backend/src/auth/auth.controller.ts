@@ -128,10 +128,9 @@ export class AuthController {
     return this.authService.updateGoogleSettings(body);
   }
 
-  // Public callback to login/signup via Google token
   @Post('google/callback')
-  async googleCallback(@Body('credential') token: string) {
-    return this.authService.googleCallback(token);
+  async googleCallback(@Body() body: any) {
+    return this.authService.googleCallback(body.credential, body.planId);
   }
 
   // Superadmin endpoint to get Facebook settings

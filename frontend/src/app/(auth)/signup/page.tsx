@@ -40,11 +40,18 @@ export default function SignupPage() {
   const handleGoogleCallback = async (response: any) => {
     setError('');
     setLoading(true);
+
+    let planId = '';
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      planId = params.get('planId') || '';
+    }
+
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/auth/google/callback`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ credential: response.credential })
+        body: JSON.stringify({ credential: response.credential, planId })
       });
 
       if (!res.ok) {
@@ -94,11 +101,17 @@ export default function SignupPage() {
     setError('');
     setLoading(true);
 
+    let planId = '';
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      planId = params.get('planId') || '';
+    }
+
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({ ...formData, planId })
       });
 
       if (!res.ok) {

@@ -180,7 +180,7 @@ export function PricingSection({ isHomepage = false }: { isHomepage?: boolean })
 
               <div className="mt-auto">
                 <Link 
-                  href="/signup" 
+                  href={`/signup?planId=${plan.id}`} 
                   className={`block w-full py-4 rounded-[16px] font-extrabold text-[16px] text-center transition-all ${
                     isPop 
                       ? 'bg-white text-zinc-900 hover:bg-zinc-50 shadow-md border-2 border-white' 
