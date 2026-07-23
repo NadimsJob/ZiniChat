@@ -54,7 +54,12 @@ export default function TenantDashboardOverview() {
   };
 
   const userName = Cookies.get('user_name') || 'Admin';
-  const isSetupPending = setupStatus && (!setupStatus.hasBusinessProfile || !setupStatus.hasConnectedChannel);
+  
+  const hasAnyChannel = stats?.features?.some((f: string) => ['whatsapp', 'messenger', 'instagram_dm', 'whatsapp_qr'].includes(f));
+  const isSetupPending = setupStatus && (
+    !setupStatus.hasBusinessProfile || 
+    (hasAnyChannel && !setupStatus.hasConnectedChannel)
+  );
 
   if (loading) {
     return (
@@ -100,39 +105,40 @@ export default function TenantDashboardOverview() {
         </div>
       </div>
 
+      {/* Free Setup Banner - Always show if not dismissed */}
+      {showSetupBanner && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-2xl bg-gradient-to-r from-primary/10 via-secondary/10 to-primary/5 border border-primary/20 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 blur-3xl -z-10 rounded-full mix-blend-multiply" />
+          <div>
+            <h3 className="text-lg font-bold text-slate-800 dark:text-zinc-200">
+              {language === 'en' ? 'Having trouble setting up? We will do it for FREE 🎁' : 'Setup করতে সমস্যা হচ্ছে? আমরা FREE করে দিব 🎁'}
+            </h3>
+            <p className="text-slate-500 dark:text-zinc-400 text-sm mt-1">
+              {language === 'en' ? 'New signup? Our team will do your entire Meta + WhatsApp setup for free within the first 7 days.' : 'নতুন signup করেছেন? প্রথম ৭ দিন আমাদের team আপনার পুরো Meta + WhatsApp setup free-তে করে দিবে।'}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={(e) => { e.preventDefault(); window.dispatchEvent(new CustomEvent('open-support-widget')); }}
+              className="whitespace-nowrap px-4 py-2.5 bg-primary text-white text-sm font-bold rounded-xl hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
+            >
+              {language === 'en' ? 'Get Free Setup →' : 'ফ্রি সেটআপ নিন →'}
+            </button>
+            <button 
+              onClick={() => setShowSetupBanner(false)}
+              className="p-2 text-slate-400 hover:text-slate-600 hover:bg-white/50 rounded-lg transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {isSetupPending ? (
         // ==========================================
         // SETUP PENDING VIEW
         // ==========================================
         <div className="max-w-4xl mx-auto mt-8 space-y-6">
-          {showSetupBanner && (
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-2xl bg-gradient-to-r from-primary/10 via-secondary/10 to-primary/5 border border-primary/20 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 blur-3xl -z-10 rounded-full mix-blend-multiply" />
-              <div>
-                <h3 className="text-lg font-bold text-slate-800 dark:text-zinc-200">
-                  {language === 'en' ? 'Having trouble setting up? We will do it for FREE 🎁' : 'Setup করতে সমস্যা হচ্ছে? আমরা FREE করে দিব 🎁'}
-                </h3>
-                <p className="text-slate-500 dark:text-zinc-400 text-sm mt-1">
-                  {language === 'en' ? 'New signup? Our team will do your entire Meta + WhatsApp setup for free within the first 7 days.' : 'নতুন signup করেছেন? প্রথম ৭ দিন আমাদের team আপনার পুরো Meta + WhatsApp setup free-তে করে দিবে।'}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <button 
-                  onClick={(e) => { e.preventDefault(); window.dispatchEvent(new CustomEvent('open-support-widget')); }}
-                  className="whitespace-nowrap px-4 py-2.5 bg-primary text-white text-sm font-bold rounded-xl hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
-                >
-                  {language === 'en' ? 'Get Free Setup →' : 'ফ্রি সেটআপ নিন →'}
-                </button>
-                <button 
-                  onClick={() => setShowSetupBanner(false)}
-                  className="p-2 text-slate-400 hover:text-slate-600 hover:bg-white/50 rounded-lg transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-          )}
-
           {stats?.features && setupStatus && (
             <SetupJourneyWidget allowedFeatures={stats.features} initialStatus={setupStatus} compact={false} />
           )}
@@ -399,9 +405,9 @@ export default function TenantDashboardOverview() {
 
           </div>
 
-          {/* Right Sidebar (Compact Setup Journey) */}
-          {stats?.features && setupStatus && (
-            <div className="w-full xl:w-[320px] shrink-0">
+          {/* Right Sidebar (Setup Checklist if not complete) */}
+          {stats?.features && setupStatus && !setupStatus.isComplete && (
+            <div className="w-full xl:w-80 shrink-0 space-y-6">
               <SetupJourneyWidget allowedFeatures={stats.features} initialStatus={setupStatus} compact={true} />
             </div>
           )}

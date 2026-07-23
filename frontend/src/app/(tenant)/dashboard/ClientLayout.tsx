@@ -177,9 +177,9 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
         { name: language === 'en' ? 'Labels' : 'লেবেলস', icon: Tag, href: '/dashboard/settings/labels' },
         { name: language === 'en' ? 'Subscription' : 'সাবস্ক্রিপশন', icon: Crown, href: '/dashboard/settings/subscription' },
         { name: language === 'en' ? 'Storage' : 'স্টোরেজ', icon: Settings2, href: '/dashboard/settings/storage' },
-      ].filter(sub => hasAccess(sub.href))
+      ] // Removed hasAccess filter here
     },
-  ].filter(item => hasAccess(item.href));
+  ]; // Removed hasAccess filter here
 
   if (pathname === '/dashboard/onboarding') {
     return (
@@ -428,7 +428,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
       )}
 
       {/* Floating Action Buttons or Modals */}
-      {allowedFeatures.includes('platform_support_ai') && <SupportWidget />}
+      <SupportWidget />
 
     </div>
   );
