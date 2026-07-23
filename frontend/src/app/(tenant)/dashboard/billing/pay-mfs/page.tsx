@@ -30,6 +30,7 @@ function PayMfsContent() {
   const { formatBDT } = useCurrency();
 
   const planId = searchParams.get('planId');
+  const addonId = searchParams.get('addonId');
   const billingCycle = searchParams.get('billingCycle') || 'monthly';
   const couponCode = searchParams.get('coupon') || '';
 
@@ -64,8 +65,8 @@ function PayMfsContent() {
 
   // 1. Create the pending payment invoice on load (handles pre-applied coupon if present)
   useEffect(() => {
-    if (!planId) {
-      toast.error('Invalid plan selection');
+    if (!planId && !addonId) {
+      toast.error('Invalid selection');
       router.push('/dashboard/settings/subscription');
       return;
     }
@@ -164,21 +165,36 @@ function PayMfsContent() {
   const initiatePaymentInvoice = async (appliedCouponCode?: string) => {
     try {
       const token = Cookies.get('access_token');
-      // Create a manual pending payment request with a placeholder TrxID first
       const tempTrxId = `PENDING_${Date.now()}`;
-      const res = await fetch(`${API}/payments/manual`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          planId,
-          trxId: tempTrxId,
-          billingCycle,
-          couponCode: appliedCouponCode || undefined
-        })
-      });
+      let res;
+      
+      if (addonId) {
+        res = await fetch(`${API}/payments/manual-addon`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            addonId,
+            trxId: tempTrxId
+          })
+        });
+      } else {
+        res = await fetch(`${API}/payments/manual`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            planId,
+            trxId: tempTrxId,
+            billingCycle,
+            couponCode: appliedCouponCode || undefined
+          })
+        });
+      }
 
       if (res.ok) {
         const data = await res.json();
@@ -463,10 +479,18 @@ function PayMfsContent() {
                 {language === 'en' ? 'Invoice Summary' : 'ইনভয়েস সামারি'}
               </h4>
               <div className="space-y-1 text-[11px] text-zinc-400">
-                <div className="flex justify-between">
-                  <span>Billing Cycle:</span>
-                  <span className="font-medium text-zinc-200 capitalize">{billingCycle}</span>
-                </div>
+                {!addonId && (
+                  <div className="flex justify-between">
+                    <span>Billing Cycle:</span>
+                    <span className="font-medium text-zinc-200 capitalize">{billingCycle}</span>
+                  </div>
+                )}
+                {addonId && (
+                  <div className="flex justify-between">
+                    <span>Type:</span>
+                    <span className="font-medium text-zinc-200 capitalize">Add-on Purchase</span>
+                  </div>
+                )}
                 <div className="flex justify-between border-t border-zinc-800/40 pt-1 mt-1 text-[13px] font-bold text-primary">
                   <span>Total Amount:</span>
                   <span>{formatBDT(payment.amountBdt)}</span>
@@ -590,57 +614,59 @@ function PayMfsContent() {
                   <div className="h-px bg-zinc-800" />
 
                   {/* Coupon Application Block */}
-                  <div className="space-y-1.5 p-2 bg-zinc-950/40 rounded-xl border border-zinc-850">
-                    <label className="block text-[10px] text-zinc-500 uppercase font-semibold">
-                      {language === 'en' ? 'Have a Coupon Code?' : 'কুপন কোড আছে?'}
-                    </label>
-                    <div className="flex gap-1.5">
-                      <input
-                        type="text"
-                        placeholder={language === 'en' ? 'e.g. DISCOUNT20' : 'যেমন: DISCOUNT20'}
-                        value={couponInput}
-                        onChange={(e) => setCouponInput(e.target.value)}
-                        disabled={applyingCoupon || !!appliedCoupon}
-                        className="flex-1 bg-zinc-900 border border-zinc-850 rounded-lg px-2.5 py-1 text-[11px] font-mono focus:outline-none focus:border-primary text-zinc-200 uppercase placeholder:normal-case"
-                      />
-                      {appliedCoupon ? (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setAppliedCoupon(null);
-                            setCouponInput('');
-                            initiatePaymentInvoice();
-                          }}
-                          className="px-2 py-1 bg-red-600/20 hover:bg-red-650/30 border border-red-500/30 text-red-400 rounded-lg text-[10px] font-bold transition-all"
-                        >
-                          {language === 'en' ? 'Remove' : 'মুছুন'}
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={handleApplyCouponClick}
-                          disabled={applyingCoupon || !couponInput.trim()}
-                          className="px-3 py-1 bg-primary/10 hover:bg-primary/20 border border-primary/30 text-primary rounded-lg text-[10px] font-bold transition-all disabled:opacity-50"
-                        >
-                          {applyingCoupon ? (
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                          ) : (
-                            language === 'en' ? 'Apply' : 'প্রয়োগ করুন'
-                          )}
-                        </button>
+                  {!addonId && (
+                    <div className="space-y-1.5 p-2 bg-zinc-950/40 rounded-xl border border-zinc-850">
+                      <label className="block text-[10px] text-zinc-500 uppercase font-semibold">
+                        {language === 'en' ? 'Have a Coupon Code?' : 'কুপন কোড আছে?'}
+                      </label>
+                      <div className="flex gap-1.5">
+                        <input
+                          type="text"
+                          placeholder={language === 'en' ? 'e.g. DISCOUNT20' : 'যেমন: DISCOUNT20'}
+                          value={couponInput}
+                          onChange={(e) => setCouponInput(e.target.value)}
+                          disabled={applyingCoupon || !!appliedCoupon}
+                          className="flex-1 bg-zinc-900 border border-zinc-850 rounded-lg px-2.5 py-1 text-[11px] font-mono focus:outline-none focus:border-primary text-zinc-200 uppercase placeholder:normal-case"
+                        />
+                        {appliedCoupon ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAppliedCoupon(null);
+                              setCouponInput('');
+                              initiatePaymentInvoice();
+                            }}
+                            className="px-2 py-1 bg-red-600/20 hover:bg-red-650/30 border border-red-500/30 text-red-400 rounded-lg text-[10px] font-bold transition-all"
+                          >
+                            {language === 'en' ? 'Remove' : 'মুছুন'}
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={handleApplyCouponClick}
+                            disabled={applyingCoupon || !couponInput.trim()}
+                            className="px-3 py-1 bg-primary/10 hover:bg-primary/20 border border-primary/30 text-primary rounded-lg text-[10px] font-bold transition-all disabled:opacity-50"
+                          >
+                            {applyingCoupon ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              language === 'en' ? 'Apply' : 'প্রয়োগ করুন'
+                            )}
+                          </button>
+                        )}
+                      </div>
+                      {couponError && (
+                        <span className="text-[10px] text-red-400 block">{couponError}</span>
+                      )}
+                      {appliedCoupon && (
+                        <span className="text-[10px] text-emerald-400 block font-medium">
+                          ✓ {language === 'en' 
+                            ? `Applied: ${appliedCoupon.discountType === 'percentage' ? `${appliedCoupon.discountAmount}% Off` : `${formatBDT(appliedCoupon.discountAmount)} Off`}` 
+                            : `প্রয়োগকৃত: ${appliedCoupon.discountType === 'percentage' ? `${appliedCoupon.discountAmount}% ছাড়` : `${formatBDT(appliedCoupon.discountAmount)} ছাড়`}`}
+                        </span>
                       )}
                     </div>
-                    {couponError && (
-                      <span className="text-[10px] text-red-400 block">{couponError}</span>
-                    )}
-                    {appliedCoupon && (
-                      <span className="text-[10px] text-emerald-400 block font-medium">
-                        ✓ {language === 'en' 
-                          ? `Applied: ${appliedCoupon.discountType === 'percentage' ? `${appliedCoupon.discountAmount}% Off` : `${formatBDT(appliedCoupon.discountAmount)} Off`}` 
-                          : `প্রয়োগকৃত: ${appliedCoupon.discountType === 'percentage' ? `${appliedCoupon.discountAmount}% ছাড়` : `${formatBDT(appliedCoupon.discountAmount)} ছাড়`}`}
-                      </span>
-                    )}
-                  </div>
+                  )}
 
                   {qrPayload.baseAmount !== undefined && (
                     <>

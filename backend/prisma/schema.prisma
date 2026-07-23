@@ -523,6 +523,8 @@ model Addon {
   value         Int // e.g., 1000 responses, 500 MB storage, 1 seat
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
+  
+  payments      Payment[]
 
   @@map("addons")
 }
@@ -563,7 +565,8 @@ model Coupon {
 model Payment {
   id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenantId        String   @db.Uuid
-  subscriptionId  String   @db.Uuid
+  subscriptionId  String?  @db.Uuid
+  addonId         String?  @db.Uuid
   amountBdt       Decimal  @db.Decimal(10, 2)
   baseAmountBdt   Decimal? @db.Decimal(10, 2)
   provider        String // sslcommerz, bkash, manual
@@ -572,8 +575,9 @@ model Payment {
   gatewayResponse Json? // For automated gateway logs
   createdAt       DateTime @default(now())
 
-  tenant       Tenant       @relation(fields: [tenantId], references: [id])
-  subscription Subscription @relation(fields: [subscriptionId], references: [id])
+  tenant       Tenant        @relation(fields: [tenantId], references: [id])
+  subscription Subscription? @relation(fields: [subscriptionId], references: [id])
+  addon        Addon?        @relation(fields: [addonId], references: [id])
 
   @@map("payments")
 }

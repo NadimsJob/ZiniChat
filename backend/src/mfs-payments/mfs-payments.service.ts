@@ -244,7 +244,7 @@ export class MfsPaymentsService {
       // 1. Fetch payment request
       const payment = await tx.payment.findFirst({
         where: { id: paymentId, tenantId, status: 'pending' },
-        include: { subscription: { include: { plan: true } } },
+        include: { subscription: { include: { plan: true } }, addon: true },
       });
 
       if (!payment) {
@@ -328,8 +328,6 @@ export class MfsPaymentsService {
       });
 
       // 4. Activate Payment & Subscription
-      const periodDays = payment.subscription?.billingCycle === 'yearly' ? 365 : 30;
-
       await tx.payment.update({
         where: { id: payment.id },
         data: {
@@ -338,35 +336,72 @@ export class MfsPaymentsService {
         },
       });
 
-      await tx.subscription.update({
-        where: { id: payment.subscriptionId },
-        data: {
-          status: 'active',
-          currentPeriodEnd: new Date(Date.now() + periodDays * 24 * 60 * 60 * 1000),
-        },
-      });
+      const tenant = await tx.tenant.findUnique({ where: { id: tenantId }, include: { plan: true } });
+
+      if (payment.addonId && payment.addon) {
+        // Provision Addon
+        let newLimit = 0;
+        const addon = payment.addon;
+        if (addon.type === 'ai_responses' || addon.type === 'ai_tokens') {
+          const current = tenant?.customAiQuota ?? tenant?.plan?.aiQuota ?? 0;
+          newLimit = current + addon.value;
+          await tx.tenant.update({ where: { id: tenantId }, data: { customAiQuota: newLimit } });
+        } else if (addon.type === 'messages') {
+          const current = tenant?.customMessageQuota ?? tenant?.plan?.messageQuota ?? 0;
+          newLimit = current + addon.value;
+          await tx.tenant.update({ where: { id: tenantId }, data: { customMessageQuota: newLimit } });
+        } else if (addon.type === 'seats') {
+          const current = tenant?.customSeatLimit ?? tenant?.plan?.seatLimit ?? 0;
+          newLimit = current + addon.value;
+          await tx.tenant.update({ where: { id: tenantId }, data: { customSeatLimit: newLimit } });
+        } else if (addon.type === 'storage') {
+          const current = tenant?.customStorageLimitMb ?? tenant?.plan?.storageLimitMb ?? 0;
+          newLimit = current + addon.value;
+          await tx.tenant.update({ where: { id: tenantId }, data: { customStorageLimitMb: newLimit } });
+        }
+      } else if (payment.subscriptionId) {
+        const periodDays = payment.subscription?.billingCycle === 'yearly' ? 365 : 30;
+        await tx.subscription.update({
+          where: { id: payment.subscriptionId },
+          data: {
+            status: 'active',
+            currentPeriodEnd: new Date(Date.now() + periodDays * 24 * 60 * 60 * 1000),
+          },
+        });
+      }
 
       // 5. Notify tenant owner & superadmins
       const owner = await tx.user.findFirst({
         where: { tenantId, role: { in: ['owner', 'admin'] } },
       });
-      const tenant = await tx.tenant.findUnique({ where: { id: tenantId } });
 
       if (owner) {
-        this.smtpService
-          .triggerPaymentApprovedEmail(
-            owner.email,
-            tenant?.businessName || 'Tenant',
-            payment.subscription?.plan?.name || 'Package',
-          )
-          .catch(() => {});
+        if (payment.addonId && payment.addon) {
+          if ((this.smtpService as any).triggerAddonPurchasedEmail) {
+            (this.smtpService as any).triggerAddonPurchasedEmail(owner.email, tenant?.businessName || 'Tenant', payment.addon.name, String(actualAmount)).catch(() => {});
+          }
+          await this.notificationsService.createNotification(
+            owner.id,
+            '🎉 অ্যাড-অন সক্রিয়!',
+            `আপনার অ্যাড-অন পেমেন্ট (TrxID: ${cleanTrxId}) অটো-ভেরিফাই করা হয়েছে এবং "${payment.addon.name}" অ্যাড-অন সচল হয়েছে।`,
+            'billing',
+          );
+        } else {
+          this.smtpService
+            .triggerPaymentApprovedEmail(
+              owner.email,
+              tenant?.businessName || 'Tenant',
+              payment.subscription?.plan?.name || 'Package',
+            )
+            .catch(() => {});
 
-        await this.notificationsService.createNotification(
-          owner.id,
-          '🎉 পেমেন্ট সফল ও সাবস্ক্রিপশন সক্রিয়!',
-          `আপনার পেমেন্ট (TrxID: ${cleanTrxId}) অটো-ভেরিফাই করা হয়েছে এবং "${payment.subscription?.plan?.name}" প্ল্যান সচল হয়েছে।`,
-          'billing',
-        );
+          await this.notificationsService.createNotification(
+            owner.id,
+            '🎉 পেমেন্ট সফল ও সাবস্ক্রিপশন সক্রিয়!',
+            `আপনার পেমেন্ট (TrxID: ${cleanTrxId}) অটো-ভেরিফাই করা হয়েছে এবং "${payment.subscription?.plan?.name}" প্ল্যান সচল হয়েছে।`,
+            'billing',
+          );
+        }
       }
 
       await this.notificationsService.createSystemNotificationForSuperadmins(
@@ -375,7 +410,7 @@ export class MfsPaymentsService {
         'billing',
       );
 
-      return { success: true, message: 'Payment successfully verified and subscription activated' };
+      return { success: true, message: 'Payment successfully verified and activated' };
     });
   }
 
@@ -385,7 +420,7 @@ export class MfsPaymentsService {
 
     const payment = await this.prisma.payment.findUnique({
       where: { id: paymentId },
-      include: { subscription: { include: { plan: true } } },
+      include: { subscription: { include: { plan: true } }, addon: true },
     });
     if (!payment) throw new NotFoundException('Payment not found');
 
@@ -403,17 +438,41 @@ export class MfsPaymentsService {
     }
 
     // Set payment to success
-    const periodDays = payment.subscription?.billingCycle === 'yearly' ? 365 : 30;
-
     await this.prisma.payment.update({
       where: { id: payment.id },
       data: { status: 'success', trxId: cleanTrxId },
     });
 
-    await this.prisma.subscription.update({
-      where: { id: payment.subscriptionId },
-      data: { status: 'active', currentPeriodEnd: new Date(Date.now() + periodDays * 24 * 60 * 60 * 1000) },
-    });
+    const tenant = await this.prisma.tenant.findUnique({ where: { id: payment.tenantId }, include: { plan: true } });
+
+    if (payment.addonId && payment.addon) {
+      // Provision Addon
+      let newLimit = 0;
+      const addon = payment.addon;
+      if (addon.type === 'ai_responses' || addon.type === 'ai_tokens') {
+        const current = tenant?.customAiQuota ?? tenant?.plan?.aiQuota ?? 0;
+        newLimit = current + addon.value;
+        await this.prisma.tenant.update({ where: { id: payment.tenantId }, data: { customAiQuota: newLimit } });
+      } else if (addon.type === 'messages') {
+        const current = tenant?.customMessageQuota ?? tenant?.plan?.messageQuota ?? 0;
+        newLimit = current + addon.value;
+        await this.prisma.tenant.update({ where: { id: payment.tenantId }, data: { customMessageQuota: newLimit } });
+      } else if (addon.type === 'seats') {
+        const current = tenant?.customSeatLimit ?? tenant?.plan?.seatLimit ?? 0;
+        newLimit = current + addon.value;
+        await this.prisma.tenant.update({ where: { id: payment.tenantId }, data: { customSeatLimit: newLimit } });
+      } else if (addon.type === 'storage') {
+        const current = tenant?.customStorageLimitMb ?? tenant?.plan?.storageLimitMb ?? 0;
+        newLimit = current + addon.value;
+        await this.prisma.tenant.update({ where: { id: payment.tenantId }, data: { customStorageLimitMb: newLimit } });
+      }
+    } else if (payment.subscriptionId) {
+      const periodDays = payment.subscription?.billingCycle === 'yearly' ? 365 : 30;
+      await this.prisma.subscription.update({
+        where: { id: payment.subscriptionId },
+        data: { status: 'active', currentPeriodEnd: new Date(Date.now() + periodDays * 24 * 60 * 60 * 1000) },
+      });
+    }
 
     return { success: true, message: 'Payment manually claimed and approved' };
   }

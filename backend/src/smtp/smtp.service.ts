@@ -4,6 +4,13 @@ import * as nodemailer from 'nodemailer';
 
 // ─── Default Email Templates ──────────────────────────────────────────────────
 const TEMPLATES = {
+  welcomeSubject: 'ZiniChat প্ল্যাটফর্মে স্বাগতম! 🎉',
+  welcomeBody: `প্রিয় {{tenantName}},
+
+ZiniChat প্ল্যাটফর্মে আপনাকে স্বাগতম! আপনার অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে।
+
+এখনই আপনার ড্যাশবোর্ডে লগইন করে আপনার কাস্টমারদের সাথে যুক্ত হওয়া শুরু করুন।`,
+
   paymentSubmittedSubject: '✅ পেমেন্ট সাবমিট সফল হয়েছে – {{tenantName}}',
   paymentSubmittedBody: `প্রিয় {{tenantName}},
 
@@ -169,8 +176,8 @@ export class SmtpService {
           fromEmail: 'noreply@zinichat.com',
           fromName: 'ZiniChat',
           sendWelcomeEmail: false,
-          welcomeSubject: 'Welcome to ZiniChat! 🎉',
-          welcomeBody: '<h1>Welcome!</h1><p>Thank you for signing up to ZiniChat.</p>',
+          welcomeSubject: TEMPLATES.welcomeSubject,
+          welcomeBody: TEMPLATES.welcomeBody,
           paymentSubmittedSubject: TEMPLATES.paymentSubmittedSubject,
           paymentSubmittedBody: TEMPLATES.paymentSubmittedBody,
           paymentPendingAdminSubject: TEMPLATES.paymentPendingAdminSubject,
@@ -219,7 +226,7 @@ export class SmtpService {
       if (!config.addonPurchasedSubject) { updates.addonPurchasedSubject = TEMPLATES.addonPurchasedSubject; updates.addonPurchasedBody = TEMPLATES.addonPurchasedBody; needsUpdate = true; }
       if (!config.expiryReminder7dSubject) { updates.expiryReminder7dSubject = TEMPLATES.expiryReminder7dSubject; updates.expiryReminder7dBody = TEMPLATES.expiryReminder7dBody; needsUpdate = true; }
       if (!config.expiryReminder2dSubject) { updates.expiryReminder2dSubject = TEMPLATES.expiryReminder2dSubject; updates.expiryReminder2dBody = TEMPLATES.expiryReminder2dBody; needsUpdate = true; }
-      if (!config.welcomeSubject) { updates.welcomeSubject = 'Welcome to ZiniChat! 🎉'; updates.welcomeBody = `প্রিয় {{tenantName}},\n\nZiniChat প্ল্যাটফর্মে আপনাকে স্বাগতম! আপনার অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে।\n\nএখনই আপনার ড্যাশবোর্ডে লগইন করে আপনার কাস্টমারদের সাথে যুক্ত হওয়া শুরু করুন।`; needsUpdate = true; }
+      if (!config.welcomeSubject) { updates.welcomeSubject = TEMPLATES.welcomeSubject; updates.welcomeBody = TEMPLATES.welcomeBody; needsUpdate = true; }
       if (!config.agentCreatedSubject) { updates.agentCreatedSubject = TEMPLATES.agentCreatedSubject; updates.agentCreatedBody = TEMPLATES.agentCreatedBody; needsUpdate = true; }
       if (!config.passwordResetSubject) { updates.passwordResetSubject = TEMPLATES.passwordResetSubject; updates.passwordResetBody = TEMPLATES.passwordResetBody; needsUpdate = true; }
       if (!config.newInquirySubject) { updates.newInquirySubject = TEMPLATES.newInquirySubject; updates.newInquiryBody = TEMPLATES.newInquiryBody; needsUpdate = true; }

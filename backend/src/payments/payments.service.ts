@@ -223,6 +223,124 @@ export class PaymentsService {
     return payment;
   }
 
+  async submitManualPaymentForAddon(tenantId: string, addonId: string, trxId: string) {
+    const addon = await this.prisma.addon.findUnique({ where: { id: addonId } });
+    if (!addon) throw new BadRequestException('Addon not found');
+
+    const amount = Number(addon.priceBdt);
+    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+
+    // Generate unique decimal offset
+    const pendingPayments = await this.prisma.payment.findMany({
+      where: { status: 'pending', provider: { in: ['manual', 'bkash', 'nagad', 'rocket', 'upay', 'bangla_qr'] } },
+      select: { amountBdt: true }
+    });
+    const usedAmounts = new Set(pendingPayments.map(p => Number(p.amountBdt).toFixed(2)));
+
+    let finalAmount = amount;
+    let foundUnique = false;
+    for (let i = 1; i <= 99; i++) {
+      const candidate = (amount + i / 100).toFixed(2);
+      if (!usedAmounts.has(candidate)) {
+        finalAmount = Number(candidate);
+        foundUnique = true;
+        break;
+      }
+    }
+    if (!foundUnique) {
+      finalAmount = Number((amount + (Math.floor(Math.random() * 99 + 1) / 100)).toFixed(2));
+    }
+
+    const payment = await this.prisma.payment.create({
+      data: {
+        tenantId,
+        addonId: addon.id,
+        amountBdt: finalAmount,
+        baseAmountBdt: amount,
+        provider: 'manual',
+        status: 'pending',
+        trxId
+      }
+    });
+
+    const owner = await this.prisma.user.findFirst({ where: { tenantId, role: { in: ['owner', 'admin'] } } });
+
+    if (owner) {
+      this.smtpService.triggerPaymentSubmittedEmail(
+        owner.email, tenant?.businessName || 'Tenant', String(amount), trxId
+      ).catch(() => {});
+      
+      await this.notificationsService.createNotification(
+        owner.id,
+        '✅ অ্যাড-অন পেমেন্ট সাবমিট হয়েছে',
+        `আপনার অ্যাড-অন পেমেন্ট (TrxID: ${trxId}) গ্রহণ করা হয়েছে। অনুমোদনের অপেক্ষায় আছে।`,
+        'billing'
+      );
+    }
+    await this.notificationsService.createSystemNotificationForSuperadmins(
+      '🔔 নতুন অ্যাড-অন পেমেন্ট',
+      `${tenant?.businessName || 'একটি টেন্যান্ট'} TrxID "${trxId}" দিয়ে ${amount} BDT পেমেন্ট সাবমিট করেছে।`,
+      'billing'
+    );
+
+    return payment;
+  }
+
+  async submitSandboxPaymentForAddon(tenantId: string, addonId: string) {
+    const addon = await this.prisma.addon.findUnique({ where: { id: addonId } });
+    if (!addon) throw new BadRequestException('Addon not found');
+
+    const amount = Number(addon.priceBdt);
+    const tenant = await this.prisma.tenant.findUnique({ 
+      where: { id: tenantId },
+      include: { plan: true }
+    });
+
+    const payment = await this.prisma.payment.create({
+      data: {
+        tenantId,
+        addonId: addon.id,
+        amountBdt: amount,
+        provider: 'sandbox_bkash',
+        status: 'success',
+        gatewayResponse: { message: 'Sandbox addon success' }
+      }
+    });
+
+    let newLimit = 0;
+    if (addon.type === 'ai_responses' || addon.type === 'ai_tokens') {
+      const current = tenant?.customAiQuota ?? tenant?.plan?.aiQuota ?? 0;
+      newLimit = current + addon.value;
+      await this.prisma.tenant.update({ where: { id: tenantId }, data: { customAiQuota: newLimit } });
+    } else if (addon.type === 'messages') {
+      const current = tenant?.customMessageQuota ?? tenant?.plan?.messageQuota ?? 0;
+      newLimit = current + addon.value;
+      await this.prisma.tenant.update({ where: { id: tenantId }, data: { customMessageQuota: newLimit } });
+    } else if (addon.type === 'seats') {
+      const current = tenant?.customSeatLimit ?? tenant?.plan?.seatLimit ?? 0;
+      newLimit = current + addon.value;
+      await this.prisma.tenant.update({ where: { id: tenantId }, data: { customSeatLimit: newLimit } });
+    } else if (addon.type === 'storage') {
+      const current = tenant?.customStorageLimitMb ?? tenant?.plan?.storageLimitMb ?? 0;
+      newLimit = current + addon.value;
+      await this.prisma.tenant.update({ where: { id: tenantId }, data: { customStorageLimitMb: newLimit } });
+    }
+
+    const owner = await this.prisma.user.findFirst({ where: { tenantId, role: { in: ['owner', 'admin'] } } });
+    if (owner) {
+      if ((this.smtpService as any).triggerAddonPurchasedEmail) {
+        (this.smtpService as any).triggerAddonPurchasedEmail(owner.email, tenant?.businessName || 'Tenant', addon.name, String(amount)).catch(() => {});
+      }
+      await this.notificationsService.createNotification(
+        owner.id,
+        '🎉 অ্যাড-অন সক্রিয়!',
+        `আপনার "${addon.name}" সফলভাবে কেনা হয়েছে।`,
+        'billing'
+      );
+    }
+    return payment;
+  }
+
   async getPendingManualPayments() {
     return this.prisma.payment.findMany({
       where: { status: 'pending', provider: 'manual' },

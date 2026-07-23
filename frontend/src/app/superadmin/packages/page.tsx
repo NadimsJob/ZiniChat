@@ -34,7 +34,7 @@ export default function PackagesPage() {
   // Addon form
   const [addonForm, setAddonForm] = useState({
     name: '', nameBn: '', description: '', descriptionBn: '',
-    priceUsd: 0, type: 'ai_tokens', value: 1000, isActive: true
+    priceBdt: 0, type: 'ai_tokens', value: 1000, isActive: true
   });
 
   const fetchData = async () => {
@@ -174,12 +174,12 @@ export default function PackagesPage() {
     if (addon) {
       setAddonForm({
         name: addon.name, nameBn: addon.nameBn || '', description: addon.description || '', descriptionBn: addon.descriptionBn || '',
-        priceUsd: Number(addon.priceUsd), type: addon.type, value: addon.value, isActive: addon.isActive
+        priceBdt: Number(addon.priceBdt), type: addon.type, value: addon.value, isActive: addon.isActive
       });
       setEditingId(addon.id);
     } else {
       setAddonForm({
-        name: '', nameBn: '', description: '', descriptionBn: '', priceUsd: 0, type: 'ai_tokens', value: 1000, isActive: true
+        name: '', nameBn: '', description: '', descriptionBn: '', priceBdt: 0, type: 'ai_tokens', value: 1000, isActive: true
       });
       setEditingId(null);
     }
@@ -435,7 +435,7 @@ export default function PackagesPage() {
                 </div>
                 <h3 className="text-[13px] font-bold">{addon.name}</h3>
                 <p className="text-[12px] text-zinc-400 mt-1 line-clamp-2">{addon.description}</p>
-                <div className="text-[15px] font-black mt-2 text-primary">{formatBDT(addon.priceUsd)}</div>
+                <div className="text-[15px] font-black mt-2 text-primary">{formatBDT(addon.priceBdt)}</div>
                 <div className="text-xs text-zinc-500 mt-1 uppercase tracking-wide font-bold">{addon.value} {addon.type.replace('_', ' ')}</div>
                 
                 <div className="flex items-center gap-2 mt-3 pt-4 border-t border-surface-hover">
@@ -492,6 +492,7 @@ export default function PackagesPage() {
                   <option value="ai_tokens">AI Responses</option>
                   <option value="messages">Messages</option>
                   <option value="seats">Team Members</option>
+                  <option value="storage">Storage (MB)</option>
                   <option value="other">Other</option>
                 </select>
               </div>
@@ -500,9 +501,8 @@ export default function PackagesPage() {
                 <input type="number" value={addonForm.value} onChange={e => setAddonForm({...addonForm, value: Number(e.target.value)})} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-secondary focus:outline-none" />
               </div>
               <div>
-                <label className="block text-[12px] font-medium mb-1 text-zinc-400">Price (USD)</label>
-                <input type="number" step="0.01" value={addonForm.priceUsd} onChange={e => setAddonForm({...addonForm, priceUsd: Number(e.target.value)})} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-secondary focus:outline-none" />
-                <p className="text-xs text-zinc-500 mt-1">Converts to {formatBDT(addonForm.priceUsd)}</p>
+                <label className="block text-[12px] font-medium mb-1 text-zinc-400">Price (BDT)</label>
+                <input type="number" step="1" value={addonForm.priceBdt} onChange={e => setAddonForm({...addonForm, priceBdt: Number(e.target.value)})} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-secondary focus:outline-none" />
               </div>
             </div>
 

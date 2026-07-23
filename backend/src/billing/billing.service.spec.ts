@@ -23,6 +23,9 @@ describe('BillingService', () => {
             payment: {
               findMany: jest.fn(),
             },
+            tenant: {
+              findUnique: jest.fn().mockResolvedValue({ id: 'tenant-1' }),
+            },
           },
         },
       ],

@@ -26,6 +26,18 @@ export class PaymentsController {
     return this.paymentsService.submitSandboxPayment(tenantId, body.planId, body.billingCycle || 'monthly', body.couponCode);
   }
 
+  @Post('manual-addon')
+  async submitManualPaymentForAddon(@Req() req: any, @Body() body: { addonId: string, trxId: string }) {
+    const tenantId = req.user.tenantId;
+    return this.paymentsService.submitManualPaymentForAddon(tenantId, body.addonId, body.trxId);
+  }
+
+  @Post('sandbox-addon')
+  async submitSandboxPaymentForAddon(@Req() req: any, @Body() body: { addonId: string }) {
+    const tenantId = req.user.tenantId;
+    return this.paymentsService.submitSandboxPaymentForAddon(tenantId, body.addonId);
+  }
+
   // Admin routes
   @UseGuards(PermissionsGuard)
   @RequirePermissions('manage:billing')

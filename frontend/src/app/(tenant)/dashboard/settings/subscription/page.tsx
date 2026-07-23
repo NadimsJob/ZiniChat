@@ -174,7 +174,7 @@ export default function SubscriptionSettingsPage() {
 
   const handleBuyAddon = async (addonId: string) => {
     if (!confirm(language === 'en' ? 'Proceed to payment?' : 'পেমেন্ট এর জন্য এগিয়ে যাবেন?')) return;
-    alert('Payment Gateway Integration Required');
+    router.push(`/dashboard/billing/pay-mfs?addonId=${addonId}`);
   };
 
   if (loading) {
