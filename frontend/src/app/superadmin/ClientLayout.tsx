@@ -115,7 +115,6 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
         { name: language === 'en' ? 'SMTP Settings' : 'এসএমটিপি সেটিংস', icon: Mail, href: '/superadmin/settings/smtp', show: hasPermission('manage:site') },
         { name: language === 'en' ? 'Business Nature' : 'বিজনেস নেচার', icon: ClipboardList, href: '/superadmin/settings/business-nature', show: hasPermission('manage:site') },
         { name: language === 'en' ? 'AI Integrations' : 'এআই ইন্টিগ্রেশন', icon: Bot, href: '/superadmin/settings/ai', show: hasPermission('manage:site') },
-        { name: language === 'en' ? 'Payment Gateways' : 'পেমেন্ট গেটওয়ে', icon: Landmark, href: '/superadmin/settings/payments', show: hasPermission('manage:site') },
         { name: language === 'en' ? 'MFS & Bank Gateway' : 'এমএফএস ও ব্যাংক গেটওয়ে', icon: Landmark, href: '/superadmin/settings/mfs', show: hasPermission('manage:site') },
         { name: language === 'en' ? 'Google Login' : 'গুগল লগইন সেটিংস', icon: Key, href: '/superadmin/settings/google-auth', show: hasPermission('manage:site') },
         { name: language === 'en' ? 'Facebook Login' : 'ফেসবুক লগইন সেটিংস', icon: Globe, href: '/superadmin/settings/facebook-auth', show: hasPermission('manage:site') },
