@@ -88,21 +88,6 @@ export default function TenantDashboardOverview() {
             {language === 'en' ? 'Your dashboard overview' : 'আপনার ড্যাশবোর্ড ওভারভিউ'}
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          {stats?.plan && (
-            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-zinc-800 rounded-lg border border-slate-200 dark:border-zinc-700">
-              <span className="text-[12px] text-slate-500">{language === 'en' ? 'Current Plan:' : 'বর্তমান প্ল্যান:'}</span>
-              <span className="text-[12px] font-bold text-primary">{stats.plan.name}</span>
-            </div>
-          )}
-          <Link 
-            href="/dashboard/settings/subscription"
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-500/10 text-yellow-600 dark:text-yellow-500 hover:bg-yellow-500/20 border border-yellow-500/20 rounded-lg text-[13px] font-bold transition-all shadow-sm"
-          >
-            <Crown className="w-4 h-4" />
-            {language === 'en' ? 'Upgrade Plan' : 'আপগ্রেড করুন'}
-          </Link>
-        </div>
       </div>
 
       {/* Free Setup Banner - Always show if not dismissed */}

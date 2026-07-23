@@ -106,14 +106,23 @@ Always communicate in Bengali unless the user speaks in English. Be polite and c
         baseURL: aiConfig.apiEndpoint || undefined
       });
 
-      const response = await openai.chat.completions.create({
-        model: aiConfig.modelName,
-        messages: messages as any,
-        tools: tools as any,
-        tool_choice: 'auto',
-      });
-
-      const responseMessage = response.choices[0].message;
+      let responseMessage: any;
+      try {
+        const response = await openai.chat.completions.create({
+          model: aiConfig.modelName,
+          messages: messages as any,
+          tools: tools as any,
+          tool_choice: 'auto',
+        });
+        responseMessage = response.choices[0].message;
+      } catch (innerError) {
+        this.logger.warn(`AI model ${aiConfig.modelName} failed with tools. Retrying without tools. Error: ${innerError.message}`);
+        const fallbackResponse = await openai.chat.completions.create({
+          model: aiConfig.modelName,
+          messages: messages as any,
+        });
+        responseMessage = fallbackResponse.choices[0].message;
+      }
 
       if (responseMessage.tool_calls) {
         // Handle tool call
