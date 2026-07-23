@@ -20,7 +20,8 @@ describe('AuthService', () => {
     user: { create: jest.fn(), findUnique: jest.fn() },
     plan: { findFirst: jest.fn() },
     subscription: { create: jest.fn() },
-    googleAuthConfig: { findFirst: jest.fn() }
+    googleAuthConfig: { findFirst: jest.fn() },
+    facebookAuthConfig: { findFirst: jest.fn(), update: jest.fn(), create: jest.fn() }
   };
 
   const mockUsersService = {
@@ -189,6 +190,32 @@ describe('AuthService', () => {
           data: expect.objectContaining({ planId: mockDefaultPlan.id, tenantId: mockTenant.id })
         })
       );
+    });
+  });
+
+  describe('facebookAuthSettings', () => {
+    it('should retrieve Facebook auth settings', async () => {
+      const mockConfig = { id: 'config-1', appId: '123456', appSecret: 'secret', isEnabled: true };
+      mockPrismaService.facebookAuthConfig.findFirst.mockResolvedValue(mockConfig);
+
+      const result = await service.getFacebookSettings();
+      expect(mockPrismaService.facebookAuthConfig.findFirst).toHaveBeenCalled();
+      expect(result).toEqual(mockConfig);
+    });
+
+    it('should update Facebook auth settings when config exists', async () => {
+      const updateData = { appId: '987654', appSecret: 'newsecret', isEnabled: true };
+      mockPrismaService.facebookAuthConfig.findFirst.mockResolvedValue({ id: 'config-1' });
+      mockPrismaService.facebookAuthConfig.update.mockResolvedValue({ id: 'config-1', ...updateData });
+
+      const result = await service.updateFacebookSettings(updateData);
+      expect(mockPrismaService.facebookAuthConfig.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'config-1' },
+          data: expect.objectContaining({ appId: '987654', isEnabled: true })
+        })
+      );
+      expect(result).toEqual(expect.objectContaining({ appId: '987654' }));
     });
   });
 });

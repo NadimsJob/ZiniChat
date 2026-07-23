@@ -471,7 +471,7 @@ export default function MfsSettingsPage() {
                     : 'নিচের বাটন থেকে অফিশিয়াল ওপেন সোর্স SMS Gateway অ্যাপটি ডাউনলোড করে ফোনে ইনস্টল করুন এবং রুলস কনফিগার করুন।'}</p>
                 </div>
                 <a
-                  href="https://github.com/bogkonstantin/android_income_sms_gateway_webhook/releases/download/v1.3.1/app-release.apk"
+                  href="https://github.com/capcom6/android-sms-gateway/releases/download/v1.67.0/app-release.apk"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="px-2.5 py-1.5 bg-primary text-black font-semibold rounded-lg text-center hover:bg-primary/95 text-[11px] shrink-0"
