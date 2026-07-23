@@ -357,8 +357,9 @@ export default function SubscriptionSettingsPage() {
                   ? (language === 'en' ? 'Current Plan' : 'বর্তমান প্ল্যান')
                   : (language === 'en' ? 'Subscribe' : 'সাবস্ক্রাইব করুন')}
               </button>
-            </div>
-          ))}
+              </div>
+            );
+          })}
         </div>
       </div>
 
