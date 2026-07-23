@@ -114,7 +114,7 @@ function PayMfsContent() {
     try {
       const token = Cookies.get('access_token');
       // Try to get Bangla QR first, then bKash, or any available
-      const providers = ['BANGLA_QR', 'BKASH', 'NAGAD', 'ROCKET', 'BANK'];
+      const providers = ['BANGLA_QR', 'BKASH', 'NAGAD', 'ROCKET', 'UPAY', 'BANK'];
       for (const p of providers) {
         const res = await fetch(`${API}/mfs-payments/qr-payload/${paymentId}?provider=${p}`, {
           headers: { 'Authorization': `Bearer ${token}` }
@@ -311,6 +311,7 @@ function PayMfsContent() {
               { id: 'BKASH', name: 'bKash', color: 'hover:border-pink-500/50 pink-border', desc: 'Personal / Merchant' },
               { id: 'NAGAD', name: 'Nagad', color: 'hover:border-orange-500/50 orange-border', desc: 'Personal / Merchant' },
               { id: 'ROCKET', name: 'Rocket', color: 'hover:border-purple-500/50 purple-border', desc: 'Personal' },
+              { id: 'UPAY', name: 'upay', color: 'hover:border-yellow-500/50 yellow-border', desc: 'Personal / Merchant' },
               { id: 'BANK', name: 'Bank Transfer', color: 'hover:border-sky-500/50 sky-border', desc: 'NPSB / RTGS / Instant Transfer' }
             ].map(m => (
               <button
@@ -332,7 +333,31 @@ function PayMfsContent() {
                   </span>
                 )}
                 <div className="flex justify-between items-center">
-                  <span className={`font-bold ${m.isHighlight ? 'text-amber-400' : 'text-zinc-200'}`}>{m.name}</span>
+                  <div className="flex items-center gap-2">
+                    {m.id === 'BKASH' && (
+                      <div className="w-5 h-5 rounded-md bg-[#E2136E] flex items-center justify-center font-black text-white text-[9px] shadow-sm select-none">bK</div>
+                    )}
+                    {m.id === 'NAGAD' && (
+                      <div className="w-5 h-5 rounded-md bg-[#F05A24] flex items-center justify-center font-black text-white text-[9px] shadow-sm select-none">N</div>
+                    )}
+                    {m.id === 'ROCKET' && (
+                      <div className="w-5 h-5 rounded-md bg-[#8C3494] flex items-center justify-center font-black text-white text-[9px] shadow-sm select-none">R</div>
+                    )}
+                    {m.id === 'UPAY' && (
+                      <div className="w-5 h-5 rounded-md bg-[#FFC629] flex items-center justify-center font-black text-black text-[9px] shadow-sm select-none">up</div>
+                    )}
+                    {m.id === 'BANGLA_QR' && (
+                      <svg viewBox="0 0 20 20" className="w-5 h-5 fill-current text-amber-400 shrink-0">
+                        <path d="M2 2h6v6H2V2zm1 1v4h4V3H3zm-1 9h6v6H2v-6zm1 1v4h4v-4H3zm6-11h6v6H9V2zm1 1v4h4V3h-4zm2 9h4v2h-4v-2zm2 2h2v4h-2v-4zm-4 2h2v2h-2v-2zm4-4h2v2h-2v-2zm-2 2h2v2h-2v-2z" />
+                      </svg>
+                    )}
+                    {m.id === 'BANK' && (
+                      <svg viewBox="0 0 24 24" className="w-5 h-5 fill-none stroke-current text-sky-400 shrink-0" strokeWidth="2">
+                        <path d="M3 21h18M5 21V10m6 11V10m6 11V10M4 10h16M3 10l9-6 9 6" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    )}
+                    <span className={`font-bold ${m.isHighlight ? 'text-amber-400' : 'text-zinc-200'}`}>{m.name}</span>
+                  </div>
                   {selectedProvider === m.id && <Check className={`w-4 h-4 ${m.isHighlight ? 'text-amber-500' : 'text-primary'}`} />}
                 </div>
                 <div className={`text-[10px] mt-0.5 ${m.isHighlight ? 'text-amber-500/60' : 'text-zinc-500'}`}>{m.desc}</div>

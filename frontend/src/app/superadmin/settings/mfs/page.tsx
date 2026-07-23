@@ -42,7 +42,7 @@ export default function MfsSettingsPage() {
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [gatewayApiKey, setGatewayApiKey] = useState('sms-gateway-secret-token');
   const [uploading, setUploading] = useState(false);
-  const [activeRuleTab, setActiveRuleTab] = useState<'BKASH' | 'NAGAD' | 'ROCKET' | 'BANGLA_QR'>('BKASH');
+  const [activeRuleTab, setActiveRuleTab] = useState<'BKASH' | 'NAGAD' | 'ROCKET' | 'UPAY' | 'BANGLA_QR'>('BKASH');
 
   useEffect(() => {
     fetchData();
@@ -347,6 +347,7 @@ export default function MfsSettingsPage() {
                       acc.provider === 'BKASH' ? 'bg-pink-600/20 text-pink-400' :
                       acc.provider === 'NAGAD' ? 'bg-orange-600/20 text-orange-400' :
                       acc.provider === 'ROCKET' ? 'bg-purple-600/20 text-purple-400' :
+                      acc.provider === 'UPAY' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/20' :
                       acc.provider === 'BANGLA_QR' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
                       'bg-sky-600/20 text-sky-400'
                     }`}>
@@ -473,7 +474,7 @@ export default function MfsSettingsPage() {
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] text-zinc-500 font-semibold block uppercase">3. Custom JSON Request Body Template (Choose Provider)</span>
                   <div className="flex gap-1">
-                    {(['BKASH', 'NAGAD', 'ROCKET', 'BANGLA_QR'] as const).map(tab => (
+                    {(['BKASH', 'NAGAD', 'ROCKET', 'UPAY', 'BANGLA_QR'] as const).map(tab => (
                       <button
                         key={tab}
                         type="button"
@@ -498,6 +499,7 @@ export default function MfsSettingsPage() {
                         {activeRuleTab === 'BKASH' ? 'bKash' : 
                          activeRuleTab === 'NAGAD' ? 'NAGAD' : 
                          activeRuleTab === 'ROCKET' ? '16216' : 
+                         activeRuleTab === 'UPAY' ? 'upay' :
                          'DHAKABANK (or your Bank Sender ID)'}
                       </strong>
                     </span>
@@ -523,6 +525,13 @@ export default function MfsSettingsPage() {
   "trxId": "%Regex=(?:TrxID|Trx\\\\s*ID|Txn\\\\s*ID|Trx\\\\.?\\\\s*ID)\\\\s*[:\\\\-\\\\s]\\\\s*([A-Za-z0-9]+)%",
   "amount": "%Regex=(?:Tk|BDT|Bdt)\\\\s*([0-9,.]+)%",
   "provider": "ROCKET",
+  "smsBody": "%text%",
+  "senderNumber": "%from%"
+}`}
+{activeRuleTab === 'UPAY' && `{
+  "trxId": "%Regex=(?:TrxID|Trx\\\\s*ID|Txn\\\\s*ID|Trx\\\\.?\\\\s*ID)\\\\s*[:\\\\-\\\\s]\\\\s*([A-Za-z0-9]+)%",
+  "amount": "%Regex=(?:Tk|BDT|Bdt)\\\\s*([0-9,.]+)%",
+  "provider": "UPAY",
   "smsBody": "%text%",
   "senderNumber": "%from%"
 }`}
@@ -702,6 +711,7 @@ export default function MfsSettingsPage() {
                   <option value="BKASH">bKash</option>
                   <option value="NAGAD">Nagad</option>
                   <option value="ROCKET">Rocket</option>
+                  <option value="UPAY">upay</option>
                   <option value="BANK">Bank Transfer</option>
                   <option value="BANGLA_QR">Bangla QR (Universal)</option>
                 </select>
