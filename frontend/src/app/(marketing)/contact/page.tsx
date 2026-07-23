@@ -90,11 +90,16 @@ export default function ContactPage() {
               <div className="w-14 h-14 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
                 <Mail className="w-7 h-7" />
               </div>
-              <h3 className="text-xl font-bold mb-2 text-foreground">{language === 'en' ? 'Email Support' : 'ইমেইল সাপোর্ট'}</h3>
-              <p className="text-muted-foreground text-sm mb-6 leading-relaxed">{language === 'en' ? 'For technical issues and detailed inquiries.' : 'টেকনিক্যাল সমস্যা এবং বিস্তারিত অনুসন্ধানের জন্য।'}</p>
-              <a href="mailto:support@zinichat.com" className="inline-flex items-center gap-2 text-sm font-bold text-blue-500 hover:text-blue-500/80 transition-colors">
-                support@zinichat.com <ArrowRight className="w-4 h-4" />
-              </a>
+              <h3 className="text-xl font-bold mb-2 text-foreground">{language === 'en' ? 'Email Contacts' : 'ইমেইল কন্টাক্টস'}</h3>
+              <p className="text-muted-foreground text-sm mb-4 leading-relaxed">{language === 'en' ? 'Reach out for official inquiries or technical support.' : 'অফিশিয়াল ইনকোয়ারি বা টেকনিক্যাল সাপোর্টের জন্য ইমেইল করুন।'}</p>
+              <div className="flex flex-col gap-2">
+                <a href="mailto:info@zinichat.com" className="inline-flex items-center gap-2 text-sm font-bold text-primary hover:underline transition-colors">
+                  <span className="text-muted-foreground font-normal">Official:</span> info@zinichat.com <ArrowRight className="w-3.5 h-3.5" />
+                </a>
+                <a href="mailto:support@zinichat.com" className="inline-flex items-center gap-2 text-sm font-bold text-blue-500 hover:underline transition-colors">
+                  <span className="text-muted-foreground font-normal">Support:</span> support@zinichat.com <ArrowRight className="w-3.5 h-3.5" />
+                </a>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">

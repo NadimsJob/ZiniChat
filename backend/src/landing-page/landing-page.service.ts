@@ -77,9 +77,9 @@ export class LandingPageService {
             bn: 'আপনার শর্তাবলী এখানে থাকবে। সুপারঅ্যাডমিন ড্যাশবোর্ড থেকে এটি এডিট করুন।'
           },
           contactInfo: {
-            address: { en: '123 AI Street, Tech Valley, Dhaka', bn: '১২৩ এআই স্ট্রিট, টেক ভ্যালি, ঢাকা' },
-            email: 'hello@zinichat.com',
-            phone: '+880 1234 567 890'
+            address: { en: 'Dhaka, Bangladesh', bn: 'ঢাকা, বাংলাদেশ' },
+            email: 'info@zinichat.com',
+            phone: '+880 1700 000 000'
           },
           socialLinksJson: {
             facebook: { url: 'https://facebook.com', enabled: true },
@@ -89,6 +89,12 @@ export class LandingPageService {
             whatsapp: { url: 'https://wa.me/1234567890', enabled: true }
           }
         }
+      });
+    } else if ((config.contactInfo as any)?.email === 'hello@zinichat.com') {
+      const updatedContactInfo = { ...(config.contactInfo as any), email: 'info@zinichat.com' };
+      config = await this.prisma.landingPageConfig.update({
+        where: { id: config.id },
+        data: { contactInfo: updatedContactInfo }
       });
     }
     return config;
