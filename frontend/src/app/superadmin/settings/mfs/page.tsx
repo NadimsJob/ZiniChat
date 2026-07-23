@@ -468,37 +468,96 @@ export default function MfsSettingsPage() {
 
               <div className="h-px bg-zinc-800" />
 
-              <div className="space-y-1.5">
-                <span className="text-[10px] text-zinc-500 font-semibold block uppercase">3. Custom JSON Request Body Template (in mobile app)</span>
-                <div className="relative">
-                  <pre className="bg-zinc-950 p-2 rounded text-[10px] font-mono text-zinc-400 overflow-x-auto select-all leading-normal">
-{`{
-  "trxId": "%Regex=TrxID\\\\s+([A-Z0-9]+)%",
-  "amount": %Regex=(?:Tk|BDT)\\\\s*([0-9.]+)%,
+              <div className="space-y-2 mt-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-zinc-500 font-semibold block uppercase">3. Custom JSON Request Body Template (Choose Provider)</span>
+                  <div className="flex gap-1">
+                    {(['BKASH', 'NAGAD', 'ROCKET', 'BANGLA_QR'] as const).map(tab => (
+                      <button
+                        key={tab}
+                        type="button"
+                        onClick={() => setActiveRuleTab(tab)}
+                        className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all border ${
+                          activeRuleTab === tab
+                            ? 'bg-[#1F824A]/20 text-[#1F824A] border-[#1F824A]/40'
+                            : 'bg-zinc-950/40 text-zinc-400 border-zinc-800 hover:text-zinc-300'
+                        }`}
+                      >
+                        {tab === 'BANGLA_QR' ? 'BANGLA QR' : tab}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-zinc-950/40 p-2.5 rounded-lg border border-zinc-850 space-y-1.5">
+                  <div className="flex justify-between items-center text-[10px] text-zinc-400">
+                    <span>
+                      {language === 'en' ? 'Sender Filter: ' : 'এসএমএস প্রেরক (Filter Sender): '} 
+                      <strong className="text-primary font-mono select-all">
+                        {activeRuleTab === 'BKASH' ? 'bKash' : 
+                         activeRuleTab === 'NAGAD' ? 'NAGAD' : 
+                         activeRuleTab === 'ROCKET' ? '16216' : 
+                         'DHAKABANK (or your Bank Sender ID)'}
+                      </strong>
+                    </span>
+                  </div>
+
+                  <div className="relative">
+                    <pre className="bg-zinc-950 p-2 rounded text-[10px] font-mono text-zinc-400 overflow-x-auto select-all leading-normal">
+{activeRuleTab === 'BKASH' && `{
+  "trxId": "%Regex=(?:TrxID|Trx\\\\s*ID|Txn\\\\s*ID|Trx\\\\.?\\\\s*ID)\\\\s*[:\\\\-\\\\s]\\\\s*([A-Za-z0-9]+)%",
+  "amount": "%Regex=(?:Tk|BDT|Bdt)\\\\s*([0-9,.]+)%",
   "provider": "BKASH",
   "smsBody": "%text%",
   "senderNumber": "%from%"
 }`}
-                  </pre>
-                  <button 
-                    onClick={() => copyToClipboard(JSON.stringify({
-                      trxId: "%Regex=TrxID\\s+([A-Z0-9]+)%",
-                      amount: "%Regex=(?:Tk|BDT)\\s*([0-9.]+)%",
-                      provider: "BKASH",
-                      smsBody: "%text%",
-                      senderNumber: "%from%"
-                    }, null, 2))}
-                    className="absolute right-2 top-2 p-1 hover:bg-zinc-800 rounded text-zinc-500 hover:text-primary transition-colors"
-                    title="Copy Template JSON"
-                  >
-                    <Clipboard className="w-3.5 h-3.5" />
-                  </button>
+{activeRuleTab === 'NAGAD' && `{
+  "trxId": "%Regex=(?:TrxID|Trx\\\\s*ID|Txn\\\\s*ID|Trx\\\\.?\\\\s*ID)\\\\s*[:\\\\-\\\\s]\\\\s*([A-Za-z0-9]+)%",
+  "amount": "%Regex=(?:Tk|BDT|Bdt)\\\\s*([0-9,.]+)%",
+  "provider": "NAGAD",
+  "smsBody": "%text%",
+  "senderNumber": "%from%"
+}`}
+{activeRuleTab === 'ROCKET' && `{
+  "trxId": "%Regex=(?:TrxID|Trx\\\\s*ID|Txn\\\\s*ID|Trx\\\\.?\\\\s*ID)\\\\s*[:\\\\-\\\\s]\\\\s*([A-Za-z0-9]+)%",
+  "amount": "%Regex=(?:Tk|BDT|Bdt)\\\\s*([0-9,.]+)%",
+  "provider": "ROCKET",
+  "smsBody": "%text%",
+  "senderNumber": "%from%"
+}`}
+{activeRuleTab === 'BANGLA_QR' && `{
+  "trxId": "%Regex=(?:TrxID|Trx\\\\s*ID|Txn\\\\s*ID|Trx\\\\.?\\\\s*ID|Ref/TrxID)\\\\s*[:\\\\-\\\\s]\\\\s*([A-Za-z0-9]+)%",
+  "amount": "%Regex=(?:Tk|BDT|Bdt)\\\\s*([0-9,.]+)%",
+  "provider": "BANGLA_QR",
+  "smsBody": "%text%",
+  "senderNumber": "%from%"
+}`}
+                    </pre>
+                    <button 
+                      onClick={() => {
+                        const regexStr = activeRuleTab === 'BANGLA_QR' 
+                          ? "(?:TrxID|Trx\\s*ID|Txn\\s*ID|Trx\\.?\\s*ID|Ref/TrxID)\\s*[:\\-\\s]\\s*([A-Za-z0-9]+)"
+                          : "(?:TrxID|Trx\\s*ID|Txn\\s*ID|Trx\\.?\\s*ID)\\s*[:\\-\\s]\\s*([A-Za-z0-9]+)";
+                        copyToClipboard(JSON.stringify({
+                          trxId: `%Regex=${regexStr}%`,
+                          amount: "%Regex=(?:Tk|BDT|Bdt)\\s*([0-9,.]+)%",
+                          provider: activeRuleTab,
+                          smsBody: "%text%",
+                          senderNumber: "%from%"
+                        }, null, 2));
+                      }}
+                      className="absolute right-2 top-2 p-1 hover:bg-zinc-800 rounded text-zinc-500 hover:text-primary transition-colors"
+                      title="Copy Template JSON"
+                    >
+                      <Clipboard className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <p className="text-[9px] text-zinc-500">
+                    {language === 'en'
+                      ? '* Copy this JSON body template and paste it inside the webhook rule settings of the mobile app.'
+                      : '* এই JSON বডি টেমপ্লেটটি কপি করে মোবাইল অ্যাপের ওয়েবহুক রুলস সেটিংসে পেস্ট করুন।'}
+                  </p>
                 </div>
-                <p className="text-[9px] text-zinc-500">
-                  {language === 'en'
-                    ? '* Paste this JSON template inside your app rules. (Change provider to "NAGAD" or "ROCKET" for Nagad/Rocket rules).'
-                    : '* এই JSON টেমপ্লেটটি অ্যাপের বডিতে পেস্ট করবেন। (নগদ বা রকেটের নিয়মের জন্য "provider" পরিবর্তন করে "NAGAD" বা "ROCKET" লিখে দেবেন)।'}
-                </p>
               </div>
             </div>
 
