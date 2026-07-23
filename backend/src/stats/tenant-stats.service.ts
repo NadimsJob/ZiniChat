@@ -8,7 +8,7 @@ export class TenantStatsService {
   async getDashboardOverview(tenantId: string) {
     const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 
-    // 1. Total Messages (current month)
+    // 1. Messages Usage (current month)
     const totalMessages = await this.prisma.message.count({
       where: {
         conversation: { tenantId },
@@ -16,20 +16,35 @@ export class TenantStatsService {
       }
     });
 
-    // 2. Total Leads (Active contacts)
+    // 2. Leads (CRM)
     const activeLeads = await this.prisma.contact.count({
       where: { tenantId }
     });
-
-    // 3. Pending Orders
-    const pendingOrders = await this.prisma.order.count({
-      where: {
-        tenantId,
-        status: 'pending'
-      }
+    
+    const newLeads = await this.prisma.contact.count({
+      where: { tenantId, createdAt: { gte: startOfMonth } }
     });
 
-    // 4. AI Usage
+    // 3. E-commerce Orders & Revenue
+    const pendingOrders = await this.prisma.order.count({
+      where: { tenantId, status: 'pending' }
+    });
+    
+    const completedOrders = await this.prisma.order.count({
+      where: { tenantId, status: 'completed' }
+    });
+
+    const revenueAgg = await this.prisma.order.aggregate({
+      _sum: { totalAmount: true },
+      where: { tenantId, status: 'completed', createdAt: { gte: startOfMonth } }
+    });
+    const monthlyRevenue = Number(revenueAgg._sum.totalAmount || 0);
+
+    const totalProducts = await this.prisma.product.count({
+      where: { tenantId, isActive: true }
+    });
+
+    // 4. AI & Subscription Quotas
     const activeSubscription = await this.prisma.subscription.findFirst({
       where: {
         tenantId,
@@ -50,21 +65,48 @@ export class TenantStatsService {
       }
     });
 
+    // 5. Recent Activity (Latest 5 Messages)
+    const recentMessages = await this.prisma.message.findMany({
+      where: { conversation: { tenantId } },
+      take: 5,
+      orderBy: { createdAt: 'desc' },
+      include: { conversation: { include: { contact: true } } }
+    });
+
+    const formattedActivity = recentMessages.map(msg => ({
+      id: msg.id,
+      type: 'message',
+      title: msg.senderType === 'user' ? 'Message received' : 'Message sent',
+      description: msg.content.substring(0, 50) + (msg.content.length > 50 ? '...' : ''),
+      time: msg.createdAt,
+      contactName: msg.conversation?.contact?.name || 'Unknown'
+    }));
+
     return {
       messages: { 
-        total: totalMessages, // keep this for backward compatibility
+        total: totalMessages, 
         used: totalMessages,
         limit: msgLimit,
         percentage: Math.min(100, Math.round((totalMessages / msgLimit) * 100))
       },
-      leads: { total: activeLeads },
-      orders: { pending: pendingOrders },
+      leads: { 
+        total: activeLeads,
+        newThisMonth: newLeads 
+      },
+      orders: { 
+        pending: pendingOrders,
+        completed: completedOrders,
+        revenue: monthlyRevenue,
+        totalProducts: totalProducts
+      },
       aiQuota: {
         used: aiUsed,
         limit: aiLimit,
         percentage: Math.min(100, Math.round((aiUsed / aiLimit) * 100))
       },
-      features: activeSubscription?.plan?.features || []
+      activity: formattedActivity,
+      features: activeSubscription?.plan?.features || [],
+      plan: activeSubscription?.plan || null
     };
   }
 }

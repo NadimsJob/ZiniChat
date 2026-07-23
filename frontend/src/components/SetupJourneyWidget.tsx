@@ -20,14 +20,24 @@ import {
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-export default function SetupJourneyWidget({ allowedFeatures }: { allowedFeatures: string[] }) {
+export default function SetupJourneyWidget({ 
+  allowedFeatures, 
+  initialStatus,
+  compact = false 
+}: { 
+  allowedFeatures: string[], 
+  initialStatus?: any,
+  compact?: boolean
+}) {
   const { language } = useLanguage();
-  const [loading, setLoading] = useState(true);
-  const [status, setStatus] = useState<any>(null);
+  const [loading, setLoading] = useState(!initialStatus);
+  const [status, setStatus] = useState<any>(initialStatus || null);
   
   useEffect(() => {
-    fetchSetupStatus();
-  }, []);
+    if (!initialStatus) {
+      fetchSetupStatus();
+    }
+  }, [initialStatus]);
 
   const fetchSetupStatus = async () => {
     try {
@@ -55,6 +65,11 @@ export default function SetupJourneyWidget({ allowedFeatures }: { allowedFeature
 
   if (!status) return null;
 
+  const hasAnyChannel = allowedFeatures.some(f => ['whatsapp', 'messenger', 'instagram_dm', 'whatsapp_qr'].includes(f));
+  const hasAiBot = allowedFeatures.includes('ai_bot');
+  const hasEcommerce = allowedFeatures.includes('ecommerce');
+  const hasLeadCrm = allowedFeatures.includes('lead_crm');
+
   // Build dynamic checklist based on allowed features
   const checklist = [
     {
@@ -73,7 +88,7 @@ export default function SetupJourneyWidget({ allowedFeatures }: { allowedFeature
       icon: MessageCircle,
       isDone: status.hasConnectedChannel,
       href: '/dashboard/settings/whatsapp',
-      show: true
+      show: hasAnyChannel
     },
     {
       id: 'ai_config',
@@ -82,16 +97,16 @@ export default function SetupJourneyWidget({ allowedFeatures }: { allowedFeature
       icon: Wand2,
       isDone: status.hasNamedAgent,
       href: '/dashboard/settings/ai-training',
-      show: true
+      show: hasAiBot
     },
     {
       id: 'ai',
       title: language === 'en' ? 'Train AI Assistant' : 'এআই অ্যাসিস্ট্যান্ট ট্রেইন করুন',
       desc: language === 'en' ? 'Add Q&A and knowledge base documents.' : 'নলেজ বেইস ডকুমেন্ট এবং প্রশ্নোত্তর দিন।',
       icon: Bot,
-      isDone: status.hasConfiguredAi, // Checking if AI assistant row exists is basic, usually it means they clicked save.
+      isDone: status.hasConfiguredAi,
       href: '/dashboard/settings/ai-training',
-      show: true
+      show: hasAiBot
     },
     {
       id: 'commerce',
@@ -100,7 +115,7 @@ export default function SetupJourneyWidget({ allowedFeatures }: { allowedFeature
       icon: Package,
       isDone: status.hasCreatedProduct,
       href: '/dashboard/products',
-      show: true
+      show: hasEcommerce
     },
     {
       id: 'leads',
@@ -109,7 +124,7 @@ export default function SetupJourneyWidget({ allowedFeatures }: { allowedFeature
       icon: Users,
       isDone: status.hasCreatedLead,
       href: '/dashboard/leads',
-      show: true
+      show: hasLeadCrm
     }
   ].filter(item => item.show);
 
@@ -118,9 +133,73 @@ export default function SetupJourneyWidget({ allowedFeatures }: { allowedFeature
   const progressPercent = totalCount === 0 ? 100 : Math.round((completedCount / totalCount) * 100);
 
   if (progressPercent === 100) {
-    return null; // Hide widget completely when 100% done (Optional: could show a minimized success state)
+    return null; // Hide widget completely when 100% done
   }
 
+  // Pending checklist for compact view
+  const pendingItems = checklist.filter(item => !item.isDone);
+
+  if (compact) {
+    return (
+      <div className="bg-white dark:bg-[#0f0f11] rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm overflow-hidden sticky top-6">
+        <div className="p-4 border-b border-border bg-surface/50">
+          <h2 className="text-md font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-primary" />
+            {language === 'en' ? 'Remaining Setup' : 'বাকি সেটআপ'}
+          </h2>
+          <div className="mt-3 flex items-center gap-3">
+            <div className="flex-1 h-1.5 bg-slate-200 dark:bg-zinc-800 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-primary rounded-full transition-all duration-1000 ease-out"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+            <div className="text-[11px] font-bold text-slate-500">{progressPercent}%</div>
+          </div>
+        </div>
+
+        <div className="divide-y divide-slate-100 dark:divide-zinc-800/50">
+          {pendingItems.map((item) => (
+            <Link 
+              key={item.id} 
+              href={item.href}
+              className="flex items-start gap-3 p-3 hover:bg-surface-hover transition-colors group"
+            >
+              <div className="mt-0.5 shrink-0">
+                <Circle className="w-4 h-4 text-slate-300 dark:text-zinc-600 group-hover:text-primary transition-colors" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-[13px] text-slate-900 dark:text-white truncate">
+                  {item.title}
+                </h3>
+              </div>
+              <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-primary shrink-0" />
+            </Link>
+          ))}
+        </div>
+        
+        {allowedFeatures.includes('platform_support_ai') && (
+          <div className="p-3 bg-primary/5 flex items-center justify-between border-t border-primary/10">
+            <p className="text-[11px] text-slate-600 font-medium flex items-center gap-1.5">
+              <Bot className="w-3.5 h-3.5 text-primary" />
+              {language === 'en' ? 'Need help?' : 'সাহায্য প্রয়োজন?'}
+            </p>
+            <button 
+              onClick={(e) => {
+                e.preventDefault();
+                window.dispatchEvent(new CustomEvent('open-support-widget'));
+              }}
+              className="text-[10px] font-bold px-2 py-1 bg-primary text-white rounded transition-colors"
+            >
+              {language === 'en' ? 'Ask AI' : 'এআই কে জিজ্ঞাসা করুন'}
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Full View
   return (
     <div className="bg-white dark:bg-[#0f0f11] rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm overflow-hidden mb-6">
       <div className="p-4 md:p-5 border-b border-border bg-surface/50">
@@ -168,7 +247,7 @@ export default function SetupJourneyWidget({ allowedFeatures }: { allowedFeature
       </div>
 
       <div className="divide-y divide-slate-100 dark:divide-zinc-800/50">
-        {checklist.map((item, index) => (
+        {checklist.map((item) => (
           <Link 
             key={item.id} 
             href={item.href}
