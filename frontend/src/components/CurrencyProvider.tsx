@@ -104,8 +104,9 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
   };
 
   const formatNumber = (num: number): string => {
-    const formatted = num.toLocaleString('en-IN');
-    if (language === 'bn') {
+    if (typeof num !== 'number' || isNaN(num)) return '0';
+    const formatted = num.toLocaleString(displayCurrency === 'USD' ? 'en-US' : 'en-IN');
+    if (language === 'bn' && displayCurrency !== 'USD') {
       return toBengaliNumerals(formatted);
     }
     return formatted;

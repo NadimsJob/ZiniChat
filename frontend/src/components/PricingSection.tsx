@@ -8,7 +8,7 @@ import Link from 'next/link';
 
 export function PricingSection({ isHomepage = false }: { isHomepage?: boolean }) {
   const { language } = useLanguage();
-  const { formatBDT, formatNumber, displayCurrency, setDisplayCurrency } = useCurrency();
+  const { rate, formatBDT, formatNumber, displayCurrency, setDisplayCurrency } = useCurrency();
   const [plans, setPlans] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isYearly, setIsYearly] = useState(false);
@@ -23,6 +23,18 @@ export function PricingSection({ isHomepage = false }: { isHomepage?: boolean })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
+
+  const maxDiscountPercent = plans.reduce((max: number, p: any) => {
+    let disc = Number(p.yearlyDiscountPercent) || 0;
+    if (!disc) {
+      const m = Number(p.priceMonthlyBdt) || 0;
+      const y = Number(p.priceYearlyBdt) || 0;
+      if (m > 0 && y > 0) {
+        disc = Math.round(((m * 12 - y) / (m * 12)) * 100 * 100) / 100;
+      }
+    }
+    return disc > max ? disc : max;
+  }, 0);
 
   if (loading) {
     return (
@@ -76,11 +88,11 @@ export function PricingSection({ isHomepage = false }: { isHomepage?: boolean })
             <span className={`text-sm font-bold transition-colors ${isYearly ? 'text-foreground' : 'text-muted-foreground'}`}>
               {language === 'en' ? 'Yearly' : 'বার্ষিক'}
             </span>
-            {plans.some(p => p.yearlyDiscountPercent) && (
-              <span className="bg-emerald-500/10 text-emerald-600 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+            {maxDiscountPercent > 0 && (
+              <span className="bg-emerald-500/10 text-emerald-600 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider animate-pulse">
                 {language === 'en' 
-                  ? `Save up to ${Math.max(...plans.map(p => Number(p.yearlyDiscountPercent) || 0))}%` 
-                  : `সর্বোচ্চ ${Math.max(...plans.map(p => Number(p.yearlyDiscountPercent) || 0))}% সাশ্রয়`}
+                  ? `Save up to ${maxDiscountPercent}%` 
+                  : `সর্বোচ্চ ${formatNumber(maxDiscountPercent)}% সাশ্রয়`}
               </span>
             )}
           </div>
@@ -89,9 +101,26 @@ export function PricingSection({ isHomepage = false }: { isHomepage?: boolean })
 
       <div className="max-w-7xl mx-auto relative z-10 grid md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
         {plans.map((plan: any) => {
-          const price = isYearly && plan.priceYearlyBdt ? plan.priceYearlyBdt : plan.priceMonthlyBdt;
-          const displayPrice = isYearly && plan.priceYearlyBdt ? price / 12 : price;
+          const mBdt = Number(plan.priceMonthlyBdt) || 0;
+          const mUsd = Number(plan.priceMonthlyUsd) > 0 ? Number(plan.priceMonthlyUsd) : Math.round(mBdt / (rate || 121));
+
+          const yBdt = Number(plan.priceYearlyBdt) > 0 ? Number(plan.priceYearlyBdt) : Math.round(mBdt * 12 * 0.8334);
+          const yUsd = Number(plan.priceYearlyUsd) > 0 ? Number(plan.priceYearlyUsd) : Math.round(mUsd * 12 * 0.8334);
+
+          const promoBdt = Number(plan.promoPriceMonthlyBdt) || 0;
+          const promoUsd = Number(plan.promoPriceMonthlyUsd) > 0 ? Number(plan.promoPriceMonthlyUsd) : Math.round(promoBdt / (rate || 121));
+
+          const baseMonthly = displayCurrency === 'USD' ? mUsd : mBdt;
+          const baseYearly = displayCurrency === 'USD' ? yUsd : yBdt;
+          const promoPrice = displayCurrency === 'USD' ? promoUsd : promoBdt;
+
+          const displayPrice = isYearly && baseYearly > 0 ? Math.round(baseYearly / 12) : baseMonthly;
           
+          let planDiscount = Number(plan.yearlyDiscountPercent) || 0;
+          if (!planDiscount && baseMonthly > 0 && baseYearly > 0) {
+            planDiscount = Math.round(((baseMonthly * 12 - baseYearly) / (baseMonthly * 12)) * 100 * 100) / 100;
+          }
+
           const isPop = plan.isPopular;
           const textColor = isPop ? 'text-zinc-900' : 'text-foreground';
           const mutedColor = isPop ? 'text-zinc-800' : 'text-muted-foreground';
@@ -123,7 +152,7 @@ export function PricingSection({ isHomepage = false }: { isHomepage?: boolean })
                 <div className={`flex items-start gap-1 ${textColor}`}>
                   <span className="text-2xl font-bold mt-2">{displayCurrency === 'BDT' ? '৳' : '$'}</span>
                   <span className="text-6xl font-black tracking-tighter">
-                    {formatNumber(!isYearly && Number(plan.promoMonths) > 0 ? plan.promoPriceMonthlyBdt : displayPrice)}
+                    {formatNumber(!isYearly && Number(plan.promoMonths) > 0 ? promoPrice : displayPrice)}
                   </span>
                 </div>
                 
@@ -137,14 +166,16 @@ export function PricingSection({ isHomepage = false }: { isHomepage?: boolean })
                   </div>
                 ) : null}
 
-                {isYearly && plan.priceYearlyBdt ? (
-                  <div className="flex flex-col gap-1.5 mt-3">
-                    <div className={`text-sm font-semibold inline-block self-start px-2 py-0.5 rounded ${isPop ? 'bg-black/10 text-zinc-900' : 'bg-emerald-500/10 text-emerald-600'}`}>
-                      {language === 'en' ? `Billed ${displayCurrency === 'BDT' ? '৳' : '$'}${formatNumber(plan.priceYearlyBdt)} yearly` : `বছরে ${displayCurrency === 'BDT' ? '৳' : '$'}${formatNumber(plan.priceYearlyBdt)} বিল করা হবে`}
+                {isYearly && baseYearly > 0 ? (
+                  <div className={`mt-3 p-3 rounded-2xl border transition-all ${isPop ? 'bg-black/10 border-black/20 text-zinc-900 font-bold' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 font-bold'}`}>
+                    <div className="text-xs">
+                      {language === 'en' 
+                        ? `Billed ${displayCurrency === 'BDT' ? '৳' : '$'}${formatNumber(baseYearly)} yearly` 
+                        : `বছরে ${displayCurrency === 'BDT' ? '৳' : '$'}${formatNumber(baseYearly)} বিল করা হবে`}
                     </div>
-                    {plan.yearlyDiscountPercent ? (
-                      <div className={`text-xs font-extrabold uppercase tracking-wider ${isPop ? 'text-zinc-900' : 'text-emerald-600'}`}>
-                        {language === 'en' ? `Save ${plan.yearlyDiscountPercent}%` : `${plan.yearlyDiscountPercent}% সাশ্রয়`}
+                    {planDiscount > 0 ? (
+                      <div className="text-[11px] font-extrabold uppercase tracking-wider mt-1">
+                        {language === 'en' ? `Save ${planDiscount}%` : `${formatNumber(planDiscount)}% সাশ্রয়`}
                       </div>
                     ) : null}
                   </div>

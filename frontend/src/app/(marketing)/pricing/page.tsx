@@ -8,7 +8,7 @@ import Link from 'next/link';
 
 export default function PricingPage() {
   const { language } = useLanguage();
-  const { formatBDT, formatNumber, displayCurrency, setDisplayCurrency, formatPrice } = useCurrency();
+  const { rate, formatBDT, formatNumber, displayCurrency, setDisplayCurrency, formatPrice } = useCurrency();
   const [plans, setPlans] = useState<any[]>([]);
   const [addons, setAddons] = useState<any[]>([]);
   const [config, setConfig] = useState<any>(null);
@@ -34,6 +34,21 @@ export default function PricingPage() {
       setTimeout(() => window.scrollTo(0, 0), 10);
     });
   }, []);
+
+  const maxDiscountPercent = useMemo(() => {
+    if (!plans || plans.length === 0) return 0;
+    return plans.reduce((max: number, p: any) => {
+      let disc = Number(p.yearlyDiscountPercent) || 0;
+      if (!disc) {
+        const m = Number(p.priceMonthlyBdt) || 0;
+        const y = Number(p.priceYearlyBdt) || 0;
+        if (m > 0 && y > 0) {
+          disc = Math.round(((m * 12 - y) / (m * 12)) * 100 * 100) / 100;
+        }
+      }
+      return disc > max ? disc : max;
+    }, 0);
+  }, [plans]);
 
   const tableRows = useMemo(() => {
     const rows: any[] = [];
@@ -154,9 +169,13 @@ export default function PricingPage() {
               <span className={`text-sm font-bold transition-colors ${isYearly ? 'text-foreground' : 'text-muted-foreground'}`}>
                 {language === 'en' ? 'Yearly' : 'বার্ষিক'}
               </span>
-              <span className="bg-emerald-500/10 text-emerald-600 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                {language === 'en' ? 'Save 20%' : '২০% ছাড়'}
-              </span>
+              {maxDiscountPercent > 0 && (
+                <span className="bg-emerald-500/10 text-emerald-600 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider animate-pulse">
+                  {language === 'en' 
+                    ? `Save up to ${maxDiscountPercent}%` 
+                    : `সর্বোচ্চ ${formatNumber(maxDiscountPercent)}% সাশ্রয়`}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -166,9 +185,26 @@ export default function PricingPage() {
       <section className="relative w-full -mt-10 px-4 sm:px-6 lg:px-8 pb-20">
         <div className="max-w-6xl mx-auto relative z-10 grid md:grid-cols-3 gap-6 lg:gap-8">
           {plans.map((plan: any) => {
-            const price = isYearly && plan.priceYearlyBdt ? plan.priceYearlyBdt : plan.priceMonthlyBdt;
-            const displayPrice = isYearly && plan.priceYearlyBdt ? price / 12 : price;
+            const mBdt = Number(plan.priceMonthlyBdt) || 0;
+            const mUsd = Number(plan.priceMonthlyUsd) > 0 ? Number(plan.priceMonthlyUsd) : Math.round(mBdt / (rate || 121));
+
+            const yBdt = Number(plan.priceYearlyBdt) > 0 ? Number(plan.priceYearlyBdt) : Math.round(mBdt * 12 * 0.8334);
+            const yUsd = Number(plan.priceYearlyUsd) > 0 ? Number(plan.priceYearlyUsd) : Math.round(mUsd * 12 * 0.8334);
+
+            const promoBdt = Number(plan.promoPriceMonthlyBdt) || 0;
+            const promoUsd = Number(plan.promoPriceMonthlyUsd) > 0 ? Number(plan.promoPriceMonthlyUsd) : Math.round(promoBdt / (rate || 121));
+
+            const baseMonthly = displayCurrency === 'USD' ? mUsd : mBdt;
+            const baseYearly = displayCurrency === 'USD' ? yUsd : yBdt;
+            const promoPrice = displayCurrency === 'USD' ? promoUsd : promoBdt;
+
+            const displayPrice = isYearly && baseYearly > 0 ? Math.round(baseYearly / 12) : baseMonthly;
             
+            let planDiscount = Number(plan.yearlyDiscountPercent) || 0;
+            if (!planDiscount && baseMonthly > 0 && baseYearly > 0) {
+              planDiscount = Math.round(((baseMonthly * 12 - baseYearly) / (baseMonthly * 12)) * 100 * 100) / 100;
+            }
+
             const isPop = plan.isPopular;
             const textColor = isPop ? 'text-zinc-900' : 'text-foreground';
             const mutedColor = isPop ? 'text-zinc-800' : 'text-muted-foreground';
@@ -200,7 +236,7 @@ export default function PricingPage() {
                   <div className={`flex items-start gap-1 ${textColor}`}>
                     <span className="text-2xl font-bold mt-2">{displayCurrency === 'BDT' ? '৳' : '$'}</span>
                     <span className="text-6xl font-black tracking-tighter">
-                      {formatNumber(!isYearly && Number(plan.promoMonths) > 0 ? plan.promoPriceMonthlyBdt : displayPrice)}
+                      {formatNumber(!isYearly && Number(plan.promoMonths) > 0 ? promoPrice : displayPrice)}
                     </span>
                   </div>
                   
@@ -214,14 +250,16 @@ export default function PricingPage() {
                     </div>
                   ) : null}
 
-                  {isYearly && plan.priceYearlyBdt ? (
-                    <div className="flex flex-col gap-1.5 mt-3">
-                      <div className={`text-sm font-semibold inline-block self-start px-2 py-0.5 rounded ${isPop ? 'bg-black/10 text-zinc-900' : 'bg-emerald-500/10 text-emerald-600'}`}>
-                        {language === 'en' ? `Billed ${displayCurrency === 'BDT' ? '৳' : '$'}${formatNumber(plan.priceYearlyBdt)} yearly` : `বছরে ${displayCurrency === 'BDT' ? '৳' : '$'}${formatNumber(plan.priceYearlyBdt)} বিল করা হবে`}
+                  {isYearly && baseYearly > 0 ? (
+                    <div className={`mt-3 p-3 rounded-2xl border transition-all ${isPop ? 'bg-black/10 border-black/20 text-zinc-900 font-bold' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 font-bold'}`}>
+                      <div className="text-xs">
+                        {language === 'en' 
+                          ? `Billed ${displayCurrency === 'BDT' ? '৳' : '$'}${formatNumber(baseYearly)} yearly` 
+                          : `বছরে ${displayCurrency === 'BDT' ? '৳' : '$'}${formatNumber(baseYearly)} বিল করা হবে`}
                       </div>
-                      {plan.yearlyDiscountPercent ? (
-                        <div className={`text-xs font-extrabold uppercase tracking-wider ${isPop ? 'text-zinc-900' : 'text-emerald-600'}`}>
-                          {language === 'en' ? `Save ${plan.yearlyDiscountPercent}%` : `${plan.yearlyDiscountPercent}% সাশ্রয়`}
+                      {planDiscount > 0 ? (
+                        <div className="text-[11px] font-extrabold uppercase tracking-wider mt-1">
+                          {language === 'en' ? `Save ${planDiscount}%` : `${formatNumber(planDiscount)}% সাশ্রয়`}
                         </div>
                       ) : null}
                     </div>
@@ -296,14 +334,25 @@ export default function PricingPage() {
             <thead>
               <tr>
                 <th className="w-1/3 p-5 border-b border-border bg-card sticky left-0 z-10"></th>
-                {plans.map((plan: any) => (
-                  <th key={plan.id} className="p-5 border-b border-border text-center w-1/4">
-                    <div className="text-lg font-bold mb-1 text-foreground">{language === 'en' ? plan.name : (plan.nameBn || plan.name)}</div>
-                    <div className="text-sm text-muted-foreground font-medium">
-                      {formatPrice(isYearly && plan.priceYearlyBdt ? plan.priceYearlyBdt / 12 : plan.priceMonthlyBdt)}/mo
-                    </div>
-                  </th>
-                ))}
+                {plans.map((plan: any) => {
+                  const mBdt = Number(plan.priceMonthlyBdt) || 0;
+                  const mUsd = Number(plan.priceMonthlyUsd) > 0 ? Number(plan.priceMonthlyUsd) : Math.round(mBdt / (rate || 121));
+                  const yBdt = Number(plan.priceYearlyBdt) > 0 ? Number(plan.priceYearlyBdt) : Math.round(mBdt * 12 * 0.8334);
+                  const yUsd = Number(plan.priceYearlyUsd) > 0 ? Number(plan.priceYearlyUsd) : Math.round(mUsd * 12 * 0.8334);
+
+                  const baseMonthly = displayCurrency === 'USD' ? mUsd : mBdt;
+                  const baseYearly = displayCurrency === 'USD' ? yUsd : yBdt;
+                  const headerDisplayPrice = isYearly && baseYearly > 0 ? Math.round(baseYearly / 12) : baseMonthly;
+
+                  return (
+                    <th key={plan.id} className="p-5 border-b border-border text-center w-1/4">
+                      <div className="text-lg font-bold mb-1 text-foreground">{language === 'en' ? plan.name : (plan.nameBn || plan.name)}</div>
+                      <div className="text-sm text-muted-foreground font-medium">
+                        {displayCurrency === 'BDT' ? '৳' : '$'}{formatNumber(headerDisplayPrice)}/mo
+                      </div>
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody>
