@@ -358,7 +358,10 @@ export class PaymentsService {
     await this.prisma.payment.update({ where: { id: paymentId }, data: { status: 'success' } });
 
     const owner = await this.prisma.user.findFirst({ where: { tenantId: payment.tenantId, role: { in: ['owner', 'admin'] } } });
-    const tenant = await this.prisma.tenant.findUnique({ where: { id: payment.tenantId }, include: { subscription: { include: { plan: true } } } });
+    const tenant = await this.prisma.tenant.findUnique({ 
+      where: { id: payment.tenantId }, 
+      include: { subscriptions: { include: { plan: true }, take: 1, orderBy: { createdAt: 'desc' } } } 
+    });
 
     if (payment.subscriptionId) {
       // Subscription Payment
@@ -385,13 +388,14 @@ export class PaymentsService {
       const addon = await this.prisma.addon.findUnique({ where: { id: payment.addonId } });
       if (addon && tenant) {
         // Apply limits
-        const currentMessageLimit = tenant.customMessageQuota ?? tenant.subscription?.plan?.messageLimit ?? 0;
-        const currentAiLimit = tenant.customAiResponseQuota ?? tenant.subscription?.plan?.aiResponseLimit ?? 0;
-        const currentStorageLimit = tenant.customStorageLimitMb ?? tenant.subscription?.plan?.storageLimitMb ?? 0;
+        const activeSub = tenant.subscriptions?.[0];
+        const currentMessageLimit = tenant.customMessageQuota ?? activeSub?.plan?.messageLimit ?? 0;
+        const currentAiLimit = tenant.customAiQuota ?? activeSub?.plan?.aiResponseLimit ?? 0;
+        const currentStorageLimit = tenant.customStorageLimitMb ?? activeSub?.plan?.storageLimitMb ?? 0;
         
         const updates: any = {};
         if (addon.type === 'messages') updates.customMessageQuota = currentMessageLimit + addon.value;
-        if (addon.type === 'ai_responses') updates.customAiResponseQuota = currentAiLimit + addon.value;
+        if (addon.type === 'ai_responses') updates.customAiQuota = currentAiLimit + addon.value;
         if (addon.type === 'storage') updates.customStorageLimitMb = currentStorageLimit + addon.value;
         
         await this.prisma.tenant.update({ where: { id: tenant.id }, data: updates });
