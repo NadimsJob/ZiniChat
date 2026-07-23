@@ -247,7 +247,7 @@ export default function PricingPage() {
                     <div className="mt-0.5 bg-green-500 rounded-full p-0.5"><Check className="w-4 h-4 shrink-0 text-white" strokeWidth={3} /></div>
                     <span><strong className={`font-extrabold ${textColor}`}>{plan.aiQuota === -1 ? 'Unlimited' : formatNumber(plan.aiQuota)}</strong> {language === 'en' ? 'AI Responses/mo' : 'এআই রেসপন্স/মাস'}</span>
                   </li>
-                  {plan.featuresJson?.slice(0, 3).map((f: any, i: number) => (
+                  {plan.featuresJson?.map((f: any, i: number) => (
                     <li key={i} className="flex items-start gap-3 text-[15px] font-medium">
                       <div className="mt-0.5 bg-green-500 rounded-full p-0.5"><Check className="w-4 h-4 shrink-0 text-white" strokeWidth={3} /></div>
                       <span>{language === 'en' ? f.en : (f.bn || f.en)}</span>
