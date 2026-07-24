@@ -593,50 +593,39 @@ function PayMfsContent() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-
-            {/* Account Info Summary Card (Grey rounded box matching epay) */}
-            <div className="bg-slate-50 dark:bg-zinc-950 p-3.5 rounded-2xl border border-slate-200 dark:border-zinc-800 space-y-2 text-[13px]">
-              <div className="flex justify-between items-center">
-                <span className="text-muted-foreground font-medium">Gateway</span>
-                <span className="font-bold capitalize">{selectedAccount.provider}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-muted-foreground font-medium">Type</span>
-                <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                  {selectedAccount.accountType === 'MERCHANT' ? 'Merchant Payment' : (selectedAccount.accountType === 'AGENT' ? 'Cash Out' : 'Send Money')}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-muted-foreground font-medium">Number</span>
-                <div className="flex items-center gap-2">
-                  <span className="font-mono font-bold text-slate-900 dark:text-white bg-slate-200/60 dark:bg-zinc-800 px-2 py-0.5 rounded text-[13px]">
-                    {selectedAccount.number}
-                  </span>
-                  <button
-                    onClick={() => handleCopy(selectedAccount.number, 'num')}
-                    className="text-emerald-600 hover:text-emerald-500 font-bold text-[12px] flex items-center gap-1"
-                  >
-                    {copiedField === 'num' ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>{copiedField === 'num' ? 'Copied' : 'Copy'}</span>
-                  </button>
+            {/* Account Details Card */}
+            <div className="bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl p-3 text-[12px]">
+              <div className="grid grid-cols-2 gap-y-3 gap-x-4">
+                <div className="flex flex-col">
+                  <span className="text-muted-foreground font-medium text-[10px] uppercase tracking-wider mb-0.5">Gateway</span>
+                  <span className="font-bold">{selectedAccount.provider}</span>
                 </div>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-muted-foreground font-medium">Order ID</span>
-                <span className="font-mono text-muted-foreground font-semibold">
-                  {payment?.id ? `ZC-${payment.id.slice(0, 6).toUpperCase()}` : 'ZC-123456'}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-muted-foreground font-medium">Auto-Verify</span>
-                <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1 text-[12px]">
-                  <CheckCircle2 className="w-3.5 h-3.5" /> Enabled
-                </span>
+                <div className="flex flex-col">
+                  <span className="text-muted-foreground font-medium text-[10px] uppercase tracking-wider mb-0.5">Type</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                    {selectedAccount.accountType === 'MERCHANT' ? 'Merchant Payment' : (selectedAccount.accountType === 'AGENT' ? 'Cash Out' : 'Send Money')}
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-muted-foreground font-medium text-[10px] uppercase tracking-wider mb-0.5">Number</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-mono font-bold text-[13px]">{selectedAccount.number}</span>
+                    <button onClick={() => handleCopy(selectedAccount.number, 'num')} className="text-emerald-600 hover:text-emerald-700 font-bold flex items-center transition-colors">
+                      {copiedField === 'num' ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-muted-foreground font-medium text-[10px] uppercase tracking-wider mb-0.5">Order ID</span>
+                  <span className="font-mono text-muted-foreground font-bold">
+                    {payment?.id ? `ZC-${payment.id.slice(0, 6).toUpperCase()}` : 'ZC-123456'}
+                  </span>
+                </div>
               </div>
             </div>
 
             {/* Step-by-Step Payment Instructions Card (Light green card with left border) */}
-            <div className="bg-emerald-500/5 dark:bg-emerald-500/10 border-l-4 border-emerald-500 rounded-r-2xl p-4 text-[13px] space-y-2 font-medium">
+            <div className="bg-emerald-500/5 dark:bg-emerald-500/10 border-l-4 border-emerald-500 rounded-r-xl p-3 text-[12px] space-y-1.5 font-medium">
               {selectedAccount.provider === 'BANGLA_QR' ? (
                 <>
                   <div className="flex gap-2">
@@ -644,11 +633,11 @@ function PayMfsContent() {
                     <span>আপনার যেকোনো ব্যাংকিং বা পেমেন্ট অ্যাপ থেকে নিচের কিউআর (QR) কোডটি স্ক্যান করুন।</span>
                   </div>
                   {(qrPayload?.qrCodeUrl || selectedAccount.qrCodeUrl) && (
-                    <div className="my-2 p-2 bg-white rounded-xl inline-block shadow-sm">
+                    <div className="my-2 bg-white rounded-xl flex justify-center items-center shadow-sm w-[180px] h-[180px] p-2 mx-auto border border-emerald-100">
                       <img 
                         src={(qrPayload?.qrCodeUrl || selectedAccount.qrCodeUrl).startsWith('http') ? (qrPayload?.qrCodeUrl || selectedAccount.qrCodeUrl) : `${API}${(qrPayload?.qrCodeUrl || selectedAccount.qrCodeUrl)}`} 
                         alt="Bangla QR Code" 
-                        className="w-40 h-40 object-contain mx-auto"
+                        className="max-w-full max-h-full object-contain"
                       />
                     </div>
                   )}
