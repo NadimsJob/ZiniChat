@@ -465,10 +465,10 @@ export default function MfsSettingsPage() {
             <div className="bg-zinc-950/20 border border-zinc-800/40 rounded-lg p-2.5 space-y-2 mt-2">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <div className="text-[11px] text-zinc-400">
-                  <span className="font-bold text-zinc-300">💡 {language === 'en' ? 'Quick Setup without Android Studio:' : 'অ্যান্ড্রয়েড স্টুডিও ছাড়া ইনস্টল করার নিয়ম:'}</span>
+                  <span className="font-bold text-zinc-300">💡 {language === 'en' ? 'Zero-Config Official ZiniChat SMS Gateway:' : 'জিরো-কনফিগারেশন অফিশিয়াল ZiniChat অ্যাপ:'}</span>
                   <p className="mt-0.5">{language === 'en' 
-                    ? 'Download the official open-source SMS Gateway APK directly, install on phone, and configure webhook rules.' 
-                    : 'নিচের বাটন থেকে অফিশিয়াল ওপেন সোর্স SMS Gateway অ্যাপটি ডাউনলোড করে ফোনে ইনস্টল করুন এবং রুলস কনফিগার করুন।'}</p>
+                    ? 'Download the ZiniChat App with built-in ON/OFF toggles for bKash, Nagad, Rocket & BD Banks. Zero manual JSON or Regex typing required!' 
+                    : 'ZiniChat কাস্টম অ্যাপ ডাউনলোড করুন। এর ভেতরে bKash, Nagad, Rocket ও Bank SMS এর বিল্ট-ইন অন/অফ সুইচ দেওয়া আছে। কোনো কোড বা টেমপ্লেট লেখা লাগবে না!'}</p>
                 </div>
                 <a
                   href="/downloads/zinichat-sms-gateway.apk"

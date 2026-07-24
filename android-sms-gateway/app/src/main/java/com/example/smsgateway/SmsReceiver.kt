@@ -28,7 +28,6 @@ class SmsReceiver : BroadcastReceiver() {
 
                         Log.d("SmsReceiver", "SMS Received from: $sender")
 
-                        // Dynamic Whitelist check based on UI Toggles
                         val isBkash = syncBkash && (sender.contains("bKash", ignoreCase = true) || sender.contains("16247"))
                         val isNagad = syncNagad && (sender.contains("NAGAD", ignoreCase = true) || sender.contains("16167"))
                         val isRocket = syncRocket && (sender.contains("ROCKET", ignoreCase = true) || sender.contains("16216"))
@@ -59,7 +58,6 @@ class SmsReceiver : BroadcastReceiver() {
         var provider = "BKASH"
         var accountType = "PERSONAL"
 
-        // 1. bKash & Bangla QR parsing
         if (sender.contains("bKash", ignoreCase = true) || sender.contains("16247")) {
             provider = "BKASH"
             if (body.contains("Merchant Pay", ignoreCase = true)) {
@@ -84,7 +82,6 @@ class SmsReceiver : BroadcastReceiver() {
                 if (trxMatcher.find()) trxId = trxMatcher.group(1)
             }
         }
-        // 2. Nagad parsing
         else if (sender.contains("NAGAD", ignoreCase = true) || sender.contains("16167")) {
             provider = "NAGAD"
             val amtPattern = Pattern.compile("Received:\\s+Tk\\s+([0-9.,]+)", Pattern.CASE_INSENSITIVE)
@@ -96,7 +93,6 @@ class SmsReceiver : BroadcastReceiver() {
             if (amtMatcher.find()) amount = amtMatcher.group(1)?.replace(",", "")?.toDoubleOrNull()
             if (trxMatcher.find()) trxId = trxMatcher.group(1)
         }
-        // 3. Bank & Rocket Universal fallback parser
         else {
             provider = if (sender.contains("ROCKET", ignoreCase = true)) "ROCKET" else "BANK"
             accountType = if (provider == "BANK") "BANK" else "PERSONAL"

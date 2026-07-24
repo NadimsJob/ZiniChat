@@ -44,7 +44,7 @@ class MainActivity : AppCompatActivity() {
         layout.addView(tvTitle)
 
         val tvSubtitle = TextView(this).apply {
-            text = "Zero-Config Automatic Payment Reader for bKash, Nagad, Rocket & All BD Banks."
+            text = "Zero-Config Automatic Payment Reader for bKash, Nagad, Rocket & BD Banks."
             textSize = 12f
             setTextColor(android.graphics.Color.GRAY)
             setPadding(0, 0, 0, 40)
@@ -80,7 +80,6 @@ class MainActivity : AppCompatActivity() {
         }
         layout.addView(tvTogglesHeader)
 
-        // bKash Switch
         swBkash = Switch(this).apply {
             text = "🟢 bKash & Bangla QR SMS Auto-Sync"
             setTextColor(android.graphics.Color.WHITE)
@@ -90,7 +89,6 @@ class MainActivity : AppCompatActivity() {
         }
         layout.addView(swBkash)
 
-        // Nagad Switch
         swNagad = Switch(this).apply {
             text = "🟢 Nagad SMS Auto-Sync"
             setTextColor(android.graphics.Color.WHITE)
@@ -100,7 +98,6 @@ class MainActivity : AppCompatActivity() {
         }
         layout.addView(swNagad)
 
-        // Rocket Switch
         swRocket = Switch(this).apply {
             text = "🟢 Rocket SMS Auto-Sync"
             setTextColor(android.graphics.Color.WHITE)
@@ -110,7 +107,6 @@ class MainActivity : AppCompatActivity() {
         }
         layout.addView(swRocket)
 
-        // Bank Switch
         swBank = Switch(this).apply {
             text = "🟢 All BD Banks (City, BRAC, EBL, DBBL, etc.)"
             setTextColor(android.graphics.Color.WHITE)
@@ -120,7 +116,6 @@ class MainActivity : AppCompatActivity() {
         }
         layout.addView(swBank)
 
-        // Save & Start Button
         btnSave = Button(this).apply {
             text = "🚀 Start Background Sync"
             setBackgroundColor(android.graphics.Color.parseColor("#1F824A"))
@@ -138,7 +133,6 @@ class MainActivity : AppCompatActivity() {
 
         setContentView(layout)
 
-        // Load saved preferences
         val sharedPref = getSharedPreferences("SmsGatewaySettings", Context.MODE_PRIVATE)
         etUrl.setText(sharedPref.getString("webhook_url", "https://api.zinichat.com/mfs-payments/sms-webhook"))
         etApiKey.setText(sharedPref.getString("api_key", "sms-gateway-secret-token"))
@@ -156,7 +150,6 @@ class MainActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            // Save to shared preferences
             sharedPref.edit().apply {
                 putString("webhook_url", url)
                 putString("api_key", apiKey)
