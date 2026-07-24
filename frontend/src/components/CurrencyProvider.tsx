@@ -16,6 +16,7 @@ interface CurrencyContextType {
   setDisplayCurrency: (currency: 'BDT' | 'USD') => void;
   formatPrice: (bdtAmount: number) => string;
   formatBDT: (usdAmount: number) => string;
+  formatBdtDirect: (bdtAmount: number) => string;
   convertToBDT: (usdAmount: number) => number;
   formatNumber: (num: number) => string;
   refresh: () => void;
@@ -32,6 +33,7 @@ const CurrencyContext = createContext<CurrencyContextType>({
   setDisplayCurrency: () => {},
   formatPrice: () => '৳0',
   formatBDT: () => '৳0',
+  formatBdtDirect: () => '৳0',
   convertToBDT: () => 0,
   formatNumber: (num) => String(num),
   refresh: () => {},
@@ -93,6 +95,15 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
     return `৳${formattedNum}`;
   };
 
+  const formatBdtDirect = (bdtAmount: number): string => {
+    const num = Number(bdtAmount) || 0;
+    const formattedNum = (num % 1 === 0 ? num : (Math.round(num * 100) / 100)).toLocaleString('en-IN');
+    if (language === 'bn') {
+      return `৳${toBengaliNumerals(formattedNum)}`;
+    }
+    return `৳${formattedNum}`;
+  };
+
   const formatPrice = (bdtAmount: number): string => {
     if (displayCurrency === 'USD') {
       const usdAmount = bdtAmount / rate;
@@ -130,6 +141,7 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
         setDisplayCurrency,
         formatPrice,
         formatBDT,
+        formatBdtDirect,
         convertToBDT,
         formatNumber,
         refresh: fetchCurrentRate,

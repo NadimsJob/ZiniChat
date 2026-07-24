@@ -22,7 +22,7 @@ const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function BillingHistoryPage() {
   const { language } = useLanguage();
-  const { formatBDT } = useCurrency();
+  const { formatBdtDirect } = useCurrency();
   const [payments, setPayments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -187,7 +187,7 @@ export default function BillingHistoryPage() {
                         {p.trxId || 'N/A'}
                       </td>
                       <td className="px-5 py-4 font-bold font-mono text-amber-500">
-                        {formatBDT(p.amountBdt)}
+                        {formatBdtDirect(p.amountBdt)}
                       </td>
                       <td className="px-5 py-4 whitespace-nowrap">
                         {getStatusBadge(p.status)}

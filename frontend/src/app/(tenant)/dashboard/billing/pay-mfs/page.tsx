@@ -31,7 +31,7 @@ function PayMfsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { language } = useLanguage();
-  const { formatBDT } = useCurrency();
+  const { formatBdtDirect } = useCurrency();
 
   const planId = searchParams.get('planId');
   const addonId = searchParams.get('addonId');
@@ -408,7 +408,7 @@ function PayMfsContent() {
             <div className="text-right">
               <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold block">Total Amount</span>
               <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
-                {formatBDT(payment?.amountBdt || 0)}
+                {formatBdtDirect(payment?.amountBdt || 0)}
               </span>
             </div>
           </div>
@@ -594,7 +594,7 @@ function PayMfsContent() {
                 {language === 'en' ? 'Exact Amount to Pay' : 'পরিশোধের সর্বমোট পরিমাণ'}
               </span>
               <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
-                {formatBDT(qrPayload?.amount || payment?.amountBdt || 0)}
+                {formatBdtDirect(qrPayload?.amount || payment?.amountBdt || 0)}
               </span>
             </div>
 

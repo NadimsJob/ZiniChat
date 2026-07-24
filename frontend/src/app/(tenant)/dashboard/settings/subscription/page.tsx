@@ -10,7 +10,7 @@ import { Crown, Package, Puzzle, Check } from 'lucide-react';
 export default function SubscriptionSettingsPage() {
   const router = useRouter();
   const { language } = useLanguage();
-  const { rate, formatBDT, formatNumber, displayCurrency, setDisplayCurrency } = useCurrency();
+  const { rate, formatBDT, formatBdtDirect, formatNumber, displayCurrency, setDisplayCurrency } = useCurrency();
 
   const [plans, setPlans] = useState<any[]>([]);
   const [addons, setAddons] = useState<any[]>([]);
@@ -374,7 +374,7 @@ export default function SubscriptionSettingsPage() {
             {addons.map(addon => (
               <div key={addon.id} className="bg-surface border border-surface-hover rounded-2xl p-3 flex flex-col hover:border-primary/50 transition-colors">
                 <h3 className="text-[13px] font-bold">{language === 'en' ? addon.name : (addon.nameBn || addon.name)}</h3>
-                <div className="text-xl font-black mt-1 text-primary">{formatBDT(addon.priceBdt)}</div>
+                <div className="text-xl font-black mt-1 text-primary">{formatBdtDirect(addon.priceBdt)}</div>
                 <div className="text-[11px] text-zinc-500 mb-3">{language === 'en' ? addon.description : (addon.descriptionBn || addon.description)}</div>
                 
                 <div className="space-y-1 mb-4 flex-1">
@@ -444,11 +444,16 @@ export default function SubscriptionSettingsPage() {
                     <div className="text-[13px] text-zinc-400">Total Amount ({billingCycle})</div>
                     {appliedCoupon && (
                       <div className="text-[12px] text-zinc-500 line-through">
-                        {formatBDT(Number(billingCycle === 'yearly' ? selectedPlan.priceYearlyBdt : selectedPlan.priceMonthlyBdt))}
+                        {formatBdtDirect(Number(billingCycle === 'yearly' ? selectedPlan.priceYearlyBdt : selectedPlan.priceMonthlyBdt))}
                       </div>
                     )}
                   </div>
-                  <div className="text-2xl font-bold text-primary">{formatBDT(calculateFinalPrice())}</div>
+                  <div className="border-t border-border pt-3 flex justify-between items-center">
+                    <span className="font-extrabold text-foreground">
+                      {language === 'en' ? 'Total Payable:' : 'সর্বমোট প্রদেয়:'}
+                    </span>
+                    <div className="text-2xl font-bold text-primary">{formatBdtDirect(calculateFinalPrice())}</div>
+                  </div>
                 </div>
 
                 {paymentConfig.isSandboxEnabled && (
