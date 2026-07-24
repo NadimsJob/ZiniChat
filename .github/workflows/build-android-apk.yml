@@ -23,11 +23,12 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.4'
 
       - name: Build Android Release APK
         run: |
           cd android-sms-gateway
-          chmod +x gradlew || true
           gradle assembleRelease
 
       - name: Upload APK Artifact
