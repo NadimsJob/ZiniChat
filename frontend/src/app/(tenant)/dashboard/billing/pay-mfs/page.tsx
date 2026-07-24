@@ -588,6 +588,16 @@ function PayMfsContent() {
               </button>
             </div>
 
+            {/* Amount Badge in Modal */}
+            <div className="bg-emerald-500/10 border border-emerald-500/30 p-3 rounded-2xl text-center space-y-0.5">
+              <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block">
+                {language === 'en' ? 'Exact Amount to Pay' : 'পরিশোধের সর্বমোট পরিমাণ'}
+              </span>
+              <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                {formatBDT(qrPayload?.amount || payment?.amountBdt || 0)}
+              </span>
+            </div>
+
             {/* Timer Banner */}
             <div className="flex items-center justify-between p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-[12px] font-bold">
               <span className="flex items-center gap-1.5">
@@ -600,12 +610,17 @@ function PayMfsContent() {
             <div className="text-center space-y-3">
               {qrPayload ? (
                 <>
-                  {/* Dynamic Bangla QR Code */}
+                  {/* Dynamic or Uploaded QR Code */}
                   <div className="p-4 rounded-2xl bg-white border border-slate-200 inline-block shadow-inner">
                     <img 
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(qrPayload.qrCodeData || selectedAccount.number)}`} 
-                      alt="Bangla QR Code"
-                      className="w-48 h-48 mx-auto"
+                      src={
+                        qrPayload.qrCodeUrl || 
+                        (qrPayload.qrCodeData?.startsWith('http') || qrPayload.qrCodeData?.startsWith('/') 
+                          ? qrPayload.qrCodeData 
+                          : `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(qrPayload.qrCodeData || selectedAccount.number)}`)
+                      } 
+                      alt="Payment QR Code"
+                      className="w-48 h-48 mx-auto object-contain"
                     />
                   </div>
 

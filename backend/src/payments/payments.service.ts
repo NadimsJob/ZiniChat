@@ -37,7 +37,8 @@ export class PaymentsService {
 
     let amount = billingCycle === 'yearly' ? Number(plan.priceYearlyBdt) : Number(plan.priceMonthlyBdt);
     
-    if (tenant?.customPriceUsd && plan.name.toLowerCase().includes('custom')) {
+    // Only use tenant.customPriceUsd if plan price is zero (custom quote plan)
+    if (amount === 0 && tenant?.customPriceUsd) {
       const currencyRateInfo = await this.prisma.exchangeRate.findFirst({
         where: { effectiveDate: { lte: new Date() } },
         orderBy: { effectiveDate: 'desc' }
@@ -160,7 +161,8 @@ export class PaymentsService {
 
     let amount = billingCycle === 'yearly' ? Number(plan.priceYearlyBdt) : Number(plan.priceMonthlyBdt);
     
-    if (tenant?.customPriceUsd && plan.name.toLowerCase().includes('custom')) {
+    // Only use tenant.customPriceUsd if plan price is zero (custom quote plan)
+    if (amount === 0 && tenant?.customPriceUsd) {
       const currencyRateInfo = await this.prisma.exchangeRate.findFirst({
         where: { effectiveDate: { lte: new Date() } },
         orderBy: { effectiveDate: 'desc' }

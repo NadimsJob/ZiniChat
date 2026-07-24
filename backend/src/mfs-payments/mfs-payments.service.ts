@@ -111,10 +111,12 @@ export class MfsPaymentsService {
     });
 
     let qrCodeData = '';
-    if (account.accountType === 'MERCHANT' || providerKey === 'BANGLA_QR') {
+    if (account.qrCodeUrl) {
+      qrCodeData = account.qrCodeUrl;
+    } else if (account.accountType === 'MERCHANT' || providerKey === 'BANGLA_QR') {
       qrCodeData = this.generateBanglaQr(account.provider, account.number, totalAmount, account.merchantId || undefined);
     } else {
-      qrCodeData = account.qrCodeUrl || '';
+      qrCodeData = '';
     }
 
     return {
