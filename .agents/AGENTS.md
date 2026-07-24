@@ -189,4 +189,13 @@ This rule documents the architectural safeguards for AI provider routing and aut
   * Always wrap AI completion requests in a try-catch to handle models that do not support tools/function calling, automatically falling back to standard completion requests or fallback model names (`gemini-2.0-flash`, `gemini-1.5-flash`).
 * **Superadmin vs Tenant Session Isolation:** `middleware.ts` MUST enforce strict role isolation for route protection. If `user_role === 'superadmin'` accesses `/dashboard`, redirect them to `/superadmin`. This prevents superadmin authentication tokens (`access_token`) from bleeding into tenant workspaces and causing cross-tenant notification leaks.
 
+---
+
+## 21. Custom Android SMS Gateway & APK Build Rules
+This rule documents the transition away from third-party SMS Forwarders and the rules for building custom ZiniChat Android APKs.
+
+* **Third-Party JSON Parsing Bug:** Generic SMS Forwarder apps (like capcom6) frequently throw `400 Bad Request` when parsing complex Regular Expressions from JSON templates. They strip double-escaped characters (e.g., converting `\\s` to `\s`), which breaks backend regex matching engines.
+* **Solution (Zero-Config App):** Do NOT instruct users to configure JSON templates or regex in third-party apps for MFS payments. ZiniChat now uses a proprietary Kotlin Android App (`android-sms-gateway`) with hardcoded, zero-config parsers for bKash, Nagad, Rocket, and all BD Banks (Bangla QR). 
+* **AndroidX & Gradle Properties:** If modifying the custom Android App (`build.gradle`) and the build fails with `Configuration ':app:releaseRuntimeClasspath' contains AndroidX dependencies`, you MUST ensure that a `gradle.properties` file exists in the Android root directory containing `android.useAndroidX=true` and `android.enableJetifier=true`.
+* **Debug vs Release APKs:** The GitHub Actions workflow (`build-android-apk.yml`) MUST build a **Debug APK** (`assembleDebug`), NOT a Release APK. Android OS will reject (App Not Installed) an unsigned Release APK. Since this is an internal utility app not destined for the Google Play Store, the default Gradle debug keystore signature is sufficient and required for successful phone installation.
 
