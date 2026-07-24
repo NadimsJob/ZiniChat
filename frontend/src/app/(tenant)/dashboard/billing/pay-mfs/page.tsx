@@ -632,39 +632,114 @@ function PayMfsContent() {
 
             {/* Step-by-Step Payment Instructions Card (Light green card with left border) */}
             <div className="bg-emerald-500/5 dark:bg-emerald-500/10 border-l-4 border-emerald-500 rounded-r-2xl p-4 text-[13px] space-y-2 font-medium">
-              <div className="flex gap-2">
-                <span className="font-bold text-emerald-600 shrink-0">1.</span>
-                <span>
-                  {selectedAccount.provider.toUpperCase()} মোবাইল মেনু বা অ্যাপে যান।
-                </span>
-              </div>
-              <div className="flex gap-2">
-                <span className="font-bold text-emerald-600 shrink-0">2.</span>
-                <span>
-                  "<strong className="text-emerald-600 dark:text-emerald-400">{selectedAccount.accountType === 'MERCHANT' ? 'Payment' : (selectedAccount.accountType === 'AGENT' ? 'Cash Out' : 'Send Money')}</strong>" অপশনে ক্লিক করুন।
-                </span>
-              </div>
-              <div className="flex gap-2 items-center">
-                <span className="font-bold text-emerald-600 shrink-0">3.</span>
-                <span className="flex items-center gap-1">
-                  নম্বর: <strong className="font-mono">{selectedAccount.number}</strong>
-                  <button onClick={() => handleCopy(selectedAccount.number, 'num')} className="text-emerald-600 hover:underline text-[11px] font-bold ml-1">Copy</button>
-                </span>
-              </div>
-              <div className="flex gap-2">
-                <span className="font-bold text-emerald-600 shrink-0">4.</span>
-                <span>
-                  টাকার পরিমাণ: <strong className="font-mono text-emerald-600 dark:text-emerald-400 text-[14px]">{formatBdtDirect(qrPayload?.amount || payment?.amountBdt || 0)}</strong>
-                </span>
-              </div>
-              <div className="flex gap-2">
-                <span className="font-bold text-emerald-600 shrink-0">5.</span>
-                <span>পিন লিখুন এবং পেমেন্ট নিশ্চিত করুন।</span>
-              </div>
-              <div className="flex gap-2">
-                <span className="font-bold text-emerald-600 shrink-0">6.</span>
-                <span>Transaction ID (বা শেষ ৪ ডিজিট) নিচে দিয়ে VERIFY করুন।</span>
-              </div>
+              {selectedAccount.provider === 'BANGLA_QR' ? (
+                <>
+                  <div className="flex gap-2">
+                    <span className="font-bold text-emerald-600 shrink-0">1.</span>
+                    <span>আপনার যেকোনো ব্যাংকিং বা পেমেন্ট অ্যাপ থেকে নিচের কিউআর (QR) কোডটি স্ক্যান করুন।</span>
+                  </div>
+                  {(qrPayload?.qrCodeUrl || selectedAccount.qrCodeUrl) && (
+                    <div className="my-2 p-2 bg-white rounded-xl inline-block shadow-sm">
+                      <img 
+                        src={qrPayload?.qrCodeUrl || selectedAccount.qrCodeUrl} 
+                        alt="Bangla QR Code" 
+                        className="w-40 h-40 object-contain mx-auto"
+                      />
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <span className="font-bold text-emerald-600 shrink-0">2.</span>
+                    <span>
+                      টাকার পরিমাণ: <strong className="font-mono text-emerald-600 dark:text-emerald-400 text-[14px]">{formatBdtDirect(qrPayload?.amount || payment?.amountBdt || 0)}</strong>
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="font-bold text-emerald-600 shrink-0">3.</span>
+                    <span>পিন দিয়ে পেমেন্ট নিশ্চিত করুন।</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="font-bold text-emerald-600 shrink-0">4.</span>
+                    <span>Transaction ID (বা শেষ ৪ ডিজিট) নিচে দিয়ে VERIFY করুন।</span>
+                  </div>
+                </>
+              ) : selectedAccount.provider === 'BANK' ? (
+                <>
+                  <div className="flex gap-2">
+                    <span className="font-bold text-emerald-600 shrink-0">1.</span>
+                    <span>আপনার ব্যাংক অ্যাপ বা ইন্টারনেট ব্যাংকিং-এ লগইন করুন।</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="font-bold text-emerald-600 shrink-0">2.</span>
+                    <span>"Fund Transfer" বা "NPSB" অপশন সিলেক্ট করুন।</span>
+                  </div>
+                  <div className="flex gap-2 flex-col">
+                    <div className="flex gap-2 items-center">
+                      <span className="font-bold text-emerald-600 shrink-0">3.</span>
+                      <span>ব্যাংক: <strong className="font-bold">{selectedAccount.bankName || 'ZiniChat Bank'}</strong></span>
+                    </div>
+                    <div className="flex items-center gap-1 pl-6">
+                      অ্যাকাউন্ট: <strong className="font-mono">{selectedAccount.number}</strong>
+                      <button onClick={() => handleCopy(selectedAccount.number, 'num')} className="text-emerald-600 hover:underline text-[11px] font-bold ml-1">Copy</button>
+                    </div>
+                    {(qrPayload?.routingNumber || selectedAccount.routingNumber) && (
+                      <div className="flex items-center gap-1 pl-6">
+                        রাউটিং: <strong className="font-mono">{qrPayload?.routingNumber || selectedAccount.routingNumber}</strong>
+                        <button onClick={() => handleCopy(qrPayload?.routingNumber || selectedAccount.routingNumber, 'routing')} className="text-emerald-600 hover:underline text-[11px] font-bold ml-1">Copy</button>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="font-bold text-emerald-600 shrink-0">4.</span>
+                    <span>
+                      টাকার পরিমাণ: <strong className="font-mono text-emerald-600 dark:text-emerald-400 text-[14px]">{formatBdtDirect(qrPayload?.amount || payment?.amountBdt || 0)}</strong>
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="font-bold text-emerald-600 shrink-0">5.</span>
+                    <span>ট্রান্সফার সম্পন্ন করুন।</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="font-bold text-emerald-600 shrink-0">6.</span>
+                    <span>Transaction ID বা Reference ID (বা শেষ ৪ ডিজিট) নিচে দিয়ে VERIFY করুন।</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex gap-2">
+                    <span className="font-bold text-emerald-600 shrink-0">1.</span>
+                    <span>
+                      {selectedAccount.provider.toUpperCase()} মোবাইল মেনু বা অ্যাপে যান।
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="font-bold text-emerald-600 shrink-0">2.</span>
+                    <span>
+                      "<strong className="text-emerald-600 dark:text-emerald-400">{selectedAccount.accountType === 'MERCHANT' ? 'Payment / Merchant Pay' : (selectedAccount.accountType === 'AGENT' ? 'Cash Out' : 'Send Money')}</strong>" অপশনে ক্লিক করুন।
+                    </span>
+                  </div>
+                  <div className="flex gap-2 items-center">
+                    <span className="font-bold text-emerald-600 shrink-0">3.</span>
+                    <span className="flex items-center gap-1">
+                      নম্বর: <strong className="font-mono">{selectedAccount.number}</strong>
+                      <button onClick={() => handleCopy(selectedAccount.number, 'num')} className="text-emerald-600 hover:underline text-[11px] font-bold ml-1">Copy</button>
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="font-bold text-emerald-600 shrink-0">4.</span>
+                    <span>
+                      টাকার পরিমাণ: <strong className="font-mono text-emerald-600 dark:text-emerald-400 text-[14px]">{formatBdtDirect(qrPayload?.amount || payment?.amountBdt || 0)}</strong>
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="font-bold text-emerald-600 shrink-0">5.</span>
+                    <span>পিন লিখুন এবং পেমেন্ট নিশ্চিত করুন।</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="font-bold text-emerald-600 shrink-0">6.</span>
+                    <span>Transaction ID (বা শেষ ৪ ডিজিট) নিচে দিয়ে VERIFY করুন।</span>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Auto-Verifying Status Banner */}
