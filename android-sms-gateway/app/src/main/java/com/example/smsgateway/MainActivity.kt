@@ -9,11 +9,9 @@ import android.widget.EditText
 import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
+import android.app.Activity
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : Activity() {
 
     private val smsPermissionCode = 101
     private lateinit var etUrl: EditText
@@ -169,8 +167,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun checkSmsPermissions() {
-        val receivePerm = ContextCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS)
-        val readPerm = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS)
+        val receivePerm = checkSelfPermission(Manifest.permission.RECEIVE_SMS)
+        val readPerm = checkSelfPermission(Manifest.permission.READ_SMS)
         
         val listPermissionsNeeded = ArrayList<String>()
         if (receivePerm != PackageManager.PERMISSION_GRANTED) {
@@ -181,7 +179,7 @@ class MainActivity : AppCompatActivity() {
         }
         
         if (listPermissionsNeeded.isNotEmpty()) {
-            ActivityCompat.requestPermissions(this, listPermissionsNeeded.toTypedArray(), smsPermissionCode)
+            requestPermissions(listPermissionsNeeded.toTypedArray(), smsPermissionCode)
         }
     }
 

@@ -11,7 +11,7 @@
         android:allowBackup="true"
         android:label="ZiniChat SMS Gateway"
         android:supportsRtl="true"
-        android:theme="@style/Theme.AppCompat.NoActionBar">
+        android:theme="@android:style/Theme.DeviceDefault.NoActionBar">
         
         <activity
             android:name=".MainActivity"
