@@ -35,7 +35,7 @@ import {
   Wallet,
   UserCircle,
   Tag,
-  Instagram,
+  Camera,
   Receipt
 } from 'lucide-react';
 import NotificationBell from '@/components/NotificationBell';
@@ -173,7 +173,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
       subItems: [
         { name: language === 'en' ? 'WhatsApp Connection' : 'হোয়াটসঅ্যাপ কানেকশন', icon: PhoneCall, href: '/dashboard/settings/whatsapp' },
         { name: language === 'en' ? 'Messenger Connection' : 'মেসেঞ্জার কানেকশন', icon: MessageCircle, href: '/dashboard/settings/messenger' },
-        { name: language === 'en' ? 'Instagram Connection' : 'ইনস্টাগ্রাম কানেকশন', icon: Instagram, href: '/dashboard/settings/instagram' },
+        { name: language === 'en' ? 'Instagram Connection' : 'ইনস্টাগ্রাম কানেকশন', icon: Camera, href: '/dashboard/settings/instagram' },
         { name: language === 'en' ? 'Team' : 'টিম', icon: UserCircle, href: '/dashboard/team' },
         { name: language === 'en' ? 'AI Training' : 'এআই ট্রেইনিং', icon: Zap, href: '/dashboard/settings/ai-training' },
         { name: language === 'en' ? 'Labels' : 'লেবেলস', icon: Tag, href: '/dashboard/settings/labels' },
