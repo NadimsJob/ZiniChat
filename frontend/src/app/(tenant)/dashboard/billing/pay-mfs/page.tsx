@@ -16,7 +16,11 @@ import {
   ShieldCheck,
   CheckCircle2,
   HelpCircle,
-  RefreshCw
+  RefreshCw,
+  X,
+  CreditCard,
+  Building2,
+  ChevronRight
 } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageProvider';
 import { useCurrency } from '@/components/CurrencyProvider';
@@ -32,13 +36,17 @@ function PayMfsContent() {
   const planId = searchParams.get('planId');
   const addonId = searchParams.get('addonId');
   const billingCycle = searchParams.get('billingCycle') || 'monthly';
-  const couponCode = searchParams.get('coupon') || '';
+  const rawPaymentId = searchParams.get('paymentId');
 
   const [payment, setPayment] = useState<any>(null);
+  const [activeAccounts, setActiveAccounts] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<'BANGLA_QR' | 'MOBILE' | 'CARD'>('BANGLA_QR');
+  
   const [qrPayload, setQrPayload] = useState<any>(null);
-  const [selectedProvider, setSelectedProvider] = useState<string>(''); // 'BKASH', 'NAGAD', 'ROCKET', 'BANK'
+  const [selectedAccount, setSelectedAccount] = useState<any>(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+
   const [trxId, setTrxId] = useState('');
-  const [senderNumber, setSenderNumber] = useState('');
   const [showTrxField, setShowTrxField] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
@@ -49,50 +57,76 @@ function PayMfsContent() {
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
   const [couponError, setCouponError] = useState('');
   const [applyingCoupon, setApplyingCoupon] = useState(false);
-  
+
   const timerRef = useRef<any>(null);
   const autoCheckRef = useRef<any>(null);
-  const senderNumberRef = useRef('');
   const trxIdRef = useRef('');
-
-  useEffect(() => {
-    senderNumberRef.current = senderNumber;
-  }, [senderNumber]);
 
   useEffect(() => {
     trxIdRef.current = trxId;
   }, [trxId]);
 
-  // 1. Create the pending payment invoice on load (handles pre-applied coupon if present)
+  // Load Active Payment Accounts configured by Superadmin
   useEffect(() => {
-    if (!planId && !addonId) {
-      toast.error('Invalid selection');
-      router.push('/dashboard/settings/subscription');
-      return;
-    }
+    fetchActiveAccounts();
+  }, []);
 
-    const preApplied = searchParams.get('coupon');
-    if (preApplied) {
-      setCouponInput(preApplied);
-      handleApplyCouponDirect(preApplied);
+  const fetchActiveAccounts = async () => {
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/mfs-payments/active-providers`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const accounts = await res.json();
+        setActiveAccounts(accounts || []);
+
+        // Default to Bangla QR if active accounts have Bangla QR, else default to first available
+        const hasBanglaQr = accounts.some((a: any) => a.provider === 'BANGLA_QR' || a.accountType === 'MERCHANT');
+        if (hasBanglaQr) {
+          setActiveTab('BANGLA_QR');
+        } else if (accounts.some((a: any) => ['BKASH', 'NAGAD', 'ROCKET', 'UPAY'].includes(a.provider))) {
+          setActiveTab('MOBILE');
+        } else {
+          setActiveTab('CARD');
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load active payment providers', err);
+    }
+  };
+
+  // Initiate or fetch existing payment invoice on load
+  useEffect(() => {
+    if (rawPaymentId) {
+      fetchExistingInvoice(rawPaymentId);
+    } else if (planId || addonId) {
+      const preApplied = searchParams.get('coupon');
+      if (preApplied) {
+        setCouponInput(preApplied);
+        handleApplyCouponDirect(preApplied);
+      } else {
+        initiatePaymentInvoice();
+      }
     } else {
-      initiatePaymentInvoice();
+      toast.error(language === 'en' ? 'Invalid checkout selection' : 'পেমেন্ট সিলেকশন সঠিক নয়');
+      router.push('/dashboard/settings/subscription');
     }
 
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
       if (autoCheckRef.current) clearInterval(autoCheckRef.current);
     };
-  }, [planId]);
+  }, [planId, addonId, rawPaymentId]);
 
-  // Start timer when invoice is loaded
+  // Start 10-minute timer when payment invoice is ready
   useEffect(() => {
     if (payment) {
       timerRef.current = setInterval(() => {
         setTimeLeft((prev) => {
           if (prev <= 1) {
             clearInterval(timerRef.current);
-            toast.error('Payment window expired. Please try again.');
+            toast.error(language === 'en' ? 'Payment window expired' : 'পেমেন্টের সময় শেষ হয়ে গেছে');
             router.push('/dashboard/settings/subscription');
             return 0;
           }
@@ -100,10 +134,30 @@ function PayMfsContent() {
         });
       }, 1000);
 
-      // Start real-time auto-checking in background every 5 seconds
+      // Background auto-verifier check every 4 seconds
       startAutoCheck();
     }
   }, [payment]);
+
+  const fetchExistingInvoice = async (pId: string) => {
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/payments/my-history`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const history = await res.json();
+        const found = history.find((p: any) => p.id === pId);
+        if (found) {
+          setPayment(found);
+        } else {
+          initiatePaymentInvoice();
+        }
+      }
+    } catch (err) {
+      initiatePaymentInvoice();
+    }
+  };
 
   const handleApplyCouponDirect = async (code: string) => {
     setApplyingCoupon(true);
@@ -144,7 +198,6 @@ function PayMfsContent() {
         const data = await res.json();
         setAppliedCoupon(data);
         toast.success(language === 'en' ? 'Coupon applied!' : 'কুপন প্রয়োগ করা হয়েছে!');
-        // Clear old timers before recreate
         if (timerRef.current) clearInterval(timerRef.current);
         if (autoCheckRef.current) clearInterval(autoCheckRef.current);
         setTimeLeft(600);
@@ -175,10 +228,7 @@ function PayMfsContent() {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({
-            addonId,
-            trxId: tempTrxId
-          })
+          body: JSON.stringify({ addonId, trxId: tempTrxId })
         });
       } else {
         res = await fetch(`${API}/payments/manual`, {
@@ -199,144 +249,114 @@ function PayMfsContent() {
       if (res.ok) {
         const data = await res.json();
         setPayment(data);
-        // Default select first available provider - we will fetch config next
-        fetchPaymentConfig(data.id);
       } else {
-        toast.error('Failed to initialize payment invoice');
+        toast.error('Failed to initialize checkout invoice');
       }
     } catch (err) {
       toast.error('Failed to connect to billing server');
     }
   };
 
-  const fetchPaymentConfig = async (paymentId: string) => {
+  // Open Payment method details modal
+  const handleSelectAccount = async (account: any) => {
+    if (!payment) return;
+    setSelectedAccount(account);
+    setShowPaymentModal(true);
+
     try {
       const token = Cookies.get('access_token');
-      // Try to get Bangla QR first, then bKash, or any available
-      const providers = ['BANGLA_QR', 'BKASH', 'NAGAD', 'ROCKET', 'UPAY', 'BANK'];
-      for (const p of providers) {
-        const res = await fetch(`${API}/mfs-payments/qr-payload/${paymentId}?provider=${p}`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (res.ok) {
-          const payload = await res.json();
-          setQrPayload(payload);
-          setSelectedProvider(payload.provider);
-          break;
-        }
+      const providerKey = account.provider;
+      const res = await fetch(`${API}/mfs-payments/qr-payload/${payment.id}?provider=${providerKey}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const payload = await res.json();
+        setQrPayload(payload);
+      } else {
+        toast.error(`Configuration issue for ${providerKey}`);
       }
     } catch (err) {
       console.error(err);
     }
   };
 
-  // Change payment method during checkout
-  const handleSelectProvider = async (provider: string) => {
-    if (!payment) return;
-    try {
-      const token = Cookies.get('access_token');
-      setSelectedProvider(provider);
-      
-      // Now query the QR payload for the selected provider
-      const res = await fetch(`${API}/mfs-payments/qr-payload/${payment.id}?provider=${provider}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const payload = await res.json();
-        setQrPayload({ ...payload, provider });
-      } else {
-        setQrPayload(null);
-        toast.error(`Configuration not found for ${provider}`);
-      }
-    } catch (err) {
-      toast.error('Error changing provider');
-    }
-  };
-
+  // Background real-time verification auto-checker
   const startAutoCheck = () => {
     if (autoCheckRef.current) clearInterval(autoCheckRef.current);
     autoCheckRef.current = setInterval(async () => {
-      if (!verifying && !paymentSuccess) {
-        silentVerify();
+      if (!payment || paymentSuccess) return;
+      try {
+        const token = Cookies.get('access_token');
+        const currentTrx = trxIdRef.current.trim().toUpperCase();
+        
+        const res = await fetch(`${API}/mfs-payments/verify`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            paymentId: payment.id,
+            trxId: currentTrx || undefined
+          })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success) {
+            setPaymentSuccess(true);
+            toast.success(language === 'en' ? 'Payment Verified & Activated!' : 'পেমেন্ট ভেরিফাই সফল হয়েছে!');
+            clearInterval(autoCheckRef.current);
+            setTimeout(() => {
+              window.location.href = `/dashboard/settings/subscription?payment=success&id=${payment.id}`;
+            }, 1200);
+          }
+        }
+      } catch (err) {
+        // Silent check
       }
-    }, 5000);
+    }, 4000);
   };
 
-  const silentVerify = async () => {
+  const handleManualVerify = async () => {
     if (!payment) return;
-    const cleanTrx = trxIdRef.current.trim();
-    const cleanNum = senderNumberRef.current.trim();
-
-    try {
-      const token = Cookies.get('access_token');
-      const res = await fetch(`${API}/mfs-payments/verify`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          paymentId: payment.id,
-          trxId: cleanTrx || undefined,
-          senderNumber: cleanNum || undefined
-        })
-      });
-      if (res.ok) {
-        clearInterval(autoCheckRef.current);
-        clearInterval(timerRef.current);
-        setPaymentSuccess(true);
-        toast.success('Payment verified successfully!');
-      }
-    } catch (e) {
-      // Fail silently in background check
-    }
-  };
-
-  const handleVerify = async () => {
-    const cleanTrx = trxId.trim();
-    const cleanNum = senderNumber.trim();
-    
-    if (showTrxField && !cleanTrx) {
-      toast.error(language === 'en' ? 'Please enter Transaction ID' : 'অনুগ্রহ করে ট্রানজেকশন আইডি দিন');
-      return;
-    }
-
     setVerifying(true);
     try {
       const token = Cookies.get('access_token');
+      const cleanTrx = trxId.trim().toUpperCase();
       const res = await fetch(`${API}/mfs-payments/verify`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           paymentId: payment.id,
-          trxId: cleanTrx || undefined,
-          senderNumber: cleanNum || undefined
+          trxId: cleanTrx
         })
       });
 
-      if (res.ok) {
+      const data = await res.json();
+      if (res.ok && data.success) {
         setPaymentSuccess(true);
-        if (timerRef.current) clearInterval(timerRef.current);
-        if (autoCheckRef.current) clearInterval(autoCheckRef.current);
-        toast.success(language === 'en' ? 'Payment Verified!' : 'পেমেন্ট সফলভাবে ভেরিফাই করা হয়েছে!');
+        toast.success(language === 'en' ? 'Payment verified successfully!' : 'পেমেন্ট সফলভাবে ভেরিফাই হয়েছে!');
+        setTimeout(() => {
+          window.location.href = `/dashboard/settings/subscription?payment=success&id=${payment.id}`;
+        }, 1200);
       } else {
-        const err = await res.json();
-        toast.error(err.message || 'Verification failed. Please double check.');
+        toast.error(data.message || (language === 'en' ? 'Payment not detected yet. Please double check.' : 'পেমেন্ট এখনো সনাক্ত করা যায়নি। অনুগ্রহ করে পরীক্ষা করুন।'));
       }
     } catch (err) {
-      toast.error('Connection error during verification');
+      toast.error('Failed to verify payment');
     } finally {
       setVerifying(false);
     }
   };
 
-  const handleCopy = (text: string, field: string) => {
+  const handleCopy = (text: string, fieldName: string) => {
     navigator.clipboard.writeText(text);
-    setCopiedField(field);
-    toast.success('Copied!');
+    setCopiedField(fieldName);
+    toast.success(language === 'en' ? 'Copied to clipboard!' : 'কপি করা হয়েছে!');
     setTimeout(() => setCopiedField(''), 2000);
   };
 
@@ -346,491 +366,320 @@ function PayMfsContent() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  if (paymentSuccess) {
-    return (
-      <div className="min-h-[80vh] flex items-center justify-center p-3 text-[13px]">
-        <div className="bg-surface/60 backdrop-blur-xl border border-zinc-800 rounded-2xl p-6 w-full max-w-md text-center space-y-4">
-          <div className="w-16 h-16 bg-emerald-950/40 border border-emerald-500 rounded-full flex items-center justify-center mx-auto text-emerald-400">
-            <CheckCircle2 className="w-10 h-10 animate-bounce" />
-          </div>
-          
-          <h2 className="text-xl font-bold text-emerald-400">
-            {language === 'en' ? 'Payment Successful!' : 'পেমেন্ট সফল হয়েছে!'}
-          </h2>
-          <p className="text-zinc-400 text-[12px]">
-            {language === 'en' 
-              ? 'Your subscription is now active. You will be redirected to the dashboard in a few seconds.' 
-              : 'আপনার সাবস্ক্রিপশন সচল হয়েছে। কিছুক্ষণের মধ্যে ড্যাশবোর্ডে রিডাইরেক্ট করা হবে।'}
-          </p>
-          
-          <button
-            onClick={() => {
-              // Reload page to apply changes
-              window.location.href = '/dashboard';
-            }}
-            className="w-full py-2 bg-primary text-black font-semibold rounded-lg hover:bg-primary/90 transition-colors"
-          >
-            {language === 'en' ? 'Go to Dashboard' : 'ড্যাশবোর্ডে ফিরে যান'}
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // Filter Active Accounts by selected top tab
+  const banglaQrAccounts = activeAccounts.filter(a => a.provider === 'BANGLA_QR' || a.accountType === 'MERCHANT');
+  const mobileBankingAccounts = activeAccounts.filter(a => ['BKASH', 'NAGAD', 'ROCKET', 'UPAY'].includes(a.provider));
+  const cardAccounts = activeAccounts.filter(a => a.provider === 'BANK');
+
+  // Fallback default list if database accounts are empty yet
+  const displayedAccounts = activeTab === 'BANGLA_QR' 
+    ? (banglaQrAccounts.length > 0 ? banglaQrAccounts : [{ provider: 'BANGLA_QR', accountType: 'MERCHANT', number: '10000001', name: 'MTB Bank Bangla QR' }])
+    : activeTab === 'MOBILE'
+    ? (mobileBankingAccounts.length > 0 ? mobileBankingAccounts : [
+        { provider: 'BKASH', accountType: 'PERSONAL', number: '01800000000', name: 'bKash Send Money' },
+        { provider: 'NAGAD', accountType: 'PERSONAL', number: '01800000000', name: 'Nagad Send Money' },
+        { provider: 'ROCKET', accountType: 'PERSONAL', number: '01800000000', name: 'Rocket Send Money' },
+        { provider: 'UPAY', accountType: 'PERSONAL', number: '01800000000', name: 'Upay Send Money' },
+      ])
+    : (cardAccounts.length > 0 ? cardAccounts : [{ provider: 'BANK', accountType: 'BANK', number: '10000001', name: 'Paystation / Bank Card' }]);
 
   return (
-    <div className="p-3 space-y-3 max-w-4xl mx-auto text-[13px]">
+    <div className="min-h-screen bg-slate-100 dark:bg-zinc-950 text-foreground py-8 px-4 flex flex-col items-center justify-center font-sans">
       <Toaster position="top-right" />
-      
-      {/* Back Header */}
-      <div className="flex items-center gap-3">
-        <button
-          onClick={() => {
-            if (confirm(language === 'en' ? 'Cancel checkout?' : 'পেমেন্ট বাতিল করে ফিরে যাবেন?')) {
-              router.push('/dashboard/settings/subscription');
-            }
-          }}
-          className="p-1.5 bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 rounded-lg text-zinc-300 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-        </button>
-        <div>
-          <h1 className="font-bold text-[14px]">
-            {language === 'en' ? 'Secure Payment Portal' : 'নিরাপদ পেমেন্ট গেটওয়ে'}
-          </h1>
-          <p className="text-[11px] text-zinc-500">
-            {language === 'en' ? 'Select MFS or Bank to scan and pay.' : 'স্ক্যান ও পেমেন্ট করতে এমএফএস বা ব্যাংক নির্বাচন করুন।'}
-          </p>
-        </div>
-      </div>
 
-      {/* Main Grid Layout */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        
-        {/* Left column: MFS Selectors */}
-        <div className="space-y-2 col-span-1">
-          <h3 className="font-semibold text-zinc-400 px-1">
-            {language === 'en' ? 'Select Payment Method' : 'পেমেন্ট মাধ্যম বেছে নিন'}
-          </h3>
+      {/* Main Container Card matching Epay / Paystation Portal design */}
+      <div className="w-full max-w-xl space-y-5">
+
+        {/* Top Header Card */}
+        <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-xl space-y-5">
           
-          <div className="space-y-2">
-            {[
-              { id: 'BANGLA_QR', name: 'Bangla QR (Universal)', color: 'hover:border-amber-500/50 amber-border', desc: language === 'en' ? 'Scan via any Bank or MFS app' : 'যেকোনো ব্যাংক বা বিকাশ/নগদ দিয়ে স্ক্যান করুন', isHighlight: true },
-              { id: 'BKASH', name: 'bKash', color: 'hover:border-pink-500/50 pink-border', desc: 'Personal / Merchant' },
-              { id: 'NAGAD', name: 'Nagad', color: 'hover:border-orange-500/50 orange-border', desc: 'Personal / Merchant' },
-              { id: 'ROCKET', name: 'Rocket', color: 'hover:border-purple-500/50 purple-border', desc: 'Personal' },
-              { id: 'UPAY', name: 'upay', color: 'hover:border-yellow-500/50 yellow-border', desc: 'Personal / Merchant' },
-              { id: 'BANK', name: 'Bank Transfer', color: 'hover:border-sky-500/50 sky-border', desc: 'NPSB / RTGS / Instant Transfer' }
-            ].map(m => (
-              <button
-                key={m.id}
-                onClick={() => handleSelectProvider(m.id)}
-                className={`w-full text-left p-3 rounded-xl border backdrop-blur-xl transition-all relative overflow-hidden ${
-                  selectedProvider === m.id 
-                    ? (m.isHighlight 
-                        ? 'bg-amber-500/5 border-amber-500/80 shadow-[0_0_15px_rgba(245,158,11,0.15)]'
-                        : 'bg-primary/10 border-primary shadow-[0_0_12px_rgba(31,130,74,0.1)]')
-                    : (m.isHighlight
-                        ? 'bg-zinc-950/20 border-amber-500/25 hover:border-amber-500/40 hover:bg-zinc-950/40'
-                        : 'bg-surface/50 border-zinc-800/80 hover:bg-surface/75')
-                }`}
-              >
-                {m.isHighlight && (
-                  <span className="absolute top-0 right-0 bg-amber-500 text-black text-[8px] font-extrabold px-1.5 py-0.5 rounded-bl uppercase tracking-wider">
-                    {language === 'en' ? 'Recommended' : 'সুপারিশকৃত'}
-                  </span>
-                )}
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    {m.id === 'BKASH' && (
-                      <div className="w-5 h-5 rounded-md bg-[#E2136E] flex items-center justify-center font-black text-white text-[9px] shadow-sm select-none">bK</div>
-                    )}
-                    {m.id === 'NAGAD' && (
-                      <div className="w-5 h-5 rounded-md bg-[#F05A24] flex items-center justify-center font-black text-white text-[9px] shadow-sm select-none">N</div>
-                    )}
-                    {m.id === 'ROCKET' && (
-                      <div className="w-5 h-5 rounded-md bg-[#8C3494] flex items-center justify-center font-black text-white text-[9px] shadow-sm select-none">R</div>
-                    )}
-                    {m.id === 'UPAY' && (
-                      <div className="w-5 h-5 rounded-md bg-[#FFC629] flex items-center justify-center font-black text-black text-[9px] shadow-sm select-none">up</div>
-                    )}
-                    {m.id === 'BANGLA_QR' && (
-                      <svg viewBox="0 0 20 20" className="w-5 h-5 fill-current text-amber-400 shrink-0">
-                        <path d="M2 2h6v6H2V2zm1 1v4h4V3H3zm-1 9h6v6H2v-6zm1 1v4h4v-4H3zm6-11h6v6H9V2zm1 1v4h4V3h-4zm2 9h4v2h-4v-2zm2 2h2v4h-2v-4zm-4 2h2v2h-2v-2zm4-4h2v2h-2v-2zm-2 2h2v2h-2v-2z" />
-                      </svg>
-                    )}
-                    {m.id === 'BANK' && (
-                      <svg viewBox="0 0 24 24" className="w-5 h-5 fill-none stroke-current text-sky-400 shrink-0" strokeWidth="2">
-                        <path d="M3 21h18M5 21V10m6 11V10m6 11V10M4 10h16M3 10l9-6 9 6" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    )}
-                    <span className={`font-bold ${m.isHighlight ? 'text-amber-400' : 'text-zinc-200'}`}>{m.name}</span>
-                  </div>
-                  {selectedProvider === m.id && <Check className={`w-4 h-4 ${m.isHighlight ? 'text-amber-500' : 'text-primary'}`} />}
-                </div>
-                <div className={`text-[10px] mt-0.5 ${m.isHighlight ? 'text-amber-500/60' : 'text-zinc-500'}`}>{m.desc}</div>
-              </button>
-            ))}
+          {/* Top Navbar Header */}
+          <div className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800/80 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-emerald-600 flex items-center justify-center text-white shadow-lg shadow-emerald-600/30">
+                <ShieldCheck className="w-6 h-6" />
+              </div>
+              <div>
+                <h1 className="font-extrabold text-[16px] leading-snug">ZiniChat SaaS</h1>
+                <p className="text-[11px] text-muted-foreground font-mono">Order: #{payment?.id?.slice(0, 10) || 'checkout'}</p>
+              </div>
+            </div>
+            
+            <div className="text-right">
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold block">Total Amount</span>
+              <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                {formatBDT(payment?.amountBdt || 0)}
+              </span>
+            </div>
           </div>
 
-          {/* Invoice Summary */}
-          {payment && (
-            <div className="bg-surface/40 border border-zinc-800 rounded-xl p-3 mt-3">
-              <h4 className="font-bold text-[12px] text-zinc-400 mb-2 uppercase tracking-wider">
-                {language === 'en' ? 'Invoice Summary' : 'ইনভয়েস সামারি'}
-              </h4>
-              <div className="space-y-1 text-[11px] text-zinc-400">
-                {!addonId && (
-                  <div className="flex justify-between">
-                    <span>Billing Cycle:</span>
-                    <span className="font-medium text-zinc-200 capitalize">{billingCycle}</span>
-                  </div>
-                )}
-                {addonId && (
-                  <div className="flex justify-between">
-                    <span>Type:</span>
-                    <span className="font-medium text-zinc-200 capitalize">Add-on Purchase</span>
-                  </div>
-                )}
-                <div className="flex justify-between border-t border-zinc-800/40 pt-1 mt-1 text-[13px] font-bold text-primary">
-                  <span>Total Amount:</span>
-                  <span>{formatBDT(payment.amountBdt)}</span>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+          {/* Category Navigation Tabs (Mobile Banking | Bangla QR [Default] | Card) */}
+          <div className="grid grid-cols-3 gap-2 p-1.5 bg-slate-100 dark:bg-zinc-950 rounded-2xl border border-slate-200 dark:border-zinc-850">
+            <button
+              onClick={() => setActiveTab('MOBILE')}
+              className={`py-3 px-2 rounded-xl text-[12px] font-bold transition-all flex flex-col items-center justify-center gap-1.5 ${
+                activeTab === 'MOBILE'
+                  ? 'bg-white dark:bg-zinc-900 text-emerald-600 dark:text-emerald-400 shadow-md border-2 border-emerald-600 dark:border-emerald-500'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Smartphone className="w-4 h-4" />
+              <span>Mobile Banking</span>
+            </button>
 
-        {/* Right column: QR and Verification details */}
-        <div className="col-span-2 space-y-3">
-          {/* Main Payment card */}
-          <div className="bg-surface/60 backdrop-blur-xl border border-zinc-800 rounded-2xl p-4 flex flex-col items-center justify-between text-center relative overflow-hidden">
-            
-            {/* Top timer */}
-            <div className="absolute top-3 right-3 bg-zinc-900 border border-zinc-800 text-zinc-400 text-[11px] font-mono px-2.5 py-1 rounded-lg flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-orange-500 animate-pulse" />
-              <span>{formatTime(timeLeft)}</span>
-            </div>
+            {/* Default & Highlighted Bangla QR */}
+            <button
+              onClick={() => setActiveTab('BANGLA_QR')}
+              className={`py-3 px-2 rounded-xl text-[12px] font-bold transition-all flex flex-col items-center justify-center gap-1.5 relative ${
+                activeTab === 'BANGLA_QR'
+                  ? 'bg-white dark:bg-zinc-900 text-emerald-600 dark:text-emerald-400 shadow-md border-2 border-emerald-600 dark:border-emerald-500'
+                  : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20'
+              }`}
+            >
+              <span className="absolute -top-2 bg-emerald-600 text-white text-[9px] px-2 py-0.2 rounded-full uppercase font-black tracking-wider shadow">
+                Recommended
+              </span>
+              <QrCode className="w-4 h-4" />
+              <span>Bangla QR</span>
+            </button>
 
-            {qrPayload ? (
-              <div className="w-full space-y-4">
+            <button
+              onClick={() => setActiveTab('CARD')}
+              className={`py-3 px-2 rounded-xl text-[12px] font-bold transition-all flex flex-col items-center justify-center gap-1.5 ${
+                activeTab === 'CARD'
+                  ? 'bg-white dark:bg-zinc-900 text-emerald-600 dark:text-emerald-400 shadow-md border-2 border-emerald-600 dark:border-emerald-500'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <CreditCard className="w-4 h-4" />
+              <span>Card / Bank</span>
+            </button>
+          </div>
+
+          {/* Provider Grid Selection */}
+          <div className="space-y-3 pt-2">
+            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">
+              Select Payment Option
+            </span>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {displayedAccounts.map((acc: any, idx: number) => {
+                const isMerchant = acc.accountType === 'MERCHANT' || acc.provider === 'BANGLA_QR';
                 
-                {/* QR Display */}
-                <div>
-                  <h3 className="font-bold text-zinc-200 mb-1">
-                    {qrPayload.accountType === 'MERCHANT' || qrPayload.provider === 'BANGLA_QR' 
-                      ? (language === 'en' ? 'Scan Bangla QR / Merchant QR' : 'বাংলা কিউআর / মার্চেন্ট কিউআর স্ক্যান করুন') 
-                      : (language === 'en' ? 'Scan QR Code to Pay' : 'কিউআর কোড স্ক্যান করে পে করুন')}
-                  </h3>
-                  <p className="text-[11px] text-zinc-500">
-                    {qrPayload.accountType === 'MERCHANT' 
-                      ? (language === 'en' ? 'Open bKash/Nagad scan option' : 'বিকাশ/নগদ অ্যাপ দিয়ে স্ক্যান করুন')
-                      : (language === 'en' ? 'Scan this code from your mobile banking app' : 'মোবাইল ব্যাংকিং অ্যাপ দিয়ে স্ক্যান করুন')}
-                  </p>
-
-                  <div className="bg-white p-2.5 rounded-xl inline-block mt-3 shadow-lg border border-zinc-200">
-                    {/* Render dynamic Bangla QR or Static QR URL */}
-                    <img 
-                      src={
-                        qrPayload.accountType === 'MERCHANT' || qrPayload.provider === 'BANGLA_QR'
-                          ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrPayload.qrCodeData)}`
-                          : (qrPayload.qrCodeUrl || `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrPayload.number)}`)
-                      } 
-                      alt="QR Code" 
-                      className="w-44 h-44"
-                    />
-                  </div>
-                </div>
-
-                {/* Instructions / Account numbers */}
-                <div className="bg-zinc-950/40 rounded-xl p-3 border border-zinc-800/40 text-left space-y-2.5 max-w-md mx-auto">
-                  
-                  {qrPayload.provider === 'BANK' ? (
-                    <>
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <span className="text-[10px] text-zinc-500 uppercase font-semibold">Bank Name</span>
-                          <div className="font-bold text-zinc-200 text-[12px]">{qrPayload.bankName}</div>
-                        </div>
-                      </div>
-                      
-                      <div className="h-px bg-zinc-800" />
-                      
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <span className="text-[10px] text-zinc-500 uppercase font-semibold">Account Number</span>
-                          <div className="font-bold text-zinc-200 text-[12px] font-mono">{qrPayload.number}</div>
-                        </div>
-                        <button 
-                          onClick={() => handleCopy(qrPayload.number, 'num')}
-                          className="p-1 hover:bg-zinc-800 rounded transition-colors text-zinc-400"
-                        >
-                          {copiedField === 'num' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                        </button>
-                      </div>
-
-                      <div className="h-px bg-zinc-800" />
-
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <span className="text-[10px] text-zinc-500 uppercase font-semibold">Routing Number</span>
-                          <div className="font-bold text-zinc-200 text-[12px] font-mono">{qrPayload.routingNumber}</div>
-                        </div>
-                        <button 
-                          onClick={() => handleCopy(qrPayload.routingNumber, 'rout')}
-                          className="p-1 hover:bg-zinc-800 rounded transition-colors text-zinc-400"
-                        >
-                          {copiedField === 'rout' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                        </button>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <span className="text-[10px] text-zinc-500 uppercase font-semibold">Payment Type</span>
-                          <div className="font-bold text-zinc-200 text-[12px] capitalize">
-                            {qrPayload.accountType.toLowerCase()} ({qrPayload.provider.toLowerCase()})
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="h-px bg-zinc-800" />
-
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <span className="text-[10px] text-zinc-500 uppercase font-semibold">Send To Number</span>
-                          <div className="font-bold text-zinc-200 text-[12px] font-mono">{qrPayload.number}</div>
-                        </div>
-                        <button 
-                          onClick={() => handleCopy(qrPayload.number, 'num')}
-                          className="p-1 hover:bg-zinc-800 rounded transition-colors text-zinc-400"
-                        >
-                          {copiedField === 'num' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                        </button>
-                      </div>
-                    </>
-                  )}
-
-                  <div className="h-px bg-zinc-800" />
-
-                  {/* Coupon Application Block */}
-                  {!addonId && (
-                    <div className="space-y-1.5 p-2 bg-zinc-950/40 rounded-xl border border-zinc-850">
-                      <label className="block text-[10px] text-zinc-500 uppercase font-semibold">
-                        {language === 'en' ? 'Have a Coupon Code?' : 'কুপন কোড আছে?'}
-                      </label>
-                      <div className="flex gap-1.5">
-                        <input
-                          type="text"
-                          placeholder={language === 'en' ? 'e.g. DISCOUNT20' : 'যেমন: DISCOUNT20'}
-                          value={couponInput}
-                          onChange={(e) => setCouponInput(e.target.value)}
-                          disabled={applyingCoupon || !!appliedCoupon}
-                          className="flex-1 bg-zinc-900 border border-zinc-850 rounded-lg px-2.5 py-1 text-[11px] font-mono focus:outline-none focus:border-primary text-zinc-200 uppercase placeholder:normal-case"
-                        />
-                        {appliedCoupon ? (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setAppliedCoupon(null);
-                              setCouponInput('');
-                              initiatePaymentInvoice();
-                            }}
-                            className="px-2 py-1 bg-red-600/20 hover:bg-red-650/30 border border-red-500/30 text-red-400 rounded-lg text-[10px] font-bold transition-all"
-                          >
-                            {language === 'en' ? 'Remove' : 'মুছুন'}
-                          </button>
+                return (
+                  <button
+                    key={idx}
+                    onClick={() => handleSelectAccount(acc)}
+                    className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 hover:border-emerald-500 dark:hover:border-emerald-500 hover:shadow-lg transition-all text-left flex items-center justify-between group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-white dark:bg-zinc-900 border border-border flex items-center justify-center shrink-0">
+                        {acc.provider === 'BKASH' ? (
+                          <span className="font-black text-[#e2136e] text-xs">bKash</span>
+                        ) : acc.provider === 'NAGAD' ? (
+                          <span className="font-black text-orange-500 text-xs">Nagad</span>
+                        ) : acc.provider === 'ROCKET' ? (
+                          <span className="font-black text-purple-500 text-xs">Rocket</span>
                         ) : (
-                          <button
-                            type="button"
-                            onClick={handleApplyCouponClick}
-                            disabled={applyingCoupon || !couponInput.trim()}
-                            className="px-3 py-1 bg-primary/10 hover:bg-primary/20 border border-primary/30 text-primary rounded-lg text-[10px] font-bold transition-all disabled:opacity-50"
-                          >
-                            {applyingCoupon ? (
-                              <Loader2 className="w-3 h-3 animate-spin" />
-                            ) : (
-                              language === 'en' ? 'Apply' : 'প্রয়োগ করুন'
-                            )}
-                          </button>
+                          <QrCode className="w-5 h-5 text-emerald-600" />
                         )}
                       </div>
-                      {couponError && (
-                        <span className="text-[10px] text-red-400 block">{couponError}</span>
-                      )}
-                      {appliedCoupon && (
-                        <span className="text-[10px] text-emerald-400 block font-medium">
-                          ✓ {language === 'en' 
-                            ? `Applied: ${appliedCoupon.discountType === 'percentage' ? `${appliedCoupon.discountAmount}% Off` : `${formatBDT(appliedCoupon.discountAmount)} Off`}` 
-                            : `প্রয়োগকৃত: ${appliedCoupon.discountType === 'percentage' ? `${appliedCoupon.discountAmount}% ছাড়` : `${formatBDT(appliedCoupon.discountAmount)} ছাড়`}`}
+                      <div>
+                        <h4 className="font-bold text-[13px] group-hover:text-emerald-600 transition-colors">
+                          {acc.name || acc.provider}
+                        </h4>
+                        <span className="text-[10px] text-muted-foreground font-semibold block uppercase">
+                          {isMerchant ? 'Merchant QR / Bangla QR' : `${acc.accountType || 'Personal'} Send Money`}
                         </span>
-                      )}
-                    </div>
-                  )}
-
-                  {qrPayload.baseAmount !== undefined && (
-                    <>
-                      <div className="h-px bg-zinc-800" />
-                      
-                      <div className="text-[11px] space-y-1 text-zinc-400">
-                        <div className="flex justify-between">
-                          <span>{language === 'en' ? 'Package Price' : 'প্যাকেজ মূল্য'}</span>
-                          <span className="font-mono">{formatBDT(qrPayload.baseAmount)}</span>
-                        </div>
-                        {Number(qrPayload.chargePercent) > 0 && (
-                          <div className="flex justify-between text-zinc-400">
-                            <span>
-                              {language === 'en' 
-                                ? `MFS Gateway Charge (${qrPayload.chargePercent}%)` 
-                                : `গেটওয়ে চার্জ (${qrPayload.chargePercent}%)`}
-                            </span>
-                            <span className="font-mono text-zinc-300">+{formatBDT(qrPayload.chargeAmount)}</span>
-                          </div>
-                        )}
-                        {Number(qrPayload.fraction) > 0 && (
-                          <div className="flex justify-between text-zinc-400">
-                            <span>
-                              {language === 'en' ? 'Fraction Offset' : 'অফসেট পয়সা'}
-                            </span>
-                            <span className="font-mono text-amber-500/80">+{formatBDT(qrPayload.fraction)}</span>
-                          </div>
-                        )}
-                      </div>
-                    </>
-                  )}
-
-                  <div className="h-px bg-zinc-800" />
-
-                  <div className="flex justify-between items-center bg-zinc-900/40 p-2 rounded-lg border border-zinc-850">
-                    <div>
-                      <span className="text-[10px] text-zinc-500 uppercase font-semibold block leading-none mb-1">
-                        {language === 'en' ? 'Exact Amount to Pay' : 'পরিশোধের হুবহু পরিমাণ'}
-                      </span>
-                      <div className="font-bold text-amber-400 text-[15px] font-mono leading-none">
-                        {formatBDT(qrPayload.amount)}
                       </div>
                     </div>
-                    <button 
-                      onClick={() => handleCopy(qrPayload.amount.toString(), 'amt')}
-                      className="p-1 hover:bg-zinc-800 rounded transition-colors text-zinc-400"
-                    >
-                      {copiedField === 'amt' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-emerald-600 group-hover:translate-x-0.5 transition-all" />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
-                {/* Real-time Zero-Input Scanning Loader */}
-                <div className="w-full max-w-md mx-auto pt-3 border-t border-zinc-800/40 space-y-4">
-                  
-                  <div className="bg-zinc-950/30 border border-zinc-850 rounded-2xl p-4 text-center space-y-3 shadow-inner">
-                    <div className="flex items-center justify-center gap-2">
-                      <Loader2 className="w-4 h-4 animate-spin text-amber-500" />
-                      <span className="text-[12px] text-zinc-300 font-bold tracking-wide animate-pulse">
-                        {language === 'en' ? 'Scanning for Payment (Realtime)...' : 'পেমেন্ট স্ক্যান করা হচ্ছে (রিয়েল-টাইম)...'}
-                      </span>
-                    </div>
-                    <div className="w-full bg-zinc-900 rounded-full h-1.5 overflow-hidden">
-                      <div className="bg-gradient-to-r from-amber-500 via-[#1F824A] to-amber-500 h-1.5 rounded-full animate-[shimmer_2s_infinite] w-full" style={{ backgroundSize: '200% 100%' }}></div>
-                    </div>
-                    <p className="text-[11px] text-zinc-400 leading-relaxed px-1">
-                      {language === 'en'
-                        ? 'Scan and pay the exact amount. The system will automatically detect the payment and activate your subscription in 5-10 seconds.'
-                        : 'মার্চেন্ট কিউআর কোড স্ক্যান করে পয়সাসহ হুবহু এই পরিমাণ টাকা পরিশোধ করুন। পে করার ৫-১০ সেকেন্ডের মধ্যে এটি অটোমেটিক ভেরিফাই হয়ে সাবস্ক্রিপশন সচল হয়ে যাবে!'}
-                    </p>
-
-                    <button
-                      onClick={handleVerify}
-                      disabled={verifying}
-                      className="mt-2 w-full py-1.5 px-3 bg-primary/10 border border-primary/30 hover:border-primary/60 text-primary rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 text-[11px]"
-                    >
-                      {verifying ? (
-                        <>
-                          <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
-                          {language === 'en' ? 'Checking status...' : 'পেমেন্ট চেক করা হচ্ছে...'}
-                        </>
-                      ) : (
-                        <>
-                          <RefreshCw className="w-3.5 h-3.5" />
-                          {language === 'en' ? 'Re-Sync Payment Status' : 'পুনরায় চেক করুন'}
-                        </>
-                      )}
-                    </button>
-                  </div>
-
-                  {/* Manual Backup Collapse Option */}
-                  <div className="space-y-2">
-                    {showTrxField ? (
-                      <div className="bg-zinc-950/20 border border-zinc-850/60 rounded-xl p-3 space-y-2.5">
-                        <div className="text-left">
-                          <label className="block text-[11px] text-zinc-400 font-semibold mb-1 uppercase tracking-wider">
-                            {qrPayload.provider === 'BANK' ? 'Transaction Reference / Trace ID' : 'MFS Transaction ID (TrxID)'}
-                          </label>
-                          <input
-                            type="text"
-                            placeholder="e.g. 8N7X2C9Y10"
-                            value={trxId}
-                            onChange={(e) => setTrxId(e.target.value)}
-                            className="w-full bg-zinc-950/60 border border-zinc-850 rounded-xl px-3 py-2 text-[13px] font-bold text-zinc-200 focus:outline-none focus:border-primary text-center font-mono placeholder:font-sans uppercase"
-                          />
-                        </div>
-                        <button
-                          onClick={handleVerify}
-                          disabled={verifying || !trxId.trim()}
-                          className="w-full py-2 bg-primary text-black hover:bg-primary/95 rounded-xl font-bold transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-1.5 text-[12px]"
-                        >
-                          {verifying ? (
-                            <>
-                              <Loader2 className="w-4 h-4 animate-spin text-black" />
-                              Verifying...
-                            </>
-                          ) : (
-                            <>
-                              <ShieldCheck className="w-4 h-4 text-black" />
-                              Verify manually
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex justify-center">
-                        <button
-                          type="button"
-                          onClick={() => setShowTrxField(true)}
-                          className="text-[10px] text-zinc-500 hover:text-zinc-300 transition-all underline"
-                        >
-                          {language === 'en' ? 'Or verify manually using Transaction ID' : 'অথবা ট্রানজেকশন আইডি দিয়ে ম্যানুয়ালি ভেরিফাই করুন'}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Contact Support Link */}
-                  <div className="pt-2 border-t border-zinc-900 flex justify-between items-center text-[11px]">
-                    <span className="text-zinc-500">
-                      {language === 'en' ? 'Having payment issues?' : 'পেমেন্ট নিয়ে কোনো সমস্যা হচ্ছে?'}
-                    </span>
-                    <a 
-                      href="/dashboard/settings/support" // Support ticket route
-                      className="text-amber-500 hover:text-amber-400 font-bold hover:underline flex items-center gap-1 transition-colors"
-                    >
-                      <HelpCircle className="w-3.5 h-3.5" />
-                      {language === 'en' ? 'Contact Support' : 'সাপোর্ট টিমের সাথে যোগাযোগ করুন'}
-                    </a>
-                  </div>
-
-                </div>
-
-              </div>
-            ) : (
-              <div className="py-20 text-zinc-500">
-                <Landmark className="w-10 h-10 mx-auto mb-2 opacity-30 animate-pulse" />
-                This payment method is not configured or offline. Please select another provider on the left.
-              </div>
+          {/* Coupon Input Drawer */}
+          <div className="pt-3 border-t border-slate-100 dark:border-zinc-800/80 space-y-2">
+            <label className="text-[11px] font-semibold text-muted-foreground block">
+              {language === 'en' ? 'Have a Coupon Code?' : 'কুপন কোড আছে?'}
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="e.g. PROMO20"
+                value={couponInput}
+                onChange={(e) => setCouponInput(e.target.value)}
+                disabled={applyingCoupon || !!appliedCoupon}
+                className="flex-1 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl px-3 py-2 text-[12px] font-mono focus:outline-none focus:border-emerald-500 uppercase"
+              />
+              {appliedCoupon ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAppliedCoupon(null);
+                    setCouponInput('');
+                    initiatePaymentInvoice();
+                  }}
+                  className="px-3 py-2 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-500 rounded-xl text-[11px] font-bold transition-all"
+                >
+                  Remove
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleApplyCouponClick}
+                  disabled={applyingCoupon || !couponInput.trim()}
+                  className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-[11px] font-bold hover:bg-emerald-500 transition-all disabled:opacity-50"
+                >
+                  {applyingCoupon ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Apply'}
+                </button>
+              )}
+            </div>
+            {appliedCoupon && (
+              <span className="text-[11px] text-emerald-500 font-bold block">
+                ✓ Coupon {appliedCoupon.code} applied!
+              </span>
             )}
           </div>
+
+          {/* Footer Contact Support Button */}
+          <div className="pt-3 border-t border-slate-100 dark:border-zinc-800/80 flex justify-between items-center text-[11px]">
+            <span className="text-muted-foreground">
+              {language === 'en' ? 'Having payment issues?' : 'পেমেন্ট নিয়ে কোনো সমস্যা হচ্ছে?'}
+            </span>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                window.dispatchEvent(new CustomEvent('open-support-widget', {
+                  detail: { message: language === 'en' ? 'I am having an issue with my payment.' : 'আমার পেমেন্ট করতে সমস্যা হচ্ছে।' }
+                }));
+              }}
+              className="text-emerald-600 dark:text-emerald-400 font-bold hover:underline flex items-center gap-1 transition-colors"
+            >
+              <HelpCircle className="w-3.5 h-3.5" />
+              {language === 'en' ? 'Contact Support' : 'সাপোর্ট টিমের সাথে যোগাযোগ করুন'}
+            </button>
+          </div>
+
         </div>
 
       </div>
+
+      {/* Payment Drawer Modal matching professional checkout view */}
+      {showPaymentModal && selectedAccount && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl w-full max-w-md p-6 shadow-2xl space-y-5 animate-in zoom-in-95 relative">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-3">
+              <div className="flex items-center gap-2">
+                <span className="font-extrabold text-[15px]">
+                  Pay with {selectedAccount.name || selectedAccount.provider}
+                </span>
+              </div>
+              <button
+                onClick={() => setShowPaymentModal(false)}
+                className="p-1 rounded-full hover:bg-slate-100 dark:hover:bg-zinc-800 text-muted-foreground transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Timer Banner */}
+            <div className="flex items-center justify-between p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-[12px] font-bold">
+              <span className="flex items-center gap-1.5">
+                <Clock className="w-4 h-4" /> Time Remaining
+              </span>
+              <span className="font-mono text-sm">{formatTime(timeLeft)}</span>
+            </div>
+
+            {/* QR Code / Payment Instructions */}
+            <div className="text-center space-y-3">
+              {qrPayload ? (
+                <>
+                  {/* Dynamic Bangla QR Code */}
+                  <div className="p-4 rounded-2xl bg-white border border-slate-200 inline-block shadow-inner">
+                    <img 
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(qrPayload.qrCodeData || selectedAccount.number)}`} 
+                      alt="Bangla QR Code"
+                      className="w-48 h-48 mx-auto"
+                    />
+                  </div>
+
+                  <div className="text-[13px] font-bold text-muted-foreground">
+                    <span>Open App → Scan QR → Confirm</span>
+                  </div>
+
+                  <div className="bg-slate-50 dark:bg-zinc-950 p-3 rounded-2xl border border-slate-200 dark:border-zinc-800 space-y-1">
+                    <span className="text-[10px] text-muted-foreground uppercase font-bold block">
+                      Send to Number ({selectedAccount.accountType || 'MERCHANT'})
+                    </span>
+                    <div className="flex items-center justify-center gap-2">
+                      <span className="font-mono font-bold text-lg text-emerald-600 dark:text-emerald-400">
+                        {qrPayload.number || selectedAccount.number}
+                      </span>
+                      <button
+                        onClick={() => handleCopy(qrPayload.number || selectedAccount.number, 'num')}
+                        className="p-1 hover:bg-slate-200 dark:hover:bg-zinc-800 rounded transition-colors text-muted-foreground"
+                      >
+                        {copiedField === 'num' ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="py-12 flex flex-col items-center justify-center gap-2">
+                  <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+                  <span className="text-[12px] text-muted-foreground">Generating QR Payload...</span>
+                </div>
+              )}
+            </div>
+
+            {/* Real-time Loader & Manual TrxID Input */}
+            <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-zinc-800">
+              <div className="flex items-center justify-center gap-2 text-[12px] text-emerald-600 dark:text-emerald-400 font-bold animate-pulse">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Waiting for your payment...</span>
+              </div>
+
+              {showTrxField ? (
+                <div className="space-y-2 pt-2">
+                  <input
+                    type="text"
+                    placeholder="Enter TrxID or Last 4 Digits"
+                    value={trxId}
+                    onChange={(e) => setTrxId(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl px-3 py-2 text-[13px] font-mono font-bold text-center uppercase"
+                  />
+                  <button
+                    onClick={handleManualVerify}
+                    disabled={verifying || !trxId.trim()}
+                    className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold transition-all text-[12px] flex items-center justify-center gap-1.5 disabled:opacity-50"
+                  >
+                    {verifying ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+                    <span>Verify Payment</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="text-center">
+                  <button
+                    type="button"
+                    onClick={() => setShowTrxField(true)}
+                    className="text-[11px] text-muted-foreground hover:text-foreground underline transition-all font-medium"
+                  >
+                    Or enter TrxID / Last 4 Digits manually
+                  </button>
+                </div>
+              )}
+            </div>
+
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
@@ -838,9 +687,9 @@ function PayMfsContent() {
 export default function PayMfsPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-white flex-col gap-2">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        <span className="text-[12px] text-zinc-400">Loading payment secure portal...</span>
+      <div className="min-h-screen flex items-center justify-center bg-slate-100 dark:bg-zinc-950 text-foreground flex-col gap-2">
+        <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+        <span className="text-[12px] text-muted-foreground">Loading payment portal...</span>
       </div>
     }>
       <PayMfsContent />

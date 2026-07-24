@@ -34,7 +34,9 @@ import {
   Crown,
   Wallet,
   UserCircle,
-  Tag
+  Tag,
+  Instagram,
+  Receipt
 } from 'lucide-react';
 import NotificationBell from '@/components/NotificationBell';
 import SupportWidget from '@/components/SupportWidget';
@@ -159,26 +161,28 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
 
   const navItems = [
     { name: language === 'en' ? 'Home' : 'হোম', icon: LayoutGrid, href: '/dashboard' },
-    { name: language === 'en' ? 'Inbox' : 'ইনবক্স', icon: Inbox, href: '/dashboard/inbox' },
+    { name: language === 'en' ? 'Live Inbox' : 'লাইভ ইনবক্স', icon: Inbox, href: '/dashboard/inbox' },
     { name: language === 'en' ? 'Leads' : 'লিডস', icon: UserCircle, href: '/dashboard/leads' },
-    { name: language === 'en' ? 'Products' : 'প্রডাক্টস', icon: ShoppingCart, href: '/dashboard/products' },
-    { name: language === 'en' ? 'Orders' : 'অর্ডারস', icon: ShoppingBag, href: '/dashboard/orders' },
-    { name: language === 'en' ? 'Support' : 'সাপোর্ট', icon: MessageSquare, href: '/dashboard/support' },
+    { name: language === 'en' ? 'Product List' : 'প্রোডাক্ট লিস্ট', icon: ShoppingCart, href: '/dashboard/products' },
+    { name: language === 'en' ? 'Manage Order' : 'ম্যানেজ অর্ডার', icon: ShoppingBag, href: '/dashboard/orders' },
     { 
       name: language === 'en' ? 'Settings' : 'সেটিংস', 
       icon: Settings2, 
       href: '/dashboard/settings', 
       hasSubmenu: true,
       subItems: [
-        { name: language === 'en' ? 'WhatsApp' : 'হোয়াটসঅ্যাপ', icon: PhoneCall, href: '/dashboard/settings/whatsapp' },
-        { name: language === 'en' ? 'Messenger' : 'মেসেঞ্জার', icon: MessageCircle, href: '/dashboard/settings/messenger' },
+        { name: language === 'en' ? 'WhatsApp Connection' : 'হোয়াটসঅ্যাপ কানেকশন', icon: PhoneCall, href: '/dashboard/settings/whatsapp' },
+        { name: language === 'en' ? 'Messenger Connection' : 'মেসেঞ্জার কানেকশন', icon: MessageCircle, href: '/dashboard/settings/messenger' },
+        { name: language === 'en' ? 'Instagram Connection' : 'ইনস্টাগ্রাম কানেকশন', icon: Instagram, href: '/dashboard/settings/instagram' },
         { name: language === 'en' ? 'Team' : 'টিম', icon: UserCircle, href: '/dashboard/team' },
         { name: language === 'en' ? 'AI Training' : 'এআই ট্রেইনিং', icon: Zap, href: '/dashboard/settings/ai-training' },
         { name: language === 'en' ? 'Labels' : 'লেবেলস', icon: Tag, href: '/dashboard/settings/labels' },
         { name: language === 'en' ? 'Subscription' : 'সাবস্ক্রিপশন', icon: Crown, href: '/dashboard/settings/subscription' },
+        { name: language === 'en' ? 'Billing History' : 'বিলিং হিস্ট্রি', icon: Receipt, href: '/dashboard/settings/billing-history' },
         { name: language === 'en' ? 'Storage' : 'স্টোরেজ', icon: Settings2, href: '/dashboard/settings/storage' },
       ] // Removed hasAccess filter here
     },
+    { name: language === 'en' ? 'Support Ticket' : 'সাপোর্ট টিকিট', icon: MessageSquare, href: '/dashboard/support' },
   ]; // Removed hasAccess filter here
 
   if (pathname === '/dashboard/onboarding') {
@@ -316,7 +320,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
                 <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-full border border-zinc-200 dark:border-zinc-700">
                   {language === 'en' ? userProfile.tenant.plan.name : userProfile.tenant.plan.nameBn || userProfile.tenant.plan.name}
                 </span>
-                <Link href="/dashboard/settings/billing">
+                <Link href="/dashboard/settings/subscription">
                   <span className="text-[11px] font-black text-white bg-gradient-to-r from-orange-500 to-amber-500 px-3 py-1 rounded-full shadow-lg shadow-orange-500/30 animate-pulse hover:animate-none hover:scale-105 transition-transform cursor-pointer border-2 border-surface">
                     {language === 'en' ? 'UPGRADE PLAN 🚀' : 'আপগ্রেড করুন 🚀'}
                   </span>

@@ -37,7 +37,7 @@ export class PaymentsService {
 
     let amount = billingCycle === 'yearly' ? Number(plan.priceYearlyBdt) : Number(plan.priceMonthlyBdt);
     
-    if (tenant?.customPriceUsd) {
+    if (tenant?.customPriceUsd && plan.name.toLowerCase().includes('custom')) {
       const currencyRateInfo = await this.prisma.exchangeRate.findFirst({
         where: { effectiveDate: { lte: new Date() } },
         orderBy: { effectiveDate: 'desc' }
@@ -112,7 +112,8 @@ export class PaymentsService {
         baseAmountBdt: amount, 
         provider: 'manual', 
         status: 'pending', 
-        trxId 
+        trxId,
+        gatewayResponse: { fractionOffset: Number((finalAmount - amount).toFixed(2)) }
       }
     });
 
@@ -159,7 +160,7 @@ export class PaymentsService {
 
     let amount = billingCycle === 'yearly' ? Number(plan.priceYearlyBdt) : Number(plan.priceMonthlyBdt);
     
-    if (tenant?.customPriceUsd) {
+    if (tenant?.customPriceUsd && plan.name.toLowerCase().includes('custom')) {
       const currencyRateInfo = await this.prisma.exchangeRate.findFirst({
         where: { effectiveDate: { lte: new Date() } },
         orderBy: { effectiveDate: 'desc' }
@@ -339,6 +340,17 @@ export class PaymentsService {
       );
     }
     return payment;
+  }
+
+  async getTenantPaymentHistory(tenantId: string) {
+    return this.prisma.payment.findMany({
+      where: { tenantId },
+      include: {
+        subscription: { include: { plan: true } },
+        addon: true
+      },
+      orderBy: { createdAt: 'desc' }
+    });
   }
 
   async getPendingManualPayments() {

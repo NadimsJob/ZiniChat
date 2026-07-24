@@ -19,6 +19,12 @@ export class MfsPaymentsController {
     return this.mfsPaymentsService.getAccounts();
   }
 
+  @Get('active-providers')
+  @UseGuards(JwtAuthGuard)
+  async getActiveProviders() {
+    return this.mfsPaymentsService.getActiveAccounts();
+  }
+
   @Post('accounts')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions('manage:tenants')

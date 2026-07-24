@@ -14,6 +14,12 @@ export class PaymentsController {
     return this.paymentsService.getConfig();
   }
 
+  @Get('my-history')
+  async getMyPaymentHistory(@Req() req: any) {
+    const tenantId = req.user.tenantId;
+    return this.paymentsService.getTenantPaymentHistory(tenantId);
+  }
+
   @Post('manual')
   async submitManualPayment(@Req() req: any, @Body() body: { planId: string, trxId: string, billingCycle: string, couponCode?: string }) {
     const tenantId = req.user.tenantId;

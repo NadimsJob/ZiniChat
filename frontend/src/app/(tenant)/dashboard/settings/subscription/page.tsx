@@ -82,7 +82,7 @@ export default function SubscriptionSettingsPage() {
   }, []);
 
   const handleSubscribe = async (planId: string) => {
-    router.push(`/dashboard/billing/pay-mfs?planId=${planId}&billingCycle=${billingCycle}`);
+    window.open(`/dashboard/billing/pay-mfs?planId=${planId}&billingCycle=${billingCycle}`, '_blank');
   };
 
   const handleApplyCoupon = async () => {
@@ -396,7 +396,7 @@ export default function SubscriptionSettingsPage() {
                 </div>
                 
                 <button 
-                  onClick={() => handleBuyAddon(addon.id)}
+                  onClick={() => window.open(`/dashboard/billing/pay-mfs?addonId=${addon.id}`, '_blank')}
                   className="w-full py-1 bg-surface-hover hover:bg-primary/20 hover:text-primary text-zinc-300 rounded-lg font-medium transition-colors text-[13px]"
                 >
                   {language === 'en' ? 'Purchase' : 'কিনুন'}

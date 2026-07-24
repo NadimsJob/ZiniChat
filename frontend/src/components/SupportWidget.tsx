@@ -22,7 +22,12 @@ export default function SupportWidget() {
   }, [isOpen]);
 
   useEffect(() => {
-    const handleOpenWidget = () => setIsOpen(true);
+    const handleOpenWidget = (e: any) => {
+      setIsOpen(true);
+      if (e.detail?.message) {
+        setInput(e.detail.message);
+      }
+    };
     window.addEventListener('open-support-widget', handleOpenWidget);
     return () => window.removeEventListener('open-support-widget', handleOpenWidget);
   }, []);
@@ -89,9 +94,10 @@ export default function SupportWidget() {
       {/* Floating Button */}
       <button
         onClick={() => setIsOpen(true)}
-        className={`fixed bottom-6 right-6 p-4 rounded-full bg-primary text-white shadow-lg hover:bg-primary/90 transition-transform duration-300 z-50 ${isOpen ? 'scale-0' : 'scale-100 hover:scale-110'}`}
+        className={`fixed bottom-6 right-6 px-5 py-3 rounded-full bg-primary text-white shadow-lg hover:bg-primary/90 transition-transform duration-300 z-50 flex items-center gap-2.5 ${isOpen ? 'scale-0' : 'scale-100 hover:scale-105'}`}
       >
         <MessageCircle className="w-6 h-6" />
+        <span className="font-semibold text-[14px]">Zinichat Assistant</span>
       </button>
 
       {/* Chat Window */}

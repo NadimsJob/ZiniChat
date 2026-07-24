@@ -79,9 +79,12 @@ export default function LoginPage() {
           ux_mode: 'popup'
         });
 
+        const container = document.getElementById('google-signin-div');
+        const containerWidth = container?.offsetWidth ? (container.offsetWidth > 400 ? 400 : container.offsetWidth) : 320;
+
         (window as any).google.accounts.id.renderButton(
-          document.getElementById('google-signin-div'),
-          { theme: 'outline', size: 'large', width: '100%' }
+          container,
+          { theme: 'outline', size: 'large', width: containerWidth, text: 'signin_with' }
         );
       } catch (err) {
         console.error('Error rendering Google button:', err);

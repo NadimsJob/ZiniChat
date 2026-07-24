@@ -82,10 +82,20 @@ export class MfsPaymentsService {
     }
 
     // Calculate new total including platform fee percentage
+    const parsedGateway = typeof payment.gatewayResponse === 'string' 
+      ? JSON.parse(payment.gatewayResponse) 
+      : (payment.gatewayResponse || {});
     const baseAmount = Number(payment.baseAmountBdt || payment.amountBdt);
-    const fraction = payment.baseAmountBdt 
-      ? Number(payment.amountBdt) - Number(payment.baseAmountBdt)
-      : Number(payment.amountBdt) % 1;
+    
+    let fraction = 0;
+    if (parsedGateway && parsedGateway.fractionOffset !== undefined) {
+      fraction = Number(parsedGateway.fractionOffset);
+    } else {
+      fraction = payment.baseAmountBdt 
+        ? Number(payment.amountBdt) - Number(payment.baseAmountBdt)
+        : Number(payment.amountBdt) % 1;
+    }
+
     const chargePercent = Number(account.chargePercent || 0);
     const chargeAmount = Number((baseAmount * (chargePercent / 100)).toFixed(2));
     const totalAmount = Number((baseAmount + chargeAmount + fraction).toFixed(2));
@@ -95,7 +105,8 @@ export class MfsPaymentsService {
       where: { id: paymentId },
       data: { 
         provider: providerKey.toLowerCase(),
-        amountBdt: totalAmount
+        amountBdt: totalAmount,
+        gatewayResponse: { ...parsedGateway, fractionOffset: fraction }
       },
     });
 
@@ -127,6 +138,13 @@ export class MfsPaymentsService {
   async getAccounts() {
     return this.prisma.mfsAccount.findMany({
       orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async getActiveAccounts() {
+    return this.prisma.mfsAccount.findMany({
+      where: { isActive: true },
+      orderBy: { provider: 'asc' },
     });
   }
 
@@ -404,6 +422,29 @@ export class MfsPaymentsService {
         }
       }
 
+      // Auto-cancel any other pending/failed payments for the same item
+      if (payment.addonId) {
+        await this.prisma.payment.updateMany({
+          where: {
+            tenantId: payment.tenantId,
+            addonId: payment.addonId,
+            id: { not: payment.id },
+            status: { in: ['pending', 'failed'] },
+          },
+          data: { status: 'cancelled' },
+        });
+      } else if (payment.subscriptionId) {
+        await this.prisma.payment.updateMany({
+          where: {
+            tenantId: payment.tenantId,
+            subscriptionId: payment.subscriptionId,
+            id: { not: payment.id },
+            status: { in: ['pending', 'failed'] },
+          },
+          data: { status: 'cancelled' },
+        });
+      }
+
       await this.notificationsService.createSystemNotificationForSuperadmins(
         '🟢 পেমেন্ট অটো-ভেরিফাইড (SMS)',
         `টেন্যান্ট ${tenant?.businessName || 'Tenant'} এর TrxID ${cleanTrxId} এর BDT ${actualAmount} পেমেন্ট অটো-ভেরিফাই সফল হয়েছে।`,
@@ -471,6 +512,29 @@ export class MfsPaymentsService {
       await this.prisma.subscription.update({
         where: { id: payment.subscriptionId },
         data: { status: 'active', currentPeriodEnd: new Date(Date.now() + periodDays * 24 * 60 * 60 * 1000) },
+      });
+    }
+
+    // Auto-cancel duplicate pending attempts
+    if (payment.addonId) {
+      await this.prisma.payment.updateMany({
+        where: {
+          tenantId: payment.tenantId,
+          addonId: payment.addonId,
+          id: { not: payment.id },
+          status: { in: ['pending', 'failed'] },
+        },
+        data: { status: 'cancelled' },
+      });
+    } else if (payment.subscriptionId) {
+      await this.prisma.payment.updateMany({
+        where: {
+          tenantId: payment.tenantId,
+          subscriptionId: payment.subscriptionId,
+          id: { not: payment.id },
+          status: { in: ['pending', 'failed'] },
+        },
+        data: { status: 'cancelled' },
       });
     }
 
