@@ -101,29 +101,33 @@ export class PaymentsService {
     const owner = await this.prisma.user.findFirst({ where: { tenantId, role: { in: ['owner', 'admin'] } } });
 
     // 5. Send emails (fire & forget)
-    if (owner) {
-      this.smtpService.triggerPaymentSubmittedEmail(
-        owner.email, tenant?.businessName || 'Tenant', String(amount), trxId
+    if (!trxId.startsWith('PENDING_')) {
+      if (owner) {
+        this.smtpService.triggerPaymentSubmittedEmail(
+          owner.email, tenant?.businessName || 'Tenant', String(amount), trxId
+        ).catch(() => {});
+      }
+      this.smtpService.triggerPaymentPendingAdminEmail(
+        tenant?.businessName || 'Tenant', String(amount), trxId
       ).catch(() => {});
     }
-    this.smtpService.triggerPaymentPendingAdminEmail(
-      tenant?.businessName || 'Tenant', String(amount), trxId
-    ).catch(() => {});
 
     // 6. In-app notifications
-    if (owner) {
-      await this.notificationsService.createNotification(
-        owner.id,
-        '✅ পেমেন্ট সাবমিট হয়েছে',
-        `আপনার পেমেন্ট (TrxID: ${trxId}) গ্রহণ করা হয়েছে। অনুমোদনের অপেক্ষায় আছে।`,
+    if (!trxId.startsWith('PENDING_')) {
+      if (owner) {
+        await this.notificationsService.createNotification(
+          owner.id,
+          '✅ পেমেন্ট সাবমিট হয়েছে',
+          `আপনার পেমেন্ট (TrxID: ${trxId}) গ্রহণ করা হয়েছে। অনুমোদনের অপেক্ষায় আছে।`,
+          'billing'
+        );
+      }
+      await this.notificationsService.createSystemNotificationForSuperadmins(
+        '🔔 নতুন পেমেন্ট ভেরিফিকেশন',
+        `${tenant?.businessName || 'একটি টেন্যান্ট'} TrxID "${trxId}" দিয়ে ${amount} BDT পেমেন্ট সাবমিট করেছে।`,
         'billing'
       );
     }
-    await this.notificationsService.createSystemNotificationForSuperadmins(
-      '🔔 নতুন পেমেন্ট ভেরিফিকেশন',
-      `${tenant?.businessName || 'একটি টেন্যান্ট'} TrxID "${trxId}" দিয়ে ${amount} BDT পেমেন্ট সাবমিট করেছে।`,
-      'billing'
-    );
 
     return payment;
   }
@@ -212,32 +216,11 @@ export class PaymentsService {
     const amount = Number(addon.priceBdt);
     const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
 
-    // Generate unique decimal offset
-    const pendingPayments = await this.prisma.payment.findMany({
-      where: { status: 'pending', provider: { in: ['manual', 'bkash', 'nagad', 'rocket', 'upay', 'bangla_qr'] } },
-      select: { amountBdt: true }
-    });
-    const usedAmounts = new Set(pendingPayments.map(p => Number(p.amountBdt).toFixed(2)));
-
-    let finalAmount = amount;
-    let foundUnique = false;
-    for (let i = 1; i <= 99; i++) {
-      const candidate = (amount + i / 100).toFixed(2);
-      if (!usedAmounts.has(candidate)) {
-        finalAmount = Number(candidate);
-        foundUnique = true;
-        break;
-      }
-    }
-    if (!foundUnique) {
-      finalAmount = Number((amount + (Math.floor(Math.random() * 99 + 1) / 100)).toFixed(2));
-    }
-
     const payment = await this.prisma.payment.create({
       data: {
         tenantId,
         addonId: addon.id,
-        amountBdt: finalAmount,
+        amountBdt: amount,
         baseAmountBdt: amount,
         provider: 'manual',
         status: 'pending',
@@ -247,23 +230,25 @@ export class PaymentsService {
 
     const owner = await this.prisma.user.findFirst({ where: { tenantId, role: { in: ['owner', 'admin'] } } });
 
-    if (owner) {
-      this.smtpService.triggerPaymentSubmittedEmail(
-        owner.email, tenant?.businessName || 'Tenant', String(amount), trxId
-      ).catch(() => {});
-      
-      await this.notificationsService.createNotification(
-        owner.id,
-        '✅ অ্যাড-অন পেমেন্ট সাবমিট হয়েছে',
-        `আপনার অ্যাড-অন পেমেন্ট (TrxID: ${trxId}) গ্রহণ করা হয়েছে। অনুমোদনের অপেক্ষায় আছে।`,
+    if (!trxId.startsWith('PENDING_')) {
+      if (owner) {
+        this.smtpService.triggerPaymentSubmittedEmail(
+          owner.email, tenant?.businessName || 'Tenant', String(amount), trxId
+        ).catch(() => {});
+        
+        await this.notificationsService.createNotification(
+          owner.id,
+          '✅ অ্যাড-অন পেমেন্ট সাবমিট হয়েছে',
+          `আপনার অ্যাড-অন পেমেন্ট (TrxID: ${trxId}) গ্রহণ করা হয়েছে। অনুমোদনের অপেক্ষায় আছে।`,
+          'billing'
+        );
+      }
+      await this.notificationsService.createSystemNotificationForSuperadmins(
+        '🔔 নতুন অ্যাড-অন পেমেন্ট',
+        `${tenant?.businessName || 'একটি টেন্যান্ট'} TrxID "${trxId}" দিয়ে ${amount} BDT পেমেন্ট সাবমিট করেছে।`,
         'billing'
       );
     }
-    await this.notificationsService.createSystemNotificationForSuperadmins(
-      '🔔 নতুন অ্যাড-অন পেমেন্ট',
-      `${tenant?.businessName || 'একটি টেন্যান্ট'} TrxID "${trxId}" দিয়ে ${amount} BDT পেমেন্ট সাবমিট করেছে।`,
-      'billing'
-    );
 
     return payment;
   }
