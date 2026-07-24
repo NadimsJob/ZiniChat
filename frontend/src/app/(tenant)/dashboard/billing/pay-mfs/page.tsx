@@ -568,16 +568,17 @@ function PayMfsContent() {
 
       </div>
 
-      {/* Payment Drawer Modal matching professional checkout view */}
+      {/* Payment Drawer Modal matching professional checkout view (epay.corp.com.bd design) */}
       {showPaymentModal && selectedAccount && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl w-full max-w-md p-6 shadow-2xl space-y-5 animate-in zoom-in-95 relative">
+          <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl w-full max-w-md p-6 shadow-2xl space-y-4 animate-in zoom-in-95 relative max-h-[95vh] overflow-y-auto">
             
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-3">
               <div className="flex items-center gap-2">
-                <span className="font-extrabold text-[15px]">
-                  Pay with {selectedAccount.name || selectedAccount.provider}
+                <CreditCard className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                <span className="font-extrabold text-[16px] capitalize">
+                  {selectedAccount.name || selectedAccount.provider}
                 </span>
               </div>
               <button
@@ -588,107 +589,128 @@ function PayMfsContent() {
               </button>
             </div>
 
-            {/* Amount Badge in Modal */}
-            <div className="bg-emerald-500/10 border border-emerald-500/30 p-3 rounded-2xl text-center space-y-0.5">
-              <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block">
-                {language === 'en' ? 'Exact Amount to Pay' : 'পরিশোধের সর্বমোট পরিমাণ'}
-              </span>
-              <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
-                {formatBdtDirect(qrPayload?.amount || payment?.amountBdt || 0)}
-              </span>
-            </div>
-
-            {/* Timer Banner */}
-            <div className="flex items-center justify-between p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-[12px] font-bold">
-              <span className="flex items-center gap-1.5">
-                <Clock className="w-4 h-4" /> Time Remaining
-              </span>
-              <span className="font-mono text-sm">{formatTime(timeLeft)}</span>
-            </div>
-
-            {/* QR Code / Payment Instructions */}
-            <div className="text-center space-y-3">
-              {qrPayload ? (
-                <>
-                  {/* Dynamic or Uploaded QR Code */}
-                  <div className="p-4 rounded-2xl bg-white border border-slate-200 inline-block shadow-inner">
-                    <img 
-                      src={
-                        qrPayload.qrCodeUrl || 
-                        (qrPayload.qrCodeData?.startsWith('http') || qrPayload.qrCodeData?.startsWith('/') 
-                          ? qrPayload.qrCodeData 
-                          : `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(qrPayload.qrCodeData || selectedAccount.number)}`)
-                      } 
-                      alt="Payment QR Code"
-                      className="w-48 h-48 mx-auto object-contain"
-                    />
-                  </div>
-
-                  <div className="text-[13px] font-bold text-muted-foreground">
-                    <span>Open App → Scan QR → Confirm</span>
-                  </div>
-
-                  <div className="bg-slate-50 dark:bg-zinc-950 p-3 rounded-2xl border border-slate-200 dark:border-zinc-800 space-y-1">
-                    <span className="text-[10px] text-muted-foreground uppercase font-bold block">
-                      Send to Number ({selectedAccount.accountType || 'MERCHANT'})
-                    </span>
-                    <div className="flex items-center justify-center gap-2">
-                      <span className="font-mono font-bold text-lg text-emerald-600 dark:text-emerald-400">
-                        {qrPayload.number || selectedAccount.number}
-                      </span>
-                      <button
-                        onClick={() => handleCopy(qrPayload.number || selectedAccount.number, 'num')}
-                        className="p-1 hover:bg-slate-200 dark:hover:bg-zinc-800 rounded transition-colors text-muted-foreground"
-                      >
-                        {copiedField === 'num' ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div className="py-12 flex flex-col items-center justify-center gap-2">
-                  <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
-                  <span className="text-[12px] text-muted-foreground">Generating QR Payload...</span>
-                </div>
-              )}
-            </div>
-
-            {/* Real-time Loader & Manual TrxID Input */}
-            <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-zinc-800">
-              <div className="flex items-center justify-center gap-2 text-[12px] text-emerald-600 dark:text-emerald-400 font-bold animate-pulse">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Waiting for your payment...</span>
+            {/* Account Info Summary Card (Grey rounded box matching epay) */}
+            <div className="bg-slate-50 dark:bg-zinc-950 p-3.5 rounded-2xl border border-slate-200 dark:border-zinc-800 space-y-2 text-[13px]">
+              <div className="flex justify-between items-center">
+                <span className="text-muted-foreground font-medium">Gateway</span>
+                <span className="font-bold capitalize">{selectedAccount.provider}</span>
               </div>
+              <div className="flex justify-between items-center">
+                <span className="text-muted-foreground font-medium">Type</span>
+                <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                  {selectedAccount.accountType === 'MERCHANT' ? 'Merchant Payment' : (selectedAccount.accountType === 'AGENT' ? 'Cash Out' : 'Send Money')}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-muted-foreground font-medium">Number</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono font-bold text-slate-900 dark:text-white bg-slate-200/60 dark:bg-zinc-800 px-2 py-0.5 rounded text-[13px]">
+                    {selectedAccount.number}
+                  </span>
+                  <button
+                    onClick={() => handleCopy(selectedAccount.number, 'num')}
+                    className="text-emerald-600 hover:text-emerald-500 font-bold text-[12px] flex items-center gap-1"
+                  >
+                    {copiedField === 'num' ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedField === 'num' ? 'Copied' : 'Copy'}</span>
+                  </button>
+                </div>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-muted-foreground font-medium">Order ID</span>
+                <span className="font-mono text-muted-foreground font-semibold">
+                  {payment?.id ? `ebpay-${payment.id.slice(0, 6)}` : 'ebpay123'}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-muted-foreground font-medium">Auto-Verify</span>
+                <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1 text-[12px]">
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Enabled
+                </span>
+              </div>
+            </div>
 
-              {showTrxField ? (
-                <div className="space-y-2 pt-2">
-                  <input
-                    type="text"
-                    placeholder="Enter TrxID or Last 4 Digits"
-                    value={trxId}
-                    onChange={(e) => setTrxId(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl px-3 py-2 text-[13px] font-mono font-bold text-center uppercase"
-                  />
-                  <button
-                    onClick={handleManualVerify}
-                    disabled={verifying || !trxId.trim()}
-                    className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold transition-all text-[12px] flex items-center justify-center gap-1.5 disabled:opacity-50"
-                  >
-                    {verifying ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
-                    <span>Verify Payment</span>
-                  </button>
-                </div>
-              ) : (
-                <div className="text-center">
-                  <button
-                    type="button"
-                    onClick={() => setShowTrxField(true)}
-                    className="text-[11px] text-muted-foreground hover:text-foreground underline transition-all font-medium"
-                  >
-                    Or enter TrxID / Last 4 Digits manually
-                  </button>
-                </div>
-              )}
+            {/* Step-by-Step Payment Instructions Card (Light green card with left border) */}
+            <div className="bg-emerald-500/5 dark:bg-emerald-500/10 border-l-4 border-emerald-500 rounded-r-2xl p-4 text-[13px] space-y-2 font-medium">
+              <div className="flex gap-2">
+                <span className="font-bold text-emerald-600 shrink-0">1.</span>
+                <span>
+                  {selectedAccount.provider.toUpperCase()} মোবাইল মেনু বা অ্যাপে যান।
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <span className="font-bold text-emerald-600 shrink-0">2.</span>
+                <span>
+                  "<strong className="text-emerald-600 dark:text-emerald-400">{selectedAccount.accountType === 'MERCHANT' ? 'Payment' : (selectedAccount.accountType === 'AGENT' ? 'Cash Out' : 'Send Money')}</strong>" অপশনে ক্লিক করুন।
+                </span>
+              </div>
+              <div className="flex gap-2 items-center">
+                <span className="font-bold text-emerald-600 shrink-0">3.</span>
+                <span className="flex items-center gap-1">
+                  নম্বর: <strong className="font-mono">{selectedAccount.number}</strong>
+                  <button onClick={() => handleCopy(selectedAccount.number, 'num')} className="text-emerald-600 hover:underline text-[11px] font-bold ml-1">Copy</button>
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <span className="font-bold text-emerald-600 shrink-0">4.</span>
+                <span>
+                  টাকার পরিমাণ: <strong className="font-mono text-emerald-600 dark:text-emerald-400 text-[14px]">{formatBdtDirect(qrPayload?.amount || payment?.amountBdt || 0)}</strong>
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <span className="font-bold text-emerald-600 shrink-0">5.</span>
+                <span>পিন লিখুন এবং পেমেন্ট নিশ্চিত করুন।</span>
+              </div>
+              <div className="flex gap-2">
+                <span className="font-bold text-emerald-600 shrink-0">6.</span>
+                <span>Transaction ID (বা শেষ ৪ ডিজিট) নিচে দিয়ে VERIFY করুন।</span>
+              </div>
+            </div>
+
+            {/* Auto-Verifying Status Banner */}
+            <div className="bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-2xl p-3 text-center space-y-1">
+              <div className="flex items-center justify-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold text-[12px] animate-pulse">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Auto-Verifying...</span>
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Checking reference order ID: <strong className="font-mono">{payment?.id ? `ebpay-${payment.id.slice(0, 6)}` : 'ebpay123'}</strong>
+              </p>
+            </div>
+
+            {/* Enter Transaction ID Form Section */}
+            <div className="space-y-3 pt-1">
+              <label className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground block">
+                ENTER TRANSACTION ID
+              </label>
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  placeholder="Enter TRXID or Last 4 Digits"
+                  value={trxId}
+                  onChange={(e) => setTrxId(e.target.value)}
+                  className="w-full bg-white dark:bg-zinc-950 border-2 border-slate-200 dark:border-zinc-800 focus:border-emerald-500 dark:focus:border-emerald-500 rounded-2xl px-4 py-3 text-[14px] font-mono font-bold text-center uppercase tracking-widest outline-none transition-all"
+                />
+                <button
+                  onClick={handleManualVerify}
+                  disabled={verifying || !trxId.trim()}
+                  className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-bold transition-all text-[14px] shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {verifying ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-5 h-5" />}
+                  <span>VERIFY</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Close Button */}
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => setShowPaymentModal(false)}
+                className="w-full py-2.5 bg-slate-200 dark:bg-zinc-800 hover:bg-slate-300 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 rounded-xl font-bold transition-colors text-[13px]"
+              >
+                Close
+              </button>
             </div>
 
           </div>

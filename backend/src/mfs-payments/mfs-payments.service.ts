@@ -86,19 +86,9 @@ export class MfsPaymentsService {
       ? JSON.parse(payment.gatewayResponse) 
       : (payment.gatewayResponse || {});
     const baseAmount = Number(payment.baseAmountBdt || payment.amountBdt);
-    
-    let fraction = 0;
-    if (parsedGateway && parsedGateway.fractionOffset !== undefined) {
-      fraction = Number(parsedGateway.fractionOffset);
-    } else {
-      fraction = payment.baseAmountBdt 
-        ? Number(payment.amountBdt) - Number(payment.baseAmountBdt)
-        : Number(payment.amountBdt) % 1;
-    }
-
     const chargePercent = Number(account.chargePercent || 0);
     const chargeAmount = Number((baseAmount * (chargePercent / 100)).toFixed(2));
-    const totalAmount = Number((baseAmount + chargeAmount + fraction).toFixed(2));
+    const totalAmount = Number((baseAmount + chargeAmount).toFixed(2));
 
     // Save/sync provider and calculated total amount to the payment invoice
     await this.prisma.payment.update({
@@ -106,18 +96,8 @@ export class MfsPaymentsService {
       data: { 
         provider: providerKey.toLowerCase(),
         amountBdt: totalAmount,
-        gatewayResponse: { ...parsedGateway, fractionOffset: fraction }
       },
     });
-
-    let qrCodeData = '';
-    if (account.qrCodeUrl) {
-      qrCodeData = account.qrCodeUrl;
-    } else if (account.accountType === 'MERCHANT' || providerKey === 'BANGLA_QR') {
-      qrCodeData = this.generateBanglaQr(account.provider, account.number, totalAmount, account.merchantId || undefined);
-    } else {
-      qrCodeData = '';
-    }
 
     return {
       paymentId: payment.id,
@@ -125,13 +105,12 @@ export class MfsPaymentsService {
       baseAmount,
       chargePercent,
       chargeAmount,
-      fraction,
+      fraction: 0,
       provider: providerKey,
       number: account.number,
       accountType: account.accountType,
       bankName: account.bankName,
       routingNumber: account.routingNumber,
-      qrCodeData, // EMVCo text for dynamic QR, or image URL for static QR
       qrCodeUrl: account.qrCodeUrl,
     };
   }
@@ -275,10 +254,28 @@ export class MfsPaymentsService {
       let smsTx: any = null;
 
       if (cleanTrxId) {
-        // Find by TrxID
+        // Find by TrxID exact match first
         smsTx = await tx.mfsTransaction.findUnique({
           where: { trxId: cleanTrxId },
         });
+
+        // If not found by exact match, search by last 4 (or N) digits of TrxID
+        if (!smsTx) {
+          const recentTxs = await tx.mfsTransaction.findMany({
+            where: {
+              isUsed: false,
+              createdAt: {
+                gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // Within last 24 hours
+              },
+            },
+            orderBy: { createdAt: 'desc' },
+          });
+
+          smsTx = recentTxs.find(t => {
+            const tTrx = t.trxId.trim().toUpperCase();
+            return tTrx.endsWith(cleanTrxId) || tTrx === cleanTrxId;
+          });
+        }
       } else if (cleanSenderNumber) {
         // Find by amount and matching sender number (matching full number or last 4 digits)
         const recentTxs = await tx.mfsTransaction.findMany({

@@ -83,38 +83,17 @@ export class PaymentsService {
       });
     }
 
-    // 3. Generate unique decimal offset to avoid same-amount collisions
-    const pendingPayments = await this.prisma.payment.findMany({
-      where: { status: 'pending', provider: { in: ['manual', 'bkash', 'nagad', 'rocket', 'upay', 'bangla_qr'] } },
-      select: { amountBdt: true }
-    });
-    const usedAmounts = new Set(pendingPayments.map(p => Number(p.amountBdt).toFixed(2)));
-
-    let finalAmount = amount;
-    let foundUnique = false;
-    for (let i = 1; i <= 99; i++) {
-      const candidate = (amount + i / 100).toFixed(2);
-      if (!usedAmounts.has(candidate)) {
-        finalAmount = Number(candidate);
-        foundUnique = true;
-        break;
-      }
-    }
-    if (!foundUnique) {
-      finalAmount = Number((amount + (Math.floor(Math.random() * 99 + 1) / 100)).toFixed(2));
-    }
-
-    // 4. Create Payment record
+    // 3. Create Payment record (exact amount, no fraction offset)
     const payment = await this.prisma.payment.create({
       data: { 
         tenantId, 
         subscriptionId: subscription.id, 
-        amountBdt: finalAmount, 
+        amountBdt: amount, 
         baseAmountBdt: amount, 
         provider: 'manual', 
         status: 'pending', 
         trxId,
-        gatewayResponse: { fractionOffset: Number((finalAmount - amount).toFixed(2)) }
+        gatewayResponse: { message: 'Invoice created' }
       }
     });
 
