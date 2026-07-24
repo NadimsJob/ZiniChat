@@ -545,10 +545,15 @@ function PayMfsContent() {
           </div>
 
           {/* Footer Contact Support Button */}
-          <div className="pt-3 border-t border-slate-100 dark:border-zinc-800/80 flex justify-between items-center text-[11px]">
-            <span className="text-muted-foreground">
+          <div className="pt-3 border-t border-slate-100 dark:border-zinc-800/80 flex flex-col sm:flex-row sm:justify-between items-start sm:items-center text-[11px] gap-3">
+            <div className="text-muted-foreground">
               {language === 'en' ? 'Having payment issues?' : 'পেমেন্ট নিয়ে কোনো সমস্যা হচ্ছে?'}
-            </span>
+              <div className="mt-1 flex items-center gap-2 font-mono text-[11px] text-slate-700 dark:text-zinc-300">
+                <a href="tel:01533894967" className="hover:text-emerald-600 transition-colors flex items-center gap-1">📞 01533894967</a>
+                <span className="text-slate-300 dark:text-zinc-700">|</span>
+                <a href="mailto:support@zinichat.com" className="hover:text-emerald-600 transition-colors flex items-center gap-1">✉️ support@zinichat.com</a>
+              </div>
+            </div>
             <button
               type="button"
               onClick={(e) => {
@@ -557,10 +562,10 @@ function PayMfsContent() {
                   detail: { message: language === 'en' ? 'I am having an issue with my payment.' : 'আমার পেমেন্ট করতে সমস্যা হচ্ছে।' }
                 }));
               }}
-              className="text-emerald-600 dark:text-emerald-400 font-bold hover:underline flex items-center gap-1 transition-colors"
+              className="text-emerald-600 dark:text-emerald-400 font-bold hover:underline flex items-center gap-1 transition-colors bg-emerald-50 dark:bg-emerald-500/10 px-3 py-1.5 rounded-lg shrink-0"
             >
               <HelpCircle className="w-3.5 h-3.5" />
-              {language === 'en' ? 'Contact Support' : 'সাপোর্ট টিমের সাথে যোগাযোগ করুন'}
+              {language === 'en' ? 'Live Chat' : 'লাইভ চ্যাট সাপোর্ট'}
             </button>
           </div>
 
@@ -619,7 +624,7 @@ function PayMfsContent() {
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground font-medium">Order ID</span>
                 <span className="font-mono text-muted-foreground font-semibold">
-                  {payment?.id ? `ebpay-${payment.id.slice(0, 6)}` : 'ebpay123'}
+                  {payment?.id ? `ZC-${payment.id.slice(0, 6).toUpperCase()}` : 'ZC-123456'}
                 </span>
               </div>
               <div className="flex justify-between items-center">
@@ -641,7 +646,7 @@ function PayMfsContent() {
                   {(qrPayload?.qrCodeUrl || selectedAccount.qrCodeUrl) && (
                     <div className="my-2 p-2 bg-white rounded-xl inline-block shadow-sm">
                       <img 
-                        src={qrPayload?.qrCodeUrl || selectedAccount.qrCodeUrl} 
+                        src={(qrPayload?.qrCodeUrl || selectedAccount.qrCodeUrl).startsWith('http') ? (qrPayload?.qrCodeUrl || selectedAccount.qrCodeUrl) : `${API}${(qrPayload?.qrCodeUrl || selectedAccount.qrCodeUrl)}`} 
                         alt="Bangla QR Code" 
                         className="w-40 h-40 object-contain mx-auto"
                       />
@@ -649,8 +654,13 @@ function PayMfsContent() {
                   )}
                   <div className="flex gap-2">
                     <span className="font-bold text-emerald-600 shrink-0">2.</span>
-                    <span>
-                      টাকার পরিমাণ: <strong className="font-mono text-emerald-600 dark:text-emerald-400 text-[14px]">{formatBdtDirect(qrPayload?.amount || payment?.amountBdt || 0)}</strong>
+                    <span className="flex flex-col">
+                      <span>টাকার পরিমাণ: <strong className="font-mono text-emerald-600 dark:text-emerald-400 text-[14px]">{formatBdtDirect(qrPayload?.amount || payment?.amountBdt || 0)}</strong></span>
+                      {qrPayload?.chargeAmount > 0 && (
+                        <span className="text-[10px] text-muted-foreground mt-0.5 leading-tight">
+                          (Base: {formatBdtDirect(qrPayload.baseAmount)} + Gateway Fee {qrPayload.chargePercent}%: {formatBdtDirect(qrPayload.chargeAmount)})
+                        </span>
+                      )}
                     </span>
                   </div>
                   <div className="flex gap-2">
@@ -690,8 +700,13 @@ function PayMfsContent() {
                   </div>
                   <div className="flex gap-2">
                     <span className="font-bold text-emerald-600 shrink-0">4.</span>
-                    <span>
-                      টাকার পরিমাণ: <strong className="font-mono text-emerald-600 dark:text-emerald-400 text-[14px]">{formatBdtDirect(qrPayload?.amount || payment?.amountBdt || 0)}</strong>
+                    <span className="flex flex-col">
+                      <span>টাকার পরিমাণ: <strong className="font-mono text-emerald-600 dark:text-emerald-400 text-[14px]">{formatBdtDirect(qrPayload?.amount || payment?.amountBdt || 0)}</strong></span>
+                      {qrPayload?.chargeAmount > 0 && (
+                        <span className="text-[10px] text-muted-foreground mt-0.5 leading-tight">
+                          (Base: {formatBdtDirect(qrPayload.baseAmount)} + Gateway Fee {qrPayload.chargePercent}%: {formatBdtDirect(qrPayload.chargeAmount)})
+                        </span>
+                      )}
                     </span>
                   </div>
                   <div className="flex gap-2">
@@ -726,8 +741,13 @@ function PayMfsContent() {
                   </div>
                   <div className="flex gap-2">
                     <span className="font-bold text-emerald-600 shrink-0">4.</span>
-                    <span>
-                      টাকার পরিমাণ: <strong className="font-mono text-emerald-600 dark:text-emerald-400 text-[14px]">{formatBdtDirect(qrPayload?.amount || payment?.amountBdt || 0)}</strong>
+                    <span className="flex flex-col">
+                      <span>টাকার পরিমাণ: <strong className="font-mono text-emerald-600 dark:text-emerald-400 text-[14px]">{formatBdtDirect(qrPayload?.amount || payment?.amountBdt || 0)}</strong></span>
+                      {qrPayload?.chargeAmount > 0 && (
+                        <span className="text-[10px] text-muted-foreground mt-0.5 leading-tight">
+                          (Base: {formatBdtDirect(qrPayload.baseAmount)} + Gateway Fee {qrPayload.chargePercent}%: {formatBdtDirect(qrPayload.chargeAmount)})
+                        </span>
+                      )}
                     </span>
                   </div>
                   <div className="flex gap-2">
@@ -749,7 +769,7 @@ function PayMfsContent() {
                 <span>Auto-Verifying...</span>
               </div>
               <p className="text-[11px] text-muted-foreground">
-                Checking reference order ID: <strong className="font-mono">{payment?.id ? `ebpay-${payment.id.slice(0, 6)}` : 'ebpay123'}</strong>
+                Checking reference order ID: <strong className="font-mono">{payment?.id ? `ZC-${payment.id.slice(0, 6).toUpperCase()}` : 'ZC-123456'}</strong>
               </p>
             </div>
 
