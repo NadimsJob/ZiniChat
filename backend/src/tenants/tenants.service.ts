@@ -8,6 +8,10 @@ export class TenantsService {
   async findAll() {
     const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 
+    const defaultPlan = await this.prisma.plan.findFirst({
+      where: { OR: [{ isDefault: true }, { priceMonthlyBdt: 0 }] }
+    });
+
     const tenants = await this.prisma.tenant.findMany({
       orderBy: { createdAt: 'desc' },
       include: {
@@ -20,9 +24,8 @@ export class TenantsService {
           select: { users: true, conversations: true },
         },
         subscriptions: {
-          orderBy: { currentPeriodEnd: 'desc' },
-          include: { plan: true },
-          take: 1
+          orderBy: { createdAt: 'desc' },
+          include: { plan: true }
         },
         usageLogs: {
           where: { createdAt: { gte: startOfMonth } },
@@ -35,8 +38,11 @@ export class TenantsService {
     });
 
     return tenants.map(t => {
-      const activeSub = t.subscriptions[0];
-      const aiLimit = activeSub?.plan?.aiQuota || 50;
+      const activeSub = t.subscriptions.find(s => s.status === 'active' || s.status === 'trialing');
+      const latestSub = t.subscriptions[0];
+      const effectivePlan = activeSub?.plan || defaultPlan || latestSub?.plan || null;
+      const subStatus = activeSub ? activeSub.status : (latestSub ? latestSub.status : 'none');
+      const aiLimit = effectivePlan?.aiQuota || 50;
       const aiUsed = t.usageLogs.length;
 
       return {
@@ -53,9 +59,9 @@ export class TenantsService {
           limit: aiLimit,
           used: aiUsed
         },
-        subscriptionStatus: activeSub?.status || 'none',
-        currentPeriodEnd: activeSub?.currentPeriodEnd || null,
-        planName: activeSub?.plan?.name || 'No Plan',
+        subscriptionStatus: subStatus,
+        currentPeriodEnd: (activeSub || latestSub)?.currentPeriodEnd || null,
+        planName: effectivePlan?.name || 'No Plan',
         customPlanName: t.customPlanName,
         customPriceUsd: t.customPriceUsd,
         customMessageQuota: t.customMessageQuota,
@@ -68,7 +74,7 @@ export class TenantsService {
         customAllowByok: t.customAllowByok,
         customFeatures: t.customFeatures,
         trialEndsAt: t.trialEndsAt,
-        basePlan: activeSub?.plan || null
+        basePlan: effectivePlan
       };
     });
   }
