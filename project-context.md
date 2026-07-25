@@ -21,12 +21,11 @@ A multi-tenant SaaS platform where businesses (tenants) manage customer communic
 ---
 
 ## 3. Current Status & Active Focus
-- **Active Focus**: Fixing Facebook OAuth flows to use the real Graph API instead of mocks, implementing proper UI-level feature gating for subscription plans (e.g. locking Instagram DMs), and ensuring UI consistency across channel connection pages.
-- **Recent Issues Fixed**: Removed mock Facebook OAuth bypasses for Messenger and Instagram, replaced with real Graph API token exchanges. Fixed Support Ticket creation UI to include toast notifications. Updated AI Support Chat to properly trigger SMTP and Web Notifications to Superadmins when auto-escalating tickets (Event Parity).
-- **System**: Backend (NestJS), Frontend (Next.js), Mobile (Kotlin Android app). Bilingual support enabled (English/Bengali) across UI components. Tickets. Implemented strict feature gating for Support AI, Team Management, and Contact Labels via Superadmin Plan settings. Extracted and animated the 2-Minute Setup Widget on the marketing pages.
-- **Next Up:** Complete deployment to test and live servers using MCP, verify live data workflows.
+- **Active Focus**: WhatsApp Meta Template System with Resumable Upload API & Live Phone Preview, per-channel AI auto-reply toggles, per-platform channel quotas, and automated server deployment.
+- **Recent Implementations & Fixes**: Implemented full Meta Graph API WhatsApp Template submission (`POST /message_templates`) with Resumable Upload API support for Media Headers (Image/PDF/Video). Built dynamic variable sample inputs (`{{1}}`, `{{2}}`) and a Live WhatsApp Phone Preview frame in the tenant dashboard. Added Webhook event listener (`message_template_status_update`) for automatic status updates (`APPROVED`/`REJECTED`) and real-time socket notifications. Converted Superadmin Templates UI to a read-only Meta status monitoring view. Verified with 11/11 passing unit tests and clean Next.js build. Pushed to Git and deployed to Live VPS via MCP tool.
+- **System**: Backend (NestJS), Frontend (Next.js), Mobile (Kotlin Android app). Bilingual support enabled (English/Bengali) across UI components. Implemented strict feature gating for Support AI, Team Management, and Contact Labels via Superadmin Plan settings.
+- **Next Up**: Monitor Meta webhook callbacks in production, build additional campaign analytics reporting.
 - Subscription logic, quotas (messages, AI tokens, storage, platform channels), and superadmin customizations have been strictly enforced on the backend via `QuotaService` and `FeatureGuard`.
-- Direct PC-to-Server deployment scripts (MCP Server) have been deprecated and deleted to enforce Git-only deployment constraints.
 - **Live and Staging Environments are fully deployed with Traefik routing, reverse proxy networking, and SSL certificates.**
 - **Performance & Load Testing has been completed directly on VPS. Capacity projections indicate 1,500+ Tenants (Official API) or 50+ (Unofficial Baileys QR) per 8GB RAM node.**
 - **Database vector search is optimized with HNSW indexes to eliminate SSD Sequential Scans and minimize Disk I/O.**
