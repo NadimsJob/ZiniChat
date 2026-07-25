@@ -325,7 +325,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
       <main className="flex-1 flex flex-col min-w-0">
         
         {/* Topbar */}
-        <header className="h-12 px-3 flex items-center justify-between shrink-0 bg-surface/70 backdrop-blur-xl border-b border-border shadow-sm relative z-10">
+        <header className="h-12 px-3 flex items-center justify-between shrink-0 bg-surface/70 backdrop-blur-xl border-b border-border shadow-sm relative z-[60]">
           <div className="flex items-center gap-2">
             <button 
               className="md:hidden p-1.5 -ml-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
