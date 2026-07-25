@@ -8,6 +8,17 @@ import Link from 'next/link';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+const parseFeaturesArray = (features: any): string[] => {
+  if (Array.isArray(features)) return features;
+  if (typeof features === 'string') {
+    try {
+      const parsed = JSON.parse(features);
+      if (Array.isArray(parsed)) return parsed;
+    } catch (e) {}
+  }
+  return [];
+};
+
 export default function TenantsPage() {
   const [tenants, setTenants] = useState<any[]>([]);
   const [aiConfigs, setAiConfigs] = useState<any[]>([]);
@@ -105,6 +116,10 @@ export default function TenantsPage() {
 
   const openCustomizeModal = (tenant: any) => {
     setEditingTenant(tenant);
+    const activeFeatures = tenant.customFeatures !== null 
+      ? parseFeaturesArray(tenant.customFeatures) 
+      : parseFeaturesArray(tenant.basePlan?.features);
+
     setCustomData({
       customPlanName: tenant.customPlanName || '',
       customPriceUsd: tenant.customPriceUsd !== null && tenant.customPriceUsd !== undefined ? String(tenant.customPriceUsd) : (tenant.basePlan?.priceMonthlyBdt !== undefined ? String(tenant.basePlan.priceMonthlyBdt) : (tenant.basePlan?.priceMonthlyUsd !== undefined ? String(tenant.basePlan.priceMonthlyUsd) : '')),
@@ -117,7 +132,7 @@ export default function TenantsPage() {
       customInstagramLimit: tenant.customInstagramLimit !== null && tenant.customInstagramLimit !== undefined ? String(tenant.customInstagramLimit) : (tenant.basePlan?.instagramLimit !== undefined ? String(tenant.basePlan.instagramLimit) : ''),
       billingCycleStart: tenant.trialEndsAt ? new Date(tenant.trialEndsAt).toISOString().split('T')[0] : '',
       customAllowByok: tenant.customAllowByok ?? (tenant.basePlan?.allowByok ?? false),
-      customFeatures: Array.isArray(tenant.customFeatures) ? tenant.customFeatures : (Array.isArray(tenant.basePlan?.features) ? tenant.basePlan?.features : []),
+      customFeatures: activeFeatures,
       hasFeaturesOverride: true,
     });
   };
@@ -458,14 +473,14 @@ export default function TenantsPage() {
                 
                 {customData.hasFeaturesOverride && (
                   <div className="grid grid-cols-2 gap-3 mt-3">
-                    <label className="flex items-center gap-2 cursor-pointer bg-background border border-zinc-800 p-2.5 rounded-xl hover:border-emerald-500/50 transition-colors">
+                    <label className="flex items-center gap-2 cursor-pointer bg-zinc-900 border border-zinc-800 p-2.5 rounded-xl hover:border-emerald-500/50 transition-colors">
                       <input 
                         type="checkbox" 
                         checked={customData.customAllowByok}
                         onChange={(e) => setCustomData({ ...customData, customAllowByok: e.target.checked })}
-                        className="w-4 h-4 rounded border-zinc-700 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-background bg-background" 
+                        className="w-4 h-4 rounded border-zinc-700 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-background bg-zinc-900" 
                       />
-                      <span className="text-[11px] font-medium text-white">Bring Your Own Key (BYOK)</span>
+                      <span className="text-[11px] font-medium text-zinc-200">Bring Your Own Key (BYOK)</span>
                     </label>
                     {[
                       { id: 'ai_assistant', label: 'AI Assistant' },
@@ -481,7 +496,7 @@ export default function TenantsPage() {
                       { id: 'team_management', label: 'Team Members & Roles' },
                       { id: 'contact_labels', label: 'Custom Contact Labels' }
                     ].map(feature => (
-                      <label key={feature.id} className="flex items-center gap-2 cursor-pointer bg-background border border-zinc-800 p-2.5 rounded-xl hover:border-emerald-500/50 transition-colors">
+                      <label key={feature.id} className="flex items-center gap-2 cursor-pointer bg-zinc-900 border border-zinc-800 p-2.5 rounded-xl hover:border-emerald-500/50 transition-colors">
                         <input 
                           type="checkbox" 
                           checked={customData.customFeatures.includes(feature.id)}
@@ -492,9 +507,9 @@ export default function TenantsPage() {
                               setCustomData({ ...customData, customFeatures: customData.customFeatures.filter((f: string) => f !== feature.id) });
                             }
                           }}
-                          className="w-4 h-4 rounded border-zinc-700 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-background bg-background" 
+                          className="w-4 h-4 rounded border-zinc-700 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-background bg-zinc-900" 
                         />
-                        <span className="text-[11px] font-medium text-white leading-tight">{feature.label}</span>
+                        <span className="text-[11px] font-medium text-zinc-200 leading-tight">{feature.label}</span>
                       </label>
                     ))}
                   </div>
