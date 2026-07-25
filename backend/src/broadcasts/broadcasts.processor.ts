@@ -62,8 +62,11 @@ export class BroadcastsProcessor extends WorkerHost {
           tenantId,
           messageId: `broadcast_${recipient.id}`,
           to: contact.phone,
-          type: 'text', // assuming text for now, could be template
-          content: broadcast.template.body,
+          type: 'template',
+          templateName: broadcast.template.name,
+          templateLanguage: broadcast.template.language || 'bn',
+          components: broadcast.template.components || [],
+          content: broadcast.template.bodyText || broadcast.template.body,
         }, {
           delay: delayMs
         });

@@ -385,13 +385,24 @@ model Automation {
 
 // Broadcast
 model Template {
-  id                 String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenantId           String  @db.Uuid
-  name               String
-  category           String
-  body               String
-  status             String
-  externalTemplateId String?
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId          String   @db.Uuid
+  name              String
+  category          String   // MARKETING, UTILITY, AUTHENTICATION
+  language          String   @default("bn") // bn, en_US, etc.
+  headerFormat      String?  @default("NONE") // NONE, TEXT, IMAGE, DOCUMENT, VIDEO
+  headerText        String?  // if headerFormat = TEXT
+  headerMediaHandle String?  // Meta media handle (h:{handle})
+  headerMediaUrl    String?  // Local upload path
+  bodyText          String   @db.Text
+  body              String?  @db.Text // Legacy body fallback
+  footerText        String?
+  components        Json?    // Full Meta API components structure
+  status            String   @default("PENDING") // PENDING, APPROVED, REJECTED, PAUSED
+  metaTemplateId    String?  // Meta API returned template ID
+  rejectionReason   String?  // Meta API rejection reason if REJECTED
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @default(now()) @updatedAt
 
   tenant     Tenant      @relation(fields: [tenantId], references: [id])
   broadcasts Broadcast[]

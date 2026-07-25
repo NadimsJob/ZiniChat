@@ -11,6 +11,7 @@ import { InboxModule } from '../../inbox/inbox.module';
 import { BillingModule } from '../../billing/billing.module';
 import { BullModule } from '@nestjs/bullmq';
 import { WhatsappWebModule } from '../whatsapp-web/whatsapp-web.module';
+import { BroadcastsModule } from '../../broadcasts/broadcasts.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { WhatsappWebModule } from '../whatsapp-web/whatsapp-web.module';
     InboxModule, 
     BillingModule,
     WhatsappWebModule,
+    BroadcastsModule,
     BullModule.registerQueue({
       name: 'whatsapp-outbound',
     })
