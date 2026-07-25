@@ -55,7 +55,16 @@ export class TenantsService {
         },
         subscriptionStatus: activeSub?.status || 'none',
         currentPeriodEnd: activeSub?.currentPeriodEnd || null,
-        planName: activeSub?.plan?.name || 'No Plan'
+        planName: activeSub?.plan?.name || 'No Plan',
+        customPlanName: t.customPlanName,
+        customPriceUsd: t.customPriceUsd,
+        customMessageQuota: t.customMessageQuota,
+        customAiQuota: t.customAiQuota,
+        customStorageLimitMb: t.customStorageLimitMb,
+        customAllowByok: t.customAllowByok,
+        customFeatures: t.customFeatures,
+        trialEndsAt: t.trialEndsAt,
+        basePlan: activeSub?.plan || null
       };
     });
   }

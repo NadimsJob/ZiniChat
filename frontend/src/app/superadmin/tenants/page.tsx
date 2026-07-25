@@ -108,8 +108,8 @@ export default function TenantsPage() {
       customAiQuota: tenant.customAiQuota || '',
       customStorageLimitMb: tenant.customStorageLimitMb || '',
       billingCycleStart: tenant.trialEndsAt ? new Date(tenant.trialEndsAt).toISOString().split('T')[0] : '',
-      customAllowByok: tenant.customAllowByok ?? false,
-      customFeatures: tenant.customFeatures || [],
+      customAllowByok: tenant.customAllowByok ?? (tenant.basePlan?.allowByok ?? false),
+      customFeatures: tenant.customFeatures || tenant.basePlan?.features || [],
       hasFeaturesOverride: tenant.customFeatures !== null,
     });
   };
@@ -291,7 +291,7 @@ export default function TenantsPage() {
                     value={customData.customPriceUsd}
                     onChange={e => setCustomData({...customData, customPriceUsd: e.target.value})}
                     className="w-full bg-[#09090b] border border-zinc-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
-                    placeholder="e.g. 50"
+                    placeholder={`e.g. ${editingTenant.basePlan?.priceMonthlyUsd || '50'}`}
                   />
                 </div>
                 <div className="space-y-1">
@@ -310,7 +310,7 @@ export default function TenantsPage() {
                     value={customData.customMessageQuota}
                     onChange={e => setCustomData({...customData, customMessageQuota: e.target.value})}
                     className="w-full bg-[#09090b] border border-zinc-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
-                    placeholder="e.g. 10000"
+                    placeholder={`e.g. ${editingTenant.basePlan?.messageQuota || '10000'}`}
                   />
                 </div>
                 <div className="space-y-1">
@@ -320,7 +320,7 @@ export default function TenantsPage() {
                     value={customData.customAiQuota}
                     onChange={e => setCustomData({...customData, customAiQuota: e.target.value})}
                     className="w-full bg-[#09090b] border border-zinc-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
-                    placeholder="e.g. 5000"
+                    placeholder={`e.g. ${editingTenant.basePlan?.aiQuota || '5000'}`}
                   />
                 </div>
                 <div className="space-y-1">
@@ -330,7 +330,7 @@ export default function TenantsPage() {
                     value={customData.customStorageLimitMb}
                     onChange={e => setCustomData({...customData, customStorageLimitMb: e.target.value})}
                     className="w-full bg-[#09090b] border border-zinc-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
-                    placeholder="e.g. 1024"
+                    placeholder={`e.g. ${editingTenant.basePlan?.storageLimitMb || '1024'}`}
                   />
                 </div>
               </div>
