@@ -107,19 +107,62 @@ export default function TenantsPage() {
     setEditingTenant(tenant);
     setCustomData({
       customPlanName: tenant.customPlanName || '',
-      customPriceUsd: tenant.customPriceUsd || '',
-      customMessageQuota: tenant.customMessageQuota || '',
-      customAiQuota: tenant.customAiQuota || '',
-      customStorageLimitMb: tenant.customStorageLimitMb || '',
-      customSeatLimit: tenant.customSeatLimit || '',
-      customWhatsappLimit: tenant.customWhatsappLimit || '',
-      customMessengerLimit: tenant.customMessengerLimit || '',
-      customInstagramLimit: tenant.customInstagramLimit || '',
+      customPriceUsd: tenant.customPriceUsd !== null && tenant.customPriceUsd !== undefined ? String(tenant.customPriceUsd) : (tenant.basePlan?.priceMonthlyBdt !== undefined ? String(tenant.basePlan.priceMonthlyBdt) : (tenant.basePlan?.priceMonthlyUsd !== undefined ? String(tenant.basePlan.priceMonthlyUsd) : '')),
+      customMessageQuota: tenant.customMessageQuota !== null && tenant.customMessageQuota !== undefined ? String(tenant.customMessageQuota) : (tenant.basePlan?.messageQuota !== undefined ? String(tenant.basePlan.messageQuota) : ''),
+      customAiQuota: tenant.customAiQuota !== null && tenant.customAiQuota !== undefined ? String(tenant.customAiQuota) : (tenant.basePlan?.aiQuota !== undefined ? String(tenant.basePlan.aiQuota) : ''),
+      customStorageLimitMb: tenant.customStorageLimitMb !== null && tenant.customStorageLimitMb !== undefined ? String(tenant.customStorageLimitMb) : (tenant.basePlan?.storageLimitMb !== undefined ? String(tenant.basePlan.storageLimitMb) : ''),
+      customSeatLimit: tenant.customSeatLimit !== null && tenant.customSeatLimit !== undefined ? String(tenant.customSeatLimit) : (tenant.basePlan?.seatLimit !== undefined ? String(tenant.basePlan.seatLimit) : ''),
+      customWhatsappLimit: tenant.customWhatsappLimit !== null && tenant.customWhatsappLimit !== undefined ? String(tenant.customWhatsappLimit) : (tenant.basePlan?.whatsappLimit !== undefined ? String(tenant.basePlan.whatsappLimit) : ''),
+      customMessengerLimit: tenant.customMessengerLimit !== null && tenant.customMessengerLimit !== undefined ? String(tenant.customMessengerLimit) : (tenant.basePlan?.messengerLimit !== undefined ? String(tenant.basePlan.messengerLimit) : ''),
+      customInstagramLimit: tenant.customInstagramLimit !== null && tenant.customInstagramLimit !== undefined ? String(tenant.customInstagramLimit) : (tenant.basePlan?.instagramLimit !== undefined ? String(tenant.basePlan.instagramLimit) : ''),
       billingCycleStart: tenant.trialEndsAt ? new Date(tenant.trialEndsAt).toISOString().split('T')[0] : '',
       customAllowByok: tenant.customAllowByok ?? (tenant.basePlan?.allowByok ?? false),
       customFeatures: Array.isArray(tenant.customFeatures) ? tenant.customFeatures : (Array.isArray(tenant.basePlan?.features) ? tenant.basePlan?.features : []),
-      hasFeaturesOverride: tenant.customFeatures !== null,
+      hasFeaturesOverride: true,
     });
+  };
+
+  const handleResetCustomPlan = async () => {
+    if (!editingTenant || !confirm('Are you sure you want to reset this tenant to default plan limits?')) return;
+    setSaving(true);
+    
+    const payload = {
+      customPlanName: null,
+      customPriceUsd: null,
+      customMessageQuota: null,
+      customAiQuota: null,
+      customStorageLimitMb: null,
+      customSeatLimit: null,
+      customWhatsappLimit: null,
+      customMessengerLimit: null,
+      customInstagramLimit: null,
+      customFeatures: null,
+      customAllowByok: null,
+    };
+
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/tenants/${editingTenant.id}/customize`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+      
+      if (res.ok) {
+        toast.success('Reset to default plan successfully');
+        setEditingTenant(null);
+        fetchTenantsAndConfigs();
+      } else {
+        toast.error('Failed to reset custom plan');
+      }
+    } catch (error) {
+      toast.error('An error occurred');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleSaveCustomPlan = async (e: React.FormEvent) => {
@@ -201,13 +244,25 @@ export default function TenantsPage() {
                   <td className="px-3 py-2 font-medium text-foreground">{tenant.name}</td>
                   <td className="px-3 py-2 text-zinc-300">{tenant.email}</td>
                   <td className="px-3 py-2">
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
-                      tenant.subscriptionStatus === 'active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 
-                      tenant.subscriptionStatus === 'past_due' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' : 
-                      'bg-zinc-800 text-zinc-500 border-zinc-700'
-                    }`}>
-                      {tenant.subscriptionStatus ? tenant.subscriptionStatus.toUpperCase() : 'NONE'}
-                    </span>
+                    <div className="flex flex-col gap-0.5">
+                      <div className="flex items-center gap-1.5">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+                          tenant.subscriptionStatus === 'active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 
+                          tenant.subscriptionStatus === 'past_due' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' : 
+                          'bg-zinc-800 text-zinc-500 border-zinc-700'
+                        }`}>
+                          {tenant.subscriptionStatus ? tenant.subscriptionStatus.toUpperCase() : 'NONE'}
+                        </span>
+                        {(tenant.customFeatures !== null || tenant.customPriceUsd !== null || tenant.customMessageQuota !== null || tenant.customPlanName !== null || tenant.customSeatLimit !== null) && (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                            Customized
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[11px] text-zinc-400 font-medium truncate max-w-[120px]">
+                        {tenant.customPlanName || tenant.planName}
+                      </span>
+                    </div>
                   </td>
                   <td className="px-3 py-2 text-zinc-400">
                     {tenant.currentPeriodEnd ? new Date(tenant.currentPeriodEnd).toLocaleDateString() : 'N/A'}
@@ -446,21 +501,31 @@ export default function TenantsPage() {
                 )}
               </div>
               
-              <div className="flex justify-end gap-3 pt-4 border-t border-zinc-800">
+              <div className="flex justify-between items-center pt-4 border-t border-zinc-800">
                 <button
                   type="button"
-                  onClick={() => setEditingTenant(null)}
-                  className="px-4 py-2 rounded-xl text-sm font-medium text-zinc-300 hover:bg-zinc-800 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
+                  onClick={handleResetCustomPlan}
                   disabled={saving}
-                  className="px-4 py-2 rounded-xl text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-500 transition-colors disabled:opacity-50"
+                  className="px-3 py-1.5 rounded-xl text-xs font-medium text-amber-400 border border-amber-500/30 hover:bg-amber-500/10 transition-colors disabled:opacity-50"
                 >
-                  {saving ? 'Saving...' : 'Save Custom Plan'}
+                  Reset Defaults
                 </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingTenant(null)}
+                    className="px-4 py-2 rounded-xl text-sm font-medium text-zinc-300 hover:bg-zinc-800 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="px-4 py-2 rounded-xl text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-500 transition-colors disabled:opacity-50"
+                  >
+                    {saving ? 'Saving...' : 'Save Custom Plan'}
+                  </button>
+                </div>
               </div>
             </form>
           </div>
