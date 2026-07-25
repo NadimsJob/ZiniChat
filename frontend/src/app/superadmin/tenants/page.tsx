@@ -107,9 +107,13 @@ export default function TenantsPage() {
       customMessageQuota: tenant.customMessageQuota || '',
       customAiQuota: tenant.customAiQuota || '',
       customStorageLimitMb: tenant.customStorageLimitMb || '',
+      customSeatLimit: tenant.customSeatLimit || '',
+      customWhatsappLimit: tenant.customWhatsappLimit || '',
+      customMessengerLimit: tenant.customMessengerLimit || '',
+      customInstagramLimit: tenant.customInstagramLimit || '',
       billingCycleStart: tenant.trialEndsAt ? new Date(tenant.trialEndsAt).toISOString().split('T')[0] : '',
       customAllowByok: tenant.customAllowByok ?? (tenant.basePlan?.allowByok ?? false),
-      customFeatures: tenant.customFeatures || tenant.basePlan?.features || [],
+      customFeatures: Array.isArray(tenant.customFeatures) ? tenant.customFeatures : (Array.isArray(tenant.basePlan?.features) ? tenant.basePlan?.features : []),
       hasFeaturesOverride: tenant.customFeatures !== null,
     });
   };
@@ -126,6 +130,10 @@ export default function TenantsPage() {
     if (customData.customMessageQuota) payload.customMessageQuota = parseInt(customData.customMessageQuota);
     if (customData.customAiQuota) payload.customAiQuota = parseInt(customData.customAiQuota);
     if (customData.customStorageLimitMb) payload.customStorageLimitMb = parseInt(customData.customStorageLimitMb);
+    if (customData.customSeatLimit) payload.customSeatLimit = parseInt(customData.customSeatLimit);
+    if (customData.customWhatsappLimit) payload.customWhatsappLimit = parseInt(customData.customWhatsappLimit);
+    if (customData.customMessengerLimit) payload.customMessengerLimit = parseInt(customData.customMessengerLimit);
+    if (customData.customInstagramLimit) payload.customInstagramLimit = parseInt(customData.customInstagramLimit);
     if (customData.billingCycleStart) payload.billingCycleStart = customData.billingCycleStart;
     
     // Always include features if the override flag is true, otherwise pass null to remove override
@@ -304,7 +312,7 @@ export default function TenantsPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-zinc-400">Message Quota</label>
+                  <label className="text-xs font-medium text-zinc-400">Message Quota /mo</label>
                   <input
                     type="number"
                     value={customData.customMessageQuota}
@@ -314,13 +322,53 @@ export default function TenantsPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-zinc-400">AI Quota</label>
+                  <label className="text-xs font-medium text-zinc-400">AI Quota /mo</label>
                   <input
                     type="number"
                     value={customData.customAiQuota}
                     onChange={e => setCustomData({...customData, customAiQuota: e.target.value})}
                     className="w-full bg-[#09090b] border border-zinc-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
                     placeholder={`e.g. ${editingTenant.basePlan?.aiQuota || '5000'}`}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-zinc-400">Team Members</label>
+                  <input
+                    type="number"
+                    value={customData.customSeatLimit}
+                    onChange={e => setCustomData({...customData, customSeatLimit: e.target.value})}
+                    className="w-full bg-[#09090b] border border-zinc-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
+                    placeholder={`e.g. ${editingTenant.basePlan?.seatLimit || '1'}`}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-zinc-400">WhatsApp Limit</label>
+                  <input
+                    type="number"
+                    value={customData.customWhatsappLimit}
+                    onChange={e => setCustomData({...customData, customWhatsappLimit: e.target.value})}
+                    className="w-full bg-[#09090b] border border-zinc-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
+                    placeholder={`e.g. ${editingTenant.basePlan?.whatsappLimit || '1'}`}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-zinc-400">Messenger Limit</label>
+                  <input
+                    type="number"
+                    value={customData.customMessengerLimit}
+                    onChange={e => setCustomData({...customData, customMessengerLimit: e.target.value})}
+                    className="w-full bg-[#09090b] border border-zinc-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
+                    placeholder={`e.g. ${editingTenant.basePlan?.messengerLimit || '1'}`}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-zinc-400">Instagram Limit</label>
+                  <input
+                    type="number"
+                    value={customData.customInstagramLimit}
+                    onChange={e => setCustomData({...customData, customInstagramLimit: e.target.value})}
+                    className="w-full bg-[#09090b] border border-zinc-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
+                    placeholder={`e.g. ${editingTenant.basePlan?.instagramLimit || '1'}`}
                   />
                 </div>
                 <div className="space-y-1">
