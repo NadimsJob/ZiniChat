@@ -25,6 +25,7 @@ export class MessengerAuthService {
         connectionMethod: true,
         verifyToken: true,
         createdAt: true,
+        isAiAutoReplyEnabled: true,
       }
     });
   }
@@ -36,8 +37,8 @@ export class MessengerAuthService {
       where: { tenantId, channelType: 'messenger' }
     });
 
-    if (currentConnections >= quotas.channelLimit) {
-      throw new ForbiddenException(`Channel limit reached (${quotas.channelLimit}). Please upgrade your plan to connect more Messenger Pages.`);
+    if (currentConnections >= quotas.messengerLimit) {
+      throw new ForbiddenException(`Messenger limit reached (${quotas.messengerLimit}). Please upgrade your plan to connect more Messenger Pages.`);
     }
   }
 
@@ -96,7 +97,7 @@ export class MessengerAuthService {
     }
   }
 
-  async connectViaFacebook(tenantId: string, code: string) {
+  async connectViaFacebook(tenantId: string, accessToken: string) {
     await this.checkQuota(tenantId);
 
     const fbConfig = await this.prisma.facebookAuthConfig.findFirst();
@@ -108,21 +109,54 @@ export class MessengerAuthService {
       throw new BadRequestException('Facebook App ID is not configured');
     }
 
-    this.logger.log(`Exchanging OAuth code for tenant ${tenantId} using App ID: ${fbConfig.appId}`);
+    this.logger.log(`Exchanging OAuth token for tenant ${tenantId} using App ID: ${fbConfig.appId}`);
     
     try {
-      // Mock OAuth exchange for demonstration
-      const mockAccessToken = `mock_system_token_${Date.now()}`;
-      const mockPageId = `mock_page_${Math.floor(Math.random() * 100000)}`;
+      // Step 1: Exchange short-lived token for long-lived token
+      const longLivedRes = await fetch(
+        `https://graph.facebook.com/v21.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${fbConfig.appId}&client_secret=${fbConfig.appSecret}&fb_exchange_token=${accessToken}`
+      );
+      
+      const longLivedData = await longLivedRes.json();
+      if (longLivedData.error) {
+        throw new Error(longLivedData.error.message);
+      }
+      
+      const finalToken = longLivedData.access_token || accessToken;
+
+      // Step 2: Get user's pages
+      const pagesRes = await fetch(`https://graph.facebook.com/v21.0/me/accounts?access_token=${finalToken}`);
+      const pagesData = await pagesRes.json();
+      
+      if (pagesData.error) {
+        throw new Error(pagesData.error.message);
+      }
+
+      if (!pagesData.data || pagesData.data.length === 0) {
+        throw new BadRequestException('No Facebook Pages found for this account.');
+      }
+
+      // Connect the first Page found
+      const page = pagesData.data[0];
+      const pageId = page.id;
+      const pageToken = page.access_token;
+      const pageName = page.name || 'Facebook Page';
+
+      const existing = await this.prisma.channelConnection.findFirst({
+        where: { tenantId, channelType: 'messenger', externalAccountId: pageId }
+      });
+
+      if (existing) {
+        throw new BadRequestException('This Messenger Page is already connected');
+      }
 
       const connection = await this.prisma.channelConnection.create({
         data: {
           tenantId,
           channelType: 'messenger',
-          externalAccountId: mockPageId,
-          accessTokenEncrypted: mockAccessToken,
-          displayName: `Auto-Connected Page`,
-          verifyToken: `auto_${Date.now()}`,
+          externalAccountId: pageId,
+          accessTokenEncrypted: pageToken,
+          displayName: pageName,
           connectionMethod: 'facebook_login',
           status: 'active'
         }
@@ -131,15 +165,15 @@ export class MessengerAuthService {
       const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
       this.notificationsService.createSystemNotificationForSuperadmins(
         'New Messenger Connection',
-        `Tenant "${tenant?.businessName}" connected a new Messenger Page (${mockPageId}) via Facebook OAuth.`,
+        `Tenant "${tenant?.businessName}" connected a new Messenger Page (${pageName}) via Facebook OAuth.`,
         'info'
       ).catch(e => this.logger.error('Failed to send notification', e));
 
       return { success: true, connectionId: connection.id };
-    } catch (error) {
-      this.logger.error('Failed to exchange Messenger code', error);
+    } catch (error: any) {
+      this.logger.error('Failed to exchange Messenger token', error);
       if (error instanceof BadRequestException || error instanceof ForbiddenException) throw error;
-      throw new BadRequestException('OAuth exchange failed');
+      throw new BadRequestException(`OAuth exchange failed: ${error.message}`);
     }
   }
 
@@ -152,5 +186,20 @@ export class MessengerAuthService {
 
     await this.prisma.channelConnection.delete({ where: { id } });
     return { success: true };
+  }
+
+  async toggleAiReply(tenantId: string, connectionId: string, isEnabled: boolean) {
+    const connection = await this.prisma.channelConnection.findUnique({
+      where: { id: connectionId }
+    });
+
+    if (!connection || connection.tenantId !== tenantId) {
+      throw new NotFoundException('Connection not found');
+    }
+
+    return this.prisma.channelConnection.update({
+      where: { id: connectionId },
+      data: { isAiAutoReplyEnabled: isEnabled }
+    });
   }
 }

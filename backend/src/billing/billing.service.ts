@@ -47,7 +47,9 @@ export class BillingService {
 
     return {
       subscription: activeSubscription,
-      channelLimit: plan?.channelLimit ?? 1,
+      whatsappLimit: tenant?.customWhatsappLimit ?? plan?.whatsappLimit ?? 1,
+      messengerLimit: tenant?.customMessengerLimit ?? plan?.messengerLimit ?? 1,
+      instagramLimit: tenant?.customInstagramLimit ?? plan?.instagramLimit ?? 1,
       messageQuota: tenant?.customMessageQuota ?? plan?.messageQuota ?? 100,
       aiQuota: tenant?.customAiQuota ?? plan?.aiQuota ?? 50,
       seatLimit: tenant?.customSeatLimit ?? plan?.seatLimit ?? 1,

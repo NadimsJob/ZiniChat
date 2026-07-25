@@ -30,4 +30,10 @@ export class MessengerAuthController {
   deleteConnection(@Request() req: any, @Param('id') id: string) {
     return this.messengerAuthService.deleteConnection(req.user.tenantId, id);
   }
+
+  @Post('connections/:id/ai-reply')
+  async toggleAiReply(@Request() req: any, @Param('id') id: string, @Body('isEnabled') isEnabled: boolean) {
+    const result = await this.messengerAuthService.toggleAiReply(req.user.tenantId, id, isEnabled);
+    return { success: true, isAiAutoReplyEnabled: result.isAiAutoReplyEnabled };
+  }
 }

@@ -36,7 +36,8 @@ import {
   UserCircle,
   Tag,
   Camera,
-  Receipt
+  Receipt,
+  Lock
 } from 'lucide-react';
 import NotificationBell from '@/components/NotificationBell';
 import SupportWidget from '@/components/SupportWidget';
@@ -55,11 +56,9 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
   const [userProfile, setUserProfile] = useState<any>(null);
   const [inboxUnreadCount, setInboxUnreadCount] = useState(0);
   const [showTrialModal, setShowTrialModal] = useState(false);
+  const [showFeatureLockedModal, setShowFeatureLockedModal] = useState(false);
   const [allowedFeatures, setAllowedFeatures] = useState<string[]>(['*']);
-  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
-    'Settings': true,
-    'সেটিংস': true
-  });
+  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     setMounted(true);
@@ -128,6 +127,14 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
     }
   }, [pathname]);
 
+  // Prevent direct URL access to locked features
+  useEffect(() => {
+    if (!allowedFeatures.includes('*') && !hasAccess(pathname)) {
+      setShowFeatureLockedModal(true);
+      router.push('/dashboard');
+    }
+  }, [pathname, allowedFeatures]);
+
   const handleLogout = () => {
     Cookies.remove('access_token');
     Cookies.remove('user_role');
@@ -177,13 +184,13 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
         { name: language === 'en' ? 'Team' : 'টিম', icon: UserCircle, href: '/dashboard/team' },
         { name: language === 'en' ? 'AI Training' : 'এআই ট্রেইনিং', icon: Zap, href: '/dashboard/settings/ai-training' },
         { name: language === 'en' ? 'Labels' : 'লেবেলস', icon: Tag, href: '/dashboard/settings/labels' },
-        { name: language === 'en' ? 'Subscription' : 'সাবস্ক্রিপশন', icon: Crown, href: '/dashboard/settings/subscription' },
-        { name: language === 'en' ? 'Billing History' : 'বিলিং হিস্ট্রি', icon: Receipt, href: '/dashboard/settings/billing-history' },
         { name: language === 'en' ? 'Storage' : 'স্টোরেজ', icon: Settings2, href: '/dashboard/settings/storage' },
-      ] // Removed hasAccess filter here
+      ]
     },
+    { name: language === 'en' ? 'Subscription' : 'সাবস্ক্রিপশন', icon: Crown, href: '/dashboard/settings/subscription' },
+    { name: language === 'en' ? 'Billing History' : 'বিলিং হিস্ট্রি', icon: Receipt, href: '/dashboard/settings/billing-history' },
     { name: language === 'en' ? 'Support Ticket' : 'সাপোর্ট টিকিট', icon: MessageSquare, href: '/dashboard/support' },
-  ]; // Removed hasAccess filter here
+  ];
 
   if (pathname === '/dashboard/onboarding') {
     return (
@@ -232,6 +239,8 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
             const isActive = pathname === item.href || (item.subItems && item.subItems.some(sub => pathname.startsWith(sub.href)));
             const isExpanded = openMenus[item.name];
 
+            const isLocked = !item.hasSubmenu && !hasAccess(item.href);
+
             return (
               <div key={item.name} className="flex flex-col">
                 <Link 
@@ -239,6 +248,9 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
                   onClick={(e) => {
                     if (item.hasSubmenu) {
                       toggleSubmenu(item.name, e);
+                    } else if (isLocked) {
+                      e.preventDefault();
+                      setShowFeatureLockedModal(true);
                     } else {
                       setIsMobileMenuOpen(false);
                     }
@@ -247,11 +259,12 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
                     isActive && !item.hasSubmenu
                       ? 'bg-gradient-to-r from-primary/10 to-accent/10 dark:from-primary/20 dark:to-accent/5 text-primary shadow-sm border border-primary/10'
                       : 'text-slate-600 dark:text-zinc-400 hover:bg-white/60 dark:hover:bg-zinc-800/50 hover:text-slate-900 dark:hover:text-zinc-200 hover:shadow-sm'
-                  }`}
+                  } ${isLocked ? 'opacity-80' : ''}`}
                 >
                   <div className="flex items-center gap-2.5">
                     <item.icon className={`w-3.5 h-3.5 ${isActive ? 'text-primary' : 'text-slate-400 dark:text-zinc-500'}`} />
                     <span className={isActive ? 'text-primary' : ''}>{item.name}</span>
+                    {isLocked && <Lock className="w-3 h-3 text-amber-500 ml-1" />}
                   </div>
                   
                   {/* Submenu Indicator or Inbox Badge */}
@@ -272,19 +285,31 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
                   <div className="mt-0.5 ml-3 pl-3 border-l border-slate-100 dark:border-zinc-800 flex flex-col space-y-0.5">
                     {item.subItems.map((subItem) => {
                       const isSubActive = pathname === subItem.href;
+                      const isSubLocked = !hasAccess(subItem.href);
+                      
                       return (
                         <Link
                           key={subItem.name}
                           href={subItem.href}
-                          onClick={() => setIsMobileMenuOpen(false)}
-                          className={`flex items-center gap-2 px-1.5 py-1 rounded-md text-[12px] font-medium transition-colors ${
+                          onClick={(e) => {
+                            if (isSubLocked) {
+                              e.preventDefault();
+                              setShowFeatureLockedModal(true);
+                            } else {
+                              setIsMobileMenuOpen(false);
+                            }
+                          }}
+                          className={`flex items-center justify-between px-1.5 py-1 rounded-md text-[12px] font-medium transition-colors ${
                             isSubActive
                               ? 'text-primary bg-gradient-to-r from-primary/10 to-accent/5 shadow-sm border border-primary/10'
                               : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-white/60 dark:hover:bg-zinc-800/30'
-                          }`}
+                          } ${isSubLocked ? 'opacity-80' : ''}`}
                         >
-                          <subItem.icon className={`w-3.5 h-3.5 ${isSubActive ? 'text-primary' : 'text-slate-400 dark:text-zinc-500'}`} />
-                          {subItem.name}
+                          <div className="flex items-center gap-2">
+                            <subItem.icon className={`w-3.5 h-3.5 ${isSubActive ? 'text-primary' : 'text-slate-400 dark:text-zinc-500'}`} />
+                            {subItem.name}
+                          </div>
+                          {isSubLocked && <Lock className="w-3 h-3 text-amber-500" />}
                         </Link>
                       );
                     })}
@@ -425,6 +450,42 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
                 className="flex-1 px-1.5 py-1 rounded-xl bg-primary text-white font-medium hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
               >
                 Subscribe Now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Feature Locked Modal */}
+      {showFeatureLockedModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-1.5">
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl max-w-md w-full p-8 text-center border border-amber-500/20">
+            <div className="w-16 h-16 bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-500 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Lock className="w-8 h-8" />
+            </div>
+            <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+              {language === 'en' ? 'Feature Locked' : 'ফিচারটি লক করা আছে'}
+            </h3>
+            <p className="text-slate-600 dark:text-zinc-400 mb-8">
+              {language === 'en' 
+                ? 'This feature is not available in your current plan. Please upgrade your subscription to access it.'
+                : 'এই ফিচারটি আপনার বর্তমান প্ল্যানে নেই। এটি ব্যবহার করতে আপনার প্ল্যান আপগ্রেড করুন।'}
+            </p>
+            <div className="flex gap-2">
+              <button 
+                onClick={() => setShowFeatureLockedModal(false)}
+                className="flex-1 px-1.5 py-1 rounded-xl border border-slate-200 dark:border-zinc-800 font-medium hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors"
+              >
+                {language === 'en' ? 'Close' : 'বন্ধ করুন'}
+              </button>
+              <button 
+                onClick={() => {
+                  setShowFeatureLockedModal(false);
+                  router.push('/dashboard/settings/subscription');
+                }}
+                className="flex-1 px-1.5 py-1 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white font-medium shadow-lg shadow-orange-500/20 hover:scale-105 transition-transform"
+              >
+                {language === 'en' ? 'Upgrade Plan' : 'আপগ্রেড করুন'}
               </button>
             </div>
           </div>

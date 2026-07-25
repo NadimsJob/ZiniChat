@@ -64,4 +64,15 @@ export class WhatsappAuthController {
       return res.status(status).json({ error: error.message });
     }
   }
+
+  @Post('connections/:id/ai-reply')
+  async toggleAiReply(@Req() req: any, @Param('id') id: string, @Body('isEnabled') isEnabled: boolean, @Res() res: Response) {
+    try {
+      const result = await this.authService.toggleAiReply(req.user.tenantId, id, isEnabled);
+      return res.status(HttpStatus.OK).json({ success: true, isAiAutoReplyEnabled: result.isAiAutoReplyEnabled });
+    } catch (error) {
+      const status = error.status || HttpStatus.INTERNAL_SERVER_ERROR;
+      return res.status(status).json({ error: error.message });
+    }
+  }
 }

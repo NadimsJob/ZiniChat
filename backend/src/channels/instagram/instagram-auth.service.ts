@@ -46,8 +46,8 @@ export class InstagramAuthService {
       where: { tenantId }
     });
 
-    if (currentConnections >= quotas.channelLimit) {
-      throw new ForbiddenException(`Channel limit reached (${quotas.channelLimit}). Please upgrade your plan to connect more channels.`);
+    if (currentConnections >= quotas.instagramLimit) {
+      throw new ForbiddenException(`Instagram limit reached (${quotas.instagramLimit}). Please upgrade your plan to connect more channels.`);
     }
   }
 
@@ -63,6 +63,7 @@ export class InstagramAuthService {
         connectionMethod: true,
         verifyToken: true,
         createdAt: true,
+        isAiAutoReplyEnabled: true,
       }
     });
   }
@@ -120,5 +121,132 @@ export class InstagramAuthService {
       if (error instanceof BadRequestException || error instanceof ForbiddenException) throw error;
       throw new BadRequestException('Failed to connect to Meta API. Please verify your Account ID and Token.');
     }
+  }
+
+  async toggleAiReply(tenantId: string, connectionId: string, isEnabled: boolean) {
+    const connection = await this.prisma.channelConnection.findUnique({
+      where: { id: connectionId }
+    });
+
+    if (!connection || connection.tenantId !== tenantId) {
+      throw new NotFoundException('Connection not found');
+    }
+
+    return this.prisma.channelConnection.update({
+      where: { id: connectionId },
+      data: { isAiAutoReplyEnabled: isEnabled }
+    });
+  }
+
+  async connectViaFacebook(tenantId: string, accessToken: string) {
+    await this.checkAccessControlAndQuota(tenantId);
+
+    try {
+      // Step 1: Exchange short-lived token for long-lived token
+      const fbConfig = await this.prisma.facebookAuthConfig.findFirst();
+      if (!fbConfig) {
+        throw new BadRequestException('Platform Facebook Auth not configured');
+      }
+
+      const longLivedRes = await fetch(
+        `https://graph.facebook.com/v21.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${fbConfig.appId}&client_secret=${fbConfig.appSecret}&fb_exchange_token=${accessToken}`
+      );
+      
+      const longLivedData = await longLivedRes.json();
+      if (longLivedData.error) {
+        throw new Error(longLivedData.error.message);
+      }
+      
+      const finalToken = longLivedData.access_token || accessToken;
+
+      // Step 2: Get user's pages
+      const pagesRes = await fetch(`https://graph.facebook.com/v21.0/me/accounts?access_token=${finalToken}`);
+      const pagesData = await pagesRes.json();
+      
+      if (pagesData.error) {
+        throw new Error(pagesData.error.message);
+      }
+
+      if (!pagesData.data || pagesData.data.length === 0) {
+        throw new BadRequestException('No Facebook Pages found for this account.');
+      }
+
+      // We'll just connect the first Instagram Business Account found linked to these pages for simplicity
+      // Or we can connect all of them. Let's find the first one that has an instagram_business_account
+      let igAccountId = null;
+      let igDisplayName = 'Instagram Account';
+
+      for (const page of pagesData.data) {
+        const pageToken = page.access_token;
+        const igRes = await fetch(`https://graph.facebook.com/v21.0/${page.id}?fields=instagram_business_account&access_token=${pageToken}`);
+        const igData = await igRes.json();
+
+        if (igData.instagram_business_account) {
+          igAccountId = igData.instagram_business_account.id;
+          
+          // Get the IG account username
+          const igUserRes = await fetch(`https://graph.facebook.com/v21.0/${igAccountId}?fields=username&access_token=${pageToken}`);
+          const igUserData = await igUserRes.json();
+          if (igUserData.username) {
+            igDisplayName = igUserData.username;
+          }
+          break; // Just connect the first one found for now to simplify
+        }
+      }
+
+      if (!igAccountId) {
+         throw new BadRequestException('No Instagram Business Accounts linked to your Facebook Pages. Please link your Instagram account to a Facebook Page first.');
+      }
+
+      const existing = await this.prisma.channelConnection.findFirst({
+        where: { tenantId, channelType: 'instagram', externalAccountId: igAccountId }
+      });
+
+      if (existing) {
+        throw new BadRequestException('This Instagram Account is already connected');
+      }
+
+      const connection = await this.prisma.channelConnection.create({
+        data: {
+          tenantId,
+          channelType: 'instagram',
+          externalAccountId: igAccountId,
+          accessTokenEncrypted: finalToken, // Storing the user long-lived token
+          displayName: igDisplayName,
+          connectionMethod: 'facebook_login',
+          status: 'active'
+        }
+      });
+
+      const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+      this.notificationsService.createSystemNotificationForSuperadmins(
+        'New Instagram Connection',
+        `Tenant "${tenant?.businessName}" connected Instagram (${igDisplayName}) via Facebook Login.`,
+        'info'
+      ).catch(e => this.logger.error('Failed to send notification', e));
+
+      return { success: true, connectionId: connection.id };
+
+    } catch (error: any) {
+      this.logger.error('Facebook Login Error:', error);
+      if (error instanceof BadRequestException || error instanceof ForbiddenException) throw error;
+      throw new BadRequestException(`Facebook Login Failed: ${error.message}`);
+    }
+  }
+
+  async deleteConnection(tenantId: string, id: string) {
+    const connection = await this.prisma.channelConnection.findUnique({
+      where: { id }
+    });
+
+    if (!connection || connection.tenantId !== tenantId) {
+      throw new NotFoundException('Connection not found');
+    }
+
+    await this.prisma.channelConnection.delete({
+      where: { id }
+    });
+
+    return { success: true };
   }
 }

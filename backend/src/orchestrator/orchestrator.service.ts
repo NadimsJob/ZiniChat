@@ -23,7 +23,7 @@ export class OrchestratorService {
         where: { id: messageId },
         include: {
           conversation: {
-            include: { contact: true }
+            include: { contact: true, channelConnection: true }
           }
         }
       });
@@ -33,6 +33,11 @@ export class OrchestratorService {
       }
 
       const tenantId = message.conversation.tenantId;
+
+      if (message.conversation.channelConnection && message.conversation.channelConnection.isAiAutoReplyEnabled === false) {
+        this.logger.debug(`AI Auto-Reply is disabled for connection ${message.conversation.channelConnection.id}. Skipping message ${messageId}.`);
+        return; 
+      }
 
       // 2. Check AI Assistant, Tenant Settings, and Routing Mode
       const assistant = await this.prisma.aiAssistant.findFirst({

@@ -22,7 +22,7 @@ const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function MessengerSettingsPage() {
   const { language } = useLanguage();
-  const [activeTab, setActiveTab] = useState<'manual' | 'facebook'>('manual');
+  const [activeTab, setActiveTab] = useState<'manual' | 'facebook'>('facebook');
   const [showInstructions, setShowInstructions] = useState(true);
   const [connections, setConnections] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,7 +73,25 @@ export default function MessengerSettingsPage() {
     }
   };
 
-  const isLimitReached = quotas && connections.length >= quotas.channelLimit;
+  const isLimitReached = quotas && connections.length >= quotas.messengerLimit;
+
+  const handleToggleAiReply = async (id: string, currentStatus: boolean) => {
+    try {
+      const res = await fetch(`${API}/channels/messenger/connections/${id}/ai-reply`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${Cookies.get('access_token')}`
+        },
+        body: JSON.stringify({ isEnabled: !currentStatus })
+      });
+      if (res.ok) {
+        setConnections(connections.map(c => c.id === id ? { ...c, isAiAutoReplyEnabled: !currentStatus } : c));
+      }
+    } catch (err) {
+      console.error('Failed to toggle AI reply:', err);
+    }
+  };
 
   const handleManualConnect = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -146,7 +164,7 @@ export default function MessengerSettingsPage() {
               : 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20'
           }`}>
             <Globe2 className="w-3.5 h-3.5" />
-            {language === 'en' ? `Channels: ${connections.length} / ${quotas.channelLimit}` : `চ্যানেল: ${connections.length} / ${quotas.channelLimit}`}
+            {language === 'en' ? `Channels: ${connections.length} / ${quotas.messengerLimit}` : `চ্যানেল: ${connections.length} / ${quotas.messengerLimit}`}
           </div>
         )}
       </div>
@@ -185,13 +203,30 @@ export default function MessengerSettingsPage() {
                         <span className="flex items-center gap-1.5"><span className="w-16 font-medium text-slate-400">Page ID:</span> {conn.externalAccountId}</span>
                       </div>
                     </div>
-                    <button 
-                      onClick={() => handleDelete(conn.id)}
-                      className="flex items-center justify-center gap-2 px-1.5 py-2 text-[13px] text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10 rounded-lg transition-colors border border-transparent hover:border-red-200 dark:hover:border-red-500/20"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      {language === 'en' ? 'Disconnect' : 'সংযোগ বিচ্ছিন্ন করুন'}
-                    </button>
+                    <div className="flex items-center gap-3">
+                      <div className="flex flex-col items-center justify-center gap-1">
+                        <span className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">AI Auto-Reply</span>
+                        <button
+                          onClick={() => handleToggleAiReply(conn.id, conn.isAiAutoReplyEnabled)}
+                          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${
+                            conn.isAiAutoReplyEnabled ? 'bg-green-500' : 'bg-slate-300 dark:bg-zinc-700'
+                          }`}
+                        >
+                          <span
+                            className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                              conn.isAiAutoReplyEnabled ? 'translate-x-4.5' : 'translate-x-1'
+                            }`}
+                          />
+                        </button>
+                      </div>
+                      <button 
+                        onClick={() => handleDelete(conn.id)}
+                        className="flex items-center justify-center gap-2 px-1.5 py-2 text-[13px] text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10 rounded-lg transition-colors border border-transparent hover:border-red-200 dark:hover:border-red-500/20"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        {language === 'en' ? 'Disconnect' : 'সংযোগ বিচ্ছিন্ন করুন'}
+                      </button>
+                    </div>
                   </div>
                 ))
               )}

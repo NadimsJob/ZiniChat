@@ -69,7 +69,9 @@ describe('BillingService', () => {
       (prismaService.subscription.findFirst as jest.Mock).mockResolvedValue({
         id: 'sub1',
         plan: {
-          channelLimit: 5,
+          whatsappLimit: 5,
+          messengerLimit: 5,
+          instagramLimit: 5,
           messageQuota: 5000,
           aiQuota: 1000,
           seatLimit: 3,
@@ -79,7 +81,7 @@ describe('BillingService', () => {
 
       const result = await service.getTenantQuotas('t1');
       expect(result.messageQuota).toBe(5000);
-      expect(result.channelLimit).toBe(5);
+      expect(result.whatsappLimit).toBe(5);
       expect(result.features).toContain('feature_1');
     });
 
@@ -88,7 +90,7 @@ describe('BillingService', () => {
 
       const result = await service.getTenantQuotas('t2');
       expect(result.messageQuota).toBe(100);
-      expect(result.channelLimit).toBe(1);
+      expect(result.whatsappLimit).toBe(1);
       expect(result.features).toEqual([]);
     });
   });

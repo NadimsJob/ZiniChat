@@ -73,7 +73,7 @@ describe('InstagramAuthService', () => {
         id: 'tenant-1',
         subscriptions: [{ plan: { features: ['whatsapp', 'instagram_dm'] } }]
       });
-      mockBillingService.getTenantQuotas.mockResolvedValue({ channelLimit: 1 });
+      mockBillingService.getTenantQuotas.mockResolvedValue({ instagramLimit: 1 });
       mockPrismaService.channelConnection.count.mockResolvedValue(1);
 
       await expect(service.connectManual('tenant-1', { accountId: '123', accessToken: 'abc' })).rejects.toThrow(ForbiddenException);
@@ -84,7 +84,7 @@ describe('InstagramAuthService', () => {
         id: 'tenant-1',
         subscriptions: [{ plan: { features: ['whatsapp', 'instagram_dm'] } }]
       });
-      mockBillingService.getTenantQuotas.mockResolvedValue({ channelLimit: 5 });
+      mockBillingService.getTenantQuotas.mockResolvedValue({ instagramLimit: 5 });
       mockPrismaService.channelConnection.count.mockResolvedValue(1);
 
       global.fetch = jest.fn().mockResolvedValue({

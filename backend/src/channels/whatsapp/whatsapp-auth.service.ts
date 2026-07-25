@@ -29,7 +29,23 @@ export class WhatsappAuthService {
         connectionMethod: true,
         verifyToken: true,
         createdAt: true,
+        isAiAutoReplyEnabled: true,
       }
+    });
+  }
+
+  async toggleAiReply(tenantId: string, connectionId: string, isEnabled: boolean) {
+    const connection = await this.prisma.channelConnection.findUnique({
+      where: { id: connectionId }
+    });
+
+    if (!connection || connection.tenantId !== tenantId) {
+      throw new NotFoundException('Connection not found');
+    }
+
+    return this.prisma.channelConnection.update({
+      where: { id: connectionId },
+      data: { isAiAutoReplyEnabled: isEnabled }
     });
   }
 
@@ -40,8 +56,8 @@ export class WhatsappAuthService {
       where: { tenantId, channelType: 'whatsapp' }
     });
 
-    if (currentConnections >= quotas.channelLimit) {
-      throw new ForbiddenException(`Channel limit reached (${quotas.channelLimit}). Please upgrade your plan to connect more WhatsApp numbers.`);
+    if (currentConnections >= quotas.whatsappLimit) {
+      throw new ForbiddenException(`WhatsApp limit reached (${quotas.whatsappLimit}). Please upgrade your plan to connect more WhatsApp numbers.`);
     }
   }
 

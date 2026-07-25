@@ -34,6 +34,9 @@ model Tenant {
   customAiQuota        Int?
   customSeatLimit      Int?
   customStorageLimitMb Int?
+  customWhatsappLimit  Int?
+  customMessengerLimit Int?
+  customInstagramLimit Int?
   customFeatures       Json?
   customAiConfigId     String?  @db.Uuid
 
@@ -129,6 +132,7 @@ model ChannelConnection {
   provider             WhatsappProvider @default(CLOUD_API)
   qrSessionId          String? // Unique session ID for Baileys
   qrStatus             String? // CONNECTING, CONNECTED, DISCONNECTED
+  isAiAutoReplyEnabled Boolean          @default(true) // Tenant can toggle AI auto-reply for this specific connection
   createdAt            DateTime         @default(now())
 
   tenant           Tenant                   @relation(fields: [tenantId], references: [id])
@@ -489,7 +493,9 @@ model Plan {
   messageQuota    Int
   aiQuota         Int
   seatLimit       Int
-  channelLimit    Int      @default(1)
+  whatsappLimit   Int      @default(1)
+  messengerLimit  Int      @default(1)
+  instagramLimit  Int      @default(1)
   storageLimitMb  Int      @default(500)
   trialDays       Int      @default(0)
   

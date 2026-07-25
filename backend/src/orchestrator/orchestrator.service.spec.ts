@@ -69,7 +69,7 @@ describe('OrchestratorService', () => {
     expect(prismaService.aiAssistant.findFirst).not.toHaveBeenCalled();
   });
 
-  it('should ignore if AI is disabled', async () => {
+  it('should ignore if AI is disabled globally', async () => {
     prismaService.message.findUnique.mockResolvedValue({
       id: 'msg1', direction: 'inbound', type: 'text', content: 'hello',
       conversation: { tenantId: 't1', conversationId: 'c1' }
@@ -77,6 +77,21 @@ describe('OrchestratorService', () => {
     prismaService.aiAssistant.findFirst.mockResolvedValue({ isActive: false });
     
     await service.processMessage('msg1');
+    expect(aiService.generateCompletion).not.toHaveBeenCalled();
+  });
+
+  it('should ignore if AI auto-reply is disabled for the specific channel connection', async () => {
+    prismaService.message.findUnique.mockResolvedValue({
+      id: 'msg2', direction: 'inbound', type: 'text', content: 'hello',
+      conversation: { 
+        tenantId: 't1', 
+        conversationId: 'c2',
+        channelConnection: { id: 'conn1', isAiAutoReplyEnabled: false } 
+      }
+    });
+    prismaService.aiAssistant.findFirst.mockResolvedValue({ isActive: true, routingMode: 'ai_first' });
+    
+    await service.processMessage('msg2');
     expect(aiService.generateCompletion).not.toHaveBeenCalled();
   });
 
@@ -97,7 +112,10 @@ describe('OrchestratorService', () => {
     prismaService.message.findUnique.mockResolvedValue({
       id: 'msg1', direction: 'inbound', type: 'text', content: { text: 'hello' },
       conversationId: 'c1',
-      conversation: { tenantId: 't1', id: 'c1' }
+      conversation: { 
+        tenantId: 't1', id: 'c1',
+        channelConnection: { id: 'conn1', isAiAutoReplyEnabled: true }
+      }
     });
     prismaService.aiAssistant.findFirst.mockResolvedValue({ 
       id: 'ai1', isActive: true, routingMode: 'ai_first', systemPrompt: 'Be nice'

@@ -24,7 +24,9 @@ export default function PackagesPage() {
     name: '', nameBn: '', description: '', descriptionBn: '',
     priceMonthlyBdt: 0, priceYearlyBdt: 0,
     promoPriceMonthlyBdt: 0, promoMonths: 0, yearlyDiscountPercent: 0,
-    messageQuota: 1000, aiQuota: 500, seatLimit: 1, trialDays: 0,
+    messageQuota: 1000, aiQuota: 500, seatLimit: 1, 
+    whatsappLimit: 1, messengerLimit: 1, instagramLimit: 1, 
+    trialDays: 0,
     allowByok: false,
     features: [] as string[],
     featuresJson: [] as { en: string, bn: string }[],
@@ -148,7 +150,7 @@ export default function PackagesPage() {
         promoPriceMonthlyBdt: Number(plan.promoPriceMonthlyBdt) || 0, 
         promoMonths: Number(plan.promoMonths) || 0, 
         yearlyDiscountPercent: Number(plan.yearlyDiscountPercent) || 0,
-        messageQuota: plan.messageQuota, aiQuota: plan.aiQuota, seatLimit: plan.seatLimit, trialDays: plan.trialDays || 0,
+        messageQuota: plan.messageQuota, aiQuota: plan.aiQuota, seatLimit: plan.seatLimit, whatsappLimit: plan.whatsappLimit ?? 1, messengerLimit: plan.messengerLimit ?? 1, instagramLimit: plan.instagramLimit ?? 1, trialDays: plan.trialDays || 0,
         allowByok: plan.allowByok || false,
         features: Array.isArray(plan.features) ? plan.features : [],
         featuresJson: Array.isArray(plan.featuresJson) ? plan.featuresJson : (typeof plan.featuresJson === 'string' ? (()=>{ try { const parsed = JSON.parse(plan.featuresJson); return Array.isArray(parsed) ? parsed : []; } catch { return []; } })() : []),
@@ -160,7 +162,7 @@ export default function PackagesPage() {
         name: '', nameBn: '', description: '', descriptionBn: '', 
         priceMonthlyBdt: 0, priceYearlyBdt: 0,
         promoPriceMonthlyBdt: 0, promoMonths: 0, yearlyDiscountPercent: 0,
-        messageQuota: 1000, aiQuota: 500, seatLimit: 1, trialDays: 0, allowByok: false,
+        messageQuota: 1000, aiQuota: 500, seatLimit: 1, whatsappLimit: 1, messengerLimit: 1, instagramLimit: 1, trialDays: 0, allowByok: false,
         features: [],
         featuresJson: [], 
         isActive: true, isPopular: false
@@ -228,6 +230,7 @@ export default function PackagesPage() {
                 
                 <div className="mt-2 space-y-2 text-[12px] text-zinc-400">
                   <div className="flex justify-between"><span>Team Members:</span> <span className="font-medium text-zinc-200">{plan.seatLimit}</span></div>
+                  <div className="flex justify-between"><span>Channels (WA/FB/IG):</span> <span className="font-medium text-zinc-200">{plan.whatsappLimit ?? 1} / {plan.messengerLimit ?? 1} / {plan.instagramLimit ?? 1}</span></div>
                   <div className="flex justify-between"><span>Messages:</span> <span className="font-medium text-zinc-200">{plan.messageQuota}</span></div>
                   <div className="flex justify-between"><span>AI Responses:</span> <span className="font-medium text-zinc-200">{plan.aiQuota}</span></div>
                   <div className="flex justify-between"><span>Features:</span> <span className="font-medium text-zinc-200">{plan.featuresJson?.length || 0} items</span></div>
@@ -321,13 +324,27 @@ export default function PackagesPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-4 gap-2.5">
+              <div className="grid grid-cols-4 gap-2.5 mt-2.5">
                 <div>
-                  <label className="block text-[12px] font-medium mb-1 text-zinc-400">Team Member Limit</label>
+                  <label className="block text-[12px] font-medium mb-1 text-zinc-400">Team Members</label>
                   <input type="number" value={planForm.seatLimit} onChange={e => setPlanForm({...planForm, seatLimit: Number(e.target.value)})} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none" />
                 </div>
                 <div>
-                  <label className="block text-[12px] font-medium mb-1 text-zinc-400">Trial Period (Days)</label>
+                  <label className="block text-[12px] font-medium mb-1 text-zinc-400">WhatsApp Limit</label>
+                  <input type="number" value={planForm.whatsappLimit} onChange={e => setPlanForm({...planForm, whatsappLimit: Number(e.target.value)})} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none" />
+                </div>
+                <div>
+                  <label className="block text-[12px] font-medium mb-1 text-zinc-400">Messenger Limit</label>
+                  <input type="number" value={planForm.messengerLimit} onChange={e => setPlanForm({...planForm, messengerLimit: Number(e.target.value)})} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none" />
+                </div>
+                <div>
+                  <label className="block text-[12px] font-medium mb-1 text-zinc-400">Instagram Limit</label>
+                  <input type="number" value={planForm.instagramLimit} onChange={e => setPlanForm({...planForm, instagramLimit: Number(e.target.value)})} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none" />
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-2.5 mt-2.5">
+                <div>
+                  <label className="block text-[12px] font-medium mb-1 text-zinc-400">Trial (Days)</label>
                   <input type="number" value={planForm.trialDays} onChange={e => setPlanForm({...planForm, trialDays: Number(e.target.value)})} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none" />
                 </div>
                 <div>
@@ -335,7 +352,7 @@ export default function PackagesPage() {
                   <input type="number" value={planForm.messageQuota} onChange={e => setPlanForm({...planForm, messageQuota: Number(e.target.value)})} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none" />
                 </div>
                 <div>
-                  <label className="block text-[12px] font-medium mb-1 text-zinc-400">AI Responses/mo</label>
+                  <label className="block text-[12px] font-medium mb-1 text-zinc-400">AI /mo</label>
                   <input type="number" value={planForm.aiQuota} onChange={e => setPlanForm({...planForm, aiQuota: Number(e.target.value)})} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none" />
                 </div>
               </div>
