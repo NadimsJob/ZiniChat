@@ -2,17 +2,29 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.smsgateway">
 
+    <!-- Core SMS permissions -->
     <uses-permission android:name="android.permission.RECEIVE_SMS" />
     <uses-permission android:name="android.permission.READ_SMS" />
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Required to run as a Foreground Service (persistent, survives app close) -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+
+    <!-- Required for BOOT_COMPLETED broadcast (auto-start after phone reboot) -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!-- Required on Android 13+ (API 33+) to show the persistent notification -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- Prevent Doze mode from killing the service (wake locks) -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <application
         android:allowBackup="true"
         android:label="ZiniChat SMS Gateway"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.DeviceDefault.NoActionBar">
-        
+
         <activity
             android:name=".MainActivity"
             android:exported="true">
@@ -22,6 +34,7 @@
             </intent-filter>
         </activity>
 
+        <!-- SMS BroadcastReceiver: woken by Android even when app is fully closed -->
         <receiver
             android:name=".SmsReceiver"
             android:enabled="true"
@@ -32,9 +45,26 @@
             </intent-filter>
         </receiver>
 
+        <!-- Boot Receiver: auto-restart service when phone reboots -->
+        <receiver
+            android:name=".BootReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <!-- Xiaomi/HyperOS quick boot support -->
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Foreground Service: persistent, survives app close, auto-restarts via START_STICKY -->
         <service
             android:name=".SmsGatewayService"
-            android:exported="false" />
-            
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="dataSync"
+            android:stopWithTask="false" />
+
     </application>
 </manifest>

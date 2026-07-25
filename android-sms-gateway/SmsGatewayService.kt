@@ -1,70 +1,89 @@
 package com.example.smsgateway
 
-import android.app.IntentService
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.os.Build
+import android.os.IBinder
 import android.util.Log
-import org.json.JSONObject
-import java.io.OutputStreamWriter
-import java.net.HttpURLConnection
-import java.net.URL
+import androidx.core.app.NotificationCompat
 
-class SmsGatewayService : IntentService("SmsGatewayService") {
+class SmsGatewayService : Service() {
 
-    override fun onHandleIntent(intent: Intent?) {
-        if (intent == null) return
+    companion object {
+        const val CHANNEL_ID = "zinichat_sms_gateway"
+        const val NOTIFICATION_ID = 1001
 
-        val trxId = intent.getStringExtra("trxId") ?: return
-        val amount = intent.getDoubleExtra("amount", 0.0)
-        val provider = intent.getStringExtra("provider") ?: "BKASH"
-        val accountType = intent.getStringExtra("accountType") ?: "PERSONAL"
-        val smsBody = intent.getStringExtra("smsBody") ?: ""
-        val senderNumber = intent.getStringExtra("senderNumber") ?: ""
-
-        Log.d("SmsGatewayService", "Syncing Transaction ID: $trxId, Amount: $amount BDT")
-
-        // Load configs from SharedPreferences
-        val sharedPref = getSharedPreferences("SmsGatewaySettings", Context.MODE_PRIVATE)
-        val webhookUrl = sharedPref.getString("webhook_url", "https://api.zinichat.com/mfs-payments/sms-webhook") ?: return
-        val apiKey = sharedPref.getString("api_key", "sms-gateway-secret-token") ?: return
-
-        try {
-            val url = URL(webhookUrl)
-            val conn = url.openConnection() as HttpURLConnection
-            conn.requestMethod = "POST"
-            conn.setRequestProperty("Content-Type", "application/json; utf-8")
-            conn.setRequestProperty("Accept", "application/json")
-            conn.setRequestProperty("X-SMS-GATEWAY-API-KEY", apiKey)
-            conn.doOutput = true
-            conn.connectTimeout = 15000
-            conn.readTimeout = 15000
-
-            // Create JSON payload
-            val jsonParam = JSONObject().apply {
-                put("trxId", trxId)
-                put("amount", amount)
-                put("provider", provider)
-                put("accountType", accountType)
-                put("smsBody", smsBody)
-                put("senderNumber", senderNumber)
-            }
-
-            val os = conn.outputStream
-            val writer = OutputStreamWriter(os, "UTF-8")
-            writer.write(jsonParam.toString())
-            writer.flush()
-            writer.close()
-            os.close()
-
-            val responseCode = conn.responseCode
-            if (responseCode == HttpURLConnection.HTTP_OK || responseCode == HttpURLConnection.HTTP_CREATED) {
-                Log.d("SmsGatewayService", "Sync Successful for TrxID: $trxId")
+        fun start(context: Context) {
+            val intent = Intent(context, SmsGatewayService::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(intent)
             } else {
-                Log.e("SmsGatewayService", "Failed to sync. Server returned: $responseCode")
+                context.startService(intent)
             }
-            conn.disconnect()
-        } catch (e: Exception) {
-            Log.e("SmsGatewayService", "Network Error during SMS sync", e)
         }
+
+        fun stop(context: Context) {
+            context.stopService(Intent(context, SmsGatewayService::class.java))
+        }
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        createNotificationChannel()
+        startForeground(NOTIFICATION_ID, buildNotification())
+        Log.d("SmsGatewayService", "✅ Foreground Service Started")
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        return START_STICKY
+    }
+
+    override fun onBind(intent: Intent?): IBinder? = null
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        Log.d("SmsGatewayService", "App swiped — scheduling restart...")
+        val restartIntent = PendingIntent.getService(
+            applicationContext, 1,
+            Intent(applicationContext, SmsGatewayService::class.java),
+            PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val alarmManager = getSystemService(ALARM_SERVICE) as android.app.AlarmManager
+        alarmManager.set(
+            android.app.AlarmManager.ELAPSED_REALTIME,
+            android.os.SystemClock.elapsedRealtime() + 1000,
+            restartIntent
+        )
+        super.onTaskRemoved(rootIntent)
+    }
+
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                CHANNEL_ID, "ZiniChat SMS Gateway", NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = "Keeps payment SMS sync running in the background"
+                setShowBadge(false)
+            }
+            getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+        }
+    }
+
+    private fun buildNotification(): android.app.Notification {
+        val pendingIntent = PendingIntent.getActivity(
+            this, 0, Intent(this, MainActivity::class.java),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        return NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle("ZiniChat SMS Gateway")
+            .setContentText("🟢 Active — Payment SMS sync is running")
+            .setSmallIcon(android.R.drawable.ic_dialog_email)
+            .setOngoing(true)
+            .setContentIntent(pendingIntent)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .build()
     }
 }
