@@ -199,3 +199,9 @@ This rule documents the transition away from third-party SMS Forwarders and the 
 * **AndroidX & Gradle Properties:** If modifying the custom Android App (`build.gradle`) and the build fails with `Configuration ':app:releaseRuntimeClasspath' contains AndroidX dependencies`, you MUST ensure that a `gradle.properties` file exists in the Android root directory containing `android.useAndroidX=true` and `android.enableJetifier=true`.
 * **Debug vs Release APKs:** The GitHub Actions workflow (`build-android-apk.yml`) MUST build a **Debug APK** (`assembleDebug`), NOT a Release APK. Android OS will reject (App Not Installed) an unsigned Release APK. Since this is an internal utility app not destined for the Google Play Store, the default Gradle debug keystore signature is sufficient and required for successful phone installation.
 
+
+---
+
+## 22. AI Automated Actions & Notifications
+* **Event Parity**: When an AI agent or automated background process (e.g., ZiniChat Support AI) creates an entity (like a Support Ticket) on behalf of a user, it MUST manually trigger the same notifications, web-socket events, and SMTP emails that the manual frontend UI would normally trigger.
+* **Why**: The AI typically writes directly to the database via Prisma, bypassing the standard service methods that contain the notification hooks. Without explicit notification calls, Superadmins and Tenants will be blind to AI-generated activities.
