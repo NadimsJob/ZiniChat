@@ -256,15 +256,16 @@ export default function TenantSupportPage() {
  </div>
  )}
 
- {/* New Ticket Modal */}
- {isNewTicketOpen && (
- <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
- <div className="bg-surface border border-surface-hover rounded-2xl max-w-md w-full max-h-[90vh] overflow-hidden flex flex-col">
- <div className="p-5 border-b border-surface-hover flex justify-between items-center bg-background shrink-0">
- <h3 className="text-[15px] font-bold">{language === 'en' ? 'Create Support Ticket' : 'নতুন সাপোর্ট টিকিট'}</h3>
- <button type="button" onClick={() => setIsNewTicketOpen(false)} className="text-zinc-400 hover:text-white"><X className="w-5 h-5"/></button>
- </div>
- <form onSubmit={handleCreateTicket} className="p-5 space-y-4 overflow-y-auto custom-scrollbar">
+  {/* New Ticket Modal */}
+  {isNewTicketOpen && (
+  <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[999] flex items-center justify-center p-4">
+  <div className="bg-surface border border-surface-hover rounded-2xl max-w-md w-full max-h-[90vh] overflow-hidden flex flex-col">
+  <div className="p-5 border-b border-surface-hover flex justify-between items-center bg-background shrink-0">
+  <h3 className="text-[15px] font-bold">{language === 'en' ? 'Create Support Ticket' : 'নতুন সাপোর্ট টিকিট'}</h3>
+  <button type="button" onClick={() => setIsNewTicketOpen(false)} className="text-zinc-400 hover:text-white"><X className="w-5 h-5"/></button>
+  </div>
+  <form onSubmit={handleCreateTicket} className="flex flex-col overflow-hidden">
+  <div className="p-5 space-y-4 overflow-y-auto custom-scrollbar">
  <div>
  <label className="block text-[12px] text-zinc-400 mb-1">{language === 'en' ? 'Subject' : 'বিষয়'}</label>
  <input 
@@ -320,26 +321,27 @@ export default function TenantSupportPage() {
  className="w-full text-[12px] file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-[12px] file:font-medium file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
  />
  </div>
- <div className="pt-2 flex justify-end gap-3">
- <button 
- type="button" 
- onClick={() => setIsNewTicketOpen(false)}
- className="px-4 py-2 rounded-xl text-[13px] text-zinc-400 hover:text-white"
- >
- {language === 'en' ? 'Cancel' : 'ক্যান্সেল'}
- </button>
- <button 
- type="submit" 
- disabled={creating}
- className="px-6 py-2 rounded-xl bg-primary text-white text-[13px] font-medium hover:bg-primary-hover disabled:opacity-50"
- >
- {creating ? (language === 'en' ? 'Creating...' : 'তৈরি হচ্ছে...') : (language === 'en' ? 'Submit Ticket' : 'সাবমিট করুন')}
- </button>
- </div>
- </form>
- </div>
- </div>
- )}
+  </div>
+  <div className="p-5 border-t border-surface-hover bg-background flex justify-end gap-3 shrink-0">
+  <button 
+  type="button" 
+  onClick={() => setIsNewTicketOpen(false)}
+  className="px-4 py-2 rounded-xl text-[13px] text-zinc-400 hover:text-white transition-colors"
+  >
+  {language === 'en' ? 'Cancel' : 'ক্যান্সেল'}
+  </button>
+  <button 
+  type="submit" 
+  disabled={creating}
+  className="px-6 py-2 rounded-xl bg-primary text-white text-[13px] font-medium hover:bg-primary-hover disabled:opacity-50 transition-colors"
+  >
+  {creating ? (language === 'en' ? 'Creating...' : 'তৈরি হচ্ছে...') : (language === 'en' ? 'Submit Ticket' : 'সাবমিট করুন')}
+  </button>
+  </div>
+  </form>
+  </div>
+  </div>
+  )}
  </div>
  );
 }

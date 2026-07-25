@@ -328,7 +328,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  <main className="flex-1 flex flex-col min-w-0">
  
  {/* Topbar */}
- <header className="h-12 px-3 flex items-center justify-between shrink-0 bg-surface/70 backdrop-blur-xl border-b border-border shadow-sm relative z-[60]">
+ <header className="h-12 px-3 flex items-center justify-between shrink-0 bg-surface/70 backdrop-blur-xl border-b border-border shadow-sm relative z-40">
  <div className="flex items-center gap-2">
  <button 
  className="md:hidden p-1.5 -ml-1.5 text-slate-500 hover:bg-primary/10 hover:text-primary rounded-lg transition-colors"
@@ -359,14 +359,20 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  
  <div className="flex items-center gap-2 md:gap-1.5">
  {mounted && (
- <button
- onClick={() => setLanguage(language === 'en' ? 'bn' : 'en')}
- title={language === 'en' ? 'Switch to Bengali' : 'Switch to English'}
- className="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 hover:bg-primary/10 hover:text-primary transition-colors"
- >
- <Globe className="w-3.5 h-3.5" />
- </button>
- )}
+  <button
+  onClick={() => setLanguage(language === 'en' ? 'bn' : 'en')}
+  title={language === 'en' ? 'Switch to Bengali' : 'Switch to English'}
+  className="relative flex items-center justify-between w-[46px] h-6 bg-slate-100 border border-slate-200 rounded-full p-0.5 overflow-hidden transition-colors hover:border-primary/50 mx-1 cursor-pointer"
+  >
+  <div
+  className={`absolute top-[1px] bottom-[1px] w-[20px] bg-primary rounded-full transition-transform duration-300 shadow-sm ${
+  language === 'bn' ? 'translate-x-[20px]' : 'translate-x-0'
+  }`}
+  />
+  <span className={`relative z-10 w-1/2 text-[9px] font-bold text-center transition-colors ${language === 'en' ? 'text-white' : 'text-slate-500'}`}>EN</span>
+  <span className={`relative z-10 w-1/2 text-[9px] font-bold text-center transition-colors ${language === 'bn' ? 'text-white' : 'text-slate-500'}`}>BN</span>
+  </button>
+  )}
  
 
  
