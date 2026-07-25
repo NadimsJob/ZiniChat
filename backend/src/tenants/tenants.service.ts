@@ -24,7 +24,7 @@ export class TenantsService {
           select: { users: true, conversations: true },
         },
         subscriptions: {
-          orderBy: { createdAt: 'desc' },
+          orderBy: { currentPeriodEnd: 'desc' },
           include: { plan: true }
         },
         usageLogs: {
@@ -38,7 +38,7 @@ export class TenantsService {
     });
 
     return tenants.map(t => {
-      const activeSub = t.subscriptions.find(s => s.status === 'active' || s.status === 'trialing');
+      const activeSub = t.subscriptions.find((s: any) => s.status === 'active' || s.status === 'trialing');
       const latestSub = t.subscriptions[0];
       const effectivePlan = activeSub?.plan || defaultPlan || latestSub?.plan || null;
       const subStatus = activeSub ? activeSub.status : (latestSub ? latestSub.status : 'none');
