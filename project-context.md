@@ -21,11 +21,11 @@ A multi-tenant SaaS platform where businesses (tenants) manage customer communic
 ---
 
 ## 3. Current Status & Active Focus
-- **Active Focus**: Implemented enterprise new-tab Payment Gateway Checkout Portal (`/dashboard/billing/pay-mfs`), Tenant Billing History (`/dashboard/settings/billing-history`), Superadmin active MFS channel filtering (`GET /mfs-payments/active-providers`), and auto-cancellation of duplicate pending payment attempts upon activation.
-- **Recent Issues Fixed**: Fixed custom price USD override bug where standard plans received custom pricing, fixed fraction offset accumulation in MFS payments, added pre-filled support chat widget opening on payment issues.
+- **Active Focus**: Fixing Facebook OAuth flows to use the real Graph API instead of mocks, implementing proper UI-level feature gating for subscription plans (e.g. locking Instagram DMs), and ensuring UI consistency across channel connection pages.
+- **Recent Issues Fixed**: Removed mock Facebook OAuth bypasses for Messenger and Instagram, replaced with real Graph API token exchanges. Fixed Support Ticket creation UI to include toast notifications. Updated AI Support Chat to properly trigger SMTP and Web Notifications to Superadmins when auto-escalating tickets (Event Parity).
 - **System**: Backend (NestJS), Frontend (Next.js), Mobile (Kotlin Android app). Bilingual support enabled (English/Bengali) across UI components. Tickets. Implemented strict feature gating for Support AI, Team Management, and Contact Labels via Superadmin Plan settings. Extracted and animated the 2-Minute Setup Widget on the marketing pages.
-- **Next Up:** Continue monitoring payment gateway operations and testing live staging tenant deployments.
-- Subscription logic, quotas (messages, AI tokens, storage), and superadmin customizations have been strictly enforced on the backend via `QuotaService` and `FeatureGuard`.
+- **Next Up:** Complete deployment to test and live servers using MCP, verify live data workflows.
+- Subscription logic, quotas (messages, AI tokens, storage, platform channels), and superadmin customizations have been strictly enforced on the backend via `QuotaService` and `FeatureGuard`.
 - Direct PC-to-Server deployment scripts (MCP Server) have been deprecated and deleted to enforce Git-only deployment constraints.
 - **Live and Staging Environments are fully deployed with Traefik routing, reverse proxy networking, and SSL certificates.**
 - **Performance & Load Testing has been completed directly on VPS. Capacity projections indicate 1,500+ Tenants (Official API) or 50+ (Unofficial Baileys QR) per 8GB RAM node.**
