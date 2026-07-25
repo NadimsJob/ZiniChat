@@ -211,3 +211,15 @@ This rule documents the transition away from third-party SMS Forwarders and the 
 ## 23. Superadmin Packages & Tenant Custom Plan Synchronization
 * **Rule**: Whenever any changes (additions, modifications, or deletions) are made to the system features list (access control checkboxes) inside `frontend/src/app/superadmin/packages/page.tsx`, the EXACT same changes MUST be synchronized with the "Customize Plan" modal in `frontend/src/app/superadmin/tenants/page.tsx`.
 * **Why**: The Tenants page allows superadmins to override plan defaults on a per-tenant basis. If a new feature is added to the Packages page, it must also be available to be explicitly overridden inside the Tenants page customization form.
+
+---
+
+## 24. Active Subscription Resolution & Pending Checkout Filtering
+* **Rule**: When querying a tenant's active plan for limits, quotas, or superadmin list displays (e.g. `tenantsService.findAll()`), NEVER blindly take `subscriptions[0]`. Unpaid payment attempts create `Subscription` records with `status = 'pending'`.
+* **Implementation**: Always filter subscriptions for `status === 'active' || status === 'trialing'`, falling back to the default/Free plan if no active subscription exists. Never allow a `pending` subscription to override the tenant's actual base plan or features.
+
+---
+
+## 25. JSON String Feature Array Substring Prevention
+* **Rule**: When rendering feature checkboxes or validating feature permissions on the frontend, NEVER call `.includes()` directly on `tenant.basePlan.features` or `customFeatures` without converting JSON strings to real JavaScript arrays first.
+* **Why**: In JavaScript, stringified JSON arrays like `'["ai_assistant","whatsapp"]'.includes('messenger')` perform a substring search on the raw string, returning `true` if matched, which incorrectly checks all checkboxes. Always use a helper function (`parseFeaturesArray`) to parse JSON strings into actual JS arrays before calling `.includes()`.
