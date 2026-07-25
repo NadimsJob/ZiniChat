@@ -9,6 +9,7 @@
 
     <!-- Required to run as a Foreground Service (persistent, survives app close) -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
     <!-- Required for BOOT_COMPLETED broadcast (auto-start after phone reboot) -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
