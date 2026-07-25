@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { SmtpService } from '../smtp/smtp.service';
 import OpenAI from 'openai';
 
 @Injectable()
@@ -9,7 +11,9 @@ export class SupportChatService {
 
   constructor(
     private prisma: PrismaService,
-    private aiService: AiService
+    private aiService: AiService,
+    private notificationsService: NotificationsService,
+    private smtpService: SmtpService
   ) {}
 
   async getConversation(tenantId: string) {
@@ -153,12 +157,13 @@ Always communicate in Bengali unless the user speaks in English. Be polite and c
         const toolCall: any = responseMessage.tool_calls[0];
         if (toolCall.function?.name === 'create_support_ticket') {
           const args = JSON.parse(toolCall.function.arguments);
+          const subject = `AI Escalated: ${args.issue_summary}`;
           
           // Create ticket
-          await this.prisma.ticket.create({
+          const ticket = await this.prisma.ticket.create({
             data: {
               tenantId,
-              subject: `AI Escalated: ${args.issue_summary}`,
+              subject: subject,
               type: 'Technical Support',
               status: 'open',
               priority: 'medium',
@@ -169,8 +174,17 @@ Always communicate in Bengali unless the user speaks in English. Be polite and c
                   message: `Phone: ${args.phone}\nIssue: ${args.issue_summary}`
                 }
               }
-            }
+            },
+            include: { tenant: true }
           });
+
+          // Send notifications to superadmin
+          await this.notificationsService.createSystemNotificationForSuperadmins(
+            `New Ticket via AI: ${subject}`,
+            `A new support ticket was auto-escalated for ${ticket.tenant.businessName}`,
+            'system'
+          );
+          await this.smtpService.triggerTicketCreatedEmail(ticket.tenant.businessName, subject, 'medium');
 
           const confirmationMsg = "আপনার জন্য একটি সাপোর্ট টিকিট ওপেন করা হয়েছে। আমাদের টিম খুব শীঘ্রই আপনার সাথে যোগাযোগ করবে।";
           await this.prisma.supportMessage.create({

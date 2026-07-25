@@ -4,6 +4,7 @@ import axios from 'axios';
 import { format } from 'date-fns';
 import { Mail, CheckCircle, Clock, Search, Paperclip, Send, AlertCircle, Plus, X } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageProvider';
+import toast from 'react-hot-toast';
 
 export default function TenantSupportPage() {
   const { language } = useLanguage();
@@ -71,14 +72,16 @@ export default function TenantSupportPage() {
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
       });
       
+      toast.success(language === 'en' ? 'Ticket created successfully!' : 'সফলভাবে টিকিট তৈরি হয়েছে!');
       setIsNewTicketOpen(false);
       setNewSubject('');
       setNewType('General');
       setNewMessage('');
       setNewFile(null);
       fetchTickets();
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
+      toast.error(error.response?.data?.message || (language === 'en' ? 'Failed to create ticket' : 'টিকিট তৈরি করতে ব্যর্থ হয়েছে'));
     } finally {
       setCreating(false);
     }
