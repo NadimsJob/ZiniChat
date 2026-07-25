@@ -26,7 +26,8 @@ import {
   Package,
   Key,
   Landmark,
-  Clock
+  Clock,
+  MessageSquare
 } from 'lucide-react';
 import NotificationBell from '@/components/NotificationBell';
 
@@ -101,6 +102,7 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
     { name: language === 'en' ? 'Audit Logs' : 'অডিট লগস', icon: ClipboardList, href: '/superadmin/audit-logs', show: hasPermission('manage:audit') },
     { name: language === 'en' ? 'Inquiries' : 'ইনকোয়ারি', icon: Mail, href: '/superadmin/inquiries', show: hasPermission('manage:site') },
     { name: language === 'en' ? 'Support Tickets' : 'সাপোর্ট টিকিট', icon: ClipboardList, href: '/superadmin/tickets', show: hasPermission('manage:site') },
+    { name: language === 'en' ? 'Message Templates' : 'মেসেজ টেমপ্লেটস', icon: MessageSquare, href: '/superadmin/templates', show: hasPermission('manage:site') },
     { name: language === 'en' ? 'AI Support Chats' : 'এআই সাপোর্ট চ্যাটস', icon: Bot, href: '/superadmin/support-chats', show: hasPermission('manage:site') },
     { 
       name: language === 'en' ? 'Settings' : 'সেটিংস', 

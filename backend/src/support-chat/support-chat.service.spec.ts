@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { SupportChatService } from './support-chat.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { SmtpService } from '../smtp/smtp.service';
 
 describe('SupportChatService', () => {
   let service: SupportChatService;
@@ -37,6 +39,8 @@ describe('SupportChatService', () => {
         SupportChatService,
         { provide: PrismaService, useValue: prismaService },
         { provide: AiService, useValue: aiService },
+        { provide: NotificationsService, useValue: { sendSystemNotification: jest.fn() } },
+        { provide: SmtpService, useValue: { triggerSupportTicketUpdate: jest.fn() } },
       ],
     }).compile();
 

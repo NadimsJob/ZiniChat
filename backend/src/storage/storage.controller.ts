@@ -62,4 +62,20 @@ export class StorageController {
 
     return { success: true, deletedCount };
   }
+
+  @Post('clear-all')
+  @RequirePermissions('manage:contacts')
+  async clearAllStorage(@Req() req: any) {
+    const tenantId = req.user?.tenantId;
+    if (!tenantId) {
+      throw new BadRequestException('Tenant ID is missing from user context');
+    }
+
+    const success = await this.storageService.clearAllMedia(tenantId);
+    if (!success) {
+      throw new BadRequestException('Failed to clear storage');
+    }
+
+    return { success: true };
+  }
 }

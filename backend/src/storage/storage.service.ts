@@ -87,4 +87,21 @@ export class StorageService {
       return false;
     }
   }
+
+  async clearAllMedia(tenantId: string): Promise<boolean> {
+    try {
+      const tenantDir = path.join(this.uploadDir, 'tenants', tenantId);
+      if (fs.existsSync(tenantDir)) {
+        const files = fs.readdirSync(tenantDir);
+        for (const file of files) {
+          fs.unlinkSync(path.join(tenantDir, file));
+        }
+      }
+      await this.quotaService.resetStorage(tenantId);
+      return true;
+    } catch (error) {
+      this.logger.error(`Failed to clear media: ${error.message}`);
+      return false;
+    }
+  }
 }

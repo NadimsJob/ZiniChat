@@ -93,4 +93,23 @@ export class BroadcastsService {
 
     return broadcast;
   }
+
+  // --- Superadmin Endpoints ---
+  async getAllTemplatesForAdmin() {
+    return this.prisma.template.findMany({
+      include: {
+        tenant: {
+          select: { businessName: true }
+        }
+      },
+      orderBy: { id: 'desc' } // or whatever order
+    });
+  }
+
+  async updateTemplateStatus(templateId: string, status: string) {
+    return this.prisma.template.update({
+      where: { id: templateId },
+      data: { status }
+    });
+  }
 }

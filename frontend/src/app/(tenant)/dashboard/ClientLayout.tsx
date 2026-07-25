@@ -58,6 +58,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  const [showTrialModal, setShowTrialModal] = useState(false);
  const [showFeatureLockedModal, setShowFeatureLockedModal] = useState(false);
  const [allowedFeatures, setAllowedFeatures] = useState<string[]>(['*']);
+ const [avatarError, setAvatarError] = useState(false);
  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
 
  useEffect(() => {
@@ -382,11 +383,12 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  className="flex items-center outline-none"
  onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
  >
- {userProfile?.profilePicUrl ? (
+ {userProfile?.profilePicUrl && !avatarError ? (
  <img
  src={`${API}${userProfile.profilePicUrl}`}
  alt="Avatar"
- className="w-8 h-8 rounded-full object-cover border border-slate-200 "
+ className="w-8 h-8 rounded-full object-cover border border-slate-200"
+ onError={() => setAvatarError(true)}
  />
  ) : (
  <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold uppercase border border-primary/20">

@@ -110,6 +110,13 @@ export class QuotaService {
     });
   }
 
+  async resetStorage(tenantId: string): Promise<void> {
+    await this.prisma.tenant.update({
+      where: { id: tenantId },
+      data: { storageUsedBytes: BigInt(0) }
+    });
+  }
+
   async checkFeature(tenantId: string, featureKey: string): Promise<boolean> {
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },

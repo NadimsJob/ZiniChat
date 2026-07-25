@@ -31,6 +31,7 @@ describe('MfsPaymentsService', () => {
       findFirst: jest.fn(),
       findUnique: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
     },
     subscription: {
       update: jest.fn(),
@@ -153,6 +154,7 @@ describe('MfsPaymentsService', () => {
 
     it('should throw NotFoundException if payment request is not found', async () => {
       mockPrismaService.payment.findFirst.mockResolvedValue(null);
+      mockPrismaService.mfsTransaction.findMany.mockResolvedValue([]);
 
       await expect(
         service.verifyPayment('user-1', 'tenant-1', 'pay-invalid', 'TRX123'),
@@ -162,6 +164,7 @@ describe('MfsPaymentsService', () => {
     it('should throw BadRequestException if transaction ID does not exist', async () => {
       mockPrismaService.payment.findFirst.mockResolvedValue(paymentStub);
       mockPrismaService.mfsTransaction.findUnique.mockResolvedValue(null);
+      mockPrismaService.mfsTransaction.findMany.mockResolvedValue([]);
 
       await expect(
         service.verifyPayment('user-1', 'tenant-1', 'pay-1', 'TRX_NOT_EXIST'),

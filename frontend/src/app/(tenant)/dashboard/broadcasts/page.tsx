@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
-import { Megaphone, Plus, Clock, Users, Play, AlertCircle, Info } from 'lucide-react';
+import { Megaphone, Plus, Clock, Users, Play, AlertCircle, Info, X } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageProvider';
 
 export default function BroadcastsPage() {
@@ -12,7 +12,8 @@ export default function BroadcastsPage() {
  const [loading, setLoading] = useState(true);
  const [error, setError] = useState<string | null>(null);
  const [activeTab, setActiveTab] = useState<'campaigns' | 'templates'>('campaigns');
-
+ const [isCampaignModalOpen, setIsCampaignModalOpen] = useState(false);
+ const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
  useEffect(() => {
  fetchData();
  }, [activeTab]);
@@ -76,7 +77,9 @@ export default function BroadcastsPage() {
  {language === 'en' ? 'Send bulk messages to your contacts via WhatsApp.' : 'হোয়াটসঅ্যাপের মাধ্যমে বাল্ক মেসেজ পাঠান।'}
  </p>
  </div>
- <button className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-[13px] font-bold rounded-xl shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all">
+ <button 
+ onClick={() => activeTab === 'campaigns' ? setIsCampaignModalOpen(true) : setIsTemplateModalOpen(true)}
+ className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-[13px] font-bold rounded-xl shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all">
  <Plus className="w-4 h-4" /> 
  {activeTab === 'campaigns' 
  ? (language === 'en' ? 'New Campaign' : 'নতুন ক্যাম্পেইন') 
@@ -168,6 +171,86 @@ export default function BroadcastsPage() {
  </div>
  )}
  </div>
+
+ {/* Campaign Modal */}
+ {isCampaignModalOpen && (
+ <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+ <div className="bg-surface border border-surface-hover w-full max-w-lg rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
+ <div className="flex justify-between items-center p-4 border-b border-surface-hover shrink-0">
+ <h2 className="text-lg font-bold">{language === 'en' ? 'Create New Campaign' : 'নতুন ক্যাম্পেইন তৈরি করুন'}</h2>
+ <button onClick={() => setIsCampaignModalOpen(false)} className="p-1 hover:bg-surface-hover rounded-lg text-zinc-400 hover:text-zinc-200 transition-colors">
+ <X className="w-5 h-5" />
+ </button>
+ </div>
+ <div className="p-4 overflow-y-auto space-y-4">
+ <div>
+ <label className="block text-[13px] font-bold text-zinc-400 mb-1">{language === 'en' ? 'Campaign Name' : 'ক্যাম্পেইনের নাম'}</label>
+ <input type="text" className="w-full bg-background border border-surface-hover rounded-xl px-3 py-2 text-[13px] outline-none focus:border-primary transition-colors" placeholder={language === 'en' ? 'e.g. Eid Promo' : 'উদাঃ ইদ প্রোমো'} />
+ </div>
+ <div>
+ <label className="block text-[13px] font-bold text-zinc-400 mb-1">{language === 'en' ? 'Select Template' : 'টেমপ্লেট নির্বাচন করুন'}</label>
+ <select className="w-full bg-background border border-surface-hover rounded-xl px-3 py-2 text-[13px] outline-none focus:border-primary transition-colors">
+ <option value="">{language === 'en' ? 'Select a template...' : 'একটি টেমপ্লেট নির্বাচন করুন...'}</option>
+ {templates.filter(t => t.status === 'APPROVED').map(t => (
+ <option key={t.id} value={t.id}>{t.name}</option>
+ ))}
+ </select>
+ {templates.filter(t => t.status === 'APPROVED').length === 0 && (
+ <p className="text-[11px] text-red-500 mt-1">{language === 'en' ? 'No approved templates available.' : 'কোনো অ্যাপ্রুভড টেমপ্লেট নেই।'}</p>
+ )}
+ </div>
+ </div>
+ <div className="p-4 border-t border-surface-hover flex justify-end gap-2 shrink-0">
+ <button onClick={() => setIsCampaignModalOpen(false)} className="px-4 py-2 text-[13px] font-bold text-zinc-400 hover:text-zinc-200 hover:bg-surface-hover rounded-xl transition-all">
+ {language === 'en' ? 'Cancel' : 'বাতিল করুন'}
+ </button>
+ <button className="px-4 py-2 bg-primary text-primary-foreground text-[13px] font-bold rounded-xl shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all">
+ {language === 'en' ? 'Create Campaign' : 'ক্যাম্পেইন তৈরি করুন'}
+ </button>
+ </div>
+ </div>
+ </div>
+ )}
+
+ {/* Template Modal */}
+ {isTemplateModalOpen && (
+ <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+ <div className="bg-surface border border-surface-hover w-full max-w-lg rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
+ <div className="flex justify-between items-center p-4 border-b border-surface-hover shrink-0">
+ <h2 className="text-lg font-bold">{language === 'en' ? 'Submit New Template' : 'নতুন টেমপ্লেট সাবমিট করুন'}</h2>
+ <button onClick={() => setIsTemplateModalOpen(false)} className="p-1 hover:bg-surface-hover rounded-lg text-zinc-400 hover:text-zinc-200 transition-colors">
+ <X className="w-5 h-5" />
+ </button>
+ </div>
+ <div className="p-4 overflow-y-auto space-y-4">
+ <div>
+ <label className="block text-[13px] font-bold text-zinc-400 mb-1">{language === 'en' ? 'Template Name' : 'টেমপ্লেটের নাম'}</label>
+ <input type="text" className="w-full bg-background border border-surface-hover rounded-xl px-3 py-2 text-[13px] outline-none focus:border-primary transition-colors" placeholder="e.g. eid_promo_01" />
+ </div>
+ <div>
+ <label className="block text-[13px] font-bold text-zinc-400 mb-1">{language === 'en' ? 'Category' : 'ক্যাটাগরি'}</label>
+ <select className="w-full bg-background border border-surface-hover rounded-xl px-3 py-2 text-[13px] outline-none focus:border-primary transition-colors">
+ <option value="MARKETING">Marketing</option>
+ <option value="UTILITY">Utility</option>
+ <option value="AUTHENTICATION">Authentication</option>
+ </select>
+ </div>
+ <div>
+ <label className="block text-[13px] font-bold text-zinc-400 mb-1">{language === 'en' ? 'Message Body' : 'মেসেজ বডি'}</label>
+ <textarea rows={4} className="w-full bg-background border border-surface-hover rounded-xl px-3 py-2 text-[13px] outline-none focus:border-primary transition-colors" placeholder={language === 'en' ? 'Hello {{1}}, here is your discount...' : 'হ্যালো {{1}}...'}></textarea>
+ </div>
+ </div>
+ <div className="p-4 border-t border-surface-hover flex justify-end gap-2 shrink-0">
+ <button onClick={() => setIsTemplateModalOpen(false)} className="px-4 py-2 text-[13px] font-bold text-zinc-400 hover:text-zinc-200 hover:bg-surface-hover rounded-xl transition-all">
+ {language === 'en' ? 'Cancel' : 'বাতিল করুন'}
+ </button>
+ <button className="px-4 py-2 bg-primary text-primary-foreground text-[13px] font-bold rounded-xl shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all">
+ {language === 'en' ? 'Submit for Approval' : 'অ্যাপ্রুভালের জন্য পাঠান'}
+ </button>
+ </div>
+ </div>
+ </div>
+ )}
  </div>
  );
 }
