@@ -37,7 +37,7 @@ export class TenantsService {
       },
     });
 
-    const defaultAiConfig = await this.prisma.aiConfig.findFirst({ where: { isDefault: true } }) || await this.prisma.aiConfig.findFirst();
+    const defaultAiConfig = await this.prisma.aiConfig.findFirst({ where: { isActive: true } }) || await this.prisma.aiConfig.findFirst();
 
     return tenants.map(t => {
       const activeSub = t.subscriptions.find((s: any) => s.status === 'active' || s.status === 'trialing');

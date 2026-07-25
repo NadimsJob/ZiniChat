@@ -219,7 +219,7 @@ export class AuthService {
           await this.prisma.tenant.update({
             where: { id: user.tenantId },
             data: { planId: activeSub.planId }
-          }).catch(err => this.logger.error('Failed to sync tenant planId in getMe', err));
+          }).catch(err => console.error('Failed to sync tenant planId in getMe', err));
         }
       }
     }
