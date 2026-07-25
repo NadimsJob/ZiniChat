@@ -4,19 +4,19 @@ import ServiceWorkerRegistry from '@/components/ServiceWorkerRegistry';
 import PwaInstallPrompt from '@/components/PwaInstallPrompt';
 
 export const metadata: Metadata = {
-  manifest: '/api/manifest/tenant',
+ manifest: '/api/manifest/tenant',
 };
 
 export default function TenantDashboardLayout({
-  children,
+ children,
 }: {
-  children: React.ReactNode;
+ children: React.ReactNode;
 }) {
-  return (
-    <>
-      <ServiceWorkerRegistry />
-      <PwaInstallPrompt type="tenant" />
-      <ClientLayout>{children}</ClientLayout>
-    </>
-  );
+ return (
+ <>
+ <ServiceWorkerRegistry />
+ <PwaInstallPrompt type="tenant" />
+ <ClientLayout>{children}</ClientLayout>
+ </>
+ );
 }
