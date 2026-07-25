@@ -188,6 +188,7 @@ export class AuthService {
             planId: true,
             plan: {
               select: {
+                id: true,
                 name: true,
                 nameBn: true
               }
@@ -196,6 +197,33 @@ export class AuthService {
         }
       }
     });
+
+    if (user && user.tenantId && user.tenant) {
+      const activeSub = await this.prisma.subscription.findFirst({
+        where: {
+          tenantId: user.tenantId,
+          status: { in: ['active', 'trialing'] }
+        },
+        include: { plan: true },
+        orderBy: { currentPeriodEnd: 'desc' }
+      });
+
+      if (activeSub && activeSub.plan) {
+        (user.tenant as any).plan = {
+          id: activeSub.plan.id,
+          name: activeSub.plan.name,
+          nameBn: activeSub.plan.nameBn
+        };
+
+        if (user.tenant.planId !== activeSub.planId) {
+          await this.prisma.tenant.update({
+            where: { id: user.tenantId },
+            data: { planId: activeSub.planId }
+          }).catch(err => this.logger.error('Failed to sync tenant planId in getMe', err));
+        }
+      }
+    }
+
     return user;
   }
 

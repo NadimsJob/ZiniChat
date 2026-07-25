@@ -9,17 +9,31 @@ export class NotificationsService {
     private gateway: NotificationsGateway
   ) {}
 
-  async getUserNotifications(userId: string) {
+  async getUserNotifications(userId: string, role?: string) {
+    const whereCondition: any = { userId };
+    if (role === 'superadmin') {
+      whereCondition.type = 'system';
+    } else {
+      whereCondition.type = { not: 'system' };
+    }
+
     return this.prisma.notification.findMany({
-      where: { userId },
+      where: whereCondition,
       orderBy: { createdAt: 'desc' },
       take: 20
     });
   }
 
-  async getUnreadCount(userId: string) {
+  async getUnreadCount(userId: string, role?: string) {
+    const whereCondition: any = { userId, isRead: false };
+    if (role === 'superadmin') {
+      whereCondition.type = 'system';
+    } else {
+      whereCondition.type = { not: 'system' };
+    }
+
     const count = await this.prisma.notification.count({
-      where: { userId, isRead: false }
+      where: whereCondition
     });
     return { count };
   }

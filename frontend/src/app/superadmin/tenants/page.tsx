@@ -291,13 +291,12 @@ export default function TenantsPage() {
                   </td>
                   <td className="px-3 py-2">
                     <select 
-                      value={tenant.customAiConfigId || 'default'} 
+                      value={tenant.customAiConfigId || (aiConfigs.find(c => c.isDefault)?.id || aiConfigs[0]?.id || '')} 
                       onChange={(e) => handleAiConfigChange(tenant.id, e.target.value)}
                       className="bg-[#09090b] border border-zinc-800 rounded px-2 py-1 text-[11px] text-white focus:outline-none focus:border-emerald-500 max-w-[130px] truncate"
                     >
-                      <option value="default">Platform Default</option>
                       {aiConfigs.map(c => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
+                        <option key={c.id} value={c.id}>{c.name}{c.isDefault ? ' (Default)' : ''}</option>
                       ))}
                     </select>
                   </td>
@@ -344,8 +343,8 @@ export default function TenantsPage() {
       </div>
 
       {editingTenant && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-[#121214] border border-zinc-800 rounded-2xl shadow-2xl max-w-md w-full p-6 animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="bg-[#121214] border border-zinc-800 rounded-2xl shadow-2xl max-w-lg w-full p-6 animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-bold text-white">Customize Plan</h3>
               <button onClick={() => setEditingTenant(null)} className="text-zinc-500 hover:text-white">

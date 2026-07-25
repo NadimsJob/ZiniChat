@@ -37,6 +37,8 @@ export class TenantsService {
       },
     });
 
+    const defaultAiConfig = await this.prisma.aiConfig.findFirst({ where: { isDefault: true } }) || await this.prisma.aiConfig.findFirst();
+
     return tenants.map(t => {
       const activeSub = t.subscriptions.find((s: any) => s.status === 'active' || s.status === 'trialing');
       const latestSub = t.subscriptions[0];
@@ -53,7 +55,7 @@ export class TenantsService {
         createdAt: t.createdAt,
         status: t.status,
         _count: t._count,
-        customAiConfigId: t.customAiConfigId,
+        customAiConfigId: t.customAiConfigId || defaultAiConfig?.id || null,
         hasByok: t.assistants.some(a => a.byokApiKeyEncrypted !== null),
         aiQuota: {
           limit: aiLimit,

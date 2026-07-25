@@ -9,12 +9,12 @@ export class NotificationsController {
 
   @Get()
   getUserNotifications(@Request() req: any) {
-    return this.notificationsService.getUserNotifications(req.user.id);
+    return this.notificationsService.getUserNotifications(req.user.id, req.user.role);
   }
 
   @Get('unread-count')
   getUnreadCount(@Request() req: any) {
-    return this.notificationsService.getUnreadCount(req.user.id);
+    return this.notificationsService.getUnreadCount(req.user.id, req.user.role);
   }
 
   @Patch(':id/read')

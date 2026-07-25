@@ -309,6 +309,36 @@ export class PaymentsService {
   }
 
   async getTenantPaymentHistory(tenantId: string) {
+    const activeSub = await this.prisma.subscription.findFirst({
+      where: { tenantId, status: { in: ['active', 'trialing'] } },
+      include: { plan: true }
+    });
+
+    if (activeSub) {
+      const pendingSubPayments = await this.prisma.payment.findMany({
+        where: {
+          tenantId,
+          status: 'pending',
+          subscriptionId: { not: null }
+        },
+        include: { subscription: true }
+      });
+
+      const idsToCancel: string[] = [];
+      for (const p of pendingSubPayments) {
+        if (p.subscription?.planId === activeSub.planId) {
+          idsToCancel.push(p.id);
+        }
+      }
+
+      if (idsToCancel.length > 0) {
+        await this.prisma.payment.updateMany({
+          where: { id: { in: idsToCancel } },
+          data: { status: 'cancelled' }
+        });
+      }
+    }
+
     return this.prisma.payment.findMany({
       where: { tenantId },
       include: {
