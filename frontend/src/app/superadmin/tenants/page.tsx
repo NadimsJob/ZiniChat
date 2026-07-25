@@ -19,7 +19,10 @@ export default function TenantsPage() {
     customMessageQuota: '',
     customAiQuota: '',
     customStorageLimitMb: '',
-    billingCycleStart: ''
+    billingCycleStart: '',
+    customAllowByok: false,
+    customFeatures: [] as string[],
+    hasFeaturesOverride: false, // Flag to know if they want to override features
   });
   const [saving, setSaving] = useState(false);
 
@@ -104,7 +107,10 @@ export default function TenantsPage() {
       customMessageQuota: tenant.customMessageQuota || '',
       customAiQuota: tenant.customAiQuota || '',
       customStorageLimitMb: tenant.customStorageLimitMb || '',
-      billingCycleStart: tenant.trialEndsAt ? new Date(tenant.trialEndsAt).toISOString().split('T')[0] : ''
+      billingCycleStart: tenant.trialEndsAt ? new Date(tenant.trialEndsAt).toISOString().split('T')[0] : '',
+      customAllowByok: tenant.customAllowByok ?? false,
+      customFeatures: tenant.customFeatures || [],
+      hasFeaturesOverride: tenant.customFeatures !== null,
     });
   };
 
@@ -121,6 +127,10 @@ export default function TenantsPage() {
     if (customData.customAiQuota) payload.customAiQuota = parseInt(customData.customAiQuota);
     if (customData.customStorageLimitMb) payload.customStorageLimitMb = parseInt(customData.customStorageLimitMb);
     if (customData.billingCycleStart) payload.billingCycleStart = customData.billingCycleStart;
+    
+    // Always include features if the override flag is true, otherwise pass null to remove override
+    payload.customFeatures = customData.hasFeaturesOverride ? customData.customFeatures : null;
+    payload.customAllowByok = customData.hasFeaturesOverride ? customData.customAllowByok : null;
 
     try {
       const token = Cookies.get('access_token');
@@ -313,7 +323,7 @@ export default function TenantsPage() {
                     placeholder="e.g. 5000"
                   />
                 </div>
-                <div className="space-y-1 col-span-2">
+                <div className="space-y-1">
                   <label className="text-xs font-medium text-zinc-400">Storage Limit (MB)</label>
                   <input
                     type="number"
@@ -324,8 +334,67 @@ export default function TenantsPage() {
                   />
                 </div>
               </div>
+
+              <div className="mt-4 border-t border-zinc-800 pt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <label className="text-xs font-medium text-zinc-400">Override System Features (Access Control)</label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={customData.hasFeaturesOverride}
+                      onChange={(e) => setCustomData({ ...customData, hasFeaturesOverride: e.target.checked })}
+                      className="w-3.5 h-3.5 rounded border-zinc-700 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-background bg-background" 
+                    />
+                    <span className="text-[11px] font-medium text-emerald-400">Enable Feature Override</span>
+                  </label>
+                </div>
+                
+                {customData.hasFeaturesOverride && (
+                  <div className="grid grid-cols-2 gap-3 mt-3">
+                    <label className="flex items-center gap-2 cursor-pointer bg-background border border-zinc-800 p-2.5 rounded-xl hover:border-emerald-500/50 transition-colors">
+                      <input 
+                        type="checkbox" 
+                        checked={customData.customAllowByok}
+                        onChange={(e) => setCustomData({ ...customData, customAllowByok: e.target.checked })}
+                        className="w-4 h-4 rounded border-zinc-700 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-background bg-background" 
+                      />
+                      <span className="text-[11px] font-medium text-white">Bring Your Own Key (BYOK)</span>
+                    </label>
+                    {[
+                      { id: 'ai_assistant', label: 'AI Assistant' },
+                      { id: 'platform_support_ai', label: 'Platform Support AI (Widget)' },
+                      { id: 'messenger', label: 'Messenger Integration' },
+                      { id: 'whatsapp', label: 'WhatsApp API (Official)' },
+                      { id: 'whatsapp_qr', label: 'WhatsApp Web (Unofficial QR)' },
+                      { id: 'whatsapp_widget', label: 'WhatsApp Website Widget' },
+                      { id: 'instagram_dm', label: 'Instagram DM Integration' },
+                      { id: 'lead_manage', label: 'Leads CRM' },
+                      { id: 'commerce', label: 'Products & Orders' },
+                      { id: 'broadcast', label: 'Broadcast Campaigns' },
+                      { id: 'team_management', label: 'Team Members & Roles' },
+                      { id: 'contact_labels', label: 'Custom Contact Labels' }
+                    ].map(feature => (
+                      <label key={feature.id} className="flex items-center gap-2 cursor-pointer bg-background border border-zinc-800 p-2.5 rounded-xl hover:border-emerald-500/50 transition-colors">
+                        <input 
+                          type="checkbox" 
+                          checked={customData.customFeatures.includes(feature.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setCustomData({ ...customData, customFeatures: [...customData.customFeatures, feature.id] });
+                            } else {
+                              setCustomData({ ...customData, customFeatures: customData.customFeatures.filter((f: string) => f !== feature.id) });
+                            }
+                          }}
+                          className="w-4 h-4 rounded border-zinc-700 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-background bg-background" 
+                        />
+                        <span className="text-[11px] font-medium text-white leading-tight">{feature.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
               
-              <div className="pt-4 flex justify-end gap-2">
+              <div className="flex justify-end gap-3 pt-4 border-t border-zinc-800">
                 <button
                   type="button"
                   onClick={() => setEditingTenant(null)}

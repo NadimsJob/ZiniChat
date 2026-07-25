@@ -154,7 +154,6 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
     '/dashboard/settings/whatsapp': ['whatsapp'],
     '/dashboard/settings/messenger': ['messenger'],
     '/dashboard/settings/ai-training': ['ai_assistant'],
-    '/dashboard/support': ['platform_support_ai'],
     '/dashboard/team': ['team_management'],
     '/dashboard/settings/labels': ['contact_labels'],
   };
@@ -493,7 +492,9 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
       )}
 
       {/* Floating Action Buttons or Modals */}
-      <SupportWidget />
+      {(allowedFeatures.includes('*') || allowedFeatures.includes('platform_support_ai')) && (
+        <SupportWidget />
+      )}
 
     </div>
   );

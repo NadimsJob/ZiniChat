@@ -45,7 +45,7 @@ export class AiTrainingService {
     });
 
     const activeSub = tenant?.subscriptions[0];
-    const allowByok = activeSub?.plan?.allowByok || false;
+    const allowByok = tenant?.customAllowByok ?? activeSub?.plan?.allowByok ?? false;
 
     return {
       routingMode: assistant.routingMode,

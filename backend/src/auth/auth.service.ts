@@ -88,11 +88,16 @@ export class AuthService {
         trialEndsAt = new Date();
       }
 
+      const defaultAiConfig = await prisma.aiConfig.findFirst({
+        where: { isActive: true, isSupportDefault: false }
+      });
+
       const tenant = await prisma.tenant.create({
         data: {
           businessName,
           trialEndsAt,
-          planId: selectedPlan?.id || null
+          planId: selectedPlan?.id || null,
+          customAiConfigId: defaultAiConfig?.id || null
         }
       });
 
@@ -444,11 +449,16 @@ export class AuthService {
           trialEndsAt = new Date();
         }
 
+        const defaultAiConfig = await this.prisma.aiConfig.findFirst({
+          where: { isActive: true, isSupportDefault: false }
+        });
+
         const tenant = await this.prisma.tenant.create({
           data: {
             businessName: `${name}'s Workspace`,
             trialEndsAt,
-            planId: selectedPlan?.id || null
+            planId: selectedPlan?.id || null,
+            customAiConfigId: defaultAiConfig?.id || null
           }
         });
 

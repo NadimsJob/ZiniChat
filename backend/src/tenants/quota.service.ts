@@ -120,11 +120,9 @@ export class QuotaService {
 
     if (!tenant) return false;
 
-    if (tenant.customFeatures) {
+    if (tenant.customFeatures !== null) {
       const customFeatures = tenant.customFeatures as string[];
-      if (Array.isArray(customFeatures) && customFeatures.includes(featureKey)) {
-        return true;
-      }
+      return Array.isArray(customFeatures) && customFeatures.includes(featureKey);
     }
 
     const activePlan = tenant.subscriptions?.[0]?.plan;

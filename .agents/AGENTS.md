@@ -205,3 +205,9 @@ This rule documents the transition away from third-party SMS Forwarders and the 
 ## 22. AI Automated Actions & Notifications
 * **Event Parity**: When an AI agent or automated background process (e.g., ZiniChat Support AI) creates an entity (like a Support Ticket) on behalf of a user, it MUST manually trigger the same notifications, web-socket events, and SMTP emails that the manual frontend UI would normally trigger.
 * **Why**: The AI typically writes directly to the database via Prisma, bypassing the standard service methods that contain the notification hooks. Without explicit notification calls, Superadmins and Tenants will be blind to AI-generated activities.
+
+---
+
+## 23. Superadmin Packages & Tenant Custom Plan Synchronization
+* **Rule**: Whenever any changes (additions, modifications, or deletions) are made to the system features list (access control checkboxes) inside `frontend/src/app/superadmin/packages/page.tsx`, the EXACT same changes MUST be synchronized with the "Customize Plan" modal in `frontend/src/app/superadmin/tenants/page.tsx`.
+* **Why**: The Tenants page allows superadmins to override plan defaults on a per-tenant basis. If a new feature is added to the Packages page, it must also be available to be explicitly overridden inside the Tenants page customization form.

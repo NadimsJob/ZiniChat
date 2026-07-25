@@ -37,6 +37,7 @@ model Tenant {
   customWhatsappLimit  Int?
   customMessengerLimit Int?
   customInstagramLimit Int?
+  customAllowByok      Boolean?
   customFeatures       Json?
   customAiConfigId     String?  @db.Uuid
 

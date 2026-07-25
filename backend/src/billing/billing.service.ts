@@ -54,6 +54,7 @@ export class BillingService {
       aiQuota: tenant?.customAiQuota ?? plan?.aiQuota ?? 50,
       seatLimit: tenant?.customSeatLimit ?? plan?.seatLimit ?? 1,
       storageLimitMb: tenant?.customStorageLimitMb ?? plan?.storageLimitMb ?? 500,
+      allowByok: tenant?.customAllowByok ?? plan?.allowByok ?? false,
       features: (tenant?.customFeatures as any) ?? plan?.features ?? [],
       customPlanName: tenant?.customPlanName,
       customPriceUsd: tenant?.customPriceUsd,

@@ -6,6 +6,10 @@ import { join } from 'path';
 import * as fs from 'fs';
 import helmet from 'helmet';
 
+(BigInt.prototype as any).toJSON = function () {
+  return Number(this);
+};
+
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
