@@ -3,7 +3,7 @@ import { AiService } from './ai.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { BadRequestException, InternalServerErrorException } from '@nestjs/common';
 
-const mockPrisma = {
+const mockPrisma: any = {
   aiConfig: {
     findMany: jest.fn(),
     findUnique: jest.fn(),
@@ -16,7 +16,7 @@ const mockPrisma = {
   tenant: {
     updateMany: jest.fn(),
   },
-  $transaction: jest.fn((callback) => callback(mockPrisma)),
+  $transaction: jest.fn((callback: any) => callback(mockPrisma)),
 };
 
 describe('AiService', () => {

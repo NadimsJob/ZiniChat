@@ -382,4 +382,238 @@ export class BroadcastsService {
       orderBy: { createdAt: 'desc' }
     });
   }
+
+  // ============================================================
+  // GLOBAL TEMPLATE LIBRARY — TENANT-FACING
+  // ============================================================
+
+  async getGlobalTemplates(filters?: { category?: string; categoryTag?: string; search?: string }) {
+    const where: any = { isPublic: true };
+
+    if (filters?.categoryTag && filters.categoryTag !== 'ALL') {
+      where.categoryTag = filters.categoryTag;
+    }
+    if (filters?.category) {
+      where.category = filters.category;
+    }
+    if (filters?.search) {
+      where.OR = [
+        { title: { contains: filters.search, mode: 'insensitive' } },
+        { bodyText: { contains: filters.search, mode: 'insensitive' } },
+        { categoryTag: { contains: filters.search, mode: 'insensitive' } },
+      ];
+    }
+
+    return this.prisma.globalTemplate.findMany({
+      where,
+      orderBy: [{ isFeatured: 'desc' }, { usageCount: 'desc' }, { createdAt: 'desc' }]
+    });
+  }
+
+  async importFromLibrary(tenantId: string, data: { globalTemplateId: string; customName: string }) {
+    // Validate template name
+    if (!/^[a-z0-9_]+$/.test(data.customName)) {
+      throw new BadRequestException('Template name must only contain lowercase letters, numbers, and underscores.');
+    }
+
+    const globalTemplate = await this.prisma.globalTemplate.findUnique({
+      where: { id: data.globalTemplateId }
+    });
+
+    if (!globalTemplate) throw new NotFoundException('Global template not found in library.');
+
+    // Check if tenant already imported this template name
+    const existing = await this.prisma.template.findFirst({
+      where: { tenantId, name: data.customName }
+    });
+    if (existing) {
+      throw new BadRequestException(`You already have a template named "${data.customName}". Please choose a different name.`);
+    }
+
+    // Fetch tenant's active WABA connection
+    const channelConn = await this.prisma.channelConnection.findFirst({
+      where: { tenantId, channelType: 'whatsapp', status: 'active' }
+    });
+
+    if (!channelConn || !channelConn.wabaId || !channelConn.accessTokenEncrypted) {
+      throw new BadRequestException('An active WhatsApp Business Account (WABA) connection is required to import templates. Please connect your WhatsApp account first.');
+    }
+
+    const wabaId = channelConn.wabaId;
+    const accessToken = channelConn.accessTokenEncrypted;
+
+    // Rebuild components — strip any media handles (those are per-account)
+    const components = globalTemplate.components as any[];
+
+    let metaResponse: any = {};
+
+    if (accessToken.startsWith('mock_') || wabaId.startsWith('mock_')) {
+      // Dev/test mode: simulate instant approval
+      metaResponse = { id: `mock_imported_${Date.now()}`, status: 'APPROVED' };
+    } else {
+      const response = await fetch(`https://graph.facebook.com/v21.0/${wabaId}/message_templates`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: data.customName,
+          category: globalTemplate.category,
+          language: globalTemplate.language,
+          components
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        this.logger.error('Meta API Template Import Failed', errorData);
+        throw new BadRequestException(`Meta API Error: ${errorData.error?.message || 'Failed to import template. Please try again.'}`);
+      }
+
+      metaResponse = await response.json();
+    }
+
+    // Save to tenant's personal templates table
+    const template = await this.prisma.template.create({
+      data: {
+        tenantId,
+        name: data.customName,
+        category: globalTemplate.category,
+        language: globalTemplate.language,
+        headerFormat: globalTemplate.headerFormat,
+        headerText: globalTemplate.headerText || null,
+        headerMediaHandle: null,
+        headerMediaUrl: null,
+        bodyText: globalTemplate.bodyText,
+        body: globalTemplate.bodyText,
+        footerText: globalTemplate.footerText || null,
+        components: globalTemplate.components as any,
+        status: metaResponse.status || 'PENDING',
+        metaTemplateId: metaResponse.id || null
+      }
+    });
+
+    // Increment global usage count
+    await this.prisma.globalTemplate.update({
+      where: { id: data.globalTemplateId },
+      data: { usageCount: { increment: 1 } }
+    });
+
+    // Notify tenant owner
+    const tenantOwner = await this.prisma.user.findFirst({
+      where: { tenantId, role: 'owner' }
+    });
+    if (tenantOwner) {
+      const statusMsg = template.status === 'APPROVED'
+        ? `"${data.customName}" টেমপ্লেটটি সফলভাবে Import হয়েছে এবং Broadcast-এর জন্য Ready!`
+        : `"${data.customName}" টেমপ্লেটটি Meta-তে Submit হয়েছে। কয়েক মিনিটের মধ্যে Approved হবে।`;
+      await this.notificationsService.createNotification(
+        tenantOwner.id,
+        `Template Library Import: ${template.status}`,
+        statusMsg,
+        template.status === 'APPROVED' ? 'info' : 'warning'
+      ).catch(e => this.logger.error('Failed to send import notification', e));
+    }
+
+    return { template, status: template.status };
+  }
+
+  // ============================================================
+  // GLOBAL TEMPLATE LIBRARY — SUPERADMIN-FACING
+  // ============================================================
+
+  async getGlobalTemplatesForAdmin() {
+    return this.prisma.globalTemplate.findMany({
+      orderBy: [{ isFeatured: 'desc' }, { usageCount: 'desc' }, { createdAt: 'desc' }]
+    });
+  }
+
+  async createGlobalTemplate(data: {
+    title: string;
+    categoryTag: string;
+    category: string;
+    language: string;
+    headerFormat?: string;
+    headerText?: string;
+    bodyText: string;
+    footerText?: string;
+    components: any;
+    isPublic?: boolean;
+    isFeatured?: boolean;
+  }) {
+    return this.prisma.globalTemplate.create({
+      data: {
+        title: data.title,
+        categoryTag: data.categoryTag,
+        category: data.category,
+        language: data.language || 'bn',
+        headerFormat: data.headerFormat || 'NONE',
+        headerText: data.headerText || null,
+        bodyText: data.bodyText,
+        footerText: data.footerText || null,
+        components: data.components,
+        isPublic: data.isPublic !== undefined ? data.isPublic : true,
+        isFeatured: data.isFeatured || false,
+      }
+    });
+  }
+
+  async promoteToGlobalLibrary(tenantTemplateId: string, data: { title: string; categoryTag: string; isFeatured?: boolean }) {
+    const tenantTemplate = await this.prisma.template.findUnique({
+      where: { id: tenantTemplateId }
+    });
+
+    if (!tenantTemplate) throw new NotFoundException('Tenant template not found.');
+    if (tenantTemplate.status !== 'APPROVED') {
+      throw new BadRequestException('Only APPROVED templates can be promoted to the global library.');
+    }
+
+    // Build components from stored template data if components field is null
+    const components = tenantTemplate.components || [
+      { type: 'BODY', text: tenantTemplate.bodyText }
+    ];
+
+    return this.prisma.globalTemplate.create({
+      data: {
+        title: data.title,
+        categoryTag: data.categoryTag,
+        category: tenantTemplate.category,
+        language: tenantTemplate.language,
+        headerFormat: tenantTemplate.headerFormat || 'NONE',
+        headerText: tenantTemplate.headerText || null,
+        bodyText: tenantTemplate.bodyText,
+        footerText: tenantTemplate.footerText || null,
+        components: components as any,
+        isPublic: true,
+        isFeatured: data.isFeatured || false,
+        sourceTenantId: tenantTemplate.tenantId,
+      }
+    });
+  }
+
+  async updateGlobalTemplate(id: string, data: Partial<{
+    title: string;
+    categoryTag: string;
+    category: string;
+    language: string;
+    headerFormat: string;
+    headerText: string;
+    bodyText: string;
+    footerText: string;
+    components: any;
+    isPublic: boolean;
+    isFeatured: boolean;
+  }>) {
+    const existing = await this.prisma.globalTemplate.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Global template not found.');
+    return this.prisma.globalTemplate.update({ where: { id }, data });
+  }
+
+  async deleteGlobalTemplate(id: string) {
+    const existing = await this.prisma.globalTemplate.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Global template not found.');
+    return this.prisma.globalTemplate.delete({ where: { id } });
+  }
 }
+

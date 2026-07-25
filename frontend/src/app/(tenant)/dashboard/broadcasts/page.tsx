@@ -1,10 +1,18 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Cookies from 'js-cookie';
-import { Megaphone, Plus, Clock, Users, Play, AlertCircle, Info, X, Trash2, Smartphone, CheckCheck, Upload, FileText, Image as ImageIcon, Video, Link, Phone, Sparkles } from 'lucide-react';
+import { Megaphone, Plus, Clock, Users, Play, AlertCircle, Info, X, Trash2, Smartphone, CheckCheck, Upload, FileText, Image as ImageIcon, Video, Link, Phone, Sparkles, Library, Search, CheckCircle2, ShieldCheck, Zap, Star } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useLanguage } from '@/components/LanguageProvider';
+
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+const LIBRARY_CATEGORY_TAGS = ['ALL', 'E-commerce', 'ঈদ অফার', 'Order Tracking', 'Appointment', 'Welcome', 'Support', 'Real Estate', 'Health', 'Finance'];
+
+function slugify(text: string) {
+  return 'lib_' + text.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 40);
+}
 
 export default function BroadcastsPage() {
   const { language } = useLanguage();
@@ -12,7 +20,18 @@ export default function BroadcastsPage() {
   const [templates, setTemplates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'campaigns' | 'templates'>('campaigns');
+  const [activeTab, setActiveTab] = useState<'campaigns' | 'templates' | 'library'>('campaigns');
+
+  // Library state
+  const [libTemplates, setLibTemplates] = useState<any[]>([]);
+  const [libLoading, setLibLoading] = useState(false);
+  const [libSearch, setLibSearch] = useState('');
+  const [libCategoryTag, setLibCategoryTag] = useState('ALL');
+  const [importModal, setImportModal] = useState<any | null>(null);
+  const [importName, setImportName] = useState('');
+  const [importNameError, setImportNameError] = useState<string | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importSuccess, setImportSuccess] = useState<{ status: string; name: string } | null>(null);
   
   // Modals
   const [isCampaignModalOpen, setIsCampaignModalOpen] = useState(false);
@@ -351,14 +370,16 @@ export default function BroadcastsPage() {
             {language === 'en' ? 'Create WhatsApp Meta-approved templates and execute bulk marketing campaigns.' : 'হোয়াটসঅ্যাপের মেটা-অ্যাপ্রুভড টেমপ্লেট তৈরি করুন এবং বাল্ক ব্রডকাস্ট পাঠান।'}
           </p>
         </div>
-        <button 
-          onClick={() => activeTab === 'campaigns' ? setIsCampaignModalOpen(true) : setIsTemplateModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-[13px] font-bold rounded-xl shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all">
-          <Plus className="w-4 h-4" /> 
-          {activeTab === 'campaigns' 
-            ? (language === 'en' ? 'New Campaign' : 'নতুন ক্যাম্পেইন') 
-            : (language === 'en' ? 'New Meta Template' : 'নতুন মেটা টেমপ্লেট')}
-        </button>
+        {activeTab !== 'library' && (
+          <button 
+            onClick={() => activeTab === 'campaigns' ? setIsCampaignModalOpen(true) : setIsTemplateModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-[13px] font-bold rounded-xl shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all">
+            <Plus className="w-4 h-4" /> 
+            {activeTab === 'campaigns' 
+              ? (language === 'en' ? 'New Campaign' : 'নতুন ক্যাম্পেইন') 
+              : (language === 'en' ? 'New Meta Template' : 'নতুন মেটা টেমপ্লেট')}
+          </button>
+        )}
       </div>
 
       {/* Guidelines Accordion */}
@@ -377,7 +398,7 @@ export default function BroadcastsPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 p-1 bg-surface-hover/30 rounded-xl w-fit">
+      <div className="flex gap-1 p-1 bg-surface-hover/30 rounded-xl w-fit">
         <button 
           onClick={() => setActiveTab('campaigns')}
           className={`px-4 py-1.5 rounded-lg text-[13px] font-bold transition-all ${activeTab === 'campaigns' ? 'bg-primary text-primary-foreground shadow-md' : 'text-zinc-400 hover:text-zinc-200'}`}
@@ -388,7 +409,27 @@ export default function BroadcastsPage() {
           onClick={() => setActiveTab('templates')}
           className={`px-4 py-1.5 rounded-lg text-[13px] font-bold transition-all ${activeTab === 'templates' ? 'bg-primary text-primary-foreground shadow-md' : 'text-zinc-400 hover:text-zinc-200'}`}
         >
-          {language === 'en' ? 'Message Templates' : 'মেসেজ টেমপ্লেটস'}
+          {language === 'en' ? 'My Templates' : 'আমার টেমপ্লেটস'}
+        </button>
+        <button 
+          onClick={() => {
+            setActiveTab('library');
+            if (libTemplates.length === 0) {
+              setLibLoading(true);
+              const token = Cookies.get('access_token');
+              fetch(`${API}/broadcasts/library`, { headers: { Authorization: `Bearer ${token}` } })
+                .then(r => r.json()).then(data => setLibTemplates(Array.isArray(data) ? data : [])).catch(() => {})
+                .finally(() => setLibLoading(false));
+            }
+          }}
+          className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[13px] font-bold transition-all ${
+            activeTab === 'library'
+              ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/30'
+              : 'text-zinc-400 hover:text-amber-400'
+          }`}
+        >
+          <Library className="w-3.5 h-3.5" />
+          {language === 'en' ? 'Template Library ✨' : 'টেমপ্লেট লাইব্রেরি ✨'}
         </button>
       </div>
 
@@ -912,6 +953,339 @@ export default function BroadcastsPage() {
           </div>
         </div>
       )}
+
+      {/* ══════════════════════════════════════════════════════════════
+          TEMPLATE LIBRARY TAB CONTENT
+      ══════════════════════════════════════════════════════════════ */}
+      {activeTab === 'library' && (
+        <div className="space-y-4 animate-in fade-in duration-300">
+
+          {/* Library Hero Banner */}
+          <div className="relative bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-transparent border border-amber-500/20 p-5 rounded-2xl overflow-hidden">
+            <div className="absolute top-0 right-0 w-48 h-48 bg-amber-500/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+            <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <Library className="w-5 h-5 text-amber-400" />
+                  <h2 className="text-[15px] font-bold text-amber-300">
+                    {language === 'en' ? 'Template Library — Pre-Approved by Meta ✓' : 'টেমপ্লেট লাইব্রেরি — মেটা কর্তৃক পূর্ব-অনুমোদিত ✓'}
+                  </h2>
+                </div>
+                <p className="text-[12px] text-zinc-400 max-w-xl">
+                  {language === 'en'
+                    ? 'Browse ready-made templates tested and verified by Meta. One-click import activates them directly to your WhatsApp account — no rejection risk.'
+                    : 'মেটা কর্তৃক পরীক্ষিত রেডিমেড টেমপ্লেট ব্রাউজ করুন। এক ক্লিকেই আপনার WhatsApp অ্যাকাউন্টে সরাসরি সক্রিয় হবে — রিজেকশনের কোনো ঝুঁকি নেই।'}
+                </p>
+              </div>
+              <div className="flex items-center gap-3 shrink-0">
+                <div className="flex flex-col items-center px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+                  <ShieldCheck className="w-4 h-4 text-amber-400 mb-0.5" />
+                  <span className="text-[10px] text-amber-400 font-bold">Zero Risk</span>
+                </div>
+                <div className="flex flex-col items-center px-3 py-2 bg-green-500/10 border border-green-500/20 rounded-xl">
+                  <Zap className="w-4 h-4 text-green-400 mb-0.5" />
+                  <span className="text-[10px] text-green-400 font-bold">Instant</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Search + Category Filters */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 absolute left-3 top-2.5 text-zinc-400" />
+              <input
+                type="text"
+                value={libSearch}
+                onChange={e => setLibSearch(e.target.value)}
+                placeholder={language === 'en' ? 'Search templates...' : 'টেমপ্লেট খুঁজুন...'}
+                className="w-full bg-surface/70 border border-surface-hover rounded-xl pl-9 pr-3 py-2 text-[12px] outline-none focus:border-amber-500/50 transition-colors"
+              />
+            </div>
+            <div className="flex gap-1.5 flex-wrap">
+              {LIBRARY_CATEGORY_TAGS.map(tag => (
+                <button
+                  key={tag}
+                  onClick={() => setLibCategoryTag(tag)}
+                  className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all whitespace-nowrap ${
+                    libCategoryTag === tag
+                      ? 'bg-amber-500 text-white shadow-md shadow-amber-500/30'
+                      : 'bg-surface-hover/50 text-zinc-400 hover:text-amber-400 hover:bg-amber-500/10 border border-transparent hover:border-amber-500/20'
+                  }`}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Template Cards Grid */}
+          {libLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[1,2,3,4,5,6].map(i => (
+                <div key={i} className="animate-pulse bg-surface/70 border border-surface-hover rounded-2xl p-4 space-y-3">
+                  <div className="h-4 bg-surface-hover rounded w-3/4" />
+                  <div className="h-3 bg-surface-hover rounded w-1/3" />
+                  <div className="h-16 bg-surface-hover rounded" />
+                  <div className="h-8 bg-surface-hover rounded" />
+                </div>
+              ))}
+            </div>
+          ) : (() => {
+            const filtered = libTemplates.filter(t => {
+              const matchTag = libCategoryTag === 'ALL' || t.categoryTag === libCategoryTag;
+              const matchSearch = !libSearch || t.title.toLowerCase().includes(libSearch.toLowerCase()) || t.bodyText?.toLowerCase().includes(libSearch.toLowerCase());
+              return matchTag && matchSearch;
+            });
+
+            if (filtered.length === 0) {
+              return (
+                <div className="text-center py-16 bg-surface/70 border border-surface-hover rounded-2xl">
+                  <Library className="w-12 h-12 mx-auto mb-4 text-zinc-600" />
+                  <p className="text-[14px] font-bold text-zinc-400">
+                    {language === 'en' ? 'No templates found' : 'কোনো টেমপ্লেট পাওয়া যায়নি'}
+                  </p>
+                  <p className="text-[12px] text-zinc-600 mt-1">
+                    {language === 'en' ? 'Try a different filter or check back later.' : 'ভিন্ন ফিল্টার ব্যবহার করুন অথবা পরে আবার চেষ্টা করুন।'}
+                  </p>
+                </div>
+              );
+            }
+
+            return (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filtered.map(tpl => (
+                  <div
+                    key={tpl.id}
+                    className={`group relative bg-surface/70 backdrop-blur-xl border rounded-2xl p-4 flex flex-col gap-3 hover:border-amber-500/30 transition-all hover:shadow-lg hover:shadow-amber-500/5 ${tpl.isFeatured ? 'border-amber-500/30 bg-amber-500/5' : 'border-surface-hover'}`}
+                  >
+                    {/* Featured Badge */}
+                    {tpl.isFeatured && (
+                      <div className="absolute -top-2 -right-2 bg-gradient-to-br from-amber-400 to-orange-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full flex items-center gap-0.5 shadow-lg">
+                        <Star className="w-2.5 h-2.5" /> FEATURED
+                      </div>
+                    )}
+
+                    {/* Card Header */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <h3 className="text-[13px] font-bold text-zinc-100 truncate">{tpl.title}</h3>
+                        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                          <span className="bg-surface-hover text-zinc-400 text-[10px] px-1.5 py-0.5 rounded">{tpl.categoryTag}</span>
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${tpl.category === 'MARKETING' ? 'bg-purple-500/10 text-purple-400' : 'bg-blue-500/10 text-blue-400'}`}>{tpl.category}</span>
+                          <span className="flex items-center gap-0.5 bg-green-500/10 text-green-500 text-[10px] font-bold px-1.5 py-0.5 rounded">
+                            <ShieldCheck className="w-2.5 h-2.5" /> Meta ✓
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Body Preview */}
+                    <div className="bg-background/60 border border-surface-hover rounded-xl p-3 text-[12px] text-zinc-300 leading-relaxed line-clamp-3 font-mono">
+                      {tpl.bodyText || '—'}
+                    </div>
+
+                    {/* Footer */}
+                    <div className="flex items-center justify-between mt-auto">
+                      <span className="text-[11px] text-zinc-500 flex items-center gap-1">
+                        <Users className="w-3 h-3" /> {tpl.usageCount} {language === 'en' ? 'businesses' : 'ব্যবসা'}
+                      </span>
+                      <button
+                        onClick={() => {
+                          setImportModal(tpl);
+                          setImportName(slugify(tpl.title));
+                          setImportNameError(null);
+                          setImportSuccess(null);
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[12px] font-bold rounded-lg shadow-md shadow-amber-500/20 hover:shadow-amber-500/40 transition-all hover:scale-105 active:scale-95"
+                      >
+                        <Zap className="w-3 h-3" />
+                        {language === 'en' ? 'Use Template' : 'ব্যবহার করুন'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════
+          IMPORT MODAL
+      ══════════════════════════════════════════════════════════════ */}
+      {importModal && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-surface border border-surface-hover rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-surface-hover">
+              <div className="flex items-center gap-2">
+                <Library className="w-4 h-4 text-amber-400" />
+                <h2 className="font-bold text-[14px]">{importModal.title}</h2>
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${importModal.category === 'MARKETING' ? 'bg-purple-500/10 text-purple-400' : 'bg-blue-500/10 text-blue-400'}`}>{importModal.category}</span>
+              </div>
+              <button onClick={() => { setImportModal(null); setImportSuccess(null); }} className="p-1.5 hover:bg-surface-hover rounded-lg transition-colors"><X className="w-4 h-4" /></button>
+            </div>
+
+            {/* Modal Body — Split Panel */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-0 min-h-[320px]">
+
+              {/* Left: WhatsApp Preview */}
+              <div className="flex flex-col items-center justify-center bg-[#0a1929] p-5 rounded-bl-none md:rounded-bl-2xl">
+                <p className="text-[11px] text-zinc-500 mb-3 text-center">{language === 'en' ? 'Live Preview' : 'লাইভ প্রিভিউ'}</p>
+                <div className="w-[200px] bg-[#128c7e] rounded-2xl overflow-hidden shadow-2xl border border-white/10">
+                  <div className="bg-[#128c7e] px-3 py-2 flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center"><Smartphone className="w-4 h-4 text-white" /></div>
+                    <div>
+                      <p className="text-white text-[11px] font-bold">Your Business</p>
+                      <p className="text-white/60 text-[9px]">WhatsApp Business</p>
+                    </div>
+                  </div>
+                  <div className="bg-[#ece5dd] p-3 min-h-[160px]">
+                    <div className="bg-white rounded-xl rounded-tl-none p-2.5 shadow-sm max-w-[95%]">
+                      {importModal.headerFormat === 'TEXT' && importModal.headerText && (
+                        <p className="text-[11px] font-bold text-gray-800 mb-1 pb-1 border-b border-gray-100">{importModal.headerText}</p>
+                      )}
+                      <p className="text-[11px] text-gray-800 leading-relaxed whitespace-pre-wrap">
+                        {importModal.bodyText || '...'}
+                      </p>
+                      {importModal.footerText && (
+                        <p className="text-[10px] text-gray-400 mt-1 pt-1 border-t border-gray-100">{importModal.footerText}</p>
+                      )}
+                      <p className="text-[9px] text-gray-400 text-right mt-1">10:45 ✓✓</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right: Config & Import */}
+              <div className="p-5 flex flex-col gap-4">
+
+                {importSuccess ? (
+                  /* Success State */
+                  <div className="flex flex-col items-center justify-center text-center h-full gap-4 py-6">
+                    <div className={`w-16 h-16 rounded-full flex items-center justify-center ${importSuccess.status === 'APPROVED' ? 'bg-green-500/10 text-green-500' : 'bg-amber-500/10 text-amber-400'}`}>
+                      {importSuccess.status === 'APPROVED' ? <CheckCircle2 className="w-8 h-8" /> : <Clock className="w-8 h-8" />}
+                    </div>
+                    {importSuccess.status === 'APPROVED' ? (
+                      <>
+                        <div>
+                          <p className="font-bold text-green-400 text-[14px]">{language === 'en' ? 'Activated Successfully! ✓' : 'সফলভাবে সক্রিয় হয়েছে! ✓'}</p>
+                          <p className="text-[12px] text-zinc-400 mt-1">
+                            {language === 'en' ? `"${importSuccess.name}" is now ready to use in Broadcast Campaigns.` : `"${importSuccess.name}" এখন Broadcast Campaign-এ ব্যবহারের জন্য প্রস্তুত।`}
+                          </p>
+                        </div>
+                        <button onClick={() => { setImportModal(null); setImportSuccess(null); setActiveTab('templates'); fetchData(); }}
+                          className="px-4 py-2 bg-primary text-white text-[12px] font-bold rounded-xl hover:bg-primary/90 transition-all">
+                          {language === 'en' ? 'Go to My Templates →' : 'আমার টেমপ্লেটস দেখুন →'}
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <div>
+                          <p className="font-bold text-amber-400 text-[14px]">{language === 'en' ? 'Submitted to Meta ⏳' : 'মেটাতে সাবমিট হয়েছে ⏳'}</p>
+                          <p className="text-[12px] text-zinc-400 mt-1">
+                            {language === 'en' ? `"${importSuccess.name}" has been submitted. Meta usually approves within minutes.` : `"${importSuccess.name}" সাবমিট হয়েছে। মেটা সাধারণত কয়েক মিনিটের মধ্যে অনুমোদন দেয়।`}
+                          </p>
+                        </div>
+                        <button onClick={() => { setImportModal(null); setImportSuccess(null); setActiveTab('templates'); fetchData(); }}
+                          className="px-4 py-2 bg-surface-hover text-zinc-200 text-[12px] font-bold rounded-xl hover:bg-surface-hover/80 transition-all">
+                          {language === 'en' ? 'Check My Templates' : 'আমার টেমপ্লেটস চেক করুন'}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  /* Import Form */
+                  <>
+                    {/* Info Note */}
+                    <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-3 flex gap-2 text-green-400">
+                      <ShieldCheck className="w-4 h-4 shrink-0 mt-0.5" />
+                      <p className="text-[11px] leading-relaxed">
+                        {language === 'en'
+                          ? 'This template has already been tested by Meta. Clicking "Import & Activate" will instantly submit it to your WhatsApp account and activate it within seconds.'
+                          : 'এই টেমপ্লেটটি মেটা কর্তৃক ইতিমধ্যে পরীক্ষিত। "Import & Activate" ক্লিক করলে সেকেন্ডের মধ্যে আপনার WhatsApp অ্যাকাউন্টে সক্রিয় হবে।'}
+                      </p>
+                    </div>
+
+                    {/* Template Name */}
+                    <div>
+                      <label className="text-[11px] text-zinc-400 mb-1 block">
+                        {language === 'en' ? 'Template Name (your account)' : 'টেমপ্লেট নাম (আপনার অ্যাকাউন্টে)'}
+                        <span className="text-zinc-600 ml-1">{language === 'en' ? '— auto-generated, editable' : '— স্বয়ংক্রিয়, পরিবর্তনযোগ্য'}</span>
+                      </label>
+                      <input
+                        value={importName}
+                        onChange={e => {
+                          const v = e.target.value;
+                          setImportName(v);
+                          if (v && !/^[a-z0-9_]+$/.test(v)) setImportNameError(language === 'en' ? 'Only lowercase letters, numbers, underscores.' : 'শুধু ছোট হাতের অক্ষর, সংখ্যা, আন্ডারস্কোর।');
+                          else setImportNameError(null);
+                        }}
+                        className={`w-full bg-background border rounded-xl px-3 py-2 text-[12px] outline-none transition-colors font-mono ${importNameError ? 'border-red-500/50 focus:border-red-500' : 'border-surface-hover focus:border-amber-500/50'}`}
+                        placeholder="lib_template_name_v1"
+                      />
+                      {importNameError && <p className="text-[11px] text-red-400 mt-1">{importNameError}</p>}
+                    </div>
+
+                    {/* Template Info */}
+                    <div className="bg-surface-hover/30 rounded-xl p-3 space-y-1.5">
+                      <div className="flex justify-between text-[11px]">
+                        <span className="text-zinc-500">{language === 'en' ? 'Category' : 'ক্যাটাগরি'}</span>
+                        <span className="text-zinc-300 font-bold">{importModal.category}</span>
+                      </div>
+                      <div className="flex justify-between text-[11px]">
+                        <span className="text-zinc-500">{language === 'en' ? 'Language' : 'ভাষা'}</span>
+                        <span className="text-zinc-300 font-bold">{importModal.language}</span>
+                      </div>
+                      <div className="flex justify-between text-[11px]">
+                        <span className="text-zinc-500">{language === 'en' ? 'Used by' : 'ব্যবহারকারী'}</span>
+                        <span className="text-zinc-300 font-bold">{importModal.usageCount} {language === 'en' ? 'businesses' : 'ব্যবসা'}</span>
+                      </div>
+                    </div>
+
+                    {/* Import Button */}
+                    <button
+                      onClick={async () => {
+                        if (!importName || importNameError) { toast.error('Please fix the template name first.'); return; }
+                        setIsImporting(true);
+                        try {
+                          const token = Cookies.get('access_token');
+                          const res = await fetch(`${API}/broadcasts/library/import`, {
+                            method: 'POST',
+                            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ globalTemplateId: importModal.id, customName: importName })
+                          });
+                          const data = await res.json();
+                          if (!res.ok) throw new Error(data.message || 'Import failed');
+                          setImportSuccess({ status: data.status, name: importName });
+                          // Refresh library usage count
+                          setLibTemplates(prev => prev.map(t => t.id === importModal.id ? { ...t, usageCount: t.usageCount + 1 } : t));
+                        } catch (err: any) {
+                          toast.error(err.message || 'Import failed. Please try again.');
+                        } finally {
+                          setIsImporting(false);
+                        }
+                      }}
+                      disabled={isImporting || !importName || !!importNameError}
+                      className="w-full flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[13px] font-bold rounded-xl shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 transition-all disabled:opacity-50 active:scale-[0.99]"
+                    >
+                      {isImporting ? (
+                        <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> {language === 'en' ? 'Activating...' : 'সক্রিয় হচ্ছে...'}</>
+                      ) : (
+                        <><Zap className="w-4 h-4" /> {language === 'en' ? 'Import & Activate' : 'Import করুন ও সক্রিয় করুন'}</>
+                      )}
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
+

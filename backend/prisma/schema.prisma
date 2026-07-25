@@ -410,6 +410,27 @@ model Template {
   @@map("templates")
 }
 
+model GlobalTemplate {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title          String
+  categoryTag    String   // Display filter tag: "E-commerce", "Eid Sale", "Appointment", etc.
+  category       String   // MARKETING, UTILITY, AUTHENTICATION
+  language       String   @default("bn")
+  headerFormat   String   @default("NONE") // NONE, TEXT, IMAGE, DOCUMENT, VIDEO
+  headerText     String?
+  bodyText       String   @db.Text
+  footerText     String?
+  components     Json     // Full Meta API components structure (mirrors Template.components)
+  isPublic       Boolean  @default(true)
+  isFeatured     Boolean  @default(false)
+  usageCount     Int      @default(0)
+  sourceTenantId String?  @db.Uuid  // Promoted from which tenant (optional)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now()) @updatedAt
+
+  @@map("global_templates")
+}
+
 model Broadcast {
   id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenantId      String    @db.Uuid

@@ -31,6 +31,13 @@ describe('BroadcastsService', () => {
     broadcast: {
       findMany: jest.fn(),
       create: jest.fn(),
+    },
+    globalTemplate: {
+      findMany: jest.fn(),
+      findUnique: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
     }
   };
 
@@ -174,6 +181,75 @@ describe('BroadcastsService', () => {
         data: { status: 'APPROVED', rejectionReason: null }
       });
       expect(mockNotificationsService.createNotification).toHaveBeenCalled();
+    });
+  });
+
+  describe('Global Template Library', () => {
+    describe('getGlobalTemplates', () => {
+      it('should fetch public templates with correct filters', async () => {
+        mockPrismaService.globalTemplate.findMany.mockResolvedValue([{ id: 'g1', title: 'Test' }]);
+        const res = await service.getGlobalTemplates({ categoryTag: 'E-commerce', category: 'MARKETING' });
+        
+        expect(res).toBeDefined();
+        expect(mockPrismaService.globalTemplate.findMany).toHaveBeenCalledWith({
+          where: expect.objectContaining({
+            isPublic: true,
+            categoryTag: 'E-commerce',
+            category: 'MARKETING'
+          }),
+          orderBy: expect.any(Array)
+        });
+      });
+    });
+
+    describe('importFromLibrary', () => {
+      it('should throw BadRequestException for invalid template name format', async () => {
+        await expect(service.importFromLibrary('tenant-1', {
+          globalTemplateId: 'g1', customName: 'Invalid Name'
+        })).rejects.toThrow(BadRequestException);
+      });
+
+      it('should throw NotFoundException if global template is missing', async () => {
+        mockPrismaService.globalTemplate.findUnique.mockResolvedValue(null);
+        await expect(service.importFromLibrary('tenant-1', {
+          globalTemplateId: 'missing-id', customName: 'valid_name'
+        })).rejects.toThrow(NotFoundException);
+      });
+
+      it('should throw BadRequestException if tenant has no active WABA', async () => {
+        mockPrismaService.globalTemplate.findUnique.mockResolvedValue({ id: 'g1', category: 'MARKETING' });
+        mockPrismaService.template.findFirst.mockResolvedValue(null); // No existing template with this name
+        mockPrismaService.channelConnection.findFirst.mockResolvedValue(null); // No WABA
+
+        await expect(service.importFromLibrary('tenant-1', {
+          globalTemplateId: 'g1', customName: 'valid_name'
+        })).rejects.toThrow(BadRequestException);
+      });
+
+      it('should successfully import template and increment usage count for mock WABA', async () => {
+        mockPrismaService.globalTemplate.findUnique.mockResolvedValue({
+          id: 'g1', category: 'MARKETING', language: 'bn', components: []
+        });
+        mockPrismaService.template.findFirst.mockResolvedValue(null);
+        mockPrismaService.channelConnection.findFirst.mockResolvedValue({
+          wabaId: 'mock_waba', accessTokenEncrypted: 'mock_token'
+        });
+        
+        mockPrismaService.template.create.mockResolvedValue({ id: 'tpl-1', status: 'APPROVED' });
+        mockPrismaService.globalTemplate.update.mockResolvedValue({});
+        mockPrismaService.user.findFirst.mockResolvedValue({ id: 'user-1' });
+
+        const res = await service.importFromLibrary('tenant-1', {
+          globalTemplateId: 'g1', customName: 'promo_2026'
+        });
+
+        expect(res.status).toBe('APPROVED');
+        expect(mockPrismaService.template.create).toHaveBeenCalled();
+        expect(mockPrismaService.globalTemplate.update).toHaveBeenCalledWith({
+          where: { id: 'g1' },
+          data: { usageCount: { increment: 1 } }
+        });
+      });
     });
   });
 });

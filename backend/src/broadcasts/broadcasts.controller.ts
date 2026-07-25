@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, Body, UseGuards, Request, Param, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, UseGuards, Request, Param, Query, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
@@ -56,11 +56,68 @@ export class BroadcastsController {
     return this.broadcastsService.createBroadcast(req.user.tenantId, data);
   }
 
-  // --- Superadmin Endpoints (Read-Only Monitoring) ---
+  // ============================================================
+  // GLOBAL TEMPLATE LIBRARY — TENANT-FACING (no feature gate for browse)
+  // ============================================================
+
+  @Get('library')
+  getGlobalTemplates(
+    @Query('categoryTag') categoryTag?: string,
+    @Query('category') category?: string,
+    @Query('search') search?: string,
+  ) {
+    return this.broadcastsService.getGlobalTemplates({ categoryTag, category, search });
+  }
+
+  @Post('library/import')
+  importFromLibrary(@Request() req: any, @Body() data: { globalTemplateId: string; customName: string }) {
+    return this.broadcastsService.importFromLibrary(req.user.tenantId, data);
+  }
+
+  // ============================================================
+  // SUPERADMIN MONITORING + GLOBAL LIBRARY MANAGEMENT
+  // ============================================================
+
   @Get('admin/templates')
   @UseGuards(RolesGuard)
   @Roles('superadmin')
   getAllTemplatesForAdmin() {
     return this.broadcastsService.getAllTemplatesForAdmin();
   }
+
+  @Get('admin/library')
+  @UseGuards(RolesGuard)
+  @Roles('superadmin')
+  getGlobalTemplatesForAdmin() {
+    return this.broadcastsService.getGlobalTemplatesForAdmin();
+  }
+
+  @Post('admin/library')
+  @UseGuards(RolesGuard)
+  @Roles('superadmin')
+  createGlobalTemplate(@Body() data: any) {
+    return this.broadcastsService.createGlobalTemplate(data);
+  }
+
+  @Post('admin/library/:id/promote')
+  @UseGuards(RolesGuard)
+  @Roles('superadmin')
+  promoteToGlobalLibrary(@Param('id') id: string, @Body() data: { title: string; categoryTag: string; isFeatured?: boolean }) {
+    return this.broadcastsService.promoteToGlobalLibrary(id, data);
+  }
+
+  @Patch('admin/library/:id')
+  @UseGuards(RolesGuard)
+  @Roles('superadmin')
+  updateGlobalTemplate(@Param('id') id: string, @Body() data: any) {
+    return this.broadcastsService.updateGlobalTemplate(id, data);
+  }
+
+  @Delete('admin/library/:id')
+  @UseGuards(RolesGuard)
+  @Roles('superadmin')
+  deleteGlobalTemplate(@Param('id') id: string) {
+    return this.broadcastsService.deleteGlobalTemplate(id);
+  }
 }
+
