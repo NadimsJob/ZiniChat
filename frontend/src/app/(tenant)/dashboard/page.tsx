@@ -90,8 +90,8 @@ export default function TenantDashboardOverview() {
  </div>
  </div>
 
- {/* Free Setup Banner - Always show if not dismissed */}
- {showSetupBanner && (
+ {/* Free Setup Banner - Only show if setup is pending and not dismissed */}
+ {showSetupBanner && isSetupPending && (
  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-2xl bg-gradient-to-r from-primary/10 via-secondary/10 to-primary/5 border border-primary/20 relative overflow-hidden">
  <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 blur-3xl -z-10 rounded-full mix-blend-multiply" />
  <div>

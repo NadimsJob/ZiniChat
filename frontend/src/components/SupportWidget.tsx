@@ -5,10 +5,14 @@ import { MessageCircle, X, Send, Loader2, Bot, User } from 'lucide-react';
 import Cookies from 'js-cookie';
 import { useLanguage } from '@/components/LanguageProvider';
 
+import { usePathname } from 'next/navigation';
+
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function SupportWidget() {
   const { language } = useLanguage();
+  const pathname = usePathname();
+  const isInbox = pathname?.includes('/inbox');
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState('');
@@ -94,10 +98,11 @@ export default function SupportWidget() {
       {/* Floating Button */}
       <button
         onClick={() => setIsOpen(true)}
-        className={`fixed bottom-6 right-6 px-5 py-3 rounded-full bg-primary text-white shadow-lg hover:bg-primary/90 transition-transform duration-300 z-50 flex items-center gap-2.5 ${isOpen ? 'scale-0' : 'scale-100 hover:scale-105'}`}
+        className={`fixed ${isInbox ? 'bottom-3 right-3 p-2.5' : 'bottom-6 right-6 px-4 py-2.5'} rounded-full bg-primary text-white shadow-xl hover:bg-primary/90 transition-transform duration-300 z-50 flex items-center gap-2 ${isOpen ? 'scale-0' : 'scale-100 hover:scale-105'}`}
+        title="Zinichat Assistant"
       >
-        <MessageCircle className="w-6 h-6" />
-        <span className="font-semibold text-[14px]">Zinichat Assistant</span>
+        <MessageCircle className="w-5 h-5" />
+        {!isInbox && <span className="font-semibold text-xs sm:text-sm">Zinichat Assistant</span>}
       </button>
 
       {/* Chat Window */}

@@ -462,10 +462,11 @@ export default function InboxPage() {
  </div>
  </div>
 
- {/* Right Pane - Chat Window */}
- <div className="flex-1 flex flex-col bg-white/20 relative">
+ {/* Right Pane - Chat Window & Lead Info */}
+ <div className="flex-1 flex min-w-0 bg-white/20 relative overflow-hidden">
  {selectedConvId ? (
  <>
+ <div className="flex-1 flex flex-col min-w-0 relative">
  {/* Chat Header */}
  <div className="h-[44px] px-3 border-b border-white/40 flex items-center justify-between bg-white/60 backdrop-blur-xl shrink-0 z-20">
  <div className="flex items-center gap-2">
@@ -670,7 +671,7 @@ export default function InboxPage() {
  </button>
  </div>
  )}
- <form onSubmit={handleSendMessage} className="flex gap-1.5 max-w-full mx-auto w-full items-end">
+ <form onSubmit={handleSendMessage} className="flex gap-1.5 max-w-full mx-auto w-full items-end pr-10 sm:pr-12">
  <input 
  type="file" 
  ref={fileInputRef} 
@@ -707,9 +708,11 @@ export default function InboxPage() {
  </button>
  </form>
  </div>
+ </div>
  
- {/* Lead Details Slide-over Panel */}
- <div className={`absolute top-0 bottom-0 right-0 w-80 bg-white/95 backdrop-blur-3xl shadow-2xl border-l border-white/50 transform transition-transform duration-300 z-30 flex flex-col ${showLeadInfo ? 'translate-x-0' : 'translate-x-full'}`}>
+ {/* Lead Details Side-by-Side Panel (squeezes chatbox smoothly) */}
+ {showLeadInfo && (
+ <div className="w-80 shrink-0 bg-white/95 backdrop-blur-3xl shadow-xl border-l border-slate-200/80 flex flex-col z-20 transition-all duration-300">
  <div className="px-3 py-3 border-b border-border flex justify-between items-center bg-background/50 backdrop-blur-md shrink-0 h-[44px]">
  <h2 className="text-[13px] font-bold text-foreground">Lead Details</h2>
  <div className="flex items-center space-x-2">
@@ -799,6 +802,7 @@ export default function InboxPage() {
  </div>
  </div>
  </div>
+ )}
  </>
  ) : (
  <div className="h-full flex flex-col items-center justify-center text-zinc-400 space-y-4">

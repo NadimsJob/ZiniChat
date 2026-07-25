@@ -135,9 +135,27 @@ export class InboxService {
     externalMessageId: string;
     timestamp: Date;
   }) {
-    // 1. Upsert Contact (Custom logic since unique constraint is missing)
+    // 1. Upsert Contact (Robust matching to prevent duplicate contacts on format variations like +, @c.us, etc.)
+    const cleanId = (data.externalContactId || '').split('@')[0].trim();
+    const strippedId = cleanId.replace(/^\+/, '');
+    const withPlusId = `+${strippedId}`;
+
     let contact = await this.prisma.contact.findFirst({
-      where: { tenantId: data.tenantId, channel: data.channel, externalContactId: data.externalContactId }
+      where: { 
+        tenantId: data.tenantId, 
+        channel: data.channel,
+        OR: [
+          { externalContactId: cleanId },
+          { externalContactId: strippedId },
+          { externalContactId: withPlusId },
+          ...(data.channel === 'whatsapp' ? [
+            { phone: cleanId },
+            { phone: strippedId },
+            { phone: withPlusId }
+          ] : [])
+        ]
+      },
+      orderBy: { createdAt: 'asc' }
     });
     
     if (!contact) {
@@ -150,9 +168,9 @@ export class InboxService {
         data: {
           tenantId: data.tenantId,
           channel: data.channel,
-          externalContactId: data.externalContactId,
-          name: data.contactName || data.externalContactId,
-          phone: data.channel === 'whatsapp' ? data.externalContactId : undefined,
+          externalContactId: cleanId,
+          name: data.contactName || cleanId,
+          phone: data.channel === 'whatsapp' ? strippedId : undefined,
           lastSeenAt: data.timestamp,
           stageId: firstStage?.id || null
         }
@@ -162,8 +180,8 @@ export class InboxService {
         where: { id: contact.id },
         data: { 
           lastSeenAt: data.timestamp, 
-          name: data.contactName || contact.name,
-          phone: data.channel === 'whatsapp' && !contact.phone ? data.externalContactId : contact.phone
+          name: (data.contactName && data.contactName !== data.externalContactId) ? data.contactName : contact.name,
+          phone: data.channel === 'whatsapp' && !contact.phone ? strippedId : contact.phone
         }
       });
     }
@@ -173,9 +191,9 @@ export class InboxService {
       where: { 
         tenantId: data.tenantId, 
         contactId: contact.id, 
-        channel: data.channel,
-        ...(data.channelConnectionId && { channelConnectionId: data.channelConnectionId })
-      }
+        channel: data.channel
+      },
+      orderBy: { createdAt: 'asc' }
     });
 
     if (!conversation) {
