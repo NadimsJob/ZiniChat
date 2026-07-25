@@ -154,8 +154,7 @@ export class InboxService {
             { phone: withPlusId }
           ] : [])
         ]
-      },
-      orderBy: { createdAt: 'asc' }
+      }
     });
     
     if (!contact) {
@@ -192,8 +191,7 @@ export class InboxService {
         tenantId: data.tenantId, 
         contactId: contact.id, 
         channel: data.channel
-      },
-      orderBy: { createdAt: 'asc' }
+      }
     });
 
     if (!conversation) {
