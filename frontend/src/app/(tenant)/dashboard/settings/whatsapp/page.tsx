@@ -137,36 +137,76 @@ export default function WhatsAppSettingsPage() {
  }
  };
 
+ useEffect(() => {
+   const params = new URLSearchParams(window.location.search);
+   const code = params.get('code');
+   if (code) {
+     handleExchangeCode(code);
+     window.history.replaceState({}, document.title, window.location.pathname);
+   }
+ }, []);
+
+ const handleExchangeCode = async (code: string, extraData?: any) => {
+   setConnecting(true);
+   setError(null);
+   setSuccessMessage(null);
+
+   try {
+     const res = await fetch(`${API}/channels/whatsapp/connect/facebook`, {
+       method: 'POST',
+       headers: {
+         'Content-Type': 'application/json',
+         'Authorization': `Bearer ${Cookies.get('access_token')}`
+       },
+       body: JSON.stringify({ code, ...extraData })
+     });
+     
+     const data = await res.json();
+     
+     if (!res.ok) {
+       throw new Error(data.error || 'Failed to exchange Facebook code');
+     }
+
+     setSuccessMessage(language === 'en' ? 'WhatsApp connected successfully via Facebook Login!' : 'ফেসবুক লগইনের মাধ্যমে হোয়াটসঅ্যাপ সফলভাবে কানেক্ট হয়েছে!');
+     fetchConnections();
+   } catch (err: any) {
+     setError(err.message);
+   } finally {
+     setConnecting(false);
+   }
+ };
+
  const handleFacebookConnect = async () => {
- // Note: Since this is an MVP without real FB SDK loaded yet, we'll simulate the OAuth redirect and callback
- setConnecting(true);
- setError(null);
- setSuccessMessage(null);
+   setConnecting(true);
+   setError(null);
+   setSuccessMessage(null);
 
- try {
- // MOCK: Sending a fake OAuth code to our backend to simulate success
- const res = await fetch(`${API}/channels/whatsapp/connect/facebook`, {
- method: 'POST',
- headers: {
- 'Content-Type': 'application/json',
- 'Authorization': `Bearer ${Cookies.get('access_token')}`
- },
- body: JSON.stringify({ code: `mock_fb_code_${Date.now()}` })
- });
- 
- const data = await res.json();
- 
- if (!res.ok) {
- throw new Error(data.error || 'Failed to connect');
- }
+   try {
+     const configRes = await fetch(`${API}/channels/whatsapp/config/facebook`, {
+       headers: {
+         'Authorization': `Bearer ${Cookies.get('access_token')}`
+       }
+     });
+     
+     const configData = await configRes.json();
+     
+     if (!configRes.ok || !configData.isEnabled || !configData.appId) {
+       throw new Error(
+         language === 'en' 
+           ? 'Facebook Authentication is not configured or enabled. Superadmin must configure App ID & App Secret in Superadmin Settings > Facebook Auth, or connect manually using tokens.'
+           : 'ফেসবুক লগইন সিস্টেম সক্রিয় নেই। সুপারএডমিন সেটিংস > ফেসবুক অথ থেকে App ID ও Secret সক্রিয় করুন অথবা Manual টোকেন ব্যবহার করুন।'
+       );
+     }
 
- setSuccessMessage(language === 'en' ? 'Facebook OAuth connected successfully!' : 'ফেসবুক ওঅথ সফলভাবে কানেক্ট হয়েছে!');
- fetchConnections();
- } catch (err: any) {
- setError(err.message);
- } finally {
- setConnecting(false);
- }
+     const redirectUri = window.location.origin + window.location.pathname;
+     const oauthUrl = `https://www.facebook.com/v21.0/dialog/oauth?client_id=${configData.appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=whatsapp_business_management,whatsapp_business_messaging&response_type=code`;
+
+     window.open(oauthUrl, 'FBLoginWindow', 'width=600,height=750,scrollbars=yes');
+   } catch (err: any) {
+     setError(err.message);
+   } finally {
+     setConnecting(false);
+   }
  };
 
  const handleDelete = async (id: string) => {

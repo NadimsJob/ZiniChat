@@ -29,13 +29,24 @@ export class WhatsappAuthController {
     }
   }
 
+  @Get('config/facebook')
+  async getFacebookConfig(@Res() res: Response) {
+    try {
+      const config = await this.authService.getFacebookConfig();
+      return res.status(HttpStatus.OK).json(config);
+    } catch (error) {
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: error.message });
+    }
+  }
+
   @Post('connect/facebook')
-  async connectFacebook(@Req() req: any, @Body('code') code: string, @Res() res: Response) {
-    if (!code) {
+  async connectFacebook(@Req() req: any, @Body() data: any, @Res() res: Response) {
+    const payload = typeof data === 'string' ? { code: data } : data;
+    if (!payload || !payload.code) {
       return res.status(HttpStatus.BAD_REQUEST).json({ error: 'OAuth code is required' });
     }
     try {
-      const result = await this.authService.connectViaFacebook(req.user.tenantId, code);
+      const result = await this.authService.connectViaFacebook(req.user.tenantId, payload);
       return res.status(HttpStatus.OK).json(result);
     } catch (error) {
       const status = error.status || HttpStatus.INTERNAL_SERVER_ERROR;
