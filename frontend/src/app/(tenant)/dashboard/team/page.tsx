@@ -152,7 +152,7 @@ export default function TeamPage() {
       <h3 className="font-semibold text-primary text-[14px] mb-1">
         {language === 'en' ? 'Team Management Instructions' : 'টিম ম্যানেজমেন্ট নির্দেশনা'}
       </h3>
-      <p className="text-[12px] text-zinc-600 leading-relaxed max-w-4xl">
+      <p className="hidden md:block text-[12px] text-zinc-600 leading-relaxed max-w-4xl">
         {language === 'en' ? 'Here you can add new agents or admins to your team. Click "Add User" to create an account. You can restrict an agent\'s access to specific connected channels (e.g., only WhatsApp, or only Messenger). Admins automatically get access to all settings and billing.' : 'এখান থেকে আপনি আপনার টিমে নতুন এজেন্ট বা অ্যাডমিন যুক্ত করতে পারবেন। "ইউজার যোগ করুন" বাটনে ক্লিক করে নতুন অ্যাকাউন্ট তৈরি করুন। আপনি চাইলে একজন এজেন্টকে নির্দিষ্ট চ্যানেলের (যেমন: শুধু WhatsApp, অথবা শুধু Messenger) এক্সেস দিতে পারবেন। অ্যাডমিনরা স্বয়ংক্রিয়ভাবে সকল সেটিংস এবং পেমেন্ট সেকশনের এক্সেস পেয়ে থাকেন।'}
       </p>
     </div>

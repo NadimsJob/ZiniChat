@@ -192,7 +192,7 @@ export default function AiTrainingPage() {
       <h3 className="font-semibold text-primary text-[14px] mb-1">
         {language === 'en' ? 'AI Training Instructions' : 'এআই ট্রেনিং নির্দেশনা'}
       </h3>
-      <p className="text-[12px] text-zinc-600 leading-relaxed max-w-4xl">
+      <p className="hidden md:block text-[12px] text-zinc-600 leading-relaxed max-w-4xl">
         {language === 'en' ? 'Welcome to the AI Brain setup! Here you can configure your AI Agent\'s name, turn it on/off, and train it by adding Q&A pairs. Go to the "Custom Q&A" tab to add specific questions your customers frequently ask. You can also upload PDF/TXT documents in the "Knowledge Documents" tab so the AI can read and answer from those files automatically. If you want the AI to pause when a human agent is assigned, enable the "Pause on Assignment" option.' : 'এআই ব্রেইন সেটআপে স্বাগতম! এখান থেকে আপনি আপনার এআই এজেন্টের নাম সেট করতে পারবেন, এআই চালু বা বন্ধ করতে পারবেন এবং কাস্টম প্রশ্ন-উত্তর (Q&A) যোগ করে এআইকে ট্রেনিং দিতে পারবেন। "Knowledge Documents" ট্যাবে গিয়ে আপনি PDF বা TXT ফাইল আপলোড করতে পারেন, এআই সেই ফাইলগুলো পড়ে নিজে নিজেই কাস্টমারকে উত্তর দিতে পারবে। আপনি যদি চান কোনো চ্যাট হিউম্যান এজেন্টের কাছে অ্যাসাইন করা হলে এআই নিজে থেকে আর উত্তর দিবে না, তবে "Pause on Assignment" অপশনটি চালু করে রাখুন।'}
       </p>
     </div>

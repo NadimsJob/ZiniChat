@@ -308,7 +308,7 @@ export default function LeadsPage() {
       <h3 className="font-semibold text-primary text-[12px] mb-0.5">
         {language === 'en' ? 'Leads Management Instructions' : 'লিড ম্যানেজমেন্ট নির্দেশনা'}
       </h3>
-      <p className="text-[11px] text-zinc-600 leading-relaxed max-w-4xl">
+       <p className="hidden md:block text-[11px] text-zinc-600 leading-relaxed max-w-4xl">
         {language === 'en' ? 'Here you can view and manage all your customer leads and contacts. You can manually create a new lead, assign leads to specific agents, set follow-up dates, and categorize them into custom stages (e.g., Interested, Not Interested). Click on any lead to see their full details or click the Chat button to open their conversation in the Inbox.' : 'এখান থেকে আপনি আপনার কাস্টমার বা লিডদের প্রোফাইল ম্যানেজ করতে পারবেন। আপনি চাইলে নিজে নতুন লিড তৈরি করতে পারেন, লিডগুলোকে বিভিন্ন এজেন্টের কাছে অ্যাসাইন করতে পারেন এবং লিডের বর্তমান অবস্থা (যেমন: আগ্রহী, আগ্রহী নয়) বোঝাতে স্টেজ পরিবর্তন করতে পারেন। যেকোনো লিডের উপর ক্লিক করে তার বিস্তারিত তথ্য দেখা যাবে এবং "Chat" বাটনে ক্লিক করে সরাসরি ইনবক্সে মেসেজ করা যাবে।'}
       </p>
     </div>

@@ -98,16 +98,16 @@ export default function SupportWidget() {
       {/* Floating Button */}
       <button
         onClick={() => setIsOpen(true)}
-        className={`fixed ${isInbox ? 'bottom-3 right-3 p-2.5' : 'bottom-6 right-6 px-4 py-2.5'} rounded-full bg-primary text-white shadow-xl hover:bg-primary/90 transition-transform duration-300 z-50 flex items-center gap-2 ${isOpen ? 'scale-0' : 'scale-100 hover:scale-105'}`}
+        className={`fixed ${isInbox ? 'bottom-16 md:bottom-3 right-3 p-2.5' : 'bottom-16 md:bottom-6 right-4 md:right-6 px-3 py-2 md:px-4 md:py-2.5'} rounded-full bg-primary text-white shadow-xl hover:bg-primary/90 transition-transform duration-300 z-50 flex items-center gap-2 ${isOpen ? 'scale-0' : 'scale-100 hover:scale-105'}`}
         title="Zinichat Assistant"
       >
         <MessageCircle className="w-5 h-5" />
-        {!isInbox && <span className="font-semibold text-xs sm:text-sm">Zinichat Assistant</span>}
+        {!isInbox && <span className="font-semibold text-xs sm:text-sm hidden sm:inline">Zinichat Assistant</span>}
       </button>
 
       {/* Chat Window */}
       <div 
-        className={`fixed bottom-6 right-6 w-[350px] sm:w-[400px] h-[550px] max-h-[85vh] bg-surface/90 backdrop-blur-xl border border-border rounded-2xl shadow-2xl flex flex-col transition-all duration-300 origin-bottom-right z-50 ${isOpen ? 'scale-100 opacity-100' : 'scale-0 opacity-0 pointer-events-none'}`}
+        className={`fixed bottom-16 md:bottom-6 right-2 sm:right-6 w-[calc(100vw-16px)] sm:w-[400px] h-[500px] max-h-[75vh] bg-white border border-slate-200 rounded-2xl shadow-2xl flex flex-col transition-all duration-300 origin-bottom-right z-50 ${isOpen ? 'scale-100 opacity-100' : 'scale-0 opacity-0 pointer-events-none'}`}
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border bg-primary/10 rounded-t-2xl">

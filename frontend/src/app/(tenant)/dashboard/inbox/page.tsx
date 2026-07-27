@@ -830,104 +830,109 @@ export default function InboxPage() {
  </div>
  </div>
  
- {/* Lead Details Side-by-Side Panel */}
- {showLeadInfo && (
- <div className="w-full md:w-52 xl:w-56 shrink-0 bg-white shadow-xl md:shadow-none border-l border-slate-200 flex flex-col z-30 fixed inset-y-0 right-0 md:static transition-all duration-300">
- <div className="px-2.5 border-b border-slate-200 flex justify-between items-center bg-white shrink-0 h-[44px] gap-1">
- <h2 className="text-[12px] font-bold text-slate-800 shrink-0 whitespace-nowrap">Lead Details</h2>
- <div className="flex items-center gap-1 shrink-0">
- <button onClick={handleUpdateLeadDetails} className="px-2.5 py-1 text-[10px] bg-primary text-white font-semibold rounded-md hover:bg-primary/90 transition-colors whitespace-nowrap shadow-sm">
-   {language === 'en' ? 'Save' : 'সেভ'}
- </button>
- <button onClick={() => setShowLeadInfo(false)} className="text-slate-400 hover:text-slate-700 p-1 rounded-md hover:bg-slate-100 transition-colors">
-   <X className="w-4 h-4" />
- </button>
- </div>
- </div>
-  
- <div className="flex-1 overflow-y-auto p-2 space-y-2 custom-scrollbar">
-  
- <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
- <div className="h-7 w-7 bg-primary/10 rounded-full flex items-center justify-center border border-primary/20 shrink-0">
- <UserCircle className="h-4 w-4 text-primary" />
- </div>
- <div className="flex-1 min-w-0">
- <h3 className="text-[11px] font-bold text-slate-900 leading-tight truncate">{selectedConv?.contact?.name || 'Unknown'}</h3>
- <p className="text-[9px] text-slate-500 truncate">{selectedConv?.contact?.externalContactId}</p>
- </div>
- </div>
+  {/* Lead Details Side-by-Side Panel */}
+  {showLeadInfo && (
+  <div className="w-full md:w-52 xl:w-56 shrink-0 bg-white shadow-xl md:shadow-none border-l border-slate-200 flex flex-col z-40 fixed inset-y-0 right-0 md:static transition-all duration-300 pb-16 md:pb-0">
+  <div className="px-3 border-b border-slate-200 flex justify-between items-center bg-white shrink-0 h-[48px] md:h-[44px] gap-1">
+  <div className="flex items-center gap-1.5">
+  <button onClick={() => setShowLeadInfo(false)} className="flex items-center gap-0.5 text-[12px] font-bold text-slate-700 hover:text-slate-900 md:hidden mr-1 bg-slate-100 px-2 py-1 rounded-md">
+    <ChevronLeft className="w-4 h-4 text-primary" /> {language === 'en' ? 'Back' : 'পিছনে'}
+  </button>
+  <h2 className="text-[13px] md:text-[12px] font-bold text-slate-800 shrink-0 whitespace-nowrap">Lead Details</h2>
+  </div>
+  <div className="flex items-center gap-1.5 shrink-0">
+  <button onClick={handleUpdateLeadDetails} className="px-3 py-1.5 md:px-2.5 md:py-1 text-[11px] md:text-[10px] bg-primary text-white font-semibold rounded-md hover:bg-primary/90 transition-colors whitespace-nowrap shadow-sm">
+    {language === 'en' ? 'Save' : 'সেভ'}
+  </button>
+  <button onClick={() => setShowLeadInfo(false)} className="hidden md:block text-slate-400 hover:text-slate-700 p-1 rounded-md hover:bg-slate-100 transition-colors">
+    <X className="w-4 h-4" />
+  </button>
+  </div>
+  </div>
+   
+  <div className="flex-1 overflow-y-auto p-3 md:p-2 space-y-3 md:space-y-2 custom-scrollbar">
+   
+  <div className="flex items-center gap-2.5 pb-2 border-b border-slate-100">
+  <div className="h-8 w-8 md:h-7 md:w-7 bg-primary/10 rounded-full flex items-center justify-center border border-primary/20 shrink-0">
+  <UserCircle className="h-5 w-5 md:h-4 md:w-4 text-primary" />
+  </div>
+  <div className="flex-1 min-w-0">
+  <h3 className="text-[13px] md:text-[11px] font-bold text-slate-900 leading-tight truncate">{selectedConv?.contact?.name || 'Unknown'}</h3>
+  <p className="text-[11px] md:text-[9px] text-slate-500 truncate">{selectedConv?.contact?.externalContactId}</p>
+  </div>
+  </div>
 
- <div className="bg-slate-50 rounded-lg p-2 border border-slate-200/70 space-y-1.5">
- <h4 className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Assigned Agent</h4>
- <select value={selectedConv?.assignedAgentId || ''} onChange={(e) => handleAssignAgent(e.target.value || null)} className="w-full bg-white border border-slate-200 rounded-md py-0.5 px-1.5 text-[10px] focus:ring-1 focus:ring-primary focus:outline-none text-slate-800">
-  <option value="">🤖 AI Assistant (Default)</option>
-  {agents.map(agent => <option key={agent.id} value={agent.id}>{agent.name}</option>)}
- </select>
- </div>
+  <div className="bg-slate-50 rounded-lg p-2.5 md:p-2 border border-slate-200/70 space-y-1.5">
+  <h4 className="text-[10px] md:text-[9px] font-bold text-slate-500 uppercase tracking-wider">Assigned Agent</h4>
+  <select value={selectedConv?.assignedAgentId || ''} onChange={(e) => handleAssignAgent(e.target.value || null)} className="w-full bg-white border border-slate-200 rounded-md py-1 md:py-0.5 px-2 md:px-1.5 text-[12px] md:text-[10px] focus:ring-1 focus:ring-primary focus:outline-none text-slate-800">
+   <option value="">🤖 AI Assistant (Default)</option>
+   {agents.map(agent => <option key={agent.id} value={agent.id}>{agent.name}</option>)}
+  </select>
+  </div>
 
- <div className="bg-slate-50 rounded-lg p-2 border border-slate-200/70 space-y-1.5">
- <h4 className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Lead Status</h4>
-  
- <div className="grid grid-cols-2 gap-1.5">
- <div>
- <label className="block text-[10px] font-medium text-slate-600 mb-0.5">Stage</label>
- <select value={editDetails.stageId} onChange={(e) => setEditDetails({...editDetails, stageId: e.target.value})} className="w-full bg-white border border-slate-200 rounded-md py-0.5 px-1 text-[10px] focus:ring-1 focus:ring-primary focus:outline-none text-slate-800">
- <option value="">Select Stage...</option>
- {stages.map(stage => <option key={stage.id} value={stage.id}>{stage.name}</option>)}
- </select>
- </div>
- <div>
- <label className="block text-[10px] font-medium text-slate-600 mb-0.5">Follow-up</label>
- <input type="date" value={editDetails.followUpAt} onChange={(e) => setEditDetails({...editDetails, followUpAt: e.target.value})} className="w-full bg-white border border-slate-200 rounded-md py-0.5 px-1 text-[10px] focus:ring-1 focus:outline-none text-slate-800" />
- </div>
- </div>
- </div>
+  <div className="bg-slate-50 rounded-lg p-2.5 md:p-2 border border-slate-200/70 space-y-1.5">
+  <h4 className="text-[10px] md:text-[9px] font-bold text-slate-500 uppercase tracking-wider">Lead Status</h4>
+   
+  <div className="grid grid-cols-2 gap-2 md:gap-1.5">
+  <div>
+  <label className="block text-[11px] md:text-[10px] font-medium text-slate-600 mb-0.5">Stage</label>
+  <select value={editDetails.stageId} onChange={(e) => setEditDetails({...editDetails, stageId: e.target.value})} className="w-full bg-white border border-slate-200 rounded-md py-1 md:py-0.5 px-2 md:px-1 text-[12px] md:text-[10px] focus:ring-1 focus:ring-primary focus:outline-none text-slate-800">
+  <option value="">Select Stage...</option>
+  {stages.map(stage => <option key={stage.id} value={stage.id}>{stage.name}</option>)}
+  </select>
+  </div>
+  <div>
+  <label className="block text-[11px] md:text-[10px] font-medium text-slate-600 mb-0.5">Follow-up</label>
+  <input type="date" value={editDetails.followUpAt} onChange={(e) => setEditDetails({...editDetails, followUpAt: e.target.value})} className="w-full bg-white border border-slate-200 rounded-md py-1 md:py-0.5 px-2 md:px-1 text-[12px] md:text-[10px] focus:ring-1 focus:outline-none text-slate-800" />
+  </div>
+  </div>
+  </div>
 
- {/* Notes Section (Moved UP for quick access) */}
- <div className="bg-slate-50 rounded-lg p-2 border border-slate-200/70 space-y-1.5">
- <h4 className="text-[9px] font-bold text-slate-500 uppercase tracking-wider flex items-center">
- <Tag className="w-2.5 h-2.5 mr-1 text-primary" /> Notes
- </h4>
- <div className="relative">
- <textarea value={noteContent} onChange={(e) => setNoteContent(e.target.value)} placeholder="Type a note..." className="w-full bg-white border border-slate-200 rounded-md p-1.5 text-[10px] focus:ring-1 focus:ring-primary focus:outline-none min-h-[45px] resize-none pb-6 text-slate-800" />
- <button onClick={handleSaveNote} className="absolute bottom-1 right-1 bg-primary text-white px-2 py-0.5 rounded text-[8px] font-semibold hover:bg-primary/90">Add</button>
- </div>
- <div className="space-y-1 max-h-28 overflow-y-auto custom-scrollbar">
- {selectedConv?.contact?.notes?.map((note: any) => (
- <div key={note.id} className="bg-white border border-slate-200 p-1.5 rounded-md">
- <p className="text-[10px] text-slate-800 whitespace-pre-wrap leading-tight">{note.content}</p>
- <p className="text-[8px] text-slate-400 mt-0.5">{new Date(note.createdAt).toLocaleDateString()}</p>
- </div>
- ))}
- {(!selectedConv?.contact?.notes || selectedConv.contact.notes.length === 0) && (
- <p className="text-[9px] text-center text-slate-400 py-1">No notes added yet.</p>
- )}
- </div>
- </div>
+  {/* Notes Section (Moved UP for quick access) */}
+  <div className="bg-slate-50 rounded-lg p-2.5 md:p-2 border border-slate-200/70 space-y-1.5">
+  <h4 className="text-[10px] md:text-[9px] font-bold text-slate-500 uppercase tracking-wider flex items-center">
+  <Tag className="w-3 h-3 md:w-2.5 md:h-2.5 mr-1 text-primary" /> Notes
+  </h4>
+  <div className="relative">
+  <textarea value={noteContent} onChange={(e) => setNoteContent(e.target.value)} placeholder="Type a note..." className="w-full bg-white border border-slate-200 rounded-md p-2 md:p-1.5 text-[12px] md:text-[10px] focus:ring-1 focus:ring-primary focus:outline-none min-h-[55px] md:min-h-[45px] resize-none pb-6 text-slate-800" />
+  <button onClick={handleSaveNote} className="absolute bottom-1.5 right-1.5 md:bottom-1 md:right-1 bg-primary text-white px-2.5 py-1 md:px-2 md:py-0.5 rounded text-[10px] md:text-[8px] font-semibold hover:bg-primary/90">Add</button>
+  </div>
+  <div className="space-y-1 max-h-36 md:max-h-28 overflow-y-auto custom-scrollbar">
+  {selectedConv?.contact?.notes?.map((note: any) => (
+  <div key={note.id} className="bg-white border border-slate-200 p-2 md:p-1.5 rounded-md">
+  <p className="text-[11px] md:text-[10px] text-slate-800 whitespace-pre-wrap leading-tight">{note.content}</p>
+  <p className="text-[9px] md:text-[8px] text-slate-400 mt-0.5">{new Date(note.createdAt).toLocaleDateString()}</p>
+  </div>
+  ))}
+  {(!selectedConv?.contact?.notes || selectedConv.contact.notes.length === 0) && (
+  <p className="text-[10px] md:text-[9px] text-center text-slate-400 py-1">No notes added yet.</p>
+  )}
+  </div>
+  </div>
 
- <div className="bg-slate-50 rounded-lg p-2 border border-slate-200/70 space-y-1.5">
- <h4 className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Contact Info</h4>
-  
- <div>
- <label className="block text-[10px] font-medium text-slate-600 mb-0.5 flex items-center"><Phone className="w-2.5 h-2.5 mr-1 text-slate-400" /> Phone</label>
- <input type="text" value={editDetails.phone} onChange={(e) => setEditDetails({...editDetails, phone: e.target.value})} placeholder="+123456789" className="w-full bg-white border border-slate-200 rounded-md py-0.5 px-1.5 text-[10px] focus:ring-1 focus:ring-primary focus:outline-none text-slate-800" />
- </div>
- <div>
- <label className="block text-[10px] font-medium text-slate-600 mb-0.5 flex items-center"><Mail className="w-2.5 h-2.5 mr-1 text-slate-400" /> Email</label>
- <input type="email" value={editDetails.email} onChange={(e) => setEditDetails({...editDetails, email: e.target.value})} placeholder="email@example.com" className="w-full bg-white border border-slate-200 rounded-md py-0.5 px-1.5 text-[10px] focus:ring-1 focus:ring-primary focus:outline-none text-slate-800" />
- </div>
- <div>
- <label className="block text-[10px] font-medium text-slate-600 mb-0.5 flex items-center"><Building className="w-2.5 h-2.5 mr-1 text-slate-400" /> Company</label>
- <input type="text" value={editDetails.company} onChange={(e) => setEditDetails({...editDetails, company: e.target.value})} placeholder="Company Ltd." className="w-full bg-white border border-slate-200 rounded-md py-0.5 px-1.5 text-[10px] focus:ring-1 focus:ring-primary focus:outline-none text-slate-800" />
- </div>
- <div>
- <label className="block text-[10px] font-medium text-slate-600 mb-0.5 flex items-center"><MapPin className="w-2.5 h-2.5 mr-1 text-slate-400" /> Address</label>
- <input type="text" value={editDetails.address} onChange={(e) => setEditDetails({...editDetails, address: e.target.value})} placeholder="Full Address..." className="w-full bg-white border border-slate-200 rounded-md py-0.5 px-1.5 text-[10px] focus:ring-1 focus:ring-primary focus:outline-none text-slate-800" />
- </div>
- </div>
- </div>
- </div>
- )}
+  <div className="bg-slate-50 rounded-lg p-2.5 md:p-2 border border-slate-200/70 space-y-2 md:space-y-1.5">
+  <h4 className="text-[10px] md:text-[9px] font-bold text-slate-500 uppercase tracking-wider">Contact Info</h4>
+   
+  <div>
+  <label className="block text-[11px] md:text-[10px] font-medium text-slate-600 mb-0.5 flex items-center"><Phone className="w-3 h-3 md:w-2.5 md:h-2.5 mr-1 text-slate-400" /> Phone</label>
+  <input type="text" value={editDetails.phone} onChange={(e) => setEditDetails({...editDetails, phone: e.target.value})} placeholder="+123456789" className="w-full bg-white border border-slate-200 rounded-md py-1 md:py-0.5 px-2 md:px-1.5 text-[12px] md:text-[10px] focus:ring-1 focus:ring-primary focus:outline-none text-slate-800" />
+  </div>
+  <div>
+  <label className="block text-[11px] md:text-[10px] font-medium text-slate-600 mb-0.5 flex items-center"><Mail className="w-3 h-3 md:w-2.5 md:h-2.5 mr-1 text-slate-400" /> Email</label>
+  <input type="email" value={editDetails.email} onChange={(e) => setEditDetails({...editDetails, email: e.target.value})} placeholder="email@example.com" className="w-full bg-white border border-slate-200 rounded-md py-1 md:py-0.5 px-2 md:px-1.5 text-[12px] md:text-[10px] focus:ring-1 focus:ring-primary focus:outline-none text-slate-800" />
+  </div>
+  <div>
+  <label className="block text-[11px] md:text-[10px] font-medium text-slate-600 mb-0.5 flex items-center"><Building className="w-3 h-3 md:w-2.5 md:h-2.5 mr-1 text-slate-400" /> Company</label>
+  <input type="text" value={editDetails.company} onChange={(e) => setEditDetails({...editDetails, company: e.target.value})} placeholder="Company Ltd." className="w-full bg-white border border-slate-200 rounded-md py-1 md:py-0.5 px-2 md:px-1.5 text-[12px] md:text-[10px] focus:ring-1 focus:ring-primary focus:outline-none text-slate-800" />
+  </div>
+  <div>
+  <label className="block text-[11px] md:text-[10px] font-medium text-slate-600 mb-0.5 flex items-center"><MapPin className="w-3 h-3 md:w-2.5 md:h-2.5 mr-1 text-slate-400" /> Address</label>
+  <input type="text" value={editDetails.address} onChange={(e) => setEditDetails({...editDetails, address: e.target.value})} placeholder="Full Address..." className="w-full bg-white border border-slate-200 rounded-md py-1 md:py-0.5 px-2 md:px-1.5 text-[12px] md:text-[10px] focus:ring-1 focus:ring-primary focus:outline-none text-slate-800" />
+  </div>
+  </div>
+  </div>
+  </div>
+  )}
  </>
  ) : (
  <div className="h-full flex flex-col items-center justify-center text-zinc-400 space-y-4">
