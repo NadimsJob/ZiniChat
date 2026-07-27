@@ -39,6 +39,11 @@ export class OrchestratorService {
         return; 
       }
 
+      if (message.conversation.isAiEnabled === false) {
+        this.logger.debug(`AI Auto-Reply is specifically disabled for conversation ${message.conversation.id}. Skipping.`);
+        return;
+      }
+
       // 2. Check AI Assistant, Tenant Settings, and Routing Mode
       const assistant = await this.prisma.aiAssistant.findFirst({
         where: { tenantId },
@@ -47,10 +52,6 @@ export class OrchestratorService {
 
       if (!assistant || !assistant.isActive || assistant.routingMode === 'custom_only') {
         return; // Tenant doesn't use the system AI Orchestrator or AI is disabled
-      }
-
-      if (message.conversation.assignedAgentId && !assistant.replyWhenAssigned) {
-        return; // AI is configured not to reply when a human agent is assigned
       }
 
       // 3. Check AI Quota

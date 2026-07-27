@@ -382,6 +382,7 @@ export class MfsPaymentsService {
           where: { id: payment.subscriptionId },
           data: {
             status: 'active',
+            currentPeriodStart: new Date(),
             currentPeriodEnd: new Date(Date.now() + periodDays * 24 * 60 * 60 * 1000),
           },
         });
@@ -510,7 +511,7 @@ export class MfsPaymentsService {
       const periodDays = payment.subscription?.billingCycle === 'yearly' ? 365 : 30;
       await this.prisma.subscription.update({
         where: { id: payment.subscriptionId },
-        data: { status: 'active', currentPeriodEnd: new Date(Date.now() + periodDays * 24 * 60 * 60 * 1000) },
+        data: { status: 'active', currentPeriodStart: new Date(), currentPeriodEnd: new Date(Date.now() + periodDays * 24 * 60 * 60 * 1000) },
       });
     }
 

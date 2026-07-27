@@ -61,4 +61,54 @@ export class BillingService {
       basePlan: plan
     };
   }
+
+  /**
+   * Returns the current billing period start/end for quota usage calculations.
+   * - For active subscriptions: uses the subscription's currentPeriodStart → currentPeriodEnd
+   * - For Free plan (no active subscription): falls back to the calendar month start → end
+   * This ensures that renewing a subscription always resets the usage window.
+   */
+  async getActivePeriod(tenantId: string): Promise<{
+    periodStart: Date;
+    periodEnd: Date;
+    messageQuota: number;
+    aiQuota: number;
+    subscription: any;
+  }> {
+    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+    const activeSubscription = await this.prisma.subscription.findFirst({
+      where: {
+        tenantId,
+        status: 'active',
+        currentPeriodEnd: { gt: new Date() }
+      },
+      include: { plan: true },
+      orderBy: { currentPeriodEnd: 'desc' }
+    });
+
+    const plan = activeSubscription?.plan;
+
+    // Determine period boundaries
+    let periodStart: Date;
+    let periodEnd: Date;
+
+    if (activeSubscription?.currentPeriodStart) {
+      periodStart = new Date(activeSubscription.currentPeriodStart);
+      periodEnd = new Date(activeSubscription.currentPeriodEnd);
+    } else {
+      // Free plan fallback: use current calendar month
+      const now = new Date();
+      periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+    }
+
+    return {
+      periodStart,
+      periodEnd,
+      messageQuota: tenant?.customMessageQuota ?? plan?.messageQuota ?? 100,
+      aiQuota: tenant?.customAiQuota ?? plan?.aiQuota ?? 50,
+      subscription: activeSubscription
+    };
+  }
 }
+

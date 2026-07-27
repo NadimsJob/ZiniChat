@@ -7,11 +7,13 @@ import { BullModule } from '@nestjs/bullmq';
 import { BroadcastsProcessor } from './broadcasts.processor';
 import { SmtpModule } from '../smtp/smtp.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { TenantsModule } from '../tenants/tenants.module';
 
 @Module({
   imports: [
     PrismaModule, 
     BillingModule,
+    TenantsModule,
     BullModule.registerQueue({ name: 'broadcasts' }),
     BullModule.registerQueue({ name: 'whatsapp-outbound' }),
     SmtpModule,

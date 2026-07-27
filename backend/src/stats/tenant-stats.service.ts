@@ -1,71 +1,56 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { QuotaService } from '../tenants/quota.service';
+import { BillingService } from '../billing/billing.service';
 
 @Injectable()
 export class TenantStatsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private quotaService: QuotaService,
+    private billingService: BillingService,
+  ) {}
 
   async getDashboardOverview(tenantId: string) {
-    const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    // 1. Get active billing period (subscription-based, not calendar month)
+    const { periodStart, messageQuota, aiQuota, subscription: activeSubscription } =
+      await this.billingService.getActivePeriod(tenantId);
 
-    // 1. Messages Usage (current month)
-    const totalMessages = await this.prisma.message.count({
-      where: {
-        conversation: { tenantId },
-        createdAt: { gte: startOfMonth }
-      }
-    });
+    // Also fetch tenant for custom overrides
+    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+    const finalMsgLimit = tenant?.customMessageQuota ?? messageQuota;
+    const finalAiLimit = tenant?.customAiQuota ?? aiQuota;
 
-    // 2. Leads (CRM)
-    const activeLeads = await this.prisma.contact.count({
-      where: { tenantId }
-    });
-    
-    const newLeads = await this.prisma.contact.count({
-      where: { tenantId, lastSeenAt: { gte: startOfMonth } }
-    });
+    // 2. Messages Used in current billing period (outbound + broadcasts)
+    const messagesUsed = await this.quotaService.getMessageUsage(tenantId, periodStart);
 
-    // 3. E-commerce Orders & Revenue
-    const pendingOrders = await this.prisma.order.count({
-      where: { tenantId, status: 'pending' }
-    });
-    
-    const completedOrders = await this.prisma.order.count({
-      where: { tenantId, status: 'completed' }
-    });
-
-    const revenueAgg = await this.prisma.order.aggregate({
-      _sum: { totalAmount: true },
-      where: { tenantId, status: 'completed', createdAt: { gte: startOfMonth } }
-    });
-    const monthlyRevenue = Number(revenueAgg._sum.totalAmount || 0);
-
-    const totalProducts = await this.prisma.product.count({
-      where: { tenantId, isActive: true }
-    });
-
-    // 4. AI & Subscription Quotas
-    const activeSubscription = await this.prisma.subscription.findFirst({
-      where: {
-        tenantId,
-        status: 'active',
-        currentPeriodEnd: { gt: new Date() }
-      },
-      include: { plan: true },
-      orderBy: { currentPeriodEnd: 'desc' }
-    });
-
-    const aiLimit = activeSubscription?.plan?.aiQuota || 50;
-    const msgLimit = activeSubscription?.plan?.messageQuota || 100;
-
+    // 3. AI Responses Used in current billing period
     const aiUsed = await this.prisma.aiUsageLog.count({
       where: {
         tenantId,
-        createdAt: { gte: startOfMonth }
+        createdAt: { gte: periodStart }
       }
     });
 
-    // 5. Recent Activity (Latest 5 Messages)
+    // 4. Leads (CRM)
+    const activeLeads = await this.prisma.contact.count({ where: { tenantId } });
+    const newLeads = await this.prisma.contact.count({
+      where: { tenantId, lastSeenAt: { gte: periodStart } }
+    });
+
+    // 5. E-commerce Orders & Revenue
+    const pendingOrders = await this.prisma.order.count({ where: { tenantId, status: 'pending' } });
+    const completedOrders = await this.prisma.order.count({ where: { tenantId, status: 'completed' } });
+
+    const revenueAgg = await this.prisma.order.aggregate({
+      _sum: { totalAmount: true },
+      where: { tenantId, status: 'completed', createdAt: { gte: periodStart } }
+    });
+    const monthlyRevenue = Number(revenueAgg._sum.totalAmount || 0);
+
+    const totalProducts = await this.prisma.product.count({ where: { tenantId, isActive: true } });
+
+    // 6. Recent Activity (Latest 5 Messages)
     const recentMessages = await this.prisma.message.findMany({
       where: { conversation: { tenantId } },
       take: 5,
@@ -86,17 +71,17 @@ export class TenantStatsService {
     });
 
     return {
-      messages: { 
-        total: totalMessages, 
-        used: totalMessages,
-        limit: msgLimit,
-        percentage: Math.min(100, Math.round((totalMessages / msgLimit) * 100))
+      messages: {
+        used: messagesUsed,
+        limit: finalMsgLimit,
+        percentage: Math.min(100, Math.round((messagesUsed / finalMsgLimit) * 100)),
+        periodStart,
       },
-      leads: { 
+      leads: {
         total: activeLeads,
-        newThisMonth: newLeads 
+        newThisMonth: newLeads
       },
-      orders: { 
+      orders: {
         pending: pendingOrders,
         completed: completedOrders,
         revenue: monthlyRevenue,
@@ -104,8 +89,8 @@ export class TenantStatsService {
       },
       aiQuota: {
         used: aiUsed,
-        limit: aiLimit,
-        percentage: Math.min(100, Math.round((aiUsed / aiLimit) * 100))
+        limit: finalAiLimit,
+        percentage: Math.min(100, Math.round((aiUsed / finalAiLimit) * 100))
       },
       activity: formattedActivity,
       features: activeSubscription?.plan?.features || [],
@@ -113,3 +98,4 @@ export class TenantStatsService {
     };
   }
 }
+

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Request, Patch, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards, Request, Patch, UseInterceptors, UploadedFile, Delete } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import * as path from 'path';
@@ -29,6 +29,12 @@ export class InboxController {
     return this.inboxService.getConversations(tenantId, req.user);
   }
 
+  @Get('unread-count')
+  async getUnreadCount(@Request() req: any) {
+    const tenantId = req.user.tenantId;
+    return this.inboxService.getUnreadCount(tenantId, req.user);
+  }
+
   @Get('conversations/:id/messages')
   async getMessages(@Request() req: any, @Param('id') id: string) {
     const tenantId = req.user.tenantId;
@@ -48,7 +54,6 @@ export class InboxController {
       conversationId: conversation.id
     });
 
-    await this.quotaService.incrementMessageCount(tenantId);
     return message;
   }
 
@@ -89,7 +94,6 @@ export class InboxController {
       conversationId: conversation.id
     });
 
-    await this.quotaService.incrementMessageCount(tenantId);
     await this.quotaService.incrementStorage(tenantId, file.size);
     return message;
   }
@@ -100,9 +104,21 @@ export class InboxController {
     return this.inboxService.assignAgent(tenantId, conversationId, body.agentId, req.user);
   }
 
+  @Patch('conversations/:id/toggle-ai')
+  async toggleAiReply(@Request() req: any, @Param('id') conversationId: string, @Body() body: { isAiEnabled: boolean }) {
+    const tenantId = req.user.tenantId;
+    return this.inboxService.toggleAiReply(tenantId, conversationId, body.isAiEnabled, req.user);
+  }
+
   @Post('conversations/:id/labels')
   async toggleLabel(@Request() req: any, @Param('id') conversationId: string, @Body() body: { labelId: string }) {
     const tenantId = req.user.tenantId;
     return this.inboxService.toggleLabel(tenantId, conversationId, body.labelId);
+  }
+
+  @Delete('conversations/:id')
+  async deleteConversation(@Request() req: any, @Param('id') conversationId: string) {
+    const tenantId = req.user.tenantId;
+    return this.inboxService.deleteConversation(conversationId, tenantId);
   }
 }

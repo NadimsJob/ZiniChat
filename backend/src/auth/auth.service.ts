@@ -109,6 +109,7 @@ export class AuthService {
             planId: selectedPlan.id,
             status,
             billingCycle: 'monthly',
+            currentPeriodStart: new Date(),
             currentPeriodEnd
           }
         });
@@ -498,6 +499,7 @@ export class AuthService {
               planId: selectedPlan.id,
               status,
               billingCycle: 'monthly',
+              currentPeriodStart: new Date(),
               currentPeriodEnd
             }
           });

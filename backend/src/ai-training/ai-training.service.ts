@@ -53,7 +53,6 @@ export class AiTrainingService {
       hasCustomKey: !!assistant.byokApiKeyEncrypted,
       aiOrderEnabled: assistant.aiOrderEnabled,
       isActive: assistant.isActive,
-      replyWhenAssigned: assistant.replyWhenAssigned,
       agentName: assistant.agentName,
       allowByok,
       planName: activeSub?.plan?.name || 'No Active Plan',

@@ -22,6 +22,11 @@ export class LabelsController {
     return this.labelsService.updateLabel(req.user.tenantId, id, body);
   }
 
+  @Post(':id/sync-ai')
+  async syncToAi(@Request() req: any, @Param('id') id: string) {
+    return this.labelsService.syncToAi(req.user.tenantId, id);
+  }
+
   @Delete(':id')
   async deleteLabel(@Request() req: any, @Param('id') id: string) {
     return this.labelsService.deleteLabel(req.user.tenantId, id);

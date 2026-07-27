@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useLanguage } from '@/components/LanguageProvider';
-import { Search, List, Kanban, Plus, UserCircle, Tag, Calendar, MessageSquare, X, MessageCircle, ShoppingBag, Phone, Mail, Building, MapPin, UserPlus, Edit2, Trash2, Check } from 'lucide-react';
+import { Search, List, Kanban, Plus, UserCircle, Tag, Calendar, MessageSquare, X, MessageCircle, ShoppingBag, Phone, Mail, Building, MapPin, UserPlus, Edit2, Trash2, Check, Download } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
+import { toast } from 'react-hot-toast';
 
 export default function LeadsPage() {
  const { language } = useLanguage();
@@ -173,6 +174,29 @@ export default function LeadsPage() {
  }
  };
 
+  const handleDeleteContact = async () => {
+    if (!selectedLead) return;
+    if (!window.confirm('Are you sure you want to delete this contact? All associated conversations, messages, and orders will be permanently deleted.')) return;
+
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/leads/${selectedLead.id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        toast.success('Contact deleted successfully');
+        setLeads(leads.filter(l => l.id !== selectedLead.id));
+        setSelectedLead(null);
+      } else {
+        toast.error('Failed to delete contact');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('An error occurred');
+    }
+  };
+
  const handleUpdateLeadDetails = async () => {
  if (!selectedLead) return;
  
@@ -234,11 +258,35 @@ export default function LeadsPage() {
  // Drag and Drop
  const handleDragStart = (e: React.DragEvent, leadId: string) => e.dataTransfer.setData('leadId', leadId);
  const handleDragOver = (e: React.DragEvent) => e.preventDefault();
- const handleDrop = (e: React.DragEvent, stageId: string) => {
- e.preventDefault();
- const leadId = e.dataTransfer.getData('leadId');
- if (leadId) handleUpdateLeadStage(leadId, stageId);
- };
+  const handleDrop = (e: React.DragEvent, stageId: string) => {
+    e.preventDefault();
+    const leadId = e.dataTransfer.getData('leadId');
+    if (leadId) handleUpdateLeadStage(leadId, stageId);
+  };
+
+  const handleExportLeads = async () => {
+    try {
+      const toastId = toast.loading('Exporting leads...');
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/leads/export`, {
+        headers: { 'Authorization': `Bearer ${Cookies.get('access_token')}` }
+      });
+      if (!res.ok) throw new Error('Failed to export leads');
+      
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'leads.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+      toast.success('Export successful', { id: toastId });
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to export leads');
+    }
+  };
 
  const filteredLeads = leads.filter(l => 
  l.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -271,6 +319,13 @@ export default function LeadsPage() {
  </div>
  
  <div className="flex items-center space-x-2">
+              <button
+                onClick={handleExportLeads}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-700 text-[12px] font-medium rounded-lg hover:bg-slate-200 transition-colors shadow-sm"
+              >
+                <Download className="w-3.5 h-3.5" />
+                {language === 'en' ? 'Export' : 'এক্সপোর্ট'}
+              </button>
  <button
  onClick={() => setIsCreatingLead(true)}
  className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white text-[12px] font-medium rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
@@ -445,7 +500,8 @@ export default function LeadsPage() {
  <div className="px-1.5 py-1 border-b border-border flex justify-between items-center bg-background/50 backdrop-blur-md">
  <h2 className="text-[13px] font-bold text-foreground">Lead Details</h2>
  <div className="flex items-center space-x-2">
- <button onClick={handleUpdateLeadDetails} className="text-[11px] bg-primary text-primary-foreground px-1.5 py-1 rounded-md font-semibold hover:bg-primary/90">Save Changes</button>
+  <button onClick={handleDeleteContact} className="text-[11px] bg-red-500/10 text-red-500 px-1.5 py-1 rounded-md font-semibold hover:bg-red-500/20">Delete</button>
+  <button onClick={handleUpdateLeadDetails} className="text-[11px] bg-primary text-primary-foreground px-1.5 py-1 rounded-md font-semibold hover:bg-primary/90">Save Changes</button>
  <button onClick={() => setSelectedLead(null)} className="text-foreground/50 hover:text-foreground p-1"><X className="h-3.5 w-3.5" /></button>
  </div>
  </div>

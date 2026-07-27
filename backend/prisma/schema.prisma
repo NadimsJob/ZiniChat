@@ -227,6 +227,8 @@ model Conversation {
   channelConnectionId String?  @db.Uuid
   assignedAgentId     String?  @db.Uuid
   status              String   @default("open") // open, closed, bot
+  isAiEnabled         Boolean  @default(true) // Per-conversation AI toggle
+  unreadCount         Int      @default(0) // Tracks unread inbound messages
   lastMessageAt       DateTime @default(now())
 
   tenant            Tenant              @relation(fields: [tenantId], references: [id])
@@ -293,7 +295,6 @@ model AiAssistant {
   agentName           String?  // New field to give AI an identity
   aiOrderEnabled      Boolean  @default(true)
   isActive            Boolean  @default(true)
-  replyWhenAssigned   Boolean  @default(false)
   createdAt           DateTime @default(now())
 
   tenant    Tenant            @relation(fields: [tenantId], references: [id])
@@ -574,6 +575,7 @@ model Subscription {
   planId           String   @db.Uuid
   status           String // active, past_due, canceled
   billingCycle     String   @default("monthly") // monthly, yearly
+  currentPeriodStart DateTime @default(now())
   currentPeriodEnd DateTime
   couponId         String?  @db.Uuid
 

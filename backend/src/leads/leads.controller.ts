@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards, Req, Res } from '@nestjs/common';
+import type { Response } from 'express';
 import { LeadsService } from './leads.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
@@ -8,6 +9,15 @@ import { RequirePermissions } from '../auth/decorators/permissions.decorator';
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 export class LeadsController {
   constructor(private readonly leadsService: LeadsService) {}
+
+  @Get('export')
+  @RequirePermissions('manage:contacts', 'read:contacts')
+  async exportLeads(@Req() req: any, @Res() res: Response) {
+    const buffer = await this.leadsService.exportLeadsToExcel(req.user.tenantId);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=leads.xlsx');
+    res.send(buffer);
+  }
 
   @Get('stages')
   @RequirePermissions('manage:contacts', 'read:contacts')
@@ -62,4 +72,11 @@ export class LeadsController {
   addNote(@Req() req: any, @Param('id') id: string, @Body('content') content: string) {
     return this.leadsService.addNote(req.user.tenantId, id, content, req.user.userId);
   }
+
+  @Delete(':id')
+  @RequirePermissions('manage:contacts')
+  deleteContact(@Req() req: any, @Param('id') id: string) {
+    return this.leadsService.deleteContact(id, req.user.tenantId);
+  }
 }
+

@@ -152,4 +152,101 @@ export class LeadsService {
       }
     });
   }
+
+  async deleteContact(contactId: string, tenantId: string) {
+    const contact = await this.prisma.contact.findFirst({
+      where: { id: contactId, tenantId }
+    });
+    if (!contact) throw new NotFoundException('Lead not found');
+
+    return this.prisma.$transaction(async (tx) => {
+      const conversations = await tx.conversation.findMany({ where: { contactId } });
+      const convIds = conversations.map(c => c.id);
+
+      if (convIds.length > 0) {
+        await tx.order.updateMany({
+          where: { conversationId: { in: convIds } },
+          data: { conversationId: null }
+        });
+        await tx.message.deleteMany({ where: { conversationId: { in: convIds } } });
+        await tx.conversationLabel.deleteMany({ where: { conversationId: { in: convIds } } });
+      }
+      
+      await tx.broadcastRecipient.deleteMany({ where: { contactId } });
+      await tx.conversation.deleteMany({ where: { contactId } });
+      
+      await tx.contact.delete({ where: { id: contactId } });
+      
+      return { success: true };
+    });
+  }
+
+  async exportLeadsToExcel(tenantId: string): Promise<Buffer> {
+    const leads = await this.prisma.contact.findMany({
+      where: { tenantId },
+      include: {
+        stage: true,
+        assignedUser: true,
+        notes: true,
+        conversations: {
+          include: {
+            labels: { include: { label: true } }
+          }
+        }
+      },
+      orderBy: { lastSeenAt: 'desc' }
+    });
+
+    const ExcelJS = require('exceljs');
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Leads');
+
+    worksheet.columns = [
+      { header: 'Name', key: 'name', width: 25 },
+      { header: 'Phone', key: 'phone', width: 20 },
+      { header: 'Email', key: 'email', width: 25 },
+      { header: 'Stage', key: 'stage', width: 15 },
+      { header: 'Assigned To', key: 'assignedTo', width: 20 },
+      { header: 'Company', key: 'company', width: 20 },
+      { header: 'Tags', key: 'tags', width: 20 },
+      { header: 'Labels', key: 'labels', width: 30 },
+      { header: 'Notes', key: 'notes', width: 30 },
+      { header: 'Last Seen', key: 'lastSeenAt', width: 20 }
+    ];
+
+    leads.forEach(lead => {
+      // Gather labels across all conversations
+      const labelNames = new Set<string>();
+      lead.conversations?.forEach(c => {
+        c.labels?.forEach(l => {
+          if (l.label && l.label.name) labelNames.add(l.label.name);
+        });
+      });
+
+      worksheet.addRow({
+        name: lead.name || '',
+        phone: lead.phone || '',
+        email: lead.email || '',
+        stage: lead.stage?.name || 'No Stage',
+        assignedTo: lead.assignedUser?.name || '',
+        company: lead.company || '',
+        tags: lead.tags?.join(', ') || '',
+        labels: Array.from(labelNames).join(', '),
+        notes: lead.notes?.map((n: any) => n.content).join(' | ') || '',
+        lastSeenAt: lead.lastSeenAt ? lead.lastSeenAt.toLocaleDateString() : ''
+      });
+    });
+
+    // Style the header
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE0E0E0' }
+    };
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    return buffer as Buffer;
+  }
 }
+

@@ -212,31 +212,6 @@ export default function AiTrainingPage() {
  </label>
  </div>
 
- {config.isActive && (
- <div className="pt-3 border-t border-surface-hover flex items-center justify-between animate-in fade-in slide-in-from-top-2">
- <div>
- <h3 className="text-[13px] font-bold text-slate-900 ">
- {language === 'en' ? 'Reply when assigned to human?' : 'হিউম্যান এজেন্টের কাছে অ্যাসাইন করা থাকলে রিপ্লাই দিবে?'}
- </h3>
- <p className="text-[11px] text-zinc-500">
- {language === 'en' ? 'If checked, AI will continue chatting even when a human agent takes over.' : 'চেক করা থাকলে, হিউম্যান এজেন্ট রিপ্লাই করার সময়ও এআই চ্যাট করবে।'}
- </p>
- </div>
- <label className="relative inline-flex items-center cursor-pointer">
- <input 
- type="checkbox" 
- checked={config.replyWhenAssigned ?? false}
- onChange={(e) => {
- const val = e.target.checked;
- setConfig({ ...config, replyWhenAssigned: val });
- handleQuickSave({ replyWhenAssigned: val });
- }}
- className="w-5 h-5 text-primary rounded border-zinc-600 focus:ring-primary focus:ring-offset-0 bg-background" 
- />
- </label>
- </div>
- )}
-
  {/* AI Agent Name */}
  <div className="pt-3 mt-3 border-t border-surface-hover">
  <label className="block text-[13px] font-bold text-slate-900 mb-1">

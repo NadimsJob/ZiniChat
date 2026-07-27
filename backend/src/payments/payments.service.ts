@@ -75,7 +75,7 @@ export class PaymentsService {
     const periodDays = billingCycle === 'yearly' ? 365 : 30;
     if (!subscription) {
       subscription = await this.prisma.subscription.create({
-        data: { tenantId, planId, billingCycle, couponId, status: 'pending', currentPeriodEnd: new Date(Date.now() + periodDays * 24 * 60 * 60 * 1000) }
+        data: { tenantId, planId, billingCycle, couponId, status: 'pending', currentPeriodStart: new Date(), currentPeriodEnd: new Date(Date.now() + periodDays * 24 * 60 * 60 * 1000) }
       });
     } else {
       subscription = await this.prisma.subscription.update({
@@ -180,12 +180,12 @@ export class PaymentsService {
     const periodDays = billingCycle === 'yearly' ? 365 : 30;
     if (!subscription) {
       subscription = await this.prisma.subscription.create({
-        data: { tenantId, planId, billingCycle, couponId, status: 'active', currentPeriodEnd: new Date(Date.now() + periodDays * 24 * 60 * 60 * 1000) }
+        data: { tenantId, planId, billingCycle, couponId, status: 'active', currentPeriodStart: new Date(), currentPeriodEnd: new Date(Date.now() + periodDays * 24 * 60 * 60 * 1000) }
       });
     } else {
       subscription = await this.prisma.subscription.update({
         where: { id: subscription.id },
-        data: { status: 'active', billingCycle, couponId, currentPeriodEnd: new Date(Date.now() + periodDays * 24 * 60 * 60 * 1000) }
+        data: { status: 'active', billingCycle, couponId, currentPeriodStart: new Date(), currentPeriodEnd: new Date(Date.now() + periodDays * 24 * 60 * 60 * 1000) }
       });
     }
     const payment = await this.prisma.payment.create({
@@ -375,7 +375,7 @@ export class PaymentsService {
       // Subscription Payment
       const subscription = await this.prisma.subscription.update({
         where: { id: payment.subscriptionId },
-        data: { status: 'active', currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
+        data: { status: 'active', currentPeriodStart: new Date(), currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
         include: { plan: true }
       });
 

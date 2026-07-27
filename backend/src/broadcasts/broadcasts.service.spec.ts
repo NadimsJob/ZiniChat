@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { BroadcastsService } from './broadcasts.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { QuotaService } from '../tenants/quota.service';
 import { ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
 
 describe('BroadcastsService', () => {
@@ -9,6 +10,9 @@ describe('BroadcastsService', () => {
   let prisma: PrismaService;
 
   const mockPrismaService = {
+    contact: {
+      count: jest.fn().mockResolvedValue(10), // mock 10 recipients by default
+    },
     tenant: {
       findUnique: jest.fn(),
     },
@@ -49,6 +53,11 @@ describe('BroadcastsService', () => {
     createNotification: jest.fn().mockResolvedValue({}),
   };
 
+  const mockQuotaService = {
+    getActivePeriodForTenant: jest.fn().mockResolvedValue({ periodStart: new Date(), messageQuota: 100 }),
+    getMessageUsage: jest.fn().mockResolvedValue(10),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -60,6 +69,10 @@ describe('BroadcastsService', () => {
         {
           provide: NotificationsService,
           useValue: mockNotificationsService,
+        },
+        {
+          provide: QuotaService,
+          useValue: mockQuotaService,
         },
         {
           provide: 'BullQueue_broadcasts',

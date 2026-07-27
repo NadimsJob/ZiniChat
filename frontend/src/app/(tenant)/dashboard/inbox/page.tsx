@@ -4,8 +4,10 @@ import { useState, useEffect, useRef } from 'react';
 import Cookies from 'js-cookie';
 import { io, Socket } from 'socket.io-client';
 import { useLanguage } from '@/components/LanguageProvider';
-import { Search, Send, User as UserIcon, Clock, MessageSquare, Phone, Info, Tag, Plus, Check, MessageCircle, MoreVertical, X, UserCircle, UserPlus, Mail, Building, MapPin, AlertCircle, Paperclip, File as FileIcon } from 'lucide-react';
+import { Search, Send, User as UserIcon, Clock, MessageSquare, Phone, Info, Tag, Plus, Check, MessageCircle, MoreVertical, X, UserCircle, UserPlus, Mail, Building, MapPin, AlertCircle, Paperclip, File as FileIcon, Trash2, Bot, ToggleLeft, ToggleRight, Wand2, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
+import { toast } from 'react-hot-toast';
+import LabelForm from '@/components/labels/LabelForm';
 
 export default function InboxPage() {
  const { language } = useLanguage();
@@ -17,6 +19,8 @@ export default function InboxPage() {
  const [loading, setLoading] = useState(true);
  const [availableLabels, setAvailableLabels] = useState<any[]>([]);
  const [showLabelsMenu, setShowLabelsMenu] = useState(false);
+ const [isCreatingLabel, setIsCreatingLabel] = useState(false);
+ const [syncingLabelId, setSyncingLabelId] = useState<string | null>(null);
  const [channelFilter, setChannelFilter] = useState<string>('all');
  const [activeChannels, setActiveChannels] = useState<any[]>([]);
  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
@@ -40,6 +44,12 @@ export default function InboxPage() {
  const socketRef = useRef<Socket | null>(null);
  const messagesEndRef = useRef<HTMLDivElement>(null);
  const fileInputRef = useRef<HTMLInputElement>(null);
+
+ const fetchLabels = async () => {
+    const token = Cookies.get('access_token');
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/labels`, { headers: { 'Authorization': `Bearer ${token}` } });
+    if (res.ok) setAvailableLabels(await res.json());
+ };
 
  // Connect to Socket and fetch conversations
  useEffect(() => {
@@ -172,7 +182,27 @@ export default function InboxPage() {
  }
  }, [selectedConvId, conversations]);
 
- const handleUpdateLeadDetails = async () => {
+  const handleDeleteConversation = async () => {
+    const selectedConv = conversations.find(c => c.id === selectedConvId);
+    if (!selectedConv) return;
+    if (!window.confirm(language === 'en' ? 'Are you sure you want to delete this conversation? This cannot be undone.' : 'আপনি কি নিশ্চিত যে এই কনভারসেশনটি মুছতে চান? এটি পূর্বাবস্থায় ফিরিয়ে আনা যাবে না।')) return;
+    
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/inbox/conversations/${selectedConv.id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setConversations(conversations.filter(c => c.id !== selectedConv.id));
+        setSelectedConvId(null);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleUpdateLeadDetails = async () => {
  const conv = conversations.find(c => c.id === selectedConvId);
  if (!conv || !conv.contact) return;
  
@@ -216,10 +246,30 @@ export default function InboxPage() {
  }
  };
 
- // Auto-scroll to bottom of messages
- useEffect(() => {
- scrollToBottom();
- }, [messages]);
+  // Auto-scroll to bottom of messages
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const handleToggleAiReply = async (isAiEnabled: boolean) => {
+    if (!selectedConvId) return;
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/inbox/conversations/${selectedConvId}/toggle-ai`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ isAiEnabled })
+      });
+      if (res.ok) {
+        setConversations(prev => prev.map(c => c.id === selectedConvId ? { ...c, isAiEnabled } : c));
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
  const handleToggleLabel = async (labelId: string) => {
  if (!selectedConvId) return;
@@ -323,7 +373,52 @@ export default function InboxPage() {
  setShowAssignMenu(false);
  };
 
- const selectedConv = conversations.find(c => c.id === selectedConvId);
+  const handleSaveLabel = async (data: { name: string; color: string; aiPrompt?: string }) => {
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/labels`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      });
+      if (res.ok) {
+        setIsCreatingLabel(false);
+        fetchLabels();
+        toast.success(language === 'en' ? 'Label created' : 'লেবেল তৈরি হয়েছে');
+      } else {
+        toast.error('Failed to create label');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Error creating label');
+    }
+  };
+
+  const handleSyncAi = async (id: string) => {
+    setSyncingLabelId(id);
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/labels/${id}/sync-ai`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        toast.success(language === 'en' ? 'Synced to AI Training!' : 'এআই ট্রেনিং এ সিঙ্ক হয়েছে!');
+      } else {
+        toast.error('Failed to sync to AI');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Error syncing to AI');
+    } finally {
+      setSyncingLabelId(null);
+    }
+  };
+
+  const selectedConv = conversations.find(c => c.id === selectedConvId);
  const filteredConversations = conversations.filter(c => channelFilter === 'all' || c.channelConnectionId === channelFilter || (channelFilter === c.channel && !c.channelConnectionId));
 
  if (loading) {
@@ -366,9 +461,15 @@ export default function InboxPage() {
  );
  }
 
- return (
- <div className="flex h-full bg-white/40 backdrop-blur-2xl overflow-hidden relative">
- 
+  return (
+  <div className="flex h-full bg-surface/80 backdrop-blur-2xl overflow-hidden relative">
+    {/* Subtle Premium Mesh Gradients */}
+    <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[120px] pointer-events-none mix-blend-multiply" />
+    <div className="absolute bottom-[-10%] right-[-5%] w-[40%] h-[40%] bg-[#EE8D27]/10 rounded-full blur-[120px] pointer-events-none mix-blend-multiply" />
+    <div className="absolute top-[40%] left-[30%] w-[20%] h-[20%] bg-emerald-500/5 rounded-full blur-[100px] pointer-events-none" />
+    
+    {/* Noise Texture for premium feel */}
+    <div className="absolute inset-0 bg-grid-pattern opacity-[0.02] pointer-events-none mix-blend-overlay" />
  {/* Left Pane - Conversations List */}
  <div className="w-72 flex-shrink-0 border-r border-white/50 flex flex-col bg-gradient-to-b from-white/60 to-white/30 backdrop-blur-md relative z-10">
  <div className="px-2 py-1.5 border-b border-surface-hover">
@@ -416,7 +517,12 @@ export default function InboxPage() {
  filteredConversations.map((conv) => (
  <button
  key={conv.id}
- onClick={() => setSelectedConvId(conv.id)}
+ onClick={() => {
+ setSelectedConvId(conv.id);
+ if (conv.unreadCount > 0) {
+ setConversations(prev => prev.map(c => c.id === conv.id ? { ...c, unreadCount: 0 } : c));
+ }
+ }}
  className={`w-full flex items-center gap-2 p-1.5 rounded-lg transition-all text-left border ${
  selectedConvId === conv.id 
  ? 'bg-white/90 shadow-sm border-primary/20 ring-1 ring-primary/10' 
@@ -431,9 +537,16 @@ export default function InboxPage() {
  <h3 className="text-[12px] font-semibold truncate text-zinc-900 ">
  {conv.contact?.name || conv.contact?.externalContactId || 'Unknown'}
  </h3>
- <span className="text-[9px] text-zinc-400 flex-shrink-0 ml-1">
- {new Date(conv.lastMessageAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
- </span>
+ <div className="flex flex-col items-end flex-shrink-0 ml-1 gap-1">
+   <span className="text-[9px] text-zinc-400">
+     {new Date(conv.lastMessageAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+   </span>
+   {conv.unreadCount > 0 && (
+     <span className="flex h-4 items-center justify-center rounded-full bg-primary px-1.5 text-[9px] font-bold text-white leading-none shadow-sm">
+       {conv.unreadCount > 99 ? '99+' : conv.unreadCount}
+     </span>
+   )}
+ </div>
  </div>
  <p className="text-[10px] text-zinc-500 truncate mt-0.5 leading-tight flex items-center gap-1">
  {conv.channel === 'whatsapp' ? <Phone className="w-3 h-3" /> : <MessageCircle className="w-3 h-3" />}
@@ -484,6 +597,18 @@ export default function InboxPage() {
  </div>
  </div>
  <div className="flex items-center gap-2 text-zinc-400 relative">
+ {/* AI Toggle */}
+ <button
+ onClick={() => handleToggleAiReply(selectedConv?.isAiEnabled === false ? true : false)}
+ className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2 text-sm border ${selectedConv?.isAiEnabled !== false ? 'bg-primary/10 text-primary border-primary/20' : 'hover:bg-surface-hover border-transparent text-zinc-400'}`}
+ title={selectedConv?.isAiEnabled !== false ? 'AI Auto-Reply: ON' : 'AI Auto-Reply: OFF'}
+ >
+ <Bot className="w-4 h-4" />
+ <span className="text-xs font-medium whitespace-nowrap hidden sm:inline-block">
+ {language === 'en' ? 'AI Reply' : 'এআই রিপ্লাই'}
+ </span>
+ {selectedConv?.isAiEnabled !== false ? <ToggleRight className="w-4 h-4 text-primary ml-1" /> : <ToggleLeft className="w-4 h-4 ml-1" />}
+ </button>
  {/* Agent Assignment Dropdown */}
  <div className="relative">
  <button 
@@ -493,7 +618,7 @@ export default function InboxPage() {
  >
  <UserIcon className="w-4 h-4" />
  <span className="text-xs font-medium whitespace-nowrap hidden sm:inline-block">
- {selectedConv?.assignedAgent ? selectedConv.assignedAgent.name : (language === 'en' ? 'Assign' : 'অ্যাসাইন')}
+ {selectedConv?.assignedAgent ? selectedConv.assignedAgent.name : '🤖 AI Assistant'}
  </span>
  </button>
  {showAssignMenu && (
@@ -508,7 +633,7 @@ export default function InboxPage() {
  onClick={() => handleAssignAgent(null)}
  className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center justify-between ${!selectedConv?.assignedAgentId ? 'bg-primary/10 text-primary' : 'hover:bg-surface-hover text-zinc-700 '}`}
  >
- <span>{language === 'en' ? 'Unassigned' : 'আনঅ্যাসাইন'}</span>
+ <span className="flex items-center gap-2"><Bot className="w-4 h-4" /> AI Assistant (Default)</span>
  {!selectedConv?.assignedAgentId && <Check className="w-4 h-4" />}
  </button>
  {agents.map(agent => (
@@ -527,39 +652,68 @@ export default function InboxPage() {
  </div>
 
  <button 
- onClick={() => { setShowLabelsMenu(!showLabelsMenu); setShowAssignMenu(false); }}
- className={`p-2 rounded-lg transition-colors flex items-center gap-1 text-sm ${showLabelsMenu ? 'bg-primary/10 text-primary' : 'hover:bg-surface-hover'}`}
- title={language === 'en' ? 'Labels' : 'লেবেলস'}
- >
+    onClick={() => { setShowLabelsMenu(!showLabelsMenu); setShowAssignMenu(false); setIsCreatingLabel(false); }}
+    className={`p-2 rounded-lg transition-colors flex items-center gap-1 text-sm ${showLabelsMenu ? 'bg-primary/10 text-primary' : 'hover:bg-surface-hover'}`}
+    title={language === 'en' ? 'Labels' : 'লেবেলস'}
+  >
  <Tag className="w-4 h-4" />
  </button>
- {showLabelsMenu && (
- <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-slate-200 rounded-xl shadow-lg z-10 p-2 animate-in fade-in zoom-in duration-200">
- <div className="text-xs font-bold px-2 py-1.5 text-slate-500 mb-1">
- {language === 'en' ? 'Toggle Labels' : 'লেবেল পরিবর্তন করুন'}
- </div>
- {availableLabels.length === 0 ? (
- <div className="text-xs px-2 py-2 text-slate-400 text-center">No labels found</div>
- ) : (
- availableLabels.map(label => {
- const isApplied = selectedConv?.labels?.some((cl: any) => cl.labelId === label.id);
- return (
- <button
- key={label.id}
- onClick={() => handleToggleLabel(label.id)}
- className="w-full flex items-center gap-2 px-2 py-1.5 hover:bg-slate-50 :bg-zinc-800 rounded-lg transition-colors text-left text-sm group"
- >
- <div className="w-3 h-3 rounded-full" style={{ backgroundColor: label.color }}></div>
- <span className="flex-1 truncate text-slate-700 group-hover:text-slate-900 :text-white">
- {label.name}
- </span>
- {isApplied && <Check className="w-3.5 h-3.5 text-primary" />}
- </button>
- );
- })
- )}
- </div>
- )}
+  {showLabelsMenu && (
+    <div className="absolute right-0 top-full mt-2 w-72 bg-white border border-slate-200 rounded-xl shadow-lg z-10 p-2 animate-in fade-in zoom-in duration-200">
+      {isCreatingLabel ? (
+        <LabelForm 
+          onSave={handleSaveLabel} 
+          onCancel={() => setIsCreatingLabel(false)} 
+        />
+      ) : (
+        <>
+          <div className="flex items-center justify-between px-2 py-1.5 mb-1 border-b border-slate-100">
+            <span className="text-xs font-bold text-slate-500">
+              {language === 'en' ? 'Toggle Labels' : 'লেবেল পরিবর্তন করুন'}
+            </span>
+            <button
+              onClick={() => setIsCreatingLabel(true)}
+              className="text-xs text-primary hover:text-primary/80 font-medium flex items-center gap-1"
+            >
+              <Plus className="w-3 h-3" />
+              {language === 'en' ? 'Add' : 'যুক্ত করুন'}
+            </button>
+          </div>
+          <div className="max-h-64 overflow-y-auto">
+            {availableLabels.length === 0 ? (
+              <div className="text-xs px-2 py-4 text-slate-400 text-center">No labels found</div>
+            ) : (
+              availableLabels.map(label => {
+                const isApplied = selectedConv?.labels?.some((cl: any) => cl.labelId === label.id);
+                return (
+                  <div key={label.id} className="flex items-center group hover:bg-slate-50 rounded-lg pr-1">
+                    <button
+                      onClick={() => handleToggleLabel(label.id)}
+                      className="flex-1 flex items-center gap-2 px-2 py-1.5 transition-colors text-left text-sm"
+                    >
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: label.color }}></div>
+                      <span className="flex-1 truncate text-slate-700 group-hover:text-slate-900">
+                        {label.name}
+                      </span>
+                      {isApplied && <Check className="w-3.5 h-3.5 text-primary" />}
+                    </button>
+                    <button 
+                      onClick={() => handleSyncAi(label.id)} 
+                      disabled={!label.aiPrompt || syncingLabelId === label.id}
+                      className="p-1.5 text-slate-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors disabled:opacity-50 opacity-0 group-hover:opacity-100"
+                      title={language === 'en' ? 'Sync to AI Training' : 'এআই ট্রেনিং এ সিঙ্ক করুন'}
+                    >
+                      {syncingLabelId === label.id ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  )}
  <div className="flex items-center gap-2">
  <button className="p-1.5 text-zinc-400 hover:text-primary transition-colors">
  <Search className="w-4 h-4" />
@@ -567,13 +721,16 @@ export default function InboxPage() {
  <button onClick={() => setShowLeadInfo(!showLeadInfo)} className={`p-1.5 transition-colors ${showLeadInfo ? 'text-primary' : 'text-zinc-400 hover:text-primary'}`}>
  <Info className="w-4 h-4" />
  </button>
+ <button onClick={handleDeleteConversation} title={language === 'en' ? 'Delete Conversation' : 'কনভারসেশন মুছুন'} className="p-1.5 text-zinc-400 hover:text-red-500 transition-colors">
+ <Trash2 className="w-4 h-4" />
+ </button>
  </div>
  </div>
  </div>
 
  {/* Chat Messages */}
- <div className="flex-1 overflow-y-auto px-2 py-2 space-y-0.5 custom-scrollbar bg-slate-50/50 bg-grid-pattern relative z-0">
- <div className="absolute inset-0 bg-gradient-to-b from-white/40 via-transparent to-white/40 pointer-events-none" />
+ <div className="flex-1 overflow-y-auto px-2 py-2 space-y-0.5 custom-scrollbar bg-transparent relative z-0">
+ <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-white/20 pointer-events-none" />
  
  {messages.length === 0 ? (
  <div className="h-full flex items-center justify-center text-zinc-500 font-medium text-[12px] relative z-10">
@@ -712,8 +869,8 @@ export default function InboxPage() {
  
  {/* Lead Details Side-by-Side Panel (squeezes chatbox smoothly) */}
  {showLeadInfo && (
- <div className="w-80 shrink-0 bg-white/95 backdrop-blur-3xl shadow-xl border-l border-slate-200/80 flex flex-col z-20 transition-all duration-300">
- <div className="px-3 py-3 border-b border-border flex justify-between items-center bg-background/50 backdrop-blur-md shrink-0 h-[44px]">
+ <div className="w-80 shrink-0 bg-white/40 backdrop-blur-3xl shadow-xl border-l border-white/50 flex flex-col z-20 transition-all duration-300">
+ <div className="px-3 py-3 border-b border-border flex justify-between items-center bg-white/30 backdrop-blur-md shrink-0 h-[44px]">
  <h2 className="text-[13px] font-bold text-foreground">Lead Details</h2>
  <div className="flex items-center space-x-2">
  <button onClick={handleUpdateLeadDetails} className="text-[11px] bg-primary text-primary-foreground px-2 py-1 rounded-md font-semibold hover:bg-primary/90">Save Changes</button>
@@ -752,8 +909,8 @@ export default function InboxPage() {
 
  <div>
  <label className="block text-[11px] font-medium text-foreground/70 mb-1 flex items-center"><UserPlus className="w-3 h-3 mr-1" /> Assigned To</label>
- <select value={editDetails.assignedUserId} onChange={(e) => setEditDetails({...editDetails, assignedUserId: e.target.value})} className="w-full bg-surface border border-slate-200 rounded-md py-1 px-1.5 text-[11px] focus:ring-1 focus:ring-primary focus:outline-none">
- <option value="">Unassigned</option>
+ <select value={editDetails.assignedUserId || ''} onChange={(e) => setEditDetails({...editDetails, assignedUserId: e.target.value})} className="w-full bg-surface border border-slate-200 rounded-md py-1 px-1.5 text-[11px] focus:ring-1 focus:ring-primary focus:outline-none">
+ <option value="">🤖 AI Assistant (Default)</option>
  {agents.map(tm => <option key={tm.id} value={tm.id}>{tm.name}</option>)}
  </select>
  </div>

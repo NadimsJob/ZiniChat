@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { NotificationsService } from '../notifications/notifications.service';
+import { QuotaService } from '../tenants/quota.service';
 
 @Injectable()
 export class BroadcastsService {
@@ -11,7 +12,8 @@ export class BroadcastsService {
   constructor(
     private prisma: PrismaService,
     @InjectQueue('broadcasts') private broadcastQueue: Queue,
-    private notificationsService: NotificationsService
+    private notificationsService: NotificationsService,
+    private quotaService: QuotaService,
   ) {}
 
   async checkAccessControl(tenantId: string) {
@@ -351,6 +353,23 @@ export class BroadcastsService {
     if (!template) throw new NotFoundException('Template not found');
     if (template.status !== 'APPROVED') {
       throw new BadRequestException('Only Meta-APPROVED templates can be used for Broadcast Campaigns.');
+    }
+
+    // Pre-check: Count how many contacts will receive this broadcast
+    const recipientCount = await this.prisma.contact.count({
+      where: { tenantId, phone: { not: null } }
+    });
+
+    // Check if this broadcast would exceed the message quota
+    const { periodStart, messageQuota } = await this.quotaService.getActivePeriodForTenant(tenantId);
+    const currentUsage = await this.quotaService.getMessageUsage(tenantId, periodStart);
+    const projectedTotal = currentUsage + recipientCount;
+
+    if (projectedTotal > messageQuota) {
+      const remaining = Math.max(0, messageQuota - currentUsage);
+      throw new ForbiddenException(
+        `Insufficient message quota. You have ${remaining} messages remaining but this broadcast targets ${recipientCount} contacts. Please upgrade your plan.`
+      );
     }
     
     const broadcast = await this.prisma.broadcast.create({

@@ -77,9 +77,10 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  
  const fetchUserAndQuotas = async () => {
  try {
- const [userRes, quotasRes] = await Promise.all([
+ const [userRes, quotasRes, unreadRes] = await Promise.all([
  fetch(`${API}/auth/me`, { headers: { 'Authorization': `Bearer ${token}` } }),
- fetch(`${API}/billing/quotas`, { headers: { 'Authorization': `Bearer ${token}` } })
+ fetch(`${API}/billing/quotas`, { headers: { 'Authorization': `Bearer ${token}` } }),
+ fetch(`${API}/inbox/unread-count`, { headers: { 'Authorization': `Bearer ${token}` } })
  ]);
  if (userRes.ok) {
  const userData = await userRes.json();
@@ -93,6 +94,10 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  if (quotas.features) {
  setAllowedFeatures(quotas.features);
  }
+ }
+ if (unreadRes.ok) {
+ const unreadData = await unreadRes.json();
+ setInboxUnreadCount(unreadData.unreadCount || 0);
  }
  } catch (err) { console.error(err); }
  };
@@ -153,9 +158,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  '/dashboard/products': ['commerce'],
  '/dashboard/orders': ['commerce'],
  '/dashboard/broadcasts': ['broadcast'],
- '/dashboard/settings/whatsapp': ['whatsapp'],
- '/dashboard/settings/messenger': ['messenger'],
- '/dashboard/settings/instagram': ['instagram_dm'],
+ '/dashboard/settings/inboxes': ['whatsapp', 'messenger', 'instagram_dm'],
  '/dashboard/settings/ai-training': ['ai_assistant'],
  '/dashboard/team': ['team_management'],
  '/dashboard/settings/labels': ['contact_labels'],
@@ -175,24 +178,22 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  { name: language === 'en' ? 'Product List' : 'প্রোডাক্ট লিস্ট', icon: ShoppingCart, href: '/dashboard/products' },
  { name: language === 'en' ? 'Manage Order' : 'ম্যানেজ অর্ডার', icon: ShoppingBag, href: '/dashboard/orders' },
  { name: language === 'en' ? 'Broadcasts' : 'ব্রডকাস্ট', icon: Megaphone, href: '/dashboard/broadcasts' },
+ { name: language === 'en' ? 'Subscription' : 'সাবস্ক্রিপশন', icon: Crown, href: '/dashboard/settings/subscription' },
+ { name: language === 'en' ? 'Billing History' : 'বিলিং হিস্ট্রি', icon: Receipt, href: '/dashboard/settings/billing-history' },
+ { name: language === 'en' ? 'Support Ticket' : 'সাপোর্ট টিকিট', icon: MessageSquare, href: '/dashboard/support' },
  { 
  name: language === 'en' ? 'Settings' : 'সেটিংস', 
  icon: Settings2, 
  href: '/dashboard/settings', 
  hasSubmenu: true,
  subItems: [
- { name: language === 'en' ? 'WhatsApp Connection' : 'হোয়াটসঅ্যাপ কানেকশন', icon: PhoneCall, href: '/dashboard/settings/whatsapp' },
- { name: language === 'en' ? 'Messenger Connection' : 'মেসেঞ্জার কানেকশন', icon: MessageCircle, href: '/dashboard/settings/messenger' },
- { name: language === 'en' ? 'Instagram Connection' : 'ইনস্টাগ্রাম কানেকশন', icon: Camera, href: '/dashboard/settings/instagram' },
+ { name: language === 'en' ? 'Inboxes' : 'ইনবক্সসমূহ', icon: Webhook, href: '/dashboard/settings/inboxes' },
  { name: language === 'en' ? 'Team' : 'টিম', icon: UserCircle, href: '/dashboard/team' },
  { name: language === 'en' ? 'AI Training' : 'এআই ট্রেইনিং', icon: Zap, href: '/dashboard/settings/ai-training' },
  { name: language === 'en' ? 'Labels' : 'লেবেলস', icon: Tag, href: '/dashboard/settings/labels' },
  { name: language === 'en' ? 'Storage' : 'স্টোরেজ', icon: Settings2, href: '/dashboard/settings/storage' },
  ]
  },
- { name: language === 'en' ? 'Subscription' : 'সাবস্ক্রিপশন', icon: Crown, href: '/dashboard/settings/subscription' },
- { name: language === 'en' ? 'Billing History' : 'বিলিং হিস্ট্রি', icon: Receipt, href: '/dashboard/settings/billing-history' },
- { name: language === 'en' ? 'Support Ticket' : 'সাপোর্ট টিকিট', icon: MessageSquare, href: '/dashboard/support' },
  ];
 
  if (pathname === '/dashboard/onboarding') {
@@ -272,7 +273,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  
  {/* Submenu Indicator or Inbox Badge */}
  <div className="flex items-center gap-2">
- {(item.name === 'Inbox' || item.name === 'ইনবক্স') && inboxUnreadCount > 0 && (
+ {(item.name === 'Live Inbox' || item.name === 'লাইভ ইনবক্স') && inboxUnreadCount > 0 && (
  <span className="flex h-5 items-center justify-center rounded-full bg-red-500 px-2 text-[10px] font-bold text-white">
  {inboxUnreadCount > 99 ? '99+' : inboxUnreadCount}
  </span>

@@ -72,6 +72,36 @@ export class InboxService {
     });
   }
 
+  async getUnreadCount(tenantId: string, user: any) {
+    let whereClause: any = { tenantId, unreadCount: { gt: 0 } };
+
+    if (user.role === 'agent' && user.agentAccessMode === 'ASSIGNED_CHANNELS') {
+      const assignments = await this.prisma.agentChannelAssignment.findMany({
+        where: { userId: user.id },
+        include: { channelConnection: true }
+      });
+      const assignedConnectionIds = assignments.map(a => a.channelConnectionId);
+
+      whereClause = {
+        ...whereClause,
+        OR: [
+          { assignedAgentId: user.id }, // Assigned explicitly to this conversation
+          { channelConnectionId: { in: assignedConnectionIds } } // Belongs to an assigned channel
+        ]
+      };
+    } else if (user.role === 'admin' || user.role === 'superadmin') {
+      // Admins only see badge for unassigned conversations, as per requirement
+      whereClause.assignedAgentId = null;
+    }
+
+    const unreadConversations = await this.prisma.conversation.aggregate({
+      where: whereClause,
+      _sum: { unreadCount: true }
+    });
+
+    return { unreadCount: unreadConversations._sum.unreadCount || 0 };
+  }
+
   async assignAgent(tenantId: string, conversationId: string, agentId: string | null, actionUser: any) {
     const conversation = await this.prisma.conversation.update({
       where: { id: conversationId, tenantId },
@@ -113,7 +143,32 @@ export class InboxService {
     return conversation;
   }
 
+  async toggleAiReply(tenantId: string, conversationId: string, isAiEnabled: boolean, actionUser: any) {
+    const conversation = await this.prisma.conversation.update({
+      where: { id: conversationId, tenantId },
+      data: { isAiEnabled },
+      include: { contact: true }
+    });
+
+    // Track in Contact History
+    await this.prisma.contactNote.create({
+      data: {
+        contactId: conversation.contactId,
+        createdBy: actionUser.id,
+        content: `AI Auto-Reply turned ${isAiEnabled ? 'ON' : 'OFF'} for this conversation.`
+      }
+    });
+
+    return conversation;
+  }
+
   async getMessages(tenantId: string, conversationId: string) {
+    // Reset unread count when conversation is opened
+    await this.prisma.conversation.updateMany({
+      where: { id: conversationId, tenantId },
+      data: { unreadCount: 0 }
+    });
+
     return this.prisma.message.findMany({
       where: { 
         conversationId,
@@ -201,13 +256,19 @@ export class InboxService {
           contactId: contact.id,
           channel: data.channel,
           channelConnectionId: data.channelConnectionId,
-          lastMessageAt: data.timestamp
+          lastMessageAt: data.timestamp,
+          unreadCount: 1
         }
       });
     } else {
       conversation = await this.prisma.conversation.update({
         where: { id: conversation.id },
-        data: { lastMessageAt: data.timestamp, status: 'open' }
+        data: { 
+          lastMessageAt: data.timestamp, 
+          status: 'open',
+          unreadCount: { increment: 1 },
+          ...(data.channelConnectionId && { channelConnectionId: data.channelConnectionId })
+        }
       });
     }
 
@@ -383,5 +444,36 @@ export class InboxService {
       });
       return { added: true };
     }
+  }
+
+  async deleteConversation(conversationId: string, tenantId: string) {
+    const conv = await this.prisma.conversation.findFirst({
+      where: { id: conversationId, tenantId }
+    });
+    
+    if (!conv) {
+      throw new Error('Conversation not found');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      await tx.order.updateMany({
+        where: { conversationId },
+        data: { conversationId: null }
+      });
+      
+      await tx.message.deleteMany({
+        where: { conversationId }
+      });
+      
+      await tx.conversationLabel.deleteMany({
+        where: { conversationId }
+      });
+      
+      await tx.conversation.delete({
+        where: { id: conversationId }
+      });
+      
+      return { success: true };
+    });
   }
 }

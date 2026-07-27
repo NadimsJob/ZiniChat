@@ -86,12 +86,29 @@ describe('OrchestratorService', () => {
       conversation: { 
         tenantId: 't1', 
         conversationId: 'c2',
+        isAiEnabled: true,
         channelConnection: { id: 'conn1', isAiAutoReplyEnabled: false } 
       }
     });
     prismaService.aiAssistant.findFirst.mockResolvedValue({ isActive: true, routingMode: 'ai_first' });
     
     await service.processMessage('msg2');
+    expect(aiService.generateCompletion).not.toHaveBeenCalled();
+  });
+
+  it('should ignore if conversation isAiEnabled is false (per-chat toggle)', async () => {
+    prismaService.message.findUnique.mockResolvedValue({
+      id: 'msg3', direction: 'inbound', type: 'text', content: 'hello',
+      conversation: { 
+        tenantId: 't1', 
+        conversationId: 'c3',
+        isAiEnabled: false,
+        channelConnection: { id: 'conn1', isAiAutoReplyEnabled: true } 
+      }
+    });
+    prismaService.aiAssistant.findFirst.mockResolvedValue({ isActive: true, routingMode: 'ai_first' });
+    
+    await service.processMessage('msg3');
     expect(aiService.generateCompletion).not.toHaveBeenCalled();
   });
 
