@@ -680,13 +680,13 @@ export default function InboxPage() {
 
   {/* Messages Area */}
   <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2 custom-scrollbar bg-gradient-to-b from-[#eef2f5] via-[#e8ecef] to-[#e4e8ec] relative z-0">
-  {messages.length === 0 ? (
-  <div className="h-full flex items-center justify-center text-slate-500 font-medium text-[12px] relative z-10">
-  {language === 'en' ? 'No messages in this conversation' : 'এই কনভার্সেশনে কোনো মেসেজ নেই'}
-  </div>
-  ) : loadingMessages ? (
+  {loading ? (
   <div className="h-full flex items-center justify-center text-slate-500 font-medium text-[12px] relative z-10">
   {language === 'en' ? 'Loading messages...' : 'মেসেজ লোড হচ্ছে...'}
+  </div>
+  ) : messages.length === 0 ? (
+  <div className="h-full flex items-center justify-center text-slate-500 font-medium text-[12px] relative z-10">
+  {language === 'en' ? 'No messages in this conversation' : 'এই কনভার্সেশনে কোনো মেসেজ নেই'}
   </div>
   ) : (
   messages.map((msg, idx) => {
