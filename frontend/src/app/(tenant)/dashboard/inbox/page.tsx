@@ -466,7 +466,7 @@ export default function InboxPage() {
   return (
   <div className="flex h-[calc(100vh-64px)] w-full bg-slate-50 overflow-hidden relative">
  {/* Left Pane - Conversations List */}
- <div className={`w-full md:w-64 xl:w-72 flex-shrink-0 border-r border-slate-200 flex flex-col bg-white relative z-10 ${selectedConvId ? 'hidden md:flex' : 'flex'}`}>
+ <div className={`w-full md:w-48 xl:w-52 flex-shrink-0 border-r border-slate-200 flex flex-col bg-white relative z-10 ${selectedConvId ? 'hidden md:flex' : 'flex'}`}>
  <div className="px-2 py-1.5 border-b border-surface-hover">
  <div className="flex items-center justify-between mb-1.5">
  <h2 className="text-[14px] font-bold">{language === 'en' ? 'Inbox' : 'ইনবক্স'}</h2>

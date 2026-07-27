@@ -156,9 +156,17 @@ export class TicketsService {
 
     if (senderType === 'admin') {
       await this.prisma.ticket.update({ where: { id }, data: { status: 'answered' } });
-      const owner = ticket.tenant.users[0];
+      const tenantUsers = await this.prisma.user.findMany({ where: { tenantId: ticket.tenantId } });
+      for (const u of tenantUsers) {
+        this.notificationsService.createNotification(
+          u.id, 
+          `New Reply on Support Ticket`, 
+          `Admin replied to your ticket '${ticket.subject}'`, 
+          'ticket'
+        );
+      }
+      const owner = tenantUsers.find(u => u.role === 'owner' || u.role === 'admin') || tenantUsers[0];
       if (owner) {
-        this.notificationsService.createNotification(owner.id, `New Reply on Ticket`, `Admin replied to your ticket '${ticket.subject}'`, 'ticket');
         await this.smtpService.triggerTicketRepliedEmail(owner.email, ticket.subject, message);
       }
     } else {

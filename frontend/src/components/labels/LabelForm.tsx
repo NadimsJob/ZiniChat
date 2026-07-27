@@ -38,35 +38,39 @@ export default function LabelForm({ initialData, onSave, onCancel }: LabelFormPr
   return (
     <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm animate-in zoom-in-95 duration-200">
       <div className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <label className="text-[13px] font-medium text-slate-700">
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <label className="text-[12px] font-medium text-slate-700 block">
               {language === 'en' ? 'Label Name' : 'লেবেলের নাম'}
             </label>
             <input
               type="text"
               value={name}
               onChange={e => setName(e.target.value)}
-              className="w-full px-1.5 py-2 border border-slate-200 rounded-xl bg-slate-50 focus:ring-2 focus:ring-primary/20 outline-none transition-all text-[13px]"
+              className="w-full px-2 py-1.5 border border-slate-200 rounded-lg bg-slate-50 focus:ring-1 focus:ring-primary outline-none transition-all text-[12px]"
               placeholder={language === 'en' ? "e.g. VIP, Urgent, Support" : "যেমন: VIP, Urgent"}
             />
           </div>
-          <div className="space-y-1.5">
-            <label className="text-[13px] font-medium text-slate-700">
+          <div className="space-y-1">
+            <label className="text-[12px] font-medium text-slate-700 block">
               {language === 'en' ? 'Color' : 'রং'}
             </label>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {['#ef4444', '#f97316', '#f59e0b', '#10b981', '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899', '#64748b'].map(c => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setColor(c)}
+                  className={`w-5 h-5 rounded-full transition-transform ${color === c ? 'ring-2 ring-offset-1 ring-primary scale-110' : 'hover:scale-105'}`}
+                  style={{ backgroundColor: c }}
+                />
+              ))}
               <input
                 type="color"
                 value={color}
                 onChange={e => setColor(e.target.value)}
-                className="w-10 h-10 p-1 border border-slate-200 rounded-xl cursor-pointer bg-slate-50"
-              />
-              <input
-                type="text"
-                value={color}
-                onChange={e => setColor(e.target.value)}
-                className="flex-1 px-1.5 py-2 border border-slate-200 rounded-xl bg-slate-50 focus:ring-2 focus:ring-primary/20 outline-none transition-all text-[13px] font-mono"
+                className="w-5 h-5 p-0 border border-slate-200 rounded-full cursor-pointer bg-slate-50 overflow-hidden shrink-0 ml-auto"
+                title="Custom Color"
               />
             </div>
           </div>

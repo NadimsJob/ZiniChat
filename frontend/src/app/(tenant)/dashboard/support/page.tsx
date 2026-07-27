@@ -116,163 +116,163 @@ export default function TenantSupportPage() {
 
  if (loading) return <div className="p-8 text-center text-zinc-500">Loading support...</div>;
 
- return (
- <div className="p-6 max-w-7xl mx-auto animate-in fade-in h-[calc(100vh-80px)] flex flex-col gap-6 relative">
-  {/* Bilingual Instruction Header */}
-  <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 flex gap-4 items-start shadow-sm mb-2 shrink-0">
-    <div className="bg-primary text-white p-2 rounded-lg shrink-0">
-      <Info className="w-5 h-5" />
-    </div>
-    <div>
-      <h3 className="font-semibold text-primary text-[14px] mb-1">
-        {language === 'en' ? 'Support Center Instructions' : 'সাপোর্ট সেন্টার নির্দেশনা'}
-      </h3>
-      <p className="text-[12px] text-zinc-600 leading-relaxed max-w-4xl">
-        {language === 'en' ? 'Welcome to the Support Center. Here you can create new support tickets for issues related to billing, channel integrations (WhatsApp/Messenger), AI training, or general queries. Click the "+" button to open a new ticket, describe your issue, and attach any relevant files. Our support team will reply directly to your ticket.' : 'সাপোর্ট সেন্টারে স্বাগতম। এখান থেকে আপনি পেমেন্ট, চ্যানেল কানেকশন (WhatsApp/Messenger), এআই ট্রেনিং বা অন্য কোনো সমস্যার জন্য নতুন সাপোর্ট টিকিট তৈরি করতে পারবেন। নতুন টিকিট তৈরি করতে "+" বাটনে ক্লিক করুন, আপনার সমস্যার কথা লিখুন এবং প্রয়োজনে ফাইল যুক্ত করুন। আমাদের সাপোর্ট টিম সরাসরি আপনার টিকিটের মাধ্যমে সমাধান দিয়ে দিবে।'}
-      </p>
-    </div>
+  return (
+  <div className="p-2 md:p-3 w-full animate-in fade-in h-[calc(100vh-64px)] flex flex-col gap-2 relative">
+   {/* Compact Instruction Header */}
+   <div className="bg-primary/10 border border-primary/20 rounded-lg p-2 flex gap-2 items-center shadow-sm shrink-0">
+     <div className="bg-primary text-white p-1 rounded-md shrink-0">
+       <Info className="w-4 h-4" />
+     </div>
+     <div className="flex-1 min-w-0">
+       <p className="text-[11px] text-slate-700 leading-tight">
+         <span className="font-bold text-primary mr-1">
+           {language === 'en' ? 'Support Center Instructions:' : 'সাপোর্ট সেন্টার নির্দেশনা:'}
+         </span>
+         {language === 'en' 
+           ? 'Create support tickets for billing, integrations, or AI training. Click "+" to submit a ticket.' 
+           : 'পেমেন্ট, চ্যানেল কানেকশন বা অন্য সমস্যার জন্য নতুন টিকিট তৈরি করতে "+" বাটনে ক্লিক করুন।'}
+       </p>
+     </div>
+   </div>
+
+   <div className="flex-1 flex gap-3 min-h-0">
+  {/* Left List */}
+  <div className={`flex-1 md:max-w-xs flex flex-col bg-white border border-slate-200 rounded-xl overflow-hidden ${selectedTicket ? 'hidden md:flex' : 'flex'}`}>
+  <div className="p-3 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+  <div>
+  <h1 className="text-[14px] font-bold text-slate-900">{language === 'en' ? 'Support Tickets' : 'সাপোর্ট টিকিট'}</h1>
+  <p className="text-[11px] text-slate-500">{language === 'en' ? 'Manage your requests' : 'আপনার রিকোয়েস্ট ম্যানেজ করুন'}</p>
   </div>
-
-  <div className="flex-1 flex gap-6 min-h-0">
- {/* Left List */}
- <div className={`flex-[1] flex flex-col bg-surface border border-surface-hover rounded-2xl overflow-hidden ${selectedTicket ? 'hidden md:flex md:max-w-md' : 'flex'}`}>
- <div className="p-5 border-b border-surface-hover flex justify-between items-center bg-background">
- <div>
- <h1 className="text-xl font-bold">{language === 'en' ? 'Support Tickets' : 'সাপোর্ট টিকিট'}</h1>
- <p className="text-[13px] text-zinc-400 mt-1">{language === 'en' ? 'Manage your requests' : 'আপনার রিকোয়েস্ট ম্যানেজ করুন'}</p>
- </div>
- <button 
- onClick={() => setIsNewTicketOpen(true)}
- className="bg-primary/10 text-primary p-2 rounded-xl hover:bg-primary hover:text-white transition-colors"
- title={language === 'en' ? 'New Ticket' : 'নতুন টিকিট'}
- >
- <Plus className="w-5 h-5" />
- </button>
- </div>
+  <button 
+  onClick={() => setIsNewTicketOpen(true)}
+  className="bg-primary text-white p-1.5 rounded-lg hover:bg-primary/90 transition-colors"
+  title={language === 'en' ? 'New Ticket' : 'নতুন টিকিট'}
+  >
+  <Plus className="w-4 h-4" />
+  </button>
+  </div>
+  
+  <div className="flex-1 overflow-y-auto p-2 space-y-2 custom-scrollbar">
+  {tickets.length === 0 ? (
+  <div className="text-center py-8 text-slate-400 text-[12px]">{language === 'en' ? 'No tickets found.' : 'কোনো টিকিট পাওয়া যায়নি'}</div>
+  ) : (
+  tickets.map(ticket => (
+  <div 
+  key={ticket.id} 
+  onClick={() => fetchTicketDetails(ticket.id)}
+  className={`p-2.5 rounded-lg border cursor-pointer transition-all ${selectedTicket?.id === ticket.id ? 'bg-primary/5 border-primary/30 shadow-sm' : 'bg-white hover:bg-slate-50 border-slate-200'}`}
+  >
+  <div className="flex justify-between items-start mb-1">
+  <div className="text-[12px] font-semibold truncate flex-1 text-slate-900">{ticket.subject}</div>
+  <div className={`text-[9px] px-1.5 py-0.5 font-bold rounded-full uppercase ml-1 ${ticket.status === 'open' ? 'bg-red-100 text-red-700' : ticket.status === 'answered' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'}`}>
+  {ticket.status}
+  </div>
+  </div>
+  <div className="flex justify-between items-center text-[10px] text-slate-500">
+  <div className="flex gap-1.5 items-center">
+  <span className="capitalize bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">{ticket.priority}</span>
+  <span className="text-slate-400">{ticket.type}</span>
+  </div>
+  <span>{format(new Date(ticket.createdAt), 'MMM d')}</span>
+  </div>
+  </div>
+  ))
+  )}
+  </div>
+  </div>
  
- <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
- {tickets.length === 0 ? (
- <div className="text-center py-12 text-zinc-500 text-[13px]">{language === 'en' ? 'No tickets found.' : 'কোনো টিকিট পাওয়া যায়নি'}</div>
- ) : (
- tickets.map(ticket => (
- <div 
- key={ticket.id} 
- onClick={() => fetchTicketDetails(ticket.id)}
- className={`p-4 rounded-xl border cursor-pointer transition-all ${selectedTicket?.id === ticket.id ? 'bg-primary/5 border-primary/20' : 'bg-background hover:bg-surface-hover border-surface-hover'}`}
- >
- <div className="flex justify-between items-start mb-2">
- <div className="text-[13px] font-semibold truncate flex-1 text-foreground">{ticket.subject}</div>
- <div className={`text-[10px] px-2 py-0.5 rounded-full uppercase ml-2 ${ticket.status === 'open' ? 'bg-red-500/10 text-red-500' : ticket.status === 'answered' ? 'bg-blue-500/10 text-blue-500' : 'bg-zinc-500/10 text-zinc-400'}`}>
- {ticket.status}
- </div>
- </div>
- <div className="flex justify-between items-center text-[12px] text-zinc-500">
- <div className="flex gap-2 items-center">
- <span className="capitalize text-[10px] bg-surface-hover px-2 py-0.5 rounded-full">{ticket.priority}</span>
- <span className="text-[10px] text-zinc-400">{ticket.type}</span>
- </div>
- <span>{format(new Date(ticket.createdAt), 'MMM d, yyyy')}</span>
- </div>
- </div>
- ))
- )}
- </div>
- </div>
-
- {/* Right Detail Pane */}
- {selectedTicket && (
- <div className="flex-[2] flex flex-col bg-surface border border-surface-hover rounded-2xl overflow-hidden">
- {/* Header */}
- <div className="p-5 border-b border-surface-hover bg-background flex items-center justify-between gap-4">
- <div className="flex items-center gap-2">
- <button className="md:hidden text-zinc-400 hover:text-white" onClick={() => setSelectedTicket(null)}><X className="w-5 h-5"/></button>
- <div>
- <h2 className="text-[15px] font-bold text-foreground">{selectedTicket.subject}</h2>
- <span className="text-[11px] text-zinc-400">{selectedTicket.type}</span>
- </div>
- </div>
- <div className={`text-[10px] px-2 py-0.5 rounded-full uppercase ${selectedTicket.status === 'open' ? 'bg-red-500/10 text-red-500' : selectedTicket.status === 'answered' ? 'bg-blue-500/10 text-blue-500' : 'bg-zinc-500/10 text-zinc-400'}`}>
- {selectedTicket.status}
- </div>
- </div>
-
- {/* Messages Thread */}
- <div className="flex-1 overflow-y-auto p-6 space-y-6">
- {selectedTicket.messages?.map((msg: any) => (
- <div key={msg.id} className={`flex gap-4 ${msg.senderType === 'tenant' ? 'flex-row-reverse' : ''}`}>
- <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${msg.senderType === 'admin' ? 'bg-primary/20 text-primary' : 'bg-surface-hover text-zinc-400'}`}>
- {msg.senderType === 'admin' ? <CheckCircle className="w-4 h-4"/> : <AlertCircle className="w-4 h-4"/>}
- </div>
- <div className={`max-w-[75%] ${msg.senderType === 'tenant' ? 'items-end flex flex-col' : ''}`}>
- <div className="text-[12px] text-zinc-500 mb-1 flex items-center gap-2">
- <span className="font-medium text-zinc-300">{msg.senderType === 'admin' ? msg.sender?.name || 'Support Team' : language === 'en' ? 'You' : 'আপনি'}</span>
- <span>{format(new Date(msg.createdAt), 'p')}</span>
- </div>
- <div className={`text-[13px] p-4 rounded-2xl whitespace-pre-wrap ${msg.senderType === 'tenant' ? 'bg-primary text-white rounded-tr-none' : 'bg-surface-hover border border-surface-hover text-zinc-200 rounded-tl-none'}`}>
- {msg.message}
- </div>
- {msg.attachmentUrl && (
- <a href={(process.env.NEXT_PUBLIC_API_URL || '').replace('/api', '') + msg.attachmentUrl} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-2 text-[12px] text-primary bg-primary/10 px-3 py-1.5 rounded-lg hover:bg-primary/20 transition-colors">
- <Paperclip className="w-3.5 h-3.5" /> {language === 'en' ? 'View Attachment' : 'অ্যাটাচমেন্ট দেখুন'}
- </a>
- )}
- </div>
- </div>
- ))}
- </div>
-
- {/* Reply Box */}
- {selectedTicket.status !== 'closed' && (
- <div className="p-4 bg-background border-t border-surface-hover">
- <form onSubmit={handleSendReply} className="flex gap-3">
- <button 
- type="button" 
- onClick={() => document.getElementById('reply-file')?.click()}
- className="p-3 bg-surface border border-surface-hover rounded-xl text-zinc-400 hover:text-primary transition-colors shrink-0"
- >
- <Paperclip className="w-5 h-5" />
- </button>
- <input type="file" id="reply-file" className="hidden" onChange={(e) => setReplyFile(e.target.files?.[0] || null)} />
+  {/* Right Detail Pane */}
+  {selectedTicket ? (
+  <div className="flex-1 flex flex-col bg-white border border-slate-200 rounded-xl overflow-hidden">
+  {/* Header */}
+  <div className="p-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between gap-3">
+  <div className="flex items-center gap-2">
+  <button className="md:hidden text-slate-500 hover:text-slate-900" onClick={() => setSelectedTicket(null)}><X className="w-4 h-4"/></button>
+  <div>
+  <h2 className="text-[13px] font-bold text-slate-900">{selectedTicket.subject}</h2>
+  <span className="text-[10px] text-slate-500">{selectedTicket.type}</span>
+  </div>
+  </div>
+  <div className={`text-[10px] px-2 py-0.5 font-bold rounded-full uppercase ${selectedTicket.status === 'open' ? 'bg-red-100 text-red-700' : selectedTicket.status === 'answered' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'}`}>
+  {selectedTicket.status}
+  </div>
+  </div>
  
- <div className="flex-1 flex flex-col gap-2">
- {replyFile && (
- <div className="text-[12px] text-zinc-400 flex items-center gap-2">
- <Paperclip className="w-3 h-3" /> {replyFile.name}
- <button type="button" onClick={() => setReplyFile(null)} className="text-red-400 hover:text-red-300">Remove</button>
- </div>
- )}
- <textarea 
- value={replyMessage}
- onChange={(e) => setReplyMessage(e.target.value)}
- placeholder={language === 'en' ? 'Type your reply...' : 'আপনার মেসেজ লিখুন...'}
- className="w-full bg-surface border border-surface-hover rounded-xl px-4 py-3 text-[13px] outline-none focus:border-primary resize-none text-foreground"
- rows={5}
- />
- </div>
-
- <button 
- type="submit" 
- disabled={sending || (!replyMessage.trim() && !replyFile)}
- className="bg-primary text-white p-3 rounded-xl hover:bg-primary-hover disabled:opacity-50 transition-colors shrink-0 h-fit"
- >
- <Send className="w-5 h-5" />
- </button>
- </form>
- </div>
- )}
- </div>
- )}
+  {/* Messages Thread */}
+  <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50">
+  {selectedTicket.messages?.map((msg: any) => (
+  <div key={msg.id} className={`flex gap-2.5 ${msg.senderType === 'tenant' ? 'flex-row-reverse' : ''}`}>
+  <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-xs font-bold ${msg.senderType === 'admin' ? 'bg-primary text-white' : 'bg-slate-200 text-slate-600'}`}>
+  {msg.senderType === 'admin' ? <CheckCircle className="w-3.5 h-3.5"/> : <AlertCircle className="w-3.5 h-3.5"/>}
+  </div>
+  <div className={`max-w-[80%] ${msg.senderType === 'tenant' ? 'items-end flex flex-col' : ''}`}>
+  <div className="text-[10px] text-slate-500 mb-0.5 flex items-center gap-1.5">
+  <span className="font-semibold text-slate-700">{msg.senderType === 'admin' ? msg.sender?.name || 'Support Team' : language === 'en' ? 'You' : 'আপনি'}</span>
+  <span>{format(new Date(msg.createdAt), 'p')}</span>
+  </div>
+  <div className={`text-[12px] p-3 rounded-xl whitespace-pre-wrap leading-relaxed shadow-sm ${msg.senderType === 'tenant' ? 'bg-primary text-white rounded-tr-none' : 'bg-white border border-slate-200 text-slate-800 rounded-tl-none'}`}>
+  {msg.message}
+  </div>
+  {msg.attachmentUrl && (
+  <a href={(process.env.NEXT_PUBLIC_API_URL || '').replace('/api', '') + msg.attachmentUrl} target="_blank" rel="noopener noreferrer" className="mt-1.5 inline-flex items-center gap-1.5 text-[11px] text-primary bg-primary/10 px-2.5 py-1 rounded-md hover:bg-primary/20 transition-colors">
+  <Paperclip className="w-3 h-3" /> {language === 'en' ? 'View Attachment' : 'অ্যাটাচমেন্ট দেখুন'}
+  </a>
+  )}
+  </div>
+  </div>
+  ))}
+  </div>
  
- {!selectedTicket && tickets.length > 0 && (
- <div className="hidden md:flex flex-[2] bg-surface border border-surface-hover rounded-2xl items-center justify-center text-zinc-500">
- <div className="text-center">
- <Mail className="w-12 h-12 mx-auto mb-4 opacity-20" />
- <p>{language === 'en' ? 'Select a ticket to view details' : 'বিস্তারিত দেখতে একটি টিকিট নির্বাচন করুন'}</p>
- </div>
- </div>
- )}
+  {/* Reply Box */}
+  {selectedTicket.status !== 'closed' && (
+  <div className="p-3 bg-white border-t border-slate-200">
+  <form onSubmit={handleSendReply} className="flex gap-2 items-end">
+  <button 
+  type="button" 
+  onClick={() => document.getElementById('reply-file')?.click()}
+  className="p-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-500 hover:text-primary transition-colors shrink-0 mb-0.5"
+  title="Attach file"
+  >
+  <Paperclip className="w-4 h-4" />
+  </button>
+  <input type="file" id="reply-file" className="hidden" onChange={(e) => setReplyFile(e.target.files?.[0] || null)} />
+  
+  <div className="flex-1 flex flex-col gap-1">
+  {replyFile && (
+  <div className="text-[11px] text-slate-600 flex items-center gap-1.5 bg-slate-100 px-2 py-0.5 rounded w-max">
+  <Paperclip className="w-3 h-3 text-primary" /> {replyFile.name}
+  <button type="button" onClick={() => setReplyFile(null)} className="text-red-500 hover:text-red-700 ml-1 font-bold">×</button>
+  </div>
+  )}
+  <textarea 
+  value={replyMessage}
+  onChange={(e) => setReplyMessage(e.target.value)}
+  placeholder={language === 'en' ? 'Type your reply...' : 'আপনার মেসেজ লিখুন...'}
+  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-[12px] outline-none focus:ring-1 focus:ring-primary focus:border-primary resize-none text-slate-800"
+  rows={2}
+  />
+  </div>
  
- </div>
+  <button 
+  type="submit" 
+  disabled={sending || (!replyMessage.trim() && !replyFile)}
+  className="bg-primary text-white p-2.5 rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors shrink-0 mb-0.5"
+  >
+  <Send className="w-4 h-4" />
+  </button>
+  </form>
+  </div>
+  )}
+  </div>
+  ) : (
+  <div className="hidden md:flex flex-1 bg-white border border-slate-200 rounded-xl items-center justify-center text-slate-400">
+  <div className="text-center">
+  <Mail className="w-10 h-10 mx-auto mb-2 opacity-30 text-primary" />
+  <p className="text-[12px] font-medium">{language === 'en' ? 'Select a ticket to view conversation' : 'মেসেজ দেখতে একটি টিকিট সিলেক্ট করুন'}</p>
+  </div>
+  </div>
+  )}
+  </div>
 
   {/* New Ticket Modal */}
   {isNewTicketOpen && (
