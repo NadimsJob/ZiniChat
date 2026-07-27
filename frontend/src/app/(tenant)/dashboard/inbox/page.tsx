@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Cookies from 'js-cookie';
 import { io, Socket } from 'socket.io-client';
 import { useLanguage } from '@/components/LanguageProvider';
-import { Search, Send, User as UserIcon, Clock, MessageSquare, Phone, Info, Tag, Plus, Check, MessageCircle, MoreVertical, X, UserCircle, UserPlus, Mail, Building, MapPin, AlertCircle, Paperclip, File as FileIcon, Trash2, Bot, ToggleLeft, ToggleRight, Wand2, RefreshCw, ChevronLeft } from 'lucide-react';
+import { Search, Send, User as UserIcon, Clock, MessageSquare, Phone, Info, Tag, Plus, Check, MessageCircle, MoreVertical, X, UserCircle, UserPlus, Mail, Building, MapPin, AlertCircle, Paperclip, File as FileIcon, Trash2, Bot, ToggleLeft, ToggleRight, Wand2, RefreshCw, ChevronLeft, PanelRight } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
 import LabelForm from '@/components/labels/LabelForm';
