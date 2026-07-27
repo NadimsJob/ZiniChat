@@ -129,6 +129,26 @@ export default function BroadcastsPage() {
     }
   };
 
+  const handleAddVariable = () => {
+    const textarea = bodyTextareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    
+    const matches = bodyText.match(/\{\{(\d+)\}\}/g) || [];
+    const nextNum = matches.length + 1;
+    const varTag = `{{${nextNum}}}`;
+
+    const newText = bodyText.substring(0, start) + varTag + bodyText.substring(end);
+    setBodyText(newText);
+
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + varTag.length, start + varTag.length);
+    }, 0);
+  };
+
   const handleTemplateNameChange = (val: string) => {
     setTemplateName(val);
     if (val && !/^[a-z0-9_]+$/.test(val)) {
