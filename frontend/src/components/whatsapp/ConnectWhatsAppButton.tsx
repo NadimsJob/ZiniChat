@@ -9,7 +9,11 @@ declare global {
   }
 }
 
-export default function ConnectWhatsAppButton() {
+interface ConnectWhatsAppButtonProps {
+  onConnected?: () => void;
+}
+
+export default function ConnectWhatsAppButton({ onConnected }: ConnectWhatsAppButtonProps) {
   const [isSdkLoaded, setIsSdkLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -76,6 +80,7 @@ export default function ConnectWhatsAppButton() {
 
       if (response.ok) {
         setMessage('WhatsApp connected successfully!');
+        if (onConnected) onConnected();
       } else {
         setMessage('Failed to connect WhatsApp to the platform.');
       }
