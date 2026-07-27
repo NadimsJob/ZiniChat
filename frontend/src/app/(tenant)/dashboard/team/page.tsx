@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useLanguage } from '@/components/LanguageProvider';
 import Cookies from 'js-cookie';
-import { Users, Plus, Shield, ShieldCheck, Mail, X, Edit2, Trash2, Crown } from 'lucide-react';
+import { Users, Plus, Shield, ShieldCheck, Mail, X, Edit2, Trash2, Crown, Save } from 'lucide-react';
 import InstructionBanner from '@/components/InstructionBanner';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
