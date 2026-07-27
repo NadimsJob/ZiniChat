@@ -50,6 +50,7 @@ export default function TenantProfilePage() {
 
  // Business Profile
  const [businessProfile, setBusinessProfile] = useState({
+ businessName: '',
  brandName: '',
  address: '',
  phoneNo: '',
@@ -88,6 +89,7 @@ export default function TenantProfilePage() {
  setNameValue(data.name || '');
  if (data.tenant) {
  setBusinessProfile({
+ businessName: data.tenant.businessName || '',
  brandName: data.tenant.brandName || '',
  address: data.tenant.address || '',
  phoneNo: data.tenant.phoneNo || '',
@@ -414,7 +416,7 @@ export default function TenantProfilePage() {
  </div>
 
  <form onSubmit={handleChangePassword} className="space-y-5">
- {/* Current Password */}
+ {profile?.hasPassword && (
  <div>
  <label className="block text-[13px] font-semibold mb-2 text-slate-700 ">
  {t('Current Password', 'বর্তমান পাসওয়ার্ড')}
@@ -437,6 +439,7 @@ export default function TenantProfilePage() {
  </button>
  </div>
  </div>
+ )}
 
  {/* New Password Fields */}
  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -547,6 +550,24 @@ export default function TenantProfilePage() {
 
  <form onSubmit={handleSaveBusiness} className="space-y-4">
  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+ {/* Business Name */}
+ <div>
+ <label className="block text-[13px] font-semibold mb-1.5 text-slate-700 ">
+ {t('Business Name', 'ব্যবসার নাম')}
+ </label>
+ <div className="relative">
+ <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
+ <Briefcase className="w-3.5 h-3.5 text-slate-400" />
+ </div>
+ <input
+ type="text"
+ value={businessProfile.businessName}
+ onChange={e => setBusinessProfile({ ...businessProfile, businessName: e.target.value })}
+ className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-1.5 text-[13px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 text-slate-900 "
+ />
+ </div>
+ </div>
+
  {/* Brand Name */}
  <div>
  <label className="block text-[13px] font-semibold mb-1.5 text-slate-700 ">

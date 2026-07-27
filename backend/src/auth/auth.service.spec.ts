@@ -66,7 +66,7 @@ describe('AuthService', () => {
   describe('signupTenant', () => {
     it('should throw ConflictException if email exists', async () => {
       mockUsersService.findByEmail.mockResolvedValue({ id: '1' });
-      await expect(service.signupTenant({ email: 'test@test.com' })).rejects.toThrow(ConflictException);
+      await expect(service.signupTenant({ email: 'test@test.com', phoneNo: '+123456' })).rejects.toThrow(ConflictException);
     });
 
     it('should create tenant, user, and assign default plan if one exists', async () => {
@@ -97,6 +97,7 @@ describe('AuthService', () => {
         businessName: 'My Biz',
         name: 'John Doe',
         email: 'john@biz.com',
+        phoneNo: '+1234567890',
         password: 'pass'
       });
 
@@ -139,6 +140,7 @@ describe('AuthService', () => {
         businessName: 'My Biz',
         name: 'John Doe',
         email: 'john@biz.com',
+        phoneNo: '+1234567890',
         password: 'pass'
       });
 

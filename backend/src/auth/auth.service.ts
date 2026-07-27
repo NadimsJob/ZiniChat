@@ -19,7 +19,7 @@ export class AuthService {
 
   async validateUser(email: string, pass: string): Promise<any> {
     const user = await this.usersService.findByEmail(email);
-    if (user && await bcrypt.compare(pass, user.passwordHash)) {
+    if (user && user.passwordHash && await bcrypt.compare(pass, user.passwordHash)) {
       const { passwordHash, ...result } = user;
       return result;
     }
@@ -48,7 +48,11 @@ export class AuthService {
   }
 
   async signupTenant(data: any) {
-    const { businessName, name, email, password, planId } = data;
+    const { businessName, name, email, password, phoneNo, planId } = data;
+
+    if (!phoneNo) {
+      throw new BadRequestException('Phone number is required');
+    }
 
     const existingUser = await this.usersService.findByEmail(email);
     if (existingUser) {
@@ -95,6 +99,7 @@ export class AuthService {
       const tenant = await prisma.tenant.create({
         data: {
           businessName,
+          phoneNo,
           trialEndsAt,
           planId: selectedPlan?.id || null,
           customAiConfigId: defaultAiConfig?.id || null
@@ -176,6 +181,7 @@ export class AuthService {
         profilePicUrl: true,
         permissions: true,
         tenantId: true,
+        passwordHash: true,
         tenant: {
           select: {
             businessName: true,
@@ -223,6 +229,10 @@ export class AuthService {
           }).catch(err => console.error('Failed to sync tenant planId in getMe', err));
         }
       }
+    }
+
+    if (user) {
+      (user as any).hasPassword = !!user.passwordHash;
     }
 
     return user;
@@ -307,8 +317,11 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new UnauthorizedException('User not found');
 
-    const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
-    if (!isValid) throw new UnauthorizedException('Invalid current password');
+    if (user.passwordHash) {
+      if (!currentPassword) throw new UnauthorizedException('Current password is required');
+      const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
+      if (!isValid) throw new UnauthorizedException('Invalid current password');
+    }
 
     const newPasswordHash = await bcrypt.hash(newPassword, 10);
     await this.prisma.user.update({
@@ -505,9 +518,8 @@ export class AuthService {
           });
         }
 
-        // Generate a random password hash for OAuth users
-        const randomPassword = Math.random().toString(36).slice(-10);
-        const passwordHash = await bcrypt.hash(randomPassword, 10);
+        // OAuth users don't have a password initially
+        const passwordHash = null;
 
         user = await this.prisma.user.create({
           data: {

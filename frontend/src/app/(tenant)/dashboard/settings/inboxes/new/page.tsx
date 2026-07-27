@@ -8,6 +8,7 @@ import { PhoneCall, MessageCircle, Camera, Webhook, ChevronRight, CheckCircle2, 
 import { toast } from 'react-hot-toast';
 import ConnectFacebookPageButton from '@/components/messenger/ConnectFacebookPageButton';
 import ConnectFacebookInstagramButton from '@/components/instagram/ConnectFacebookInstagramButton';
+import ConnectWhatsAppButton from '@/components/whatsapp/ConnectWhatsAppButton';
 
 export default function NewInboxStepper() {
   const { language } = useLanguage();
@@ -215,6 +216,17 @@ export default function NewInboxStepper() {
           <div className="animate-in fade-in slide-in-from-right-8 duration-500 max-w-xl bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
             <h1 className="text-2xl font-bold text-slate-900 mb-6">{language === 'en' ? 'Configure WhatsApp' : 'হোয়াটসঅ্যাপ কনফিগার করুন'} {provider === 'cloud' ? 'Cloud' : 'Web'}</h1>
             {provider === 'cloud' ? (
+              <div>
+                <div className="mb-8">
+                  <ConnectWhatsAppButton onConnected={() => setStep(4)} />
+                </div>
+
+                <div className="relative flex items-center py-5">
+                  <div className="flex-grow border-t border-slate-200"></div>
+                  <span className="flex-shrink-0 mx-4 text-slate-400 text-xs font-medium uppercase">{language === 'en' ? 'Or Manual Setup' : 'অথবা ম্যানুয়াল সেটআপ'}</span>
+                  <div className="flex-grow border-t border-slate-200"></div>
+                </div>
+
               <form onSubmit={handleConnectWhatsApp} className="space-y-4">
                 <div className="bg-blue-50 text-blue-800 p-4 rounded-xl text-sm mb-4">
                   <p className="font-semibold mb-1">{language === 'en' ? 'Instructions:' : 'নির্দেশনা:'}</p>
@@ -248,6 +260,7 @@ export default function NewInboxStepper() {
                   {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (language === 'en' ? 'Create Inbox' : 'ইনবক্স তৈরি করুন')}
                 </button>
               </form>
+              </div>
             ) : (
               <div className="text-center py-10">
                 <div className="bg-amber-50 text-amber-700 p-4 rounded-xl text-sm mb-6 flex gap-3 text-left">

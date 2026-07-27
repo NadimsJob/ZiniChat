@@ -12,6 +12,7 @@ export default function SignupPage() {
     businessName: '',
     name: '',
     email: '',
+    phoneNo: '+880',
     password: ''
   });
   const [error, setError] = useState('');
@@ -177,6 +178,17 @@ export default function SignupPage() {
             required
             className="w-full bg-background border border-surface-hover rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
             placeholder="you@example.com"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1.5 text-zinc-400">Phone Number (with Country Code)</label>
+          <input
+            type="tel"
+            value={formData.phoneNo}
+            onChange={(e) => setFormData({...formData, phoneNo: e.target.value})}
+            required
+            className="w-full bg-background border border-surface-hover rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+            placeholder="+8801700000000"
           />
         </div>
         <div>

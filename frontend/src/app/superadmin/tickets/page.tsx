@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import Cookies from 'js-cookie';
 import { format } from 'date-fns';
 import { Mail, CheckCircle, Clock, Search, Paperclip, Send, AlertCircle, X } from 'lucide-react';
 
@@ -21,7 +22,7 @@ export default function SuperadminTicketsPage() {
 
   const fetchTickets = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = Cookies.get('access_token');
       const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/tickets`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -35,7 +36,7 @@ export default function SuperadminTicketsPage() {
 
   const fetchAdmins = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = Cookies.get('access_token');
       const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/tickets/admins`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -47,7 +48,7 @@ export default function SuperadminTicketsPage() {
 
   const fetchTicketDetails = async (id: string) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = Cookies.get('access_token');
       const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/tickets/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -59,7 +60,7 @@ export default function SuperadminTicketsPage() {
 
   const updateStatus = async (id: string, status: string) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = Cookies.get('access_token');
       await axios.patch(`${process.env.NEXT_PUBLIC_API_URL}/tickets/${id}/status`, { status }, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -74,7 +75,7 @@ export default function SuperadminTicketsPage() {
 
   const assignTicket = async (id: string, assignedToId: string | null) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = Cookies.get('access_token');
       await axios.patch(`${process.env.NEXT_PUBLIC_API_URL}/tickets/${id}/assign`, { assignedToId }, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -93,7 +94,7 @@ export default function SuperadminTicketsPage() {
     
     setSending(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = Cookies.get('access_token');
       const formData = new FormData();
       if (replyMessage.trim()) formData.append('message', replyMessage);
       if (replyFile) formData.append('file', replyFile);

@@ -74,7 +74,7 @@ model User {
   tenantId             String?   @db.Uuid // null for superadmin
   name                 String
   email                String    @unique
-  passwordHash         String
+  passwordHash         String?
   role                 String    @default("agent") // superadmin, owner, admin, agent
   profilePicUrl        String?
   permissions          String[]  @default([]) // e.g. ["manage:tenants", "manage:billing"]

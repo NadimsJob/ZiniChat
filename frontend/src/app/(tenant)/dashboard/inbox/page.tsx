@@ -133,7 +133,9 @@ export default function InboxPage() {
  if (conv) {
  setSelectedConvId(conv.id);
  }
- }
+ } else if (data.length > 0) {
+    setSelectedConvId(data[0].id);
+  }
  }
  })
  .catch(err => {
@@ -496,10 +498,13 @@ export default function InboxPage() {
  <button 
  key={channel.id}
  onClick={() => setChannelFilter(channel.id)}
- className={`flex-1 py-1 px-2 min-w-[80px] text-[11px] font-medium rounded-md transition-colors flex justify-center items-center gap-1 ${channelFilter === channel.id ? 'bg-white shadow-sm text-slate-900 ' : 'text-slate-500 hover:text-slate-700 '}`}
+ className={`relative flex-1 py-1 px-2 min-w-[80px] text-[11px] font-medium rounded-md transition-colors flex justify-center items-center gap-1 ${channelFilter === channel.id ? 'bg-white shadow-sm text-slate-900 ' : 'text-slate-500 hover:text-slate-700 '}`}
  >
  {channel.channelType === 'whatsapp' ? <Phone className="w-3 h-3" /> : <MessageCircle className="w-3 h-3" />}
  <span className="truncate max-w-[80px]">{channel.displayName || channel.phoneNumber || channel.channelType}</span>
+ {channel.status === 'active' && (
+   <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+ )}
  </button>
  ))}
  </div>
@@ -576,12 +581,12 @@ export default function InboxPage() {
  </div>
 
  {/* Right Pane - Chat Window & Lead Info */}
- <div className="flex-1 flex min-w-0 bg-white/20 relative overflow-hidden">
+ <div className="flex-1 flex min-w-0 bg-slate-50 relative overflow-hidden">
  {selectedConvId ? (
  <>
  <div className="flex-1 flex flex-col min-w-0 relative">
  {/* Chat Header */}
- <div className="h-[44px] px-3 border-b border-white/40 flex items-center justify-between bg-white/60 backdrop-blur-xl shrink-0 z-20">
+ <div className="h-[44px] px-3 border-b border-slate-200 flex items-center justify-between bg-white shrink-0 z-20">
  <div className="flex items-center gap-2">
  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-emerald-100 to-teal-100 border border-emerald-200 text-emerald-700 flex items-center justify-center font-bold text-[10px] uppercase shadow-sm">
  {selectedConv?.contact?.name ? selectedConv.contact.name.charAt(0) : <UserIcon className="w-3 h-3" />}
@@ -609,46 +614,7 @@ export default function InboxPage() {
  </span>
  {selectedConv?.isAiEnabled !== false ? <ToggleRight className="w-4 h-4 text-primary ml-1" /> : <ToggleLeft className="w-4 h-4 ml-1" />}
  </button>
- {/* Agent Assignment Dropdown */}
- <div className="relative">
- <button 
- onClick={() => { setShowAssignMenu(!showAssignMenu); setShowLabelsMenu(false); }}
- className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2 text-sm border ${showAssignMenu ? 'bg-primary/10 text-primary border-primary/20' : 'hover:bg-surface-hover border-transparent'}`}
- title={language === 'en' ? 'Assign Agent' : 'এজেন্ট অ্যাসাইন করুন'}
- >
- <UserIcon className="w-4 h-4" />
- <span className="text-xs font-medium whitespace-nowrap hidden sm:inline-block">
- {selectedConv?.assignedAgent ? selectedConv.assignedAgent.name : '🤖 AI Assistant'}
- </span>
- </button>
- {showAssignMenu && (
- <div className="absolute right-0 top-full mt-2 w-56 bg-surface border border-primary/10 shadow-xl shadow-primary/5 hover:border-primary/20 hover:shadow-primary/10 transition-all rounded-xl shadow-xl z-10 overflow-hidden">
- <div className="p-2 border-b border-surface-hover">
- <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider px-2">
- {language === 'en' ? 'Assign Agent' : 'এজেন্ট অ্যাসাইন করুন'}
- </span>
- </div>
- <div className="max-h-64 overflow-y-auto p-1">
- <button
- onClick={() => handleAssignAgent(null)}
- className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center justify-between ${!selectedConv?.assignedAgentId ? 'bg-primary/10 text-primary' : 'hover:bg-surface-hover text-zinc-700 '}`}
- >
- <span className="flex items-center gap-2"><Bot className="w-4 h-4" /> AI Assistant (Default)</span>
- {!selectedConv?.assignedAgentId && <Check className="w-4 h-4" />}
- </button>
- {agents.map(agent => (
- <button
- key={agent.id}
- onClick={() => handleAssignAgent(agent.id)}
- className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center justify-between ${selectedConv?.assignedAgentId === agent.id ? 'bg-primary/10 text-primary' : 'hover:bg-surface-hover text-zinc-700 '}`}
- >
- <span className="truncate">{agent.name}</span>
- {selectedConv?.assignedAgentId === agent.id && <Check className="w-4 h-4" />}
- </button>
- ))}
- </div>
- </div>
- )}
+  {/* Agent Assignment Moved */}
  </div>
 
  <button 
@@ -869,8 +835,8 @@ export default function InboxPage() {
  
  {/* Lead Details Side-by-Side Panel (squeezes chatbox smoothly) */}
  {showLeadInfo && (
- <div className="w-80 shrink-0 bg-white/40 backdrop-blur-3xl shadow-xl border-l border-white/50 flex flex-col z-20 transition-all duration-300">
- <div className="px-3 py-3 border-b border-border flex justify-between items-center bg-white/30 backdrop-blur-md shrink-0 h-[44px]">
+ <div className="w-80 shrink-0 bg-white shadow-xl border-l border-slate-200 flex flex-col z-20 transition-all duration-300">
+ <div className="px-3 py-3 border-b border-slate-200 flex justify-between items-center bg-white shrink-0 h-[44px]">
  <h2 className="text-[13px] font-bold text-foreground">Lead Details</h2>
  <div className="flex items-center space-x-2">
  <button onClick={handleUpdateLeadDetails} className="text-[11px] bg-primary text-primary-foreground px-2 py-1 rounded-md font-semibold hover:bg-primary/90">Save Changes</button>
@@ -888,6 +854,14 @@ export default function InboxPage() {
  <h3 className="text-[12px] font-bold text-foreground leading-tight truncate">{selectedConv?.contact?.name || 'Unknown'}</h3>
  <p className="text-[10px] text-foreground/60 truncate">{selectedConv?.contact?.externalContactId}</p>
  </div>
+ </div>
+
+ <div className="bg-white/50 rounded-lg p-2.5 border border-slate-200 space-y-2.5">
+ <h4 className="text-[9px] font-bold text-foreground/50 uppercase tracking-wider">Assigned Agent</h4>
+ <select value={selectedConv?.assignedAgentId || ''} onChange={(e) => handleAssignAgent(e.target.value || null)} className="w-full bg-surface border border-slate-200 rounded-md py-1 px-1.5 text-[11px] focus:ring-1 focus:ring-primary focus:outline-none">
+  <option value="">🤖 AI Assistant (Default)</option>
+  {agents.map(agent => <option key={agent.id} value={agent.id}>{agent.name}</option>)}
+ </select>
  </div>
 
  <div className="bg-white/50 rounded-lg p-2.5 border border-slate-200 space-y-2.5">
