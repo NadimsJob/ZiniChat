@@ -45,6 +45,12 @@ export default function InboxPage() {
  const messagesEndRef = useRef<HTMLDivElement>(null);
  const fileInputRef = useRef<HTMLInputElement>(null);
 
+ const fetchLabels = async () => {
+    const token = Cookies.get('access_token');
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/labels`, { headers: { 'Authorization': `Bearer ${token}` } });
+    if (res.ok) setAvailableLabels(await res.json());
+  };
+
  // Connect to Socket and fetch conversations
  useEffect(() => {
  const token = Cookies.get('access_token');
