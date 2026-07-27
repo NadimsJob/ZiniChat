@@ -175,11 +175,28 @@ export default function AiTrainingPage() {
  }
 
  return (
- <div className="bg-white/70 backdrop-blur-xl border border-white/50 rounded-2xl p-1.5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] _8px_30px_rgb(0,0,0,0.2)] max-w-4xl mx-auto space-y-4 animate-in fade-in duration-500 pb-4">
- <div>
- <h1 className="text-2xl font-bold tracking-tight">{language === 'en' ? 'AI Training & Configuration' : 'এআই ট্রেইনিং ও কনফিগারেশন'}</h1>
- <p className="text-zinc-400 mt-2">{language === 'en' ? 'Train your AI assistant with business-specific knowledge and manage API settings.' : 'আপনার ব্যবসার তথ্য দিয়ে AI কে ট্রেইন করুন এবং API সেটিংস পরিচালনা করুন।'}</p>
- </div>
+  <div className="bg-white/70 backdrop-blur-xl border border-white/50 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] max-w-4xl mx-auto space-y-4 animate-in fade-in duration-500 pb-4">
+  <div className="flex items-start justify-between gap-4">
+    <div>
+      <h1 className="text-2xl font-bold tracking-tight text-slate-900">{language === 'en' ? 'AI Training & Configuration' : 'এআই ট্রেইনিং ও কনফিগারেশন'}</h1>
+      <p className="text-zinc-500 mt-2">{language === 'en' ? 'Train your AI assistant with business-specific knowledge and manage API settings.' : 'আপনার ব্যবসার তথ্য দিয়ে AI কে ট্রেইন করুন এবং API সেটিংস পরিচালনা করুন।'}</p>
+    </div>
+  </div>
+
+  {/* Bilingual Instruction Header */}
+  <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 flex gap-4 items-start shadow-sm mb-4">
+    <div className="bg-primary text-white p-2 rounded-lg shrink-0">
+      <Wand2 className="w-5 h-5" />
+    </div>
+    <div>
+      <h3 className="font-semibold text-primary text-[14px] mb-1">
+        {language === 'en' ? 'AI Training Instructions' : 'এআই ট্রেনিং নির্দেশনা'}
+      </h3>
+      <p className="text-[12px] text-zinc-600 leading-relaxed max-w-4xl">
+        {language === 'en' ? 'Welcome to the AI Brain setup! Here you can configure your AI Agent\'s name, turn it on/off, and train it by adding Q&A pairs. Go to the "Custom Q&A" tab to add specific questions your customers frequently ask. You can also upload PDF/TXT documents in the "Knowledge Documents" tab so the AI can read and answer from those files automatically. If you want the AI to pause when a human agent is assigned, enable the "Pause on Assignment" option.' : 'এআই ব্রেইন সেটআপে স্বাগতম! এখান থেকে আপনি আপনার এআই এজেন্টের নাম সেট করতে পারবেন, এআই চালু বা বন্ধ করতে পারবেন এবং কাস্টম প্রশ্ন-উত্তর (Q&A) যোগ করে এআইকে ট্রেনিং দিতে পারবেন। "Knowledge Documents" ট্যাবে গিয়ে আপনি PDF বা TXT ফাইল আপলোড করতে পারেন, এআই সেই ফাইলগুলো পড়ে নিজে নিজেই কাস্টমারকে উত্তর দিতে পারবে। আপনি যদি চান কোনো চ্যাট হিউম্যান এজেন্টের কাছে অ্যাসাইন করা হলে এআই নিজে থেকে আর উত্তর দিবে না, তবে "Pause on Assignment" অপশনটি চালু করে রাখুন।'}
+      </p>
+    </div>
+  </div>
 
  {/* Master Toggle */}
  <div className="bg-surface border border-primary/10 shadow-sm rounded-xl p-4 flex flex-col gap-4 animate-in fade-in">

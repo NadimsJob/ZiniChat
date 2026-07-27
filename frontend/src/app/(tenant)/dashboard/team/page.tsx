@@ -142,7 +142,22 @@ export default function TeamPage() {
  };
 
  return (
- <div className="bg-white/70 backdrop-blur-xl border border-white/50 rounded-2xl p-1.5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] _8px_30px_rgb(0,0,0,0.2)] max-w-6xl mx-auto space-y-3">
+ <div className="bg-white/70 backdrop-blur-xl border border-white/50 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] max-w-6xl mx-auto space-y-4">
+  {/* Bilingual Instruction Header */}
+  <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 flex gap-4 items-start shadow-sm mb-4 shrink-0">
+    <div className="bg-primary text-white p-2 rounded-lg shrink-0">
+      <ShieldCheck className="w-5 h-5" />
+    </div>
+    <div>
+      <h3 className="font-semibold text-primary text-[14px] mb-1">
+        {language === 'en' ? 'Team Management Instructions' : 'টিম ম্যানেজমেন্ট নির্দেশনা'}
+      </h3>
+      <p className="text-[12px] text-zinc-600 leading-relaxed max-w-4xl">
+        {language === 'en' ? 'Here you can add new agents or admins to your team. Click "Add User" to create an account. You can restrict an agent\'s access to specific connected channels (e.g., only WhatsApp, or only Messenger). Admins automatically get access to all settings and billing.' : 'এখান থেকে আপনি আপনার টিমে নতুন এজেন্ট বা অ্যাডমিন যুক্ত করতে পারবেন। "ইউজার যোগ করুন" বাটনে ক্লিক করে নতুন অ্যাকাউন্ট তৈরি করুন। আপনি চাইলে একজন এজেন্টকে নির্দিষ্ট চ্যানেলের (যেমন: শুধু WhatsApp, অথবা শুধু Messenger) এক্সেস দিতে পারবেন। অ্যাডমিনরা স্বয়ংক্রিয়ভাবে সকল সেটিংস এবং পেমেন্ট সেকশনের এক্সেস পেয়ে থাকেন।'}
+      </p>
+    </div>
+  </div>
+
  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
  <div>
  <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">

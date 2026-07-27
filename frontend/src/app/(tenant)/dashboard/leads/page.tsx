@@ -299,7 +299,21 @@ export default function LeadsPage() {
  return (
  <div className="flex h-full bg-white/70 backdrop-blur-xl border border-white/50 rounded-2xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] _8px_30px_rgb(0,0,0,0.2)] relative text-[13px]">
  <div className={`flex-1 flex flex-col transition-all duration-300 min-w-0`}>
- 
+  {/* Bilingual Instruction Header */}
+  <div className="bg-primary/10 border-b border-primary/20 p-3 flex gap-3 items-start shadow-sm shrink-0">
+    <div className="bg-primary text-white p-1.5 rounded-lg shrink-0">
+      <Users className="w-4 h-4" />
+    </div>
+    <div>
+      <h3 className="font-semibold text-primary text-[12px] mb-0.5">
+        {language === 'en' ? 'Leads Management Instructions' : 'লিড ম্যানেজমেন্ট নির্দেশনা'}
+      </h3>
+      <p className="text-[11px] text-zinc-600 leading-relaxed max-w-4xl">
+        {language === 'en' ? 'Here you can view and manage all your customer leads and contacts. You can manually create a new lead, assign leads to specific agents, set follow-up dates, and categorize them into custom stages (e.g., Interested, Not Interested). Click on any lead to see their full details or click the Chat button to open their conversation in the Inbox.' : 'এখান থেকে আপনি আপনার কাস্টমার বা লিডদের প্রোফাইল ম্যানেজ করতে পারবেন। আপনি চাইলে নিজে নতুন লিড তৈরি করতে পারেন, লিডগুলোকে বিভিন্ন এজেন্টের কাছে অ্যাসাইন করতে পারেন এবং লিডের বর্তমান অবস্থা (যেমন: আগ্রহী, আগ্রহী নয়) বোঝাতে স্টেজ পরিবর্তন করতে পারেন। যেকোনো লিডের উপর ক্লিক করে তার বিস্তারিত তথ্য দেখা যাবে এবং "Chat" বাটনে ক্লিক করে সরাসরি ইনবক্সে মেসেজ করা যাবে।'}
+      </p>
+    </div>
+  </div>
+
  {/* Compact Header */}
  <div className="px-1.5 py-1 border-b border-border bg-surface/50 backdrop-blur-xl flex justify-between items-center z-10">
  <div className="flex items-center space-x-4">
@@ -463,7 +477,6 @@ export default function LeadsPage() {
  <th className="px-1.5 py-2.5 text-left font-semibold text-foreground/60 uppercase tracking-wider">Contact</th>
  <th className="px-1.5 py-2.5 text-left font-semibold text-foreground/60 uppercase tracking-wider">Company</th>
  <th className="px-1.5 py-2.5 text-left font-semibold text-foreground/60 uppercase tracking-wider">Stage</th>
- <th className="px-1.5 py-2.5 text-left font-semibold text-foreground/60 uppercase tracking-wider">Assigned To</th>
  <th className="px-1.5 py-2.5 text-left font-semibold text-foreground/60 uppercase tracking-wider">Follow Up</th>
  </tr>
  </thead>
@@ -480,7 +493,6 @@ export default function LeadsPage() {
  <span className="px-2 py-0.5 rounded border" style={{ borderColor: lead.stage.color, color: lead.stage.color, backgroundColor: `${lead.stage.color}10` }}>{lead.stage.name}</span>
  ) : '-'}
  </td>
- <td className="px-1.5 py-2 whitespace-nowrap text-foreground/70">{lead.assignedUser?.name || 'Unassigned'}</td>
  <td className="px-1.5 py-2 whitespace-nowrap text-foreground/70">
  {lead.followUpAt ? new Date(lead.followUpAt).toLocaleDateString() : '-'}
  </td>

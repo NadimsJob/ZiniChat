@@ -31,7 +31,7 @@ export default function TenantSupportPage() {
 
  const fetchTickets = async () => {
  try {
- const token = localStorage.getItem('token');
+ const token = Cookies.get('access_token');
  const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/tickets`, {
  headers: { Authorization: `Bearer ${token}` }
  });
@@ -45,7 +45,7 @@ export default function TenantSupportPage() {
 
  const fetchTicketDetails = async (id: string) => {
  try {
- const token = localStorage.getItem('token');
+ const token = Cookies.get('access_token');
  const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/tickets/${id}`, {
  headers: { Authorization: `Bearer ${token}` }
  });
@@ -117,24 +117,40 @@ export default function TenantSupportPage() {
  if (loading) return <div className="p-8 text-center text-zinc-500">Loading support...</div>;
 
  return (
- <div className="p-6 max-w-7xl mx-auto animate-in fade-in h-[calc(100vh-80px)] flex gap-6 relative">
+ <div className="p-6 max-w-7xl mx-auto animate-in fade-in h-[calc(100vh-80px)] flex flex-col gap-6 relative">
+  {/* Bilingual Instruction Header */}
+  <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 flex gap-4 items-start shadow-sm mb-2 shrink-0">
+    <div className="bg-primary text-white p-2 rounded-lg shrink-0">
+      <Info className="w-5 h-5" />
+    </div>
+    <div>
+      <h3 className="font-semibold text-primary text-[14px] mb-1">
+        {language === 'en' ? 'Support Center Instructions' : 'সাপোর্ট সেন্টার নির্দেশনা'}
+      </h3>
+      <p className="text-[12px] text-zinc-600 leading-relaxed max-w-4xl">
+        {language === 'en' ? 'Welcome to the Support Center. Here you can create new support tickets for issues related to billing, channel integrations (WhatsApp/Messenger), AI training, or general queries. Click the "+" button to open a new ticket, describe your issue, and attach any relevant files. Our support team will reply directly to your ticket.' : 'সাপোর্ট সেন্টারে স্বাগতম। এখান থেকে আপনি পেমেন্ট, চ্যানেল কানেকশন (WhatsApp/Messenger), এআই ট্রেনিং বা অন্য কোনো সমস্যার জন্য নতুন সাপোর্ট টিকিট তৈরি করতে পারবেন। নতুন টিকিট তৈরি করতে "+" বাটনে ক্লিক করুন, আপনার সমস্যার কথা লিখুন এবং প্রয়োজনে ফাইল যুক্ত করুন। আমাদের সাপোর্ট টিম সরাসরি আপনার টিকিটের মাধ্যমে সমাধান দিয়ে দিবে।'}
+      </p>
+    </div>
+  </div>
+
+  <div className="flex-1 flex gap-6 min-h-0">
  {/* Left List */}
- <div className={`flex-1 flex flex-col bg-surface border border-surface-hover rounded-2xl overflow-hidden ${selectedTicket ? 'hidden md:flex md:max-w-md' : 'flex'}`}>
+ <div className={`flex-[1] flex flex-col bg-surface border border-surface-hover rounded-2xl overflow-hidden ${selectedTicket ? 'hidden md:flex md:max-w-md' : 'flex'}`}>
  <div className="p-5 border-b border-surface-hover flex justify-between items-center bg-background">
  <div>
- <h1 className="text-xl font-bold">{language === 'en' ? 'Support' : 'সাপোর্ট'}</h1>
- <p className="text-[13px] text-zinc-400 mt-1">{language === 'en' ? 'Need help? Contact support' : 'যেকোনো প্রয়োজনে যোগাযোগ করুন'}</p>
+ <h1 className="text-xl font-bold">{language === 'en' ? 'Support Tickets' : 'সাপোর্ট টিকিট'}</h1>
+ <p className="text-[13px] text-zinc-400 mt-1">{language === 'en' ? 'Manage your requests' : 'আপনার রিকোয়েস্ট ম্যানেজ করুন'}</p>
  </div>
  <button 
  onClick={() => setIsNewTicketOpen(true)}
  className="bg-primary/10 text-primary p-2 rounded-xl hover:bg-primary hover:text-white transition-colors"
- title="New Ticket"
+ title={language === 'en' ? 'New Ticket' : 'নতুন টিকিট'}
  >
  <Plus className="w-5 h-5" />
  </button>
  </div>
  
- <div className="flex-1 overflow-y-auto p-4 space-y-3">
+ <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
  {tickets.length === 0 ? (
  <div className="text-center py-12 text-zinc-500 text-[13px]">{language === 'en' ? 'No tickets found.' : 'কোনো টিকিট পাওয়া যায়নি'}</div>
  ) : (
@@ -255,6 +271,8 @@ export default function TenantSupportPage() {
  </div>
  </div>
  )}
+ 
+ </div>
 
   {/* New Ticket Modal */}
   {isNewTicketOpen && (

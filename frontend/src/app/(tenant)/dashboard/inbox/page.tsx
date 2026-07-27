@@ -462,7 +462,7 @@ export default function InboxPage() {
  }
 
   return (
-  <div className="flex h-[calc(100vh-48px)] bg-surface/80 backdrop-blur-2xl overflow-hidden relative">
+  <div className="flex h-full min-h-[calc(100vh-80px)] w-full bg-surface/80 backdrop-blur-2xl overflow-hidden relative">
     {/* Subtle Premium Mesh Gradients */}
     <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[120px] pointer-events-none mix-blend-multiply" />
     <div className="absolute bottom-[-10%] right-[-5%] w-[40%] h-[40%] bg-[#EE8D27]/10 rounded-full blur-[120px] pointer-events-none mix-blend-multiply" />
