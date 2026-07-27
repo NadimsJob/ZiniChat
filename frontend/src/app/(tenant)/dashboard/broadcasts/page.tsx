@@ -316,6 +316,24 @@ export default function BroadcastsPage() {
     setButtons([]);
   };
 
+  const getRenderedBodyPreview = () => {
+    let text = bodyText || (language === 'en' ? 'Your message preview will appear here...' : 'আপনার মেসেজের প্রিভিউ এখানে দেখাবে...');
+    Object.keys(bodySamples).forEach(key => {
+      const val = bodySamples[key] ? `[${bodySamples[key]}]` : `{{${key}}}`;
+      text = text.replaceAll(`{{${key}}}`, val);
+    });
+    return text;
+  };
+
+  const getRenderedHeaderText = () => {
+    let text = headerText;
+    Object.keys(headerSamples).forEach(key => {
+      const val = headerSamples[key] ? `[${headerSamples[key]}]` : `{{${key}}}`;
+      text = text.replaceAll(`{{${key}}}`, val);
+    });
+    return text;
+  };
+
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] text-center space-y-4 animate-in fade-in zoom-in duration-500">
