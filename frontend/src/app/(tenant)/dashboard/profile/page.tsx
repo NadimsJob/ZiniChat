@@ -416,7 +416,7 @@ export default function TenantProfilePage() {
  </div>
 
  <form onSubmit={handleChangePassword} className="space-y-5">
- {profile?.hasPassword && (
+ {profile?.passwordHash && (
  <div>
  <label className="block text-[13px] font-semibold mb-2 text-slate-700 ">
  {t('Current Password', 'বর্তমান পাসওয়ার্ড')}

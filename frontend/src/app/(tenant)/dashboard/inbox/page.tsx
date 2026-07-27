@@ -615,7 +615,6 @@ export default function InboxPage() {
  {selectedConv?.isAiEnabled !== false ? <ToggleRight className="w-4 h-4 text-primary ml-1" /> : <ToggleLeft className="w-4 h-4 ml-1" />}
  </button>
   {/* Agent Assignment Moved */}
- </div>
 
  <button 
     onClick={() => { setShowLabelsMenu(!showLabelsMenu); setShowAssignMenu(false); setIsCreatingLabel(false); }}
@@ -690,6 +689,7 @@ export default function InboxPage() {
  <button onClick={handleDeleteConversation} title={language === 'en' ? 'Delete Conversation' : 'কনভারসেশন মুছুন'} className="p-1.5 text-zinc-400 hover:text-red-500 transition-colors">
  <Trash2 className="w-4 h-4" />
  </button>
+ </div>
  </div>
  </div>
 

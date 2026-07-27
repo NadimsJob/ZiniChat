@@ -245,6 +245,7 @@ export class AuthService {
     const updateTenantData: any = {
       isOnboarded: true
     };
+    if (data.businessName !== undefined) updateTenantData.businessName = data.businessName;
     if (data.brandName !== undefined) updateTenantData.brandName = data.brandName;
     if (data.address !== undefined) updateTenantData.address = data.address;
     if (data.phoneNo !== undefined) updateTenantData.phoneNo = data.phoneNo;
