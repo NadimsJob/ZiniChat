@@ -464,16 +464,9 @@ export default function InboxPage() {
  }
 
   return (
-  <div className="flex h-full min-h-[calc(100vh-80px)] w-full bg-surface/80 backdrop-blur-2xl overflow-hidden relative">
-    {/* Subtle Premium Mesh Gradients */}
-    <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[120px] pointer-events-none mix-blend-multiply" />
-    <div className="absolute bottom-[-10%] right-[-5%] w-[40%] h-[40%] bg-[#EE8D27]/10 rounded-full blur-[120px] pointer-events-none mix-blend-multiply" />
-    <div className="absolute top-[40%] left-[30%] w-[20%] h-[20%] bg-emerald-500/5 rounded-full blur-[100px] pointer-events-none" />
-    
-    {/* Noise Texture for premium feel */}
-    <div className="absolute inset-0 bg-grid-pattern opacity-[0.02] pointer-events-none mix-blend-overlay" />
+  <div className="flex h-[calc(100vh-64px)] w-full bg-slate-50 overflow-hidden relative">
  {/* Left Pane - Conversations List */}
- <div className="w-72 flex-shrink-0 border-r border-white/50 flex flex-col bg-gradient-to-b from-white/60 to-white/30 backdrop-blur-md relative z-10">
+ <div className="w-72 flex-shrink-0 border-r border-slate-200 flex flex-col bg-white relative z-10">
  <div className="px-2 py-1.5 border-b border-surface-hover">
  <div className="flex items-center justify-between mb-1.5">
  <h2 className="text-[14px] font-bold">{language === 'en' ? 'Inbox' : 'ইনবক্স'}</h2>
@@ -694,8 +687,7 @@ export default function InboxPage() {
  </div>
 
  {/* Chat Messages */}
- <div className="flex-1 overflow-y-auto px-2 py-2 space-y-0.5 custom-scrollbar bg-transparent relative z-0">
- <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-white/20 pointer-events-none" />
+ <div className="flex-1 overflow-y-auto px-2 py-2 space-y-0.5 custom-scrollbar bg-[#f0f2f5] relative z-0">
  
  {messages.length === 0 ? (
  <div className="h-full flex items-center justify-center text-zinc-500 font-medium text-[12px] relative z-10">
@@ -708,8 +700,8 @@ export default function InboxPage() {
  <div key={msg.id || idx} className={`flex relative z-10 ${isOutbound ? 'justify-end' : 'justify-start'}`}>
  <div className={`max-w-[85%] rounded-lg px-2 py-1 shadow-sm text-[12px] relative ${
  isOutbound 
- ? 'bg-gradient-to-br from-primary to-emerald-600 text-white rounded-br-none border border-primary/20' 
- : 'bg-white/95 backdrop-blur-md border border-slate-200/60 text-slate-800 rounded-bl-none'
+ ? 'bg-primary text-white rounded-br-none' 
+ : 'bg-white border border-slate-200 text-slate-800 rounded-bl-none'
  }`}>
  <div className="whitespace-pre-wrap leading-snug flex flex-col">
  {msg.content?.quotedMsg && (
@@ -855,7 +847,7 @@ export default function InboxPage() {
  </div>
  </div>
 
- <div className="bg-white/50 rounded-lg p-2.5 border border-slate-200 space-y-2.5">
+ <div className="bg-white rounded-lg p-2.5 border border-slate-200 space-y-2.5">
  <h4 className="text-[9px] font-bold text-foreground/50 uppercase tracking-wider">Assigned Agent</h4>
  <select value={selectedConv?.assignedAgentId || ''} onChange={(e) => handleAssignAgent(e.target.value || null)} className="w-full bg-surface border border-slate-200 rounded-md py-1 px-1.5 text-[11px] focus:ring-1 focus:ring-primary focus:outline-none">
   <option value="">🤖 AI Assistant (Default)</option>
@@ -863,7 +855,7 @@ export default function InboxPage() {
  </select>
  </div>
 
- <div className="bg-white/50 rounded-lg p-2.5 border border-slate-200 space-y-2.5">
+ <div className="bg-white rounded-lg p-2.5 border border-slate-200 space-y-2.5">
  <h4 className="text-[9px] font-bold text-foreground/50 uppercase tracking-wider">Lead Status</h4>
  
  <div className="grid grid-cols-2 gap-2">
@@ -881,7 +873,7 @@ export default function InboxPage() {
  </div>
  </div>
 
- <div className="bg-white/50 rounded-lg p-2.5 border border-slate-200 space-y-2.5">
+ <div className="bg-white rounded-lg p-2.5 border border-slate-200 space-y-2.5">
  <h4 className="text-[9px] font-bold text-foreground/50 uppercase tracking-wider">Contact Info</h4>
  
  <div>
