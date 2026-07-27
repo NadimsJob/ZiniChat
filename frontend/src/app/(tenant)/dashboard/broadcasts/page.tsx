@@ -149,6 +149,24 @@ export default function BroadcastsPage() {
     }, 0);
   };
 
+  const handleAddButton = () => {
+    if (buttons.length >= 10) {
+      toast.error(language === 'en' ? 'Maximum 10 buttons allowed' : 'সর্বোচ্চ ১০টি বাটন যুক্ত করা যাবে');
+      return;
+    }
+    setButtons([...buttons, { type: 'QUICK_REPLY', text: '', url: '', phoneNumber: '', sample: '' }]);
+  };
+
+  const handleRemoveButton = (index: number) => {
+    setButtons(buttons.filter((_, i) => i !== index));
+  };
+
+  const handleButtonChange = (index: number, field: string, value: string) => {
+    const updated = [...buttons];
+    updated[index][field] = value;
+    setButtons(updated);
+  };
+
   const handleTemplateNameChange = (val: string) => {
     setTemplateName(val);
     if (val && !/^[a-z0-9_]+$/.test(val)) {
