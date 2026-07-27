@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { format } from 'date-fns';
-import { Mail, CheckCircle, Clock, Search, Paperclip, Send, AlertCircle, Plus, X } from 'lucide-react';
+import { Mail, CheckCircle, Clock, Search, Paperclip, Send, AlertCircle, Plus, X, Info } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageProvider';
 import toast from 'react-hot-toast';
 import Cookies from 'js-cookie';

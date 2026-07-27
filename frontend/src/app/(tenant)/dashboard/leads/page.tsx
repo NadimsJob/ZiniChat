@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useLanguage } from '@/components/LanguageProvider';
-import { Search, List, Kanban, Plus, UserCircle, Tag, Calendar, MessageSquare, X, MessageCircle, ShoppingBag, Phone, Mail, Building, MapPin, UserPlus, Edit2, Trash2, Check, Download } from 'lucide-react';
+import { Search, List, Kanban, Plus, UserCircle, Tag, Calendar, MessageSquare, X, MessageCircle, ShoppingBag, Phone, Mail, Building, MapPin, UserPlus, Edit2, Trash2, Check, Download, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 import { toast } from 'react-hot-toast';
