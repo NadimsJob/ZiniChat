@@ -40,6 +40,7 @@ This document contains rules and behavioral guidelines specific to this workspac
 * **Brand Colors**: Always incorporate the brand colors (Green `#1F824A` and Orange `#EE8D27`) using standard Tailwind utilities or custom classes, ensuring a premium aesthetic.
 * **Compact UI**: All forms, popups, and tables must be highly dense and compact. Minimize padding and font sizes (e.g., `text-[12px]` or `text-[13px]`) to maximize information density on SaaS screens.
 * **Responsive Modals**: Always ensure modals are scrollable internally (`overflow-y-auto`, `max-h-[90vh]`) so they don't lock or overflow on small laptop screens.
+* **Simultaneous Mobile Native App Responsiveness (CRITICAL)**: Whenever any design or layout change is requested for web/desktop view, you MUST simultaneously optimize and test the layout for mobile responsive view in a native app style (e.g., compact touch cards, single-line action bars, collapsable banners, bottom sheets, zero horizontal page overflow). Never implement web-only changes without adapting the mobile user experience in parallel.
 
 ---
 
