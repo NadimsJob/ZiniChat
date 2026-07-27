@@ -6,6 +6,7 @@ import { useLanguage } from '@/components/LanguageProvider';
 import { Tag, Plus, Trash2, Edit2, Wand2, RefreshCw } from 'lucide-react';
 import LabelForm from '@/components/labels/LabelForm';
 import InstructionBanner from '@/components/InstructionBanner';
+import toast from 'react-hot-toast';
 
 export default function LabelsPage() {
  const { language } = useLanguage();
