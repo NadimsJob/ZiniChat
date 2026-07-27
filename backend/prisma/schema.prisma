@@ -43,28 +43,28 @@ model Tenant {
 
   createdAt DateTime @default(now())
 
-  users         User[]
-  channelConns  ChannelConnection[]
-  contacts      Contact[]
-  conversations Conversation[]
-  assistants    AiAssistant[]
-  automations   Automation[]
-  templates     Template[]
-  broadcasts    Broadcast[]
-  products      Product[]
-  orders        Order[]
-  subscriptions Subscription[]
-  payments      Payment[]
-  knowledgeDocs KnowledgeDocument[]
-  qnaItems      QnAKnowledgeBase[]
-  usageLogs     AiUsageLog[]
-  auditLogs     AuditLog[] // Audit logs targeting this tenant
-  labels        Label[]
-  kanbanStages  KanbanStage[]
-  Ticket        Ticket[]
-  customAiConfig AiConfig? @relation(fields: [customAiConfigId], references: [id])
+  users                User[]
+  channelConns         ChannelConnection[]
+  contacts             Contact[]
+  conversations        Conversation[]
+  assistants           AiAssistant[]
+  automations          Automation[]
+  templates            Template[]
+  broadcasts           Broadcast[]
+  products             Product[]
+  orders               Order[]
+  subscriptions        Subscription[]
+  payments             Payment[]
+  knowledgeDocs        KnowledgeDocument[]
+  qnaItems             QnAKnowledgeBase[]
+  usageLogs            AiUsageLog[]
+  auditLogs            AuditLog[] // Audit logs targeting this tenant
+  labels               Label[]
+  kanbanStages         KanbanStage[]
+  Ticket               Ticket[]
+  customAiConfig       AiConfig?             @relation(fields: [customAiConfigId], references: [id])
   supportConversations SupportConversation[]
-  plan          Plan?    @relation(fields: [planId], references: [id])
+  plan                 Plan?                 @relation(fields: [planId], references: [id])
 
   @@map("tenants")
 }
@@ -292,7 +292,7 @@ model AiAssistant {
   apiKeyMode          String // Deprecated: kept for backwards compatibility
   routingMode         String   @default("system_only") // system_only, custom_only, hybrid
   byokApiKeyEncrypted String?
-  agentName           String?  // New field to give AI an identity
+  agentName           String? // New field to give AI an identity
   aiOrderEnabled      Boolean  @default(true)
   isActive            Boolean  @default(true)
   createdAt           DateTime @default(now())
@@ -389,19 +389,19 @@ model Template {
   id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenantId          String   @db.Uuid
   name              String
-  category          String   // MARKETING, UTILITY, AUTHENTICATION
+  category          String // MARKETING, UTILITY, AUTHENTICATION
   language          String   @default("bn") // bn, en_US, etc.
   headerFormat      String?  @default("NONE") // NONE, TEXT, IMAGE, DOCUMENT, VIDEO
-  headerText        String?  // if headerFormat = TEXT
-  headerMediaHandle String?  // Meta media handle (h:{handle})
-  headerMediaUrl    String?  // Local upload path
+  headerText        String? // if headerFormat = TEXT
+  headerMediaHandle String? // Meta media handle (h:{handle})
+  headerMediaUrl    String? // Local upload path
   bodyText          String   @db.Text
   body              String?  @db.Text // Legacy body fallback
   footerText        String?
-  components        Json?    // Full Meta API components structure
+  components        Json? // Full Meta API components structure
   status            String   @default("PENDING") // PENDING, APPROVED, REJECTED, PAUSED
-  metaTemplateId    String?  // Meta API returned template ID
-  rejectionReason   String?  // Meta API rejection reason if REJECTED
+  metaTemplateId    String? // Meta API returned template ID
+  rejectionReason   String? // Meta API rejection reason if REJECTED
   createdAt         DateTime @default(now())
   updatedAt         DateTime @default(now()) @updatedAt
 
@@ -414,18 +414,18 @@ model Template {
 model GlobalTemplate {
   id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   title          String
-  categoryTag    String   // Display filter tag: "E-commerce", "Eid Sale", "Appointment", etc.
-  category       String   // MARKETING, UTILITY, AUTHENTICATION
+  categoryTag    String // Display filter tag: "E-commerce", "Eid Sale", "Appointment", etc.
+  category       String // MARKETING, UTILITY, AUTHENTICATION
   language       String   @default("bn")
   headerFormat   String   @default("NONE") // NONE, TEXT, IMAGE, DOCUMENT, VIDEO
   headerText     String?
   bodyText       String   @db.Text
   footerText     String?
-  components     Json     // Full Meta API components structure (mirrors Template.components)
+  components     Json // Full Meta API components structure (mirrors Template.components)
   isPublic       Boolean  @default(true)
   isFeatured     Boolean  @default(false)
   usageCount     Int      @default(0)
-  sourceTenantId String?  @db.Uuid  // Promoted from which tenant (optional)
+  sourceTenantId String?  @db.Uuid // Promoted from which tenant (optional)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @default(now()) @updatedAt
 
@@ -433,16 +433,17 @@ model GlobalTemplate {
 }
 
 model Broadcast {
-  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenantId      String    @db.Uuid
-  templateId    String    @db.Uuid
+  id            String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String               @db.Uuid
+  templateId    String               @db.Uuid
   segmentFilter Json?
   scheduledAt   DateTime?
   status        String // scheduled, processing, completed
-
-  tenant     Tenant               @relation(fields: [tenantId], references: [id])
-  template   Template             @relation(fields: [templateId], references: [id])
-  recipients BroadcastRecipient[]
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @default(now()) @updatedAt
+  tenant        Tenant               @relation(fields: [tenantId], references: [id])
+  template      Template             @relation(fields: [templateId], references: [id])
+  recipients    BroadcastRecipient[]
 
   @@map("broadcasts")
 }
@@ -517,37 +518,37 @@ model OrderItem {
 
 // Billing & Subscription Packages
 model Plan {
-  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id              String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name            String
   nameBn          String?
   description     String?
   descriptionBn   String?
-  priceMonthlyBdt Decimal  @db.Decimal(10, 2)
-  priceYearlyBdt  Decimal  @db.Decimal(10, 2)
+  priceMonthlyBdt Decimal @db.Decimal(10, 2)
+  priceYearlyBdt  Decimal @db.Decimal(10, 2)
   messageQuota    Int
   aiQuota         Int
   seatLimit       Int
-  whatsappLimit   Int      @default(1)
-  messengerLimit  Int      @default(1)
-  instagramLimit  Int      @default(1)
-  storageLimitMb  Int      @default(500)
-  trialDays       Int      @default(0)
-  
+  whatsappLimit   Int     @default(1)
+  messengerLimit  Int     @default(1)
+  instagramLimit  Int     @default(1)
+  storageLimitMb  Int     @default(500)
+  trialDays       Int     @default(0)
+
   // Promotional & Discount Fields
-  promoPriceMonthlyBdt Decimal? @db.Decimal(10, 2)
-  promoMonths          Int?
+  promoPriceMonthlyBdt  Decimal? @db.Decimal(10, 2)
+  promoMonths           Int?
   yearlyDiscountPercent Decimal? @db.Decimal(5, 2)
 
-  allowByok       Boolean  @default(false)
-  features        Json     @default("[]") // Array of feature keys like 'orders', 'leads'
-  featuresJson    Json     @default("[]") // Array of {en, bn} strings
-  isActive        Boolean  @default(true)
-  isPopular       Boolean  @default(false)
-  isDefault       Boolean  @default(false)
-  createdAt       DateTime @default(now())
+  allowByok    Boolean  @default(false)
+  features     Json     @default("[]") // Array of feature keys like 'orders', 'leads'
+  featuresJson Json     @default("[]") // Array of {en, bn} strings
+  isActive     Boolean  @default(true)
+  isPopular    Boolean  @default(false)
+  isDefault    Boolean  @default(false)
+  createdAt    DateTime @default(now())
 
-  subscriptions   Subscription[]
-  tenants         Tenant[]
+  subscriptions Subscription[]
+  tenants       Tenant[]
 
   @@map("plans")
 }
@@ -563,21 +564,21 @@ model Addon {
   value         Int // e.g., 1000 responses, 500 MB storage, 1 seat
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
-  
-  payments      Payment[]
+
+  payments Payment[]
 
   @@map("addons")
 }
 
 model Subscription {
-  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenantId         String   @db.Uuid
-  planId           String   @db.Uuid
-  status           String // active, past_due, canceled
-  billingCycle     String   @default("monthly") // monthly, yearly
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId           String   @db.Uuid
+  planId             String   @db.Uuid
+  status             String // active, past_due, canceled
+  billingCycle       String   @default("monthly") // monthly, yearly
   currentPeriodStart DateTime @default(now())
-  currentPeriodEnd DateTime
-  couponId         String?  @db.Uuid
+  currentPeriodEnd   DateTime
+  couponId           String?  @db.Uuid
 
   tenant   Tenant    @relation(fields: [tenantId], references: [id])
   plan     Plan      @relation(fields: [planId], references: [id])
@@ -789,17 +790,17 @@ model Notification {
 }
 
 model AiConfig {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name        String
-  provider    String // openai, anthropic, gemini, custom
-  modelName   String
-  apiKey      String
-  apiEndpoint String? // Optional custom proxy endpoint
-  isActive    Boolean  @default(false)
-  isSupportDefault Boolean @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  tenants     Tenant[]
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name             String
+  provider         String // openai, anthropic, gemini, custom
+  modelName        String
+  apiKey           String
+  apiEndpoint      String? // Optional custom proxy endpoint
+  isActive         Boolean  @default(false)
+  isSupportDefault Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  tenants          Tenant[]
 
   @@map("ai_configs")
 }
@@ -856,24 +857,24 @@ model SiteInquiry {
 }
 
 model SupportConversation {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenantId  String   @db.Uuid
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  id        String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String           @db.Uuid
+  tenant    Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   messages  SupportMessage[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
   @@map("support_conversations")
 }
 
 model SupportMessage {
-  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  conversationId String   @db.Uuid
+  id             String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  conversationId String              @db.Uuid
   conversation   SupportConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  senderType     String   // 'user' or 'ai'
-  message        String   @db.Text
-  createdAt      DateTime @default(now())
-  
+  senderType     String // 'user' or 'ai'
+  message        String              @db.Text
+  createdAt      DateTime            @default(now())
+
   @@map("support_messages")
 }
 
@@ -881,13 +882,13 @@ model SupportMessage {
 model MfsAccount {
   id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenantId      String?  @db.Uuid // Optional, for future multi-tenant capability
-  provider      String   // "BKASH" | "NAGAD" | "ROCKET" | "BANK"
-  accountType   String   // "PERSONAL" | "MERCHANT" | "BANK_ACCOUNT"
-  number        String   // MFS number or Bank A/C number
-  merchantId    String?  // Merchant ID (PAN) for merchant pay / Bangla QR
-  bankName      String?  // Name of the bank (if BANK)
-  routingNumber String?  // Routing number for bank accounts
-  qrCodeUrl     String?  // Static QR code image path if uploaded
+  provider      String // "BKASH" | "NAGAD" | "ROCKET" | "BANK"
+  accountType   String // "PERSONAL" | "MERCHANT" | "BANK_ACCOUNT"
+  number        String // MFS number or Bank A/C number
+  merchantId    String? // Merchant ID (PAN) for merchant pay / Bangla QR
+  bankName      String? // Name of the bank (if BANK)
+  routingNumber String? // Routing number for bank accounts
+  qrCodeUrl     String? // Static QR code image path if uploaded
   chargePercent Decimal  @default(0) @db.Decimal(5, 2)
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
@@ -898,32 +899,30 @@ model MfsAccount {
 }
 
 model MfsTransaction {
-  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  trxId         String    @unique
-  provider      String    // "BKASH" | "NAGAD" | "ROCKET" | "BANK"
-  accountType   String    @default("PERSONAL") // "PERSONAL" | "MERCHANT" | "BANK"
-  amount        Decimal   @db.Decimal(10, 2)
-  senderNumber  String?   // Customer's number if extracted from SMS
-  smsBody       String    @db.Text
-  isUsed        Boolean   @default(false)
-  usedByUserId  String?   @db.Uuid
-  usedAt        DateTime?
-  createdAt     DateTime  @default(now())
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  trxId        String    @unique
+  provider     String // "BKASH" | "NAGAD" | "ROCKET" | "BANK"
+  accountType  String    @default("PERSONAL") // "PERSONAL" | "MERCHANT" | "BANK"
+  amount       Decimal   @db.Decimal(10, 2)
+  senderNumber String? // Customer's number if extracted from SMS
+  smsBody      String    @db.Text
+  isUsed       Boolean   @default(false)
+  usedByUserId String?   @db.Uuid
+  usedAt       DateTime?
+  createdAt    DateTime  @default(now())
 
   @@map("mfs_transactions")
 }
 
 model MfsPayment {
-  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId         String    @db.Uuid
-  amount         Decimal   @db.Decimal(10, 2)
-  provider       String    // "BKASH" | "NAGAD" | "ROCKET" | "BANK"
-  status         String    @default("PENDING") // PENDING, COMPLETED, FAILED
-  trxId          String?
-  verifiedAt     DateTime?
-  createdAt      DateTime  @default(now())
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String    @db.Uuid
+  amount     Decimal   @db.Decimal(10, 2)
+  provider   String // "BKASH" | "NAGAD" | "ROCKET" | "BANK"
+  status     String    @default("PENDING") // PENDING, COMPLETED, FAILED
+  trxId      String?
+  verifiedAt DateTime?
+  createdAt  DateTime  @default(now())
 
   @@map("mfs_payments")
 }
-
-
