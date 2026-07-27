@@ -573,203 +573,195 @@ export default function InboxPage() {
  </div>
  </div>
 
- {/* Right Pane - Chat Window & Lead Info */}
- <div className={`flex-1 min-w-0 bg-slate-50 relative overflow-hidden ${selectedConvId ? 'flex' : 'hidden md:flex'}`}>
- {selectedConvId ? (
- <>
- <div className="flex-1 flex flex-col min-w-0 relative">
- {/* Chat Header */}
- <div className="h-[44px] px-3 border-b border-slate-200 flex items-center justify-between bg-white shrink-0 z-20">
- <div className="flex items-center gap-2">
- <button 
- onClick={() => setSelectedConvId(null)}
- className="md:hidden p-1 -ml-1 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-md transition-colors"
- title={language === 'en' ? 'Back to conversations' : 'ইনবক্স লিস্টে ফিরে যান'}
- >
- <ChevronLeft className="w-5 h-5" />
- </button>
- <div className="w-7 h-7 rounded-full bg-gradient-to-br from-emerald-100 to-teal-100 border border-emerald-200 text-emerald-700 flex items-center justify-center font-bold text-[10px] uppercase shadow-sm">
- {selectedConv?.contact?.name ? selectedConv.contact.name.charAt(0) : <UserIcon className="w-3 h-3" />}
- </div>
- <div>
- <h2 className="font-semibold text-[13px] text-zinc-900 leading-none mb-0.5">
- {selectedConv?.contact?.name || selectedConv?.contact?.externalContactId || 'Unknown Contact'}
- </h2>
- <div className="flex items-center gap-1 text-[10px] text-zinc-500 leading-none">
- <span className="flex w-2 h-2 rounded-full bg-emerald-500"></span>
- {selectedConv?.channelConnection ? (selectedConv.channelConnection.displayName || selectedConv.channelConnection.phoneNumber) : (selectedConv?.channel === 'whatsapp' ? 'WhatsApp' : selectedConv?.channel)}
- </div>
- </div>
- </div>
- <div className="flex items-center gap-2 text-zinc-400 relative">
- {/* AI Toggle */}
- <button
- onClick={() => handleToggleAiReply(selectedConv?.isAiEnabled === false ? true : false)}
- className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2 text-sm border ${selectedConv?.isAiEnabled !== false ? 'bg-primary/10 text-primary border-primary/20' : 'hover:bg-surface-hover border-transparent text-zinc-400'}`}
- title={selectedConv?.isAiEnabled !== false ? 'AI Auto-Reply: ON' : 'AI Auto-Reply: OFF'}
- >
- <Bot className="w-4 h-4" />
- <span className="text-xs font-medium whitespace-nowrap hidden sm:inline-block">
- {language === 'en' ? 'AI Reply' : 'এআই রিপ্লাই'}
- </span>
- {selectedConv?.isAiEnabled !== false ? <ToggleRight className="w-4 h-4 text-primary ml-1" /> : <ToggleLeft className="w-4 h-4 ml-1" />}
- </button>
- 
- <button 
-    onClick={() => { setShowLabelsMenu(!showLabelsMenu); setShowAssignMenu(false); setIsCreatingLabel(false); }}
-    className={`p-2 rounded-lg transition-colors flex items-center gap-1 text-sm ${showLabelsMenu ? 'bg-primary/10 text-primary' : 'hover:bg-surface-hover'}`}
-    title={language === 'en' ? 'Labels' : 'লেবেলস'}
+  {/* Right Pane - Chat Window & Lead Info */}
+  <div className={`flex-1 min-w-0 bg-[#eef2f5] relative overflow-hidden ${selectedConvId ? 'flex flex-col h-full' : 'hidden md:flex md:flex-col md:h-full'}`}>
+  {selectedConvId ? (
+  <>
+  {/* Middle Pane - Active Chat Board */}
+  <div className="flex-1 flex flex-col min-w-0 relative h-full overflow-hidden">
+  {/* Sticky Pinned Chat Header */}
+  <div className="h-[48px] md:h-[44px] px-3 border-b border-slate-200/80 flex items-center justify-between bg-white shrink-0 z-30 sticky top-0 shadow-sm">
+  <div className="flex items-center gap-2 min-w-0">
+  <button 
+  onClick={() => setSelectedConvId(null)}
+  className="md:hidden p-1.5 -ml-1 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors shrink-0"
+  title={language === 'en' ? 'Back to conversations' : 'ইনবক্স লিস্টে ফিরে যান'}
   >
- <Tag className="w-4 h-4" />
- </button>
-  {showLabelsMenu && (
-    <div className="absolute right-0 top-full mt-2 w-72 bg-white border border-slate-200 rounded-xl shadow-lg z-10 p-2 animate-in fade-in zoom-in duration-200">
-      {isCreatingLabel ? (
-        <LabelForm 
-          onSave={handleSaveLabel} 
-          onCancel={() => setIsCreatingLabel(false)} 
-        />
-      ) : (
-        <>
-          <div className="flex items-center justify-between px-2 py-1.5 mb-1 border-b border-slate-100">
-            <span className="text-xs font-bold text-slate-500">
-              {language === 'en' ? 'Toggle Labels' : 'লেবেল পরিবর্তন করুন'}
-            </span>
-            <button
-              onClick={() => setIsCreatingLabel(true)}
-              className="text-xs text-primary hover:text-primary/80 font-medium flex items-center gap-1"
-            >
-              <Plus className="w-3 h-3" />
-              {language === 'en' ? 'Add' : 'যুক্ত করুন'}
-            </button>
-          </div>
-          <div className="max-h-64 overflow-y-auto">
-            {availableLabels.length === 0 ? (
-              <div className="text-xs px-2 py-4 text-slate-400 text-center">No labels found</div>
-            ) : (
-              availableLabels.map(label => {
-                const isApplied = selectedConv?.labels?.some((cl: any) => cl.labelId === label.id);
-                return (
-                  <div key={label.id} className="flex items-center group hover:bg-slate-50 rounded-lg pr-1">
-                    <button
-                      onClick={() => handleToggleLabel(label.id)}
-                      className="flex-1 flex items-center gap-2 px-2 py-1.5 transition-colors text-left text-sm"
-                    >
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: label.color }}></div>
-                      <span className="flex-1 truncate text-slate-700 group-hover:text-slate-900">
-                        {label.name}
-                      </span>
-                      {isApplied && <Check className="w-3.5 h-3.5 text-primary" />}
-                    </button>
-                    <button 
-                      onClick={() => handleSyncAi(label.id)} 
-                      disabled={!label.aiPrompt || syncingLabelId === label.id}
-                      className="p-1.5 text-slate-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors disabled:opacity-50 opacity-0 group-hover:opacity-100"
-                      title={language === 'en' ? 'Sync to AI Training' : 'এআই ট্রেনিং এ সিঙ্ক করুন'}
-                    >
-                      {syncingLabelId === label.id ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
-                    </button>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </>
-      )}
-    </div>
-  )}
- <div className="flex items-center gap-2">
- <button className="p-1.5 text-zinc-400 hover:text-primary transition-colors">
- <Search className="w-4 h-4" />
- </button>
- <button onClick={() => setShowLeadInfo(!showLeadInfo)} className={`p-1.5 transition-colors ${showLeadInfo ? 'text-primary' : 'text-zinc-400 hover:text-primary'}`}>
- <Info className="w-4 h-4" />
- </button>
- <button onClick={handleDeleteConversation} title={language === 'en' ? 'Delete Conversation' : 'কনভারসেশন মুছুন'} className="p-1.5 text-zinc-400 hover:text-red-500 transition-colors">
- <Trash2 className="w-4 h-4" />
- </button>
- </div>
- </div>
- </div>
+  <ChevronLeft className="w-5 h-5 text-primary" />
+  </button>
+  <div className="w-8 h-8 md:w-7 md:h-7 rounded-full bg-gradient-to-br from-[#1F824A] to-teal-700 text-white flex items-center justify-center font-bold text-[11px] md:text-[10px] uppercase shadow-sm shrink-0">
+  {selectedConv?.contact?.name ? selectedConv.contact.name.charAt(0) : <UserIcon className="w-3.5 h-3.5" />}
+  </div>
+  <div className="min-w-0 flex-1">
+  <h2 className="font-bold text-[13px] md:text-[12px] text-slate-900 leading-none mb-0.5 truncate">
+  {selectedConv?.contact?.name || selectedConv?.contact?.externalContactId || 'Unknown Contact'}
+  </h2>
+  <div className="flex items-center gap-1.5 text-[10px] text-slate-500 leading-none truncate">
+  <span className="flex w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+  <span className="truncate">{selectedConv?.channelConnection ? (selectedConv.channelConnection.displayName || selectedConv.channelConnection.phoneNumber) : (selectedConv?.channel === 'whatsapp' ? 'WhatsApp' : selectedConv?.channel)}</span>
+  </div>
+  </div>
+  </div>
+  <div className="flex items-center gap-1.5 text-slate-500 relative shrink-0">
+  {/* AI Toggle */}
+  <button
+  onClick={() => handleToggleAiReply(selectedConv?.isAiEnabled === false ? true : false)}
+  className={`px-2 py-1 rounded-lg transition-colors flex items-center gap-1 text-xs border ${selectedConv?.isAiEnabled !== false ? 'bg-primary/10 text-primary border-primary/30 font-semibold' : 'hover:bg-slate-100 border-slate-200 text-slate-500'}`}
+  title={selectedConv?.isAiEnabled !== false ? 'AI Auto-Reply: ON' : 'AI Auto-Reply: OFF'}
+  >
+  <Bot className="w-3.5 h-3.5 text-primary" />
+  <span className="text-[11px] font-semibold whitespace-nowrap hidden sm:inline-block">
+  {language === 'en' ? 'AI Reply' : 'এআই রিপ্লাই'}
+  </span>
+  {selectedConv?.isAiEnabled !== false ? <ToggleRight className="w-4 h-4 text-primary" /> : <ToggleLeft className="w-4 h-4 text-slate-400" />}
+  </button>  
+  
+  <button 
+     onClick={() => { setShowLabelsMenu(!showLabelsMenu); setShowAssignMenu(false); setIsCreatingLabel(false); }}
+     className={`p-1.5 rounded-lg transition-colors flex items-center gap-1 text-sm ${showLabelsMenu ? 'bg-primary/10 text-primary' : 'hover:bg-slate-100 text-slate-600'}`}
+     title={language === 'en' ? 'Labels' : 'লেবেলস'}
+   >
+  <Tag className="w-4 h-4" />
+  </button>
+   {showLabelsMenu && (
+     <div className="absolute right-0 top-full mt-2 w-72 bg-white border border-slate-200 rounded-xl shadow-xl z-40 p-2 animate-in fade-in zoom-in duration-200">
+       {isCreatingLabel ? (
+         <LabelForm 
+           onSave={handleSaveLabel} 
+           onCancel={() => setIsCreatingLabel(false)} 
+         />
+       ) : (
+         <>
+           <div className="flex items-center justify-between px-2 py-1.5 mb-1 border-b border-slate-100">
+             <span className="text-xs font-bold text-slate-600">
+               {language === 'en' ? 'Toggle Labels' : 'লেবেল পরিবর্তন করুন'}
+             </span>
+             <button
+               onClick={() => setIsCreatingLabel(true)}
+               className="text-xs text-primary hover:text-primary/80 font-medium flex items-center gap-1"
+             >
+               <Plus className="w-3 h-3" />
+               {language === 'en' ? 'Add' : 'যুক্ত করুন'}
+             </button>
+           </div>
+           <div className="max-h-64 overflow-y-auto">
+             {availableLabels.length === 0 ? (
+               <div className="text-xs px-2 py-4 text-slate-400 text-center">No labels found</div>
+             ) : (
+               availableLabels.map(label => {
+                 const isApplied = selectedConv?.labelIds?.includes(label.id);
+                 return (
+                   <div key={label.id} className="flex items-center group hover:bg-slate-50 rounded-lg pr-1">
+                     <button
+                       onClick={() => handleToggleLabel(label.id)}
+                       className="flex-1 flex items-center gap-2 px-2 py-1.5 transition-colors text-left text-sm"
+                     >
+                       <div className="w-3 h-3 rounded-full" style={{ backgroundColor: label.color || '#3b82f6' }}></div>
+                       <span className="flex-1 truncate text-slate-700 group-hover:text-slate-900">
+                         {label.name}
+                       </span>
+                       {isApplied && <Check className="w-3.5 h-3.5 text-primary" />}
+                     </button>
+                   </div>
+                 );
+               })
+             )}
+           </div>
+         </>
+       )}
+     </div>
+   )}
 
- {/* Chat Messages */}
- <div className="flex-1 overflow-y-auto px-3 py-3 space-y-1 custom-scrollbar bg-[#ebedf0] relative z-0">
- 
- {messages.length === 0 ? (
- <div className="h-full flex items-center justify-center text-zinc-500 font-medium text-[12px] relative z-10">
- {language === 'en' ? 'Loading messages...' : 'মেসেজ লোড হচ্ছে...'}
- </div>
- ) : (
- messages.map((msg, idx) => {
- const isOutbound = msg.direction === 'outbound';
- return (
- <div key={msg.id || idx} className={`flex relative z-10 ${isOutbound ? 'justify-end' : 'justify-start'}`}>
- <div className={`max-w-[85%] rounded-lg px-2 py-1 shadow-sm text-[12px] relative ${
- isOutbound 
- ? 'bg-primary text-white rounded-br-none' 
- : 'bg-white border border-slate-200 text-slate-800 rounded-bl-none'
- }`}>
- <div className="whitespace-pre-wrap leading-snug flex flex-col">
- {msg.content?.quotedMsg && (
- <div className="mb-2 p-2 rounded bg-black/5 border-l-4 border-primary/50 text-[11px] opacity-80">
- <div className="font-semibold mb-0.5">{msg.content.quotedMsg.participant?.split('@')[0] || 'Someone'}</div>
- <div className="truncate max-w-[200px]">{msg.content.quotedMsg.text}</div>
- </div>
- )}
- {msg.type !== 'text' && (
- <span className="italic opacity-80 text-[11px] block mb-1">
- [{msg.type} message]
- </span>
- )}
- {msg.content?.thumbnail && !msg.content?.mediaUrl && (
- <img 
- src={`data:image/jpeg;base64,${msg.content.thumbnail}`} 
- alt="Media thumbnail" 
- onClick={() => setZoomedImage(`data:image/jpeg;base64,${msg.content.thumbnail}`)}
- className="max-w-[200px] rounded-md mb-2 shadow-sm border border-black/10 cursor-pointer hover:opacity-90 transition-opacity" 
- />
- )}
- {msg.content?.mediaUrl && msg.type === 'image' && (
- <img 
- src={msg.content.mediaUrl} 
- alt="Media image" 
- onClick={() => setZoomedImage(msg.content.mediaUrl)}
- className="max-w-[250px] max-h-[250px] object-cover rounded-md mb-2 shadow-sm border border-black/10 cursor-pointer hover:opacity-90 transition-opacity" 
- />
- )}
- {msg.content?.mediaUrl && msg.type === 'video' && (
- <video 
- src={msg.content.mediaUrl} 
- controls
- className="max-w-[250px] max-h-[250px] rounded-md mb-2 shadow-sm border border-black/10 " 
- />
- )}
- <div>
- {msg.content?.body || msg.content?.text || (typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content))}
- <span className={`inline-block text-[9px] ml-2 float-right mt-1 opacity-70`}>
- {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
- </span>
- </div>
- </div>
- {msg.status === 'rate_limited' && (
- <div className="flex items-center gap-1 text-[10px] text-red-500 mt-1 border-t border-red-500/20 pt-1">
- <AlertCircle className="w-3 h-3" />
- {language === 'en' ? 'Blocked: Rate Limit Exceeded (10/min) to prevent ban.' : 'ব্লকড: অ্যাকাউন্ট ব্যান এড়াতে লিমিট ক্রস করায় মেসেজ পাঠানো হয়নি।'}
- </div>
- )}
- {msg.status === 'failed' && (
- <div className="flex items-center gap-1 text-[10px] text-red-500 mt-1 border-t border-red-500/20 pt-1">
- <AlertCircle className="w-3 h-3" />
- {language === 'en' ? 'Failed to send.' : 'পাঠাতে ব্যর্থ হয়েছে।'}
- </div>
- )}
- </div>
- </div>
- );
- })
- )}
- <div ref={messagesEndRef} />
- </div>
+  <button onClick={() => setShowLeadInfo(!showLeadInfo)} className={`p-1.5 rounded-lg transition-colors flex items-center gap-1 ${showLeadInfo ? 'bg-primary/10 text-primary' : 'hover:bg-slate-100 text-slate-600'}`} title={language === 'en' ? 'Lead Details' : 'লিড ডিটেইলস'}>
+  <PanelRight className="w-4 h-4" />
+  </button>
+  </div>
+  </div>
+
+  {/* Messages Area */}
+  <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2 custom-scrollbar bg-gradient-to-b from-[#eef2f5] via-[#e8ecef] to-[#e4e8ec] relative z-0">
+  {messages.length === 0 ? (
+  <div className="h-full flex items-center justify-center text-slate-500 font-medium text-[12px] relative z-10">
+  {language === 'en' ? 'No messages in this conversation' : 'এই কনভার্সেশনে কোনো মেসেজ নেই'}
+  </div>
+  ) : loadingMessages ? (
+  <div className="h-full flex items-center justify-center text-slate-500 font-medium text-[12px] relative z-10">
+  {language === 'en' ? 'Loading messages...' : 'মেসেজ লোড হচ্ছে...'}
+  </div>
+  ) : (
+  messages.map((msg, idx) => {
+  const isOutbound = msg.direction === 'outbound';
+  const isFailed = msg.status === 'failed' || msg.status === 'rate_limited';
+  return (
+  <div key={msg.id || idx} className={`flex relative z-10 ${isOutbound ? 'justify-end' : 'justify-start'}`}>
+  <div className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-3.5 py-2 text-[12px] relative shadow-md transition-all ${
+  isFailed
+  ? 'bg-red-50 border border-red-300 text-red-900 rounded-br-none'
+  : isOutbound 
+  ? 'bg-gradient-to-r from-[#1F824A] to-[#166538] text-white rounded-br-none border border-emerald-600/30' 
+  : 'bg-white border border-slate-200/90 text-slate-900 rounded-bl-none'
+  }`}>
+  <div className="whitespace-pre-wrap leading-relaxed flex flex-col">
+  {msg.content?.quotedMsg && (
+  <div className="mb-2 p-2 rounded-lg bg-black/10 border-l-4 border-emerald-300 text-[11px] opacity-90">
+  <div className="font-semibold mb-0.5">{msg.content.quotedMsg.participant?.split('@')[0] || 'Someone'}</div>
+  <div className="truncate max-w-[200px]">{msg.content.quotedMsg.text}</div>
+  </div>
+  )}
+  {msg.type !== 'text' && (
+  <span className="italic opacity-80 text-[11px] block mb-1">
+  [{msg.type} message]
+  </span>
+  )}
+  {msg.content?.thumbnail && !msg.content?.mediaUrl && (
+  <img 
+  src={`data:image/jpeg;base64,${msg.content.thumbnail}`} 
+  alt="Media thumbnail" 
+  onClick={() => setZoomedImage(`data:image/jpeg;base64,${msg.content.thumbnail}`)}
+  className="max-w-[200px] rounded-lg mb-2 shadow-sm border border-black/10 cursor-pointer hover:opacity-90 transition-opacity" 
+  />
+  )}
+  {msg.content?.mediaUrl && msg.type === 'image' && (
+  <img 
+  src={msg.content.mediaUrl} 
+  alt="Media image" 
+  onClick={() => setZoomedImage(msg.content.mediaUrl)}
+  className="max-w-[250px] max-h-[250px] object-cover rounded-lg mb-2 shadow-sm border border-black/10 cursor-pointer hover:opacity-90 transition-opacity" 
+  />
+  )}
+  {msg.content?.mediaUrl && msg.type === 'video' && (
+  <video 
+  src={msg.content.mediaUrl} 
+  controls
+  className="max-w-[250px] max-h-[250px] rounded-lg mb-2 shadow-sm border border-black/10" 
+  />
+  )}
+  <div>
+  {msg.content?.body || msg.content?.text || (typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content))}
+  <span className={`inline-block text-[9px] ml-2 float-right mt-1 font-medium ${isOutbound && !isFailed ? 'text-emerald-100' : 'text-slate-400'}`}>
+  {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+  </span>
+  </div>
+  </div>
+  {msg.status === 'rate_limited' && (
+  <div className="flex items-center gap-1 text-[10px] text-red-600 font-semibold mt-1.5 border-t border-red-200 pt-1">
+  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+  {language === 'en' ? 'Blocked: Rate Limit Exceeded (10/min).' : 'ব্লকড: লিমিট ক্রস করায় মেসেজ পাঠানো হয়নি।'}
+  </div>
+  )}
+  {msg.status === 'failed' && (
+  <div className="flex items-center gap-1 text-[10px] text-red-600 font-semibold mt-1.5 border-t border-red-200 pt-1">
+  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+  {language === 'en' ? 'Failed to send.' : 'পাঠাতে ব্যর্থ হয়েছে।'}
+  </div>
+  )}
+  </div>
+  </div>
+  );
+  })
+  )}
+  <div ref={messagesEndRef} />
+  </div>
 
  {/* Chat Input */}
  <div className="px-2 py-1.5 bg-white/60 backdrop-blur-xl border-t border-white/40 z-20 flex flex-col">
