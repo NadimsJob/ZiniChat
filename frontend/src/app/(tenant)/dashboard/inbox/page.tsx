@@ -924,20 +924,6 @@ export default function InboxPage() {
  <label className="block text-[10px] font-medium text-slate-600 mb-0.5 flex items-center"><MapPin className="w-2.5 h-2.5 mr-1 text-slate-400" /> Address</label>
  <input type="text" value={editDetails.address} onChange={(e) => setEditDetails({...editDetails, address: e.target.value})} placeholder="Full Address..." className="w-full bg-white border border-slate-200 rounded-md py-0.5 px-1.5 text-[10px] focus:ring-1 focus:ring-primary focus:outline-none text-slate-800" />
  </div>
- </div>(e.target.value)} placeholder="Type a note..." className="w-full bg-surface border border-slate-200 rounded-lg p-2 text-[11px] focus:ring-1 focus:ring-primary focus:outline-none min-h-[60px] resize-none pb-7" />
- <button onClick={handleSaveNote} className="absolute bottom-1.5 right-1.5 bg-primary text-primary-foreground px-2 py-0.5 rounded text-[9px] font-semibold hover:bg-primary/90">Add</button>
- </div>
- <div className="space-y-1.5">
- {selectedConv?.contact?.notes?.map((note: any) => (
- <div key={note.id} className="bg-surface border border-slate-200 p-2 rounded-lg">
- <p className="text-[11px] text-foreground/90 whitespace-pre-wrap">{note.content}</p>
- <p className="text-[9px] text-foreground/40 mt-1">{new Date(note.createdAt).toLocaleString()}</p>
- </div>
- ))}
- {(!selectedConv?.contact?.notes || selectedConv.contact.notes.length === 0) && (
- <p className="text-[11px] text-center text-foreground/40 py-2">No notes added yet.</p>
- )}
- </div>
  </div>
  </div>
  </div>
