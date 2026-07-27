@@ -1,6 +1,11 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+import Cookies from 'js-cookie';
+import Link from 'next/link';
+import { useLanguage } from '@/components/LanguageProvider';
 import InstructionBanner from '@/components/InstructionBanner';
+import toast from 'react-hot-toast';
 import { Plus, Webhook, Trash2, Copy, RefreshCw, MessageCircle, PhoneCall, Camera, Settings2, CheckCircle2, XCircle } from 'lucide-react';
 
 export default function InboxesPage() {

@@ -28,7 +28,7 @@ export default function InboxPage() {
  const [agents, setAgents] = useState<any[]>([]);
  const [showAssignMenu, setShowAssignMenu] = useState(false);
  
- const [showLeadInfo, setShowLeadInfo] = useState(true);
+ const [showLeadInfo, setShowLeadInfo] = useState(false);
  const [stages, setStages] = useState<any[]>([]);
  const [editDetails, setEditDetails] = useState({
  stageId: '',
@@ -44,12 +44,6 @@ export default function InboxPage() {
  const socketRef = useRef<Socket | null>(null);
  const messagesEndRef = useRef<HTMLDivElement>(null);
  const fileInputRef = useRef<HTMLInputElement>(null);
-
- const fetchLabels = async () => {
-    const token = Cookies.get('access_token');
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/labels`, { headers: { 'Authorization': `Bearer ${token}` } });
-    if (res.ok) setAvailableLabels(await res.json());
- };
 
  // Connect to Socket and fetch conversations
  useEffect(() => {
@@ -574,7 +568,7 @@ export default function InboxPage() {
  </div>
 
   {/* Right Pane - Chat Window & Lead Info */}
-  <div className={`flex-1 min-w-0 bg-[#eef2f5] relative overflow-hidden ${selectedConvId ? 'flex flex-col h-full' : 'hidden md:flex md:flex-col md:h-full'}`}>
+  <div className={`flex-1 min-w-0 bg-[#eef2f5] relative overflow-hidden ${selectedConvId ? 'flex flex-col md:flex-row h-full' : 'hidden md:flex md:flex-row md:h-full'}`}>
   {selectedConvId ? (
   <>
   {/* Middle Pane - Active Chat Board */}
