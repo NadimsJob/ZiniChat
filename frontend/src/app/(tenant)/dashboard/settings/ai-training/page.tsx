@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
 import { useLanguage } from '@/components/LanguageProvider';
-import { Bot, Key, Save, AlertCircle, RefreshCw, MessageSquare, Plus, Edit2, Trash2, X, Check, Wand2 } from 'lucide-react';
+import { Bot, Key, Save, AlertCircle, RefreshCw, MessageSquare, Plus, Edit2, Trash2, X, Check, Wand2, Eye } from 'lucide-react';
 import InstructionBanner from '@/components/InstructionBanner';
 
 export default function AiTrainingPage() {
@@ -271,7 +271,19 @@ export default function AiTrainingPage() {
  </div>
  <div className="text-right">
  <div className="text-[13px] text-zinc-400">{language === 'en' ? 'Platform AI Quota' : 'প্ল্যাটফর্ম এআই কোটা'}</div>
- <div className="font-bold text-[13px] text-primary">{config.aiQuota.toLocaleString()} {language === 'en' ? 'msgs/mo' : 'মেসেজ/মাস'}</div>
+ <div className="font-bold text-[13px] text-primary">{config.aiQuota.toLocaleString()} {language === 'en' ? 'মেসেজ/মাস' : 'মেসেজ/মাস'}</div>
+ </div>
+ </div>
+
+ <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 mb-3 flex items-center justify-between">
+ <div className="flex items-center gap-2">
+ <Eye className="w-5 h-5 text-emerald-500 shrink-0" />
+ <div>
+ <div className="font-bold text-[13px] text-slate-900">{language === 'en' ? 'AI Product Image Vision' : 'এআই প্রডাক্ট ইমেজ ভিশন'}</div>
+ <div className="text-[11px] text-zinc-500">
+ {language === 'en' ? 'Customers can send product photos. AI inspects the image and matches it with your Product Catalog (5 credits per image analysis).' : 'কাস্টমার পণ্যের ছবি পাঠালে AI ছবি দেখে ক্যাটালগের সাথে মিলিয়ে প্রোডাক্ট নাম ও দাম রিপ্লাই দেবে (প্রতি ইমেজ রিডে ৫ ক্রাডিট কাটা হবে)।'}
+ </div>
+ </div>
  </div>
  </div>
 

@@ -3,6 +3,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
 import { InboxService } from '../inbox/inbox.service';
 import { BillingService } from '../billing/billing.service';
+import * as path from 'path';
+import * as fs from 'fs';
 
 @Injectable()
 export class OrchestratorService {
@@ -28,8 +30,8 @@ export class OrchestratorService {
         }
       });
 
-      if (!message || message.direction !== 'inbound' || message.type !== 'text') {
-        return; // Only process inbound text messages for now
+      if (!message || message.direction !== 'inbound' || (message.type !== 'text' && message.type !== 'image')) {
+        return; // Only process inbound text or image messages
       }
 
       const tenantId = message.conversation.tenantId;
@@ -54,6 +56,19 @@ export class OrchestratorService {
         return; // Tenant doesn't use the system AI Orchestrator or AI is disabled
       }
 
+      // Resolve AI Config to check Vision capability
+      const customAiConfigId = assistant.tenant?.customAiConfigId || undefined;
+      let targetConfig: any = null;
+      if (customAiConfigId) {
+        targetConfig = await this.prisma.aiConfig.findUnique({ where: { id: customAiConfigId } });
+      } else {
+        targetConfig = await this.prisma.aiConfig.findFirst({ where: { isActive: true } });
+      }
+
+      const isVisionSupported = this.aiService.isVisionSupported(targetConfig?.provider, targetConfig?.modelName);
+      const isImageMessage = message.type === 'image';
+      const creditsNeeded = (isImageMessage && isVisionSupported) ? 5 : 1;
+
       // 3. Check AI Quota
       const quotas = await this.billingService.getTenantQuotas(tenantId);
       const usage = await this.prisma.aiUsageLog.aggregate({
@@ -66,8 +81,8 @@ export class OrchestratorService {
         _count: true
       });
 
-      if (usage._count >= quotas.aiQuota) {
-        this.logger.warn(`Tenant ${tenantId} exceeded AI quota. Message ${messageId} ignored by AI.`);
+      if (usage._count + creditsNeeded > quotas.aiQuota) {
+        this.logger.warn(`Tenant ${tenantId} has insufficient AI quota (needs ${creditsNeeded}, has ${quotas.aiQuota - usage._count}). Message ${messageId} ignored by AI.`);
         return; 
       }
 
@@ -86,25 +101,47 @@ export class OrchestratorService {
         return;
       }
 
-      // 4. Gather Context
-      const prompt = await this.buildContextPrompt(message.conversationId, assistant);
-
-      // 5. LLM Execution
-      // Extract the raw text from the message content
-      let userText = '';
-      if (typeof message.content === 'object' && message.content !== null) {
-        userText = (message.content as any).text || JSON.stringify(message.content);
-      } else {
-        userText = String(message.content);
+      // Extract image path and caption if image
+      let imagePathsToPass: string[] = [];
+      let userCaption = '';
+      if (isImageMessage) {
+        if (typeof message.content === 'object' && message.content !== null) {
+          const cnt = message.content as any;
+          userCaption = cnt.caption || cnt.text || '';
+          const relPath = cnt.localUrl || cnt.localPath || cnt.mediaUrl || cnt.url || cnt.path;
+          if (relPath) {
+            const absolutePath = path.isAbsolute(relPath) ? relPath : path.join(process.cwd(), relPath.startsWith('/') ? relPath.substring(1) : relPath);
+            if (fs.existsSync(absolutePath)) {
+              imagePathsToPass.push(absolutePath);
+            }
+          }
+        } else if (typeof message.content === 'string') {
+          userCaption = message.content;
+        }
       }
 
-      // We need to send the full system prompt + the latest user message
-      // Actually, buildContextPrompt should format the conversation history as well.
+      // 4. Gather Context
+      const prompt = await this.buildContextPrompt(message.conversationId, assistant, {
+        isImage: isImageMessage && isVisionSupported && imagePathsToPass.length > 0,
+        caption: userCaption
+      });
+
+      // 5. LLM Execution
+      let userText = '';
+      if (!isImageMessage) {
+        if (typeof message.content === 'object' && message.content !== null) {
+          userText = (message.content as any).text || JSON.stringify(message.content);
+        } else {
+          userText = String(message.content);
+        }
+      } else {
+        userText = userCaption ? `[Image Sent] Caption: ${userCaption}` : '[Image Sent by Customer]';
+      }
+
       const fullPrompt = `${prompt}\n\nCustomer: ${userText}`;
 
-      // Call AiService (using the tenant's AI config or platform config if BYOK not used/allowed)
-      const customAiConfigId = assistant.tenant?.customAiConfigId || undefined;
-      const replyText = await this.aiService.generateCompletion(fullPrompt, customAiConfigId);
+      const actualImagePaths = (isImageMessage && isVisionSupported && imagePathsToPass.length > 0) ? imagePathsToPass : undefined;
+      const replyText = await this.aiService.generateCompletion(fullPrompt, customAiConfigId, actualImagePaths);
 
       if (!replyText || replyText.trim() === '') {
         return;
@@ -113,22 +150,30 @@ export class OrchestratorService {
       // 6. Action / Response Dispatch
       await this.inboxService.saveOutboundMessage(tenantId, message.conversationId, replyText, 'text');
 
-      // 7. Log Usage
-      await this.prisma.aiUsageLog.create({
-        data: {
-          tenantId,
-          assistantId: assistant.id,
-          tokensUsed: 0, // Estimate or fetch from AiService later
-          costUsd: 0,
-        }
+      // 7. Log Usage (5 entries for Vision image analysis, 1 for standard text or text fallback)
+      const logsToCreate = Array.from({ length: creditsNeeded }).map(() => ({
+        tenantId,
+        assistantId: assistant.id,
+        tokensUsed: 0,
+        costUsd: 0,
+      }));
+
+      await this.prisma.aiUsageLog.createMany({
+        data: logsToCreate
       });
+
+      this.logger.log(`AI Orchestration completed for message ${messageId}. Deducted ${creditsNeeded} credit(s).`);
 
     } catch (error) {
       this.logger.error(`Error orchestrating message ${messageId}: ${error.message}`);
     }
   }
 
-  private async buildContextPrompt(conversationId: string, assistant: any): Promise<string> {
+  private async buildContextPrompt(
+    conversationId: string, 
+    assistant: any, 
+    imageOptions?: { isImage: boolean; caption: string }
+  ): Promise<string> {
     const conversation = await this.prisma.conversation.findUnique({
       where: { id: conversationId },
       include: { contact: { include: { stage: true } }, tenant: true }
@@ -161,6 +206,17 @@ export class OrchestratorService {
       prompt += `\nYour Core Instructions:\n${systemPrompt}\n`;
     }
 
+    if (imageOptions?.isImage) {
+      prompt += `\n--- IMPORTANT IMAGE ANALYSIS INSTRUCTIONS ---\n`;
+      prompt += `The customer has sent an image in the conversation. Look closely at the image provided.\n`;
+      prompt += `1. Identify the product or item shown in the image.\n`;
+      prompt += `2. Cross-reference it with our PRODUCT CATALOG below to find the matching product name, price, and availability.\n`;
+      prompt += `3. Give a helpful response confirming the product details, stock status, and price in BDT.\n`;
+      if (imageOptions.caption) {
+        prompt += `Customer's caption for image: "${imageOptions.caption}"\n`;
+      }
+    }
+
     prompt += `\n--- CUSTOMER INFO ---\n`;
     prompt += `Name: ${conversation.contact.name}\n`;
     if (conversation.contact.phone) prompt += `Phone: ${conversation.contact.phone}\n`;
@@ -180,7 +236,7 @@ export class OrchestratorService {
       const sender = msg.direction === 'inbound' ? 'Customer' : 'Assistant';
       let text = '';
       if (typeof msg.content === 'object' && msg.content !== null) {
-        text = (msg.content as any).text || '';
+        text = (msg.content as any).text || (msg.content as any).caption || '';
       } else {
         text = String(msg.content);
       }

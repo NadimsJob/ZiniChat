@@ -9,10 +9,28 @@ export class AiService {
 
   constructor(private prisma: PrismaService) {}
 
+  isVisionSupported(provider?: string, modelName?: string): boolean {
+    if (!modelName) return false;
+    const p = (provider || 'openai').toLowerCase();
+    const m = modelName.toLowerCase();
+
+    if (p === 'gemini') return true;
+    if (p === 'anthropic') return true;
+
+    if (m.includes('4o') || m.includes('vision') || m.includes('turbo') || m.includes('o1') || m.includes('o3') || m.includes('llava') || m.includes('claude-3') || m.includes('gemini')) {
+      return true;
+    }
+    return false;
+  }
+
   async getConfigs() {
-    return this.prisma.aiConfig.findMany({
+    const configs = await this.prisma.aiConfig.findMany({
       orderBy: { createdAt: 'desc' }
     });
+    return configs.map(c => ({
+      ...c,
+      isVisionSupported: this.isVisionSupported(c.provider, c.modelName)
+    }));
   }
 
   async saveConfig(data: any) {

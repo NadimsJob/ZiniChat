@@ -22,9 +22,14 @@ describe('OrchestratorService', () => {
       aiAssistant: {
         findFirst: jest.fn(),
       },
+      aiConfig: {
+        findUnique: jest.fn(),
+        findFirst: jest.fn().mockResolvedValue({ provider: 'gemini', modelName: 'gemini-1.5-flash' })
+      },
       aiUsageLog: {
         aggregate: jest.fn().mockResolvedValue({ _count: 0 }),
         create: jest.fn(),
+        createMany: jest.fn(),
       },
       conversation: {
         findUnique: jest.fn().mockResolvedValue({
@@ -39,6 +44,7 @@ describe('OrchestratorService', () => {
     };
 
     aiService = {
+      isVisionSupported: jest.fn().mockReturnValue(true),
       generateCompletion: jest.fn().mockResolvedValue('Hello from AI'),
     };
 
@@ -125,7 +131,7 @@ describe('OrchestratorService', () => {
     expect(aiService.generateCompletion).not.toHaveBeenCalled();
   });
 
-  it('should orchestrate successfully', async () => {
+  it('should orchestrate text message successfully and deduct 1 credit', async () => {
     prismaService.message.findUnique.mockResolvedValue({
       id: 'msg1', direction: 'inbound', type: 'text', content: { text: 'hello' },
       conversationId: 'c1',
@@ -144,6 +150,35 @@ describe('OrchestratorService', () => {
     expect(inboxService.saveOutboundMessage).toHaveBeenCalledWith(
       't1', 'c1', 'Hello from AI', 'text'
     );
-    expect(prismaService.aiUsageLog.create).toHaveBeenCalled();
+    expect(prismaService.aiUsageLog.createMany).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.arrayContaining([expect.objectContaining({ tenantId: 't1' })]) })
+    );
+  });
+
+  it('should process image vision message and deduct 5 credits', async () => {
+    prismaService.message.findUnique.mockResolvedValue({
+      id: 'msg_img', direction: 'inbound', type: 'image', content: { caption: 'Product photo' },
+      conversationId: 'c1',
+      conversation: { 
+        tenantId: 't1', id: 'c1',
+        channelConnection: { id: 'conn1', isAiAutoReplyEnabled: true }
+      }
+    });
+    prismaService.aiAssistant.findFirst.mockResolvedValue({ 
+      id: 'ai1', isActive: true, routingMode: 'ai_first', systemPrompt: 'Be nice'
+    });
+    aiService.isVisionSupported.mockReturnValue(true);
+
+    await service.processMessage('msg_img');
+
+    expect(aiService.generateCompletion).toHaveBeenCalled();
+    expect(prismaService.aiUsageLog.createMany).toHaveBeenCalledWith({
+      data: expect.arrayContaining([
+        expect.objectContaining({ tenantId: 't1', assistantId: 'ai1' })
+      ])
+    });
+    // Check that 5 items were logged
+    const callArg = prismaService.aiUsageLog.createMany.mock.calls[0][0];
+    expect(callArg.data.length).toBe(5);
   });
 });

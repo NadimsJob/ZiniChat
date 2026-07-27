@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Cookies from 'js-cookie';
 import { io, Socket } from 'socket.io-client';
 import { useLanguage } from '@/components/LanguageProvider';
-import { Search, Send, User as UserIcon, Clock, MessageSquare, Phone, Info, Tag, Plus, Check, MessageCircle, MoreVertical, X, UserCircle, UserPlus, Mail, Building, MapPin, AlertCircle, Paperclip, File as FileIcon, Trash2, Bot, ToggleLeft, ToggleRight, Wand2, RefreshCw, ChevronLeft, PanelRight } from 'lucide-react';
+import { Search, Send, User as UserIcon, Clock, MessageSquare, Phone, Info, Tag, Plus, Check, MessageCircle, MoreVertical, X, UserCircle, UserPlus, Mail, Building, MapPin, AlertCircle, Paperclip, File as FileIcon, Trash2, Bot, ToggleLeft, ToggleRight, Wand2, RefreshCw, ChevronLeft, PanelRight, Eye } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
 import LabelForm from '@/components/labels/LabelForm';
@@ -709,9 +709,10 @@ export default function InboxPage() {
   </div>
   )}
   {msg.type !== 'text' && (
-  <span className="italic opacity-80 text-[11px] block mb-1">
-  [{msg.type} message]
-  </span>
+  <div className="flex items-center gap-1 text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/80 mb-1.5 w-fit font-semibold shadow-xs">
+  <Eye className="w-3 h-3 text-emerald-600 shrink-0" />
+  <span>{msg.type === 'image' ? (language === 'en' ? 'AI Vision Image Read (5 Credits)' : 'এআই ভিশন ইমেজ রিড (৫ ক্রাডিট)') : `[${msg.type} message]`}</span>
+  </div>
   )}
   {msg.content?.thumbnail && !msg.content?.mediaUrl && (
   <img 

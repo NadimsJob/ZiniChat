@@ -3,6 +3,19 @@ import { LeadsService } from './leads.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotFoundException } from '@nestjs/common';
 
+jest.mock('exceljs', () => ({
+  Workbook: jest.fn().mockImplementation(() => ({
+    addWorksheet: jest.fn().mockReturnValue({
+      columns: [],
+      addRow: jest.fn(),
+      getRow: jest.fn().mockReturnValue({ font: {}, fill: {} }),
+    }),
+    xlsx: {
+      writeBuffer: jest.fn().mockResolvedValue(Buffer.from('excel-data')),
+    },
+  })),
+}), { virtual: true });
+
 describe('LeadsService', () => {
   let service: LeadsService;
   let prisma: PrismaService;

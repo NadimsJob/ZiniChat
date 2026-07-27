@@ -3,7 +3,18 @@
 import { useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
 import { useLanguage } from '@/components/LanguageProvider';
-import { Bot, Plus, Trash2, Edit2, Play, CheckCircle, AlertCircle, ToggleLeft, ToggleRight, Settings, RefreshCcw } from 'lucide-react';
+import { Bot, Plus, Trash2, Edit2, Play, CheckCircle, AlertCircle, ToggleLeft, ToggleRight, Settings, RefreshCcw, Eye, EyeOff } from 'lucide-react';
+
+function checkVisionSupport(provider?: string, modelName?: string): boolean {
+  if (!modelName) return false;
+  const p = (provider || 'openai').toLowerCase();
+  const m = modelName.toLowerCase();
+  if (p === 'gemini' || p === 'anthropic') return true;
+  if (m.includes('4o') || m.includes('vision') || m.includes('turbo') || m.includes('o1') || m.includes('o3') || m.includes('llava') || m.includes('claude-3') || m.includes('gemini')) {
+    return true;
+  }
+  return false;
+}
 
 export default function AiSettingsPage() {
   const { language } = useLanguage();
@@ -254,6 +265,17 @@ export default function AiSettingsPage() {
               <div className="text-[12px] text-zinc-400 space-y-1">
                 <div>Model Name: <span className="font-medium text-zinc-200">{config.modelName}</span></div>
                 {config.apiEndpoint && <div className="truncate">Endpoint: <span className="font-mono text-xs text-zinc-300">{config.apiEndpoint}</span></div>}
+                <div className="pt-1 flex items-center gap-1.5">
+                  {checkVisionSupport(config.provider, config.modelName) ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                      <Eye className="w-3 h-3" /> Vision Supported (5 credits/image)
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                      <EyeOff className="w-3 h-3" /> Text Only (Fallback Mode)
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -340,6 +362,19 @@ export default function AiSettingsPage() {
                     {language === 'en' ? 'Load Models' : 'মডেল লোড করুন'}
                   </button>
                 </div>
+                {form.modelName && (
+                  <div className="mt-1.5 flex items-center gap-1.5 text-[11px]">
+                    {checkVisionSupport(form.provider, form.modelName) ? (
+                      <span className="text-emerald-400 flex items-center gap-1 font-semibold">
+                        <Eye className="w-3.5 h-3.5" /> {language === 'en' ? 'Vision Supported (5 credits / image read)' : 'ভিশন সাপোর্টেড (প্রতি ইমেজ রিডে ৫ ক্রাডিট)'}
+                      </span>
+                    ) : (
+                      <span className="text-amber-400 flex items-center gap-1 font-semibold">
+                        <EyeOff className="w-3.5 h-3.5" /> {language === 'en' ? 'Text Only (Image read will fallback to caption & catalog)' : 'শুধু টেক্সট (ইমেজ রিড ব্যাকআপ মোডে কাজ করবে)'}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div>

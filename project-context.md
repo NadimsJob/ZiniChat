@@ -22,14 +22,12 @@ A multi-tenant SaaS platform enabling businesses (tenants) to manage customer co
 ---
 
 ## 3. Current Status & Active Focus
-- **Active Focus**: Mobile UI Native App Responsiveness, Universal Interactive Instruction Banners, and Live Inbox 3-Column Desktop/Mobile Layout Optimization.
+- **Active Focus**: AI Image Vision Analysis, Mobile UI Native App Responsiveness, Universal Interactive Instruction Banners, and Live Inbox Layout Optimization.
 - **Recent Implementations**:
+  - **AI Image Vision & Catalog Matching**: Implemented AI image reading in Live Inbox (`orchestrator.service.ts` & `ai.service.ts`). AI automatically analyzes customer-submitted product photos, matches items against tenant Product Catalog (name, price in BDT, availability), deducts **5 AI credits** per image analysis via 5 `aiUsageLog` entries, and provides text-only fallback (using caption + product catalog) when a model without Vision support is selected.
+  - **Vision Model Indicators & UI Badges**: Added live `Vision Supported` vs `Text Only` badges across Superadmin AI Configuration cards/modals, Tenant AI Settings, and Live Inbox message bubbles. Passed 138/138 backend unit tests (including image vision orchestrator tests) and clean TypeScript compilation.
   - **Live Inbox Overhaul**: Enforced 3-column desktop layout (`flex flex-col md:flex-row h-full`), mobile single-pane flow with `< Back` button, sticky pinned header, gradient emerald chat bubbles, compact Lead Details pane (`w-52/w-56`), and default `showLeadInfo: false`.
   - **Workspace Rules**: Added mandatory rule requiring all web/desktop design changes to be simultaneously optimized for mobile native app responsiveness.
-  - **Global Templates & Library**: Created `GlobalTemplate` model and 2-tab Superadmin / 3-tab Tenant Template Library with live WhatsApp preview import modal.
-  - **Unified Inboxes & Meta OAuth**: Merged WhatsApp, Messenger, and Instagram into single `/settings/inboxes` wizard with Facebook SDK auto-login.
-  - **Quota Engine Overhaul**: Real-time quota enforcement based on strict billing cycle boundaries (`currentPeriodStart` to `currentPeriodEnd`).
-  - **Android Gateway APK**: Persistent Foreground Service (`START_STICKY`, `dataSync`, `BootReceiver`) for zero-config bKash, Nagad, Rocket & BD Bank MFS payment verification.
 
 ---
 
@@ -37,6 +35,7 @@ A multi-tenant SaaS platform enabling businesses (tenants) to manage customer co
 
 | Date | Feature / Module | Affected Files | Key Details & Architectural Notes |
 |---|---|---|---|
+| **2026-07-27** | **AI Product Image Vision Analysis & Catalog Matching** | `orchestrator.service.ts`, `ai.service.ts`, `superadmin/settings/ai/page.tsx`, `ai-training/page.tsx`, `inbox/page.tsx`, `orchestrator.service.spec.ts` | Enabled AI Assistant image processing in Live Inbox. Supports Gemini, Claude & OpenAI vision models to recognize customer product photos and match them with tenant Product Catalog. Enforced 5 AI credits deduction per image analysis (Option A - 5 `aiUsageLog` entries). Included text fallback mode (caption + catalog) when non-vision models are used. Added live UI badges in Superadmin AI Settings, Tenant AI Settings, and Live Inbox bubbles. All 138 backend unit tests passing. |
 | **2026-07-27** | **Workspace Rule: Desktop & Mobile Native App Responsiveness** | `.agents/AGENTS.md` | Added mandatory rule requiring all web/desktop design and layout changes to be simultaneously optimized for mobile responsive view in a native app style. |
 | **2026-07-27** | **Live Inbox Horizontal 3-Column Layout & Desktop Fix** | `inbox/page.tsx`, `settings/inboxes/page.tsx`, `settings/labels/page.tsx`, `team/page.tsx` | Fixed bug where `Lead Details` displaced chat board due to `flex-col` mode. Set container to `flex flex-col md:flex-row h-full`, placing `Lead Details` on the far right on desktop. Defaulted `showLeadInfo` to `false`. Added missing page imports (`useLanguage`, `toast`, `Save`, `fetchLabels`). Passed Next.js build (`16.4s`) and deployed to live server (`a53e5af`). |
 | **2026-07-27** | **Sticky Pinned Mobile Chat Header & Vibrant Gradient Bubbles** | `inbox/page.tsx`, `leads/page.tsx`, `SupportWidget.tsx` | Applied `sticky top-0 z-30 shrink-0` to mobile chat header with locked internal message scrolling (`overflow-y-auto`). Enhanced chat styling with emerald gradient outbound bubbles (`from-[#1F824A] to-[#166538]`), white inbound cards, and soft background wallpaper. Redesigned action toolbars across Leads, Products, and Orders to non-wrapping flex-col layout on mobile. |
