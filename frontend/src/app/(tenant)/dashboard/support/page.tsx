@@ -246,7 +246,7 @@ export default function TenantSupportPage() {
  onChange={(e) => setReplyMessage(e.target.value)}
  placeholder={language === 'en' ? 'Type your reply...' : 'আপনার মেসেজ লিখুন...'}
  className="w-full bg-surface border border-surface-hover rounded-xl px-4 py-3 text-[13px] outline-none focus:border-primary resize-none text-foreground"
- rows={2}
+ rows={5}
  />
  </div>
 

@@ -112,7 +112,7 @@ export class TicketsService {
     // Notify tenant owner
     const owner = ticket.tenant.users[0];
     if (owner) {
-      this.notificationsService.createNotification(owner.id, `Ticket Status Updated`, `Your ticket '${ticket.subject}' is now ${status}.`, 'system');
+      this.notificationsService.createNotification(owner.id, `Ticket Status Updated`, `Your ticket '${ticket.subject}' is now ${status}.`, 'ticket');
       await this.smtpService.triggerTicketStatusEmail(owner.email, ticket.subject, status);
     }
 
@@ -158,7 +158,7 @@ export class TicketsService {
       await this.prisma.ticket.update({ where: { id }, data: { status: 'answered' } });
       const owner = ticket.tenant.users[0];
       if (owner) {
-        this.notificationsService.createNotification(owner.id, `New Reply on Ticket`, `Admin replied to your ticket '${ticket.subject}'`, 'system');
+        this.notificationsService.createNotification(owner.id, `New Reply on Ticket`, `Admin replied to your ticket '${ticket.subject}'`, 'ticket');
         await this.smtpService.triggerTicketRepliedEmail(owner.email, ticket.subject, message);
       }
     } else {

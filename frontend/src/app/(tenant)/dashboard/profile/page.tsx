@@ -562,8 +562,10 @@ export default function TenantProfilePage() {
  <input
  type="text"
  value={businessProfile.businessName}
- onChange={e => setBusinessProfile({ ...businessProfile, businessName: e.target.value })}
- className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-1.5 text-[13px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 text-slate-900 "
+ readOnly
+ disabled
+ className="w-full bg-slate-100 border border-slate-200 rounded-xl pl-8 pr-3 py-1.5 text-[13px] text-slate-500 cursor-not-allowed focus:outline-none"
+ title={language === 'en' ? 'Contact support to change business name' : 'ব্যবসার নাম পরিবর্তন করতে সাপোর্টে যোগাযোগ করুন'}
  />
  </div>
  </div>
@@ -580,8 +582,10 @@ export default function TenantProfilePage() {
  <input
  type="text"
  value={businessProfile.brandName}
- onChange={e => setBusinessProfile({ ...businessProfile, brandName: e.target.value })}
- className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-1.5 text-[13px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 text-slate-900 "
+ readOnly
+ disabled
+ className="w-full bg-slate-100 border border-slate-200 rounded-xl pl-8 pr-3 py-1.5 text-[13px] text-slate-500 cursor-not-allowed focus:outline-none"
+ title={language === 'en' ? 'Contact support to change brand name' : 'ব্র্যান্ডের নাম পরিবর্তন করতে সাপোর্টে যোগাযোগ করুন'}
  />
  </div>
  </div>
