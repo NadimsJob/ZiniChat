@@ -621,7 +621,13 @@ export default function BroadcastsPage() {
                       <input 
                         type="file" 
                         accept={headerFormat === 'IMAGE' ? 'image/*' : headerFormat === 'DOCUMENT' ? 'application/pdf' : 'video/*'}
-                        onChange={handleFileChange}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setHeaderFile(file);
+                            setHeaderFilePreview(URL.createObjectURL(file));
+                          }
+                        }}
                         className="w-full bg-background border border-surface-hover rounded-xl px-3 py-2 text-[12px] file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-[11px] file:font-bold file:bg-primary/20 file:text-primary"
                       />
                     </div>
