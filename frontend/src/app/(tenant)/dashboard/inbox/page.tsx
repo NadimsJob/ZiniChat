@@ -462,7 +462,7 @@ export default function InboxPage() {
  }
 
   return (
-  <div className="flex h-full bg-surface/80 backdrop-blur-2xl overflow-hidden relative">
+  <div className="flex h-[calc(100vh-48px)] bg-surface/80 backdrop-blur-2xl overflow-hidden relative">
     {/* Subtle Premium Mesh Gradients */}
     <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[120px] pointer-events-none mix-blend-multiply" />
     <div className="absolute bottom-[-10%] right-[-5%] w-[40%] h-[40%] bg-[#EE8D27]/10 rounded-full blur-[120px] pointer-events-none mix-blend-multiply" />
@@ -891,7 +891,7 @@ export default function InboxPage() {
  </div>
 
  <div className="bg-white/50 rounded-lg p-2.5 border border-slate-200 space-y-2.5">
- <h4 className="text-[9px] font-bold text-foreground/50 uppercase tracking-wider">Status & Assignment</h4>
+ <h4 className="text-[9px] font-bold text-foreground/50 uppercase tracking-wider">Lead Status</h4>
  
  <div className="grid grid-cols-2 gap-2">
  <div>
@@ -905,14 +905,6 @@ export default function InboxPage() {
  <label className="block text-[11px] font-medium text-foreground/70 mb-1">Follow-up</label>
  <input type="date" value={editDetails.followUpAt} onChange={(e) => setEditDetails({...editDetails, followUpAt: e.target.value})} className="w-full bg-surface border border-slate-200 rounded-md py-1 px-1.5 text-[11px] focus:ring-1 focus:outline-none text-foreground" />
  </div>
- </div>
-
- <div>
- <label className="block text-[11px] font-medium text-foreground/70 mb-1 flex items-center"><UserPlus className="w-3 h-3 mr-1" /> Assigned To</label>
- <select value={editDetails.assignedUserId || ''} onChange={(e) => setEditDetails({...editDetails, assignedUserId: e.target.value})} className="w-full bg-surface border border-slate-200 rounded-md py-1 px-1.5 text-[11px] focus:ring-1 focus:ring-primary focus:outline-none">
- <option value="">🤖 AI Assistant (Default)</option>
- {agents.map(tm => <option key={tm.id} value={tm.id}>{tm.name}</option>)}
- </select>
  </div>
  </div>
 
