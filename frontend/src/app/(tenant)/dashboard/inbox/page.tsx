@@ -692,7 +692,6 @@ export default function InboxPage() {
  </button>
  </div>
  </div>
- </div>
 
  {/* Chat Messages */}
  <div className="flex-1 overflow-y-auto px-2 py-2 space-y-0.5 custom-scrollbar bg-transparent relative z-0">
