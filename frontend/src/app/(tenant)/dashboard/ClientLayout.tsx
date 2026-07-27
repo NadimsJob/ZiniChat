@@ -217,7 +217,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
 
  {/* Sidebar Navigation */}
  <aside className={`
- fixed md:relative z-50 h-full w-[190px] 
+ fixed md:relative z-50 h-full w-[165px] 
  border-r border-border bg-surface backdrop-blur-2xl 
  shadow-[4px_0_24px_rgba(31,130,74,0.03)]
  flex flex-col shrink-0 transition-transform duration-300 ease-in-out
@@ -430,8 +430,58 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  </header>
 
  {/* Page Content */}
- <div className={`flex-1 overflow-auto custom-scrollbar ${pathname.includes('/inbox') ? 'p-0' : 'p-3'}`}>
+ <div className={`flex-1 overflow-auto custom-scrollbar pb-14 md:pb-0 ${pathname.includes('/inbox') ? 'p-0' : 'p-3'}`}>
  {children}
+ </div>
+
+ {/* Mobile Bottom Navigation Bar */}
+ <div className="md:hidden fixed bottom-0 left-0 right-0 h-14 bg-white/95 backdrop-blur-md border-t border-slate-200 z-40 flex items-center justify-around px-1 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+   <Link 
+     href="/dashboard" 
+     className={`flex flex-col items-center justify-center w-full h-full text-[10px] font-medium transition-colors ${pathname === '/dashboard' ? 'text-primary font-bold' : 'text-slate-500'}`}
+   >
+     <LayoutGrid className="w-5 h-5 mb-0.5" />
+     <span>{language === 'en' ? 'Home' : 'হোম'}</span>
+   </Link>
+
+   <Link 
+     href="/dashboard/inbox" 
+     className={`flex flex-col items-center justify-center w-full h-full text-[10px] font-medium transition-colors relative ${pathname.includes('/inbox') ? 'text-primary font-bold' : 'text-slate-500'}`}
+   >
+     <div className="relative">
+       <Inbox className="w-5 h-5 mb-0.5" />
+       {inboxUnreadCount > 0 && (
+         <span className="absolute -top-1 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
+           {inboxUnreadCount > 99 ? '99+' : inboxUnreadCount}
+         </span>
+       )}
+     </div>
+     <span>{language === 'en' ? 'Inbox' : 'ইনবক্স'}</span>
+   </Link>
+
+   <Link 
+     href="/dashboard/leads" 
+     className={`flex flex-col items-center justify-center w-full h-full text-[10px] font-medium transition-colors ${pathname.includes('/leads') ? 'text-primary font-bold' : 'text-slate-500'}`}
+   >
+     <UserCircle className="w-5 h-5 mb-0.5" />
+     <span>{language === 'en' ? 'Leads' : 'লিডস'}</span>
+   </Link>
+
+   <Link 
+     href="/dashboard/orders" 
+     className={`flex flex-col items-center justify-center w-full h-full text-[10px] font-medium transition-colors ${pathname.includes('/orders') ? 'text-primary font-bold' : 'text-slate-500'}`}
+   >
+     <ShoppingBag className="w-5 h-5 mb-0.5" />
+     <span>{language === 'en' ? 'Orders' : 'অর্ডার'}</span>
+   </Link>
+
+   <button 
+     onClick={() => setIsMobileMenuOpen(true)}
+     className="flex flex-col items-center justify-center w-full h-full text-[10px] font-medium text-slate-500 hover:text-primary transition-colors"
+   >
+     <Menu className="w-5 h-5 mb-0.5" />
+     <span>{language === 'en' ? 'Menu' : 'মেনু'}</span>
+   </button>
  </div>
  </main>
 

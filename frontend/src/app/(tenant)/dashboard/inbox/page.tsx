@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Cookies from 'js-cookie';
 import { io, Socket } from 'socket.io-client';
 import { useLanguage } from '@/components/LanguageProvider';
-import { Search, Send, User as UserIcon, Clock, MessageSquare, Phone, Info, Tag, Plus, Check, MessageCircle, MoreVertical, X, UserCircle, UserPlus, Mail, Building, MapPin, AlertCircle, Paperclip, File as FileIcon, Trash2, Bot, ToggleLeft, ToggleRight, Wand2, RefreshCw } from 'lucide-react';
+import { Search, Send, User as UserIcon, Clock, MessageSquare, Phone, Info, Tag, Plus, Check, MessageCircle, MoreVertical, X, UserCircle, UserPlus, Mail, Building, MapPin, AlertCircle, Paperclip, File as FileIcon, Trash2, Bot, ToggleLeft, ToggleRight, Wand2, RefreshCw, ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
 import LabelForm from '@/components/labels/LabelForm';
@@ -28,7 +28,7 @@ export default function InboxPage() {
  const [agents, setAgents] = useState<any[]>([]);
  const [showAssignMenu, setShowAssignMenu] = useState(false);
  
- const [showLeadInfo, setShowLeadInfo] = useState(true);
+ const [showLeadInfo, setShowLeadInfo] = useState(false);
  const [stages, setStages] = useState<any[]>([]);
  const [editDetails, setEditDetails] = useState({
  stageId: '',
@@ -466,7 +466,7 @@ export default function InboxPage() {
   return (
   <div className="flex h-[calc(100vh-64px)] w-full bg-slate-50 overflow-hidden relative">
  {/* Left Pane - Conversations List */}
- <div className="w-72 flex-shrink-0 border-r border-slate-200 flex flex-col bg-white relative z-10">
+ <div className={`w-full md:w-64 xl:w-72 flex-shrink-0 border-r border-slate-200 flex flex-col bg-white relative z-10 ${selectedConvId ? 'hidden md:flex' : 'flex'}`}>
  <div className="px-2 py-1.5 border-b border-surface-hover">
  <div className="flex items-center justify-between mb-1.5">
  <h2 className="text-[14px] font-bold">{language === 'en' ? 'Inbox' : 'ইনবক্স'}</h2>
@@ -574,13 +574,20 @@ export default function InboxPage() {
  </div>
 
  {/* Right Pane - Chat Window & Lead Info */}
- <div className="flex-1 flex min-w-0 bg-slate-50 relative overflow-hidden">
+ <div className={`flex-1 min-w-0 bg-slate-50 relative overflow-hidden ${selectedConvId ? 'flex' : 'hidden md:flex'}`}>
  {selectedConvId ? (
  <>
  <div className="flex-1 flex flex-col min-w-0 relative">
  {/* Chat Header */}
  <div className="h-[44px] px-3 border-b border-slate-200 flex items-center justify-between bg-white shrink-0 z-20">
  <div className="flex items-center gap-2">
+ <button 
+ onClick={() => setSelectedConvId(null)}
+ className="md:hidden p-1 -ml-1 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-md transition-colors"
+ title={language === 'en' ? 'Back to conversations' : 'ইনবক্স লিস্টে ফিরে যান'}
+ >
+ <ChevronLeft className="w-5 h-5" />
+ </button>
  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-emerald-100 to-teal-100 border border-emerald-200 text-emerald-700 flex items-center justify-center font-bold text-[10px] uppercase shadow-sm">
  {selectedConv?.contact?.name ? selectedConv.contact.name.charAt(0) : <UserIcon className="w-3 h-3" />}
  </div>
@@ -607,8 +614,7 @@ export default function InboxPage() {
  </span>
  {selectedConv?.isAiEnabled !== false ? <ToggleRight className="w-4 h-4 text-primary ml-1" /> : <ToggleLeft className="w-4 h-4 ml-1" />}
  </button>
-  {/* Agent Assignment Moved */}
-
+ 
  <button 
     onClick={() => { setShowLabelsMenu(!showLabelsMenu); setShowAssignMenu(false); setIsCreatingLabel(false); }}
     className={`p-2 rounded-lg transition-colors flex items-center gap-1 text-sm ${showLabelsMenu ? 'bg-primary/10 text-primary' : 'hover:bg-surface-hover'}`}
@@ -824,9 +830,9 @@ export default function InboxPage() {
  </div>
  </div>
  
- {/* Lead Details Side-by-Side Panel (squeezes chatbox smoothly) */}
+ {/* Lead Details Side-by-Side Panel */}
  {showLeadInfo && (
- <div className="w-80 shrink-0 bg-white shadow-xl border-l border-slate-200 flex flex-col z-20 transition-all duration-300">
+ <div className="w-full md:w-52 xl:w-56 shrink-0 bg-white shadow-xl md:shadow-none border-l border-slate-200 flex flex-col z-30 fixed inset-y-0 right-0 md:static transition-all duration-300">
  <div className="px-3 py-3 border-b border-slate-200 flex justify-between items-center bg-white shrink-0 h-[44px]">
  <h2 className="text-[13px] font-bold text-foreground">Lead Details</h2>
  <div className="flex items-center space-x-2">
