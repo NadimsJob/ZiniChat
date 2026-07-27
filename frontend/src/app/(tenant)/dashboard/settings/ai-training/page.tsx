@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
 import { useLanguage } from '@/components/LanguageProvider';
 import { Bot, Key, Save, AlertCircle, RefreshCw, MessageSquare, Plus, Edit2, Trash2, X, Check, Wand2 } from 'lucide-react';
+import InstructionBanner from '@/components/InstructionBanner';
 
 export default function AiTrainingPage() {
  const { language } = useLanguage();
@@ -144,20 +145,6 @@ export default function AiTrainingPage() {
  }
  };
 
- const handleDeleteQna = async (id: string) => {
- if (!confirm(language === 'en' ? 'Delete this question?' : 'এই প্রশ্নটি মুছে ফেলবেন?')) return;
- try {
- const token = Cookies.get('access_token');
- await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai-training/qna/${id}`, {
- method: 'DELETE',
- headers: { 'Authorization': `Bearer ${token}` }
- });
- fetchData();
- } catch (err) {
- console.error(err);
- }
- };
-
  const openQnaModal = (qna?: any) => {
  if (qna) {
  setQnaForm({ id: qna.id, question: qna.question, answer: qna.answer || '', isDefault: qna.isDefault });
@@ -183,20 +170,12 @@ export default function AiTrainingPage() {
     </div>
   </div>
 
-  {/* Bilingual Instruction Header */}
-  <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 flex gap-4 items-start shadow-sm mb-4">
-    <div className="bg-primary text-white p-2 rounded-lg shrink-0">
-      <Wand2 className="w-5 h-5" />
-    </div>
-    <div>
-      <h3 className="font-semibold text-primary text-[14px] mb-1">
-        {language === 'en' ? 'AI Training Instructions' : 'এআই ট্রেনিং নির্দেশনা'}
-      </h3>
-      <p className="hidden md:block text-[12px] text-zinc-600 leading-relaxed max-w-4xl">
-        {language === 'en' ? 'Welcome to the AI Brain setup! Here you can configure your AI Agent\'s name, turn it on/off, and train it by adding Q&A pairs. Go to the "Custom Q&A" tab to add specific questions your customers frequently ask. You can also upload PDF/TXT documents in the "Knowledge Documents" tab so the AI can read and answer from those files automatically. If you want the AI to pause when a human agent is assigned, enable the "Pause on Assignment" option.' : 'এআই ব্রেইন সেটআপে স্বাগতম! এখান থেকে আপনি আপনার এআই এজেন্টের নাম সেট করতে পারবেন, এআই চালু বা বন্ধ করতে পারবেন এবং কাস্টম প্রশ্ন-উত্তর (Q&A) যোগ করে এআইকে ট্রেনিং দিতে পারবেন। "Knowledge Documents" ট্যাবে গিয়ে আপনি PDF বা TXT ফাইল আপলোড করতে পারেন, এআই সেই ফাইলগুলো পড়ে নিজে নিজেই কাস্টমারকে উত্তর দিতে পারবে। আপনি যদি চান কোনো চ্যাট হিউম্যান এজেন্টের কাছে অ্যাসাইন করা হলে এআই নিজে থেকে আর উত্তর দিবে না, তবে "Pause on Assignment" অপশনটি চালু করে রাখুন।'}
-      </p>
-    </div>
-  </div>
+  <InstructionBanner 
+    title={language === 'en' ? 'AI Training Instructions' : 'এআই ট্রেনিং নির্দেশনা'}
+    description={language === 'en' ? 'Welcome to the AI Brain setup! Here you can configure your AI Agent\'s name, turn it on/off, and train it by adding Q&A pairs. Go to the "Custom Q&A" tab to add specific questions your customers frequently ask. You can also upload PDF/TXT documents in the "Knowledge Documents" tab so the AI can read and answer from those files automatically.' : 'এআই ব্রেইন সেটআপে স্বাগতম! এখান থেকে আপনি আপনার এআই এজেন্টের নাম সেট করতে পারবেন, এআই চালু বা বন্ধ করতে পারবেন এবং কাস্টম প্রশ্ন-উত্তর (Q&A) যোগ করে এআইকে ট্রেনিং দিতে পারবেন। "Knowledge Documents" ট্যাবে গিয়ে আপনি PDF বা TXT ফাইল আপলোড করতে পারেন।'}
+    icon={Wand2}
+    variant="purple"
+  />
 
  {/* Master Toggle */}
  <div className="bg-surface border border-primary/10 shadow-sm rounded-xl p-4 flex flex-col gap-4 animate-in fade-in">
@@ -240,11 +219,11 @@ export default function AiTrainingPage() {
  placeholder={language === 'en' ? 'e.g., Zini, Sarah, SupportBot' : 'যেমন: জিনী, সারা, সাপোর্টবট'}
  value={config.agentName || ''}
  onChange={(e) => setConfig({ ...config, agentName: e.target.value })}
- className="w-full bg-surface border border-surface-hover rounded-xl px-3 py-1.5 text-[13px] text-white focus:outline-none focus:border-primary"
+ className="w-full bg-surface border border-surface-hover rounded-xl px-3 py-1.5 text-[13px] text-slate-900 focus:outline-none focus:border-primary"
  />
  <button 
  onClick={() => handleQuickSave({ agentName: config.agentName })}
- className="px-4 py-1.5 bg-secondary text-secondary-foreground rounded-xl text-[12px] font-bold hover:bg-secondary/90 transition-all shrink-0"
+ className="px-4 py-1.5 bg-secondary text-white rounded-xl text-[12px] font-bold hover:bg-secondary/90 transition-all shrink-0"
  >
  {language === 'en' ? 'Save Name' : 'নাম সেভ করুন'}
  </button>
@@ -405,15 +384,15 @@ export default function AiTrainingPage() {
 
  <div className="space-y-2">
  {defaultQnas.map(qna => (
- <div key={qna.id} className="bg-background border border-surface-hover rounded-xl p-1.5 flex items-start justify-between gap-2">
- <div className="flex-1">
- <div className="font-medium text-zinc-200">{qna.question}</div>
- {qna.answer ? (
- <div className="text-[13px] text-zinc-400 mt-2 bg-surface p-1.5 rounded-lg border border-surface-hover">{qna.answer}</div>
- ) : (
- <div className="text-[13px] text-red-400 mt-2 italic">{language === 'en' ? 'Not answered yet' : 'এখনও উত্তর দেওয়া হয়নি'}</div>
- )}
- </div>
+          <div key={qna.id} className="bg-white border border-slate-200 rounded-xl p-3 flex items-start justify-between gap-3 shadow-sm">
+            <div className="flex-1">
+              <div className="font-bold text-[14px] text-slate-900">{qna.question}</div>
+              {qna.answer ? (
+                <div className="text-[13px] text-slate-800 mt-2 bg-slate-50 p-2.5 rounded-lg border border-slate-200/90 leading-relaxed font-medium">{qna.answer}</div>
+              ) : (
+                <div className="text-[12px] text-red-500 mt-1.5 font-medium italic">{language === 'en' ? 'Not answered yet' : 'এখনও উত্তর দেওয়া হয়নি'}</div>
+              )}
+            </div>
  <button 
  onClick={() => openQnaModal(qna)}
  className="px-1.5 py-1.5 bg-secondary/10 text-secondary rounded-lg hover:bg-secondary/20 transition-colors text-[13px] font-medium shrink-0 flex items-center gap-2"

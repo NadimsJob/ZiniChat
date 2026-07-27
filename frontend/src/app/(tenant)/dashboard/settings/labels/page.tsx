@@ -5,7 +5,7 @@ import Cookies from 'js-cookie';
 import { useLanguage } from '@/components/LanguageProvider';
 import { Tag, Plus, Trash2, Edit2, Wand2, RefreshCw } from 'lucide-react';
 import LabelForm from '@/components/labels/LabelForm';
-import { toast } from 'react-hot-toast';
+import InstructionBanner from '@/components/InstructionBanner';
 
 export default function LabelsPage() {
  const { language } = useLanguage();
@@ -102,20 +102,14 @@ export default function LabelsPage() {
 
  return (
  <div className="bg-white/70 backdrop-blur-xl border border-white/50 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] max-w-4xl mx-auto space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+
   {/* Bilingual Instruction Header */}
-  <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 flex gap-4 items-start shadow-sm mb-4 shrink-0">
-    <div className="bg-primary text-white p-2 rounded-lg shrink-0">
-      <Tag className="w-5 h-5" />
-    </div>
-    <div>
-      <h3 className="font-semibold text-primary text-[14px] mb-1">
-        {language === 'en' ? 'Labels Management Instructions' : 'লেবেল ম্যানেজমেন্ট নির্দেশনা'}
-      </h3>
-      <p className="hidden md:block text-[12px] text-zinc-600 leading-relaxed max-w-4xl">
-        {language === 'en' ? 'Create custom labels (e.g., VIP, Follow-up, Complained) to organize your inbox conversations. You can optionally add "AI Instructions" to a label. When a label with instructions is applied to a chat, the AI Assistant will read those instructions and adapt its replies accordingly. Click the magic wand icon to manually sync the latest label instructions to the AI Training memory.' : 'আপনার ইনবক্সের মেসেজগুলো গুছিয়ে রাখার জন্য কাস্টম লেবেল (যেমন: VIP, Follow-up, Complained) তৈরি করুন। লেবেল তৈরির সময় আপনি চাইলে "AI Instructions" যুক্ত করতে পারেন। এই লেবেল কোনো চ্যাটে যুক্ত করা হলে, এআই অ্যাসিস্ট্যান্ট সেই নির্দেশনা অনুযায়ী কাস্টমারকে উত্তর দিবে। লেবেলের এআই নির্দেশনা আপডেট করার পর, এআই এর মেমোরিতে সিঙ্ক করতে ম্যাজিক ওয়ান্ড আইকনে ক্লিক করুন।'}
-      </p>
-    </div>
-  </div>
+  <InstructionBanner 
+    title={language === 'en' ? 'Labels Management Instructions' : 'লেবেল ম্যানেজমেন্ট নির্দেশনা'}
+    description={language === 'en' ? 'Create custom labels (e.g., VIP, Follow-up, Complained) to organize your inbox conversations. You can optionally add "AI Instructions" to a label. When a label with instructions is applied to a chat, the AI Assistant will read those instructions and adapt its replies accordingly.' : 'আপনার ইনবক্সের মেসেজগুলো গুছিয়ে রাখার জন্য কাস্টম লেবেল (যেমন: VIP, Follow-up, Complained) তৈরি করুন। লেবেল তৈরির সময় আপনি চাইলে "AI Instructions" যুক্ত করতে পারেন।'}
+    icon={Tag}
+    variant="emerald"
+  />
  <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
  <div>
  <h1 className="text-2xl font-bold flex items-center gap-2 text-slate-900 ">

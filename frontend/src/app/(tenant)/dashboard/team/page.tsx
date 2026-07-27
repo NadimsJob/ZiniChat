@@ -3,182 +3,176 @@
 import { useState, useEffect } from 'react';
 import { useLanguage } from '@/components/LanguageProvider';
 import Cookies from 'js-cookie';
-import { Users, Plus, Shield, ShieldCheck, Mail, Save, X, Edit2, Trash2, CheckCircle2, Crown } from 'lucide-react';
+import { Users, Plus, Shield, ShieldCheck, Mail, X, Edit2, Trash2, Crown } from 'lucide-react';
+import InstructionBanner from '@/components/InstructionBanner';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function TeamPage() {
- const { language } = useLanguage();
- const [agents, setAgents] = useState<any[]>([]);
- const [channels, setChannels] = useState<any[]>([]);
- const [loading, setLoading] = useState(true);
- 
- const [isModalOpen, setIsModalOpen] = useState(false);
- const [editingAgent, setEditingAgent] = useState<any>(null);
- 
- const [formData, setFormData] = useState({
- name: '',
- email: '',
- password: '',
- role: 'agent',
- agentAccessMode: 'ALL_CHANNELS',
- assignedChannels: [] as string[]
- });
- 
- const [saving, setSaving] = useState(false);
- const [error, setError] = useState('');
+  const { language } = useLanguage();
+  const [agents, setAgents] = useState<any[]>([]);
+  const [channels, setChannels] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingAgent, setEditingAgent] = useState<any>(null);
+  
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: 'agent',
+    agentAccessMode: 'ALL_CHANNELS',
+    assignedChannels: [] as string[]
+  });
+  
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
 
- const fetchData = async () => {
- try {
- setLoading(true);
- const token = Cookies.get('access_token');
- 
- const [agentsRes, channelsRes] = await Promise.all([
- fetch(`${API}/tenant/team`, { headers: { 'Authorization': `Bearer ${token}` } }),
- fetch(`${API}/channels`, { headers: { 'Authorization': `Bearer ${token}` } })
- ]);
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const token = Cookies.get('access_token');
+      
+      const [agentsRes, channelsRes] = await Promise.all([
+        fetch(`${API}/tenant/team`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch(`${API}/channels`, { headers: { 'Authorization': `Bearer ${token}` } })
+      ]);
 
- if (agentsRes.ok) setAgents(await agentsRes.json());
- if (channelsRes.ok) setChannels(await channelsRes.json());
- } catch (err) {
- console.error(err);
- } finally {
- setLoading(false);
- }
- };
+      if (agentsRes.ok) setAgents(await agentsRes.json());
+      if (channelsRes.ok) setChannels(await channelsRes.json());
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
- useEffect(() => {
- fetchData();
- }, []);
+  useEffect(() => {
+    fetchData();
+  }, []);
 
- const openModal = (agent: any = null) => {
- setError('');
- if (agent) {
- setEditingAgent(agent);
- setFormData({
- name: agent.name,
- email: agent.email,
- password: '',
- role: agent.role,
- agentAccessMode: agent.agentAccessMode,
- assignedChannels: agent.channelAssignments?.map((c: any) => c.channelConnectionId) || []
- });
- } else {
- setEditingAgent(null);
- setFormData({
- name: '',
- email: '',
- password: '',
- role: 'agent',
- agentAccessMode: 'ALL_CHANNELS',
- assignedChannels: []
- });
- }
- setIsModalOpen(true);
- };
+  const openModal = (agent: any = null) => {
+    setError('');
+    if (agent) {
+      setEditingAgent(agent);
+      setFormData({
+        name: agent.name,
+        email: agent.email,
+        password: '',
+        role: agent.role,
+        agentAccessMode: agent.agentAccessMode,
+        assignedChannels: agent.channelAssignments?.map((c: any) => c.channelConnectionId) || []
+      });
+    } else {
+      setEditingAgent(null);
+      setFormData({
+        name: '',
+        email: '',
+        password: '',
+        role: 'agent',
+        agentAccessMode: 'ALL_CHANNELS',
+        assignedChannels: []
+      });
+    }
+    setIsModalOpen(true);
+  };
 
- const handleToggleChannel = (channelId: string) => {
- setFormData(prev => ({
- ...prev,
- assignedChannels: prev.assignedChannels.includes(channelId)
- ? prev.assignedChannels.filter(id => id !== channelId)
- : [...prev.assignedChannels, channelId]
- }));
- };
+  const handleToggleChannel = (channelId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      assignedChannels: prev.assignedChannels.includes(channelId)
+        ? prev.assignedChannels.filter(id => id !== channelId)
+        : [...prev.assignedChannels, channelId]
+    }));
+  };
 
- const handleSubmit = async (e: React.FormEvent) => {
- e.preventDefault();
- setSaving(true);
- setError('');
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setError('');
 
- try {
- const token = Cookies.get('access_token');
- const url = editingAgent ? `${API}/tenant/team/${editingAgent.id}` : `${API}/tenant/team`;
- const method = editingAgent ? 'PATCH' : 'POST';
+    try {
+      const token = Cookies.get('access_token');
+      const url = editingAgent ? `${API}/tenant/team/${editingAgent.id}` : `${API}/tenant/team`;
+      const method = editingAgent ? 'PATCH' : 'POST';
 
- const res = await fetch(url, {
- method,
- headers: {
- 'Content-Type': 'application/json',
- 'Authorization': `Bearer ${token}`
- },
- body: JSON.stringify(formData)
- });
+      const res = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(formData)
+      });
 
- if (!res.ok) {
- const data = await res.json();
- throw new Error(data.message || 'Failed to save agent');
- }
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || 'Failed to save agent');
+      }
 
- await fetchData();
- setIsModalOpen(false);
- } catch (err: any) {
- setError(err.message);
- } finally {
- setSaving(false);
- }
- };
+      await fetchData();
+      setIsModalOpen(false);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
 
- const handleDelete = async (id: string) => {
- if (!confirm(language === 'en' ? 'Are you sure you want to delete this user?' : 'আপনি কি নিশ্চিত যে এই ইউজারকে মুছে ফেলতে চান?')) return;
- 
- try {
- const token = Cookies.get('access_token');
- const res = await fetch(`${API}/tenant/team/${id}`, {
- method: 'DELETE',
- headers: { 'Authorization': `Bearer ${token}` }
- });
+  const handleDelete = async (id: string) => {
+    if (!confirm(language === 'en' ? 'Are you sure you want to delete this user?' : 'আপনি কি নিশ্চিত যে এই ইউজারকে মুছে ফেলতে চান?')) return;
+    
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/tenant/team/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
 
- if (!res.ok) {
- const data = await res.json();
- alert(data.message || 'Failed to delete');
- return;
- }
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.message || 'Failed to delete');
+        return;
+      }
 
- fetchData();
- } catch (err) {
- console.error(err);
- }
- };
+      fetchData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
- return (
- <div className="bg-white/70 backdrop-blur-xl border border-white/50 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] max-w-6xl mx-auto space-y-4">
-  {/* Bilingual Instruction Header */}
-  <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 flex gap-4 items-start shadow-sm mb-4 shrink-0">
-    <div className="bg-primary text-white p-2 rounded-lg shrink-0">
-      <ShieldCheck className="w-5 h-5" />
-    </div>
-    <div>
-      <h3 className="font-semibold text-primary text-[14px] mb-1">
-        {language === 'en' ? 'Team Management Instructions' : 'টিম ম্যানেজমেন্ট নির্দেশনা'}
-      </h3>
-      <p className="hidden md:block text-[12px] text-zinc-600 leading-relaxed max-w-4xl">
-        {language === 'en' ? 'Here you can add new agents or admins to your team. Click "Add User" to create an account. You can restrict an agent\'s access to specific connected channels (e.g., only WhatsApp, or only Messenger). Admins automatically get access to all settings and billing.' : 'এখান থেকে আপনি আপনার টিমে নতুন এজেন্ট বা অ্যাডমিন যুক্ত করতে পারবেন। "ইউজার যোগ করুন" বাটনে ক্লিক করে নতুন অ্যাকাউন্ট তৈরি করুন। আপনি চাইলে একজন এজেন্টকে নির্দিষ্ট চ্যানেলের (যেমন: শুধু WhatsApp, অথবা শুধু Messenger) এক্সেস দিতে পারবেন। অ্যাডমিনরা স্বয়ংক্রিয়ভাবে সকল সেটিংস এবং পেমেন্ট সেকশনের এক্সেস পেয়ে থাকেন।'}
-      </p>
-    </div>
-  </div>
+  return (
+    <div className="bg-white/70 backdrop-blur-xl border border-white/50 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] max-w-6xl mx-auto space-y-4">
+      {/* Interactive Instruction Banner */}
+      <InstructionBanner 
+        title={language === 'en' ? 'Team Management Instructions' : 'টিম ম্যানেজমেন্ট নির্দেশনা'}
+        description={language === 'en' ? 'Here you can add new agents or admins to your team. Click "Add User" to create an account. You can restrict an agent\'s access to specific connected channels (e.g., only WhatsApp, or only Messenger).' : 'এখান থেকে আপনি আপনার টিমে নতুন এজেন্ট বা অ্যাডমিন যুক্ত করতে পারবেন। "ইউজার যোগ করুন" বাটনে ক্লিক করে নতুন অ্যাকাউন্ট তৈরি করুন।'}
+        icon={ShieldCheck}
+        variant="emerald"
+      />
 
- <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
- <div>
- <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
- <Users className="w-6 h-6 text-primary" />
- {language === 'en' ? 'Team Management' : 'টিম ম্যানেজমেন্ট'}
- </h1>
- <p className="text-slate-500 text-[13px] mt-1">
- {language === 'en' 
- ? 'Manage agents, assign roles, and configure channel access.' 
- : 'এজেন্ট ম্যানেজ করুন, রোল এবং চ্যানেল অ্যাক্সেস কনফিগার করুন।'}
- </p>
- </div>
- 
- <button
- onClick={() => openModal()}
- className="flex items-center gap-1.5 px-2 py-1 bg-primary hover:bg-primary/90 text-white rounded-lg text-[13px] font-medium transition-all shadow-lg shadow-primary/20"
- >
- <Plus className="w-3.5 h-3.5" />
- {language === 'en' ? 'Add User' : 'ইউজার যোগ করুন'}
- </button>
- </div>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+            <Users className="w-6 h-6 text-primary" />
+            {language === 'en' ? 'Team Management' : 'টিম ম্যানেজমেন্ট'}
+          </h1>
+          <p className="text-slate-500 text-[13px] mt-1">
+            {language === 'en' 
+              ? 'Manage agents, assign roles, and configure channel access.' 
+              : 'এজেন্ট ম্যানেজ করুন, রোল এবং চ্যানেল অ্যাক্সেস কনফিগার করুন।'}
+          </p>
+        </div>
+        
+        <button
+          onClick={() => openModal()}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-primary/90 text-white rounded-lg text-xs font-bold transition-all shadow-md shrink-0 whitespace-nowrap"
+        >
+          <Plus className="w-4 h-4" />
+          {language === 'en' ? 'Add User' : 'ইউজার যোগ করুন'}
+        </button>
+      </div>
 
  {loading ? (
  <div className="h-64 flex items-center justify-center">

@@ -5,6 +5,7 @@ import Cookies from 'js-cookie';
 import { Megaphone, Plus, Clock, Users, Play, AlertCircle, Info, X, Trash2, Smartphone, CheckCheck, Upload, FileText, Image as ImageIcon, Video, Link, Phone, Sparkles, Library, Search, CheckCircle2, ShieldCheck, Zap, Star } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useLanguage } from '@/components/LanguageProvider';
+import InstructionBanner from '@/components/InstructionBanner';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -135,53 +136,6 @@ export default function BroadcastsPage() {
     } else {
       setNameError(null);
     }
-  };
-
-  const handleAddVariable = () => {
-    const textarea = bodyTextareaRef.current;
-    if (!textarea) return;
-
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    
-    // Count existing variables to get next variable number
-    const matches = bodyText.match(/\{\{(\d+)\}\}/g) || [];
-    const nextNum = matches.length + 1;
-    const varTag = `{{${nextNum}}}`;
-
-    const newText = bodyText.substring(0, start) + varTag + bodyText.substring(end);
-    setBodyText(newText);
-
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(start + varTag.length, start + varTag.length);
-    }, 0);
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setHeaderFile(file);
-      setHeaderFilePreview(URL.createObjectURL(file));
-    }
-  };
-
-  const handleAddButton = () => {
-    if (buttons.length >= 10) {
-      toast.error(language === 'en' ? 'Maximum 10 buttons allowed' : 'সর্বোচ্চ ১০টি বাটন যুক্ত করা যাবে');
-      return;
-    }
-    setButtons([...buttons, { type: 'QUICK_REPLY', text: '', url: '', phoneNumber: '', sample: '' }]);
-  };
-
-  const handleRemoveButton = (index: number) => {
-    setButtons(buttons.filter((_, i) => i !== index));
-  };
-
-  const handleButtonChange = (index: number, field: string, value: string) => {
-    const updated = [...buttons];
-    updated[index][field] = value;
-    setButtons(updated);
   };
 
   const handleSubmitTemplate = async () => {
@@ -324,25 +278,6 @@ export default function BroadcastsPage() {
     setButtons([]);
   };
 
-  // Render Preview Text (replacing {{1}} with samples)
-  const getRenderedBodyPreview = () => {
-    let text = bodyText || (language === 'en' ? 'Your message preview will appear here...' : 'আপনার মেসেজের প্রিভিউ এখানে দেখাবে...');
-    Object.keys(bodySamples).forEach(key => {
-      const val = bodySamples[key] ? `[${bodySamples[key]}]` : `{{${key}}}`;
-      text = text.replaceAll(`{{${key}}}`, val);
-    });
-    return text;
-  };
-
-  const getRenderedHeaderText = () => {
-    let text = headerText;
-    Object.keys(headerSamples).forEach(key => {
-      const val = headerSamples[key] ? `[${headerSamples[key]}]` : `{{${key}}}`;
-      text = text.replaceAll(`{{${key}}}`, val);
-    });
-    return text;
-  };
-
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] text-center space-y-4 animate-in fade-in zoom-in duration-500">
@@ -358,56 +293,49 @@ export default function BroadcastsPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-4 animate-in fade-in duration-500">
+    <div className="max-w-7xl mx-auto space-y-4 p-2 sm:p-4 animate-in fade-in duration-500">
       {/* Header Banner */}
-      <div className="flex justify-between items-center bg-surface/70 backdrop-blur-xl border border-surface-hover p-4 rounded-2xl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface/70 backdrop-blur-xl border border-surface-hover p-4 rounded-2xl shadow-sm">
         <div>
           <h1 className="text-lg font-bold flex items-center gap-2 text-primary">
-            <Megaphone className="w-5 h-5" /> 
-            {language === 'en' ? 'Broadcast Campaigns & Meta Templates' : 'ব্রডকাস্ট ক্যাম্পেইন ও মেটা টেমপ্লেট'}
+            <Megaphone className="w-5 h-5 shrink-0" /> 
+            <span>{language === 'en' ? 'Broadcast Campaigns & Meta Templates' : 'ব্রডকাস্ট ক্যাম্পেইন ও মেটা টেমপ্লেট'}</span>
           </h1>
-          <p className="text-xs text-zinc-400 mt-1">
+          <p className="text-xs text-zinc-400 mt-0.5">
             {language === 'en' ? 'Create WhatsApp Meta-approved templates and execute bulk marketing campaigns.' : 'হোয়াটসঅ্যাপের মেটা-অ্যাপ্রুভড টেমপ্লেট তৈরি করুন এবং বাল্ক ব্রডকাস্ট পাঠান।'}
           </p>
         </div>
         {activeTab !== 'library' && (
           <button 
             onClick={() => activeTab === 'campaigns' ? setIsCampaignModalOpen(true) : setIsTemplateModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-[13px] font-bold rounded-xl shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all">
-            <Plus className="w-4 h-4" /> 
-            {activeTab === 'campaigns' 
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-xs font-bold rounded-xl shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all whitespace-nowrap shrink-0">
+            <Plus className="w-4 h-4 shrink-0" /> 
+            <span>{activeTab === 'campaigns' 
               ? (language === 'en' ? 'New Campaign' : 'নতুন ক্যাম্পেইন') 
-              : (language === 'en' ? 'New Meta Template' : 'নতুন মেটা টেমপ্লেট')}
+              : (language === 'en' ? 'New Meta Template' : 'নতুন মেটা টেমপ্লেট')}</span>
           </button>
         )}
       </div>
 
       {/* Guidelines Accordion */}
-      <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-2xl flex gap-3 text-blue-400">
-        <Info className="w-5 h-5 shrink-0 mt-0.5" />
-        <div className="space-y-1">
-          <h3 className="font-bold text-[14px]">
-            {language === 'en' ? 'Meta Official Template Guidelines' : 'মেটা (Meta) অফিশিয়াল টেমপ্লেট নিয়মাবলী'}
-          </h3>
-          <ul className="list-disc list-inside text-[12px] opacity-90 space-y-0.5">
-            <li>{language === 'en' ? 'Template names must only use lowercase letters, numbers, and underscores (e.g. eid_promo_2026).' : 'টেমপ্লেটের নাম শুধুমাত্র ছোট হাতের অক্ষর, সংখ্যা এবং আন্ডারস্কোর (_) দিয়ে লিখতে হবে।'}</li>
-            <li>{language === 'en' ? 'Sample values are MANDATORY for variables like {{1}}, {{2}} to prevent instant Meta rejection.' : 'মেসেজে {{1}}, {{2}} থাকলে নিচে অবশ্যই স্যাম্পল মান দিতে হবে, অন্যথায় মেটা রিজেক্ট করবে।'}</li>
-            <li>{language === 'en' ? 'Meta AI auto-reviews templates usually within 1 minute to 24 hours.' : 'মেটা এআই সাধারণ ১ মিনিট থেকে ২৪ ঘণ্টার মধ্যে টেমপ্লেট রিভিউ সম্পন্ন করে।'}</li>
-          </ul>
-        </div>
-      </div>
+      <InstructionBanner 
+        title={language === 'en' ? 'Meta Official Template Guidelines' : 'মেটা (Meta) অফিশিয়াল টেমপ্লেট নিয়মাবলী'}
+        description={language === 'en' ? 'Template names must only use lowercase letters, numbers, and underscores (e.g. eid_promo_2026). Sample values are MANDATORY for variables like {{1}}, {{2}} to prevent instant Meta rejection. Meta AI auto-reviews templates usually within 1 minute to 24 hours.' : 'টেমপ্লেটের নাম শুধুমাত্র ছোট হাতের অক্ষর, সংখ্যা এবং আন্ডারস্কোর (_) দিয়ে লিখতে হবে। মেসেজে {{1}}, {{2}} থাকলে নিচে অবশ্যই স্যাম্পল মান দিতে হবে, অন্যথায় মেটা রিজেক্ট করবে। মেটা এআই ১ মিনিট থেকে ২৪ ঘণ্টার মধ্যে টেমপ্লেট রিভিউ সম্পন্ন করে।'}
+        icon={Info}
+        variant="blue"
+      />
 
       {/* Tabs */}
-      <div className="flex gap-1 p-1 bg-surface-hover/30 rounded-xl w-fit">
+      <div className="flex gap-1 p-1 bg-surface-hover/30 rounded-xl w-full sm:w-fit overflow-x-auto border border-surface-hover/50 shrink-0">
         <button 
           onClick={() => setActiveTab('campaigns')}
-          className={`px-4 py-1.5 rounded-lg text-[13px] font-bold transition-all ${activeTab === 'campaigns' ? 'bg-primary text-primary-foreground shadow-md' : 'text-zinc-400 hover:text-zinc-200'}`}
+          className={`px-3.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap shrink-0 transition-all ${activeTab === 'campaigns' ? 'bg-primary text-primary-foreground shadow-md' : 'text-zinc-400 hover:text-zinc-200'}`}
         >
           {language === 'en' ? 'Campaigns' : 'ক্যাম্পেইনস'}
         </button>
         <button 
           onClick={() => setActiveTab('templates')}
-          className={`px-4 py-1.5 rounded-lg text-[13px] font-bold transition-all ${activeTab === 'templates' ? 'bg-primary text-primary-foreground shadow-md' : 'text-zinc-400 hover:text-zinc-200'}`}
+          className={`px-3.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap shrink-0 transition-all ${activeTab === 'templates' ? 'bg-primary text-primary-foreground shadow-md' : 'text-zinc-400 hover:text-zinc-200'}`}
         >
           {language === 'en' ? 'My Templates' : 'আমার টেমপ্লেটস'}
         </button>
