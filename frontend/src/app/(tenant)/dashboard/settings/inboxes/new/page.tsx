@@ -1,14 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '@/components/LanguageProvider';
 import Cookies from 'js-cookie';
 import { useRouter } from 'next/navigation';
 import {
   PhoneCall, MessageCircle, Camera, ChevronRight, CheckCircle2, ArrowLeft,
-  Loader2, Sparkles, AlertCircle, Lock, TrendingUp, Crown
+  Loader2, Sparkles, AlertCircle, Lock, TrendingUp, Crown, QrCode as QrIcon, Smartphone, RefreshCw
 } from 'lucide-react';
-import { toast } from 'react-hot-toast';
+import { toast, Toaster } from 'react-hot-toast';
+import QRCode from 'react-qr-code';
+import { io, Socket } from 'socket.io-client';
 import ConnectFacebookPageButton from '@/components/messenger/ConnectFacebookPageButton';
 import ConnectFacebookInstagramButton from '@/components/instagram/ConnectFacebookInstagramButton';
 import ConnectWhatsAppButton from '@/components/whatsapp/ConnectWhatsAppButton';
@@ -35,6 +37,15 @@ export default function NewInboxStepper() {
     phoneNumber: '',
     displayName: ''
   });
+
+  // WhatsApp Web State
+  const [webAuthMethod, setWebAuthMethod] = useState<'qr' | 'pairing'>('qr');
+  const [qrCodeData, setQrCodeData] = useState<string | null>(null);
+  const [qrLoading, setQrLoading] = useState(false);
+  const [pairingPhone, setPairingPhone] = useState('');
+  const [pairingCode, setPairingCode] = useState<string | null>(null);
+  const [pairingLoading, setPairingLoading] = useState(false);
+  const socketRef = useRef<Socket | null>(null);
 
   // Messenger Form Data
   const [fbData, setFbData] = useState({
@@ -67,6 +78,12 @@ export default function NewInboxStepper() {
       }
     };
     fetchQuotas();
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+    };
   }, []);
 
   const channelDefs = [
@@ -117,6 +134,88 @@ export default function NewInboxStepper() {
     }
     setSelectedChannel(ch.id);
     setStep(ch.id === 'whatsapp' ? 2 : 3);
+  };
+
+  // Setup WebSocket connection for WhatsApp Web QR updates
+  const initWebSocket = () => {
+    if (socketRef.current?.connected) return;
+    
+    const token = Cookies.get('access_token');
+    const wsUrl = API.replace(/^http/, 'ws');
+    
+    const socket = io(`${wsUrl}/inbox`, {
+      auth: { token },
+      transports: ['websocket', 'polling']
+    });
+
+    socket.on('whatsapp_qr_code', (data: { qr: string }) => {
+      setQrCodeData(data.qr);
+      setQrLoading(false);
+    });
+
+    socket.on('whatsapp_connected', () => {
+      toast.success(language === 'en' ? 'WhatsApp Web connected successfully!' : 'হোয়াটসঅ্যাপ ওয়েব কানেক্ট হয়েছে!');
+      setStep(4);
+    });
+
+    socketRef.current = socket;
+  };
+
+  // WhatsApp Web QR Code Initializer
+  const handleStartQr = async () => {
+    setQrLoading(true);
+    setQrCodeData(null);
+    initWebSocket();
+
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/whatsapp-web/start-qr`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || data.error || 'Failed to start QR session');
+      }
+      toast.success(language === 'en' ? 'Generating QR Code...' : 'কিউআর কোড তৈরি করা হচ্ছে...');
+    } catch (err: any) {
+      toast.error(err.message);
+      setQrLoading(false);
+    }
+  };
+
+  // WhatsApp Web Pairing Code Generator
+  const handleStartPairing = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pairingPhone) {
+      toast.error(language === 'en' ? 'Please enter a phone number' : 'ফোন নম্বর দিন');
+      return;
+    }
+    setPairingLoading(true);
+    setPairingCode(null);
+    initWebSocket();
+
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/whatsapp-web/start-pairing`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify({ phoneNumber: pairingPhone })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || data.error || 'Failed to get pairing code');
+      }
+      setPairingCode(data.pairingCode);
+      toast.success(language === 'en' ? 'Pairing Code Generated!' : 'পেয়ারিং কোড তৈরি হয়েছে!');
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setPairingLoading(false);
+    }
   };
 
   const handleConnectWhatsApp = async (e: React.FormEvent) => {
@@ -197,6 +296,8 @@ export default function NewInboxStepper() {
 
   return (
     <div className="min-h-full flex bg-background">
+      <Toaster position="top-right" />
+      
       {/* Sidebar Stepper */}
       <div className="w-64 shrink-0 bg-surface/70 backdrop-blur-xl border-r border-surface-hover p-6 hidden md:flex flex-col">
         <button
@@ -239,7 +340,6 @@ export default function NewInboxStepper() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {channelDefs.map(ch => {
                   const isLocked = ch.current >= ch.limit;
-                  const isFull = ch.limit === 0;
                   const usagePercent = ch.limit > 0 ? Math.min((ch.current / ch.limit) * 100, 100) : 100;
 
                   return (
@@ -357,7 +457,7 @@ export default function NewInboxStepper() {
                 </div>
                 <h3 className="font-bold text-[14px] text-foreground mb-1">WhatsApp Web (Baileys)</h3>
                 <p className="text-[12px] text-zinc-400 leading-relaxed">
-                  {language === 'en' ? 'Connect via QR scan. Suitable for small businesses.' : 'QR স্ক্যানের মাধ্যমে কানেক্ট। ছোট ব্যবসার জন্য।'}
+                  {language === 'en' ? 'Connect via QR scan or Pairing Code. Suitable for small businesses.' : 'QR স্ক্যান বা পেয়ারিং কোড দিয়ে কানেক্ট করুন। ছোট ব্যবসার জন্য।'}
                 </p>
               </button>
             </div>
@@ -387,14 +487,6 @@ export default function NewInboxStepper() {
                   <div className="flex-grow border-t border-surface-hover" />
                 </div>
                 <form onSubmit={handleConnectWhatsApp} className="space-y-4">
-                  <div className="bg-blue-500/10 border border-blue-500/20 text-blue-300 p-3.5 rounded-xl text-[12px] mb-2">
-                    <p className="font-bold mb-1">{language === 'en' ? 'Instructions:' : 'নির্দেশনা:'}</p>
-                    <ul className="list-disc pl-4 space-y-1 text-zinc-400">
-                      <li>{language === 'en' ? 'Go to developers.facebook.com > My Apps.' : 'developers.facebook.com > My Apps-এ যান।'}</li>
-                      <li>{language === 'en' ? 'Open your WhatsApp App > WhatsApp Setup.' : 'আপনার হোয়াটসঅ্যাপ অ্যাপে WhatsApp Setup-এ ক্লিক করুন।'}</li>
-                      <li>{language === 'en' ? 'Copy Phone Number ID, WABA ID and Token.' : 'Phone Number ID, WABA ID এবং Access Token কপি করুন।'}</li>
-                    </ul>
-                  </div>
                   {[
                     { label: language === 'en' ? 'Inbox Name' : 'ইনবক্সের নাম', value: waData.displayName, key: 'displayName', placeholder: 'e.g. Sales Support', type: 'text' },
                     { label: language === 'en' ? 'Phone Number' : 'ফোন নম্বর', value: waData.phoneNumber, key: 'phoneNumber', placeholder: '+8801700000000', type: 'text' },
@@ -420,19 +512,124 @@ export default function NewInboxStepper() {
                 </form>
               </div>
             ) : (
-              // WhatsApp Web (Baileys) — QR flow
-              <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-6 text-center">
-                <div className="bg-amber-500/10 border border-amber-500/20 text-amber-300 p-4 rounded-xl text-[12px] mb-6 flex gap-3 text-left">
-                  <AlertCircle className="w-5 h-5 shrink-0 text-amber-400" />
-                  <p className="text-zinc-300">
-                    {language === 'en'
-                      ? 'QR Code scanning for WhatsApp Web is managed from the Inboxes list. Click Initialize to start the QR session, then scan from your phone.'
-                      : 'WhatsApp Web QR স্ক্যান ইনবক্স তালিকা থেকে পরিচালিত হয়। Initialize করুন, তারপর আপনার ফোন দিয়ে QR স্ক্যান করুন।'}
-                  </p>
+              /* FULL INTERACTIVE WHATSAPP WEB (BAILEYS) AUTHENTICATION FLOW */
+              <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-6 space-y-6">
+                
+                {/* Method selector tabs */}
+                <div className="flex bg-background border border-surface-hover p-1 rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => setWebAuthMethod('qr')}
+                    className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                      webAuthMethod === 'qr' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-zinc-400 hover:text-foreground'
+                    }`}
+                  >
+                    <QrIcon className="w-3.5 h-3.5" />
+                    <span>{language === 'en' ? 'Scan QR Code' : 'QR কোড স্ক্যান'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setWebAuthMethod('pairing')}
+                    className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                      webAuthMethod === 'pairing' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-zinc-400 hover:text-foreground'
+                    }`}
+                  >
+                    <Smartphone className="w-3.5 h-3.5" />
+                    <span>{language === 'en' ? 'Pairing Code' : 'পেয়ারিং কোড'}</span>
+                  </button>
                 </div>
-                <button onClick={() => setStep(4)} className="bg-primary text-primary-foreground px-8 py-2.5 rounded-xl font-bold hover:bg-primary/90 transition-all">
-                  {language === 'en' ? 'Initialize Connection' : 'কানেকশন শুরু করুন'}
-                </button>
+
+                {/* QR Code Tab View */}
+                {webAuthMethod === 'qr' && (
+                  <div className="text-center space-y-5">
+                    {!qrCodeData ? (
+                      <div className="py-6 space-y-4">
+                        <div className="w-16 h-16 bg-emerald-500/10 rounded-2xl flex items-center justify-center mx-auto border border-emerald-500/20">
+                          <QrIcon className="w-8 h-8 text-emerald-500" />
+                        </div>
+                        <h3 className="text-sm font-bold text-foreground">
+                          {language === 'en' ? 'Generate WhatsApp Web QR' : 'WhatsApp Web QR তৈরি করুন'}
+                        </h3>
+                        <p className="text-xs text-zinc-400 max-w-sm mx-auto">
+                          {language === 'en' 
+                            ? 'Click Initialize Connection to generate a live QR code, then scan it using WhatsApp on your phone.' 
+                            : 'কানেকশন শুরু করতে নিচের বাটনে ক্লিক করুন। আপনার ফোনের হোয়াটসঅ্যাপ অ্যাপ দিয়ে QR কোডটি স্ক্যান করুন।'}
+                        </p>
+                        <button
+                          onClick={handleStartQr}
+                          disabled={qrLoading}
+                          className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-xs shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 mx-auto disabled:opacity-50 transition-all cursor-pointer"
+                        >
+                          {qrLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                          <span>{qrLoading ? (language === 'en' ? 'Initializing...' : 'তৈরি করা হচ্ছে...') : (language === 'en' ? 'Initialize Connection' : 'কানেকশন শুরু করুন')}</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="py-4 space-y-4 animate-in fade-in duration-300">
+                        <div className="bg-white p-4 rounded-2xl inline-block shadow-md border border-slate-200">
+                          <QRCode value={qrCodeData} size={200} />
+                        </div>
+                        <div className="text-xs text-zinc-400 space-y-1">
+                          <p className="font-bold text-foreground">{language === 'en' ? 'Scan with WhatsApp' : 'WhatsApp দিয়ে স্ক্যান করুন'}</p>
+                          <p>{language === 'en' ? 'Open WhatsApp → Settings → Linked Devices → Link a Device' : 'WhatsApp খুলুন → Settings → Linked Devices → Link a Device'}</p>
+                        </div>
+                        <button
+                          onClick={handleStartQr}
+                          className="px-3 py-1.5 bg-surface-hover text-zinc-300 hover:text-foreground rounded-lg text-[11px] font-bold inline-flex items-center gap-1 transition-colors"
+                        >
+                          <RefreshCw className="w-3 h-3" />
+                          <span>{language === 'en' ? 'Refresh QR Code' : 'QR রিফ্রেশ করুন'}</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Pairing Code Tab View */}
+                {webAuthMethod === 'pairing' && (
+                  <div className="space-y-4">
+                    <form onSubmit={handleStartPairing} className="space-y-3">
+                      <div>
+                        <label className="block text-[12px] font-bold text-zinc-400 mb-1">
+                          {language === 'en' ? 'WhatsApp Phone Number' : 'হোয়াটসঅ্যাপ ফোন নম্বর'}
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={pairingPhone}
+                          onChange={e => setPairingPhone(e.target.value)}
+                          placeholder="+8801700000000"
+                          className="w-full bg-background border border-surface-hover rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-primary text-foreground"
+                        />
+                      </div>
+                      <button
+                        type="submit"
+                        disabled={pairingLoading}
+                        className="w-full bg-primary text-primary-foreground py-2.5 rounded-xl font-bold hover:bg-primary/90 flex items-center justify-center gap-2 disabled:opacity-50 text-xs transition-all cursor-pointer"
+                      >
+                        {pairingLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Smartphone className="w-4 h-4" />}
+                        <span>{language === 'en' ? 'Get Pairing Code' : 'পেয়ারিং কোড পান'}</span>
+                      </button>
+                    </form>
+
+                    {pairingCode && (
+                      <div className="bg-surface/80 border border-primary/30 p-5 rounded-2xl text-center space-y-2 animate-in zoom-in-95 duration-300">
+                        <div className="text-xs text-zinc-400 font-bold uppercase tracking-wider">
+                          {language === 'en' ? 'Your WhatsApp Pairing Code' : 'আপনার পেয়ারিং কোড'}
+                        </div>
+                        <div className="text-3xl font-mono font-black text-emerald-400 tracking-widest py-1 bg-background rounded-xl border border-surface-hover">
+                          {pairingCode}
+                        </div>
+                        <p className="text-[11px] text-zinc-400">
+                          {language === 'en' 
+                            ? 'Open WhatsApp → Linked Devices → Link with phone number instead → Enter Code' 
+                            : 'WhatsApp খুলুন → Linked Devices → Link with phone number instead → কোডটি দিন'}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
               </div>
             )}
           </div>
@@ -466,7 +663,7 @@ export default function NewInboxStepper() {
                 ].map(field => (
                   <div key={field.key}>
                     <label className="block text-[12px] font-bold text-zinc-400 mb-1">{field.label}</label>
-                    <input required type={field.type} value={field.value} onChange={e => setFbData({ ...fbData, [field.key]: e.target.value })} placeholder={field.placeholder} className="w-full bg-background border border-surface-hover rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-primary transition-colors" />
+                    <input required type={field.type} value={field.value} onChange={e => setFbData({ ...fbData, [field.key]: e.target.value })} placeholder={field.placeholder} className="w-full bg-background border border-surface-hover rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-primary transition-colors text-foreground" />
                   </div>
                 ))}
                 <button disabled={loading} type="submit" className="w-full bg-blue-600 text-white py-2.5 rounded-xl font-bold hover:bg-blue-700 flex items-center justify-center disabled:opacity-50 transition-all">
@@ -505,7 +702,7 @@ export default function NewInboxStepper() {
                 ].map(field => (
                   <div key={field.key}>
                     <label className="block text-[12px] font-bold text-zinc-400 mb-1">{field.label}</label>
-                    <input required type={field.type} value={field.value} onChange={e => setIgData({ ...igData, [field.key]: e.target.value })} placeholder={field.placeholder} className="w-full bg-background border border-surface-hover rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-primary transition-colors" />
+                    <input required type={field.type} value={field.value} onChange={e => setIgData({ ...igData, [field.key]: e.target.value })} placeholder={field.placeholder} className="w-full bg-background border border-surface-hover rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-primary transition-colors text-foreground" />
                   </div>
                 ))}
                 <button disabled={loading} type="submit" className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-2.5 rounded-xl font-bold flex items-center justify-center disabled:opacity-50 transition-all hover:opacity-90">

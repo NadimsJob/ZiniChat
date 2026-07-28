@@ -63,17 +63,24 @@ export class WhatsappWebService implements OnModuleInit {
       );
     }
 
-    // Also block a second WEB_QR connection specifically (one QR session per tenant)
+    // Block only if a truly ACTIVE socket session exists
     const existingWebQr = await this.prisma.channelConnection.findFirst({
-      where: { tenantId, provider: 'WEB_QR', status: { in: ['active', 'pending', 'connected'] } }
+      where: { tenantId, provider: 'WEB_QR' }
     });
 
     if (existingWebQr) {
-      throw new ForbiddenException(
-        'A WhatsApp Web (QR) session already exists for this account. ' +
-        'Please disconnect the existing session before connecting a new one.'
-      );
+      const isLiveSocket = this.isSocketConnected(tenantId);
+      if (isLiveSocket) {
+        throw new ForbiddenException(
+          'An active WhatsApp Web session is already connected. Please disconnect it from the Inboxes page first.'
+        );
+      } else {
+        // Clean up stale DB record and session files so a fresh QR can be scanned
+        await this.prisma.channelConnection.delete({ where: { id: existingWebQr.id } }).catch(() => {});
+        await this.logout(tenantId).catch(() => {});
+      }
     }
+
   }
 
   async initSocket(tenantId: string) {
