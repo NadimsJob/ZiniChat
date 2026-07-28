@@ -64,6 +64,11 @@ When a user asks to connect WhatsApp Official Business API:
 --------------------------------------------------
 # SUPPORT BEHAVIOR
 Always answer using current tenant configuration, settings, connected channels, subscription, documentation, and activity. Never hallucinate.
+The tenant's full plan details (message quota, AI response quota, storage limit, price) are provided in the CURRENT TENANT REAL-TIME WORKSPACE CONTEXT below — use them directly to answer billing/quota questions.
+
+--------------------------------------------------
+# IMAGE COST POLICY (IMPORTANT)
+When a customer sends an image via WhatsApp/Messenger/Instagram, the AI analyzes it and deducts 5 AI Responses from the tenant's quota per image. If a tenant asks why their AI quota decreased, explain this clearly: "প্রতিটি ইনকামিং ইমেজ বিশ্লেষণে ৫টি এআই রেসপন্স কোটা কাটা হয়।"
 
 --------------------------------------------------
 # CONFIGURATION & AUTO SETUP
@@ -86,7 +91,7 @@ DO NOT calculate via AI text. Call 'redirect_to_dashboard_analytics' or instruct
 
 --------------------------------------------------
 # BILLING SUPPORT
-Answer billing questions (Current Plan, Renewal Date, Invoice, Payment Status, Quota, Storage) directly using current tenant data.
+Answer billing questions (Current Plan, Renewal Date, Invoice, Payment Status, Quota, Storage) directly using current tenant data provided in the context below.
 
 --------------------------------------------------
 # SUPPORT TICKET CREATION
@@ -99,8 +104,14 @@ Upon approval, call 'create_detailed_support_ticket'.
 If a "Prior Conversation Context Summary" is provided at the top of your system context, treat it as ground truth about what was already discussed. Do NOT ask the user to repeat information already captured in the summary.
 
 --------------------------------------------------
-# RESPONSE STYLE
-Always communicate in Bengali unless the user speaks in English. Be professional, friendly, concise, action-oriented, and step-by-step.`;
+# RESPONSE STYLE — CRITICAL
+- ALWAYS communicate in Bengali unless user writes in English.
+- Keep responses SHORT and DIRECT — maximum 3-4 lines per reply.
+- NEVER write long paragraphs or numbered lists unless absolutely necessary.
+- Use ✅ ❌ 📌 emojis sparingly to highlight key info.
+- If the answer is one sentence, give one sentence. Do NOT pad responses.
+- Never repeat back what the user said. Just answer.
+- Action-oriented: tell the user what to do next, not what happened.`;
 
 @Injectable()
 export class SupportChatService {
@@ -204,12 +215,38 @@ export class SupportChatService {
       })
       .join(', ') || 'None';
 
+    const plan = tenant.plan;
+    // Correct field names from schema
+    const messageQuota = tenant.customMessageQuota ?? plan?.messageQuota ?? 0;
+    const aiQuota = tenant.customAiQuota ?? plan?.aiQuota ?? 0;
+    const storageLimit = tenant.customStorageLimitMb ?? plan?.storageLimitMb ?? 0;
+    const planPrice = plan?.priceMonthlyBdt ? Number(plan.priceMonthlyBdt) : 0;
+
+    // Channel limits (custom overrides take priority)
+    const waLimit = tenant.customWhatsappLimit ?? plan?.whatsappLimit ?? 0;
+    const igLimit = tenant.customInstagramLimit ?? plan?.instagramLimit ?? 0;
+    const msLimit = tenant.customMessengerLimit ?? plan?.messengerLimit ?? 0;
+    const widgetLimit = tenant.customWebsiteWidgetLimit ?? plan?.websiteWidgetLimit ?? 0;
+
+    // Plan features
+    const planFeatures: string[] = [
+      ...(Array.isArray(tenant.customFeatures) ? tenant.customFeatures : []),
+      ...(Array.isArray(plan?.features) ? (plan.features as string[]) : [])
+    ];
+
     return `CURRENT TENANT REAL-TIME WORKSPACE CONTEXT:
 - Business Name: ${tenant.businessName} (Tenant ID: ${tenant.id})
-- Active Subscription Plan: ${planName} (Expires/Renews: ${expirationDate})
+- Active Subscription Plan: ${planName} | Price: ৳${planPrice}/month
+- Plan Expires/Renews: ${expirationDate}
+- Plan Quota — Messages: ${messageQuota === 0 ? 'Unlimited' : messageQuota} | AI Responses: ${aiQuota === 0 ? 'Unlimited' : aiQuota} | Storage: ${storageLimit === 0 ? 'Unlimited' : storageLimit + ' MB'}
+- Messages Used This Cycle: ${tenant.messageCount}
+- CHANNEL ALLOWANCES (0 = NOT allowed on this plan):
+  WhatsApp: ${waLimit} | Instagram: ${igLimit} | Messenger: ${msLimit} | Web Widget: ${widgetLimit}
 - Connected Channels: ${connectedChannels}
-- Total Messages Sent This Cycle: ${tenant.messageCount}
-- Active AI Model: ${tenant.customAiConfig?.modelName || 'Platform Default'} (${tenant.customAiConfig?.provider || 'OpenAI'})`;
+- Active AI Model: ${tenant.customAiConfig?.modelName || 'Platform Default'} (${tenant.customAiConfig?.provider || 'OpenAI'})
+- IMAGE ANALYSIS COST: Each customer image analyzed costs 5 AI Responses from quota.
+- IMPORTANT: Before giving setup instructions for any channel (WhatsApp/Instagram/Messenger), first check CHANNEL ALLOWANCES. If the limit is 0, tell the tenant their plan does not include this channel and they must upgrade.`;
+
   }
 
   /**
