@@ -35,10 +35,12 @@ const createPrismaMock = () => ({
   message: { count: jest.fn() },
   broadcastRecipient: { count: jest.fn() },
   aiUsageLog: { count: jest.fn() },
+  product: { count: jest.fn() },
 });
 
 const createBillingMock = () => ({
   getActivePeriod: jest.fn(),
+  getTenantQuotas: jest.fn(),
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -321,6 +323,37 @@ describe('QuotaService', () => {
         where: { id: TENANT_ID },
         data: { storageUsedBytes: BigInt(0) },
       });
+    });
+  });
+
+  // ─── checkProductCatalogQuota ────────────────────────────────────────────────
+  describe('checkProductCatalogQuota', () => {
+    it('throws ForbiddenException when tenant not found', async () => {
+      prisma.tenant.findUnique.mockResolvedValue(null);
+      await expect(service.checkProductCatalogQuota(TENANT_ID)).rejects.toThrow(ForbiddenException);
+    });
+
+    it('throws ForbiddenException when tenant is suspended', async () => {
+      prisma.tenant.findUnique.mockResolvedValue({ status: 'suspended' });
+      await expect(service.checkProductCatalogQuota(TENANT_ID)).rejects.toThrow('Account suspended');
+    });
+
+    it('throws ForbiddenException when product catalog limit is reached', async () => {
+      prisma.tenant.findUnique.mockResolvedValue(mockActiveTenant());
+      billing.getTenantQuotas.mockResolvedValue({ productCatalogLimit: 5 });
+      prisma.product.count.mockResolvedValue(5);
+
+      await expect(service.checkProductCatalogQuota(TENANT_ID)).rejects.toThrow(
+        /Product catalog limit reached \(5\/5\)/
+      );
+    });
+
+    it('passes when product count is below limit', async () => {
+      prisma.tenant.findUnique.mockResolvedValue(mockActiveTenant());
+      billing.getTenantQuotas.mockResolvedValue({ productCatalogLimit: 5 });
+      prisma.product.count.mockResolvedValue(4);
+
+      await expect(service.checkProductCatalogQuota(TENANT_ID)).resolves.not.toThrow();
     });
   });
 });

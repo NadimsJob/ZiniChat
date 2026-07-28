@@ -102,13 +102,13 @@ export class TenantStatsService {
       messagesUsed,
     ] = await Promise.all([
       this.prisma.message.count({
-        where: { conversation: { tenantId }, createdAt: { gte: todayStart } }
+        where: { conversation: { tenantId }, direction: 'outbound', createdAt: { gte: todayStart } }
       }),
       this.prisma.message.count({
-        where: { conversation: { tenantId }, createdAt: { gte: from, lte: to } }
+        where: { conversation: { tenantId }, direction: 'outbound', createdAt: { gte: from, lte: to } }
       }),
       this.prisma.message.count({
-        where: { conversation: { tenantId }, createdAt: { gte: prevFrom, lte: prevTo } }
+        where: { conversation: { tenantId }, direction: 'outbound', createdAt: { gte: prevFrom, lte: prevTo } }
       }),
       this.quotaService.getMessageUsage(tenantId, periodStart),
     ]);
@@ -422,8 +422,16 @@ export class TenantStatsService {
         messages: { used: messagesUsed, limit: finalMsgLimit, pct: msgUsagePct },
         ai: { used: aiFiltered, limit: finalAiLimit, pct: aiUsagePct },
         seats: { used: teamCount, limit: seatLimit, pct: Math.round((teamCount / Math.max(1, seatLimit)) * 100) },
-        contacts: { used: contactsCount, limit: 10000, pct: Math.round((contactsCount / 10000) * 100) },
-        products: { used: productsCount, limit: 500, pct: Math.round((productsCount / 500) * 100) },
+        contacts: {
+          used: contactsCount,
+          limit: quotas.contactsLimit,
+          pct: quotas.contactsLimit ? Math.round((contactsCount / quotas.contactsLimit) * 100) : 0
+        },
+        products: {
+          used: productsCount,
+          limit: quotas.productCatalogLimit,
+          pct: Math.round((productsCount / Math.max(1, quotas.productCatalogLimit)) * 100)
+        },
         broadcasts: { used: broadcastCount, limit: 50, pct: Math.round((broadcastCount / 50) * 100) },
         storageMb: { used: 0, limit: storageLimitMb, pct: 0 },
       },

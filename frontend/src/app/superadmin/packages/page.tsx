@@ -25,7 +25,7 @@ export default function PackagesPage() {
     priceMonthlyBdt: 0, priceYearlyBdt: 0,
     promoPriceMonthlyBdt: 0, promoMonths: 0, yearlyDiscountPercent: 0,
     messageQuota: 1000, aiQuota: 500, seatLimit: 1, storageLimitMb: 500,
-    whatsappLimit: 1, messengerLimit: 1, instagramLimit: 1, 
+    whatsappLimit: 1, messengerLimit: 1, instagramLimit: 1, productCatalogLimit: 50, contactsLimit: null as number | null,
     trialDays: 0,
     allowByok: false,
     features: [] as string[],
@@ -150,7 +150,7 @@ export default function PackagesPage() {
         promoPriceMonthlyBdt: Number(plan.promoPriceMonthlyBdt) || 0, 
         promoMonths: Number(plan.promoMonths) || 0, 
         yearlyDiscountPercent: Number(plan.yearlyDiscountPercent) || 0,
-        messageQuota: plan.messageQuota, aiQuota: plan.aiQuota, seatLimit: plan.seatLimit, storageLimitMb: plan.storageLimitMb ?? 500, whatsappLimit: plan.whatsappLimit ?? 1, messengerLimit: plan.messengerLimit ?? 1, instagramLimit: plan.instagramLimit ?? 1, trialDays: plan.trialDays || 0,
+        messageQuota: plan.messageQuota, aiQuota: plan.aiQuota, seatLimit: plan.seatLimit, storageLimitMb: plan.storageLimitMb ?? 500, whatsappLimit: plan.whatsappLimit ?? 1, messengerLimit: plan.messengerLimit ?? 1, instagramLimit: plan.instagramLimit ?? 1, productCatalogLimit: plan.productCatalogLimit ?? 50, contactsLimit: plan.contactsLimit ?? null, trialDays: plan.trialDays || 0,
         allowByok: plan.allowByok || false,
         features: Array.isArray(plan.features) ? plan.features : [],
         featuresJson: Array.isArray(plan.featuresJson) ? plan.featuresJson : (typeof plan.featuresJson === 'string' ? (()=>{ try { const parsed = JSON.parse(plan.featuresJson); return Array.isArray(parsed) ? parsed : []; } catch { return []; } })() : []),
@@ -162,7 +162,7 @@ export default function PackagesPage() {
         name: '', nameBn: '', description: '', descriptionBn: '', 
         priceMonthlyBdt: 0, priceYearlyBdt: 0,
         promoPriceMonthlyBdt: 0, promoMonths: 0, yearlyDiscountPercent: 0,
-        messageQuota: 1000, aiQuota: 500, seatLimit: 1, storageLimitMb: 500, whatsappLimit: 1, messengerLimit: 1, instagramLimit: 1, trialDays: 0, allowByok: false,
+        messageQuota: 1000, aiQuota: 500, seatLimit: 1, storageLimitMb: 500, whatsappLimit: 1, messengerLimit: 1, instagramLimit: 1, productCatalogLimit: 50, contactsLimit: null, trialDays: 0, allowByok: false,
         features: [],
         featuresJson: [], 
         isActive: true, isPopular: false
@@ -354,6 +354,14 @@ export default function PackagesPage() {
                 <div>
                   <label className="block text-[12px] font-medium mb-1 text-zinc-400">AI /mo</label>
                   <input type="number" value={planForm.aiQuota} onChange={e => setPlanForm({...planForm, aiQuota: Number(e.target.value)})} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none" />
+                </div>
+                <div>
+                  <label className="block text-[12px] font-medium mb-1 text-zinc-400">Products Limit</label>
+                  <input type="number" value={planForm.productCatalogLimit} onChange={e => setPlanForm({...planForm, productCatalogLimit: Number(e.target.value)})} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none" />
+                </div>
+                <div>
+                  <label className="block text-[12px] font-medium mb-1 text-zinc-400">Contacts Limit (Empty=∞)</label>
+                  <input type="number" placeholder="Unlimited" value={planForm.contactsLimit === null ? '' : planForm.contactsLimit} onChange={e => setPlanForm({...planForm, contactsLimit: e.target.value === '' ? null : Number(e.target.value)})} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none" />
                 </div>
                 <div>
                   <label className="block text-[12px] font-medium mb-1 text-zinc-400">Storage (MB)</label>

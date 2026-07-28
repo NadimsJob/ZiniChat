@@ -67,6 +67,8 @@ export class BillingService {
       messengerLimit: tenant?.customMessengerLimit ?? plan?.messengerLimit ?? 1,
       instagramLimit: tenant?.customInstagramLimit ?? plan?.instagramLimit ?? 1,
       websiteWidgetLimit: tenant?.customWebsiteWidgetLimit ?? plan?.websiteWidgetLimit ?? 0,
+      productCatalogLimit: tenant?.customProductCatalogLimit ?? plan?.productCatalogLimit ?? 50,
+      contactsLimit: tenant?.customContactsLimit ?? plan?.contactsLimit ?? null,
       messageQuota: tenant?.customMessageQuota ?? plan?.messageQuota ?? 100,
       aiQuota: tenant?.customAiQuota ?? plan?.aiQuota ?? 50,
       seatLimit: tenant?.customSeatLimit ?? plan?.seatLimit ?? 1,

@@ -162,5 +162,23 @@ export class QuotaService {
 
     return false;
   }
+
+  /**
+   * Product Catalog Quota = total products created by tenant
+   */
+  async checkProductCatalogQuota(tenantId: string): Promise<void> {
+    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+    if (!tenant) throw new ForbiddenException('Tenant not found');
+    if (tenant.status === 'suspended') throw new ForbiddenException('Account suspended');
+
+    const quotas = await this.billingService.getTenantQuotas(tenantId);
+    const currentCount = await this.prisma.product.count({ where: { tenantId } });
+
+    if (currentCount >= quotas.productCatalogLimit) {
+      throw new ForbiddenException(
+        `Product catalog limit reached (${currentCount}/${quotas.productCatalogLimit}). Upgrade your plan to add more products.`
+      );
+    }
+  }
 }
 

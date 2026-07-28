@@ -424,18 +424,6 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  {language === 'en' ? 'Overview' : 'ওভারভিউ'}
  </h2>
 
-  {userProfile?.tenant?.plan && (
-  <div className="hidden md:flex items-center ml-2 gap-1.5">
-  <span className="text-[9px] font-bold text-primary uppercase tracking-wider bg-primary/10 px-1.5 py-0.5 rounded-full border border-primary/20">
-  {language === 'en' ? userProfile.tenant.plan.name : userProfile.tenant.plan.nameBn || userProfile.tenant.plan.name}
-  </span>
-  <Link href="/dashboard/settings/subscription">
-  <span className="text-[9px] font-bold text-white bg-gradient-to-r from-secondary to-amber-500 px-2 py-0.5 rounded-full shadow-sm hover:scale-105 transition-transform cursor-pointer border border-white">
-  {language === 'en' ? 'UPGRADE 🚀' : 'আপগ্রেড 🚀'}
-  </span>
-  </Link>
-  </div>
-  )}
  </div>
  
  <div className="flex items-center gap-2 md:gap-1.5">

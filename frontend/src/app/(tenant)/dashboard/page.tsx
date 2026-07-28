@@ -304,7 +304,7 @@ export default function ExecutiveDashboardPage() {
         <div className="bg-emerald-500/5 backdrop-blur-xl border border-emerald-500/20 rounded-2xl p-4 flex flex-col justify-between hover:border-emerald-500/40 hover:bg-emerald-500/10 transition-all shadow-sm">
           <div>
             <div className="flex items-center justify-between text-zinc-400 mb-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">{language === 'en' ? 'Messages' : 'মেসেজ'}</span>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">{language === 'en' ? 'Messages Sent' : 'মেসেজ সেন্ড'}</span>
               <MessageSquare className="w-4 h-4 text-emerald-400" />
             </div>
             <div className="text-2xl sm:text-3xl font-black text-foreground">{formatNumber(kpis.messages?.month || 0)}</div>
@@ -451,7 +451,7 @@ export default function ExecutiveDashboardPage() {
               { label: language === 'en' ? 'Team Seats' : 'টিম সিট', used: sub.seats?.used, limit: sub.seats?.limit, pct: sub.seats?.pct, icon: Users },
               { label: language === 'en' ? 'Contacts' : 'কন্টাক্টস', used: sub.contacts?.used, limit: sub.contacts?.limit, pct: sub.contacts?.pct, icon: Users },
               { label: language === 'en' ? 'Products Catalog' : 'প্রোডাক্ট ক্যাটালগ', used: sub.products?.used, limit: sub.products?.limit, pct: sub.products?.pct, icon: Package },
-            ].map((item) => (
+            ].filter(item => item.limit !== null && item.limit !== undefined).map((item) => (
               <div key={item.label} className="space-y-1">
                 <div className="flex justify-between text-[11px]">
                   <span className="text-zinc-400 flex items-center gap-1.5">

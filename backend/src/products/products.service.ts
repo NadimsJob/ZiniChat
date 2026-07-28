@@ -1,9 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { QuotaService } from '../tenants/quota.service';
 
 @Injectable()
 export class ProductsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private quotaService: QuotaService,
+  ) {}
 
   async getProducts(tenantId: string) {
     return this.prisma.product.findMany({
@@ -13,6 +17,7 @@ export class ProductsService {
   }
 
   async createProduct(tenantId: string, data: any) {
+    await this.quotaService.checkProductCatalogQuota(tenantId);
     return this.prisma.product.create({
       data: {
         tenantId,

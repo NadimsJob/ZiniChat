@@ -186,6 +186,9 @@ export class TenantsService {
     if (data.customWhatsappLimit !== undefined) updateData.customWhatsappLimit = data.customWhatsappLimit;
     if (data.customMessengerLimit !== undefined) updateData.customMessengerLimit = data.customMessengerLimit;
     if (data.customInstagramLimit !== undefined) updateData.customInstagramLimit = data.customInstagramLimit;
+    if (data.customWebsiteWidgetLimit !== undefined) updateData.customWebsiteWidgetLimit = data.customWebsiteWidgetLimit;
+    if (data.customProductCatalogLimit !== undefined) updateData.customProductCatalogLimit = data.customProductCatalogLimit;
+    if (data.customContactsLimit !== undefined) updateData.customContactsLimit = data.customContactsLimit;
     if (data.customFeatures !== undefined) updateData.customFeatures = data.customFeatures;
     if (data.customAllowByok !== undefined) updateData.customAllowByok = data.customAllowByok;
     if (data.billingCycleStart !== undefined) updateData.trialEndsAt = new Date(data.billingCycleStart); // using trialEndsAt to mark billing start if needed or just use it to track overriding.

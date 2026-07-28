@@ -40,6 +40,8 @@ model Tenant {
   customMessengerLimit      Int?
   customInstagramLimit      Int?
   customWebsiteWidgetLimit  Int?
+  customProductCatalogLimit Int?
+  customContactsLimit       Int?
   customAllowByok           Boolean?
   customFeatures            Json?
   customAiConfigId          String?  @db.Uuid
@@ -536,6 +538,8 @@ model Plan {
   messengerLimit       Int     @default(1)
   instagramLimit       Int     @default(1)
   websiteWidgetLimit   Int     @default(0) // 0 = disabled by default
+  productCatalogLimit  Int     @default(50)
+  contactsLimit        Int?    // null = unlimited
   storageLimitMb       Int     @default(500)
   trialDays       Int     @default(0)
 

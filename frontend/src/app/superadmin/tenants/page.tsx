@@ -36,6 +36,8 @@ export default function TenantsPage() {
     customWhatsappLimit: '',
     customMessengerLimit: '',
     customInstagramLimit: '',
+    customProductCatalogLimit: '',
+    customContactsLimit: '',
     billingCycleStart: '',
     customAllowByok: false,
     customFeatures: [] as string[],
@@ -135,6 +137,8 @@ export default function TenantsPage() {
       customWhatsappLimit: tenant.customWhatsappLimit !== null && tenant.customWhatsappLimit !== undefined ? String(tenant.customWhatsappLimit) : (tenant.basePlan?.whatsappLimit !== undefined ? String(tenant.basePlan.whatsappLimit) : ''),
       customMessengerLimit: tenant.customMessengerLimit !== null && tenant.customMessengerLimit !== undefined ? String(tenant.customMessengerLimit) : (tenant.basePlan?.messengerLimit !== undefined ? String(tenant.basePlan.messengerLimit) : ''),
       customInstagramLimit: tenant.customInstagramLimit !== null && tenant.customInstagramLimit !== undefined ? String(tenant.customInstagramLimit) : (tenant.basePlan?.instagramLimit !== undefined ? String(tenant.basePlan.instagramLimit) : ''),
+      customProductCatalogLimit: tenant.customProductCatalogLimit !== null && tenant.customProductCatalogLimit !== undefined ? String(tenant.customProductCatalogLimit) : (tenant.basePlan?.productCatalogLimit !== undefined ? String(tenant.basePlan.productCatalogLimit) : ''),
+      customContactsLimit: tenant.customContactsLimit !== null && tenant.customContactsLimit !== undefined ? String(tenant.customContactsLimit) : (tenant.basePlan?.contactsLimit !== undefined && tenant.basePlan?.contactsLimit !== null ? String(tenant.basePlan.contactsLimit) : ''),
       billingCycleStart: tenant.trialEndsAt ? new Date(tenant.trialEndsAt).toISOString().split('T')[0] : '',
       customAllowByok: tenant.customAllowByok ?? (tenant.basePlan?.allowByok ?? false),
       customFeatures: activeFeatures,
@@ -156,6 +160,8 @@ export default function TenantsPage() {
       customWhatsappLimit: null,
       customMessengerLimit: null,
       customInstagramLimit: null,
+      customProductCatalogLimit: null,
+      customContactsLimit: null,
       customFeatures: null,
       customAllowByok: null,
     };
@@ -203,6 +209,12 @@ export default function TenantsPage() {
     if (customData.customWhatsappLimit) payload.customWhatsappLimit = parseInt(customData.customWhatsappLimit);
     if (customData.customMessengerLimit) payload.customMessengerLimit = parseInt(customData.customMessengerLimit);
     if (customData.customInstagramLimit) payload.customInstagramLimit = parseInt(customData.customInstagramLimit);
+    if (customData.customProductCatalogLimit) payload.customProductCatalogLimit = parseInt(customData.customProductCatalogLimit);
+    if (customData.customContactsLimit !== undefined && customData.customContactsLimit !== '') {
+      payload.customContactsLimit = parseInt(customData.customContactsLimit);
+    } else if (customData.customContactsLimit === '') {
+      payload.customContactsLimit = null;
+    }
     if (customData.billingCycleStart) payload.billingCycleStart = customData.billingCycleStart;
     
     // Always include features if the override flag is true, otherwise pass null to remove override
@@ -473,6 +485,26 @@ export default function TenantsPage() {
                     onChange={e => setCustomData({...customData, customInstagramLimit: e.target.value})}
                     className="w-full bg-[#09090b] border border-zinc-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
                     placeholder={`e.g. ${editingTenant.basePlan?.instagramLimit || '1'}`}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-zinc-400">Products Limit</label>
+                  <input
+                    type="number"
+                    value={customData.customProductCatalogLimit}
+                    onChange={e => setCustomData({...customData, customProductCatalogLimit: e.target.value})}
+                    className="w-full bg-[#09090b] border border-zinc-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
+                    placeholder={`e.g. ${editingTenant.basePlan?.productCatalogLimit || '50'}`}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-zinc-400">Contacts Limit (Empty = ∞)</label>
+                  <input
+                    type="number"
+                    value={customData.customContactsLimit}
+                    onChange={e => setCustomData({...customData, customContactsLimit: e.target.value})}
+                    className="w-full bg-[#09090b] border border-zinc-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
+                    placeholder="Unlimited"
                   />
                 </div>
                 <div className="space-y-1">
