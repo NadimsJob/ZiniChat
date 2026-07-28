@@ -168,39 +168,26 @@ export default function ExecutiveDashboardPage() {
   const health = data?.healthScore || {};
   const crm = data?.crm || {};
   const orders = data?.orders || {};
-
-  // Construct Bilingual AI Executive Summary
-  const aiRate = kpis.ai?.automationRate || 0;
-  const msgGrowth = kpis.messages?.growth || 0;
   const openConvs = kpis.conversations?.open || 0;
   const unreadConvs = kpis.conversations?.unread || 0;
-  const overdueLeads = crm.overdue || 0;
 
+
+  // Construct Bilingual AI Executive Summary (Strictly for TODAY, independent of date filter)
   const aiSummaryText = language === 'bn'
-    ? [
-        aiRate > 0 ? `আজ এআই ${formatNumber(aiRate)}% মেসেজ স্বয়ংক্রিয়ভাবে উত্তর দিয়েছে।` : 'আজ এআই মেসেজ হ্যান্ডলিং শুরু করেনি।',
-        msgGrowth > 0
-          ? `পূর্ববর্তী সময়ের তুলনায় মেসেজের সংখ্যা ${formatNumber(msgGrowth)}% বেড়েছে।`
-          : msgGrowth < 0
-          ? `পূর্ববর্তী সময়ের তুলনায় মেসেজ ভলিউম ${formatNumber(Math.abs(msgGrowth))}% কমেছে।`
-          : 'মেসেজ ভলিউম স্থিতিশীল আছে।',
+    ? (data?.todaySummaryBn || [
+        `আজ এআই ${formatNumber(kpis.ai?.today ? Math.round((kpis.ai.today / Math.max(1, kpis.messages?.today || 1)) * 100) : 0)}% মেসেজ স্বয়ংক্রিয়ভাবে উত্তর দিয়েছে।`,
+        `আজ মোট ${formatNumber(kpis.messages?.today || 0)}টি মেসেজ আদান-প্রদান হয়েছে।`,
         openConvs > 0
           ? `${formatNumber(openConvs)}টি ইনবক্স কনভারসেশন ওপেন আছে (${unreadConvs > 0 ? `${formatNumber(unreadConvs)}টি অপঠিত 🔴` : 'সব পঠিত 🟢'})।`
-          : 'কোনো ওপেন ইনবক্স মেসেজ পেন্ডিং নেই 🟢',
-        overdueLeads > 0 ? `${formatNumber(overdueLeads)}টি লিড ফলো-আপ করার সময় পার হয়ে গেছে।` : ''
-      ].filter(Boolean).join(' ')
-    : [
-        aiRate > 0 ? `AI handled ${aiRate}% of conversations automatically.` : 'AI handles incoming messages automatically.',
-        msgGrowth > 0
-          ? `Customer messages increased by ${msgGrowth}% compared to previous period.`
-          : msgGrowth < 0
-          ? `Message volume is down ${Math.abs(msgGrowth)}% from previous period.`
-          : 'Message volume is steady.',
+          : 'কোনো ওপেন ইনবক্স মেসেজ পেন্ডিং নেই 🟢'
+      ].filter(Boolean).join(' '))
+    : (data?.todaySummaryEn || [
+        `AI handled ${kpis.ai?.today ? Math.round((kpis.ai.today / Math.max(1, kpis.messages?.today || 1)) * 100) : 0}% of messages today automatically.`,
         openConvs > 0
           ? `${openConvs} conversations currently open (${unreadConvs > 0 ? `${unreadConvs} unread 🔴` : 'all read 🟢'}).`
-          : 'All inbox messages are resolved 🟢',
-        overdueLeads > 0 ? `${overdueLeads} leads require urgent follow-up.` : ''
-      ].filter(Boolean).join(' ');
+          : 'All inbox messages are resolved 🟢'
+      ].filter(Boolean).join(' '));
+
 
   return (
     <div className="max-w-[1600px] mx-auto space-y-6 p-2 sm:p-4 pb-16 animate-in fade-in duration-500 text-foreground">

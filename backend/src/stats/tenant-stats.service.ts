@@ -143,6 +143,20 @@ export class TenantStatsService {
     const projectedAiCost = numDays > 0 ? (aiCostFilteredUsd / numDays) * 30 : 0;
     const avgCostPerResponse = aiResponseCount > 0 ? aiCostFilteredUsd / aiResponseCount : 0;
 
+    const yesterday = this.daysAgo(1);
+    const [msgYesterday, outboundToday] = await Promise.all([
+      this.prisma.message.count({
+        where: { conversation: { tenantId }, createdAt: { gte: yesterday, lt: todayStart } }
+      }),
+      this.prisma.message.count({
+        where: { conversation: { tenantId }, direction: 'outbound', createdAt: { gte: todayStart } }
+      })
+    ]);
+
+
+    const todayAutomationRate = outboundToday > 0 ? Math.round((aiToday / outboundToday) * 100) : 0;
+    const todayMsgGrowth = msgYesterday > 0 ? Math.round(((msgToday - msgYesterday) / msgYesterday) * 100) : 0;
+
     // Human messages = total outbound - AI outbound in range
     const outboundFiltered = await this.prisma.message.count({
       where: { conversation: { tenantId }, direction: 'outbound', createdAt: { gte: from, lte: to } }
@@ -157,6 +171,32 @@ export class TenantStatsService {
       this.prisma.conversation.count({ where: { tenantId, status: 'bot' } }),
       this.prisma.conversation.count({ where: { tenantId, status: 'closed', lastMessageAt: { gte: todayStart } } }),
     ]);
+
+    // Build strict TODAY summary text (does not change with date range filter)
+    const todaySummaryEn = [
+      todayAutomationRate > 0 ? `AI handled ${todayAutomationRate}% of messages automatically today.` : 'AI has not automated replies today.',
+      todayMsgGrowth > 0 
+        ? `Message volume is up ${todayMsgGrowth}% compared to yesterday.`
+        : todayMsgGrowth < 0 
+        ? `Message volume is down ${Math.abs(todayMsgGrowth)}% from yesterday.` 
+        : 'Message volume is steady compared to yesterday.',
+      openConvs > 0 
+        ? `${openConvs} conversation${openConvs > 1 ? 's are' : ' is'} currently open (${unreadConvs > 0 ? `${unreadConvs} unread` : 'all read'}).`
+        : 'No open inbox messages pending.'
+    ].join(' ');
+
+    const todaySummaryBn = [
+      todayAutomationRate > 0 ? `আজ এআই ${todayAutomationRate}% মেসেজ স্বয়ংক্রিয়ভাবে উত্তর দিয়েছে।` : 'আজ এআই মেসেজ হ্যান্ডলিং শুরু করেনি।',
+      todayMsgGrowth > 0
+        ? `গতকালকের তুলনায় মেসেজের সংখ্যা ${todayMsgGrowth}% বেড়েছে।`
+        : todayMsgGrowth < 0
+        ? `গতকালকের তুলনায় মেসেজ ভলিউম ${Math.abs(todayMsgGrowth)}% কমেছে।`
+        : 'গতকালকের তুলনায় মেসেজ ভলিউম স্থিতিশীল আছে।',
+      openConvs > 0
+        ? `${openConvs}টি ইনবক্স কনভারসেশন ওপেন আছে (${unreadConvs > 0 ? `${unreadConvs}টি অপঠিত` : 'সব পঠিত 🟢'})।`
+        : 'কোনো ওপেন ইনবক্স মেসেজ পেন্ডিং নেই 🟢'
+    ].join(' ');
+
 
     // ── Subscription health ───────────────────────────────────────────────────
     const storageLimitMb = quotas.storageLimitMb;
@@ -313,7 +353,10 @@ export class TenantStatsService {
       range,
       fromDate: from.toISOString(),
       toDate: to.toISOString(),
+      todaySummaryEn,
+      todaySummaryBn,
       // KPI cards
+
       kpis: {
         messages: {
           today: msgToday,

@@ -36,9 +36,12 @@ const mockPrisma = {
     findFirst: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
+    delete: jest.fn().mockResolvedValue({}),
+    deleteMany: jest.fn().mockResolvedValue({ count: 1 }),
     count: jest.fn().mockResolvedValue(0),
   },
 };
+
 
 const mockInboxGateway = {
   broadcastToTenant: jest.fn(),
