@@ -36,7 +36,7 @@ export class BillingService {
     const activeSubscription = await this.prisma.subscription.findFirst({
       where: {
         tenantId,
-        status: 'active',
+        status: { in: ['active', 'trialing'] },
         currentPeriodEnd: { gt: new Date() }
       },
       include: { plan: true },
@@ -44,6 +44,19 @@ export class BillingService {
     });
 
     const plan = activeSubscription?.plan;
+
+    // Current channel connection counts (active only)
+    const [currentWhatsapp, currentMessenger, currentInstagram] = await Promise.all([
+      this.prisma.channelConnection.count({
+        where: { tenantId, channelType: 'whatsapp', status: { in: ['active', 'connected'] } }
+      }),
+      this.prisma.channelConnection.count({
+        where: { tenantId, channelType: 'messenger', status: { in: ['active', 'connected'] } }
+      }),
+      this.prisma.channelConnection.count({
+        where: { tenantId, channelType: 'instagram', status: { in: ['active', 'connected'] } }
+      }),
+    ]);
 
     return {
       subscription: activeSubscription,
@@ -58,9 +71,14 @@ export class BillingService {
       features: (tenant?.customFeatures as any) ?? plan?.features ?? [],
       customPlanName: tenant?.customPlanName,
       customPriceUsd: tenant?.customPriceUsd,
-      basePlan: plan
+      basePlan: plan,
+      // Current usage counts for channel connections
+      currentWhatsapp,
+      currentMessenger,
+      currentInstagram,
     };
   }
+
 
   /**
    * Returns the current billing period start/end for quota usage calculations.

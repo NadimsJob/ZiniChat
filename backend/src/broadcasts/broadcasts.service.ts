@@ -634,5 +634,128 @@ export class BroadcastsService {
     if (!existing) throw new NotFoundException('Global template not found.');
     return this.prisma.globalTemplate.delete({ where: { id } });
   }
+
+  // ============================================================
+  // SYNC TEMPLATES FROM META — Pull approved templates from Meta WABA
+  // ============================================================
+
+  async syncTemplatesFromMeta(tenantId: string): Promise<{ synced: number; skipped: number; templates: any[] }> {
+    await this.checkAccessControl(tenantId);
+
+    const channelConn = await this.prisma.channelConnection.findFirst({
+      where: { tenantId, channelType: 'whatsapp', status: 'active' },
+    });
+
+    if (!channelConn || !channelConn.wabaId || !channelConn.accessTokenEncrypted) {
+      throw new BadRequestException('An active WhatsApp Business Account (WABA) connection is required to sync Meta templates.');
+    }
+
+    const { wabaId, accessTokenEncrypted: accessToken } = channelConn;
+
+    // Fetch all templates from Meta Graph API
+    const metaUrl = `https://graph.facebook.com/v21.0/${wabaId}/message_templates?fields=id,name,status,category,language,components,rejected_reason&limit=100`;
+
+    let metaTemplates: any[] = [];
+
+    if (accessToken.startsWith('mock_') || wabaId.startsWith('mock_')) {
+      // Dev/test mode: return empty list so the UI shows a friendly message
+      metaTemplates = [];
+    } else {
+      const response = await fetch(metaUrl, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        this.logger.error('Meta template sync failed', errorData);
+        throw new BadRequestException(`Meta API Error: ${errorData.error?.message || 'Failed to fetch templates from Meta'}`);
+      }
+
+      const data = await response.json();
+      metaTemplates = data.data || [];
+    }
+
+    let synced = 0;
+    let skipped = 0;
+    const savedTemplates: any[] = [];
+
+    for (const mt of metaTemplates) {
+      // Parse components to extract header/body/footer
+      const components: any[] = mt.components || [];
+      const headerComp = components.find((c: any) => c.type === 'HEADER');
+      const bodyComp = components.find((c: any) => c.type === 'BODY');
+      const footerComp = components.find((c: any) => c.type === 'FOOTER');
+
+      const headerFormat = headerComp?.format || 'NONE';
+      const headerText = headerComp?.format === 'TEXT' ? headerComp.text : null;
+      const bodyText = bodyComp?.text || '';
+      const footerText = footerComp?.text || null;
+
+      // Check if template already exists in DB (by metaTemplateId or name+tenantId)
+      const existing = await this.prisma.template.findFirst({
+        where: {
+          tenantId,
+          OR: [
+            { metaTemplateId: mt.id },
+            { name: mt.name },
+          ],
+        },
+      });
+
+      if (existing) {
+        // Update status and rejection reason only
+        await this.prisma.template.update({
+          where: { id: existing.id },
+          data: {
+            status: mt.status,
+            rejectionReason: mt.rejected_reason || null,
+            metaTemplateId: mt.id,
+          },
+        });
+        skipped++;
+        savedTemplates.push({ ...existing, status: mt.status, synced: false });
+        continue;
+      }
+
+      // Create new template record
+      const created = await this.prisma.template.create({
+        data: {
+          tenantId,
+          name: mt.name,
+          category: mt.category,
+          language: mt.language,
+          headerFormat,
+          headerText,
+          headerMediaHandle: null,
+          headerMediaUrl: null,
+          bodyText,
+          body: bodyText,
+          footerText,
+          components,
+          status: mt.status,
+          rejectionReason: mt.rejected_reason || null,
+          metaTemplateId: mt.id,
+        },
+      });
+
+      synced++;
+      savedTemplates.push({ ...created, synced: true });
+    }
+
+    // Notify tenant owner
+    if (synced > 0) {
+      const tenantOwner = await this.prisma.user.findFirst({ where: { tenantId, role: 'owner' } });
+      if (tenantOwner) {
+        await this.notificationsService.createNotification(
+          tenantOwner.id,
+          `Meta Template Sync Complete`,
+          `${synced} নতুন টেমপ্লেট Meta থেকে সফলভাবে import হয়েছে। ${skipped} টি আগে থেকেই ছিল।`,
+          'info',
+        ).catch(e => this.logger.error('Failed to send sync notification', e));
+      }
+    }
+
+    return { synced, skipped, templates: savedTemplates };
+  }
 }
 

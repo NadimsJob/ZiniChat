@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Cookies from 'js-cookie';
-import { Megaphone, Plus, Clock, Users, Play, AlertCircle, Info, X, Trash2, Smartphone, CheckCheck, Upload, FileText, Image as ImageIcon, Video, Link, Phone, Sparkles, Library, Search, CheckCircle2, ShieldCheck, Zap, Star } from 'lucide-react';
+import { Megaphone, Plus, Clock, Users, Play, AlertCircle, Info, X, Trash2, Smartphone, CheckCheck, Upload, FileText, Image as ImageIcon, Video, Link, Phone, Sparkles, Library, Search, CheckCircle2, ShieldCheck, Zap, Star, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useLanguage } from '@/components/LanguageProvider';
 import InstructionBanner from '@/components/InstructionBanner';
@@ -38,6 +38,7 @@ export default function BroadcastsPage() {
   const [isCampaignModalOpen, setIsCampaignModalOpen] = useState(false);
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // Template Form State
   const [templateName, setTemplateName] = useState('');
@@ -300,6 +301,34 @@ export default function BroadcastsPage() {
     }
   };
 
+  const handleSyncFromMeta = async () => {
+    setIsSyncing(true);
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/broadcasts/templates/sync-from-meta`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Sync failed');
+      
+      if (data.synced === 0 && data.skipped === 0) {
+        toast(language === 'en' ? 'No templates found in your Meta account.' : 'আপনার Meta অ্যাকাউন্টে কোনো টেমপ্লেট পাওয়া যায়নি।', { icon: 'ℹ️' });
+      } else {
+        toast.success(
+          language === 'en'
+            ? `Sync complete! ${data.synced} new, ${data.skipped} already existed.`
+            : `সিঙ্ক সম্পন্ন! ${data.synced}টি নতুন, ${data.skipped}টি আগে থেকেই ছিল।`
+        );
+        fetchData();
+      }
+    } catch (err: any) {
+      toast.error(err.message || (language === 'en' ? 'Failed to sync from Meta.' : 'Meta থেকে সিঙ্ক করতে ব্যর্থ হয়েছে।'));
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   const resetTemplateForm = () => {
     setTemplateName('');
     setNameError(null);
@@ -362,14 +391,26 @@ export default function BroadcastsPage() {
           </p>
         </div>
         {activeTab !== 'library' && (
-          <button 
-            onClick={() => activeTab === 'campaigns' ? setIsCampaignModalOpen(true) : setIsTemplateModalOpen(true)}
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-xs font-bold rounded-xl shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all whitespace-nowrap shrink-0">
-            <Plus className="w-4 h-4 shrink-0" /> 
-            <span>{activeTab === 'campaigns' 
-              ? (language === 'en' ? 'New Campaign' : 'নতুন ক্যাম্পেইন') 
-              : (language === 'en' ? 'New Meta Template' : 'নতুন মেটা টেমপ্লেট')}</span>
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            {activeTab === 'templates' && (
+              <button
+                onClick={handleSyncFromMeta}
+                disabled={isSyncing}
+                title={language === 'en' ? 'Pull all templates from your Meta WABA account' : 'Meta WABA অ্যাকাউন্ট থেকে সব টেমপ্লেট নিয়ে আসুন'}
+                className="flex items-center gap-1.5 px-3 py-2 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/20 text-xs font-bold rounded-xl transition-all disabled:opacity-60 whitespace-nowrap">
+                <RefreshCw className={`w-3.5 h-3.5 shrink-0 ${isSyncing ? 'animate-spin' : ''}`} />
+                <span>{isSyncing ? (language === 'en' ? 'Syncing...' : 'সিঙ্ক হচ্ছে...') : (language === 'en' ? 'Sync from Meta' : 'Meta থেকে Sync')}</span>
+              </button>
+            )}
+            <button 
+              onClick={() => activeTab === 'campaigns' ? setIsCampaignModalOpen(true) : setIsTemplateModalOpen(true)}
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-xs font-bold rounded-xl shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all whitespace-nowrap">
+              <Plus className="w-4 h-4 shrink-0" /> 
+              <span>{activeTab === 'campaigns' 
+                ? (language === 'en' ? 'New Campaign' : 'নতুন ক্যাম্পেইন') 
+                : (language === 'en' ? 'New Meta Template' : 'নতুন মেটা টেমপ্লেট')}</span>
+            </button>
+          </div>
         )}
       </div>
 

@@ -46,6 +46,11 @@ export class BroadcastsController {
     return this.broadcastsService.deleteTemplate(req.user.tenantId, id);
   }
 
+  @Post('templates/sync-from-meta')
+  syncTemplatesFromMeta(@Request() req: any) {
+    return this.broadcastsService.syncTemplatesFromMeta(req.user.tenantId);
+  }
+
   @Get()
   getBroadcasts(@Request() req: any) {
     return this.broadcastsService.getBroadcasts(req.user.tenantId);

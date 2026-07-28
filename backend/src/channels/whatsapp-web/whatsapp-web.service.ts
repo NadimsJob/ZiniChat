@@ -1,8 +1,9 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { InboxGateway } from '../../inbox/inbox.gateway';
 import { InboxService } from '../../inbox/inbox.service';
-import makeWASocket, { useMultiFileAuthState, DisconnectReason, Browsers, fetchLatestBaileysVersion, downloadMediaMessage } from '@whiskeysockets/baileys';
+import { BillingService } from '../../billing/billing.service';
+import makeWASocket, { useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, downloadMediaMessage } from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
 
 import * as fs from 'fs';
@@ -12,6 +13,9 @@ import * as path from 'path';
 export class WhatsappWebService implements OnModuleInit {
   private readonly logger = new Logger(WhatsappWebService.name);
   private sockets: Map<string, any> = new Map();
+  // Cache connectionId per tenant to avoid race condition on first message
+  private connectionIds: Map<string, string> = new Map();
+
   private debugLog(msg: string) {
     fs.appendFileSync('wa-debug.log', `[${new Date().toISOString()}] ${msg}\n`);
     this.logger.log(msg);
@@ -20,7 +24,8 @@ export class WhatsappWebService implements OnModuleInit {
   constructor(
     private readonly prisma: PrismaService,
     private readonly inboxGateway: InboxGateway,
-    private readonly inboxService: InboxService
+    private readonly inboxService: InboxService,
+    private readonly billingService: BillingService,
   ) {}
 
   async onModuleInit() {
@@ -31,9 +36,37 @@ export class WhatsappWebService implements OnModuleInit {
     this.debugLog(`Found ${activeConnections.length} active connections to restore.`);
     for (const conn of activeConnections) {
       this.debugLog(`Restoring WhatsApp Web session for tenant ${conn.tenantId}`);
+      // Pre-cache the known connectionId so first messages work immediately
+      this.connectionIds.set(conn.tenantId, conn.id);
       await this.initSocket(conn.tenantId).catch(err => {
         this.debugLog(`Failed to restore session for ${conn.tenantId}: ${err.message}`);
       });
+    }
+  }
+
+  // =========================================================
+  // Quota + duplicate guard — called before startQr/startPairing
+  // =========================================================
+  private async checkWhatsappWebQuota(tenantId: string): Promise<void> {
+    const quotas = await this.billingService.getTenantQuotas(tenantId);
+
+    if (quotas.currentWhatsapp >= quotas.whatsappLimit) {
+      throw new ForbiddenException(
+        `WhatsApp limit reached (${quotas.currentWhatsapp}/${quotas.whatsappLimit}). ` +
+        `Please upgrade your plan to connect more WhatsApp numbers.`
+      );
+    }
+
+    // Also block a second WEB_QR connection specifically (one QR session per tenant)
+    const existingWebQr = await this.prisma.channelConnection.findFirst({
+      where: { tenantId, provider: 'WEB_QR', status: { in: ['active', 'pending', 'connected'] } }
+    });
+
+    if (existingWebQr) {
+      throw new ForbiddenException(
+        'A WhatsApp Web (QR) session already exists for this account. ' +
+        'Please disconnect the existing session before connecting a new one.'
+      );
     }
   }
 
@@ -45,7 +78,7 @@ export class WhatsappWebService implements OnModuleInit {
       version,
       auth: state,
       printQRInTerminal: false,
-      syncFullHistory: false, // Low memory
+      syncFullHistory: false,
     });
 
     sock.ev.on('creds.update', saveCreds);
@@ -53,13 +86,15 @@ export class WhatsappWebService implements OnModuleInit {
     sock.ev.on('connection.update', (update) => {
       const { connection, lastDisconnect, qr } = update;
       this.debugLog(`Connection update for ${tenantId}: ${connection} ${lastDisconnect ? lastDisconnect.error : ''}`);
+
       if (qr) {
         this.debugLog(`Got QR code for tenant ${tenantId}`);
         this.inboxGateway.broadcastToTenant(tenantId, 'whatsapp_qr_code', { qr });
       }
+
       if (connection === 'close') {
         const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
-        const shouldReconnect = statusCode !== DisconnectReason.loggedOut && statusCode !== 409; // 409 is conflict
+        const shouldReconnect = statusCode !== DisconnectReason.loggedOut && statusCode !== 409;
         this.debugLog(`Connection closed due to ${lastDisconnect?.error}, reconnecting: ${shouldReconnect}`);
         if (shouldReconnect) {
           setTimeout(() => {
@@ -78,9 +113,9 @@ export class WhatsappWebService implements OnModuleInit {
         if (meId) {
           const jid = meId.split(':')[0];
           if (jid && !jid.includes('@')) {
-            phoneNumber = jid; // e.g. 8801791894967
+            phoneNumber = jid;
           } else {
-             phoneNumber = meId.split('@')[0].split(':')[0];
+            phoneNumber = meId.split('@')[0].split(':')[0];
           }
         }
 
@@ -88,26 +123,32 @@ export class WhatsappWebService implements OnModuleInit {
           where: { tenantId, provider: 'WEB_QR' }
         }).then(async (existing) => {
           if (existing) {
-             await this.prisma.channelConnection.update({
-               where: { id: existing.id },
-               data: { status: 'active', qrStatus: 'CONNECTED', phoneNumber }
-             });
+            await this.prisma.channelConnection.update({
+              where: { id: existing.id },
+              data: { status: 'active', qrStatus: 'CONNECTED', phoneNumber }
+            });
+            // Cache the connectionId immediately after DB update so first messages work
+            this.connectionIds.set(tenantId, existing.id);
+            this.debugLog(`Cached connectionId ${existing.id} for tenant ${tenantId}`);
           } else {
-             await this.prisma.channelConnection.create({
-               data: {
-                 tenantId,
-                 channelType: 'whatsapp',
-                 provider: 'WEB_QR',
-                 status: 'active',
-                 qrStatus: 'CONNECTED',
-                 displayName: 'WhatsApp Web',
-                 externalAccountId: `wa_web_${tenantId.substring(0, 8)}`,
-                 accessTokenEncrypted: 'baileys_local_session',
-                 phoneNumber
-               }
-             });
+            const created = await this.prisma.channelConnection.create({
+              data: {
+                tenantId,
+                channelType: 'whatsapp',
+                provider: 'WEB_QR',
+                status: 'active',
+                qrStatus: 'CONNECTED',
+                displayName: 'WhatsApp Web',
+                externalAccountId: `wa_web_${tenantId.substring(0, 8)}`,
+                accessTokenEncrypted: 'baileys_local_session',
+                phoneNumber
+              }
+            });
+            // Cache the newly created connectionId
+            this.connectionIds.set(tenantId, created.id);
+            this.debugLog(`Created & cached connectionId ${created.id} for tenant ${tenantId}`);
           }
-          // Emit success AFTER database is updated so frontend fetch works immediately
+          // Emit success AFTER database is updated
           this.inboxGateway.broadcastToTenant(tenantId, 'whatsapp_qr_connected', { success: true });
         }).catch(err => {
           this.debugLog(`Failed to save connection for ${tenantId}: ${err.message}`);
@@ -116,7 +157,7 @@ export class WhatsappWebService implements OnModuleInit {
     });
 
     sock.ev.on('messages.upsert', async (m) => {
-      this.debugLog(`Got messages for ${tenantId}: ${JSON.stringify(m)}`);
+      this.debugLog(`Got messages for ${tenantId}: type=${m.type}, count=${m.messages.length}`);
       if (m.type !== 'notify') return;
       
       for (const msg of m.messages) {
@@ -125,7 +166,7 @@ export class WhatsappWebService implements OnModuleInit {
         let remoteJid = msg.key.remoteJid;
         // If the primary JID is a LID (Linked Device format), use the alternate standard phone JID if available
         if (remoteJid?.includes('@lid') && msg.key.remoteJidAlt) {
-           remoteJid = msg.key.remoteJidAlt;
+          remoteJid = msg.key.remoteJidAlt;
         }
 
         if (!remoteJid || remoteJid.includes('@g.us')) continue;
@@ -145,16 +186,13 @@ export class WhatsappWebService implements OnModuleInit {
           contentStr = msg.message.extendedTextMessage.text;
           const contextInfo = msg.message.extendedTextMessage.contextInfo;
           if (contextInfo?.quotedMessage) {
-             const qMsg = contextInfo.quotedMessage;
-             let qText = '[Media message]';
-             if (qMsg.conversation) qText = qMsg.conversation;
-             else if (qMsg.extendedTextMessage?.text) qText = qMsg.extendedTextMessage.text;
-             else if (qMsg.imageMessage?.caption) qText = qMsg.imageMessage.caption;
-             else if (qMsg.videoMessage?.caption) qText = qMsg.videoMessage.caption;
-             quotedMsg = {
-               text: qText,
-               participant: contextInfo.participant
-             };
+            const qMsg = contextInfo.quotedMessage;
+            let qText = '[Media message]';
+            if (qMsg.conversation) qText = qMsg.conversation;
+            else if (qMsg.extendedTextMessage?.text) qText = qMsg.extendedTextMessage.text;
+            else if (qMsg.imageMessage?.caption) qText = qMsg.imageMessage.caption;
+            else if (qMsg.videoMessage?.caption) qText = qMsg.videoMessage.caption;
+            quotedMsg = { text: qText, participant: contextInfo.participant };
           }
         } else if (msg.message.imageMessage) {
           messageType = 'image';
@@ -176,35 +214,47 @@ export class WhatsappWebService implements OnModuleInit {
 
         if (messageType === 'image' || messageType === 'video' || messageType === 'document') {
           try {
-             this.debugLog(`Attempting to download media for msg ${msg.key.id}`);
-             const buffer = await downloadMediaMessage(msg, 'buffer', {}, { 
-               reuploadRequest: sock.updateMediaMessage,
-               logger: this.logger as any
-             });
-             this.debugLog(`Downloaded media buffer of size ${buffer.length}`);
-             const ext = messageType === 'image' ? 'jpg' : (messageType === 'video' ? 'mp4' : 'bin');
-             const filename = `wa_${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`;
-             const uploadsDir = path.join(process.cwd(), 'uploads');
-             if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-             const filepath = path.join(uploadsDir, filename);
-             fs.writeFileSync(filepath, buffer);
-             mediaUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/uploads/${filename}`;
-             this.debugLog(`Saved media to ${mediaUrl}`);
-          } catch(e) {
-             this.logger.error('Failed to download media: ' + e.message);
-             this.debugLog(`Failed to download media: ${e.message} ${e.stack}`);
+            this.debugLog(`Attempting to download media for msg ${msg.key.id}`);
+            const buffer = await downloadMediaMessage(msg, 'buffer', {}, { 
+              reuploadRequest: sock.updateMediaMessage,
+              logger: this.logger as any
+            });
+            this.debugLog(`Downloaded media buffer of size ${buffer.length}`);
+            const ext = messageType === 'image' ? 'jpg' : (messageType === 'video' ? 'mp4' : 'bin');
+            const filename = `wa_${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`;
+            const uploadsDir = path.join(process.cwd(), 'uploads');
+            if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+            const filepath = path.join(uploadsDir, filename);
+            fs.writeFileSync(filepath, buffer);
+            mediaUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/uploads/${filename}`;
+            this.debugLog(`Saved media to ${mediaUrl}`);
+          } catch (e) {
+            this.logger.error('Failed to download media: ' + e.message);
+            this.debugLog(`Failed to download media: ${e.message} ${e.stack}`);
           }
         }
 
         try {
-          const connection = await this.prisma.channelConnection.findFirst({
-             where: { tenantId, provider: 'WEB_QR', status: 'active' }
-          });
+          // Use cached connectionId first (avoids race condition on first message after reconnect)
+          let channelConnectionId: string | undefined = this.connectionIds.get(tenantId);
+
+          if (!channelConnectionId) {
+            // Fallback: query DB (handles edge cases where cache was lost after restart)
+            const connection = await this.prisma.channelConnection.findFirst({
+              where: { tenantId, provider: 'WEB_QR', status: { in: ['active', 'connected'] } }
+            });
+            channelConnectionId = connection?.id;
+            if (channelConnectionId) {
+              this.connectionIds.set(tenantId, channelConnectionId);
+            }
+          }
+
+          this.debugLog(`Using channelConnectionId=${channelConnectionId} for incoming message`);
 
           const savedData = await this.inboxService.handleIncomingMessage({
             tenantId,
             channel: 'whatsapp',
-            channelConnectionId: connection?.id || undefined,
+            channelConnectionId,
             externalContactId,
             contactName,
             messageType,
@@ -234,6 +284,9 @@ export class WhatsappWebService implements OnModuleInit {
   }
 
   async startPairing(tenantId: string, phoneNumber: string): Promise<string> {
+    // Enforce quota + duplicate guard
+    await this.checkWhatsappWebQuota(tenantId);
+
     if (this.sockets.has(tenantId)) {
       this.sockets.get(tenantId).ws?.close();
       this.sockets.delete(tenantId);
@@ -244,12 +297,15 @@ export class WhatsappWebService implements OnModuleInit {
   }
 
   async startQr(tenantId: string): Promise<void> {
+    // Enforce quota + duplicate guard
+    await this.checkWhatsappWebQuota(tenantId);
+
     if (this.sockets.has(tenantId)) {
       this.sockets.get(tenantId).ws?.close();
       this.sockets.delete(tenantId);
     }
     await this.initSocket(tenantId);
-    // The QR will be emitted via connection.update
+    // The QR will be emitted via connection.update event
   }
 
   async logout(tenantId: string) {
@@ -260,6 +316,9 @@ export class WhatsappWebService implements OnModuleInit {
       this.sockets.get(tenantId).ws?.close();
       this.sockets.delete(tenantId);
     }
+    // Clear cached connectionId
+    this.connectionIds.delete(tenantId);
+
     const sessionDir = `./sessions/whatsapp_web/${tenantId}`;
     if (fs.existsSync(sessionDir)) {
       fs.rmSync(sessionDir, { recursive: true, force: true });

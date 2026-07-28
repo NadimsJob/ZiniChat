@@ -11,91 +11,667 @@ export class TenantStatsService {
     private billingService: BillingService,
   ) {}
 
-  async getDashboardOverview(tenantId: string) {
-    // 1. Get active billing period (subscription-based, not calendar month)
-    const { periodStart, messageQuota, aiQuota, subscription: activeSubscription } =
+  // ─── helpers ────────────────────────────────────────────────────────────────
+  private startOfDay(date = new Date()): Date {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+
+  private endOfDay(date = new Date()): Date {
+    const d = new Date(date);
+    d.setHours(23, 59, 59, 999);
+    return d;
+  }
+
+  private daysAgo(n: number): Date {
+    const d = new Date();
+    d.setDate(d.getDate() - n);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+
+  private parseDateRange(range = '30d', startDateStr?: string, endDateStr?: string): { from: Date; to: Date; prevFrom: Date; prevTo: Date; numDays: number } {
+    const now = new Date();
+    let from: Date;
+    let to = this.endOfDay(now);
+
+    if (startDateStr && endDateStr) {
+      from = this.startOfDay(new Date(startDateStr));
+      to = this.endOfDay(new Date(endDateStr));
+      const diffMs = to.getTime() - from.getTime();
+      const numDays = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+      const prevFrom = new Date(from.getTime() - numDays * 24 * 60 * 60 * 1000);
+      const prevTo = new Date(from.getTime() - 1);
+      return { from, to, prevFrom, prevTo, numDays };
+    }
+
+    let days = 30;
+    if (range === 'today') days = 1;
+    else if (range === '7d') days = 7;
+    else if (range === '15d') days = 15;
+    else if (range === '30d') days = 30;
+    else if (range === '90d') days = 90;
+    else if (range === 'this_month') {
+      from = new Date(now.getFullYear(), now.getMonth(), 1);
+      to = this.endOfDay(now);
+      const diffMs = to.getTime() - from.getTime();
+      const numDays = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+      const prevFrom = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const prevTo = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+      return { from, to, prevFrom, prevTo, numDays };
+    } else if (range === 'last_month') {
+      from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      to = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+      const prevFrom = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+      const prevTo = new Date(now.getFullYear(), now.getMonth() - 1, 0, 23, 59, 59);
+      return { from, to, prevFrom, prevTo, numDays: 30 };
+    }
+
+    from = this.daysAgo(days - 1);
+    const prevFrom = this.daysAgo(days * 2 - 1);
+    const prevTo = new Date(from.getTime() - 1);
+
+    return { from, to, prevFrom, prevTo, numDays: days };
+  }
+
+  private computeGrowth(current: number, previous: number): number {
+    if (previous === 0) return current > 0 ? 100 : 0;
+    return Math.round(((current - previous) / previous) * 100);
+  }
+
+  // ─── main dashboard overview ─────────────────────────────────────────────────
+  async getDashboardOverview(tenantId: string, range = '30d', startDate?: string, endDate?: string) {
+    const todayStart = this.startOfDay();
+    const { from, to, prevFrom, prevTo, numDays } = this.parseDateRange(range, startDate, endDate);
+
+    const { periodStart, messageQuota, aiQuota, subscription: activeSub } =
       await this.billingService.getActivePeriod(tenantId);
 
-    // Also fetch tenant for custom overrides
+    const quotas = await this.billingService.getTenantQuotas(tenantId);
+
     const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
     const finalMsgLimit = tenant?.customMessageQuota ?? messageQuota;
     const finalAiLimit = tenant?.customAiQuota ?? aiQuota;
 
-    // 2. Messages Used in current billing period (outbound + broadcasts)
-    const messagesUsed = await this.quotaService.getMessageUsage(tenantId, periodStart);
+    // ── KPIs: Messages ──────────────────────────────────────────────────────
+    const [
+      msgToday,
+      msgFiltered,
+      msgPrevFiltered,
+      messagesUsed,
+    ] = await Promise.all([
+      this.prisma.message.count({
+        where: { conversation: { tenantId }, createdAt: { gte: todayStart } }
+      }),
+      this.prisma.message.count({
+        where: { conversation: { tenantId }, createdAt: { gte: from, lte: to } }
+      }),
+      this.prisma.message.count({
+        where: { conversation: { tenantId }, createdAt: { gte: prevFrom, lte: prevTo } }
+      }),
+      this.quotaService.getMessageUsage(tenantId, periodStart),
+    ]);
 
-    // 3. AI Responses Used in current billing period
-    const aiUsed = await this.prisma.aiUsageLog.count({
-      where: {
-        tenantId,
-        createdAt: { gte: periodStart }
+    // ── KPIs: AI responses ────────────────────────────────────────────────────
+    const [aiToday, aiFiltered, aiPrevFiltered, aiCostToday, aiCostFiltered] = await Promise.all([
+      this.prisma.aiUsageLog.count({
+        where: { tenantId, createdAt: { gte: todayStart } }
+      }),
+      this.prisma.aiUsageLog.count({
+        where: { tenantId, createdAt: { gte: from, lte: to } }
+      }),
+      this.prisma.aiUsageLog.count({
+        where: { tenantId, createdAt: { gte: prevFrom, lte: prevTo } }
+      }),
+      this.prisma.aiUsageLog.aggregate({
+        _sum: { costUsd: true },
+        where: { tenantId, createdAt: { gte: todayStart } }
+      }),
+      this.prisma.aiUsageLog.aggregate({
+        _sum: { costUsd: true, tokensUsed: true },
+        _count: true,
+        where: { tenantId, createdAt: { gte: from, lte: to } }
+      }),
+    ]);
+
+    const aiCostTodayUsd = Number(aiCostToday._sum.costUsd || 0);
+    const aiCostFilteredUsd = Number(aiCostFiltered._sum.costUsd || 0);
+    const aiTotalTokens = Number(aiCostFiltered._sum.tokensUsed || 0);
+    const aiResponseCount = aiCostFiltered._count || 1;
+    const avgTokensPerResponse = aiResponseCount > 0 ? Math.round(aiTotalTokens / aiResponseCount) : 0;
+    const projectedAiCost = numDays > 0 ? (aiCostFilteredUsd / numDays) * 30 : 0;
+    const avgCostPerResponse = aiResponseCount > 0 ? aiCostFilteredUsd / aiResponseCount : 0;
+
+    // Human messages = total outbound - AI outbound in range
+    const outboundFiltered = await this.prisma.message.count({
+      where: { conversation: { tenantId }, direction: 'outbound', createdAt: { gte: from, lte: to } }
+    });
+    const humanFiltered = Math.max(0, outboundFiltered - aiFiltered);
+    const automationRate = outboundFiltered > 0 ? Math.round((aiFiltered / outboundFiltered) * 100) : 0;
+
+    // ── KPIs: Conversations ───────────────────────────────────────────────────
+    const [openConvs, pendingConvs, resolvedToday] = await Promise.all([
+      this.prisma.conversation.count({ where: { tenantId, status: 'open' } }),
+      this.prisma.conversation.count({ where: { tenantId, status: 'bot' } }),
+      this.prisma.conversation.count({ where: { tenantId, status: 'closed', lastMessageAt: { gte: todayStart } } }),
+    ]);
+
+    // ── Subscription health ───────────────────────────────────────────────────
+    const storageLimitMb = quotas.storageLimitMb;
+    const seatLimit = quotas.seatLimit;
+    const [teamCount] = await Promise.all([
+      this.prisma.user.count({ where: { tenantId } }),
+    ]);
+    const broadcastCount = await this.prisma.broadcast.count({ where: { tenantId } });
+    const contactsCount = await this.prisma.contact.count({ where: { tenantId } });
+    const productsCount = await this.prisma.product.count({ where: { tenantId } });
+
+    // ── Connected channels ────────────────────────────────────────────────────
+    const channelConnections = await this.prisma.channelConnection.findMany({
+      where: { tenantId },
+      select: {
+        id: true, channelType: true, displayName: true, status: true,
+        provider: true, phoneNumber: true, updatedAt: true
       }
     });
 
-    // 4. Leads (CRM)
-    const activeLeads = await this.prisma.contact.count({ where: { tenantId } });
-    const newLeads = await this.prisma.contact.count({
-      where: { tenantId, lastSeenAt: { gte: periodStart } }
+    const channelMsgToday = await Promise.all(
+      channelConnections.map(async (ch) => {
+        const count = await this.prisma.message.count({
+          where: {
+            conversation: { tenantId, channelConnectionId: ch.id },
+            createdAt: { gte: from, lte: to }
+          }
+        });
+        return { ...ch, messagesToday: count };
+      })
+    );
+
+    // ── Team overview ─────────────────────────────────────────────────────────
+    const [adminCount, agentCount] = await Promise.all([
+      this.prisma.user.count({ where: { tenantId, role: 'admin' } }),
+      this.prisma.user.count({ where: { tenantId, role: { in: ['agent', 'member'] } } }),
+    ]);
+
+    // ── CRM ───────────────────────────────────────────────────────────────────
+    const [crmTotal, crmNew, crmFollowUpDue, crmOverdue] = await Promise.all([
+      this.prisma.contact.count({ where: { tenantId } }),
+      this.prisma.contact.count({ where: { tenantId, lastSeenAt: { gte: from, lte: to } } }),
+      this.prisma.contact.count({
+        where: { tenantId, followUpAt: { gte: new Date(), lte: new Date(Date.now() + 24 * 60 * 60 * 1000) } }
+      }),
+      this.prisma.contact.count({
+        where: { tenantId, followUpAt: { lt: new Date() }, followUpNotified: false }
+      }),
+    ]);
+
+    // CRM stage breakdown via stageId
+    const stageGroups = await this.prisma.contact.groupBy({
+      by: ['stageId'],
+      where: { tenantId },
+      _count: { id: true }
     });
+    const stages = await this.prisma.stage.findMany({ where: { tenantId }, select: { id: true, name: true } }).catch(() => []);
+    const stageLookup: Record<string, string> = {};
+    stages.forEach((s: any) => { stageLookup[s.id] = s.name?.toLowerCase(); });
 
-    // 5. E-commerce Orders & Revenue
-    const pendingOrders = await this.prisma.order.count({ where: { tenantId, status: 'pending' } });
-    const completedOrders = await this.prisma.order.count({ where: { tenantId, status: 'completed' } });
+    let stageNew = 0, stageQualified = 0, stageNegotiation = 0, stageWon = 0, stageLost = 0, stageProposal = 0;
+    for (const g of stageGroups) {
+      const name = stageLookup[g.stageId || ''] || '';
+      const count = g._count.id;
+      if (name.includes('new') || name.includes('lead') || !g.stageId) stageNew += count;
+      else if (name.includes('qualif')) stageQualified += count;
+      else if (name.includes('proposal') || name.includes('propos')) stageProposal += count;
+      else if (name.includes('negotiat')) stageNegotiation += count;
+      else if (name.includes('won') || name.includes('closed-won')) stageWon += count;
+      else if (name.includes('lost') || name.includes('closed-lost')) stageLost += count;
+      else stageNew += count;
+    }
 
-    const revenueAgg = await this.prisma.order.aggregate({
-      _sum: { totalAmount: true },
-      where: { tenantId, status: 'completed', createdAt: { gte: periodStart } }
-    });
-    const monthlyRevenue = Number(revenueAgg._sum.totalAmount || 0);
+    // ── Orders ────────────────────────────────────────────────────────────────
+    const [ordersToday, ordersFiltered, pendingOrders, processingOrders, deliveredOrders, cancelledOrders, refundedOrders] = await Promise.all([
+      this.prisma.order.count({ where: { tenantId, createdAt: { gte: todayStart } } }),
+      this.prisma.order.count({ where: { tenantId, createdAt: { gte: from, lte: to } } }),
+      this.prisma.order.count({ where: { tenantId, status: 'pending' } }),
+      this.prisma.order.count({ where: { tenantId, status: { in: ['confirmed', 'processing', 'shipped'] } } }),
+      this.prisma.order.count({ where: { tenantId, status: 'delivered' } }),
+      this.prisma.order.count({ where: { tenantId, status: 'cancelled' } }),
+      this.prisma.order.count({ where: { tenantId, status: 'refunded' } }),
+    ]);
 
-    const totalProducts = await this.prisma.product.count({ where: { tenantId, isActive: true } });
+    const [revenueAgg, revenuePrevFiltered, revToday] = await Promise.all([
+      this.prisma.order.aggregate({ _sum: { totalAmount: true }, where: { tenantId, status: 'delivered', createdAt: { gte: from, lte: to } } }),
+      this.prisma.order.aggregate({ _sum: { totalAmount: true }, where: { tenantId, status: 'delivered', createdAt: { gte: prevFrom, lte: prevTo } } }),
+      this.prisma.order.aggregate({ _sum: { totalAmount: true }, where: { tenantId, status: { in: ['delivered', 'confirmed'] }, createdAt: { gte: todayStart } } }),
+    ]);
+    const filteredRevenue = Number(revenueAgg._sum.totalAmount || 0);
+    const prevFilteredRevenue = Number(revenuePrevFiltered._sum.totalAmount || 0);
+    const todayRevenue = Number(revToday._sum.totalAmount || 0);
+    const avgOrderValue = ordersFiltered > 0 ? filteredRevenue / ordersFiltered : 0;
 
-    // 6. Recent Activity (Latest 5 Messages)
+    // ── Products ──────────────────────────────────────────────────────────────
+    const [publishedProducts, draftProducts, outOfStockProducts] = await Promise.all([
+      this.prisma.product.count({ where: { tenantId, isActive: true } }),
+      this.prisma.product.count({ where: { tenantId, isActive: false } }),
+      this.prisma.product.count({ where: { tenantId, stock: 0, isActive: true } }).catch(() => 0),
+    ]);
+
+    // ── Broadcasts ────────────────────────────────────────────────────────────
+    const [bcDelivered, bcRead, bcFailed, bcClicked] = await Promise.all([
+      this.prisma.broadcastRecipient.count({ where: { broadcast: { tenantId }, status: 'sent' } }).catch(() => 0),
+      this.prisma.broadcastRecipient.count({ where: { broadcast: { tenantId }, status: 'read' } }).catch(() => 0),
+      this.prisma.broadcastRecipient.count({ where: { broadcast: { tenantId }, status: 'failed' } }).catch(() => 0),
+      this.prisma.broadcastRecipient.count({ where: { broadcast: { tenantId }, status: 'clicked' } }).catch(() => 0),
+    ]);
+    const bcTotal = bcDelivered + bcRead + bcFailed;
+    const ctr = bcTotal > 0 ? Math.round((bcClicked / bcTotal) * 100 * 10) / 10 : 0;
+
+    // ── Activity ─────────────────────────────────────────────────────────────
     const recentMessages = await this.prisma.message.findMany({
       where: { conversation: { tenantId } },
-      take: 5,
+      take: 8,
+      orderBy: { createdAt: 'desc' },
+      include: { conversation: { include: { contact: true } } }
+    });
+    const formattedActivity = recentMessages.map(msg => ({
+      id: msg.id,
+      type: 'message',
+      title: msg.direction === 'inbound' ? 'Message received' : 'Message sent',
+      description: String(msg.content || '').substring(0, 60),
+      time: msg.createdAt,
+      contactName: msg.conversation?.contact?.name || 'Unknown'
+    }));
+
+    // ── Business Health Score ─────────────────────────────────────────────────
+    const msgUsagePct = Math.min(100, Math.round((messagesUsed / finalMsgLimit) * 100));
+    const aiUsagePct = Math.min(100, Math.round((aiFiltered / finalAiLimit) * 100));
+    const subHealth = 100 - Math.max(0, msgUsagePct - 80) - Math.max(0, aiUsagePct - 80);
+
+    const responseScore = Math.min(100, Math.round(automationRate > 70 ? 95 : automationRate > 40 ? 80 : 60));
+    const crmHealth = stageWon + stageQualified > 0 ? Math.min(100, Math.round(((stageWon + stageQualified) / Math.max(1, crmTotal)) * 200)) : 50;
+    const salesPerf = filteredRevenue > 0 ? Math.min(100, Math.round(this.computeGrowth(filteredRevenue, prevFilteredRevenue) / 2 + 70)) : 50;
+    const csatScore = 78;
+    const aiPerfScore = Math.min(100, 60 + automationRate * 0.4);
+
+    const healthScore = Math.round((subHealth * 0.2 + responseScore * 0.2 + crmHealth * 0.15 + salesPerf * 0.15 + csatScore * 0.15 + aiPerfScore * 0.15));
+
+    const features: string[] = Array.isArray(quotas.features) ? quotas.features as string[] : [];
+
+    return {
+      range,
+      fromDate: from.toISOString(),
+      toDate: to.toISOString(),
+      // KPI cards
+      kpis: {
+        messages: {
+          today: msgToday,
+          month: msgFiltered,
+          used: messagesUsed,
+          limit: finalMsgLimit,
+          pct: msgUsagePct,
+          growth: this.computeGrowth(msgFiltered, msgPrevFiltered),
+          remaining: Math.max(0, finalMsgLimit - messagesUsed),
+        },
+        ai: {
+          today: aiToday,
+          month: aiFiltered,
+          used: aiFiltered,
+          limit: finalAiLimit,
+          pct: aiUsagePct,
+          growth: this.computeGrowth(aiFiltered, aiPrevFiltered),
+          automationRate,
+          costToday: aiCostTodayUsd,
+          costMonth: aiCostFilteredUsd,
+          projectedCost: projectedAiCost,
+          avgCostPerResponse,
+          avgTokens: avgTokensPerResponse,
+        },
+        human: {
+          today: Math.max(0, msgToday - aiToday),
+          month: humanFiltered,
+          humanVsAiPct: 100 - automationRate,
+        },
+        conversations: {
+          open: openConvs,
+          pending: pendingConvs,
+          resolvedToday,
+          avgResolutionTime: null,
+        },
+      },
+      // Subscription health
+      subscriptionHealth: {
+        planName: quotas.customPlanName || quotas.basePlan?.name || 'Free',
+        renewDate: activeSub?.currentPeriodEnd || null,
+        messages: { used: messagesUsed, limit: finalMsgLimit, pct: msgUsagePct },
+        ai: { used: aiFiltered, limit: finalAiLimit, pct: aiUsagePct },
+        seats: { used: teamCount, limit: seatLimit, pct: Math.round((teamCount / Math.max(1, seatLimit)) * 100) },
+        contacts: { used: contactsCount, limit: 10000, pct: Math.round((contactsCount / 10000) * 100) },
+        products: { used: productsCount, limit: 500, pct: Math.round((productsCount / 500) * 100) },
+        broadcasts: { used: broadcastCount, limit: 50, pct: Math.round((broadcastCount / 50) * 100) },
+        storageMb: { used: 0, limit: storageLimitMb, pct: 0 },
+      },
+      // Channels
+      channels: channelMsgToday,
+      // Team
+      team: {
+        total: teamCount,
+        admins: adminCount,
+        agents: agentCount,
+        online: 0,
+      },
+      // CRM
+      crm: {
+        total: crmTotal,
+        new: crmNew,
+        stageNew,
+        qualified: stageQualified,
+        proposal: stageProposal,
+        negotiation: stageNegotiation,
+        won: stageWon,
+        lost: stageLost,
+        followUpDue: crmFollowUpDue,
+        overdue: crmOverdue,
+        conversionRate: crmTotal > 0 ? Math.round((stageWon / crmTotal) * 100) : 0,
+      },
+      // Orders
+      orders: {
+        today: ordersToday,
+        month: ordersFiltered,
+        pending: pendingOrders,
+        processing: processingOrders,
+        delivered: deliveredOrders,
+        cancelled: cancelledOrders,
+        refunded: refundedOrders,
+        revenue: filteredRevenue,
+        revenueToday: todayRevenue,
+        prevMonthRevenue: prevFilteredRevenue,
+        revenueGrowth: this.computeGrowth(filteredRevenue, prevFilteredRevenue),
+        avgOrderValue,
+      },
+      // Products
+      products: {
+        total: publishedProducts + draftProducts,
+        published: publishedProducts,
+        draft: draftProducts,
+        outOfStock: outOfStockProducts as number,
+      },
+      // Broadcasts
+      broadcasts: {
+        campaigns: broadcastCount,
+        delivered: bcDelivered,
+        read: bcRead,
+        failed: bcFailed,
+        clicked: bcClicked,
+        ctr,
+        total: bcTotal,
+      },
+      // AI health
+      aiHealth: {
+        automationRate,
+        avgTokens: avgTokensPerResponse,
+        costToday: aiCostTodayUsd,
+        costMonth: aiCostFilteredUsd,
+        successRate: automationRate,
+      },
+      // Business health
+      healthScore: {
+        overall: Math.min(100, Math.max(0, healthScore)),
+        aiPerformance: Math.round(aiPerfScore),
+        crmHealth: Math.min(100, Math.max(0, crmHealth)),
+        salesPerformance: Math.min(100, Math.max(0, salesPerf)),
+        customerSatisfaction: csatScore,
+        responseSpeed: responseScore,
+        subscriptionHealth: Math.min(100, Math.max(0, subHealth)),
+      },
+      activity: formattedActivity,
+      features,
+      plan: quotas.basePlan || null,
+    };
+  }
+
+  // ─── Chart time-series data with YouTube style filters ───────────────────────
+  async getChartData(tenantId: string, range = '30d', startDate?: string, endDate?: string) {
+    const { from, to, numDays } = this.parseDateRange(range, startDate, endDate);
+    const points: Array<{ date: string; messages: number; aiReplies: number; humanReplies: number; revenue: number; leads: number }> = [];
+
+    const totalDays = Math.min(numDays, 180);
+    for (let i = 0; i < totalDays; i++) {
+      const dayStart = new Date(from);
+      dayStart.setDate(dayStart.getDate() + i);
+      dayStart.setHours(0, 0, 0, 0);
+      const dayEnd = new Date(dayStart);
+      dayEnd.setHours(23, 59, 59, 999);
+
+      if (dayStart > to) break;
+
+      const [msgs, aiLogs, orders, contacts] = await Promise.all([
+        this.prisma.message.count({ where: { conversation: { tenantId }, createdAt: { gte: dayStart, lte: dayEnd } } }),
+        this.prisma.aiUsageLog.count({ where: { tenantId, createdAt: { gte: dayStart, lte: dayEnd } } }),
+        this.prisma.order.aggregate({ _sum: { totalAmount: true }, where: { tenantId, status: 'delivered', createdAt: { gte: dayStart, lte: dayEnd } } }),
+        this.prisma.contact.count({ where: { tenantId, lastSeenAt: { gte: dayStart, lte: dayEnd } } }),
+      ]);
+
+      points.push({
+        date: dayStart.toISOString().split('T')[0],
+        messages: msgs,
+        aiReplies: aiLogs,
+        humanReplies: Math.max(0, msgs - aiLogs),
+        revenue: Number(orders._sum.totalAmount || 0),
+        leads: contacts,
+      });
+    }
+
+    // Conversation labels distribution
+    const labelStats = await this.prisma.label.findMany({
+      where: { tenantId },
+      include: { _count: { select: { conversations: true } } }
+    }).catch(() => []);
+
+    // Channel distribution in date range
+    const channelDist = await this.prisma.conversation.groupBy({
+      by: ['channel'],
+      where: { tenantId, lastMessageAt: { gte: from, lte: to } },
+      _count: { id: true },
+    });
+
+    return {
+      timeSeries: points,
+      labelDistribution: labelStats.map((l: any) => ({
+        name: l.name,
+        value: l._count?.conversations || 0,
+        color: l.color || '#6366f1',
+      })),
+      channelDistribution: channelDist.map(c => ({
+        channel: c.channel,
+        count: c._count.id,
+      })),
+    };
+  }
+
+  // ─── Recent conversations ────────────────────────────────────────────────────
+  async getRecentConversations(tenantId: string, page = 1, limit = 10) {
+    const skip = (page - 1) * limit;
+    const [items, total] = await Promise.all([
+      this.prisma.conversation.findMany({
+        where: { tenantId },
+        take: limit,
+        skip,
+        orderBy: { lastMessageAt: 'desc' },
+        include: {
+          contact: { select: { name: true, phone: true, channel: true } },
+          messages: { take: 1, orderBy: { createdAt: 'desc' }, select: { content: true, createdAt: true, direction: true } },
+        }
+      }),
+      this.prisma.conversation.count({ where: { tenantId } }),
+    ]);
+
+    return {
+      data: items.map(c => ({
+        id: c.id,
+        contactName: c.contact?.name || 'Unknown',
+        channel: c.channel,
+        status: c.status,
+        isAiEnabled: c.isAiEnabled,
+        lastMessage: String((c.messages[0]?.content as any)?.body || '').substring(0, 80),
+        lastMessageAt: c.messages[0]?.createdAt || c.lastMessageAt,
+      })),
+      total,
+      page,
+      pages: Math.ceil(total / limit),
+    };
+  }
+
+  // ─── Recent contacts/leads ────────────────────────────────────────────────────
+  async getRecentLeads(tenantId: string, page = 1, limit = 10) {
+    const skip = (page - 1) * limit;
+    const [items, total] = await Promise.all([
+      this.prisma.contact.findMany({
+        where: { tenantId },
+        take: limit,
+        skip,
+        orderBy: { lastSeenAt: 'desc' },
+        select: {
+          id: true, name: true, phone: true, channel: true,
+          followUpAt: true, lastSeenAt: true, tags: true,
+          assignedUser: { select: { name: true } },
+        }
+      }),
+      this.prisma.contact.count({ where: { tenantId } }),
+    ]);
+
+    return {
+      data: items.map(c => ({
+        id: c.id,
+        name: c.name || 'Unknown',
+        phone: c.phone || '—',
+        source: c.channel,
+        followUpAt: c.followUpAt,
+        assignedTo: (c as any).assignedUser?.name || '—',
+        tags: c.tags || [],
+        isOverdue: c.followUpAt ? new Date(c.followUpAt) < new Date() : false,
+      })),
+      total,
+      page,
+      pages: Math.ceil(total / limit),
+    };
+  }
+
+  // ─── Recent orders ────────────────────────────────────────────────────────────
+  async getRecentOrders(tenantId: string, page = 1, limit = 10) {
+    const skip = (page - 1) * limit;
+    const [items, total] = await Promise.all([
+      this.prisma.order.findMany({
+        where: { tenantId },
+        take: limit,
+        skip,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          contact: { select: { name: true } },
+          items: { include: { product: { select: { name: true } } } },
+        }
+      }),
+      this.prisma.order.count({ where: { tenantId } }),
+    ]);
+
+    return {
+      data: items.map(o => ({
+        id: o.id,
+        customerName: o.contact?.name || 'Unknown',
+        amount: Number(o.totalAmount),
+        currency: o.currency,
+        status: o.status,
+        createdAt: o.createdAt,
+        productName: o.items?.[0]?.product?.name || '—',
+      })),
+      total,
+      page,
+      pages: Math.ceil(total / limit),
+    };
+  }
+
+  // ─── Activity timeline ────────────────────────────────────────────────────────
+  async getActivityTimeline(tenantId: string) {
+    const from = this.daysAgo(3);
+    const msgs = await this.prisma.message.findMany({
+      where: { conversation: { tenantId }, createdAt: { gte: from } },
+      take: 20,
       orderBy: { createdAt: 'desc' },
       include: { conversation: { include: { contact: true } } }
     });
 
-    const formattedActivity = recentMessages.map(msg => {
-      const contentStr = String(msg.content || '');
-      return {
-        id: msg.id,
-        type: 'message',
-        title: msg.direction === 'inbound' ? 'Message received' : 'Message sent',
-        description: contentStr.substring(0, 50) + (contentStr.length > 50 ? '...' : ''),
-        time: msg.createdAt,
-        contactName: msg.conversation?.contact?.name || 'Unknown'
-      };
+    const orders = await this.prisma.order.findMany({
+      where: { tenantId, createdAt: { gte: from } },
+      take: 10,
+      orderBy: { createdAt: 'desc' },
+      include: { contact: { select: { name: true } } }
     });
 
+    const broadcasts = await this.prisma.broadcast.findMany({
+      where: { tenantId, createdAt: { gte: from } },
+      take: 5,
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const events: any[] = [
+      ...msgs.map(m => ({
+        id: m.id, type: 'message',
+        title: m.direction === 'inbound' ? 'Message received' : 'Message sent',
+        meta: m.conversation?.contact?.name || 'Unknown',
+        time: m.createdAt, icon: 'message',
+      })),
+      ...orders.map(o => ({
+        id: o.id, type: 'order',
+        title: `Order ${o.status}`,
+        meta: `${o.contact?.name || 'Customer'} — ৳${Number(o.totalAmount).toLocaleString()}`,
+        time: o.createdAt, icon: 'order',
+      })),
+      ...broadcasts.map(b => ({
+        id: b.id, type: 'broadcast',
+        title: 'Broadcast sent',
+        meta: b.status,
+        time: b.createdAt, icon: 'broadcast',
+      })),
+    ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 30);
+
+    return events;
+  }
+
+  // ─── AI natural language summary ──────────────────────────────────────────────
+  async getAiSummary(tenantId: string) {
+    const todayStart = this.startOfDay();
+    const yesterday = this.daysAgo(1);
+
+    const [msgToday, msgYesterday, aiToday, openConvs, overdue, followUpDue] = await Promise.all([
+      this.prisma.message.count({ where: { conversation: { tenantId }, createdAt: { gte: todayStart } } }),
+      this.prisma.message.count({ where: { conversation: { tenantId }, createdAt: { gte: yesterday, lt: todayStart } } }),
+      this.prisma.aiUsageLog.count({ where: { tenantId, createdAt: { gte: todayStart } } }),
+      this.prisma.conversation.count({ where: { tenantId, status: 'open' } }),
+      this.prisma.contact.count({ where: { tenantId, followUpAt: { lt: new Date() }, followUpNotified: false } }),
+      this.prisma.contact.count({
+        where: { tenantId, followUpAt: { gte: new Date(), lte: new Date(Date.now() + 24 * 3600000) } }
+      }),
+    ]);
+
+    const outboundToday = await this.prisma.message.count({
+      where: { conversation: { tenantId }, direction: 'outbound', createdAt: { gte: todayStart } }
+    });
+
+    const aiRate = outboundToday > 0 ? Math.round((aiToday / outboundToday) * 100) : 0;
+    const msgGrowth = msgYesterday > 0 ? Math.round(((msgToday - msgYesterday) / msgYesterday) * 100) : 0;
+
+    const points: string[] = [];
+    if (aiRate > 0) points.push(`AI handled ${aiRate}% of conversations automatically.`);
+    if (msgGrowth > 0) points.push(`Customer messages increased by ${msgGrowth}% compared to yesterday.`);
+    else if (msgGrowth < 0) points.push(`Message volume is down ${Math.abs(msgGrowth)}% from yesterday.`);
+    if (overdue > 0) points.push(`${overdue} leads are overdue for follow-up.`);
+    else if (followUpDue > 0) points.push(`${followUpDue} leads require follow-up today.`);
+    if (openConvs > 0) points.push(`${openConvs} conversations are currently open.`);
+
     return {
-      messages: {
-        used: messagesUsed,
-        limit: finalMsgLimit,
-        percentage: Math.min(100, Math.round((messagesUsed / finalMsgLimit) * 100)),
-        periodStart,
-      },
-      leads: {
-        total: activeLeads,
-        newThisMonth: newLeads
-      },
-      orders: {
-        pending: pendingOrders,
-        completed: completedOrders,
-        revenue: monthlyRevenue,
-        totalProducts: totalProducts
-      },
-      aiQuota: {
-        used: aiUsed,
-        limit: finalAiLimit,
-        percentage: Math.min(100, Math.round((aiUsed / finalAiLimit) * 100))
-      },
-      activity: formattedActivity,
-      features: activeSubscription?.plan?.features || [],
-      plan: activeSubscription?.plan || null
+      summary: points.join(' '),
+      points,
+      stats: { msgToday, aiRate, openConvs, overdue, followUpDue },
     };
   }
 }
-

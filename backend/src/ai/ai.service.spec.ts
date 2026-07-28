@@ -2,6 +2,12 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AiService } from './ai.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { BadRequestException, InternalServerErrorException } from '@nestjs/common';
+import * as fs from 'fs';
+
+jest.mock('fs', () => ({
+  ...jest.requireActual('fs'),
+  readFileSync: jest.fn().mockReturnValue(Buffer.from('fake-image-data')),
+}));
 
 const mockPrisma: any = {
   aiConfig: {
@@ -37,6 +43,29 @@ describe('AiService', () => {
     }).compile();
 
     service = module.get<AiService>(AiService);
+  });
+
+  describe('isVisionSupported', () => {
+    it('should return true for gemini and anthropic regardless of model name', () => {
+      expect(service.isVisionSupported('gemini', 'some-model')).toBe(true);
+      expect(service.isVisionSupported('anthropic', 'other-model')).toBe(true);
+    });
+
+    it('should return true for specific model keywords', () => {
+      expect(service.isVisionSupported('openai', 'gpt-4o')).toBe(true);
+      expect(service.isVisionSupported('openai', 'gpt-4-vision-preview')).toBe(true);
+      expect(service.isVisionSupported('ollama', 'llava')).toBe(true);
+      expect(service.isVisionSupported('openai', 'o1-preview')).toBe(true);
+    });
+
+    it('should return false for models without vision support', () => {
+      expect(service.isVisionSupported('openai', 'gpt-3.5')).toBe(false);
+      expect(service.isVisionSupported('openai', 'gpt-4')).toBe(false);
+    });
+
+    it('should return false if no modelName is provided', () => {
+      expect(service.isVisionSupported('openai')).toBe(false);
+    });
   });
 
   describe('fetchAvailableModels', () => {
@@ -162,6 +191,66 @@ describe('AiService', () => {
         headers: expect.objectContaining({ 'x-api-key': 'anthropic-key' }),
         body: expect.stringContaining('max_tokens')
       }));
+    });
+
+    it('should send correct payload with image paths for OpenAI', async () => {
+      mockPrisma.aiConfig.findFirst.mockResolvedValueOnce({
+        modelName: 'gpt-4o',
+        apiKey: 'test-key',
+        provider: 'openai',
+      });
+
+      globalFetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ choices: [{ message: { content: 'openai vision response' } }] }),
+      });
+
+      const res = await service.generateCompletion('describe this', undefined, ['test.png']);
+      expect(res).toBe('openai vision response');
+      expect(globalFetchMock).toHaveBeenCalledWith('https://api.openai.com/v1/chat/completions', expect.objectContaining({
+        body: expect.stringContaining('image_url')
+      }));
+      expect(fs.readFileSync).toHaveBeenCalledWith('test.png');
+    });
+
+    it('should send correct payload with image paths for Gemini', async () => {
+      mockPrisma.aiConfig.findFirst.mockResolvedValueOnce({
+        modelName: 'gemini-1.5-pro',
+        apiKey: 'gemini-key',
+        provider: 'gemini',
+      });
+
+      globalFetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ candidates: [{ content: { parts: [{ text: 'gemini vision response' }] } }] }),
+      });
+
+      const res = await service.generateCompletion('describe this', undefined, ['test.webp']);
+      expect(res).toBe('gemini vision response');
+      expect(globalFetchMock).toHaveBeenCalledWith(expect.stringContaining('gemini-1.5-pro:generateContent'), expect.objectContaining({
+        body: expect.stringContaining('inline_data')
+      }));
+      expect(fs.readFileSync).toHaveBeenCalledWith('test.webp');
+    });
+
+    it('should send correct payload with image paths for Anthropic', async () => {
+      mockPrisma.aiConfig.findFirst.mockResolvedValueOnce({
+        modelName: 'claude-3',
+        apiKey: 'anthropic-key',
+        provider: 'anthropic',
+      });
+
+      globalFetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ content: [{ text: 'anthropic vision response' }] }),
+      });
+
+      const res = await service.generateCompletion('describe this', undefined, ['test.jpeg']);
+      expect(res).toBe('anthropic vision response');
+      expect(globalFetchMock).toHaveBeenCalledWith('https://api.anthropic.com/v1/messages', expect.objectContaining({
+        body: expect.stringContaining('base64')
+      }));
+      expect(fs.readFileSync).toHaveBeenCalledWith('test.jpeg');
     });
   });
 });
