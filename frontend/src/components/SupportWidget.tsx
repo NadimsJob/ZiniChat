@@ -1,17 +1,17 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { MessageCircle, X, Send, Loader2, Bot, User } from 'lucide-react';
+import { MessageCircle, X, Send, Loader2, Bot, Check, Ban, LogOut } from 'lucide-react';
 import Cookies from 'js-cookie';
 import { useLanguage } from '@/components/LanguageProvider';
-
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function SupportWidget() {
   const { language } = useLanguage();
   const pathname = usePathname();
+  const router = useRouter();
   const isInbox = pathname?.includes('/inbox');
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<any[]>([]);
@@ -59,6 +59,52 @@ export default function SupportWidget() {
     }
   };
 
+  const closeSupportSession = async () => {
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/support-chat/close`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setMessages(prev => [...prev, { senderType: 'ai', message: data.message }]);
+      }
+    } catch (err) {
+      console.error('Failed to close support session', err);
+    }
+  };
+
+  const handlePermissionDecision = async (decision: 'confirm' | 'cancel', description: string) => {
+    const text = decision === 'confirm' 
+      ? `হ্যাঁ, আমি সম্মতি দিচ্ছি: ${description}`
+      : `না, বাতিল করুন: ${description}`;
+    
+    setInput('');
+    setMessages(prev => [...prev, { senderType: 'user', message: text }]);
+    setLoading(true);
+
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/support-chat/send`, {
+        method: 'POST',
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ message: text })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setMessages(prev => [...prev, { senderType: 'ai', message: data.message }]);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim()) return;
@@ -93,24 +139,95 @@ export default function SupportWidget() {
     }
   };
 
+  const renderFormattedMessage = (msg: any) => {
+    const text = msg.message || '';
+
+    // Check for Permission Request card
+    if (text.includes('ACTION_PERMISSION_REQUEST:')) {
+      try {
+        const jsonStr = text.split('ACTION_PERMISSION_REQUEST:')[1].split('\n')[0];
+        const payload = JSON.parse(jsonStr);
+        return (
+          <div className="space-y-3">
+            <p className="font-semibold text-amber-600 dark:text-amber-400">⚠️ পারমিশন অনুরোধ:</p>
+            <p className="text-zinc-700 dark:text-zinc-300 bg-amber-500/10 p-2.5 rounded-lg border border-amber-500/20">{payload.description}</p>
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={() => handlePermissionDecision('confirm', payload.description)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[12px] font-bold shadow transition-colors"
+              >
+                <Check className="w-3.5 h-3.5" /> হ্যাঁ, ইমপ্লিমেন্ট করুন
+              </button>
+              <button
+                onClick={() => handlePermissionDecision('cancel', payload.description)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-[12px] font-bold shadow transition-colors"
+              >
+                <Ban className="w-3.5 h-3.5" /> বাতিল
+              </button>
+            </div>
+          </div>
+        );
+      } catch (err) {
+        // Fallback to normal text
+      }
+    }
+
+    // Check for markdown link patterns e.g. [Link Text](/path)
+    const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = linkRegex.exec(text)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push(text.substring(lastIndex, match.index));
+      }
+      const label = match[1];
+      const url = match[2];
+      parts.push(
+        <button
+          key={match.index}
+          onClick={() => {
+            if (url.startsWith('/')) {
+              router.push(url);
+              setIsOpen(false);
+            } else {
+              window.open(url, '_blank');
+            }
+          }}
+          className="inline-flex items-center gap-1 my-1 px-2.5 py-1 bg-primary text-white rounded-md text-[11px] font-bold hover:bg-primary/90 transition-all shadow-sm"
+        >
+          {label}
+        </button>
+      );
+      lastIndex = linkRegex.lastIndex;
+    }
+
+    if (lastIndex < text.length) {
+      parts.push(text.substring(lastIndex));
+    }
+
+    return <div>{parts.length > 0 ? parts : text}</div>;
+  };
+
   return (
     <>
       {/* Floating Button */}
       <button
         onClick={() => setIsOpen(true)}
         className={`fixed ${isInbox ? 'bottom-16 md:bottom-3 right-3 p-2.5' : 'bottom-16 md:bottom-6 right-4 md:right-6 px-3 py-2 md:px-4 md:py-2.5'} rounded-full bg-primary text-white shadow-xl hover:bg-primary/90 transition-transform duration-300 z-50 flex items-center gap-2 ${isOpen ? 'scale-0' : 'scale-100 hover:scale-105'}`}
-        title="Zinichat Assistant"
+        title="ZiniChat Support AI"
       >
         <MessageCircle className="w-5 h-5" />
-        {!isInbox && <span className="font-semibold text-xs sm:text-sm hidden sm:inline">Zinichat Assistant</span>}
+        {!isInbox && <span className="font-semibold text-xs sm:text-sm hidden sm:inline">ZiniChat Support</span>}
       </button>
 
       {/* Chat Window */}
       <div 
-        className={`fixed bottom-16 md:bottom-6 right-2 sm:right-6 w-[calc(100vw-16px)] sm:w-[400px] h-[500px] max-h-[75vh] bg-white border border-slate-200 rounded-2xl shadow-2xl flex flex-col transition-all duration-300 origin-bottom-right z-50 ${isOpen ? 'scale-100 opacity-100' : 'scale-0 opacity-0 pointer-events-none'}`}
+        className={`fixed bottom-16 md:bottom-6 right-2 sm:right-6 w-[calc(100vw-16px)] sm:w-[420px] h-[520px] max-h-[80vh] bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-2xl flex flex-col transition-all duration-300 origin-bottom-right z-50 ${isOpen ? 'scale-100 opacity-100' : 'scale-0 opacity-0 pointer-events-none'}`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border bg-primary/10 rounded-t-2xl">
+        <div className="flex items-center justify-between p-3.5 border-b border-border bg-primary/10 rounded-t-2xl">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white">
               <Bot className="w-5 h-5" />
@@ -118,23 +235,32 @@ export default function SupportWidget() {
             <div>
               <h3 className="font-semibold text-[14px]">ZiniChat Support</h3>
               <p className="text-[11px] text-primary/80">
-                {language === 'en' ? 'AI Assistant is online' : 'এআই অ্যাসিস্ট্যান্ট অনলাইনে আছে'}
+                {language === 'en' ? 'AI Support Engineer is online' : 'এআই সাপোর্ট ইঞ্জিনিয়ারিং অনলাইনে আছে'}
               </p>
             </div>
           </div>
-          <button 
-            onClick={() => setIsOpen(false)}
-            className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={closeSupportSession}
+              title="Close Current Session"
+              className="p-1.5 text-zinc-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+            <button 
+              onClick={() => setIsOpen(false)}
+              className="p-1.5 hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {messages.length === 0 && !loading && (
             <div className="text-center text-slate-500 text-[12px] mt-10">
-              {language === 'en' ? 'Ask me anything about setting up ZiniChat!' : 'ZiniChat সেটআপ নিয়ে যেকোনো প্রশ্ন করতে পারেন!'}
+              {language === 'en' ? 'Ask me anything about setting up ZiniChat!' : 'ZiniChat অ্যাকাউন্ট ও ফিচার সেটআপ নিয়ে যেকোনো প্রশ্ন করতে পারেন!'}
             </div>
           )}
           
@@ -146,13 +272,13 @@ export default function SupportWidget() {
                 </div>
               )}
               <div 
-                className={`max-w-[80%] p-3 rounded-2xl text-[13px] whitespace-pre-wrap ${
+                className={`max-w-[85%] p-3 rounded-2xl text-[13px] whitespace-pre-wrap ${
                   msg.senderType === 'user' 
                     ? 'bg-primary text-white rounded-tr-sm' 
                     : 'bg-slate-100 dark:bg-zinc-800 text-foreground border border-border rounded-tl-sm'
                 }`}
               >
-                {msg.message}
+                {renderFormattedMessage(msg)}
               </div>
             </div>
           ))}

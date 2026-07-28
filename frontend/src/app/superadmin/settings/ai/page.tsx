@@ -229,13 +229,35 @@ export default function AiSettingsPage() {
             {language === 'en' ? 'Manage multiple AI model endpoints and credentials for tenant bot assistants.' : 'টিম চ্যাট অ্যাসিস্ট্যান্ট ও বট পরিচালনা করার জন্য এআই ক্রেডেনশিয়াল কনফিগার করুন।'}
           </p>
         </div>
-        <button 
-          onClick={() => openModal()}
-          className="flex items-center gap-2 px-2.5 py-2.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/95 transition-all font-semibold shadow-lg shadow-primary/20 text-[12px]"
-        >
-          <Plus className="w-4 h-4" />
-          {language === 'en' ? 'Add Model Config' : 'মডেল কনফিগারেশন যোগ করুন'}
-        </button>
+        <div className="flex gap-2">
+          <button 
+            onClick={async () => {
+              try {
+                const token = Cookies.get('access_token');
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/support-chat/admin/default-prompt`, {
+                  headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                  const data = await res.json();
+                  alert(`[Default Support Prompt Template]\n\n${data.prompt}`);
+                }
+              } catch (e) {
+                console.error(e);
+              }
+            }}
+            className="flex items-center gap-2 px-2.5 py-2.5 bg-secondary/20 text-secondary hover:bg-secondary/30 rounded-lg transition-all font-semibold border border-secondary/30 text-[12px]"
+          >
+            <Bot className="w-4 h-4" />
+            {language === 'en' ? 'Default Support Prompt' : 'ডিফল্ট সাপোর্ট প্রম্পট দেখুন'}
+          </button>
+          <button 
+            onClick={() => openModal()}
+            className="flex items-center gap-2 px-2.5 py-2.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/95 transition-all font-semibold shadow-lg shadow-primary/20 text-[12px]"
+          >
+            <Plus className="w-4 h-4" />
+            {language === 'en' ? 'Add Model Config' : 'মডেল কনফিগারেশন যোগ করুন'}
+          </button>
+        </div>
       </div>
 
       <div className="grid md:grid-cols-2 gap-3">
