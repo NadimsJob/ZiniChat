@@ -425,4 +425,59 @@ export class PaymentsService {
 
     return { message: 'Payment approved' };
   }
+
+  async getUpcomingBill(tenantId: string) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      include: { plan: true }
+    });
+
+    const activeSub = await this.prisma.subscription.findFirst({
+      where: {
+        tenantId,
+        status: { in: ['active', 'trialing'] }
+      },
+      include: { plan: true },
+      orderBy: { currentPeriodEnd: 'desc' }
+    });
+
+    const plan = activeSub?.plan || tenant?.plan;
+    const cycle = activeSub?.billingCycle || 'monthly';
+
+    let amountBdt = 0;
+    if (tenant?.customPriceUsd) {
+      amountBdt = Math.round(Number(tenant.customPriceUsd) * 120);
+    } else if (plan) {
+      amountBdt = cycle === 'yearly'
+        ? Number(plan.priceYearlyBdt || Number(plan.priceMonthlyBdt) * 12)
+        : Number(plan.priceMonthlyBdt);
+    }
+
+    const now = new Date();
+    const nextBillDate = activeSub?.currentPeriodEnd || new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const diffTime = nextBillDate.getTime() - now.getTime();
+    const daysRemaining = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+
+    const pendingPayment = await this.prisma.payment.findFirst({
+      where: {
+        tenantId,
+        status: 'pending',
+        subscriptionId: activeSub?.id || undefined
+      }
+    });
+
+    return {
+      planName: tenant?.customPlanName || plan?.name || 'Free Plan',
+      planId: plan?.id || null,
+      billingCycle: cycle,
+      amountBdt,
+      nextBillDate,
+      daysRemaining,
+      hasPendingPayment: !!pendingPayment,
+      pendingTrxId: pendingPayment?.trxId || null,
+      isPaidAdvance: daysRemaining > 15 && activeSub?.status === 'active',
+      status: activeSub?.status || 'inactive',
+    };
+  }
 }
+

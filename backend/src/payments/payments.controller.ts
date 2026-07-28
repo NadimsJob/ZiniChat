@@ -20,6 +20,13 @@ export class PaymentsController {
     return this.paymentsService.getTenantPaymentHistory(tenantId);
   }
 
+  @Get('upcoming-bill')
+  async getUpcomingBill(@Req() req: any) {
+    const tenantId = req.user.tenantId;
+    return this.paymentsService.getUpcomingBill(tenantId);
+  }
+
+
   @Post('manual')
   async submitManualPayment(@Req() req: any, @Body() body: { planId: string, trxId: string, billingCycle: string, couponCode?: string }) {
     const tenantId = req.user.tenantId;
