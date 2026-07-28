@@ -9,7 +9,10 @@ import Link from 'next/link';
 import { toast } from 'react-hot-toast';
 import LabelForm from '@/components/labels/LabelForm';
 
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
 export default function InboxPage() {
+
  const { language } = useLanguage();
  const [conversations, setConversations] = useState<any[]>([]);
  const [selectedConvId, setSelectedConvId] = useState<string | null>(null);
@@ -692,6 +695,27 @@ export default function InboxPage() {
   messages.map((msg, idx) => {
   const isOutbound = msg.direction === 'outbound';
   const isFailed = msg.status === 'failed' || msg.status === 'rate_limited';
+
+  // Parse message content (handles object, JSON string, or raw string)
+  let contentObj = msg.content;
+  if (typeof contentObj === 'string') {
+    try {
+      contentObj = JSON.parse(contentObj);
+    } catch (e) {
+      contentObj = { body: msg.content, text: msg.content };
+    }
+  }
+
+  let mediaUrl = contentObj?.mediaUrl || contentObj?.url || contentObj?.fileUrl || contentObj?.image;
+  if (mediaUrl && typeof mediaUrl === 'string') {
+    if (!mediaUrl.startsWith('http://') && !mediaUrl.startsWith('https://') && !mediaUrl.startsWith('data:')) {
+      mediaUrl = `${API}${mediaUrl.startsWith('/') ? '' : '/'}${mediaUrl}`;
+    }
+  }
+
+  const textBody = contentObj?.body || contentObj?.text || (typeof contentObj === 'string' ? '' : (contentObj?.caption || ''));
+  const isImage = msg.type === 'image' || !!mediaUrl;
+
   return (
   <div key={msg.id || idx} className={`flex relative z-10 ${isOutbound ? 'justify-end' : 'justify-start'}`}>
   <div className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-3.5 py-2 text-[12px] relative shadow-md transition-all ${
@@ -702,48 +726,47 @@ export default function InboxPage() {
   : 'bg-white border border-slate-200/90 text-slate-900 rounded-bl-none'
   }`}>
   <div className="whitespace-pre-wrap leading-relaxed flex flex-col">
-  {msg.content?.quotedMsg && (
+  {contentObj?.quotedMsg && (
   <div className="mb-2 p-2 rounded-lg bg-black/10 border-l-4 border-emerald-300 text-[11px] opacity-90">
-  <div className="font-semibold mb-0.5">{msg.content.quotedMsg.participant?.split('@')[0] || 'Someone'}</div>
-  <div className="truncate max-w-[200px]">{msg.content.quotedMsg.text}</div>
+  <div className="font-semibold mb-0.5">{contentObj.quotedMsg.participant?.split('@')[0] || 'Someone'}</div>
+  <div className="truncate max-w-[200px]">{contentObj.quotedMsg.text}</div>
   </div>
   )}
-  {msg.type !== 'text' && (
+
+  {/* AI Vision Badge: ONLY show for INBOUND customer images */}
+  {!isOutbound && (isImage || msg.isVisionRead) && (
   <div className="flex items-center gap-1 text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/80 mb-1.5 w-fit font-semibold shadow-xs">
   <Eye className="w-3 h-3 text-emerald-600 shrink-0" />
-  <span>{msg.type === 'image' ? (language === 'en' ? 'AI Vision Image Read (5 Credits)' : 'এআই ভিশন ইমেজ রিড (৫ ক্রাডিট)') : `[${msg.type} message]`}</span>
+  <span>{language === 'en' ? 'AI Vision Image Read (5 Responses)' : 'এআই ভিশন ইমেজ রিড (৫ রেসপন্স)'}</span>
   </div>
   )}
-  {msg.content?.thumbnail && !msg.content?.mediaUrl && (
+
+  {contentObj?.thumbnail && !mediaUrl && (
   <img 
-  src={`data:image/jpeg;base64,${msg.content.thumbnail}`} 
+  src={`data:image/jpeg;base64,${contentObj.thumbnail}`} 
   alt="Media thumbnail" 
-  onClick={() => setZoomedImage(`data:image/jpeg;base64,${msg.content.thumbnail}`)}
+  onClick={() => setZoomedImage(`data:image/jpeg;base64,${contentObj.thumbnail}`)}
   className="max-w-[200px] rounded-lg mb-2 shadow-sm border border-black/10 cursor-pointer hover:opacity-90 transition-opacity" 
   />
   )}
-  {msg.content?.mediaUrl && msg.type === 'image' && (
+
+  {mediaUrl && (
   <img 
-  src={msg.content.mediaUrl} 
+  src={mediaUrl} 
   alt="Media image" 
-  onClick={() => setZoomedImage(msg.content.mediaUrl)}
+  onClick={() => setZoomedImage(mediaUrl)}
   className="max-w-[250px] max-h-[250px] object-cover rounded-lg mb-2 shadow-sm border border-black/10 cursor-pointer hover:opacity-90 transition-opacity" 
   />
   )}
-  {msg.content?.mediaUrl && msg.type === 'video' && (
-  <video 
-  src={msg.content.mediaUrl} 
-  controls
-  className="max-w-[250px] max-h-[250px] rounded-lg mb-2 shadow-sm border border-black/10" 
-  />
-  )}
+
   <div>
-  {msg.content?.body || msg.content?.text || (typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content))}
+  {textBody}
   <span className={`inline-block text-[9px] ml-2 float-right mt-1 font-medium ${isOutbound && !isFailed ? 'text-emerald-100' : 'text-slate-400'}`}>
   {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
   </span>
   </div>
   </div>
+
   {msg.status === 'rate_limited' && (
   <div className="flex items-center gap-1 text-[10px] text-red-600 font-semibold mt-1.5 border-t border-red-200 pt-1">
   <AlertCircle className="w-3.5 h-3.5 shrink-0" />
@@ -760,6 +783,7 @@ export default function InboxPage() {
   </div>
   );
   })
+
   )}
   <div ref={messagesEndRef} />
   </div>
