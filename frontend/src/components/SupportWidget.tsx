@@ -1,13 +1,206 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { MessageCircle, X, Send, Loader2, Bot, Check, Ban, LogOut } from 'lucide-react';
+import { MessageCircle, X, Send, Loader2, Bot, Check, Ban, LogOut, Wifi } from 'lucide-react';
 import Cookies from 'js-cookie';
 import { useLanguage } from '@/components/LanguageProvider';
 import { usePathname, useRouter } from 'next/navigation';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+// ─── Inline WhatsApp Official API Connect UI ────────────────────────────────
+function InlineChannelConnectUI({ channelType, instructions, onSuccess }: {
+  channelType: string;
+  instructions: string;
+  onSuccess: () => void;
+}) {
+  const [isSdkLoaded, setIsSdkLoaded] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [tab, setTab] = useState<'oauth' | 'manual'>('oauth');
+  const [form, setForm] = useState({ phoneNumberId: '', accessToken: '', wabaId: '' });
+  const [status, setStatus] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  useEffect(() => {
+    // Load Facebook SDK
+    if ((window as any).FB) { setIsSdkLoaded(true); return; }
+    if (document.getElementById('facebook-jssdk')) return;
+
+    (window as any).fbAsyncInit = function () {
+      (window as any).FB.init({
+        appId: process.env.NEXT_PUBLIC_FACEBOOK_APP_ID,
+        autoLogAppEvents: true,
+        xfbml: true,
+        version: 'v19.0',
+      });
+      setIsSdkLoaded(true);
+    };
+
+    const js = document.createElement('script');
+    js.id = 'facebook-jssdk';
+    js.src = 'https://connect.facebook.net/en_US/sdk.js';
+    document.body.appendChild(js);
+  }, []);
+
+  const handleFBConnect = () => {
+    if (!(window as any).FB) { setStatus({ type: 'error', text: 'Facebook SDK লোড হয়নি। পেজ রিফ্রেশ করুন।' }); return; }
+    setIsConnecting(true);
+    setStatus(null);
+    (window as any).FB.login(
+      (response: any) => {
+        if (response.authResponse) {
+          sendFBTokenToBackend(response.authResponse.accessToken);
+        } else {
+          setStatus({ type: 'error', text: 'লগইন বাতিল করা হয়েছে বা অনুমতি দেওয়া হয়নি।' });
+          setIsConnecting(false);
+        }
+      },
+      {
+        scope: 'whatsapp_business_management,whatsapp_business_messaging',
+        return_scopes: true,
+      }
+    );
+  };
+
+  const sendFBTokenToBackend = async (accessToken: string) => {
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/channels/whatsapp/connect-oauth`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accessToken })
+      });
+      if (res.ok) {
+        setStatus({ type: 'success', text: '✅ WhatsApp সফলভাবে কানেক্ট হয়েছে!' });
+        onSuccess();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setStatus({ type: 'error', text: err.message || 'কানেক্ট করতে ব্যর্থ হয়েছে।' });
+      }
+    } catch (e) {
+      setStatus({ type: 'error', text: 'নেটওয়ার্ক এরর। পুনরায় চেষ্টা করুন।' });
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  const handleManualConnect = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.phoneNumberId || !form.accessToken || !form.wabaId) {
+      setStatus({ type: 'error', text: 'সব তথ্য পূরণ করুন।' }); return;
+    }
+    setIsConnecting(true);
+    setStatus(null);
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/channels/whatsapp/connect-manual`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(form)
+      });
+      if (res.ok) {
+        setStatus({ type: 'success', text: '✅ WhatsApp ম্যানুয়ালি কানেক্ট সফল হয়েছে!' });
+        onSuccess();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setStatus({ type: 'error', text: err.message || 'কানেক্ট করতে ব্যর্থ হয়েছে।' });
+      }
+    } catch (e) {
+      setStatus({ type: 'error', text: 'নেটওয়ার্ক এরর।' });
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  return (
+    <div className="space-y-2.5">
+      <p className="text-[12px] text-zinc-600 dark:text-zinc-300 leading-relaxed">{instructions}</p>
+
+      {/* Tab switcher */}
+      <div className="flex rounded-lg overflow-hidden border border-border">
+        <button
+          onClick={() => setTab('oauth')}
+          className={`flex-1 py-1.5 text-[11px] font-semibold transition-colors ${tab === 'oauth' ? 'bg-primary text-white' : 'bg-transparent text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800'}`}
+        >
+          Facebook OAuth
+        </button>
+        <button
+          onClick={() => setTab('manual')}
+          className={`flex-1 py-1.5 text-[11px] font-semibold transition-colors ${tab === 'manual' ? 'bg-primary text-white' : 'bg-transparent text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800'}`}
+        >
+          Manual Setup
+        </button>
+      </div>
+
+      {tab === 'oauth' && (
+        <button
+          onClick={handleFBConnect}
+          disabled={isConnecting}
+          className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#1877F2] hover:bg-[#166FE5] disabled:opacity-60 text-white font-bold rounded-xl text-[13px] transition-colors shadow-md"
+        >
+          {isConnecting ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+            </svg>
+          )}
+          {isConnecting ? 'কানেক্ট হচ্ছে...' : 'Connect with Facebook'}
+        </button>
+      )}
+
+      {tab === 'manual' && (
+        <form onSubmit={handleManualConnect} className="space-y-2">
+          <div>
+            <label className="block text-[10px] font-bold text-zinc-500 mb-1">Phone Number ID</label>
+            <input
+              type="text"
+              value={form.phoneNumberId}
+              onChange={e => setForm(f => ({ ...f, phoneNumberId: e.target.value }))}
+              placeholder="e.g. 123456789012345"
+              className="w-full bg-slate-50 dark:bg-zinc-800 border border-border rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold text-zinc-500 mb-1">Permanent Access Token</label>
+            <input
+              type="password"
+              value={form.accessToken}
+              onChange={e => setForm(f => ({ ...f, accessToken: e.target.value }))}
+              placeholder="EAA..."
+              className="w-full bg-slate-50 dark:bg-zinc-800 border border-border rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold text-zinc-500 mb-1">WhatsApp Business Account ID (WABA ID)</label>
+            <input
+              type="text"
+              value={form.wabaId}
+              onChange={e => setForm(f => ({ ...f, wabaId: e.target.value }))}
+              placeholder="e.g. 987654321098765"
+              className="w-full bg-slate-50 dark:bg-zinc-800 border border-border rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={isConnecting}
+            className="w-full flex items-center justify-center gap-2 py-2 bg-primary hover:bg-primary/90 disabled:opacity-60 text-white font-bold rounded-xl text-[12px] transition-colors"
+          >
+            {isConnecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wifi className="w-4 h-4" />}
+            {isConnecting ? 'কানেক্ট হচ্ছে...' : 'Manual Connect করুন'}
+          </button>
+        </form>
+      )}
+
+      {status && (
+        <p className={`text-[11px] font-semibold rounded-lg px-2 py-1.5 ${status.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400'}`}>
+          {status.text}
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ─── Main SupportWidget ──────────────────────────────────────────────────────
 export default function SupportWidget() {
   const { language } = useLanguage();
   const pathname = usePathname();
@@ -76,10 +269,10 @@ export default function SupportWidget() {
   };
 
   const handlePermissionDecision = async (decision: 'confirm' | 'cancel', description: string) => {
-    const text = decision === 'confirm' 
+    const text = decision === 'confirm'
       ? `হ্যাঁ, আমি সম্মতি দিচ্ছি: ${description}`
       : `না, বাতিল করুন: ${description}`;
-    
+
     setInput('');
     setMessages(prev => [...prev, { senderType: 'user', message: text }]);
     setLoading(true);
@@ -88,7 +281,7 @@ export default function SupportWidget() {
       const token = Cookies.get('access_token');
       const res = await fetch(`${API}/support-chat/send`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
@@ -118,22 +311,22 @@ export default function SupportWidget() {
       const token = Cookies.get('access_token');
       const res = await fetch(`${API}/support-chat/send`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ message: userMsg })
       });
-      
+
       if (res.ok) {
         const data = await res.json();
         setMessages(prev => [...prev, { senderType: 'ai', message: data.message }]);
       } else {
-        setMessages(prev => [...prev, { senderType: 'ai', message: "Sorry, I couldn't process your request." }]);
+        setMessages(prev => [...prev, { senderType: 'ai', message: "দুঃখিত, অনুরোধটি প্রক্রিয়া করা সম্ভব হয়নি।" }]);
       }
     } catch (err) {
       console.error(err);
-      setMessages(prev => [...prev, { senderType: 'ai', message: "Connection error. Please try again later." }]);
+      setMessages(prev => [...prev, { senderType: 'ai', message: "সংযোগে সমস্যা হয়েছে। পুনরায় চেষ্টা করুন।" }]);
     } finally {
       setLoading(false);
     }
@@ -142,7 +335,29 @@ export default function SupportWidget() {
   const renderFormattedMessage = (msg: any) => {
     const text = msg.message || '';
 
-    // Check for Permission Request card
+    // ── 1. Channel Connect UI ──────────────────────────────────────────────
+    if (text.startsWith('CHANNEL_CONNECT_UI:')) {
+      try {
+        const jsonStr = text.replace('CHANNEL_CONNECT_UI:', '').trim();
+        const payload = JSON.parse(jsonStr);
+        return (
+          <InlineChannelConnectUI
+            channelType={payload.channelType}
+            instructions={payload.instructions}
+            onSuccess={() => {
+              setMessages(prev => [...prev, {
+                senderType: 'ai',
+                message: '✅ চ্যানেল সফলভাবে কানেক্ট হয়েছে! আপনার Channels পেজ থেকে নতুন কানেকশনটি দেখতে পাবেন।'
+              }]);
+            }}
+          />
+        );
+      } catch (e) {
+        // Fallback
+      }
+    }
+
+    // ── 2. Permission Request Card ─────────────────────────────────────────
     if (text.includes('ACTION_PERMISSION_REQUEST:')) {
       try {
         const jsonStr = text.split('ACTION_PERMISSION_REQUEST:')[1].split('\n')[0];
@@ -172,9 +387,9 @@ export default function SupportWidget() {
       }
     }
 
-    // Check for markdown link patterns e.g. [Link Text](/path)
+    // ── 3. Markdown Link Pills ─────────────────────────────────────────────
     const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
-    const parts = [];
+    const parts: any[] = [];
     let lastIndex = 0;
     let match;
 
@@ -223,7 +438,7 @@ export default function SupportWidget() {
       </button>
 
       {/* Chat Window */}
-      <div 
+      <div
         className={`fixed bottom-16 md:bottom-6 right-2 sm:right-6 w-[calc(100vw-16px)] sm:w-[420px] h-[520px] max-h-[80vh] bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-2xl flex flex-col transition-all duration-300 origin-bottom-right z-50 ${isOpen ? 'scale-100 opacity-100' : 'scale-0 opacity-0 pointer-events-none'}`}
       >
         {/* Header */}
@@ -247,7 +462,7 @@ export default function SupportWidget() {
             >
               <LogOut className="w-4 h-4" />
             </button>
-            <button 
+            <button
               onClick={() => setIsOpen(false)}
               className="p-1.5 hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-colors"
             >
@@ -260,10 +475,10 @@ export default function SupportWidget() {
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {messages.length === 0 && !loading && (
             <div className="text-center text-slate-500 text-[12px] mt-10">
-              {language === 'en' ? 'Ask me anything about setting up ZiniChat!' : 'ZiniChat অ্যাকাউন্ট ও ফিচার সেটআপ নিয়ে যেকোনো প্রশ্ন করতে পারেন!'}
+              {language === 'en' ? 'Ask me anything about setting up ZiniChat!' : 'ZiniChat অ্যাকাউন্ট ও ফিচার সেটআপ নিয়ে যেকোনো প্রশ্ন করতে পারেন!'}
             </div>
           )}
-          
+
           {messages.map((msg, idx) => (
             <div key={idx} className={`flex gap-2 ${msg.senderType === 'user' ? 'justify-end' : 'justify-start'}`}>
               {msg.senderType === 'ai' && (
@@ -271,10 +486,10 @@ export default function SupportWidget() {
                   <Bot className="w-3 h-3 text-primary" />
                 </div>
               )}
-              <div 
+              <div
                 className={`max-w-[85%] p-3 rounded-2xl text-[13px] whitespace-pre-wrap ${
-                  msg.senderType === 'user' 
-                    ? 'bg-primary text-white rounded-tr-sm' 
+                  msg.senderType === 'user'
+                    ? 'bg-primary text-white rounded-tr-sm'
                     : 'bg-slate-100 dark:bg-zinc-800 text-foreground border border-border rounded-tl-sm'
                 }`}
               >
@@ -310,7 +525,7 @@ export default function SupportWidget() {
               }
             }}
           />
-          <button 
+          <button
             type="submit"
             disabled={!input.trim() || loading}
             className="p-2.5 bg-primary text-white rounded-xl hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed shrink-0 transition-colors"

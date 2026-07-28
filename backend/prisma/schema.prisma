@@ -888,14 +888,15 @@ model SiteInquiry {
 }
 
 model SupportConversation {
-  id        String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenantId  String           @db.Uuid
-  status    String           @default("active") // 'active', 'closed'
-  closedAt  DateTime?
-  tenant    Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  messages  SupportMessage[]
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
+  id             String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String           @db.Uuid
+  status         String           @default("active") // 'active', 'closed'
+  closedAt       DateTime?
+  contextSummary String?          @db.Text // AI-generated rolling context summary
+  tenant         Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  messages       SupportMessage[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 
   @@map("support_conversations")
 }

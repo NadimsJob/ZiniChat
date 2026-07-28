@@ -31,6 +31,37 @@ You MUST politely deny:
 "I can only access your organization's workspace. For security and privacy reasons I cannot access or disclose information from any other tenant."
 
 --------------------------------------------------
+# NAVIGATION MAP (EXACT ROUTES — USE THESE ONLY)
+When navigating the user to any page, use ONLY these exact paths:
+
+| Page | Path |
+|------|------|
+| Dashboard / Home | /dashboard |
+| Inbox (Conversations) | /dashboard/inbox |
+| Channels & Inboxes (WhatsApp, Instagram, Messenger setup) | /dashboard/settings/inboxes |
+| Add New Channel / Inbox | /dashboard/settings/inboxes/new |
+| AI Training / Knowledge Base | /dashboard/settings/ai-training |
+| Subscription / Plan | /dashboard/settings/subscription |
+| Billing History | /dashboard/settings/billing-history |
+| Storage | /dashboard/settings/storage |
+| Labels | /dashboard/settings/labels |
+| Team | /dashboard/team |
+| Leads / CRM | /dashboard/leads |
+| Broadcasts | /dashboard/broadcasts |
+| Orders | /dashboard/orders |
+| Support | /dashboard/support |
+
+NEVER invent or guess paths. ONLY use paths from this table.
+
+--------------------------------------------------
+# WHATSAPP OFFICIAL API SETUP GUIDE
+When a user asks to connect WhatsApp Official Business API:
+1. ALWAYS call the tool 'show_channel_connect_ui' with channel_type = 'whatsapp_official'.
+2. This will render an interactive Facebook Login button and Manual Setup form directly in the chat.
+3. Do NOT just provide a link. Always call show_channel_connect_ui.
+4. After calling the tool, explain what the user will see: "নিচের বাটনে ক্লিক করে আপনার Meta Business অ্যাকাউন্টে লগইন করুন। অথবা আপনার কাছে Phone Number ID, Access Token এবং WABA ID থাকলে ম্যানুয়াল ফর্ম পূরণ করুন।"
+
+--------------------------------------------------
 # SUPPORT BEHAVIOR
 Always answer using current tenant configuration, settings, connected channels, subscription, documentation, and activity. Never hallucinate.
 
@@ -62,6 +93,10 @@ Answer billing questions (Current Plan, Renewal Date, Invoice, Payment Status, Q
 If an issue cannot be resolved, ask permission:
 "It appears this issue requires assistance from our technical support team. Would you like me to create a support ticket on your behalf?"
 Upon approval, call 'create_detailed_support_ticket'.
+
+--------------------------------------------------
+# SESSION MEMORY
+If a "Prior Conversation Context Summary" is provided at the top of your system context, treat it as ground truth about what was already discussed. Do NOT ask the user to repeat information already captured in the summary.
 
 --------------------------------------------------
 # RESPONSE STYLE
@@ -120,7 +155,7 @@ export class SupportChatService {
     });
 
     if (conversation) {
-      const closingMsg = "আপনার সময় দেওয়ার জন্য ধন্যবাদ! যদি নতুন কোনো বিষয় বা সমস্যা দেখা দেয়, যেকোনো সময় আমায় মেসেজ দিন। 😊";
+      const closingMsg = "আপনার সময় দেওয়ার জন্য ধন্যবাহ! যদি নতুন কোনো বিষয় বা সমস্যা দেখা দেয়, যেকোনো সময় আমায় মেসেজ দিন। 😊";
       await this.prisma.supportMessage.create({
         data: {
           conversationId: conversation.id,
@@ -178,6 +213,46 @@ export class SupportChatService {
   }
 
   /**
+   * Generates a rolling context summary using AI (called every 10 messages)
+   */
+  private async generateAndSaveContextSummary(
+    conversationId: string,
+    messages: any[],
+    openai: OpenAI,
+    modelName: string,
+    provider: string
+  ): Promise<string> {
+    try {
+      const transcript = messages
+        .map(m => `${m.senderType === 'user' ? 'User' : 'AI'}: ${m.message}`)
+        .join('\n');
+
+      const summaryResponse = await openai.chat.completions.create({
+        model: provider === 'gemini' ? 'gemini-2.0-flash' : modelName,
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a context summarizer. Summarize the following support chat conversation into 3-5 bullet points in Bengali, focusing on: what the user is trying to do, what has already been completed, what is still pending, and any relevant config details shared. Be brief and factual.'
+          },
+          { role: 'user', content: transcript }
+        ]
+      });
+
+      const summary = summaryResponse.choices[0]?.message?.content || '';
+      if (summary) {
+        await this.prisma.supportConversation.update({
+          where: { id: conversationId },
+          data: { contextSummary: summary }
+        });
+      }
+      return summary;
+    } catch (err) {
+      this.logger.warn(`Context summary generation failed: ${err.message}`);
+      return '';
+    }
+  }
+
+  /**
    * Main Support Chat Message Handler
    */
   async sendMessage(tenantId: string, message: string) {
@@ -194,10 +269,13 @@ export class SupportChatService {
     });
 
     // Fetch conversation history for active session
-    const history = await this.prisma.supportMessage.findMany({
+    const allHistory = await this.prisma.supportMessage.findMany({
       where: { conversationId: conversation.id },
       orderBy: { createdAt: 'asc' }
     });
+
+    // Limit to last 30 messages for context window efficiency
+    const history = allHistory.slice(-30);
 
     // Determine AiConfig
     let aiConfig = await this.prisma.aiConfig.findFirst({
@@ -211,7 +289,7 @@ export class SupportChatService {
     }
 
     if (!aiConfig) {
-      const fallbackMsg = "AI কনফিগারেশন সেটআপ করা নেই। দয়া করে ফোন কলের মাধ্যমে সাপোর্ট টিমের সাথে যোগাযোগ করুন।";
+      const fallbackMsg = "AI কনফিগারেশন সেটআপ করা নেই। দয়া করে ফোন কলের মাধ্যমে সাপোর্ট টিমের সাথে যোগাযোগ করুন।";
       await this.prisma.supportMessage.create({
         data: { conversationId: conversation.id, senderType: 'ai', message: fallbackMsg }
       });
@@ -221,12 +299,22 @@ export class SupportChatService {
     // Build Tenant Context
     const tenantContext = await this.getTenantContext(tenantId);
 
+    // Re-fetch conversation for contextSummary
+    const convo = await this.prisma.supportConversation.findUnique({
+      where: { id: conversation.id }
+    });
+
     // Base System Prompt
     const baseSystemPrompt = aiConfig.systemPrompt || DEFAULT_SUPPORT_AI_SYSTEM_PROMPT;
 
-    const fullSystemPrompt = `${baseSystemPrompt}\n\n${tenantContext}`;
+    // Inject prior context summary if available
+    const priorSummaryBlock = convo?.contextSummary
+      ? `\n\n--------------------------------------------------\n# PRIOR CONVERSATION CONTEXT SUMMARY\n${convo.contextSummary}\n--------------------------------------------------`
+      : '';
 
-    const messages = [
+    const fullSystemPrompt = `${baseSystemPrompt}${priorSummaryBlock}\n\n${tenantContext}`;
+
+    const messages_payload = [
       { role: 'system', content: fullSystemPrompt },
       ...history.map(msg => ({
         role: msg.senderType === 'user' ? 'user' : 'assistant',
@@ -263,15 +351,36 @@ export class SupportChatService {
         type: 'function',
         function: {
           name: 'navigate_to_page',
-          description: 'Provides exact navigation steps and direct page link when tenant asks where or how to configure something.',
+          description: 'Provides exact navigation steps and direct page link when tenant asks where or how to configure something. ONLY use paths from the NAVIGATION MAP.',
           parameters: {
             type: 'object',
             properties: {
               page_name: { type: 'string', description: 'The title of the page' },
-              path: { type: 'string', description: 'The frontend route path (e.g. /dashboard/settings/ai-training)' },
+              path: { type: 'string', description: 'The exact frontend route path from the NAVIGATION MAP (e.g. /dashboard/settings/inboxes)' },
               navigation_steps: { type: 'string', description: 'Step by step navigation menu path' }
             },
             required: ['page_name', 'path', 'navigation_steps']
+          }
+        }
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'show_channel_connect_ui',
+          description: 'Renders an interactive channel connection UI (Facebook OAuth button + manual form) directly inside the chat widget. Call this when user wants to connect WhatsApp Official API, Instagram, or Messenger.',
+          parameters: {
+            type: 'object',
+            properties: {
+              channel_type: {
+                type: 'string',
+                description: 'The channel to connect: whatsapp_official, instagram, or messenger'
+              },
+              instructions: {
+                type: 'string',
+                description: 'Bengali instructions to show the user above the connect UI'
+              }
+            },
+            required: ['channel_type', 'instructions']
           }
         }
       },
@@ -325,7 +434,7 @@ export class SupportChatService {
       try {
         const response = await openai.chat.completions.create({
           model: aiConfig.modelName,
-          messages: messages as any,
+          messages: messages_payload as any,
           tools: tools as any,
           tool_choice: 'auto'
         });
@@ -334,7 +443,7 @@ export class SupportChatService {
         this.logger.warn(`AI model ${aiConfig.modelName} failed: ${innerError.message}. Fallback...`);
         const fallbackResponse = await openai.chat.completions.create({
           model: aiConfig.provider === 'gemini' ? 'gemini-2.0-flash' : aiConfig.modelName,
-          messages: messages as any
+          messages: messages_payload as any
         });
         responseMessage = fallbackResponse.choices[0].message;
       }
@@ -373,7 +482,7 @@ export class SupportChatService {
           );
           await this.smtpService.triggerTicketCreatedEmail(ticket.tenant.businessName, subject, 'medium');
 
-          replyMsg = `আপনার জন্য সাপোর্ট টিকিট #${ticket.id.slice(0, 8)} সফলভাবে ওপেন করা হয়েছে। আমাদের টেকনিক্যাল টিম খুব শীঘ্রই যোগাযোগ করবে।`;
+          replyMsg = `আপনার জন্য সাপোর্ট টিকিট #${ticket.id.slice(0, 8)} সফলভাবে ওপেন করা হয়েছে। আমাদের টেকনিক্যাল টিম খুব শীঘ্রই যোগাযোগ করবে।`;
 
         } else if (fnName === 'request_tenant_permission') {
           replyMsg = `ACTION_PERMISSION_REQUEST:{"actionType":"${args.action_type}","description":"${args.description}"}\n\nআমি এই পরিবর্তনটি সম্পাদন করতে প্রস্তুত। আপনি কি সম্মতি দিচ্ছেন?`;
@@ -381,18 +490,33 @@ export class SupportChatService {
         } else if (fnName === 'navigate_to_page') {
           replyMsg = `📌 **${args.page_name}**:\n${args.navigation_steps}\n\n[এখানে ক্লিক করুন](${args.path})`;
 
+        } else if (fnName === 'show_channel_connect_ui') {
+          replyMsg = `CHANNEL_CONNECT_UI:{"channelType":"${args.channel_type}","instructions":"${args.instructions.replace(/"/g, '\\"')}"}`;
+
         } else if (fnName === 'redirect_to_dashboard_analytics') {
           replyMsg = `📊 আপনি আপনার ড্যাশবোর্ড থেকে লাইভ পরিসংখ্যান দেখতে পারবেন:\n\n[📊 ড্যাশবোর্ডে যান](${args.dashboard_path})`;
 
         } else if (fnName === 'get_tenant_workspace_status') {
-          replyMsg = `আপনার ওয়ার্কস্পেসের বর্তমান বিবরণ:\n${tenantContext}`;
+          replyMsg = `আপনার ওয়ার্কস্পেসের বর্তমান বিবরণ:\n${tenantContext}`;
         } else {
-          replyMsg = responseMessage.content || 'প্রসেস সম্পন্ন হয়েছে।';
+          replyMsg = responseMessage.content || 'প্রসেস সম্পন্ন হয়েছে।';
         }
 
         await this.prisma.supportMessage.create({
           data: { conversationId: conversation.id, senderType: 'ai', message: replyMsg }
         });
+
+        // Trigger context summary every 10 messages
+        const totalMsgCount = allHistory.length + 1; // +1 for the AI reply we just created
+        if (totalMsgCount > 0 && totalMsgCount % 10 === 0) {
+          const fullHistory = await this.prisma.supportMessage.findMany({
+            where: { conversationId: conversation.id },
+            orderBy: { createdAt: 'asc' }
+          });
+          await this.generateAndSaveContextSummary(
+            conversation.id, fullHistory, openai, aiConfig.modelName, aiConfig.provider
+          );
+        }
 
         return { success: true, message: replyMsg };
 
@@ -401,12 +525,25 @@ export class SupportChatService {
         await this.prisma.supportMessage.create({
           data: { conversationId: conversation.id, senderType: 'ai', message: aiResponse }
         });
+
+        // Trigger context summary every 10 messages
+        const totalMsgCount = allHistory.length + 1;
+        if (totalMsgCount > 0 && totalMsgCount % 10 === 0) {
+          const fullHistory = await this.prisma.supportMessage.findMany({
+            where: { conversationId: conversation.id },
+            orderBy: { createdAt: 'asc' }
+          });
+          await this.generateAndSaveContextSummary(
+            conversation.id, fullHistory, openai, aiConfig.modelName, aiConfig.provider
+          );
+        }
+
         return { success: true, message: aiResponse };
       }
 
     } catch (error) {
       this.logger.error(`Error in Support AI: ${error.message}`);
-      const errorMsg = "দুঃখিত, এই মুহূর্তে সার্ভিস সাড়া দিচ্ছে না। দয়া করে কিছুক্ষণ পর আবার চেষ্টা করুন।";
+      const errorMsg = "দুঃখিত, এই মুহূর্তে সার্ভিস সাড়া দিচ্ছে না। দয়া করে কিছুক্ষণ পর আবার চেষ্টা করুন।";
       await this.prisma.supportMessage.create({
         data: { conversationId: conversation.id, senderType: 'ai', message: errorMsg }
       });
