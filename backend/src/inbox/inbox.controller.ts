@@ -23,6 +23,29 @@ export class InboxController {
     return this.inboxService.getActiveChannels(tenantId);
   }
 
+  @Patch('channels/:id/ai-reply')
+  async toggleChannelAiReply(
+    @Request() req: any,
+    @Param('id') channelConnectionId: string,
+    @Body() body: { isAiAutoReplyEnabled: boolean }
+  ) {
+    const tenantId = req.user.tenantId;
+    return this.inboxService.toggleChannelAiReply(tenantId, channelConnectionId, body.isAiAutoReplyEnabled);
+  }
+
+  @Post('channels/:id/reconnect')
+  async reconnectChannel(@Request() req: any, @Param('id') channelConnectionId: string) {
+    const tenantId = req.user.tenantId;
+    return this.inboxService.reconnectChannel(tenantId, channelConnectionId);
+  }
+
+  @Delete('channels/:id')
+  async deleteChannel(@Request() req: any, @Param('id') channelConnectionId: string) {
+    const tenantId = req.user.tenantId;
+    return this.inboxService.deleteChannel(tenantId, channelConnectionId);
+  }
+
+
   @Get('conversations')
   async getConversations(@Request() req: any) {
     const tenantId = req.user.tenantId;

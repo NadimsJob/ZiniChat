@@ -20,16 +20,59 @@ export class InboxService {
   ) {}
 
   async getActiveChannels(tenantId: string) {
-    return this.prisma.channelConnection.findMany({
-      where: { tenantId, status: 'active' },
+    const connections = await this.prisma.channelConnection.findMany({
+      where: { tenantId },
       select: {
         id: true,
         channelType: true,
         displayName: true,
-        phoneNumber: true
+        phoneNumber: true,
+        provider: true,
+        status: true,
+        qrStatus: true,
+        isAiAutoReplyEnabled: true,
+        connectionMethod: true,
+        createdAt: true,
       }
     });
+
+    return connections.map(conn => {
+      const isConnected = conn.status === 'active' || conn.qrStatus === 'CONNECTED';
+      return {
+        ...conn,
+        status: isConnected ? 'active' : 'disconnected',
+        isConnected
+      };
+    });
   }
+
+  async toggleChannelAiReply(tenantId: string, id: string, isAiAutoReplyEnabled: boolean) {
+    return this.prisma.channelConnection.update({
+      where: { id },
+      data: { isAiAutoReplyEnabled }
+    });
+  }
+
+  async deleteChannel(tenantId: string, id: string) {
+    return this.prisma.channelConnection.delete({
+      where: { id }
+    });
+  }
+
+  async reconnectChannel(tenantId: string, id: string) {
+    const conn = await this.prisma.channelConnection.findFirst({
+      where: { id, tenantId }
+    });
+    if (!conn) throw new Error('Channel not found');
+
+    await this.prisma.channelConnection.update({
+      where: { id },
+      data: { status: 'active', qrStatus: 'CONNECTING' }
+    });
+
+    return { message: 'Reconnection initiated' };
+  }
+
 
   async getConversations(tenantId: string, user: any) {
     let whereClause: any = { tenantId };

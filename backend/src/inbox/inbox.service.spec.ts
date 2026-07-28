@@ -160,4 +160,30 @@ describe('InboxService', () => {
       expect(result).toEqual({ unreadCount: 2 });
     });
   });
+
+  describe('Channel Management', () => {
+    it('should toggle AI auto reply for a channel connection', async () => {
+      prismaService.channelConnection = { update: jest.fn().mockResolvedValue({ id: 'conn1', isAiAutoReplyEnabled: false }) };
+      const res = await service.toggleChannelAiReply('tenant1', 'conn1', false);
+      expect(prismaService.channelConnection.update).toHaveBeenCalledWith({
+        where: { id: 'conn1' },
+        data: { isAiAutoReplyEnabled: false }
+      });
+      expect(res.isAiAutoReplyEnabled).toBe(false);
+    });
+
+    it('should return connected channels with active status', async () => {
+      prismaService.channelConnection = {
+        ...prismaService.channelConnection,
+        findMany: jest.fn().mockResolvedValue([
+          { id: 'conn1', channelType: 'whatsapp', status: 'active', qrStatus: 'CONNECTED', isAiAutoReplyEnabled: true }
+        ])
+      };
+      const res = await service.getActiveChannels('tenant1');
+      expect(res).toHaveLength(1);
+      expect(res[0].isConnected).toBe(true);
+      expect(res[0].status).toBe('active');
+    });
+  });
 });
+

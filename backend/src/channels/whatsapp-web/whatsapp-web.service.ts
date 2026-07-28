@@ -28,6 +28,11 @@ export class WhatsappWebService implements OnModuleInit {
     private readonly billingService: BillingService,
   ) {}
 
+  isSocketConnected(tenantId: string): boolean {
+    const sock = this.sockets.get(tenantId);
+    return !!(sock && (sock.user || sock.ws?.readyState === 1));
+  }
+
   async onModuleInit() {
     this.debugLog('Initializing WhatsappWebService...');
     const activeConnections = await this.prisma.channelConnection.findMany({
@@ -43,6 +48,7 @@ export class WhatsappWebService implements OnModuleInit {
       });
     }
   }
+
 
   // =========================================================
   // Quota + duplicate guard — called before startQr/startPairing
