@@ -48,6 +48,10 @@ export default function TenantProfilePage() {
  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
  const [changingPassword, setChangingPassword] = useState(false);
 
+ // Logo upload
+ const [uploadingLogo, setUploadingLogo] = useState(false);
+ const [logoPreview, setLogoPreview] = useState<string | null>(null);
+
  // Business Profile
  const [businessProfile, setBusinessProfile] = useState({
  businessName: '',
@@ -55,7 +59,8 @@ export default function TenantProfilePage() {
  address: '',
  phoneNo: '',
  employeeCount: '1-10',
- businessNature: ''
+ businessNature: '',
+ logoUrl: ''
  });
  const [businessNatures, setBusinessNatures] = useState<any[]>([]);
  const [savingBusiness, setSavingBusiness] = useState(false);
@@ -94,7 +99,8 @@ export default function TenantProfilePage() {
  address: data.tenant.address || '',
  phoneNo: data.tenant.phoneNo || '',
  employeeCount: data.tenant.employeeCount || '1-10',
- businessNature: data.tenant.businessNature || ''
+ businessNature: data.tenant.businessNature || '',
+ logoUrl: data.tenant.logoUrl || ''
  });
  }
  }
@@ -102,6 +108,39 @@ export default function TenantProfilePage() {
  console.error(err);
  } finally {
  setLoading(false);
+ }
+ };
+
+ const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+ const file = e.target.files?.[0];
+ if (!file) return;
+
+ const reader = new FileReader();
+ reader.onload = () => setLogoPreview(reader.result as string);
+ reader.readAsDataURL(file);
+
+ setUploadingLogo(true);
+ try {
+ const formData = new FormData();
+ formData.append('logo', file);
+
+ const res = await fetch(`${API}/auth/tenant-logo`, {
+ method: 'PATCH',
+ headers: { 'Authorization': `Bearer ${Cookies.get('access_token')}` },
+ body: formData,
+ });
+
+ if (res.ok) {
+ const data = await res.json();
+ setBusinessProfile(prev => ({ ...prev, logoUrl: data.logoUrl }));
+ setSuccess(t('Business logo uploaded successfully!', 'বিজনেস লোগো সফলভাবে আপলোড হয়েছে!'));
+ } else {
+ setError(t('Logo upload failed', 'লোগো আপলোড ব্যর্থ'));
+ }
+ } catch (err) {
+ setError(t('Logo upload failed', 'লোগো আপলোড ব্যর্থ'));
+ } finally {
+ setUploadingLogo(false);
  }
  };
 
@@ -549,7 +588,52 @@ export default function TenantProfilePage() {
  </div>
 
  <form onSubmit={handleSaveBusiness} className="space-y-4">
- <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    {/* Business Logo Upload */}
+    <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl space-y-2">
+      <label className="block text-[12px] font-bold text-slate-800">
+        {t('Business Logo (Displayed on Landing Page Marquee)', 'ব্যবসার লোগো (ল্যান্ডিং পেজ স্লাইডারে প্রদর্শন হবে)')}
+      </label>
+      <div className="flex flex-col sm:flex-row items-center gap-3">
+        {logoPreview || businessProfile.logoUrl ? (
+          <div className="w-16 h-16 rounded-xl border border-slate-300 bg-white p-1 shadow-sm shrink-0 flex items-center justify-center overflow-hidden">
+            <img src={logoPreview || (businessProfile.logoUrl.startsWith('http') ? businessProfile.logoUrl : `${API}${businessProfile.logoUrl}`)} alt="Business Logo" className="w-full h-full object-contain" />
+          </div>
+        ) : (
+          <div className="w-16 h-16 rounded-xl border border-dashed border-slate-300 bg-white flex items-center justify-center text-slate-400 text-[10px] font-bold shrink-0">
+            No Logo
+          </div>
+        )}
+        <div className="flex-1 w-full space-y-2">
+          <input
+            type="file"
+            accept="image/*"
+            ref={fileInputRef}
+            onChange={handleLogoUpload}
+            className="hidden"
+          />
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingLogo}
+              className="px-3 py-1.5 bg-primary text-white font-bold rounded-lg text-xs hover:bg-primary/90 transition-all flex items-center gap-1.5 shadow-sm cursor-pointer disabled:opacity-50"
+            >
+              {uploadingLogo ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
+              <span>{t('Upload Logo Image', 'লোগো ছবি আপলোড করুন')}</span>
+            </button>
+          </div>
+          <input
+            type="text"
+            value={businessProfile.logoUrl}
+            onChange={(e) => setBusinessProfile({ ...businessProfile, logoUrl: e.target.value })}
+            placeholder="https://example.com/logo.png or uploaded path"
+            className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-primary"
+          />
+        </div>
+      </div>
+    </div>
+
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
  {/* Business Name */}
  <div>
  <label className="block text-[13px] font-semibold mb-1.5 text-slate-700 ">

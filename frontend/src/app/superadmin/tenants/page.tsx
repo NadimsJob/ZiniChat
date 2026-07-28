@@ -25,6 +25,8 @@ export default function TenantsPage() {
   const [loading, setLoading] = useState(true);
   const [editingTenant, setEditingTenant] = useState<any>(null);
   const [customData, setCustomData] = useState({
+    businessName: '',
+    logoUrl: '',
     customPlanName: '',
     customPriceUsd: '',
     customMessageQuota: '',
@@ -39,6 +41,7 @@ export default function TenantsPage() {
     customFeatures: [] as string[],
     hasFeaturesOverride: false, // Flag to know if they want to override features
   });
+
   const [saving, setSaving] = useState(false);
 
   const fetchTenantsAndConfigs = async () => {
@@ -121,6 +124,8 @@ export default function TenantsPage() {
       : parseFeaturesArray(tenant.basePlan?.features);
 
     setCustomData({
+      businessName: tenant.name || '',
+      logoUrl: tenant.logoUrl || '',
       customPlanName: tenant.customPlanName || '',
       customPriceUsd: tenant.customPriceUsd !== null && tenant.customPriceUsd !== undefined ? String(tenant.customPriceUsd) : (tenant.basePlan?.priceMonthlyBdt !== undefined ? String(tenant.basePlan.priceMonthlyBdt) : (tenant.basePlan?.priceMonthlyUsd !== undefined ? String(tenant.basePlan.priceMonthlyUsd) : '')),
       customMessageQuota: tenant.customMessageQuota !== null && tenant.customMessageQuota !== undefined ? String(tenant.customMessageQuota) : (tenant.basePlan?.messageQuota !== undefined ? String(tenant.basePlan.messageQuota) : ''),
@@ -186,7 +191,9 @@ export default function TenantsPage() {
     setSaving(true);
     
     // Clean up empty strings to undefined/null for API
-    const payload: any = {};
+    const payload: any = {
+      logoUrl: customData.logoUrl || null,
+    };
     if (customData.customPlanName) payload.customPlanName = customData.customPlanName;
     if (customData.customPriceUsd) payload.customPriceUsd = parseFloat(customData.customPriceUsd);
     if (customData.customMessageQuota) payload.customMessageQuota = parseInt(customData.customMessageQuota);
@@ -201,6 +208,7 @@ export default function TenantsPage() {
     // Always include features if the override flag is true, otherwise pass null to remove override
     payload.customFeatures = customData.hasFeaturesOverride ? customData.customFeatures : null;
     payload.customAllowByok = customData.hasFeaturesOverride ? customData.customAllowByok : null;
+
 
     try {
       const token = Cookies.get('access_token');
@@ -354,6 +362,28 @@ export default function TenantsPage() {
             <p className="text-sm text-zinc-400 mb-6">Override default plan limits for <strong>{editingTenant.name}</strong>. Leave blank to use their subscribed plan defaults.</p>
             
             <form onSubmit={handleSaveCustomPlan} className="space-y-4">
+              <div className="p-3 bg-[#09090b] border border-zinc-800 rounded-xl space-y-2">
+                <label className="text-xs font-semibold text-zinc-300 block">Tenant Logo URL (Displayed on Landing Page Marquee)</label>
+                <div className="flex items-center gap-3">
+                  {customData.logoUrl ? (
+                    <div className="w-10 h-10 rounded-lg border border-zinc-700 bg-zinc-900 p-1 flex items-center justify-center shrink-0 overflow-hidden">
+                      <img src={customData.logoUrl.startsWith('http') ? customData.logoUrl : `${API}${customData.logoUrl}`} alt="Logo" className="w-full h-full object-contain" />
+                    </div>
+                  ) : (
+                    <div className="w-10 h-10 rounded-lg border border-dashed border-zinc-800 bg-zinc-900 flex items-center justify-center text-zinc-500 text-[9px] font-bold shrink-0">
+                      No Logo
+                    </div>
+                  )}
+                  <input
+                    type="text"
+                    value={customData.logoUrl}
+                    onChange={e => setCustomData({...customData, logoUrl: e.target.value})}
+                    className="flex-1 bg-[#121214] border border-zinc-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+                    placeholder="https://example.com/logo.png or /uploads/logos/..."
+                  />
+                </div>
+              </div>
+
               <div className="space-y-1">
                 <label className="text-xs font-medium text-zinc-400">Custom Plan Name (optional)</label>
                 <input
@@ -364,6 +394,7 @@ export default function TenantsPage() {
                   placeholder="e.g. VIP Enterprise"
                 />
               </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-xs font-medium text-zinc-400">Monthly Price ($)</label>

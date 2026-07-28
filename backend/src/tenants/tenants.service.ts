@@ -63,6 +63,7 @@ export class TenantsService {
         },
         subscriptionStatus: subStatus,
         currentPeriodEnd: (activeSub || latestSub)?.currentPeriodEnd || null,
+        logoUrl: t.logoUrl,
         planName: effectivePlan?.name || 'No Plan',
         customPlanName: t.customPlanName,
         customPriceUsd: t.customPriceUsd,
@@ -80,6 +81,29 @@ export class TenantsService {
       };
     });
   }
+
+  async getPublicClientLogos() {
+    const tenants = await this.prisma.tenant.findMany({
+      where: { status: 'active' },
+      select: {
+        id: true,
+        businessName: true,
+        brandName: true,
+        logoUrl: true,
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+    });
+
+    return tenants
+      .filter(t => t.businessName || t.logoUrl)
+      .map(t => ({
+        id: t.id,
+        name: t.brandName || t.businessName,
+        logoUrl: t.logoUrl || null,
+      }));
+  }
+
 
   async findOne(id: string) {
     const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
@@ -147,8 +171,12 @@ export class TenantsService {
 
   async customizePlan(id: string, data: any, actorUserId: string) {
     const updateData: any = {};
-    
+    if (data.logoUrl !== undefined) updateData.logoUrl = data.logoUrl;
+
+    if (data.businessName !== undefined) updateData.businessName = data.businessName;
+    if (data.brandName !== undefined) updateData.brandName = data.brandName;
     if (data.customPlanName !== undefined) updateData.customPlanName = data.customPlanName;
+
     if (data.customPriceUsd !== undefined) updateData.customPriceUsd = data.customPriceUsd;
     if (data.customMessageQuota !== undefined) updateData.customMessageQuota = data.customMessageQuota;
     if (data.customAiQuota !== undefined) updateData.customAiQuota = data.customAiQuota;

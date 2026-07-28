@@ -104,6 +104,35 @@ export class AuthController {
     );
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Patch('tenant-logo')
+  @UseInterceptors(FileInterceptor('logo', {
+    storage: diskStorage({
+      destination: './uploads/logos',
+      filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+        cb(null, 'tenant_logo_' + uniqueSuffix + extname(file.originalname));
+      },
+    }),
+    fileFilter: (req, file, cb) => {
+      if (!file.mimetype.match(/\/(jpg|jpeg|png|gif|webp|svg\+xml)$/)) {
+        cb(new Error('Only image files are allowed!'), false);
+      } else {
+        cb(null, true);
+      }
+    },
+    limits: { fileSize: 5 * 1024 * 1024 },
+  }))
+  updateTenantLogo(
+    @Request() req: any,
+    @Body('logoUrl') logoUrlInput?: string,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    const logoUrl = file ? `/uploads/logos/${file.filename}` : logoUrlInput;
+    return this.authService.updateTenantLogo(req.user.userId, logoUrl || '');
+  }
+
+
   // Public endpoint to check if Google Auth is enabled and get client ID
   @Get('google/config')
   async getGoogleConfig() {

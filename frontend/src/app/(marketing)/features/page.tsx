@@ -11,10 +11,11 @@ const integrations = [
   { name: 'WhatsApp Business', icon: '💬', desc: { en: 'Official API + QR Web', bn: 'অফিসিয়াল API + QR Web' }, color: 'bg-green-500/10 border-green-500/30 text-green-500' },
   { name: 'Meta Messenger', icon: '📘', desc: { en: 'Facebook Page Inbox', bn: 'ফেসবুক পেজ ইনবক্স' }, color: 'bg-blue-500/10 border-blue-500/30 text-blue-500' },
   { name: 'Instagram DM', icon: '📸', desc: { en: 'Direct Message integration', bn: 'ডাইরেক্ট মেসেজ ইন্টিগ্রেশন' }, color: 'bg-pink-500/10 border-pink-500/30 text-pink-500' },
-  { name: 'OpenAI', icon: '🤖', desc: { en: 'GPT-4 powered responses', bn: 'GPT-4 চালিত রেসপন্স' }, color: 'bg-zinc-500/10 border-zinc-500/30 text-zinc-500' },
-  { name: 'Anthropic Claude', icon: '🧠', desc: { en: 'Claude AI integration', bn: 'Claude AI ইন্টিগ্রেশন' }, color: 'bg-purple-500/10 border-purple-500/30 text-purple-500' },
-  { name: 'Supabase', icon: '🗄️', desc: { en: 'Scalable PostgreSQL DB', bn: 'স্কেলেবল PostgreSQL DB' }, color: 'bg-teal-500/10 border-teal-500/30 text-teal-500' },
+  { name: 'MFS Auto Gateway', icon: '💸', desc: { en: 'bKash / Nagad SMS Match', bn: 'অটো SMS পেমেন্ট ট্র্যাকিং' }, color: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500' },
+  { name: 'EMVCo Bangla QR', icon: '📱', desc: { en: 'Dynamic Bangla QR', bn: 'ডাইনামিক বাংলা কিউআর' }, color: 'bg-amber-500/10 border-amber-500/30 text-amber-500' },
+  { name: 'OpenAI GPT-4o', icon: '🤖', desc: { en: 'Vision & Text AI Engine', bn: 'ভিশন ও টেক্সট এআই ইনজিন' }, color: 'bg-zinc-500/10 border-zinc-500/30 text-zinc-500' },
 ];
+
 
 export default function FeaturesPage() {
   const { language } = useLanguage();

@@ -4,10 +4,21 @@ import { useEffect, useState } from 'react';
 import { useLanguage } from '@/components/LanguageProvider';
 import { useCurrency } from '@/components/CurrencyProvider';
 import Link from 'next/link';
-import { Bot, ShieldCheck, ArrowRight, CheckCircle2, MessageSquare, Zap, Globe, Users, ShoppingCart, Star, Send, CheckCheck, PlayCircle, Timer } from 'lucide-react';
+import { Bot, ShieldCheck, ArrowRight, CheckCircle2, MessageSquare, Zap, Globe, Users, ShoppingCart, Star, Send, CheckCheck, PlayCircle, Timer, Sparkles } from 'lucide-react';
 import { InteractiveFeatureTabs, processFeatures } from '@/components/InteractiveFeatureTabs';
 import { PricingSection } from '@/components/PricingSection';
 import SetupWidgetMockup from '@/components/SetupWidgetMockup';
+
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+const DEFAULT_BRANDS = [
+  { name: 'Star Tech Electronics' },
+  { name: 'Evaly Express' },
+  { name: 'StyleHub BD' },
+  { name: 'Gadget Express' },
+  { name: 'Urban Threads BD' },
+  { name: 'FreshMart Online' },
+];
 
 function WhatsAppBotMockup({ language }: { language: string }) {
   return (
@@ -79,14 +90,25 @@ export default function HomePage() {
   const [plans, setPlans] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [clientLogos, setClientLogos] = useState<any[]>([]);
+  const [dashboardTab, setDashboardTab] = useState<'overview' | 'inbox'>('overview');
+
+  useEffect(() => {
+    fetch(`${API}/tenants/public/client-logos`)
+      .then(res => res.ok ? res.json() : [])
+      .then(data => setClientLogos(data))
+      .catch(() => {});
+  }, []);
+
+  const displayLogos = clientLogos.length > 0 ? clientLogos : DEFAULT_BRANDS;
 
   useEffect(() => {
     Promise.all([
-      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/landing-page/config`).then(res => {
+      fetch(`${API}/landing-page/config`).then(res => {
         if (!res.ok) throw new Error('API Error');
         return res.json();
       }),
-      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/packages/plans`).then(res => res.ok ? res.json() : [])
+      fetch(`${API}/packages/plans`).then(res => res.ok ? res.json() : [])
     ])
     .then(([configData, plansData]) => {
       setConfig(configData);
@@ -99,6 +121,7 @@ export default function HomePage() {
       setLoading(false);
     });
   }, []);
+
 
   if (loading) {
     return (
@@ -205,88 +228,356 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Trusted By - Alapai Style Grid */}
-      <section className="relative overflow-hidden w-full bg-background py-16 lg:py-24 border-y border-border/40">
-        <div className="relative mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
+      {/* Trusted By - Dynamic Continuous Sliding Marquee */}
+      <section className="relative overflow-hidden w-full bg-background py-14 lg:py-20 border-y border-border/40">
+        <div className="relative mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8 mb-10">
           <span className="inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-foreground shadow-sm">
             <Star className="w-3.5 h-3.5 text-accent fill-accent" />
-            {language === 'en' ? 'Trusted by innovative businesses' : 'সারা বাংলাদেশে বিশ্বস্ত'}
+            {language === 'en' ? 'Trusted by innovative businesses' : 'সারা বাংলাদেশে প্রগ্রেসিভ ব্র্যান্ডসমূহ'}
           </span>
-          <h2 className="mx-auto mt-6 max-w-2xl text-2xl font-black tracking-tight text-foreground sm:text-3xl lg:text-4xl">
-            {language === 'en' ? 'Growing businesses are scaling with ' : 'বাড়ন্ত ব্যবসাগুলো এখন আমাদের সাথেই '}
-            <span className="text-accent underline decoration-accent/30 underline-offset-4">{language === 'en' ? 'us' : 'বিক্রি করছে'}</span>
+          <h2 className="mx-auto mt-4 max-w-2xl text-2xl font-black tracking-tight text-foreground sm:text-3xl lg:text-4xl">
+            {language === 'en' ? 'Growing businesses scaling with ' : 'আজই আপনার ব্যবসা অটোমেট করুন '}
+            <span className="text-primary underline decoration-primary/30 underline-offset-4">{language === 'en' ? 'ZiniChat' : 'ZiniChat-এর সাথে'}</span>
           </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-base text-muted-foreground sm:text-lg font-medium">
-            {language === 'en' ? 'From E-commerce to Services, businesses everywhere are using ZiniChat to automate sales.' : 'ই-কমার্স থেকে শুরু করে বিভিন্ন সার্ভিস — অসংখ্য ব্যবসা এগিয়ে চলছে ZiniChat-এর সাথে।'}
+          <p className="mx-auto mt-2 max-w-2xl text-sm text-muted-foreground sm:text-base font-medium">
+            {language === 'en' ? 'From E-commerce to Services, top Bangladesh brands automate sales with us.' : 'ই-কমার্স, রিটেইল থেকে সার্ভিস — শীর্ষ ব্র্যান্ডগুলো তাদের সেলস ও কাস্টমার সাপোর্ট চালাচ্ছে ZiniChat-এ।'}
           </p>
+        </div>
+
+        {/* Continuous Sliding Marquee */}
+        <div className="relative w-full overflow-hidden py-4 bg-surface/30 backdrop-blur-md">
+          <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-background to-transparent z-10" />
+          <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-background to-transparent z-10" />
           
-          <div className="mx-auto mt-12 grid max-w-5xl grid-cols-2 gap-4 sm:grid-cols-4 sm:gap-6">
-            {[
-              { name: 'Acme Corp', icon: '🚀' },
-              { name: 'TechFlow', icon: '⚡' },
-              { name: 'Globex', icon: '🌍' },
-              { name: 'Stark Ind.', icon: '🛡️' }
-            ].map((company, idx) => (
-              <div key={idx} className="group flex flex-col items-center justify-center gap-3 rounded-[2rem] border border-border bg-card py-8 px-4 shadow-sm transition-all duration-300 hover:-translate-y-2 hover:border-accent/40 hover:shadow-xl hover:shadow-accent/10 cursor-default">
-                <div className="flex w-12 h-12 items-center justify-center rounded-full bg-muted group-hover:bg-accent/10 transition-colors">
-                  <span className="text-2xl">{company.icon}</span>
-                </div>
-                <span className="text-lg font-extrabold text-foreground/70 group-hover:text-foreground transition-colors">{company.name}</span>
+          <div className="flex w-[200%] animate-marquee hover:[animation-play-state:paused] items-center gap-6">
+            {/* Repeat list twice for seamless infinite loop */}
+            {[...displayLogos, ...displayLogos].map((client, idx) => (
+              <div
+                key={idx}
+                className="flex items-center gap-3 shrink-0 rounded-2xl border border-border/80 bg-card px-5 py-3 shadow-sm hover:border-primary/40 hover:shadow-md transition-all cursor-default"
+              >
+                {client.logoUrl ? (
+                  <img
+                    src={client.logoUrl.startsWith('http') ? client.logoUrl : `${API}${client.logoUrl}`}
+                    alt={client.name}
+                    className="h-8 w-auto max-w-[120px] object-contain"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">
+                    {client.name.charAt(0)}
+                  </div>
+                )}
+                <span className="text-sm font-bold text-foreground/80 whitespace-nowrap">{client.name}</span>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* How it Works Section */}
-      <section className="relative overflow-hidden w-full bg-muted py-16 lg:py-24">
-        <div className="pointer-events-none absolute -left-24 top-1/4 w-72 h-72 rounded-full bg-primary/10 blur-3xl"></div>
-        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto mb-12 max-w-2xl text-center">
-            <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-foreground">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
-              {language === 'en' ? 'How it Works' : 'যেভাবে কাজ করে'}
+      {/* Tenant Dashboard UI Snapshot Showcase */}
+      <section className="relative w-full bg-muted/50 py-16 lg:py-24 border-b border-border/40 overflow-hidden">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-3xl text-center mb-12">
+            <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-primary">
+              <Sparkles className="w-3.5 h-3.5" />
+              {language === 'en' ? 'Live Tenant Dashboard Snapshot' : 'লাইভ ড্যাশবোর্ড ইন্টারফেস প্রিভিউ'}
             </span>
-            <h2 className="mb-3 mt-4 text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl lg:text-4xl">
-              {language === 'en' ? 'Setup in minutes, Automate forever' : 'মিনিটেই চালু, তিন ধাপেই বিক্রি'}
+            <h2 className="mt-4 text-3xl font-extrabold tracking-tight sm:text-4xl lg:text-5xl text-foreground">
+              {language === 'en' ? 'Powerful Executive Command Center' : 'এক নজরে আপনার ব্যবসার সম্পূর্ণ নিয়ন্ত্রণ'}
             </h2>
+            <p className="mt-3 text-base text-muted-foreground sm:text-lg">
+              {language === 'en' 
+                ? 'Real-time KPIs, AI Daily Summaries, Omnichannel Live Inbox, and automated payment tracking in one sleek dashboard.' 
+                : 'লাইভ কেপিআই, দৈনিক এআই সামারি, অমনিচ্যানেল ইনবক্স ও অটোমেটেড পেমেন্ট ট্র্যাকিং — সব একসাথে।'}
+            </p>
           </div>
-          
-          <div className="relative grid gap-6 md:grid-cols-3 md:gap-5 lg:gap-8">
-            <div className="hidden md:block absolute top-11 inset-x-[16.6%] h-px bg-gradient-to-r from-primary/40 via-secondary/40 to-primary/40" />
+
+          {/* Interactive Mock Dashboard Frame */}
+          <div className="rounded-3xl border border-border/80 bg-surface/80 backdrop-blur-2xl p-4 sm:p-6 shadow-2xl shadow-primary/10 max-w-6xl mx-auto space-y-6">
             
-            <div className="group relative rounded-2xl border border-border bg-card p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/10 sm:p-7">
-              <div className="mb-5 flex items-center justify-between">
-                <span className="flex w-12 h-12 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm transition-transform duration-300 group-hover:scale-105">
-                  <Globe className="w-6 h-6" />
-                </span>
-                <span className="text-5xl font-black text-muted/50 group-hover:text-primary/10 transition-colors">01</span>
+            {/* Dashboard Header Bar */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-border">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary font-extrabold flex items-center justify-center text-lg border border-primary/20">
+                  Z
+                </div>
+                <div>
+                  <h3 className="font-bold text-foreground text-base flex items-center gap-2">
+                    StyleHub BD <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 font-bold border border-emerald-500/20">Active Pro</span>
+                  </h3>
+                  <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    {language === 'en' ? 'AI Sales Agent Online (24/7 Autopilot)' : 'এআই সেলস এজেন্ট অনলাইন (২৪/৭ চালু)'}
+                  </p>
+                </div>
               </div>
-              <h3 className="mb-2 text-lg font-bold text-foreground">{language === 'en' ? 'Connect Channels' : 'চ্যানেল কানেক্ট করুন'}</h3>
-              <p className="text-sm text-muted-foreground">{language === 'en' ? 'Link your WhatsApp Business, Facebook Page, or Instagram account with a single click.' : 'আপনার হোয়াটসঅ্যাপ, ফেসবুক পেজ বা ইনস্টাগ্রাম অ্যাকাউন্ট এক ক্লিকে লিঙ্ক করুন।'}</p>
+
+              {/* View Switcher Tabs */}
+              <div className="flex items-center gap-2 bg-muted p-1 rounded-xl border border-border">
+                <button
+                  onClick={() => setDashboardTab('overview')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    dashboardTab === 'overview' ? 'bg-primary text-white shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {language === 'en' ? 'KPI Overview' : 'কেপিআই ড্যাশবোর্ড'}
+                </button>
+                <button
+                  onClick={() => setDashboardTab('inbox')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    dashboardTab === 'inbox' ? 'bg-primary text-white shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {language === 'en' ? 'Live Inbox' : 'লাইভ ইনবক্স (3 Unread)'}
+                </button>
+              </div>
             </div>
+
+            {/* Tab 1: Executive KPI Overview */}
+            {dashboardTab === 'overview' && (
+              <div className="space-y-6 animate-fade-in-up">
+                
+                {/* AI Daily Summary Alert Card */}
+                <div className="p-4 rounded-2xl bg-gradient-to-r from-primary/10 via-primary/5 to-secondary/10 border border-primary/20 shadow-sm flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-primary text-white flex items-center justify-center shrink-0 font-bold">
+                    <Bot className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-extrabold uppercase tracking-wider text-primary">
+                        {language === 'en' ? 'Today AI Summary' : 'আজকের এআই সামারি'}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground font-semibold">Updated 5m ago</span>
+                    </div>
+                    <p className="text-xs sm:text-sm font-semibold text-foreground/90 leading-relaxed">
+                      {language === 'en' 
+                        ? 'AI automatically handled 88% of messages today (+15% msg volume). Acquired 18 new leads, received 24 completed orders (Total ৳48,500), and sent 1 broadcast campaign.' 
+                        : 'আজ এআই অটোমেশন ৮৮% মেসেজ হ্যান্ডেল করেছে। গতকালের তুলনায় মেসেজ ভলিউম ১৫% বেড়েছে। ১৮টি নতুন লিড, ২৪টি ডেলিভার্ড অর্ডার (মোট ৳৪৮,৫০০) অর্জিত হয়েছে।'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* 4 Key Metric Cards */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                  <div className="p-4 rounded-2xl bg-card border border-border/80 shadow-sm space-y-2">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground font-medium">
+                      <span>{language === 'en' ? 'Today Revenue' : 'আজকের সেলস'}</span>
+                      <span className="text-emerald-600 font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded text-[10px]">+12%</span>
+                    </div>
+                    <p className="text-xl sm:text-2xl font-black text-foreground">৳৪৮,৫০০</p>
+                    <p className="text-[11px] text-muted-foreground">{language === 'en' ? '24 Paid Orders' : '২৪টি সাকসেসফুল অর্ডার'}</p>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-card border border-border/80 shadow-sm space-y-2">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground font-medium">
+                      <span>{language === 'en' ? 'AI Response Rate' : 'এআই রেসপন্স রেট'}</span>
+                      <span className="text-primary font-bold bg-primary/10 px-1.5 py-0.5 rounded text-[10px]">88%</span>
+                    </div>
+                    <p className="text-xl sm:text-2xl font-black text-foreground">৪২৫ <span className="text-xs font-normal text-muted-foreground">msgs</span></p>
+                    <p className="text-[11px] text-muted-foreground">{language === 'en' ? 'Instant AI Replies' : 'ইনস্ট্যান্ট অটোমেটেড রিপ্লাই'}</p>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-card border border-border/80 shadow-sm space-y-2">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground font-medium">
+                      <span>{language === 'en' ? 'New Leads' : 'নতুন লিডসমূহ'}</span>
+                      <span className="text-secondary font-bold bg-secondary/10 px-1.5 py-0.5 rounded text-[10px]">Today</span>
+                    </div>
+                    <p className="text-xl sm:text-2xl font-black text-foreground">১৮ <span className="text-xs font-normal text-muted-foreground">contacts</span></p>
+                    <p className="text-[11px] text-muted-foreground">{language === 'en' ? 'Auto-captured in CRM' : 'সিআরএমে স্বয়ংক্রিয় সেভ'}</p>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-card border border-border/80 shadow-sm space-y-2">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground font-medium">
+                      <span>{language === 'en' ? 'Active Channels' : 'সংযুক্ত চ্যানেল'}</span>
+                      <span className="text-emerald-500 font-bold">🟢 Online</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 pt-1">
+                      <span className="px-2 py-1 bg-[#25D366]/10 text-[#25D366] rounded font-bold text-[10px]">WhatsApp Web</span>
+                      <span className="px-2 py-1 bg-[#0088CC]/10 text-[#0088CC] rounded font-bold text-[10px]">Messenger</span>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            )}
+
+            {/* Tab 2: Live Omnichannel Inbox Snapshot */}
+            {dashboardTab === 'inbox' && (
+              <div className="rounded-2xl border border-border bg-card overflow-hidden grid grid-cols-1 md:grid-cols-12 min-h-[320px] animate-fade-in-up">
+                {/* Left Conversation List */}
+                <div className="md:col-span-5 border-r border-border p-3 space-y-2 bg-muted/30">
+                  <div className="text-xs font-extrabold text-muted-foreground uppercase px-2 pb-1">Recent Conversations</div>
+                  {[
+                    { name: 'Tanvir Hossain', text: 'bKash e tk pathaisi, TrxID: 9X82M1', time: '2m ago', active: true, unread: true, channel: 'WhatsApp' },
+                    { name: 'Nusrat Jahan', text: 'Blue dress er Size XL stock e ache?', time: '12m ago', active: false, unread: true, channel: 'Messenger' },
+                    { name: 'Rafiqul Islam', text: 'Order #1042 delivery update lagbe', time: '1h ago', active: false, unread: false, channel: 'WhatsApp' },
+                  ].map((item, idx) => (
+                    <div key={idx} className={`p-2.5 rounded-xl border transition-all cursor-pointer ${item.active ? 'bg-primary/10 border-primary/30 shadow-sm' : 'bg-card border-border hover:border-primary/20'}`}>
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-xs text-foreground flex items-center gap-1.5">
+                          {item.name}
+                          {item.unread && <span className="w-2 h-2 rounded-full bg-red-500" />}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground">{item.time}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground truncate mt-0.5">{item.text}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Right Chat Board */}
+                <div className="md:col-span-7 p-4 flex flex-col justify-between bg-surface/50">
+                  <div className="space-y-3">
+                    <div className="flex justify-start">
+                      <div className="max-w-[85%] rounded-2xl rounded-tl-sm bg-muted p-2.5 text-xs">
+                        <p className="font-semibold text-foreground">Tanvir Hossain:</p>
+                        <p className="text-muted-foreground">আমি ২৪৫০ টাকা bKash সেন্ড মানি করেছি। TrxID: 9X82M1K9</p>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end">
+                      <div className="max-w-[85%] rounded-2xl rounded-tr-sm bg-primary text-white p-2.5 text-xs shadow-sm">
+                        <div className="flex items-center gap-1 font-bold text-[10px] text-emerald-200 mb-0.5">
+                          <Bot className="w-3 h-3" /> ZiniChat AI Auto-Verified
+                        </div>
+                        <p>ধন্যবাদ তানভীর ভাই! আপনার bKash পেমেন্ট সফলভাবে ভেরিফাই করা হয়েছে। আপনার অর্ডার #1043 কনফার্ম করা হলো! 📦</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> MFS Auto-Claim Matched</span>
+                    <span className="font-bold text-primary">Replying automatically...</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+          </div>
+        </div>
+      </section>
+
+      {/* Channel Settings Showcase */}
+      <section className="relative overflow-hidden w-full bg-background py-16 lg:py-24 border-b border-border/40">
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-3xl text-center mb-14">
+            <span className="inline-flex items-center gap-2 rounded-full border border-secondary/30 bg-secondary/10 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-secondary">
+              <Globe className="w-3.5 h-3.5" />
+              {language === 'en' ? 'Supported Messaging Channels' : 'চ্যানেল কানেক্টিভিটি সুবিধা'}
+            </span>
+            <h2 className="mt-4 text-3xl font-extrabold tracking-tight sm:text-4xl lg:text-5xl text-foreground">
+              {language === 'en' ? 'Connect All Channels in Seconds' : 'হোয়াটসঅ্যাপ, মেসেঞ্জার ও ইনস্টাগ্রাম — সব এক ছাদের নিচে'}
+            </h2>
+            <p className="mt-3 text-base text-muted-foreground sm:text-lg">
+              {language === 'en' 
+                ? 'Flexible connection options for your business: Official Meta Cloud API or zero-cost WhatsApp Web QR/Pairing code.' 
+                : 'অফিসিয়াল মেটা ক্লাউড এপিআই কিংবা সম্পূর্ণ ফ্রি হোয়াটসঅ্যাপ ওয়েব কুইক কানেক্ট — আপনার ইচ্ছামতো বেছে নিন।'}
+            </p>
+          </div>
+
+          {/* 4 Channel Feature Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             
-            <div className="group relative rounded-2xl border border-border bg-card p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/10 sm:p-7">
-              <div className="mb-5 flex items-center justify-between">
-                <span className="flex w-12 h-12 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm transition-transform duration-300 group-hover:scale-105">
-                  <Bot className="w-6 h-6" />
-                </span>
-                <span className="text-5xl font-black text-muted/50 group-hover:text-primary/10 transition-colors">02</span>
+            {/* WhatsApp Web (Baileys) */}
+            <div className="group rounded-3xl border border-border bg-card p-6 shadow-sm hover:border-[#25D366]/50 hover:shadow-xl hover:shadow-[#25D366]/10 transition-all duration-300 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 rounded-2xl bg-[#25D366]/10 text-[#25D366] flex items-center justify-center font-black text-xl">
+                    WA
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 text-[10px] font-extrabold border border-emerald-500/20">
+                    Instant Connect
+                  </span>
+                </div>
+                <h3 className="text-lg font-bold text-foreground mb-2">WhatsApp Web (Baileys)</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed mb-4">
+                  {language === 'en' 
+                    ? 'No Meta verification needed. Connect your personal/business WhatsApp using 8-digit Pairing Code or instant QR Scan.' 
+                    : 'মেটা ভেরিফিকেশন ছাড়া আপনার সাধারণ বা বিজনেস হোয়াটসঅ্যাপ ৮-ডিজিট পেয়ারিং কোড বা QR দিয়ে সহজেই কানেক্ট করুন।'}
+                </p>
               </div>
-              <h3 className="mb-2 text-lg font-bold text-foreground">{language === 'en' ? 'Train the AI' : 'এআই ট্রেইন করুন'}</h3>
-              <p className="text-sm text-muted-foreground">{language === 'en' ? 'Upload your products and FAQs. The AI learns your business instantly.' : 'আপনার প্রোডাক্ট এবং FAQ আপলোড করুন। এআই সাথে সাথেই আপনার ব্যবসা শিখে নেয়।'}</p>
+              <ul className="space-y-2 border-t border-border/60 pt-4 text-xs font-semibold text-foreground/80">
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-[#25D366]" /> 8-Digit Phone Pairing Code</li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-[#25D366]" /> Live QR Code Scanning</li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-[#25D366]" /> Auto Multi-Device Sync</li>
+              </ul>
             </div>
-            
-            <div className="group relative rounded-2xl border border-border bg-card p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/10 sm:p-7">
-              <div className="mb-5 flex items-center justify-between">
-                <span className="flex w-12 h-12 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm transition-transform duration-300 group-hover:scale-105">
-                  <Zap className="w-6 h-6" />
-                </span>
-                <span className="text-5xl font-black text-muted/50 group-hover:text-primary/10 transition-colors">03</span>
+
+            {/* WhatsApp Cloud API */}
+            <div className="group rounded-3xl border border-border bg-card p-6 shadow-sm hover:border-[#075E54]/50 hover:shadow-xl hover:shadow-[#075E54]/10 transition-all duration-300 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-black text-xl">
+                    API
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-extrabold border border-primary/20">
+                    Official Meta
+                  </span>
+                </div>
+                <h3 className="text-lg font-bold text-foreground mb-2">WhatsApp Cloud API</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed mb-4">
+                  {language === 'en' 
+                    ? 'Official Meta Cloud infrastructure for large scale enterprise broadcasting and verified Green Tick support.' 
+                    : 'অফিসিয়াল মেটা ক্লাউড সার্ভার হাই-ভলিউম মেসেজিং ও গ্রিন টিক ভেরিফাইড অ্যাকাউন্টের জন্য।'}
+                </p>
               </div>
-              <h3 className="mb-2 text-lg font-bold text-foreground">{language === 'en' ? 'Automate & Grow' : 'স্বয়ংক্রিয় করুন'}</h3>
-              <p className="text-sm text-muted-foreground">{language === 'en' ? 'Watch as the AI answers questions and closes sales 24/7 on autopilot.' : 'এআই কীভাবে স্বয়ংক্রিয়ভাবে উত্তর দেয় এবং সেলস ক্লোজ করে তা দেখুন।'}</p>
+              <ul className="space-y-2 border-t border-border/60 pt-4 text-xs font-semibold text-foreground/80">
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-primary" /> Verified Green Badge Ready</li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-primary" /> Approved Message Templates</li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-primary" /> Unlimited High-Speed Queue</li>
+              </ul>
             </div>
+
+            {/* Facebook Messenger */}
+            <div className="group rounded-3xl border border-border bg-card p-6 shadow-sm hover:border-[#0088CC]/50 hover:shadow-xl hover:shadow-[#0088CC]/10 transition-all duration-300 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 rounded-2xl bg-[#0088CC]/10 text-[#0088CC] flex items-center justify-center font-black text-xl">
+                    FB
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full bg-[#0088CC]/10 text-[#0088CC] text-[10px] font-extrabold border border-[#0088CC]/20">
+                    1-Click OAuth
+                  </span>
+                </div>
+                <h3 className="text-lg font-bold text-foreground mb-2">Facebook Messenger</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed mb-4">
+                  {language === 'en' 
+                    ? 'Connect Facebook pages directly. Automatically answer inbox messages and post comment inquiries 24/7.' 
+                    : 'ফেসবুক পেজ ও কমেন্ট মেসেজ অটো-রিপ্লাই করুন সাথে সাথেই। কাস্টমার কমেন্ট করলেই এআই চ্যাটে নিয়ে আসবে।'}
+                </p>
+              </div>
+              <ul className="space-y-2 border-t border-border/60 pt-4 text-xs font-semibold text-foreground/80">
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-[#0088CC]" /> Facebook Page Sync</li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-[#0088CC]" /> Post Comment Auto-Reply</li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-[#0088CC]" /> Instant Lead Capture</li>
+              </ul>
+            </div>
+
+            {/* Instagram DM */}
+            <div className="group rounded-3xl border border-border bg-card p-6 shadow-sm hover:border-[#E4405F]/50 hover:shadow-xl hover:shadow-[#E4405F]/10 transition-all duration-300 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 rounded-2xl bg-[#E4405F]/10 text-[#E4405F] flex items-center justify-center font-black text-xl">
+                    IG
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full bg-[#E4405F]/10 text-[#E4405F] text-[10px] font-extrabold border border-[#E4405F]/20">
+                    E-Commerce DM
+                  </span>
+                </div>
+                <h3 className="text-lg font-bold text-foreground mb-2">Instagram Direct DM</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed mb-4">
+                  {language === 'en' 
+                    ? 'Automate Instagram DMs and Story Mentions. Send product links and close sales right inside Instagram.' 
+                    : 'ইনস্টাগ্রাম মেসেজ ও স্টোরি মেনশন অটোমেশন। কাস্টমারদের ইনবক্সে প্রোডাক্ট ক্যাটালগ পাঠান।'}
+                </p>
+              </div>
+              <ul className="space-y-2 border-t border-border/60 pt-4 text-xs font-semibold text-foreground/80">
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-[#E4405F]" /> Story Reply Automation</li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-[#E4405F]" /> Dynamic Product Cards</li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-[#E4405F]" /> Unified Multi-Account</li>
+              </ul>
+            </div>
+
           </div>
         </div>
       </section>
@@ -294,7 +585,7 @@ export default function HomePage() {
       {/* Dynamic Features Section */}
       <section id="features" className="relative w-full bg-background py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-12 text-center">
-          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4">
+          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4 text-foreground">
             {language === 'en' ? 'Everything you need to scale' : 'আপনার ব্যবসার জন্য যা লাগে সব আছে'}
           </h2>
           <p className="text-base text-muted-foreground max-w-2xl mx-auto sm:text-lg">
@@ -340,3 +631,4 @@ export default function HomePage() {
     </div>
   );
 }
+

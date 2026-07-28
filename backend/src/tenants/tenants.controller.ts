@@ -7,23 +7,34 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { RequirePermissions } from '../auth/decorators/permissions.decorator';
 
 @Controller('tenants')
-@UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
-@Roles('superadmin')
-@RequirePermissions('manage:tenants')
 export class TenantsController {
   constructor(private readonly tenantsService: TenantsService) {}
 
+  @Get('public/client-logos')
+  getPublicClientLogos() {
+    return this.tenantsService.getPublicClientLogos();
+  }
+
   @Get()
+  @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
+  @Roles('superadmin')
+  @RequirePermissions('manage:tenants')
   findAll() {
     return this.tenantsService.findAll();
   }
 
   @Get(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
+  @Roles('superadmin')
+  @RequirePermissions('manage:tenants')
   findOne(@Param('id') id: string) {
     return this.tenantsService.findOne(id);
   }
 
   @Patch(':id/status')
+  @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
+  @Roles('superadmin')
+  @RequirePermissions('manage:tenants')
   updateStatus(
     @Param('id') id: string,
     @Body('status') status: string,
@@ -34,6 +45,9 @@ export class TenantsController {
   }
 
   @Patch(':id/customize')
+  @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
+  @Roles('superadmin')
+  @RequirePermissions('manage:tenants')
   customizePlan(
     @Param('id') id: string,
     @Body() customizationData: any,
@@ -44,6 +58,9 @@ export class TenantsController {
   }
 
   @Patch(':id/ai-config')
+  @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
+  @Roles('superadmin')
+  @RequirePermissions('manage:tenants')
   updateAiConfig(
     @Param('id') id: string,
     @Body('customAiConfigId') customAiConfigId: string | null,
@@ -53,3 +70,4 @@ export class TenantsController {
     return this.tenantsService.updateAiConfig(id, customAiConfigId, actorUserId);
   }
 }
+

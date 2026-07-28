@@ -20,7 +20,9 @@ model Tenant {
   ownerName      String?
   employeeCount  String?
   businessNature String?
+  logoUrl        String?
   isOnboarded    Boolean   @default(false)
+
   planId         String?   @db.Uuid
   status         String    @default("active") // active, suspended
   trialEndsAt    DateTime?

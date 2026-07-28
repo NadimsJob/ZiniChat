@@ -252,6 +252,7 @@ export class AuthService {
     if (data.ownerName !== undefined) updateTenantData.ownerName = data.ownerName;
     if (data.employeeCount !== undefined) updateTenantData.employeeCount = data.employeeCount;
     if (data.businessNature !== undefined) updateTenantData.businessNature = data.businessNature;
+    if (data.logoUrl !== undefined) updateTenantData.logoUrl = data.logoUrl;
 
     await this.prisma.tenant.update({
       where: { id: user.tenantId },
@@ -267,6 +268,19 @@ export class AuthService {
 
     return { success: true };
   }
+
+  async updateTenantLogo(userId: string, logoUrl: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user || !user.tenantId) throw new UnauthorizedException('Tenant not found');
+
+    const tenant = await this.prisma.tenant.update({
+      where: { id: user.tenantId },
+      data: { logoUrl }
+    });
+
+    return { success: true, logoUrl: tenant.logoUrl };
+  }
+
 
   async getSetupStatus(tenantId: string) {
     if (!tenantId) throw new BadRequestException('Tenant ID required');
