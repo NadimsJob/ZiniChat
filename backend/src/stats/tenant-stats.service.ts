@@ -172,7 +172,7 @@ export class TenantStatsService {
       where: { tenantId },
       select: {
         id: true, channelType: true, displayName: true, status: true,
-        provider: true, phoneNumber: true, updatedAt: true
+        provider: true, phoneNumber: true, createdAt: true
       }
     });
 
@@ -212,7 +212,7 @@ export class TenantStatsService {
       where: { tenantId },
       _count: { id: true }
     });
-    const stages = await this.prisma.stage.findMany({ where: { tenantId }, select: { id: true, name: true } }).catch(() => []);
+    const stages = (this.prisma as any).stage ? await (this.prisma as any).stage.findMany({ where: { tenantId }, select: { id: true, name: true } }).catch(() => []) : [];
     const stageLookup: Record<string, string> = {};
     stages.forEach((s: any) => { stageLookup[s.id] = s.name?.toLowerCase(); });
 
@@ -254,8 +254,9 @@ export class TenantStatsService {
     const [publishedProducts, draftProducts, outOfStockProducts] = await Promise.all([
       this.prisma.product.count({ where: { tenantId, isActive: true } }),
       this.prisma.product.count({ where: { tenantId, isActive: false } }),
-      this.prisma.product.count({ where: { tenantId, stock: 0, isActive: true } }).catch(() => 0),
+      this.prisma.product.count({ where: { tenantId, stockCount: 0, isActive: true } }).catch(() => 0),
     ]);
+
 
     // ── Broadcasts ────────────────────────────────────────────────────────────
     const [bcDelivered, bcRead, bcFailed, bcClicked] = await Promise.all([
