@@ -369,30 +369,7 @@ export class InboxService {
       throw new Error('Conversation not found');
     }
 
-    // Check Global Message Quota
-    const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-    
-    // Get quota limits
-    const activeSub = await this.prisma.subscription.findFirst({
-      where: { tenantId, status: 'active', currentPeriodEnd: { gt: new Date() } },
-      include: { plan: true },
-      orderBy: { currentPeriodEnd: 'desc' }
-    });
-    const messageQuota = activeSub?.plan?.messageQuota || 100; // Free tier default
-
-    // Count messages used
-    const messagesUsed = await this.prisma.message.count({
-      where: {
-        conversation: { tenantId },
-        createdAt: { gte: startOfMonth }
-      }
-    });
-
-    if (messagesUsed >= messageQuota) {
-      throw new Error('MESSAGE_QUOTA_EXCEEDED');
-    }
-
-    // Save as pending initially
+    // Save as pending initially (Message Quota is checked upstream in controller via QuotaService)
     const message = await this.prisma.message.create({
       data: {
         conversationId: conversation.id,
@@ -409,18 +386,20 @@ export class InboxService {
     });
 
     // Ensure active channelConnectionId
-    let channelConnId: string | null = conversation.channelConnectionId;
-    if (!channelConnId) {
-      const activeConn = await this.prisma.channelConnection.findFirst({
-        where: { tenantId, channelType: conversation.channel, status: 'active' }
-      });
-      channelConnId = activeConn?.id || null;
-      if (channelConnId) {
+    let channelConnId: string | null = null;
+    const activeConn = await this.prisma.channelConnection.findFirst({
+      where: { tenantId, channelType: conversation.channel, status: 'active' }
+    });
+    if (activeConn) {
+      channelConnId = activeConn.id;
+      if (conversation.channelConnectionId !== activeConn.id) {
         await this.prisma.conversation.update({
           where: { id: conversation.id },
-          data: { channelConnectionId: channelConnId }
+          data: { channelConnectionId: activeConn.id }
         }).catch(() => {});
       }
+    } else {
+      channelConnId = conversation.channelConnectionId;
     }
 
     // Add to BullMQ Queue
