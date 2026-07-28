@@ -445,13 +445,15 @@ export class PaymentsService {
     const cycle = activeSub?.billingCycle || 'monthly';
 
     let amountBdt = 0;
-    if (tenant?.customPriceUsd) {
-      amountBdt = Math.round(Number(tenant.customPriceUsd) * 120);
-    } else if (plan) {
+    if (plan) {
       amountBdt = cycle === 'yearly'
         ? Number(plan.priceYearlyBdt || Number(plan.priceMonthlyBdt) * 12)
         : Number(plan.priceMonthlyBdt);
+    } else if (tenant?.customPriceUsd) {
+      const customPrice = Number(tenant.customPriceUsd);
+      amountBdt = customPrice > 200 ? Math.round(customPrice) : Math.round(customPrice * 120);
     }
+
 
     const now = new Date();
     const nextBillDate = activeSub?.currentPeriodEnd || new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
