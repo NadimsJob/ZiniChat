@@ -6,7 +6,8 @@ import Cookies from 'js-cookie';
 import { useRouter } from 'next/navigation';
 import {
   PhoneCall, MessageCircle, Camera, ChevronRight, CheckCircle2, ArrowLeft,
-  Loader2, Sparkles, AlertCircle, Lock, TrendingUp, Crown, QrCode as QrIcon, Smartphone, RefreshCw
+  Loader2, Sparkles, AlertCircle, Lock, TrendingUp, Crown, QrCode as QrIcon, Smartphone, RefreshCw,
+  Globe, Copy, Check, Zap, ExternalLink
 } from 'lucide-react';
 import { toast, Toaster } from 'react-hot-toast';
 import QRCode from 'react-qr-code';
@@ -62,6 +63,22 @@ export default function NewInboxStepper() {
   });
 
   const [loading, setLoading] = useState(false);
+
+  // Website Widget state
+  const [websiteSubType, setWebsiteSubType] = useState<'LIVE_CHAT' | 'WHATSAPP' | null>(null);
+  const [waInboxes, setWaInboxes] = useState<any[]>([]);
+  const [waInboxesLoading, setWaInboxesLoading] = useState(false);
+  const [selectedWaInbox, setSelectedWaInbox] = useState<any | null>(null);
+  const [generatedWidget, setGeneratedWidget] = useState<any | null>(null);
+  const [codeCopied, setCodeCopied] = useState(false);
+  const [widgetForm, setWidgetForm] = useState({
+    name: '',
+    domain: '',
+    primaryColor: '#1F824A',
+    heading: 'Chat with us',
+    tagline: 'We are here to help you.',
+    greetingEnabled: false,
+  });
 
   useEffect(() => {
     const fetchQuotas = async () => {
@@ -152,6 +169,17 @@ export default function NewInboxStepper() {
       limit: quotas?.instagramLimit ?? 1,
       current: quotas?.currentInstagram ?? 0,
     },
+    {
+      id: 'website',
+      name: language === 'en' ? 'Website' : 'ওয়েবসাইট',
+      icon: Globe,
+      color: 'text-purple-500',
+      bgColor: 'bg-purple-500/10',
+      borderActive: 'border-purple-500',
+      desc: language === 'en' ? 'Add live chat or WhatsApp widget to your website' : 'আপনার ওয়েবসাইটে লাইভ চ্যাট বা হোয়াটসঅ্যাপ বাটন যোগ করুন',
+      limit: quotas?.websiteWidgetLimit ?? 0,
+      current: quotas?.currentWebsiteWidget ?? 0,
+    },
   ];
 
   const handleChannelSelect = (ch: typeof channelDefs[0]) => {
@@ -165,7 +193,106 @@ export default function NewInboxStepper() {
       return;
     }
     setSelectedChannel(ch.id);
-    setStep(ch.id === 'whatsapp' ? 2 : 3);
+    if (ch.id === 'whatsapp') setStep(2);
+    else if (ch.id === 'website') { setWebsiteSubType(null); setStep(2); }
+    else setStep(3);
+  };
+
+  // Website: fetch connected WhatsApp inboxes
+  const fetchWaInboxes = async () => {
+    setWaInboxesLoading(true);
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/inbox/channels`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const channels = await res.json();
+        setWaInboxes(channels.filter((c: any) => c.channelType === 'whatsapp' && (c.status === 'active' || c.isConnected)));
+      }
+    } catch (e) { console.error(e); }
+    finally { setWaInboxesLoading(false); }
+  };
+
+  // Website: create live chat widget
+  const handleCreateLiveChatWidget = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/website-widget`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ type: 'LIVE_CHAT', ...widgetForm }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to create widget');
+      setGeneratedWidget(data);
+      setStep(4);
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Website: create WhatsApp widget
+  const handleCreateWaWidget = async () => {
+    if (!selectedWaInbox) return;
+    setLoading(true);
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/website-widget`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ type: 'WHATSAPP', name: `WA Widget – ${selectedWaInbox.displayName}`, whatsappInboxId: selectedWaInbox.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to create widget');
+      setGeneratedWidget(data);
+      setStep(4);
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getEmbedCode = (widget: any) => {
+    if (widget.type === 'WHATSAPP') {
+      const phone = selectedWaInbox?.phoneNumber?.replace(/\D/g, '') || '';
+      return `<!-- ZiniChat WhatsApp Widget -->
+<script>
+(function(){
+  var w=document.createElement('div');
+  w.id='zc-wa-widget';
+  document.body.appendChild(w);
+  var s=document.createElement('script');
+  s.src='${API}/widget.js';
+  s.setAttribute('data-token','${widget.widgetToken}');
+  s.setAttribute('data-phone','${phone}');
+  s.setAttribute('data-color','${widget.primaryColor}');
+  document.head.appendChild(s);
+})();
+</script>`;
+    }
+    return `<!-- ZiniChat Live Chat Widget -->
+<script>
+(function(){
+  var s=document.createElement('script');
+  s.src='${API}/widget.js';
+  s.setAttribute('data-token','${widget.widgetToken}');
+  s.setAttribute('data-color','${widget.primaryColor}');
+  s.setAttribute('data-heading','${widget.heading}');
+  document.head.appendChild(s);
+})();
+</script>`;
+  };
+
+  const handleCopyCode = (code: string) => {
+    navigator.clipboard.writeText(code);
+    setCodeCopied(true);
+    setTimeout(() => setCodeCopied(false), 2000);
   };
 
   // Setup WebSocket connection for WhatsApp Web QR updates
@@ -441,8 +568,8 @@ export default function NewInboxStepper() {
                 <TrendingUp className="w-4 h-4 text-blue-400 mt-0.5 shrink-0" />
                 <p className="text-[12px] text-zinc-400 leading-relaxed">
                   {language === 'en'
-                    ? `Your current plan allows: WhatsApp ×${quotas.whatsappLimit}, Messenger ×${quotas.messengerLimit}, Instagram ×${quotas.instagramLimit}.`
-                    : `আপনার বর্তমান প্ল্যানে: WhatsApp ×${quotas.whatsappLimit}, Messenger ×${quotas.messengerLimit}, Instagram ×${quotas.instagramLimit} কানেক্ট করতে পারবেন।`}
+                    ? `Your current plan allows: WhatsApp ×${quotas.whatsappLimit}, Messenger ×${quotas.messengerLimit}, Instagram ×${quotas.instagramLimit}, Website Widget ×${quotas.websiteWidgetLimit}.`
+                    : `আপনার বর্তমান প্ল্যানে: WhatsApp ×${quotas.whatsappLimit}, Messenger ×${quotas.messengerLimit}, Instagram ×${quotas.instagramLimit}, ওয়েবসাইট উইজেট ×${quotas.websiteWidgetLimit} কানেক্ট করতে পারবেন।`}
                   {' '}<button onClick={() => router.push('/dashboard/settings/subscription')} className="text-primary font-bold hover:underline">
                     {language === 'en' ? 'Upgrade Plan' : 'আপগ্রেড করুন'}
                   </button>
@@ -745,8 +872,266 @@ export default function NewInboxStepper() {
           </div>
         )}
 
-        {/* Step 4: Success */}
-        {step === 4 && (
+        {/* Step 2: Website sub-option picker */}
+        {step === 2 && selectedChannel === 'website' && (
+          <div className="animate-in fade-in slide-in-from-right-8 duration-400">
+            <button onClick={() => setStep(1)} className="flex items-center text-[12px] text-zinc-400 hover:text-foreground mb-6 transition-colors">
+              <ArrowLeft className="w-3.5 h-3.5 mr-1" /> {language === 'en' ? 'Back' : 'পেছনে'}
+            </button>
+            <h1 className="text-2xl font-black text-foreground mb-1">
+              {language === 'en' ? 'Choose Widget Type' : 'উইজেট ধরন বেছে নিন'}
+            </h1>
+            <p className="text-[13px] text-zinc-400 mb-8">
+              {language === 'en' ? 'How do you want to engage visitors on your website?' : 'আপনার ওয়েবসাইটের ভিজিটরদের সাথে কিভাবে যোগাযোগ করবেন?'}
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl">
+              <button
+                onClick={() => { setWebsiteSubType('LIVE_CHAT'); setStep(3); }}
+                className="bg-surface/70 backdrop-blur-sm p-6 rounded-2xl border border-surface-hover hover:border-purple-500/50 hover:shadow-lg transition-all text-left group">
+                <div className="w-11 h-11 rounded-xl bg-purple-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <Zap className="w-5 h-5 text-purple-400" />
+                </div>
+                <h3 className="font-bold text-[14px] text-foreground mb-1">
+                  {language === 'en' ? 'Website Live Chat' : 'লাইভ চ্যাট উইজেট'}
+                </h3>
+                <p className="text-[12px] text-zinc-400 leading-relaxed">
+                  {language === 'en' ? 'Embed a branded chat widget directly into your website. Visitors message your inbox.' : 'আপনার ওয়েবসাইটে একটি ব্র্যান্ডেড চ্যাট বক্স যোগ করুন। ভিজিটররা সরাসরি ইনবক্সে মেসেজ করবে।'}
+                </p>
+                <div className="mt-3 flex items-center gap-1 text-purple-400 text-[11px] font-bold">
+                  {language === 'en' ? 'Custom branding' : 'কাস্টম ব্র্যান্ডিং'} <ChevronRight className="w-3 h-3" />
+                </div>
+              </button>
+
+              <button
+                onClick={() => { setWebsiteSubType('WHATSAPP'); setStep(3); fetchWaInboxes(); }}
+                className="bg-surface/70 backdrop-blur-sm p-6 rounded-2xl border border-surface-hover hover:border-emerald-500/50 hover:shadow-lg transition-all text-left group">
+                <div className="w-11 h-11 rounded-xl bg-emerald-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <PhoneCall className="w-5 h-5 text-emerald-500" />
+                </div>
+                <h3 className="font-bold text-[14px] text-foreground mb-1">
+                  {language === 'en' ? 'WhatsApp on Website' : 'ওয়েবসাইটে হোয়াটসঅ্যাপ'}
+                </h3>
+                <p className="text-[12px] text-zinc-400 leading-relaxed">
+                  {language === 'en' ? 'Add a floating WhatsApp button. Visitors tap it to open WhatsApp and chat with you.' : 'একটি ফ্লোটিং হোয়াটসঅ্যাপ বাটন যোগ করুন। ভিজিটররা ক্লিক করে সরাসরি হোয়াটসঅ্যাপে মেসেজ করবে।'}
+                </p>
+                <div className="mt-3 flex items-center gap-1 text-emerald-500 text-[11px] font-bold">
+                  {language === 'en' ? 'Floating chat button' : 'ফ্লোটিং বাটন'} <ChevronRight className="w-3 h-3" />
+                </div>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 3: Website — Live Chat Form */}
+        {step === 3 && selectedChannel === 'website' && websiteSubType === 'LIVE_CHAT' && (
+          <div className="animate-in fade-in slide-in-from-right-8 duration-400 max-w-xl">
+            <button onClick={() => setStep(2)} className="flex items-center text-[12px] text-zinc-400 hover:text-foreground mb-6 transition-colors">
+              <ArrowLeft className="w-3.5 h-3.5 mr-1" /> {language === 'en' ? 'Back' : 'পেছনে'}
+            </button>
+            <h1 className="text-2xl font-black text-foreground mb-6">
+              {language === 'en' ? 'Configure Live Chat Widget' : 'লাইভ চ্যাট উইজেট কনফিগার করুন'}
+            </h1>
+            <form onSubmit={handleCreateLiveChatWidget}>
+              <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-6 space-y-4">
+                {[
+                  { label: language === 'en' ? 'Widget Name' : 'উইজেটের নাম', key: 'name', placeholder: language === 'en' ? 'e.g. Sales Chat' : 'যেমন: সেলস চ্যাট', type: 'text', required: true },
+                  { label: language === 'en' ? 'Your Website Domain' : 'ওয়েবসাইট ডোমেইন', key: 'domain', placeholder: 'e.g. mystore.com', type: 'text', required: false },
+                  { label: language === 'en' ? 'Chat Heading' : 'চ্যাটের শিরোনাম', key: 'heading', placeholder: 'Chat with us', type: 'text', required: false },
+                  { label: language === 'en' ? 'Tagline' : 'ট্যাগলাইন', key: 'tagline', placeholder: 'We are here to help.', type: 'text', required: false },
+                ].map(field => (
+                  <div key={field.key}>
+                    <label className="block text-[12px] font-bold text-zinc-400 mb-1">{field.label}</label>
+                    <input
+                      required={field.required}
+                      type={field.type}
+                      value={(widgetForm as any)[field.key]}
+                      onChange={e => setWidgetForm({ ...widgetForm, [field.key]: e.target.value })}
+                      placeholder={field.placeholder}
+                      className="w-full bg-background border border-surface-hover rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-primary transition-colors text-foreground"
+                    />
+                  </div>
+                ))}
+                <div>
+                  <label className="block text-[12px] font-bold text-zinc-400 mb-1">
+                    {language === 'en' ? 'Brand Color' : 'ব্র্যান্ড কালার'}
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={widgetForm.primaryColor}
+                      onChange={e => setWidgetForm({ ...widgetForm, primaryColor: e.target.value })}
+                      className="w-10 h-10 rounded-lg border border-surface-hover cursor-pointer bg-transparent"
+                    />
+                    <span className="text-[12px] font-mono text-zinc-400">{widgetForm.primaryColor}</span>
+                  </div>
+                </div>
+                <label className="flex items-center gap-3 cursor-pointer p-3 bg-background border border-surface-hover rounded-xl hover:border-primary/40 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={widgetForm.greetingEnabled}
+                    onChange={e => setWidgetForm({ ...widgetForm, greetingEnabled: e.target.checked })}
+                    className="w-4 h-4 rounded text-primary"
+                  />
+                  <div>
+                    <div className="text-[12px] font-bold text-foreground">{language === 'en' ? 'Show Greeting Message' : 'স্বাগত বার্তা দেখান'}</div>
+                    <div className="text-[11px] text-zinc-400">{language === 'en' ? 'Auto-open chat with a greeting when visitor arrives' : 'ভিজিটর আসলে স্বয়ংক্রিয়ভাবে চ্যাট খুলবে'}</div>
+                  </div>
+                </label>
+                <button disabled={loading} type="submit" className="w-full bg-purple-600 text-white py-2.5 rounded-xl font-bold hover:bg-purple-700 flex items-center justify-center gap-2 disabled:opacity-50 transition-all mt-2">
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                  {language === 'en' ? 'Generate Widget Code' : 'উইজেট কোড তৈরি করুন'}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* Step 3: Website — WhatsApp Inbox Picker */}
+        {step === 3 && selectedChannel === 'website' && websiteSubType === 'WHATSAPP' && (
+          <div className="animate-in fade-in slide-in-from-right-8 duration-400 max-w-xl">
+            <button onClick={() => setStep(2)} className="flex items-center text-[12px] text-zinc-400 hover:text-foreground mb-6 transition-colors">
+              <ArrowLeft className="w-3.5 h-3.5 mr-1" /> {language === 'en' ? 'Back' : 'পেছনে'}
+            </button>
+            <h1 className="text-2xl font-black text-foreground mb-1">
+              {language === 'en' ? 'Pick a WhatsApp Inbox' : 'হোয়াটসঅ্যাপ ইনবক্স বেছে নিন'}
+            </h1>
+            <p className="text-[13px] text-zinc-400 mb-6">
+              {language === 'en' ? 'Visitors clicking your website button will open a chat with this number.' : 'ভিজিটররা বাটন ক্লিক করলে এই নম্বরে চ্যাট খুলবে।'}
+            </p>
+
+            {waInboxesLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              </div>
+            ) : waInboxes.length === 0 ? (
+              <div className="bg-surface/70 border border-surface-hover rounded-2xl p-8 text-center">
+                <div className="w-14 h-14 rounded-2xl bg-orange-500/10 flex items-center justify-center mx-auto mb-4">
+                  <AlertCircle className="w-7 h-7 text-orange-400" />
+                </div>
+                <h3 className="font-bold text-foreground mb-2">
+                  {language === 'en' ? 'No Connected WhatsApp Found' : 'কোনো সংযুক্ত হোয়াটসঅ্যাপ নেই'}
+                </h3>
+                <p className="text-[12px] text-zinc-400 mb-5">
+                  {language === 'en' ? 'Please connect a WhatsApp account first before creating a WhatsApp website widget.' : 'প্রথমে একটি হোয়াটসঅ্যাপ অ্যাকাউন্ট কানেক্ট করুন।'}
+                </p>
+                <button
+                  onClick={() => { setStep(1); setSelectedChannel('whatsapp'); setTimeout(() => setStep(2), 100); }}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-xl font-bold text-[12px] hover:bg-emerald-500 transition-colors"
+                >
+                  <PhoneCall className="w-4 h-4" />
+                  {language === 'en' ? 'Connect WhatsApp First' : 'WhatsApp কানেক্ট করুন'}
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {waInboxes.map(inbox => (
+                  <button
+                    key={inbox.id}
+                    onClick={() => setSelectedWaInbox(selectedWaInbox?.id === inbox.id ? null : inbox)}
+                    className={`w-full text-left p-4 rounded-2xl border transition-all ${
+                      selectedWaInbox?.id === inbox.id
+                        ? 'border-emerald-500 bg-emerald-500/10'
+                        : 'border-surface-hover bg-surface/70 hover:border-emerald-500/50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
+                        <PhoneCall className="w-4 h-4 text-emerald-500" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-bold text-[13px] text-foreground truncate">{inbox.displayName || 'WhatsApp'}</div>
+                        <div className="text-[11px] text-zinc-400">{inbox.phoneNumber || inbox.provider}</div>
+                      </div>
+                      {selectedWaInbox?.id === inbox.id && (
+                        <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+                      )}
+                    </div>
+                  </button>
+                ))}
+                <button
+                  disabled={!selectedWaInbox || loading}
+                  onClick={handleCreateWaWidget}
+                  className="w-full mt-2 bg-emerald-600 text-white py-2.5 rounded-xl font-bold hover:bg-emerald-500 flex items-center justify-center gap-2 disabled:opacity-40 transition-all"
+                >
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Globe className="w-4 h-4" />}
+                  {language === 'en' ? 'Generate Widget Code' : 'উইজেট কোড তৈরি করুন'}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Step 4: Website Widget — Code Generated */}
+        {step === 4 && selectedChannel === 'website' && generatedWidget && (() => {
+          const embedCode = getEmbedCode(generatedWidget);
+          return (
+            <div className="animate-in zoom-in-95 duration-400 max-w-2xl">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-12 h-12 bg-purple-500/10 rounded-2xl flex items-center justify-center">
+                  <CheckCircle2 className="w-6 h-6 text-purple-400" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-black text-foreground">
+                    {language === 'en' ? 'Widget Ready! 🎉' : 'উইজেট তৈরি হয়েছে! 🎉'}
+                  </h1>
+                  <p className="text-[12px] text-zinc-400">
+                    {language === 'en' ? 'Copy the code and paste it into your website.' : 'কোডটি কপি করে আপনার ওয়েবসাইটে পেস্ট করুন।'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Code block */}
+              <div className="bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden mb-5">
+                <div className="flex items-center justify-between px-4 py-2.5 bg-zinc-900 border-b border-zinc-800">
+                  <span className="text-[11px] font-mono text-zinc-400">HTML — Paste before &lt;/body&gt;</span>
+                  <button
+                    onClick={() => handleCopyCode(embedCode)}
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                      codeCopied ? 'bg-emerald-600 text-white' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+                    }`}
+                  >
+                    {codeCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                    {codeCopied ? (language === 'en' ? 'Copied!' : 'কপি হয়েছে!') : (language === 'en' ? 'Copy Code' : 'কপি করুন')}
+                  </button>
+                </div>
+                <pre className="text-[11px] font-mono text-emerald-300 p-4 overflow-x-auto leading-relaxed whitespace-pre-wrap break-all">{embedCode}</pre>
+              </div>
+
+              {/* Installation instructions */}
+              <div className="bg-blue-500/5 border border-blue-500/15 rounded-2xl p-5 space-y-3 mb-5">
+                <div className="flex items-center gap-2 text-blue-400 font-bold text-[12px]">
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  {language === 'en' ? 'Installation Instructions' : 'ইন্সটলেশন নির্দেশনা'}
+                </div>
+                <ol className="space-y-2 text-[12px] text-zinc-400">
+                  <li className="flex gap-2"><span className="text-primary font-bold shrink-0">1.</span>{language === 'en' ? 'Copy the code above.' : 'উপরের কোডটি কপি করুন।'}</li>
+                  <li className="flex gap-2"><span className="text-primary font-bold shrink-0">2.</span>{language === 'en' ? 'Open your website HTML file or CMS template.' : 'আপনার ওয়েবসাইটের HTML ফাইল বা CMS টেমপ্লেট খুলুন।'}</li>
+                  <li className="flex gap-2"><span className="text-primary font-bold shrink-0">3.</span>{language === 'en' ? 'Paste it just before the closing </body> tag.' : 'কোডটি </body> ট্যাগের ঠিক আগে পেস্ট করুন।'}</li>
+                  <li className="flex gap-2"><span className="text-primary font-bold shrink-0">4.</span>{language === 'en' ? 'Save & publish. Your widget will appear on the site.' : 'সেভ করে পাবলিশ করুন। ওয়েবসাইটে উইজেট দেখা যাবে।'}</li>
+                </ol>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => handleCopyCode(embedCode)}
+                  className="flex-1 bg-primary text-primary-foreground py-2.5 rounded-xl font-bold hover:bg-primary/90 flex items-center justify-center gap-2 transition-all"
+                >
+                  {codeCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  {codeCopied ? (language === 'en' ? 'Copied!' : 'কপি হয়েছে!') : (language === 'en' ? 'Copy Embed Code' : 'এম্বেড কোড কপি করুন')}
+                </button>
+                <button
+                  onClick={() => router.push('/dashboard/settings/inboxes')}
+                  className="px-5 py-2.5 rounded-xl border border-surface-hover text-zinc-400 hover:text-foreground hover:border-primary/40 text-[13px] font-bold transition-colors"
+                >
+                  {language === 'en' ? 'Done' : 'সম্পন্ন'}
+                </button>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Step 4: Success (non-website channels) */}
+        {step === 4 && selectedChannel !== 'website' && (
           <div className="animate-in zoom-in-95 duration-500 max-w-md mx-auto text-center py-12">
             <div className="w-20 h-20 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl shadow-primary/20">
               <Sparkles className="w-10 h-10" />

@@ -46,7 +46,7 @@ export class BillingService {
     const plan = activeSubscription?.plan;
 
     // Current channel connection counts (active only)
-    const [currentWhatsapp, currentMessenger, currentInstagram] = await Promise.all([
+    const [currentWhatsapp, currentMessenger, currentInstagram, currentWebsiteWidget] = await Promise.all([
       this.prisma.channelConnection.count({
         where: { tenantId, channelType: 'whatsapp', status: { in: ['active', 'connected'] } }
       }),
@@ -56,6 +56,9 @@ export class BillingService {
       this.prisma.channelConnection.count({
         where: { tenantId, channelType: 'instagram', status: { in: ['active', 'connected'] } }
       }),
+      this.prisma.websiteWidget.count({
+        where: { tenantId, isActive: true }
+      }),
     ]);
 
     return {
@@ -63,6 +66,7 @@ export class BillingService {
       whatsappLimit: tenant?.customWhatsappLimit ?? plan?.whatsappLimit ?? 1,
       messengerLimit: tenant?.customMessengerLimit ?? plan?.messengerLimit ?? 1,
       instagramLimit: tenant?.customInstagramLimit ?? plan?.instagramLimit ?? 1,
+      websiteWidgetLimit: tenant?.customWebsiteWidgetLimit ?? plan?.websiteWidgetLimit ?? 0,
       messageQuota: tenant?.customMessageQuota ?? plan?.messageQuota ?? 100,
       aiQuota: tenant?.customAiQuota ?? plan?.aiQuota ?? 50,
       seatLimit: tenant?.customSeatLimit ?? plan?.seatLimit ?? 1,
@@ -76,6 +80,7 @@ export class BillingService {
       currentWhatsapp,
       currentMessenger,
       currentInstagram,
+      currentWebsiteWidget,
     };
   }
 

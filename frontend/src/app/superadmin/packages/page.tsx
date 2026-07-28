@@ -380,6 +380,7 @@ export default function PackagesPage() {
                     { id: 'whatsapp', label: 'WhatsApp API (Official)' },
                     { id: 'whatsapp_qr', label: 'WhatsApp Web (Unofficial QR)' },
                     { id: 'whatsapp_widget', label: 'WhatsApp Website Widget' },
+                    { id: 'website_widget', label: 'Website Live Chat Widget' },
                     { id: 'instagram_dm', label: 'Instagram DM Integration' },
                     { id: 'lead_manage', label: 'Leads CRM' },
                     { id: 'commerce', label: 'Products & Orders' },

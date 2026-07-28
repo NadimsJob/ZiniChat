@@ -43,13 +43,15 @@ import { TicketsModule } from './tickets/tickets.module';
 import { BroadcastsModule } from './broadcasts/broadcasts.module';
 import { InstagramAuthModule } from './channels/instagram/instagram-auth.module';
 import { MfsPaymentsModule } from './mfs-payments/mfs-payments.module';
+import { WebsiteWidgetModule } from './website-widget/website-widget.module';
 
 @Module({
   imports: [
     ThrottlerModule.forRoot([{
       ttl: 60000,
-      limit: 100,
+      limit: 60,
     }]),
+    WebsiteWidgetModule,
     ScheduleModule.forRoot(),
     BullModule.forRoot({
       connection: {

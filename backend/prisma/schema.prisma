@@ -36,12 +36,13 @@ model Tenant {
   customAiQuota        Int?
   customSeatLimit      Int?
   customStorageLimitMb Int?
-  customWhatsappLimit  Int?
-  customMessengerLimit Int?
-  customInstagramLimit Int?
-  customAllowByok      Boolean?
-  customFeatures       Json?
-  customAiConfigId     String?  @db.Uuid
+  customWhatsappLimit       Int?
+  customMessengerLimit      Int?
+  customInstagramLimit      Int?
+  customWebsiteWidgetLimit  Int?
+  customAllowByok           Boolean?
+  customFeatures            Json?
+  customAiConfigId          String?  @db.Uuid
 
   createdAt DateTime @default(now())
 
@@ -66,6 +67,7 @@ model Tenant {
   Ticket               Ticket[]
   customAiConfig       AiConfig?             @relation(fields: [customAiConfigId], references: [id])
   supportConversations SupportConversation[]
+  websiteWidgets       WebsiteWidget[]
   plan                 Plan?                 @relation(fields: [planId], references: [id])
 
   @@map("tenants")
@@ -530,10 +532,11 @@ model Plan {
   messageQuota    Int
   aiQuota         Int
   seatLimit       Int
-  whatsappLimit   Int     @default(1)
-  messengerLimit  Int     @default(1)
-  instagramLimit  Int     @default(1)
-  storageLimitMb  Int     @default(500)
+  whatsappLimit        Int     @default(1)
+  messengerLimit       Int     @default(1)
+  instagramLimit       Int     @default(1)
+  websiteWidgetLimit   Int     @default(0) // 0 = disabled by default
+  storageLimitMb       Int     @default(500)
   trialDays       Int     @default(0)
 
   // Promotional & Discount Fields
@@ -553,6 +556,27 @@ model Plan {
   tenants       Tenant[]
 
   @@map("plans")
+}
+
+// Website & WhatsApp website widget configurations
+model WebsiteWidget {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String   @db.Uuid
+  widgetToken     String   @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type            String   @default("LIVE_CHAT") // LIVE_CHAT | WHATSAPP
+  name            String
+  domain          String?
+  primaryColor    String   @default("#1F824A")
+  heading         String   @default("Chat with us")
+  tagline         String   @default("We are here to help you.")
+  greetingEnabled Boolean  @default(false)
+  whatsappInboxId String?  @db.Uuid // for WHATSAPP type only
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("website_widgets")
 }
 
 model Addon {
