@@ -19,6 +19,9 @@ const mockPrisma = {
   channelConnection: {
     count: jest.fn().mockResolvedValue(0),
   },
+  websiteWidget: {
+    count: jest.fn().mockResolvedValue(0),
+  },
 };
 
 describe('BillingService', () => {

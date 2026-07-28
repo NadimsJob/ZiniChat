@@ -377,10 +377,13 @@ export class WhatsappWebService implements OnModuleInit {
         waits++;
       }
     }
-    if (!sock) {
-      throw new Error(`No active Baileys socket found for tenant ${tenantId}`);
+    // Clean recipient phone number (strip LID, device suffix :1, @s.whatsapp.net, +, etc.)
+    const cleanNumber = to.split('@')[0].split(':')[0].replace(/\D/g, '');
+    if (!cleanNumber) {
+      throw new Error(`Invalid WhatsApp recipient number: ${to}`);
     }
-    const jid = `${to}@s.whatsapp.net`;
+    const jid = `${cleanNumber}@s.whatsapp.net`;
+    this.debugLog(`Sending WhatsApp message via Baileys to ${jid}`);
     
     let result;
     if (mediaPath && fs.existsSync(mediaPath)) {

@@ -26,11 +26,12 @@ export class WhatsappProcessor extends WorkerHost {
       // 1. Fetch the active channel connection for this tenant
       let connection;
       if (channelConnectionId) {
-        connection = await this.prisma.channelConnection.findUnique({
-          where: { id: channelConnectionId }
+        connection = await this.prisma.channelConnection.findFirst({
+          where: { id: channelConnectionId, tenantId, status: 'active' }
         });
-      } else {
-        // Fallback for older conversations that might not have channelConnectionId
+      }
+      if (!connection) {
+        // Fallback for older/reconnected conversations with missing or stale channelConnectionId
         connection = await this.prisma.channelConnection.findFirst({
           where: { tenantId, channelType: 'whatsapp', status: 'active' }
         });

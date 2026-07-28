@@ -408,6 +408,21 @@ export class InboxService {
       data: { lastMessageAt: new Date() }
     });
 
+    // Ensure active channelConnectionId
+    let channelConnId: string | null = conversation.channelConnectionId;
+    if (!channelConnId) {
+      const activeConn = await this.prisma.channelConnection.findFirst({
+        where: { tenantId, channelType: conversation.channel, status: 'active' }
+      });
+      channelConnId = activeConn?.id || null;
+      if (channelConnId) {
+        await this.prisma.conversation.update({
+          where: { id: conversation.id },
+          data: { channelConnectionId: channelConnId }
+        }).catch(() => {});
+      }
+    }
+
     // Add to BullMQ Queue
     if (conversation.channel === 'whatsapp') {
       await this.whatsappQueue.add(
@@ -419,7 +434,7 @@ export class InboxService {
           type,
           content,
           conversationId,
-          channelConnectionId: conversation.channelConnectionId,
+          channelConnectionId: channelConnId,
         },
         {
           attempts: 3,
