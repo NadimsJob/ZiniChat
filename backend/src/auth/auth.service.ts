@@ -520,7 +520,7 @@ export class AuthService {
         }
 
         // OAuth users don't have a password initially
-        const passwordHash = null;
+        const passwordHash = '';
 
         user = await this.prisma.user.create({
           data: {
