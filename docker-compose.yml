@@ -23,6 +23,7 @@ services:
       - supabase_network
     volumes:
       - zinichat_backend_uploads:/usr/src/app/uploads
+      - zinichat_backend_sessions:/usr/src/app/sessions
     depends_on:
       - redis
     extra_hosts:
@@ -71,3 +72,4 @@ networks:
 volumes:
   zinichat_redis_data:
   zinichat_backend_uploads:
+  zinichat_backend_sessions:

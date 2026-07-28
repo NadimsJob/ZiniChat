@@ -30,7 +30,10 @@ export class WhatsappWebService implements OnModuleInit {
 
   isSocketConnected(tenantId: string): boolean {
     const sock = this.sockets.get(tenantId);
-    return !!(sock && (sock.user || sock.ws?.readyState === 1));
+    if (!sock) return false;
+    const isWsOpen = sock.ws?.readyState === 1;
+    const hasUser = !!(sock.user || sock.authState?.creds?.me);
+    return isWsOpen && hasUser;
   }
 
   async onModuleInit() {
@@ -96,7 +99,12 @@ export class WhatsappWebService implements OnModuleInit {
       auth: state,
       printQRInTerminal: false,
       syncFullHistory: false,
+      keepAliveIntervalMs: 25000,
+      connectTimeoutMs: 60000,
+      defaultQueryTimeoutMs: 60000,
     });
+
+    this.sockets.set(tenantId, sock);
 
     sock.ev.on('creds.update', saveCreds);
 
@@ -111,14 +119,28 @@ export class WhatsappWebService implements OnModuleInit {
 
       if (connection === 'close') {
         const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
-        const shouldReconnect = statusCode !== DisconnectReason.loggedOut && statusCode !== 409;
-        this.debugLog(`Connection closed due to ${lastDisconnect?.error}, reconnecting: ${shouldReconnect}`);
-        if (shouldReconnect) {
-          setTimeout(() => {
-            this.initSocket(tenantId).catch(err => {
-              this.debugLog(`Reconnect failed for ${tenantId}: ${err.message}`);
-            });
-          }, 3000);
+        const isLoggedOut = statusCode === DisconnectReason.loggedOut;
+        this.debugLog(`Connection closed for ${tenantId}. Error: ${lastDisconnect?.error}, statusCode: ${statusCode}`);
+
+        if (isLoggedOut) {
+          this.debugLog(`Logged out by WhatsApp for tenant ${tenantId}. Cleaning up session.`);
+          this.logout(tenantId).catch(() => {});
+          this.prisma.channelConnection.updateMany({
+            where: { tenantId, provider: 'WEB_QR' },
+            data: { status: 'disconnected', qrStatus: 'DISCONNECTED' }
+          }).catch(() => {});
+        } else {
+          const shouldReconnect = statusCode !== 409;
+          this.debugLog(`Connection closed for tenant ${tenantId}, scheduling automatic reconnect...`);
+          if (shouldReconnect) {
+            setTimeout(() => {
+              if (!this.isSocketConnected(tenantId)) {
+                this.initSocket(tenantId).catch(err => {
+                  this.debugLog(`Reconnect attempt failed for ${tenantId}: ${err.message}`);
+                });
+              }
+            }, 3000);
+          }
         }
       } else if (connection === 'open') {
         this.debugLog(`Opened connection for tenant ${tenantId}`);
@@ -345,7 +367,16 @@ export class WhatsappWebService implements OnModuleInit {
   }
 
   async sendMessage(tenantId: string, to: string, content: string, mediaPath?: string, messageType?: string): Promise<string> {
-    const sock = this.sockets.get(tenantId);
+    let sock = this.sockets.get(tenantId);
+    if (!sock || !this.isSocketConnected(tenantId)) {
+      this.debugLog(`Socket for tenant ${tenantId} not ready, initializing socket connection...`);
+      sock = await this.initSocket(tenantId);
+      let waits = 0;
+      while (!this.isSocketConnected(tenantId) && waits < 10) {
+        await new Promise(r => setTimeout(r, 500));
+        waits++;
+      }
+    }
     if (!sock) {
       throw new Error(`No active Baileys socket found for tenant ${tenantId}`);
     }
