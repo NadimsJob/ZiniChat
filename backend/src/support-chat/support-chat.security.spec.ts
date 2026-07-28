@@ -163,6 +163,9 @@ describe('SupportChatService Security & Isolation Audit', () => {
           expect(where.tenantId).toBe(AUTHENTICATED_TENANT_ID);
           return Promise.resolve({ id: 'user-auth-111' });
         })
+      },
+      plan: {
+        findMany: jest.fn().mockResolvedValue([])
       }
     };
 

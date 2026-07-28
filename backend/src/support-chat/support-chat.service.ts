@@ -52,6 +52,7 @@ When navigating the user to any page, use ONLY these exact paths:
 | Support | /dashboard/support |
 
 NEVER invent or guess paths. ONLY use paths from this table.
+ALWAYS format page links using markdown syntax, for example: [এখানে ব্রডকাস্ট করুন](/dashboard/broadcasts) or [এখানে সাবস্ক্রিপশন দেখুন](/dashboard/settings/subscription). NEVER output raw unformatted path strings.
 
 --------------------------------------------------
 # WHATSAPP OFFICIAL API SETUP GUIDE
@@ -102,6 +103,15 @@ Upon approval, call 'create_detailed_support_ticket'.
 --------------------------------------------------
 # SESSION MEMORY
 If a "Prior Conversation Context Summary" is provided at the top of your system context, treat it as ground truth about what was already discussed. Do NOT ask the user to repeat information already captured in the summary.
+
+--------------------------------------------------
+# PLAN PURCHASING & UPGRADE ASSISTANCE (CRITICAL)
+When a user asks about plan pricing, upgrading, buying a plan, adding channels/seats, or custom plans:
+1. ALWAYS provide clear, helpful pricing & plan details using the ALL AVAILABLE SYSTEM PLANS list provided in the context below.
+2. State exact plan names, prices in BDT (৳), and feature limits (WhatsApp limit, AI quota, seats).
+3. CUSTOM PLAN SUPPORT: YES! Custom plans ARE fully supported in ZiniChat. If a user asks for custom channels (e.g., 5 WhatsApp channels), extra seats, or custom quotas, tell them: "হ্যাঁ! ZiniChat-এ আপনার প্রয়োজন অনুযায়ী কাস্টম প্ল্যান নেওয়ার পূর্ণ সুবিধা রয়েছে। কাস্টম চ্যানেল বা কোটা সেটআপের জন্য আমরা সরাসরি সহযোগিতা করব।"
+4. Help them upgrade: Tell them to visit [এখানে সাবস্ক্রিপশন দেখুন](/dashboard/settings/subscription) or offer: "আমি কি আপনার জন্য একটি সাপোর্টিং টিকিট তৈরি করব যাতে আমাদের সেলস টিম আপনার সাথে যোগাযোগ করে কাস্টম প্ল্যান অ্যাক্টিভ করে দেয়?"
+5. NEVER say custom plans are unavailable. Always proactively assist the user with pricing and upgrade guidance.
 
 --------------------------------------------------
 # RESPONSE STYLE — CRITICAL
@@ -202,6 +212,16 @@ export class SupportChatService {
 
     if (!tenant) return "Tenant context unavailable.";
 
+    // Fetch all active system plans for pricing and upgrade assistance
+    const allPlans = (await this.prisma.plan?.findMany?.({
+      where: { isActive: true },
+      orderBy: { priceMonthlyBdt: 'asc' }
+    })) || [];
+
+    const allPlansFormatted = allPlans.map(p => 
+      `- ${p.name}: ৳${Number(p.priceMonthlyBdt)}/মাস | WhatsApp: ${p.whatsappLimit} | Messenger: ${p.messengerLimit} | Instagram: ${p.instagramLimit} | Messages: ${p.messageQuota === 0 ? 'Unlimited' : p.messageQuota} | AI Quota: ${p.aiQuota === 0 ? 'Unlimited' : p.aiQuota} | Seats: ${p.seatLimit}`
+    ).join('\n') || '- Default Plans available on subscription page';
+
     const activeSubscription = tenant.subscriptions?.[0];
     const planName = tenant.customPlanName || tenant.plan?.name || "Free Tier";
     const expirationDate = activeSubscription?.currentPeriodEnd
@@ -228,19 +248,21 @@ export class SupportChatService {
     const msLimit = tenant.customMessengerLimit ?? plan?.messengerLimit ?? 0;
     const widgetLimit = tenant.customWebsiteWidgetLimit ?? plan?.websiteWidgetLimit ?? 0;
 
-
     return `CURRENT TENANT REAL-TIME WORKSPACE CONTEXT:
 - Business Name: ${tenant.businessName} (Tenant ID: ${tenant.id})
 - Active Subscription Plan: ${planName} | Price: ৳${planPrice}/month
-- Plan Expires/Renews: ${expirationDate}
-- Plan Quota — Messages: ${messageQuota === 0 ? 'Unlimited' : messageQuota} | AI Responses: ${aiQuota === 0 ? 'Unlimited' : aiQuota} | Storage: ${storageLimit === 0 ? 'Unlimited' : storageLimit + ' MB'}
+- Plan Renewal/Expiration Date: ${expirationDate}
+- Current Plan Quota — Messages: ${messageQuota === 0 ? 'Unlimited' : messageQuota} | AI Responses: ${aiQuota === 0 ? 'Unlimited' : aiQuota} | Storage: ${storageLimit === 0 ? 'Unlimited' : storageLimit + ' MB'}
 - Messages Used This Cycle: ${tenant.messageCount}
 - CHANNEL ALLOWANCES (0 = NOT allowed on this plan):
   WhatsApp: ${waLimit} | Instagram: ${igLimit} | Messenger: ${msLimit} | Web Widget: ${widgetLimit}
 - Connected Channels: ${connectedChannels}
 - Active AI Model: ${tenant.customAiConfig?.modelName || 'Platform Default'} (${tenant.customAiConfig?.provider || 'OpenAI'})
 - IMAGE ANALYSIS COST: Each customer image analyzed costs 5 AI Responses from quota.
-- IMPORTANT: Before giving setup instructions for any channel (WhatsApp/Instagram/Messenger), first check CHANNEL ALLOWANCES. If the limit is 0, tell the tenant their plan does not include this channel and they must upgrade.`;
+
+ALL AVAILABLE SYSTEM PLANS (Use for pricing, upgrades & custom requests):
+${allPlansFormatted}
+- CUSTOM PLAN OPTION: Yes! Custom Plans ARE fully supported. Users can request any custom WhatsApp channels (e.g., 5 channels), custom seats, or custom quotas. Offer to create a ticket for custom setup.`;
 
   }
 

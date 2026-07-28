@@ -194,6 +194,12 @@ describe('SupportChatService', () => {
       },
       user: {
         findFirst: jest.fn().mockResolvedValue({ id: 'user-123' })
+      },
+      plan: {
+        findMany: jest.fn().mockResolvedValue([
+          { name: 'Starter', priceMonthlyBdt: 499, whatsappLimit: 1, messengerLimit: 1, instagramLimit: 0, messageQuota: 1000, aiQuota: 500, seatLimit: 2 },
+          { name: 'Growth', priceMonthlyBdt: 999, whatsappLimit: 3, messengerLimit: 3, instagramLimit: 3, messageQuota: 5000, aiQuota: 2000, seatLimit: 5 }
+        ])
       }
     };
 

@@ -387,18 +387,20 @@ export default function SupportWidget() {
       }
     }
 
-    // ── 3. Markdown Link Pills ─────────────────────────────────────────────
-    const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+    // ── 3. Link Pills (Markdown links [Label](url) AND raw paths /dashboard/...) ──
+    const combinedRegex = /\[([^\]]+)\]\(([^)]+)\)|(\/dashboard[^\s\)\.\,]+)/g;
     const parts: any[] = [];
     let lastIndex = 0;
     let match;
 
-    while ((match = linkRegex.exec(text)) !== null) {
+    while ((match = combinedRegex.exec(text)) !== null) {
       if (match.index > lastIndex) {
         parts.push(text.substring(lastIndex, match.index));
       }
-      const label = match[1];
-      const url = match[2];
+
+      const label = match[1] || `এখানে যান 🔗`;
+      const url = match[2] || match[3];
+
       parts.push(
         <button
           key={match.index}
@@ -410,12 +412,12 @@ export default function SupportWidget() {
               window.open(url, '_blank');
             }
           }}
-          className="inline-flex items-center gap-1 my-1 px-2.5 py-1 bg-primary text-white rounded-md text-[11px] font-bold hover:bg-primary/90 transition-all shadow-sm"
+          className="inline-flex items-center gap-1 my-1 mx-0.5 px-2.5 py-1 bg-primary text-white rounded-md text-[11px] font-bold hover:bg-primary/90 transition-all shadow-sm cursor-pointer"
         >
           {label}
         </button>
       );
-      lastIndex = linkRegex.lastIndex;
+      lastIndex = combinedRegex.lastIndex;
     }
 
     if (lastIndex < text.length) {
