@@ -151,8 +151,9 @@ export class TenantStatsService {
     const automationRate = outboundFiltered > 0 ? Math.round((aiFiltered / outboundFiltered) * 100) : 0;
 
     // ── KPIs: Conversations ───────────────────────────────────────────────────
-    const [openConvs, pendingConvs, resolvedToday] = await Promise.all([
+    const [openConvs, unreadConvs, pendingConvs, resolvedToday] = await Promise.all([
       this.prisma.conversation.count({ where: { tenantId, status: 'open' } }),
+      this.prisma.conversation.count({ where: { tenantId, status: 'open', unreadCount: { gt: 0 } } }),
       this.prisma.conversation.count({ where: { tenantId, status: 'bot' } }),
       this.prisma.conversation.count({ where: { tenantId, status: 'closed', lastMessageAt: { gte: todayStart } } }),
     ]);
@@ -257,7 +258,6 @@ export class TenantStatsService {
       this.prisma.product.count({ where: { tenantId, stockCount: 0, isActive: true } }).catch(() => 0),
     ]);
 
-
     // ── Broadcasts ────────────────────────────────────────────────────────────
     const [bcDelivered, bcRead, bcFailed, bcClicked] = await Promise.all([
       this.prisma.broadcastRecipient.count({ where: { broadcast: { tenantId }, status: 'sent' } }).catch(() => 0),
@@ -284,18 +284,28 @@ export class TenantStatsService {
       contactName: msg.conversation?.contact?.name || 'Unknown'
     }));
 
-    // ── Business Health Score ─────────────────────────────────────────────────
+    // ── Business Health Score (Real Data - 0 if no sales/CRM) ────────────────
     const msgUsagePct = Math.min(100, Math.round((messagesUsed / finalMsgLimit) * 100));
     const aiUsagePct = Math.min(100, Math.round((aiFiltered / finalAiLimit) * 100));
-    const subHealth = 100 - Math.max(0, msgUsagePct - 80) - Math.max(0, aiUsagePct - 80);
+    const subHealth = Math.max(0, 100 - Math.max(0, msgUsagePct - 80) - Math.max(0, aiUsagePct - 80));
 
-    const responseScore = Math.min(100, Math.round(automationRate > 70 ? 95 : automationRate > 40 ? 80 : 60));
-    const crmHealth = stageWon + stageQualified > 0 ? Math.min(100, Math.round(((stageWon + stageQualified) / Math.max(1, crmTotal)) * 200)) : 50;
-    const salesPerf = filteredRevenue > 0 ? Math.min(100, Math.round(this.computeGrowth(filteredRevenue, prevFilteredRevenue) / 2 + 70)) : 50;
-    const csatScore = 78;
-    const aiPerfScore = Math.min(100, 60 + automationRate * 0.4);
+    const responseScore = automationRate > 0 ? Math.min(100, Math.round(automationRate > 70 ? 95 : automationRate > 40 ? 80 : 60)) : 0;
+    const crmHealth = crmTotal > 0 ? Math.min(100, Math.round(((stageWon + stageQualified) / crmTotal) * 100)) : 0;
+    const salesPerf = filteredRevenue > 0 ? Math.min(100, Math.round(this.computeGrowth(filteredRevenue, prevFilteredRevenue) / 2 + 70)) : 0;
+    const csatScore = openConvs + resolvedToday > 0 ? Math.min(100, Math.round((resolvedToday / (openConvs + resolvedToday)) * 100)) : 0;
+    const aiPerfScore = aiFiltered > 0 ? Math.min(100, Math.round(60 + automationRate * 0.4)) : 0;
 
-    const healthScore = Math.round((subHealth * 0.2 + responseScore * 0.2 + crmHealth * 0.15 + salesPerf * 0.15 + csatScore * 0.15 + aiPerfScore * 0.15));
+    // Health Score calculation (weighted average of non-zero active areas, 0 if fresh account)
+    let scoreSum = 0;
+    let weightSum = 0;
+
+    if (subHealth > 0) { scoreSum += subHealth * 0.2; weightSum += 0.2; }
+    if (responseScore > 0) { scoreSum += responseScore * 0.2; weightSum += 0.2; }
+    if (crmHealth > 0) { scoreSum += crmHealth * 0.2; weightSum += 0.2; }
+    if (salesPerf > 0) { scoreSum += salesPerf * 0.2; weightSum += 0.2; }
+    if (aiPerfScore > 0) { scoreSum += aiPerfScore * 0.2; weightSum += 0.2; }
+
+    const overallHealthScore = weightSum > 0 ? Math.round(scoreSum / weightSum) : 0;
 
     const features: string[] = Array.isArray(quotas.features) ? quotas.features as string[] : [];
 
@@ -335,6 +345,7 @@ export class TenantStatsService {
         },
         conversations: {
           open: openConvs,
+          unread: unreadConvs,
           pending: pendingConvs,
           resolvedToday,
           avgResolutionTime: null,
@@ -417,7 +428,7 @@ export class TenantStatsService {
       },
       // Business health
       healthScore: {
-        overall: Math.min(100, Math.max(0, healthScore)),
+        overall: Math.min(100, Math.max(0, overallHealthScore)),
         aiPerformance: Math.round(aiPerfScore),
         crmHealth: Math.min(100, Math.max(0, crmHealth)),
         salesPerformance: Math.min(100, Math.max(0, salesPerf)),
@@ -430,6 +441,7 @@ export class TenantStatsService {
       plan: quotas.basePlan || null,
     };
   }
+
 
   // ─── Chart time-series data with YouTube style filters ───────────────────────
   async getChartData(tenantId: string, range = '30d', startDate?: string, endDate?: string) {
