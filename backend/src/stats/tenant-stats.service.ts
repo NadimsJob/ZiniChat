@@ -172,6 +172,20 @@ export class TenantStatsService {
       this.prisma.conversation.count({ where: { tenantId, status: 'closed', lastMessageAt: { gte: todayStart } } }),
     ]);
 
+    // Fetch today's explicit metrics for leads, orders, revenue, and broadcasts
+    const [leadsTodayCount, ordersTodayCount, todayRevenueAggregate, broadcastsTodayCount] = await Promise.all([
+      this.prisma.contact.count({ where: { tenantId, lastSeenAt: { gte: todayStart } } }),
+      this.prisma.order.count({ where: { tenantId, createdAt: { gte: todayStart } } }),
+      this.prisma.order.aggregate({
+        where: { tenantId, status: { in: ['delivered', 'completed', 'paid'] }, createdAt: { gte: todayStart } },
+        _sum: { totalAmount: true }
+      }),
+      this.prisma.broadcast.count({ where: { tenantId, createdAt: { gte: todayStart } } })
+    ]);
+
+
+    const todayRevenueVal = Number(todayRevenueAggregate._sum.totalAmount || 0);
+
     // Build strict TODAY summary text (does not change with date range filter)
     const todaySummaryEn = [
       todayAutomationRate > 0 ? `AI handled ${todayAutomationRate}% of messages automatically today.` : 'AI has not automated replies today.',
@@ -181,9 +195,12 @@ export class TenantStatsService {
         ? `Message volume is down ${Math.abs(todayMsgGrowth)}% from yesterday.` 
         : 'Message volume is steady compared to yesterday.',
       openConvs > 0 
-        ? `${openConvs} conversation${openConvs > 1 ? 's are' : ' is'} currently open (${unreadConvs > 0 ? `${unreadConvs} unread` : 'all read'}).`
-        : 'No open inbox messages pending.'
-    ].join(' ');
+        ? `${openConvs} conversation${openConvs > 1 ? 's are' : ' is'} currently open (${unreadConvs > 0 ? `${unreadConvs} unread 🔴` : 'all read 🟢'}).`
+        : 'No open inbox messages pending 🟢',
+      leadsTodayCount > 0 ? `Acquired ${leadsTodayCount} new lead${leadsTodayCount > 1 ? 's' : ''} today.` : 'No new leads acquired today.',
+      ordersTodayCount > 0 ? `Received ${ordersTodayCount} order${ordersTodayCount > 1 ? 's' : ''} today (total ৳${todayRevenueVal.toLocaleString()}).` : 'No new orders today.',
+      broadcastsTodayCount > 0 ? `Sent ${broadcastsTodayCount} broadcast campaign${broadcastsTodayCount > 1 ? 's' : ''} today.` : ''
+    ].filter(Boolean).join(' ');
 
     const todaySummaryBn = [
       todayAutomationRate > 0 ? `আজ এআই ${todayAutomationRate}% মেসেজ স্বয়ংক্রিয়ভাবে উত্তর দিয়েছে।` : 'আজ এআই মেসেজ হ্যান্ডলিং শুরু করেনি।',
@@ -193,9 +210,13 @@ export class TenantStatsService {
         ? `গতকালকের তুলনায় মেসেজ ভলিউম ${Math.abs(todayMsgGrowth)}% কমেছে।`
         : 'গতকালকের তুলনায় মেসেজ ভলিউম স্থিতিশীল আছে।',
       openConvs > 0
-        ? `${openConvs}টি ইনবক্স কনভারসেশন ওপেন আছে (${unreadConvs > 0 ? `${unreadConvs}টি অপঠিত` : 'সব পঠিত 🟢'})।`
-        : 'কোনো ওপেন ইনবক্স মেসেজ পেন্ডিং নেই 🟢'
-    ].join(' ');
+        ? `${openConvs}টি ইনবক্স কনভারসেশন ওপেন আছে (${unreadConvs > 0 ? `${unreadConvs}টি অপঠিত 🔴` : 'সব পঠিত 🟢'})।`
+        : 'কোনো ওপেন ইনবক্স মেসেজ পেন্ডিং নেই 🟢',
+      leadsTodayCount > 0 ? `আজ নতুন ${leadsTodayCount}টি লিড যুক্ত হয়েছে।` : 'আজ কোনো নতুন লিড যুক্ত হয়নি।',
+      ordersTodayCount > 0 ? `আজ ${ordersTodayCount}টি অর্ডার এসেছে (মোট ৳${todayRevenueVal.toLocaleString('bn-BD')})।` : 'আজ কোনো নতুন অর্ডার আসেনি।',
+      broadcastsTodayCount > 0 ? `আজ ${broadcastsTodayCount}টি ব্রডকাস্ট ক্যাম্পেইন পরিচালনা করা হয়েছে।` : ''
+    ].filter(Boolean).join(' ');
+
 
 
     // ── Subscription health ───────────────────────────────────────────────────
