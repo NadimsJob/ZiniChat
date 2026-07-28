@@ -86,6 +86,38 @@ export default function NewInboxStepper() {
     };
   }, []);
 
+  const handleConnectedSuccess = () => {
+    toast.success(language === 'en' ? 'WhatsApp Web connected successfully! 🎉' : 'হোয়াটসঅ্যাপ ওয়েব সফলভাবে কানেক্ট হয়েছে! 🎉');
+    setStep(4);
+    setTimeout(() => {
+      router.push('/dashboard/settings/inboxes');
+    }, 1800);
+  };
+
+  // Polling fallback while waiting for QR scan / pairing
+  useEffect(() => {
+    if (step !== 3 || selectedChannel !== 'whatsapp' || provider !== 'web') return;
+
+    const interval = setInterval(async () => {
+      try {
+        const token = Cookies.get('access_token');
+        const res = await fetch(`${API}/inbox/channels`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const channels = await res.json();
+          const webConn = channels.find((c: any) => c.provider === 'WEB_QR' && (c.isConnected || c.status === 'active'));
+          if (webConn) {
+            clearInterval(interval);
+            handleConnectedSuccess();
+          }
+        }
+      } catch (e) {}
+    }, 2500);
+
+    return () => clearInterval(interval);
+  }, [step, selectedChannel, provider]);
+
   const channelDefs = [
     {
       id: 'whatsapp',
@@ -153,10 +185,9 @@ export default function NewInboxStepper() {
       setQrLoading(false);
     });
 
-    socket.on('whatsapp_connected', () => {
-      toast.success(language === 'en' ? 'WhatsApp Web connected successfully!' : 'হোয়াটসঅ্যাপ ওয়েব কানেক্ট হয়েছে!');
-      setStep(4);
-    });
+    // Listen to both event names for maximum reliability
+    socket.on('whatsapp_qr_connected', handleConnectedSuccess);
+    socket.on('whatsapp_connected', handleConnectedSuccess);
 
     socketRef.current = socket;
   };
@@ -230,7 +261,7 @@ export default function NewInboxStepper() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || data.error || 'Failed to connect');
-      setStep(4);
+      handleConnectedSuccess();
     } catch (err: any) {
       toast.error(err.message);
     } finally {
@@ -250,7 +281,7 @@ export default function NewInboxStepper() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || data.error || 'Failed to connect');
-      setStep(4);
+      handleConnectedSuccess();
     } catch (err: any) {
       toast.error(err.message);
     } finally {
@@ -270,7 +301,7 @@ export default function NewInboxStepper() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || data.error || 'Failed to connect');
-      setStep(4);
+      handleConnectedSuccess();
     } catch (err: any) {
       toast.error(err.message);
     } finally {
@@ -477,7 +508,7 @@ export default function NewInboxStepper() {
             {provider === 'cloud' ? (
               <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-6">
                 <div className="mb-6">
-                  <ConnectWhatsAppButton onConnected={() => setStep(4)} />
+                  <ConnectWhatsAppButton onConnected={handleConnectedSuccess} />
                 </div>
                 <div className="relative flex items-center py-4">
                   <div className="flex-grow border-t border-surface-hover" />
@@ -646,7 +677,7 @@ export default function NewInboxStepper() {
             </h1>
             <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-6 space-y-5">
               <div>
-                <ConnectFacebookPageButton onConnected={() => setStep(4)} />
+                <ConnectFacebookPageButton onConnected={handleConnectedSuccess} />
               </div>
               <div className="relative flex items-center py-2">
                 <div className="flex-grow border-t border-surface-hover" />
@@ -685,7 +716,7 @@ export default function NewInboxStepper() {
             </h1>
             <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-6 space-y-5">
               <div>
-                <ConnectFacebookInstagramButton onConnected={() => setStep(4)} />
+                <ConnectFacebookInstagramButton onConnected={handleConnectedSuccess} />
               </div>
               <div className="relative flex items-center py-2">
                 <div className="flex-grow border-t border-surface-hover" />
@@ -724,13 +755,13 @@ export default function NewInboxStepper() {
             </h1>
             <p className="text-[13px] text-zinc-400 mb-8 leading-relaxed">
               {language === 'en'
-                ? 'Your new inbox has been configured and is ready to receive messages.'
-                : 'আপনার ইনবক্সটি এখন মেসেজ গ্রহণের জন্য প্রস্তুত।'}
+                ? 'Your new inbox has been connected and you are being redirected to your inboxes list...'
+                : 'আপনার ইনবক্সটি সংযুক্ত হয়েছে এবং ইনবক্স তালিকায় নিয়ে যাওয়া হচ্ছে...'}
             </p>
             <button
               onClick={() => router.push('/dashboard/settings/inboxes')}
               className="bg-primary text-primary-foreground px-8 py-3 rounded-xl font-bold hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all hover:-translate-y-0.5">
-              {language === 'en' ? 'Go to Inboxes' : 'ইনবক্সে যান'}
+              {language === 'en' ? 'Go to Inboxes Now' : 'ইনবক্সে যান'}
             </button>
           </div>
         )}

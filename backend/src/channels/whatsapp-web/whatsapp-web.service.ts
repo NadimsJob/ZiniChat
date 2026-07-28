@@ -165,11 +165,13 @@ export class WhatsappWebService implements OnModuleInit {
             this.connectionIds.set(tenantId, created.id);
             this.debugLog(`Created & cached connectionId ${created.id} for tenant ${tenantId}`);
           }
-          // Emit success AFTER database is updated
+          // Emit success AFTER database is updated (both event names for full compatibility)
           this.inboxGateway.broadcastToTenant(tenantId, 'whatsapp_qr_connected', { success: true });
+          this.inboxGateway.broadcastToTenant(tenantId, 'whatsapp_connected', { success: true });
         }).catch(err => {
           this.debugLog(`Failed to save connection for ${tenantId}: ${err.message}`);
         });
+
       }
     });
 
