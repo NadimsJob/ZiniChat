@@ -114,7 +114,7 @@ export class TenantStatsService {
     ]);
 
     // ── KPIs: AI responses ────────────────────────────────────────────────────
-    const [aiToday, aiFiltered, aiPrevFiltered, aiCostToday, aiCostFiltered] = await Promise.all([
+    const [aiToday, aiFiltered, aiPrevFiltered, aiCostToday, aiCostFiltered, aiUsedInPeriod] = await Promise.all([
       this.prisma.aiUsageLog.count({
         where: { tenantId, createdAt: { gte: todayStart } }
       }),
@@ -132,6 +132,9 @@ export class TenantStatsService {
         _sum: { costUsd: true, tokensUsed: true },
         _count: true,
         where: { tenantId, createdAt: { gte: from, lte: to } }
+      }),
+      this.prisma.aiUsageLog.count({
+        where: { tenantId, createdAt: { gte: periodStart } }
       }),
     ]);
 
@@ -346,9 +349,11 @@ export class TenantStatsService {
     }));
 
     // ── Business Health Score (Real Data - 0 if no sales/CRM) ────────────────
-    const msgUsagePct = Math.min(100, Math.round((messagesUsed / finalMsgLimit) * 100));
+    const finalMessagesUsed = Math.max(messagesUsed, aiUsedInPeriod);
+    const msgUsagePct = Math.min(100, Math.round((finalMessagesUsed / finalMsgLimit) * 100));
     const aiUsagePct = Math.min(100, Math.round((aiFiltered / finalAiLimit) * 100));
-    const subHealth = Math.max(0, 100 - Math.max(0, msgUsagePct - 80) - Math.max(0, aiUsagePct - 80));
+    const aiPeriodUsagePct = Math.min(100, Math.round((aiUsedInPeriod / finalAiLimit) * 100));
+    const subHealth = Math.max(0, 100 - Math.max(0, msgUsagePct - 80) - Math.max(0, aiPeriodUsagePct - 80));
 
     const responseScore = automationRate > 0 ? Math.min(100, Math.round(automationRate > 70 ? 95 : automationRate > 40 ? 80 : 60)) : 0;
     const crmHealth = crmTotal > 0 ? Math.min(100, Math.round(((stageWon + stageQualified) / crmTotal) * 100)) : 0;
@@ -419,8 +424,8 @@ export class TenantStatsService {
       subscriptionHealth: {
         planName: quotas.customPlanName || quotas.basePlan?.name || 'Free',
         renewDate: activeSub?.currentPeriodEnd || null,
-        messages: { used: messagesUsed, limit: finalMsgLimit, pct: msgUsagePct },
-        ai: { used: aiFiltered, limit: finalAiLimit, pct: aiUsagePct },
+        messages: { used: finalMessagesUsed, limit: finalMsgLimit, pct: msgUsagePct },
+        ai: { used: aiUsedInPeriod, limit: finalAiLimit, pct: aiPeriodUsagePct },
         seats: { used: teamCount, limit: seatLimit, pct: Math.round((teamCount / Math.max(1, seatLimit)) * 100) },
         contacts: {
           used: contactsCount,
