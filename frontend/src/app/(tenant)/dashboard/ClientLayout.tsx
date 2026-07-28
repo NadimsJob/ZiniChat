@@ -38,7 +38,8 @@ import {
  Camera,
  Receipt,
  Lock,
- Pin
+ Pin,
+ X
 } from 'lucide-react';
 import NotificationBell from '@/components/NotificationBell';
 import SupportWidget from '@/components/SupportWidget';
@@ -124,47 +125,70 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  if (!window.location.pathname.includes('/dashboard/inbox')) {
  setInboxUnreadCount(prev => prev + 1);
 
- const senderName = data.contactName || data.conversation?.contactName || data.message?.senderName || 'New Contact';
- let msgSnippet = data.text || data.message?.content?.body || data.message?.content?.text || '';
- if (!msgSnippet && typeof data.message?.content === 'string') {
- try {
- const parsed = JSON.parse(data.message.content);
- msgSnippet = parsed.body || parsed.text || (parsed.mediaUrl ? '📷 Photo' : 'New Message');
- } catch (e) {
- msgSnippet = data.message.content;
- }
- }
- if (!msgSnippet) msgSnippet = 'New Message';
+        const senderName =
+          data.contact?.name ||
+          data.contact?.pushName ||
+          data.conversation?.contact?.name ||
+          data.conversation?.contactName ||
+          data.contactName ||
+          data.message?.senderName ||
+          data.contact?.phoneNo ||
+          data.contact?.phoneNumber ||
+          data.conversation?.externalThreadId ||
+          'New Contact';
 
- toast.custom(
- (t) => (
- <div
- onClick={() => {
- toast.dismiss(t.id);
- router.push(`/dashboard/inbox?id=${data.conversation?.id || data.conversationId || ''}`);
- }}
- className={`${
- t.visible ? 'animate-in slide-in-from-bottom-5 duration-300' : 'animate-out fade-out duration-200'
- } max-w-sm w-full bg-slate-900/95 text-white shadow-2xl rounded-2xl p-3.5 border border-emerald-500/30 flex items-start gap-3 cursor-pointer hover:bg-slate-800 transition-all group`}
- >
- <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-md">
- {senderName.substring(0, 2).toUpperCase()}
- </div>
- <div className="flex-1 min-w-0">
- <div className="flex items-center justify-between">
- <h4 className="text-xs font-bold text-emerald-400 truncate">{senderName}</h4>
- <span className="text-[10px] text-zinc-400">Just now</span>
- </div>
- <p className="text-[11px] text-zinc-200 truncate mt-0.5">{msgSnippet}</p>
- <span className="text-[10px] text-emerald-400 font-semibold mt-1 inline-flex items-center gap-1 group-hover:underline">
- Click to reply →
- </span>
- </div>
- </div>
- ),
- { position: 'bottom-right', duration: 6000 }
- );
- }
+        let msgSnippet = data.text || data.message?.content?.body || data.message?.content?.text || '';
+        if (!msgSnippet && typeof data.message?.content === 'string') {
+          try {
+            const parsed = JSON.parse(data.message.content);
+            msgSnippet = parsed.body || parsed.text || (parsed.mediaUrl ? '📷 Photo' : 'New Message');
+          } catch (e) {
+            msgSnippet = data.message.content;
+          }
+        }
+        if (!msgSnippet) msgSnippet = 'New Message';
+
+        toast.custom(
+          (t) => (
+            <div
+              onClick={() => {
+                toast.dismiss(t.id);
+                router.push(`/dashboard/inbox?id=${data.conversation?.id || data.conversationId || ''}`);
+              }}
+              className={`${
+                t.visible ? 'animate-in slide-in-from-bottom-5 duration-300' : 'animate-out fade-out duration-200'
+              } max-w-sm w-full bg-slate-900/95 text-white shadow-2xl rounded-2xl p-3.5 border border-emerald-500/30 flex items-start gap-3 cursor-pointer hover:bg-slate-800 transition-all group`}
+            >
+              <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-md">
+                {senderName.substring(0, 2).toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-1">
+                  <h4 className="text-xs font-bold text-emerald-400 truncate">{senderName}</h4>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className="text-[10px] text-zinc-400">Just now</span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toast.dismiss(t.id);
+                      }}
+                      className="p-1 hover:bg-white/10 rounded-md text-zinc-400 hover:text-white transition-colors"
+                      title="Close notification"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+                <p className="text-[11px] text-zinc-200 truncate mt-0.5">{msgSnippet}</p>
+                <span className="text-[10px] text-emerald-400 font-semibold mt-1 inline-flex items-center gap-1 group-hover:underline">
+                  Click to reply →
+                </span>
+              </div>
+            </div>
+          ),
+          { position: 'bottom-right', duration: 5000 }
+        ); }
  });
  });
  }
