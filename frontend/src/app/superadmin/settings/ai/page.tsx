@@ -27,6 +27,12 @@ export default function AiSettingsPage() {
   const [fetchedModels, setFetchedModels] = useState<string[]>([]);
   const [defaultModal, setDefaultModal] = useState<{isOpen: boolean, config: any}>({ isOpen: false, config: null });
 
+  // Support AI Prompt Editor Modal State
+  const [promptModalOpen, setPromptModalOpen] = useState(false);
+  const [promptText, setPromptText] = useState('');
+  const [savingPrompt, setSavingPrompt] = useState(false);
+  const [isCustomPrompt, setIsCustomPrompt] = useState(false);
+
   const [form, setForm] = useState({
     id: '',
     name: '',
@@ -55,6 +61,51 @@ export default function AiSettingsPage() {
   useEffect(() => {
     fetchConfigs();
   }, []);
+
+  const openSupportPromptModal = async () => {
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/support-chat/admin/default-prompt`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPromptText(data.prompt || '');
+        setIsCustomPrompt(!!data.isCustom);
+        setPromptModalOpen(true);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Failed to load support prompt');
+    }
+  };
+
+  const handleSaveSupportPrompt = async () => {
+    setSavingPrompt(true);
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/support-chat/admin/support-prompt`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ prompt: promptText })
+      });
+      if (res.ok) {
+        alert(language === 'en' ? 'Support AI System Prompt saved successfully!' : 'সাপোর্ট এআই সিস্টেম প্রম্পট সফলভাবে সেভ হয়েছে!');
+        setIsCustomPrompt(true);
+        setPromptModalOpen(false);
+      } else {
+        alert('Failed to save prompt.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error saving prompt');
+    } finally {
+      setSavingPrompt(false);
+    }
+  };
 
   const openModal = (config?: any) => {
     if (config) {
@@ -231,24 +282,11 @@ export default function AiSettingsPage() {
         </div>
         <div className="flex gap-2">
           <button 
-            onClick={async () => {
-              try {
-                const token = Cookies.get('access_token');
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/support-chat/admin/default-prompt`, {
-                  headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (res.ok) {
-                  const data = await res.json();
-                  alert(`[Default Support Prompt Template]\n\n${data.prompt}`);
-                }
-              } catch (e) {
-                console.error(e);
-              }
-            }}
+            onClick={openSupportPromptModal}
             className="flex items-center gap-2 px-2.5 py-2.5 bg-secondary/20 text-secondary hover:bg-secondary/30 rounded-lg transition-all font-semibold border border-secondary/30 text-[12px]"
           >
             <Bot className="w-4 h-4" />
-            {language === 'en' ? 'Default Support Prompt' : 'ডিফল্ট সাপোর্ট প্রম্পট দেখুন'}
+            {language === 'en' ? 'Support AI Prompt' : 'সাপোর্ট এআই প্রম্পট কনফিগার'}
           </button>
           <button 
             onClick={() => openModal()}
@@ -339,6 +377,87 @@ export default function AiSettingsPage() {
           </div>
         )}
       </div>
+
+      {/* Support AI Prompt Editor Modal */}
+      {promptModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-2.5 z-50 animate-in fade-in duration-300">
+          <div className="bg-surface border border-surface-hover rounded-2xl w-full max-w-2xl overflow-y-auto max-h-[92vh] p-4 space-y-3 shadow-2xl">
+            <div className="flex justify-between items-center pb-2 border-b border-surface-hover">
+              <div>
+                <h2 className="text-[15px] font-bold text-zinc-100 flex items-center gap-2">
+                  <Bot className="w-4 h-4 text-secondary" />
+                  {language === 'en' ? 'Support AI System Prompt Configuration' : 'সাপোর্ট এআই সিস্টেম প্রম্পট কনফিগারেশন'}
+                </h2>
+                <p className="text-[11px] text-zinc-400 mt-0.5">
+                  {language === 'en' ? 'Customize the system instructions, setup behavior, and security rules for ZiniChat Support AI.' : 'ZiniChat সাপোর্ট এআই এর জন্য সিস্টেম নির্দেশনা, অটো সেটআপ রুলস ও সিকিউরিটি পলিসি কাস্টমাইজ বা এডিট করুন।'}
+                </p>
+              </div>
+              <button onClick={() => setPromptModalOpen(false)} className="text-zinc-500 hover:text-zinc-300">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <label className="block text-[12px] font-bold text-zinc-300">
+                  {language === 'en' ? 'System Prompt Text' : 'সিস্টেম প্রম্পট টেক্সট'}
+                </label>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      const token = Cookies.get('access_token');
+                      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/support-chat/admin/default-prompt`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                      });
+                      if (res.ok) {
+                        const data = await res.json();
+                        setPromptText(data.prompt || '');
+                      }
+                    } catch (e) {}
+                  }}
+                  className="text-[11px] font-semibold text-secondary hover:underline flex items-center gap-1"
+                >
+                  <RefreshCcw className="w-3 h-3" />
+                  {language === 'en' ? 'Restore Default Template' : 'ডিফল্ট মাস্টার টেমপ্লেট লোড করুন'}
+                </button>
+              </div>
+
+              <textarea
+                rows={16}
+                value={promptText}
+                onChange={e => setPromptText(e.target.value)}
+                className="w-full bg-background border border-surface-hover rounded-xl p-3 font-mono text-[12px] leading-relaxed text-zinc-200 focus:border-primary focus:outline-none resize-y"
+                placeholder="Enter custom support AI prompt..."
+              />
+            </div>
+
+            <div className="flex justify-between items-center pt-3 border-t border-surface-hover">
+              <span className="text-[11px] text-zinc-400">
+                {isCustomPrompt ? (language === 'en' ? 'Status: Custom Prompt Active' : 'স্ট্যাটাস: কাস্টম প্রম্পট অ্যাক্টিভ') : (language === 'en' ? 'Status: Using Master Default' : 'স্ট্যাটাস: ডিফল্ট টেমপ্লেট')}
+              </span>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPromptModalOpen(false)}
+                  className="px-3 py-2 bg-surface-hover hover:bg-surface-hover/80 rounded-lg text-[12px] font-semibold transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveSupportPrompt}
+                  disabled={savingPrompt}
+                  className="px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg text-[12px] font-semibold transition-colors shadow-lg shadow-primary/20 flex items-center gap-2"
+                >
+                  {savingPrompt && <RefreshCcw className="w-3.5 h-3.5 animate-spin" />}
+                  {language === 'en' ? 'Save System Prompt' : 'সিস্টেম প্রম্পট সেভ করুন'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Configuration Modal */}
       {modalOpen && (

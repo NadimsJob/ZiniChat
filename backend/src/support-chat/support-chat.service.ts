@@ -222,7 +222,7 @@ export class SupportChatService {
     const tenantContext = await this.getTenantContext(tenantId);
 
     // Base System Prompt
-    const baseSystemPrompt = DEFAULT_SUPPORT_AI_SYSTEM_PROMPT;
+    const baseSystemPrompt = aiConfig.systemPrompt || DEFAULT_SUPPORT_AI_SYSTEM_PROMPT;
 
     const fullSystemPrompt = `${baseSystemPrompt}\n\n${tenantContext}`;
 
@@ -441,5 +441,48 @@ export class SupportChatService {
         messages: { orderBy: { createdAt: 'asc' } }
       }
     });
+  }
+
+  /**
+   * Superadmin method: Get active support prompt or default template
+   */
+  async getSupportPrompt() {
+    let aiConfig = await this.prisma.aiConfig.findFirst({
+      where: { isSupportDefault: true }
+    });
+    if (!aiConfig) {
+      aiConfig = await this.prisma.aiConfig.findFirst({
+        where: { isActive: true }
+      });
+    }
+    return {
+      prompt: aiConfig?.systemPrompt || DEFAULT_SUPPORT_AI_SYSTEM_PROMPT,
+      isCustom: !!aiConfig?.systemPrompt,
+      configId: aiConfig?.id || null
+    };
+  }
+
+  /**
+   * Superadmin method: Save custom support AI system prompt
+   */
+  async updateSupportPrompt(prompt: string) {
+    let aiConfig = await this.prisma.aiConfig.findFirst({
+      where: { isSupportDefault: true }
+    });
+    if (!aiConfig) {
+      aiConfig = await this.prisma.aiConfig.findFirst({
+        where: { isActive: true }
+      });
+    }
+
+    if (aiConfig) {
+      await this.prisma.aiConfig.update({
+        where: { id: aiConfig.id },
+        data: { systemPrompt: prompt }
+      });
+      return { success: true, message: "Support AI System Prompt updated successfully." };
+    }
+
+    return { success: false, message: "No active AI Configuration found to save prompt." };
   }
 }

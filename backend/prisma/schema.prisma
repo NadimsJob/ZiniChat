@@ -826,6 +826,7 @@ model AiConfig {
   modelName        String
   apiKey           String
   apiEndpoint      String? // Optional custom proxy endpoint
+  systemPrompt     String?  @db.Text // Custom System Prompt (especially for Support AI)
   isActive         Boolean  @default(false)
   isSupportDefault Boolean  @default(false)
   createdAt        DateTime @default(now())

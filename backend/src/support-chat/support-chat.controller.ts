@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, UseGuards, Req } from '@nestjs/common';
 import { SupportChatService, DEFAULT_SUPPORT_AI_SYSTEM_PROMPT } from './support-chat.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -34,7 +34,14 @@ export class SupportChatController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('superadmin')
   getDefaultPrompt() {
-    return { prompt: DEFAULT_SUPPORT_AI_SYSTEM_PROMPT };
+    return this.supportChatService.getSupportPrompt();
+  }
+
+  @Patch('admin/support-prompt')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('superadmin')
+  updateSupportPrompt(@Body('prompt') prompt: string) {
+    return this.supportChatService.updateSupportPrompt(prompt);
   }
 
   @Get('admin/conversations')
