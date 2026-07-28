@@ -228,11 +228,6 @@ export class SupportChatService {
     const msLimit = tenant.customMessengerLimit ?? plan?.messengerLimit ?? 0;
     const widgetLimit = tenant.customWebsiteWidgetLimit ?? plan?.websiteWidgetLimit ?? 0;
 
-    // Plan features
-    const planFeatures: string[] = [
-      ...(Array.isArray(tenant.customFeatures) ? tenant.customFeatures : []),
-      ...(Array.isArray(plan?.features) ? (plan.features as string[]) : [])
-    ];
 
     return `CURRENT TENANT REAL-TIME WORKSPACE CONTEXT:
 - Business Name: ${tenant.businessName} (Tenant ID: ${tenant.id})
