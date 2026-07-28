@@ -193,7 +193,7 @@ export default function ExecutiveDashboardPage() {
     <div className="max-w-[1600px] mx-auto space-y-6 p-2 sm:p-4 pb-16 animate-in fade-in duration-500 text-foreground">
 
       {/* TOP HEADER: EXECUTIVE CONTROL BAR */}
-      <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+      <div className="bg-surface/90 backdrop-blur-xl border border-surface-hover rounded-2xl p-4 sm:p-5 shadow-lg shadow-black/5 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
         
         {/* Left Welcome Info (Fully Dynamic Name) */}
         <div className="flex items-center gap-3">
@@ -301,7 +301,7 @@ export default function ExecutiveDashboardPage() {
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
         
         {/* KPI 1: Messages */}
-        <div className="bg-emerald-500/5 backdrop-blur-xl border border-emerald-500/20 rounded-2xl p-4 flex flex-col justify-between hover:border-emerald-500/40 hover:bg-emerald-500/10 transition-all shadow-sm">
+        <div className="bg-emerald-500/5 backdrop-blur-xl border border-emerald-500/20 rounded-2xl p-4 flex flex-col justify-between hover:border-emerald-500/40 hover:bg-emerald-500/10 transition-all shadow-md shadow-black/5 hover:shadow-lg">
           <div>
             <div className="flex items-center justify-between text-zinc-400 mb-2">
               <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">{language === 'en' ? 'Messages Sent' : 'মেসেজ সেন্ড'}</span>
@@ -323,7 +323,7 @@ export default function ExecutiveDashboardPage() {
         </div>
 
         {/* KPI 2: AI Responses */}
-        <div className="bg-purple-500/5 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-4 flex flex-col justify-between hover:border-purple-500/40 hover:bg-purple-500/10 transition-all shadow-sm">
+        <div className="bg-purple-500/5 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-4 flex flex-col justify-between hover:border-purple-500/40 hover:bg-purple-500/10 transition-all shadow-md shadow-black/5 hover:shadow-lg">
           <div>
             <div className="flex items-center justify-between text-zinc-400 mb-2">
               <span className="text-[11px] font-bold uppercase tracking-wider text-purple-400">{language === 'en' ? 'AI Replies' : 'এআই রিপ্লাই'}</span>
@@ -343,7 +343,7 @@ export default function ExecutiveDashboardPage() {
         </div>
 
         {/* KPI 3: Human Responses */}
-        <div className="bg-blue-500/5 backdrop-blur-xl border border-blue-500/20 rounded-2xl p-4 flex flex-col justify-between hover:border-blue-500/40 hover:bg-blue-500/10 transition-all shadow-sm">
+        <div className="bg-blue-500/5 backdrop-blur-xl border border-blue-500/20 rounded-2xl p-4 flex flex-col justify-between hover:border-blue-500/40 hover:bg-blue-500/10 transition-all shadow-md shadow-black/5 hover:shadow-lg">
           <div>
             <div className="flex items-center justify-between text-zinc-400 mb-2">
               <span className="text-[11px] font-bold uppercase tracking-wider text-blue-400">{language === 'en' ? 'Human Replies' : 'হিউম্যান রিপ্লাই'}</span>
@@ -361,7 +361,7 @@ export default function ExecutiveDashboardPage() {
         </div>
 
         {/* KPI 4: AI Cost */}
-        <div className="bg-emerald-500/5 backdrop-blur-xl border border-emerald-500/20 rounded-2xl p-4 flex flex-col justify-between hover:border-emerald-500/40 hover:bg-emerald-500/10 transition-all shadow-sm">
+        <div className="bg-emerald-500/5 backdrop-blur-xl border border-emerald-500/20 rounded-2xl p-4 flex flex-col justify-between hover:border-emerald-500/40 hover:bg-emerald-500/10 transition-all shadow-md shadow-black/5 hover:shadow-lg">
           <div>
             <div className="flex items-center justify-between text-zinc-400 mb-2">
               <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">{language === 'en' ? 'AI Spend' : 'এআই খরচ'}</span>
@@ -378,7 +378,7 @@ export default function ExecutiveDashboardPage() {
         </div>
 
         {/* KPI 5: Open Conversations */}
-        <div className="bg-amber-500/5 backdrop-blur-xl border border-amber-500/20 rounded-2xl p-4 flex flex-col justify-between hover:border-amber-500/40 hover:bg-amber-500/10 transition-all shadow-sm">
+        <div className="bg-amber-500/5 backdrop-blur-xl border border-amber-500/20 rounded-2xl p-4 flex flex-col justify-between hover:border-amber-500/40 hover:bg-amber-500/10 transition-all shadow-md shadow-black/5 hover:shadow-lg">
           <div>
             <div className="flex items-center justify-between text-zinc-400 mb-2">
               <span className="text-[11px] font-bold uppercase tracking-wider text-amber-400">{language === 'en' ? 'Open Inbox' : 'ওপেন ইনবক্স'}</span>
@@ -407,7 +407,7 @@ export default function ExecutiveDashboardPage() {
         </div>
 
         {/* KPI 6: Subscription Usage */}
-        <div className="bg-primary/5 backdrop-blur-xl border border-primary/20 rounded-2xl p-4 flex flex-col justify-between hover:border-primary/40 hover:bg-primary/10 transition-all shadow-sm">
+        <div className="bg-primary/5 backdrop-blur-xl border border-primary/20 rounded-2xl p-4 flex flex-col justify-between hover:border-primary/40 hover:bg-primary/10 transition-all shadow-md shadow-black/5 hover:shadow-lg">
           <div>
             <div className="flex items-center justify-between text-zinc-400 mb-2">
               <span className="text-[11px] font-bold uppercase tracking-wider text-primary">{language === 'en' ? 'Plan Quota' : 'প্ল্যান কোটা'}</span>
@@ -435,7 +435,7 @@ export default function ExecutiveDashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         
         {/* Subscription Health Card */}
-        <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-5 flex flex-col justify-between">
+        <div className="bg-surface/90 backdrop-blur-xl border border-surface-hover/80 rounded-2xl p-5 flex flex-col justify-between shadow-lg shadow-black/5 hover:shadow-xl transition-all">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-[14px] font-bold flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-primary" />
@@ -447,7 +447,7 @@ export default function ExecutiveDashboardPage() {
           <div className="space-y-3">
             {[
               { label: language === 'en' ? 'Messages Usage' : 'মেসেজ কোটা', used: sub.messages?.used, limit: sub.messages?.limit, pct: sub.messages?.pct, icon: MessageSquare },
-              { label: language === 'en' ? 'AI Credits Usage' : 'এআই ক্রেডিট কোটা', used: sub.ai?.used, limit: sub.ai?.limit, pct: sub.ai?.pct, icon: Bot },
+              { label: language === 'en' ? 'AI Response Usage' : 'এআই রেসপন্স কোটা', used: sub.ai?.used, limit: sub.ai?.limit, pct: sub.ai?.pct, icon: Bot },
               { label: language === 'en' ? 'Team Seats' : 'টিম সিট', used: sub.seats?.used, limit: sub.seats?.limit, pct: sub.seats?.pct, icon: Users },
               { label: language === 'en' ? 'Contacts' : 'কন্টাক্টস', used: sub.contacts?.used, limit: sub.contacts?.limit, pct: sub.contacts?.pct, icon: Users },
               { label: language === 'en' ? 'Products Catalog' : 'প্রোডাক্ট ক্যাটালগ', used: sub.products?.used, limit: sub.products?.limit, pct: sub.products?.pct, icon: Package },
@@ -473,7 +473,7 @@ export default function ExecutiveDashboardPage() {
         </div>
 
         {/* Connected Channels Card */}
-        <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-5 flex flex-col justify-between">
+        <div className="bg-surface/90 backdrop-blur-xl border border-surface-hover/80 rounded-2xl p-5 flex flex-col justify-between shadow-lg shadow-black/5 hover:shadow-xl transition-all">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-[14px] font-bold flex items-center gap-2">
               <PhoneCall className="w-4 h-4 text-emerald-400" />
@@ -510,7 +510,7 @@ export default function ExecutiveDashboardPage() {
         </div>
 
         {/* Team Overview Card */}
-        <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-5 flex flex-col justify-between">
+        <div className="bg-surface/90 backdrop-blur-xl border border-surface-hover/80 rounded-2xl p-5 flex flex-col justify-between shadow-lg shadow-black/5 hover:shadow-xl transition-all">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-[14px] font-bold flex items-center gap-2">
               <Users className="w-4 h-4 text-blue-400" />
@@ -551,7 +551,7 @@ export default function ExecutiveDashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         
         {/* Large Time-series Area Chart */}
-        <div className="lg:col-span-2 bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-5">
+        <div className="lg:col-span-2 bg-surface/90 backdrop-blur-xl border border-surface-hover/80 rounded-2xl p-5 shadow-lg shadow-black/5 hover:shadow-xl transition-all">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-[15px] font-bold text-foreground">{language === 'en' ? 'Conversation Volume Trend' : 'মেসেজিং ভলিউম ট্রেন্ড'}</h3>
@@ -589,7 +589,7 @@ export default function ExecutiveDashboardPage() {
         </div>
 
         {/* Conversation Channel / Label Distribution */}
-        <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-5 flex flex-col justify-between">
+        <div className="bg-surface/90 backdrop-blur-xl border border-surface-hover/80 rounded-2xl p-5 flex flex-col justify-between shadow-lg shadow-black/5 hover:shadow-xl transition-all">
           <h3 className="text-[15px] font-bold text-foreground mb-2">{language === 'en' ? 'Channel Distribution' : 'চ্যানেল ডিস্ট্রিবিউশন'}</h3>
           
           <div className="h-52 w-full">
@@ -636,7 +636,7 @@ export default function ExecutiveDashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         
         {/* CRM Overview */}
-        <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-5">
+        <div className="bg-surface/90 backdrop-blur-xl border border-surface-hover/80 rounded-2xl p-5 shadow-lg shadow-black/5 hover:shadow-xl transition-all">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-[15px] font-bold flex items-center gap-2">
               <Target className="w-4 h-4 text-secondary" />
@@ -671,7 +671,7 @@ export default function ExecutiveDashboardPage() {
         </div>
 
         {/* Revenue Analytics Chart */}
-        <div className="lg:col-span-2 bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-5">
+        <div className="lg:col-span-2 bg-surface/90 backdrop-blur-xl border border-surface-hover/80 rounded-2xl p-5 shadow-lg shadow-black/5 hover:shadow-xl transition-all">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-[15px] font-bold text-foreground">{language === 'en' ? 'E-Commerce & Orders Revenue' : 'ই-কমার্স রেভিনিউ'}</h3>
@@ -708,7 +708,7 @@ export default function ExecutiveDashboardPage() {
         <div className="xl:col-span-2 space-y-6">
 
           {/* Recent Conversations Table */}
-          <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-5">
+          <div className="bg-surface/90 backdrop-blur-xl border border-surface-hover/80 rounded-2xl p-5 shadow-lg shadow-black/5 hover:shadow-xl transition-all">
             <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
               <h3 className="text-[15px] font-bold text-foreground flex items-center gap-2">
                 <MessageSquare className="w-4 h-4 text-primary" />
@@ -766,7 +766,7 @@ export default function ExecutiveDashboardPage() {
           </div>
 
           {/* Recent Orders Table */}
-          <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-5">
+          <div className="bg-surface/90 backdrop-blur-xl border border-surface-hover/80 rounded-2xl p-5 shadow-lg shadow-black/5 hover:shadow-xl transition-all">
             <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
               <h3 className="text-[15px] font-bold text-foreground flex items-center gap-2">
                 <ShoppingCart className="w-4 h-4 text-amber-400" />
@@ -816,7 +816,7 @@ export default function ExecutiveDashboardPage() {
         <div className="space-y-6">
 
           {/* Business Health Card */}
-          <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-5 text-center">
+          <div className="bg-surface/90 backdrop-blur-xl border border-surface-hover/80 rounded-2xl p-5 text-center shadow-lg shadow-black/5 hover:shadow-xl transition-all">
             <h3 className="text-[14px] font-bold uppercase tracking-wider text-zinc-400 mb-4">{language === 'en' ? 'Business Health Score' : 'বিজনেস হেলথ স্কোর'}</h3>
             
             <div className="relative w-36 h-36 mx-auto flex items-center justify-center my-2">
