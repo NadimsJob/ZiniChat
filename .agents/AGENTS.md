@@ -226,3 +226,18 @@ This rule documents the transition away from third-party SMS Forwarders and the 
 ## 25. JSON String Feature Array Substring Prevention
 * **Rule**: When rendering feature checkboxes or validating feature permissions on the frontend, NEVER call `.includes()` directly on `tenant.basePlan.features` or `customFeatures` without converting JSON strings to real JavaScript arrays first.
 * **Why**: In JavaScript, stringified JSON arrays like `'["ai_assistant","whatsapp"]'.includes('messenger')` perform a substring search on the raw string, returning `true` if matched, which incorrectly checks all checkboxes. Always use a helper function (`parseFeaturesArray`) to parse JSON strings into actual JS arrays before calling `.includes()`.
+
+---
+
+## 26. WhatsApp Web Baileys Docker Persistence & Session Health
+* **Rule**: Any service managing Baileys WhatsApp Web connections MUST store session files inside a persistent Docker volume (`zinichat_backend_sessions:/usr/src/app/sessions` in `docker-compose.yml`).
+* **Why**: Baileys stores local credentials (`creds.json`) on disk. Without explicit volume mounting, container restarts or deployments permanently wipe active QR sessions, dropping user connections and requiring manual re-pairing.
+* **Socket Configuration**: Always set `keepAliveIntervalMs: 25000`, `connectTimeoutMs: 60000`, and `defaultQueryTimeoutMs: 60000` in `makeWASocket()` options to prevent silent TCP socket idle timeouts. Provide auto-reconnect fallback handling in `sendMessage` if the socket connection is temporarily closed.
+
+---
+
+## 27. Subscription Quota Breakdown Period Alignment & Terminology
+* **Rule**: When calculating quota breakdown health metrics for tenants (e.g. `messages` vs `ai` response counts), ALL metrics in `subscriptionHealth` MUST be computed relative to the active subscription billing cycle start date (`periodStart`), NOT the dashboard's date-range picker filter.
+* **Mathematical Consistency**: Since every automated AI response sends an outbound message, `messages.used` in `subscriptionHealth` MUST always be calculated as `Math.max(messagesUsed, aiUsedInPeriod)` to prevent `Messages Usage` from ever appearing smaller than `AI Response Usage`.
+* **Terminology**: Use **"AI Response Usage" / "এআই রেসপন্স কোটা"** for AI quota labels rather than "AI Credits Usage" across all UI cards and modals.
+
