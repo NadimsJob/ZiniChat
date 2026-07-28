@@ -329,8 +329,9 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
                   }}
                   className={`group flex items-center ${isSidebarCollapsed ? 'justify-center px-1 py-2' : 'justify-between px-2 py-1.5'} rounded-lg text-[12px] font-medium transition-all ${
                     isActive && !item.hasSubmenu
-                      ? 'bg-gradient-to-r from-primary/15 to-primary/5 text-primary shadow-[0_2px_10px_rgba(31,130,74,0.1)] border border-primary/20'
+                      ? 'bg-gradient-to-r from-primary/15 via-primary/10 to-amber-500/10 text-primary shadow-[0_2px_10px_rgba(31,130,74,0.12)] border border-primary/25 font-bold'
                       : 'text-slate-600 hover:bg-primary/5 hover:text-primary hover:border-primary/10 border border-transparent'
+
                   } ${isLocked ? 'opacity-80' : ''}`}
                 >
                   <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-2.5'}`}>

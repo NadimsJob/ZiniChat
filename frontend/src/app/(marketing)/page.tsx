@@ -293,17 +293,17 @@ export default function HomePage() {
           </div>
 
           {/* Interactive Mock Dashboard Frame */}
-          <div className="rounded-3xl border border-border/80 bg-surface/80 backdrop-blur-2xl p-4 sm:p-6 shadow-2xl shadow-primary/10 max-w-6xl mx-auto space-y-6">
+          <div className="rounded-3xl border border-primary/20 bg-gradient-to-br from-white via-slate-50/90 to-amber-500/5 backdrop-blur-2xl p-4 sm:p-6 shadow-2xl shadow-primary/10 max-w-6xl mx-auto space-y-6">
             
             {/* Dashboard Header Bar */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-border">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary font-extrabold flex items-center justify-center text-lg border border-primary/20">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary via-secondary to-amber-400 text-white font-extrabold flex items-center justify-center text-lg shadow-md">
                   Z
                 </div>
                 <div>
                   <h3 className="font-bold text-foreground text-base flex items-center gap-2">
-                    StyleHub BD <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 font-bold border border-emerald-500/20">Active Pro</span>
+                    StyleHub BD <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-bold border border-primary/20">Active Pro</span>
                   </h3>
                   <p className="text-xs text-muted-foreground flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -317,7 +317,7 @@ export default function HomePage() {
                 <button
                   onClick={() => setDashboardTab('overview')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                    dashboardTab === 'overview' ? 'bg-primary text-white shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                    dashboardTab === 'overview' ? 'bg-gradient-to-r from-primary to-emerald-600 text-white shadow-sm' : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
                   {language === 'en' ? 'KPI Overview' : 'কেপিআই ড্যাশবোর্ড'}
@@ -325,7 +325,7 @@ export default function HomePage() {
                 <button
                   onClick={() => setDashboardTab('inbox')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                    dashboardTab === 'inbox' ? 'bg-primary text-white shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                    dashboardTab === 'inbox' ? 'bg-gradient-to-r from-primary to-emerald-600 text-white shadow-sm' : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
                   {language === 'en' ? 'Live Inbox' : 'লাইভ ইনবক্স (3 Unread)'}
@@ -338,10 +338,11 @@ export default function HomePage() {
               <div className="space-y-6 animate-fade-in-up">
                 
                 {/* AI Daily Summary Alert Card */}
-                <div className="p-4 rounded-2xl bg-gradient-to-r from-primary/10 via-primary/5 to-secondary/10 border border-primary/20 shadow-sm flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-primary text-white flex items-center justify-center shrink-0 font-bold">
+                <div className="p-4 rounded-2xl bg-gradient-to-r from-primary/15 via-amber-500/10 to-secondary/15 border border-primary/25 shadow-sm flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-primary to-emerald-600 text-white flex items-center justify-center shrink-0 font-bold shadow-md">
                     <Bot className="w-5 h-5" />
                   </div>
+
                   <div className="flex-1 space-y-1">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-extrabold uppercase tracking-wider text-primary">
@@ -364,7 +365,7 @@ export default function HomePage() {
                       <span>{language === 'en' ? 'Today Revenue' : 'আজকের সেলস'}</span>
                       <span className="text-emerald-600 font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded text-[10px]">+12%</span>
                     </div>
-                    <p className="text-xl sm:text-2xl font-black text-foreground">৳৪৮,৫০০</p>
+                    <p className="text-xl sm:text-2xl font-black text-foreground">{language === 'en' ? '৳48,500' : '৳৪৮,৫০০'}</p>
                     <p className="text-[11px] text-muted-foreground">{language === 'en' ? '24 Paid Orders' : '২৪টি সাকসেসফুল অর্ডার'}</p>
                   </div>
 
@@ -373,7 +374,7 @@ export default function HomePage() {
                       <span>{language === 'en' ? 'AI Response Rate' : 'এআই রেসপন্স রেট'}</span>
                       <span className="text-primary font-bold bg-primary/10 px-1.5 py-0.5 rounded text-[10px]">88%</span>
                     </div>
-                    <p className="text-xl sm:text-2xl font-black text-foreground">৪২৫ <span className="text-xs font-normal text-muted-foreground">msgs</span></p>
+                    <p className="text-xl sm:text-2xl font-black text-foreground">{language === 'en' ? '425' : '৪২৫'} <span className="text-xs font-normal text-muted-foreground">msgs</span></p>
                     <p className="text-[11px] text-muted-foreground">{language === 'en' ? 'Instant AI Replies' : 'ইনস্ট্যান্ট অটোমেটেড রিপ্লাই'}</p>
                   </div>
 
@@ -382,7 +383,7 @@ export default function HomePage() {
                       <span>{language === 'en' ? 'New Leads' : 'নতুন লিডসমূহ'}</span>
                       <span className="text-secondary font-bold bg-secondary/10 px-1.5 py-0.5 rounded text-[10px]">Today</span>
                     </div>
-                    <p className="text-xl sm:text-2xl font-black text-foreground">১৮ <span className="text-xs font-normal text-muted-foreground">contacts</span></p>
+                    <p className="text-xl sm:text-2xl font-black text-foreground">{language === 'en' ? '18' : '১৮'} <span className="text-xs font-normal text-muted-foreground">contacts</span></p>
                     <p className="text-[11px] text-muted-foreground">{language === 'en' ? 'Auto-captured in CRM' : 'সিআরএমে স্বয়ংক্রিয় সেভ'}</p>
                   </div>
 
@@ -478,7 +479,7 @@ export default function HomePage() {
           {/* 4 Channel Feature Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             
-            {/* WhatsApp Web (Baileys) */}
+            {/* WhatsApp Web */}
             <div className="group rounded-3xl border border-border bg-card p-6 shadow-sm hover:border-[#25D366]/50 hover:shadow-xl hover:shadow-[#25D366]/10 transition-all duration-300 flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between mb-4">
@@ -489,13 +490,14 @@ export default function HomePage() {
                     Instant Connect
                   </span>
                 </div>
-                <h3 className="text-lg font-bold text-foreground mb-2">WhatsApp Web (Baileys)</h3>
+                <h3 className="text-lg font-bold text-foreground mb-2">WhatsApp Web</h3>
                 <p className="text-xs text-muted-foreground leading-relaxed mb-4">
                   {language === 'en' 
                     ? 'No Meta verification needed. Connect your personal/business WhatsApp using 8-digit Pairing Code or instant QR Scan.' 
                     : 'মেটা ভেরিফিকেশন ছাড়া আপনার সাধারণ বা বিজনেস হোয়াটসঅ্যাপ ৮-ডিজিট পেয়ারিং কোড বা QR দিয়ে সহজেই কানেক্ট করুন।'}
                 </p>
               </div>
+
               <ul className="space-y-2 border-t border-border/60 pt-4 text-xs font-semibold text-foreground/80">
                 <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-[#25D366]" /> 8-Digit Phone Pairing Code</li>
                 <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-[#25D366]" /> Live QR Code Scanning</li>

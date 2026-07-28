@@ -63,7 +63,7 @@ export class TenantsService {
         },
         subscriptionStatus: subStatus,
         currentPeriodEnd: (activeSub || latestSub)?.currentPeriodEnd || null,
-        logoUrl: t.logoUrl,
+        logoUrl: (t as any).logoUrl || null,
         planName: effectivePlan?.name || 'No Plan',
         customPlanName: t.customPlanName,
         customPriceUsd: t.customPriceUsd,
@@ -90,19 +90,20 @@ export class TenantsService {
         businessName: true,
         brandName: true,
         logoUrl: true,
-      },
+      } as any,
       orderBy: { createdAt: 'desc' },
       take: 20,
     });
 
     return tenants
-      .filter(t => t.businessName || t.logoUrl)
-      .map(t => ({
+      .filter((t: any) => t.businessName || t.logoUrl)
+      .map((t: any) => ({
         id: t.id,
         name: t.brandName || t.businessName,
         logoUrl: t.logoUrl || null,
       }));
   }
+
 
 
   async findOne(id: string) {

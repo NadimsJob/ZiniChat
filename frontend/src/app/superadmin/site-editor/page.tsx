@@ -372,20 +372,66 @@ export default function SiteEditorPage() {
         </div>
 
         {/* Social Links */}
-        <div className="space-y-3 pt-4 border-t border-surface-hover">
-          <h3 className="text-sm font-bold text-muted-foreground">Social Media Links</h3>
-          <div className="grid md:grid-cols-2 gap-4">
-            {['facebook', 'twitter', 'linkedin', 'instagram', 'whatsapp'].map(platform => (
-              <div key={platform} className="flex items-center gap-3 p-3 bg-background border border-surface-hover rounded-lg">
-                <input type="checkbox" checked={config.socialLinksJson?.[platform]?.enabled || false} onChange={e => setConfig({...config, socialLinksJson: {...config.socialLinksJson, [platform]: {...config.socialLinksJson?.[platform], enabled: e.target.checked}}})} className="w-4 h-4 rounded text-primary border-surface-hover focus:ring-primary" />
-                <div className="flex-1">
-                  <label className="block text-xs font-medium capitalize mb-1">{platform}</label>
-                  <input type="text" placeholder="URL" value={config.socialLinksJson?.[platform]?.url || ''} onChange={e => setConfig({...config, socialLinksJson: {...config.socialLinksJson, [platform]: {...config.socialLinksJson?.[platform], url: e.target.value}}})} className="w-full bg-surface border border-surface-hover rounded px-2 py-1 text-xs" />
+        <div id="social-links" className="space-y-4 pt-6 border-t border-surface-hover">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                🌐 Social Media Links Setting
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Manage social media channel links displayed in the website footer ("Connect With Us").
+              </p>
+            </div>
+            <button 
+              onClick={handleSave} 
+              disabled={saving}
+              className="px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-bold hover:opacity-90 transition-all shadow-sm"
+            >
+              {saving ? 'Saving...' : 'Save Social Links'}
+            </button>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {['facebook', 'twitter', 'linkedin', 'instagram', 'whatsapp', 'youtube'].map(platform => (
+              <div key={platform} className="flex items-start gap-3 p-3.5 bg-background border border-surface-hover rounded-xl shadow-sm hover:border-primary/30 transition-all">
+                <input 
+                  type="checkbox" 
+                  checked={config.socialLinksJson?.[platform]?.enabled ?? true} 
+                  onChange={e => setConfig({
+                    ...config, 
+                    socialLinksJson: {
+                      ...config.socialLinksJson, 
+                      [platform]: { ...config.socialLinksJson?.[platform], enabled: e.target.checked }
+                    }
+                  })} 
+                  className="w-4 h-4 mt-1 rounded text-primary border-surface-hover focus:ring-primary cursor-pointer" 
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold capitalize text-foreground">{platform}</label>
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${config.socialLinksJson?.[platform]?.enabled ?? true ? 'bg-emerald-500/10 text-emerald-600' : 'bg-muted text-muted-foreground'}`}>
+                      {config.socialLinksJson?.[platform]?.enabled ?? true ? 'Visible' : 'Hidden'}
+                    </span>
+                  </div>
+                  <input 
+                    type="text" 
+                    placeholder={`https://${platform}.com/...`} 
+                    value={config.socialLinksJson?.[platform]?.url || ''} 
+                    onChange={e => setConfig({
+                      ...config, 
+                      socialLinksJson: {
+                        ...config.socialLinksJson, 
+                        [platform]: { ...config.socialLinksJson?.[platform], url: e.target.value }
+                      }
+                    })} 
+                    className="w-full bg-surface border border-surface-hover rounded-lg px-2.5 py-1.5 text-xs text-foreground focus:border-primary focus:outline-none" 
+                  />
                 </div>
               </div>
             ))}
           </div>
         </div>
+
 
         {/* Privacy Policy */}
         <div className="space-y-3 pt-4 border-t border-surface-hover">

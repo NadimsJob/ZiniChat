@@ -9,6 +9,8 @@ const Facebook = ({ className }: { className?: string }) => <svg xmlns="http://w
 const Twitter = ({ className }: { className?: string }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/></svg>;
 const Instagram = ({ className }: { className?: string }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>;
 const Linkedin = ({ className }: { className?: string }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg>;
+const Youtube = ({ className }: { className?: string }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"/><polygon points="10 15 15 12 10 9 10 15"/></svg>;
+
 import Image from 'next/image';
 
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
@@ -52,14 +54,21 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Language Toggle */}
+            {/* Language Toggle - Exact Pill Switcher as Tenant Panel */}
             <button
               onClick={() => setLanguage(language === 'en' ? 'bn' : 'en')}
-              className="flex items-center justify-center gap-1.5 h-9 px-4 rounded-full border border-border bg-muted hover:bg-card text-xs font-semibold text-foreground transition-all shadow-sm"
+              title={language === 'en' ? 'Switch to Bengali' : 'Switch to English'}
+              className="relative flex items-center justify-between w-[48px] h-7 bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-full p-0.5 overflow-hidden transition-colors hover:border-primary/50 mx-1 cursor-pointer shrink-0 shadow-sm"
             >
-              <Globe className="w-3.5 h-3.5" />
-              {language === 'en' ? 'EN' : 'BN'}
+              <div
+                className={`absolute top-[1px] bottom-[1px] w-[21px] bg-primary rounded-full transition-transform duration-300 shadow-sm ${
+                  language === 'bn' ? 'translate-x-[21px]' : 'translate-x-0'
+                }`}
+              />
+              <span className={`relative z-10 w-1/2 text-[10px] font-bold text-center transition-colors ${language === 'en' ? 'text-white' : 'text-slate-500 dark:text-zinc-400'}`}>EN</span>
+              <span className={`relative z-10 w-1/2 text-[10px] font-bold text-center transition-colors ${language === 'bn' ? 'text-white' : 'text-slate-500 dark:text-zinc-400'}`}>BN</span>
             </button>
+
 
             <Link href="/login" className="hidden sm:flex items-center justify-center h-9 px-5 rounded-full bg-primary text-primary-foreground text-xs font-bold hover:bg-primary/90 transition-all shadow-sm">
               {language === 'en' ? 'Login' : 'লগইন'} <ArrowRight className="ml-1 w-3.5 h-3.5" />
@@ -140,29 +149,35 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
               <h4 className="text-xs font-bold text-foreground mb-3 uppercase tracking-wider">
                 {language === 'en' ? 'Connect With Us' : 'আমাদের সাথে যুক্ত হোন'}
               </h4>
-              <div className="flex gap-3">
-                {config?.socialLinksJson?.facebook?.enabled && (
-                  <a href={config.socialLinksJson.facebook.url} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-card border border-border flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-white hover:border-primary transition-all">
+              <div className="flex flex-wrap gap-2.5">
+                {(config?.socialLinksJson?.facebook?.enabled ?? true) && (
+                  <a href={config?.socialLinksJson?.facebook?.url || 'https://facebook.com'} target="_blank" rel="noopener noreferrer" title="Facebook" className="w-10 h-10 rounded-full bg-card border border-border flex items-center justify-center text-muted-foreground hover:bg-[#1877F2] hover:text-white hover:border-[#1877F2] transition-all shadow-sm">
                     <Facebook className="w-4 h-4" />
                   </a>
                 )}
-                {config?.socialLinksJson?.twitter?.enabled && (
-                  <a href={config.socialLinksJson.twitter.url} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-card border border-border flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-white hover:border-primary transition-all">
+                {(config?.socialLinksJson?.twitter?.enabled ?? true) && (
+                  <a href={config?.socialLinksJson?.twitter?.url || 'https://x.com'} target="_blank" rel="noopener noreferrer" title="Twitter / X" className="w-10 h-10 rounded-full bg-card border border-border flex items-center justify-center text-muted-foreground hover:bg-[#1DA1F2] hover:text-white hover:border-[#1DA1F2] transition-all shadow-sm">
                     <Twitter className="w-4 h-4" />
                   </a>
                 )}
-                {config?.socialLinksJson?.linkedin?.enabled && (
-                  <a href={config.socialLinksJson.linkedin.url} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-card border border-border flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-white hover:border-primary transition-all">
+                {(config?.socialLinksJson?.linkedin?.enabled ?? true) && (
+                  <a href={config?.socialLinksJson?.linkedin?.url || 'https://linkedin.com'} target="_blank" rel="noopener noreferrer" title="LinkedIn" className="w-10 h-10 rounded-full bg-card border border-border flex items-center justify-center text-muted-foreground hover:bg-[#0A66C2] hover:text-white hover:border-[#0A66C2] transition-all shadow-sm">
                     <Linkedin className="w-4 h-4" />
                   </a>
                 )}
-                {config?.socialLinksJson?.instagram?.enabled && (
-                  <a href={config.socialLinksJson.instagram.url} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-card border border-border flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-white hover:border-primary transition-all">
+                {(config?.socialLinksJson?.instagram?.enabled ?? true) && (
+                  <a href={config?.socialLinksJson?.instagram?.url || 'https://instagram.com'} target="_blank" rel="noopener noreferrer" title="Instagram" className="w-10 h-10 rounded-full bg-card border border-border flex items-center justify-center text-muted-foreground hover:bg-[#E4405F] hover:text-white hover:border-[#E4405F] transition-all shadow-sm">
                     <Instagram className="w-4 h-4" />
+                  </a>
+                )}
+                {(config?.socialLinksJson?.youtube?.enabled ?? true) && (
+                  <a href={config?.socialLinksJson?.youtube?.url || 'https://youtube.com'} target="_blank" rel="noopener noreferrer" title="YouTube" className="w-10 h-10 rounded-full bg-card border border-border flex items-center justify-center text-muted-foreground hover:bg-[#FF0000] hover:text-white hover:border-[#FF0000] transition-all shadow-sm">
+                    <Youtube className="w-4 h-4" />
                   </a>
                 )}
               </div>
             </div>
+
           </div>
 
           <div className="pt-3 border-t border-border flex flex-col md:flex-row items-center justify-between gap-3">

@@ -486,7 +486,8 @@ export default function NewInboxStepper() {
                 <div className="w-11 h-11 rounded-xl bg-surface-hover flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
                   <PhoneCall className="w-5 h-5 text-zinc-400" />
                 </div>
-                <h3 className="font-bold text-[14px] text-foreground mb-1">WhatsApp Web (Baileys)</h3>
+                <h3 className="font-bold text-[14px] text-foreground mb-1">WhatsApp Web</h3>
+
                 <p className="text-[12px] text-zinc-400 leading-relaxed">
                   {language === 'en' ? 'Connect via QR scan or Pairing Code. Suitable for small businesses.' : 'QR স্ক্যান বা পেয়ারিং কোড দিয়ে কানেক্ট করুন। ছোট ব্যবসার জন্য।'}
                 </p>
