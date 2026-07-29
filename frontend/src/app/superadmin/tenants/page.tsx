@@ -508,6 +508,19 @@ export default function TenantsPage() {
                 </div>
                 <div className="space-y-1">
                   <div className="flex justify-between items-center">
+                    <label className="text-xs font-medium text-zinc-400">Website Widget Limit</label>
+                    {modalUsage && <span className="text-[10px] text-emerald-400">Active: {modalUsage.currentWebsiteWidget || 0}</span>}
+                  </div>
+                  <input
+                    type="number"
+                    value={customData.customWebsiteWidgetLimit}
+                    onChange={e => setCustomData({...customData, customWebsiteWidgetLimit: e.target.value})}
+                    className="w-full bg-[#09090b] border border-zinc-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
+                    placeholder={`e.g. ${editingTenant.basePlan?.websiteWidgetLimit || '1'}`}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center">
                     <label className="text-xs font-medium text-zinc-400">Products Limit</label>
                     {modalUsage && <span className="text-[10px] text-emerald-400 font-mono">Count: {modalUsage.productsCount}</span>}
                   </div>
