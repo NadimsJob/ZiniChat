@@ -112,6 +112,17 @@ export class WhatsappAuthService {
         'info'
       ).catch(e => this.logger.error('Failed to send notification', e));
 
+      // Notify tenant admins/owners
+      const tenantAdmins = await this.prisma.user.findMany({ where: { tenantId, role: { in: ['owner', 'admin'] } } });
+      for (const admin of tenantAdmins) {
+        this.notificationsService.createNotification(
+          admin.id,
+          '✅ WhatsApp Number Connected',
+          `Your WhatsApp number (${displayName || phoneNumber || phoneNumberId}) has been successfully connected.`,
+          'system'
+        ).catch(() => {});
+      }
+
       return { success: true, connectionId: connection.id };
     } catch (error) {
       this.logger.error('Failed to connect WhatsApp manually', error);
@@ -252,6 +263,17 @@ export class WhatsappAuthService {
         'info'
       ).catch(e => this.logger.error('Failed to send notification', e));
 
+      // Notify tenant admins/owners
+      const tenantAdmins = await this.prisma.user.findMany({ where: { tenantId, role: { in: ['owner', 'admin'] } } });
+      for (const admin of tenantAdmins) {
+        this.notificationsService.createNotification(
+          admin.id,
+          '✅ WhatsApp Number Connected',
+          `Your WhatsApp number (${displayName || phoneNumber || targetPhoneId}) has been successfully connected via Facebook.`,
+          'system'
+        ).catch(() => {});
+      }
+
       return { success: true, connectionId: connection.id };
     } catch (error) {
       this.logger.error('Failed to exchange WhatsApp code', error);
@@ -313,9 +335,24 @@ export class WhatsappAuthService {
       await this.whatsappWebService.logout(tenantId);
     }
 
-    await this.prisma.channelConnection.delete({
-      where: { id: connectionId }
-    });
+    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+    await this.prisma.channelConnection.delete({ where: { id: connectionId } });
+
+    // Notify tenant admins/owners
+    const tenantAdmins = await this.prisma.user.findMany({ where: { tenantId, role: { in: ['owner', 'admin'] } } });
+    for (const admin of tenantAdmins) {
+      this.notificationsService.createNotification(
+        admin.id,
+        '⚠️ WhatsApp Channel Disconnected',
+        `WhatsApp connection "${connection.displayName || connection.phoneNumber || connectionId}" has been removed.`,
+        'system'
+      ).catch(() => {});
+    }
+    this.notificationsService.createSystemNotificationForSuperadmins(
+      'WhatsApp Channel Removed',
+      `Tenant "${tenant?.businessName}" removed WhatsApp connection "${connection.displayName || connection.phoneNumber}"`,
+      'info'
+    ).catch(() => {});
 
     return { success: true, message: 'Connection removed' };
   }

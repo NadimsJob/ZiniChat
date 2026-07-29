@@ -162,7 +162,8 @@ describe('SupportChatService Security & Isolation Audit', () => {
         findFirst: jest.fn().mockImplementation(({ where }) => {
           expect(where.tenantId).toBe(AUTHENTICATED_TENANT_ID);
           return Promise.resolve({ id: 'user-auth-111' });
-        })
+        }),
+        findMany: jest.fn().mockResolvedValue([{ id: 'user-auth-111', email: 'owner@test.com' }])
       },
       plan: {
         findMany: jest.fn().mockResolvedValue([])
@@ -170,6 +171,7 @@ describe('SupportChatService Security & Isolation Audit', () => {
     };
 
     notificationsService = {
+      createNotification: jest.fn().mockResolvedValue(true),
       createSystemNotificationForSuperadmins: jest.fn().mockResolvedValue(true)
     };
 

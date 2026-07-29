@@ -89,6 +89,17 @@ export class MessengerAuthService {
         'info'
       ).catch(e => this.logger.error('Failed to send notification', e));
 
+      // Notify tenant admins/owners
+      const tenantAdmins = await this.prisma.user.findMany({ where: { tenantId, role: { in: ['owner', 'admin'] } } });
+      for (const admin of tenantAdmins) {
+        this.notificationsService.createNotification(
+          admin.id,
+          '✅ Messenger Page Connected',
+          `Your Messenger Page (${displayName || pageId}) has been successfully connected.`,
+          'system'
+        ).catch(() => {});
+      }
+
       return { success: true, connectionId: connection.id };
     } catch (error) {
       this.logger.error('Failed to connect Messenger manually', error);
@@ -169,6 +180,17 @@ export class MessengerAuthService {
         'info'
       ).catch(e => this.logger.error('Failed to send notification', e));
 
+      // Notify tenant admins/owners
+      const tenantAdmins = await this.prisma.user.findMany({ where: { tenantId, role: { in: ['owner', 'admin'] } } });
+      for (const admin of tenantAdmins) {
+        this.notificationsService.createNotification(
+          admin.id,
+          '✅ Messenger Page Connected',
+          `Your Messenger Page "${pageName}" has been successfully connected via Facebook.`,
+          'system'
+        ).catch(() => {});
+      }
+
       return { success: true, connectionId: connection.id };
     } catch (error: any) {
       this.logger.error('Failed to exchange Messenger token', error);
@@ -184,7 +206,25 @@ export class MessengerAuthService {
 
     if (!connection) throw new NotFoundException('Connection not found');
 
+    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
     await this.prisma.channelConnection.delete({ where: { id } });
+
+    // Notify tenant admins/owners
+    const tenantAdmins = await this.prisma.user.findMany({ where: { tenantId, role: { in: ['owner', 'admin'] } } });
+    for (const admin of tenantAdmins) {
+      this.notificationsService.createNotification(
+        admin.id,
+        '⚠️ Messenger Channel Disconnected',
+        `Messenger connection "${connection.displayName || id}" has been removed.`,
+        'system'
+      ).catch(() => {});
+    }
+    this.notificationsService.createSystemNotificationForSuperadmins(
+      'Messenger Channel Removed',
+      `Tenant "${tenant?.businessName}" removed Messenger Page "${connection.displayName}"`,
+      'info'
+    ).catch(() => {});
+
     return { success: true };
   }
 

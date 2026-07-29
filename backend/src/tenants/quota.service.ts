@@ -1,6 +1,7 @@
 import { Injectable, ForbiddenException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { BillingService } from '../billing/billing.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class QuotaService {
@@ -9,6 +10,7 @@ export class QuotaService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly billingService: BillingService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   /**
@@ -25,6 +27,19 @@ export class QuotaService {
     const used = await this.getMessageUsage(tenantId, periodStart);
 
     if (used >= messageQuota) {
+      // Notify tenant admins/owners (fire & forget)
+      this.prisma.user.findMany({ where: { tenantId, role: { in: ['owner', 'admin'] } } })
+        .then(admins => {
+          for (const admin of admins) {
+            this.notificationsService.createNotification(
+              admin.id,
+              '🚨 Message Quota Limit Reached',
+              `Your monthly message quota has been fully used (${used}/${messageQuota}). Please upgrade your plan to continue sending messages.`,
+              'system'
+            ).catch(() => {});
+          }
+        })
+        .catch(() => {});
       throw new ForbiddenException(`Message quota exceeded (${used}/${messageQuota}). Please upgrade your plan.`);
     }
   }
@@ -81,6 +96,19 @@ export class QuotaService {
     });
 
     if (aiUsed >= aiQuota) {
+      // Notify tenant admins/owners (fire & forget)
+      this.prisma.user.findMany({ where: { tenantId, role: { in: ['owner', 'admin'] } } })
+        .then(admins => {
+          for (const admin of admins) {
+            this.notificationsService.createNotification(
+              admin.id,
+              '🚨 AI Quota Limit Reached',
+              `Your monthly AI response quota has been fully used (${aiUsed}/${aiQuota}). Please upgrade your plan to continue using AI auto-replies.`,
+              'system'
+            ).catch(() => {});
+          }
+        })
+        .catch(() => {});
       throw new ForbiddenException(`AI quota exceeded (${aiUsed}/${aiQuota}). Please upgrade your plan.`);
     }
   }
@@ -175,6 +203,19 @@ export class QuotaService {
     const currentCount = await this.prisma.product.count({ where: { tenantId } });
 
     if (currentCount >= quotas.productCatalogLimit) {
+      // Notify tenant admins/owners (fire & forget)
+      this.prisma.user.findMany({ where: { tenantId, role: { in: ['owner', 'admin'] } } })
+        .then(admins => {
+          for (const admin of admins) {
+            this.notificationsService.createNotification(
+              admin.id,
+              '🚨 Product Catalog Limit Reached',
+              `Your product catalog limit has been reached (${currentCount}/${quotas.productCatalogLimit}). Upgrade your plan to add more products.`,
+              'system'
+            ).catch(() => {});
+          }
+        })
+        .catch(() => {});
       throw new ForbiddenException(
         `Product catalog limit reached (${currentCount}/${quotas.productCatalogLimit}). Upgrade your plan to add more products.`
       );

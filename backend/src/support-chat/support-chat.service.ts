@@ -536,6 +536,17 @@ ${allPlansFormatted}
           );
           await this.smtpService.triggerTicketCreatedEmail(ticket.tenant.businessName, subject, 'medium');
 
+          // Notify tenant workspace admins/owners (Event Parity)
+          const tenantAdmins = await this.prisma.user.findMany({ where: { tenantId, role: { in: ['owner', 'admin'] } } });
+          for (const admin of tenantAdmins) {
+            this.notificationsService.createNotification(
+              admin.id,
+              'Ticket Created via AI Support',
+              `A support ticket '${subject}' was automatically created for your workspace.`,
+              'system'
+            ).catch(() => {});
+          }
+
           replyMsg = `আপনার জন্য সাপোর্ট টিকিট #${ticket.id.slice(0, 8)} সফলভাবে ওপেন করা হয়েছে। আমাদের টেকনিক্যাল টিম খুব শীঘ্রই যোগাযোগ করবে।`;
 
         } else if (fnName === 'request_tenant_permission') {

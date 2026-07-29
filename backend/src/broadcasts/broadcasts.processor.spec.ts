@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { BroadcastsProcessor } from './broadcasts.processor';
 import { PrismaService } from '../prisma/prisma.service';
 import { SmtpService } from '../smtp/smtp.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { Job } from 'bullmq';
 
 import { getQueueToken } from '@nestjs/bullmq';
@@ -27,7 +28,12 @@ describe('BroadcastsProcessor', () => {
   };
 
   const mockSmtpService = {
-    triggerBroadcastCompletedEmail: jest.fn().mockResolvedValue(true)
+    triggerBroadcastCompletedEmail: jest.fn().mockResolvedValue(true),
+    sendMail: jest.fn().mockResolvedValue({ messageId: '123' })
+  };
+
+  const mockNotificationsService = {
+    createNotification: jest.fn().mockResolvedValue(true)
   };
 
   let mockWhatsappQueue: any;
@@ -38,6 +44,7 @@ describe('BroadcastsProcessor', () => {
         BroadcastsProcessor,
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: SmtpService, useValue: mockSmtpService },
+        { provide: NotificationsService, useValue: mockNotificationsService },
         { provide: getQueueToken('whatsapp-outbound'), useValue: { add: jest.fn() } },
       ],
     }).compile();

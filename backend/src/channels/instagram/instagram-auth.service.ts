@@ -115,6 +115,17 @@ export class InstagramAuthService {
         'info'
       ).catch(e => this.logger.error('Failed to send notification', e));
 
+      // Notify tenant admins/owners
+      const tenantAdmins = await this.prisma.user.findMany({ where: { tenantId, role: { in: ['owner', 'admin'] } } });
+      for (const admin of tenantAdmins) {
+        this.notificationsService.createNotification(
+          admin.id,
+          '✅ Instagram Account Connected',
+          `Your Instagram account (${displayName || accountId}) has been successfully connected.`,
+          'system'
+        ).catch(() => {});
+      }
+
       return { success: true, connectionId: connection.id };
     } catch (error) {
       this.logger.error('Failed to connect Instagram manually', error);
@@ -225,6 +236,17 @@ export class InstagramAuthService {
         'info'
       ).catch(e => this.logger.error('Failed to send notification', e));
 
+      // Notify tenant admins/owners
+      const tenantAdmins = await this.prisma.user.findMany({ where: { tenantId, role: { in: ['owner', 'admin'] } } });
+      for (const admin of tenantAdmins) {
+        this.notificationsService.createNotification(
+          admin.id,
+          '✅ Instagram Account Connected',
+          `Your Instagram account "${igDisplayName}" has been successfully connected via Facebook.`,
+          'system'
+        ).catch(() => {});
+      }
+
       return { success: true, connectionId: connection.id };
 
     } catch (error: any) {
@@ -243,9 +265,24 @@ export class InstagramAuthService {
       throw new NotFoundException('Connection not found');
     }
 
-    await this.prisma.channelConnection.delete({
-      where: { id }
-    });
+    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+    await this.prisma.channelConnection.delete({ where: { id } });
+
+    // Notify tenant admins/owners
+    const tenantAdmins = await this.prisma.user.findMany({ where: { tenantId, role: { in: ['owner', 'admin'] } } });
+    for (const admin of tenantAdmins) {
+      this.notificationsService.createNotification(
+        admin.id,
+        '⚠️ Instagram Channel Disconnected',
+        `Instagram connection "${connection.displayName || id}" has been removed.`,
+        'system'
+      ).catch(() => {});
+    }
+    this.notificationsService.createSystemNotificationForSuperadmins(
+      'Instagram Channel Removed',
+      `Tenant "${tenant?.businessName}" removed Instagram connection "${connection.displayName}"`,
+      'info'
+    ).catch(() => {});
 
     return { success: true };
   }

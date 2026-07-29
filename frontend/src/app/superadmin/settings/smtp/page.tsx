@@ -7,164 +7,128 @@ import { Mail, Send, Save, CheckCircle, AlertCircle, ChevronDown, ChevronUp, Bel
 
 const DEFAULT_TEMPLATES: Record<string, { subject: string; body: string }> = {
   welcome: {
-    subject: '🎉 Welcome to ZiniChat, {{tenantName}}!',
-    body: `<div style="text-align: center; margin-bottom: 20px;">
-  <img src="https://zinichat.com/logo.png" alt="ZiniChat Logo" style="height: 48px; width: auto;" />
-</div>
+    subject: '🎉 ZiniChat প্ল্যাটফর্মে স্বাগতম, {{tenantName}}!',
+    body: `প্রিয় {{tenantName}},
 
-Dear {{tenantName}},
+ZiniChat প্ল্যাটফর্মে আপনাকে স্বাগতম! আপনার অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে।
 
-Welcome to ZiniChat! Your account has been created successfully.
+এখনই আপনার ড্যাশবোর্ডে লগইন করে আপনার কাস্টমারদের সাথে যুক্ত হওয়া শুরু করুন।
 
-Get started by logging into your dashboard and connecting with your customers today.
-
-Thank you,
-ZiniChat Team
+ধন্যবাদ,
+ZiniChat টিম
 support@zinichat.com`,
   },
   paymentSubmitted: {
-    subject: '✅ Payment Received Successfully – {{tenantName}}',
-    body: `<div style="text-align: center; margin-bottom: 20px;">
-  <img src="https://zinichat.com/logo.png" alt="ZiniChat Logo" style="height: 48px; width: auto;" />
-</div>
+    subject: '✅ পেমেন্ট সাবমিট সফল হয়েছে – {{tenantName}}',
+    body: `প্রিয় {{tenantName}},
 
-Dear {{tenantName}},
-
-Your payment submission has been received successfully. Our team will verify it shortly.
+আপনার পেমেন্ট সাবমিট সফলভাবে গ্রহণ করা হয়েছে। আমাদের টিম শীঘ্রই এটি ভেরিফাই করবে।
 
 TrxID: {{trxId}}
-Amount: {{amount}} BDT
+পরিমাণ: {{amount}} BDT
 
-Verification typically takes 1–2 business days. You will be notified via email once approved.
+ভেরিফিকেশনে সাধারণত ১–২ কার্যদিবস সময় লাগে। অ্যাপ্রুভ হলে আপনাকে ইমেইলে জানানো হবে।
 
-ZiniChat Billing Team
+ZiniChat বিলিং টিম
 billing@zinichat.com`,
   },
   paymentPendingAdmin: {
-    subject: '🔔 New Payment Requires Verification – {{tenantName}}',
-    body: `<div style="text-align: center; margin-bottom: 20px;">
-  <img src="https://zinichat.com/logo.png" alt="ZiniChat Logo" style="height: 48px; width: auto;" />
-</div>
+    subject: '🔔 নতুন পেমেন্ট ভেরিফিকেশন প্রয়োজন – {{tenantName}}',
+    body: `অ্যাডমিন সতর্কতা:
+একটি নতুন ম্যানুয়াল পেমেন্ট সাবমিট হয়েছে। অনুগ্রহ করে ভেরিফাই করুন।
 
-Admin Alert:
-A new manual payment has been submitted. Please verify and approve.
-
-Tenant: {{tenantName}}
+টেন্যান্ট: {{tenantName}}
 TrxID: {{trxId}}
-Amount: {{amount}} BDT
+পরিমাণ: {{amount}} BDT
 
-Please navigate to the Superadmin panel to approve the payment.
+দয়া করে Superadmin প্যানেলে গিয়ে পেমেন্টটি অ্যাপ্রুভ করুন।
 
-ZiniChat System Notification`,
+ZiniChat সিস্টেম নোটিফিকেশন`,
   },
   paymentApproved: {
-    subject: '🎉 Payment Approved – {{planName}} Plan Active!',
-    body: `<div style="text-align: center; margin-bottom: 20px;">
-  <img src="https://zinichat.com/logo.png" alt="ZiniChat Logo" style="height: 48px; width: auto;" />
-</div>
+    subject: '🎉 পেমেন্ট অনুমোদিত হয়েছে – {{planName}} প্ল্যান সক্রিয়!',
+    body: `প্রিয় {{tenantName}},
 
-Dear {{tenantName}},
+আপনার পেমেন্ট সফলভাবে অনুমোদিত হয়েছে। 
+আপনার সাবস্ক্রিপশন এখন সক্রিয়!
 
-Your payment has been successfully approved. 
-Your subscription is now active!
+সক্রিয় প্ল্যান: {{planName}}
 
-Active Plan: {{planName}}
+এখনই আপনার ড্যাশবোর্ডে লগইন করে সব ফিচার উপভোগ করুন!
 
-Log in to your dashboard now to enjoy all features!
-
-ZiniChat Team
+ZiniChat টিম
 support@zinichat.com`,
   },
   addonPurchased: {
-    subject: '🧩 Add-on Activated – {{addonName}}',
-    body: `<div style="text-align: center; margin-bottom: 20px;">
-  <img src="https://zinichat.com/logo.png" alt="ZiniChat Logo" style="height: 48px; width: auto;" />
-</div>
+    subject: '🧩 অ্যাড-অন সক্রিয় হয়েছে – {{addonName}}',
+    body: `প্রিয় {{tenantName}},
 
-Dear {{tenantName}},
+আপনার কেনা অ্যাড-অনটি সফলভাবে আপনার অ্যাকাউন্টে যোগ করা হয়েছে এবং এখনই ব্যবহারযোগ্য।
 
-The add-on you purchased has been successfully added to your account and is ready to use.
+অ্যাড-অন: {{addonName}}
+পরিমাণ: {{amount}} BDT
 
-Add-on: {{addonName}}
-Amount: {{amount}} BDT
+যেকোনো প্রয়োজনে আমাদের সাথে যোগাযোগ করুন।
 
-If you need any assistance, feel free to contact us.
-
-ZiniChat Team
+ZiniChat টিম
 support@zinichat.com`,
   },
   expiryReminder7d: {
-    subject: '⚠️ Subscription Expiring in 7 Days – {{tenantName}}',
-    body: `<div style="text-align: center; margin-bottom: 20px;">
-  <img src="https://zinichat.com/logo.png" alt="ZiniChat Logo" style="height: 48px; width: auto;" />
-</div>
+    subject: '⚠️ সাবস্ক্রিপশনের মেয়াদ ৭ দিনে শেষ হবে – {{tenantName}}',
+    body: `প্রিয় {{tenantName}},
 
-Dear {{tenantName}},
+আপনার ZiniChat সাবস্ক্রিপশনের মেয়াদ মাত্র ৭ দিন পরে শেষ হবে।
 
-Your ZiniChat subscription will expire in exactly 7 days.
+মেয়াদ শেষের তারিখ: {{expiryDate}}
 
-Expiry Date: {{expiryDate}}
+আপনার প্ল্যাটফর্মের সার্ভিস নিরবচ্ছিন্ন রাখতে এখনই রিনিউ করুন।
 
-Please renew your subscription now to ensure uninterrupted service for your platform.
-
-ZiniChat Team
+ZiniChat টিম
 support@zinichat.com`,
   },
   expiryReminder2d: {
-    subject: '🚨 URGENT: Subscription Expiring in 2 Days!',
-    body: `<div style="text-align: center; margin-bottom: 20px;">
-  <img src="https://zinichat.com/logo.png" alt="ZiniChat Logo" style="height: 48px; width: auto;" />
-</div>
+    subject: '🚨 জরুরি: সাবস্ক্রিপশনের মেয়াদ মাত্র ২ দিন বাকি!',
+    body: `প্রিয় {{tenantName}},
 
-Dear {{tenantName}},
+আপনার ZiniChat সাবস্ক্রিপশনের মেয়াদ মাত্র ২ দিন পরে শেষ হবে!
+মেয়াদ শেষ হলে আপনার সকল সার্ভিস সাময়িকভাবে বন্ধ হয়ে যেতে পারে।
 
-Your ZiniChat subscription will expire in just 2 days!
-If not renewed, all services will be temporarily suspended.
+মেয়াদ শেষের তারিখ: {{expiryDate}}
 
-Expiry Date: {{expiryDate}}
+অনুগ্রহ করে দ্রুত আপনার সাবস্ক্রিপশনটি রিনিউ করুন।
 
-Please renew your subscription immediately.
-
-ZiniChat Team
+ZiniChat টিম
 support@zinichat.com`,
   },
   agentCreated: {
-    subject: '🔐 You have been added as an Agent on ZiniChat',
-    body: `<div style="text-align: center; margin-bottom: 20px;">
-  <img src="https://zinichat.com/logo.png" alt="ZiniChat Logo" style="height: 48px; width: auto;" />
-</div>
+    subject: '🔐 ZiniChat-এ আপনাকে এজেন্ট হিসেবে যুক্ত করা হয়েছে',
+    body: `প্রিয় {{agentName}},
 
-Dear {{agentName}},
-
-{{tenantName}} has added you as an agent to the ZiniChat system.
-Please log in using the credentials below:
+{{tenantName}} আপনাকে ZiniChat সিস্টেমে এজেন্ট হিসেবে যুক্ত করেছে।
+নিচের ক্রেডেনশিয়াল ব্যবহার করে সিস্টেমে লগইন করুন:
 
 Email: {{email}}
 Password: {{password}}
 
-Login Link: {{loginUrl}}
+লগইন লিংক: {{loginUrl}}
 
-⚠️ For your security, please ensure you change your password immediately after logging in.
+⚠️ নিরাপত্তার স্বার্থে লগইন করার পর অবশ্যই আপনার পাসওয়ার্ড পরিবর্তন করে নিবেন।
 
-ZiniChat Team
+ZiniChat টিম
 support@zinichat.com`,
   },
   passwordReset: {
-    subject: '🔐 Password Reset Request – ZiniChat',
-    body: `<div style="text-align: center; margin-bottom: 20px;">
-  <img src="https://zinichat.com/logo.png" alt="ZiniChat Logo" style="height: 48px; width: auto;" />
-</div>
+    subject: '🔐 পাসওয়ার্ড রিসেট করুন – ZiniChat',
+    body: `প্রিয় {{userName}},
 
-Dear {{userName}},
-
-We received a request to reset the password for your account.
-Please click the link below to set a new password:
+আমরা আপনার অ্যাকাউন্টের জন্য একটি পাসওয়ার্ড রিসেট করার অনুরোধ পেয়েছি।
+অনুগ্রহ করে নিচের লিংকে ক্লিক করে নতুন পাসওয়ার্ড সেট করুন:
 
 {{resetLink}}
 
-⚠️ This link will remain active for 1 hour. If you did not make this request, please ignore this email.
+⚠️ এই লিংকটি আগামী ১ ঘণ্টার জন্য কাজ করবে। আপনি যদি এই অনুরোধটি না করে থাকেন, তাহলে এই ইমেইলটি এড়িয়ে যান।
 
-ZiniChat Security Team
+ZiniChat সিকিউরিটি টিম
 security@zinichat.com`,
   },
 };

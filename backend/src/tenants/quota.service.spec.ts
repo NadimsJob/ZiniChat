@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { QuotaService } from './quota.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { BillingService } from '../billing/billing.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { ForbiddenException } from '@nestjs/common';
 
 // ─── Shared Fixtures ───────────────────────────────────────────────────────────
@@ -32,6 +33,7 @@ const mockActiveTenant = (overrides?: any) => ({
 // ─── Mock Factories ─────────────────────────────────────────────────────────────
 const createPrismaMock = () => ({
   tenant: { findUnique: jest.fn(), update: jest.fn() },
+  user: { findMany: jest.fn().mockResolvedValue([]) },
   message: { count: jest.fn() },
   broadcastRecipient: { count: jest.fn() },
   aiUsageLog: { count: jest.fn() },
@@ -58,6 +60,7 @@ describe('QuotaService', () => {
         QuotaService,
         { provide: PrismaService, useValue: prisma },
         { provide: BillingService, useValue: billing },
+        { provide: NotificationsService, useValue: { createNotification: jest.fn().mockResolvedValue({}) } },
       ],
     }).compile();
 

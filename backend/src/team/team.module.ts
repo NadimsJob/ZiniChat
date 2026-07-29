@@ -5,9 +5,10 @@ import { TenantTeamController } from './tenant-team.controller';
 import { TenantTeamService } from './tenant-team.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { SmtpModule } from '../smtp/smtp.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
-  imports: [PrismaModule, SmtpModule],
+  imports: [PrismaModule, SmtpModule, NotificationsModule],
   controllers: [TeamController, TenantTeamController],
   providers: [TeamService, TenantTeamService]
 })

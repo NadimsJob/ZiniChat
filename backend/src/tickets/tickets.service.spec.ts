@@ -17,8 +17,8 @@ describe('TicketsService', () => {
       update: jest.fn(),
     },
     user: {
-      findFirst: jest.fn(),
-      findMany: jest.fn(),
+      findFirst: jest.fn().mockResolvedValue({ id: 'user-1', email: 'owner@test.com', role: 'owner' }),
+      findMany: jest.fn().mockResolvedValue([{ id: 'user-1', email: 'owner@test.com', role: 'owner' }]),
     },
     ticketMessage: {
       create: jest.fn(),
@@ -27,7 +27,10 @@ describe('TicketsService', () => {
 
   const mockSmtpService = {
     triggerTicketCreatedEmail: jest.fn().mockResolvedValue(undefined),
-    triggerTicketReplyEmail: jest.fn().mockResolvedValue(undefined),
+    triggerTicketRepliedEmail: jest.fn().mockResolvedValue(undefined),
+    triggerTicketStatusEmail: jest.fn().mockResolvedValue(undefined),
+    triggerTicketAssignedEmail: jest.fn().mockResolvedValue(undefined),
+    getAdminNotificationEmails: jest.fn().mockResolvedValue(['superadmin@test.com']),
   };
 
   const mockNotificationsService = {

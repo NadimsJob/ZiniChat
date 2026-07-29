@@ -1,6 +1,7 @@
 import { Injectable, ConflictException, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SmtpService } from '../smtp/smtp.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 
@@ -22,7 +23,8 @@ export type MenuPermission = typeof ALL_MENU_PERMISSIONS[number];
 export class TenantTeamService {
   constructor(
     private prisma: PrismaService,
-    private smtp: SmtpService
+    private smtp: SmtpService,
+    private notificationsService: NotificationsService,
   ) {}
 
   /**
@@ -47,6 +49,16 @@ export class TenantTeamService {
     // 1. Check seat limit (with custom override)
     const { limit, used } = await this.getEffectiveSeatLimit(tenantId);
     if (used >= limit) {
+      // Warn tenant owners that seat limit is reached
+      const owners = await this.prisma.user.findMany({ where: { tenantId, role: { in: ['owner', 'admin'] } } });
+      for (const owner of owners) {
+        this.notificationsService.createNotification(
+          owner.id,
+          '🚨 Seat Limit Reached',
+          `You have reached your team member seat limit (${used}/${limit}). Upgrade your plan to add more team members.`,
+          'system'
+        ).catch(() => {});
+      }
       throw new ForbiddenException(
         `Seat limit reached. Your plan allows a maximum of ${limit} team members. Please upgrade your plan to add more.`
       );
@@ -101,6 +113,14 @@ export class TenantTeamService {
     } catch (e) {
       console.error('Failed to send agent creation email:', e);
     }
+
+    // 7. Send in-app welcome notification to the new team member
+    this.notificationsService.createNotification(
+      user.id,
+      '👋 Welcome to the Team!',
+      `You have been added to "${tenant.businessName}" as a ${role || 'agent'}. Check your email for login credentials.`,
+      'system'
+    ).catch(() => {});
 
     return this.findOne(tenantId, user.id);
   }
@@ -185,6 +205,16 @@ export class TenantTeamService {
       }
     }
 
+    // Notify agent if their role or permissions changed
+    if (role !== undefined || menuPermissions !== undefined) {
+      this.notificationsService.createNotification(
+        id,
+        'ℹ️ Your account has been updated',
+        `Your role or access permissions have been updated by an admin. Please refresh if you notice any changes.`,
+        'system'
+      ).catch(() => {});
+    }
+
     return this.findOne(tenantId, id);
   }
 
@@ -196,6 +226,17 @@ export class TenantTeamService {
 
     await this.prisma.agentChannelAssignment.deleteMany({ where: { userId: id } });
     await this.prisma.user.delete({ where: { id } });
+
+    // Notify workspace owners/admins about removal
+    const owners = await this.prisma.user.findMany({ where: { tenantId, role: { in: ['owner', 'admin'] }, id: { not: id } } });
+    for (const owner of owners) {
+      this.notificationsService.createNotification(
+        owner.id,
+        '👤 Team Member Removed',
+        `"${user.name}" (${user.email}) has been removed from your workspace.`,
+        'system'
+      ).catch(() => {});
+    }
 
     return { success: true, message: 'Team member removed successfully.' };
   }

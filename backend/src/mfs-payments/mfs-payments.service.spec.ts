@@ -37,7 +37,8 @@ describe('MfsPaymentsService', () => {
       update: jest.fn(),
     },
     user: {
-      findFirst: jest.fn(),
+      findFirst: jest.fn().mockResolvedValue({ id: 'user-1', email: 'test@example.com' }),
+      findMany: jest.fn().mockResolvedValue([{ id: 'user-1', email: 'test@example.com' }]),
     },
     tenant: {
       findUnique: jest.fn(),
@@ -46,6 +47,9 @@ describe('MfsPaymentsService', () => {
 
   const mockSmtpService = {
     triggerPaymentApprovedEmail: jest.fn().mockResolvedValue(true),
+    triggerAddonPurchasedEmail: jest.fn().mockResolvedValue(true),
+    triggerPaymentRejectedEmail: jest.fn().mockResolvedValue(true),
+    triggerPaymentPendingAdminEmail: jest.fn().mockResolvedValue(true),
   };
 
   const mockNotificationsService = {
@@ -245,6 +249,43 @@ describe('MfsPaymentsService', () => {
       // Checksum is 4 characters at the end
       const crcPart = qrText.substring(qrText.length - 4);
       expect(crcPart).toMatch(/^[0-9A-F]{4}$/);
+    });
+  });
+  describe('manualClaimTransaction', () => {
+    it('should activate subscription, notify tenant admins and superadmins', async () => {
+      const paymentStub = {
+        id: 'pay-1',
+        tenantId: 'tenant-1',
+        subscriptionId: 'sub-1',
+        amountBdt: 500.0,
+        status: 'pending',
+        subscription: { id: 'sub-1', billingCycle: 'monthly', plan: { name: 'Starter Plan' } },
+        addon: null,
+        addonId: null,
+      };
+      mockPrismaService.payment.findUnique.mockResolvedValue(paymentStub);
+      mockPrismaService.mfsTransaction.findUnique.mockResolvedValue(null); // No SMS tx found
+      mockPrismaService.tenant.findUnique.mockResolvedValue({ id: 'tenant-1', businessName: 'Test Biz', plan: null });
+      mockPrismaService.user.findMany.mockResolvedValue([{ id: 'user-1', email: 'owner@test.com' }]);
+      mockPrismaService.payment.update.mockResolvedValue({ ...paymentStub, status: 'success' });
+      mockPrismaService.payment.updateMany.mockResolvedValue({ count: 0 });
+      mockPrismaService.subscription.update.mockResolvedValue({ id: 'sub-1', status: 'active' });
+
+      const result = await service.manualClaimTransaction('superadmin-1', 'TRX123', 'pay-1');
+
+      expect(result.success).toBe(true);
+      expect(mockNotificationsService.createNotification).toHaveBeenCalledWith(
+        'user-1',
+        expect.stringContaining('Admin Claim'),
+        expect.any(String),
+        'billing'
+      );
+      expect(mockNotificationsService.createSystemNotificationForSuperadmins).toHaveBeenCalled();
+      expect(mockSmtpService.triggerPaymentApprovedEmail).toHaveBeenCalledWith(
+        'owner@test.com',
+        'Test Biz',
+        'Starter Plan'
+      );
     });
   });
 });

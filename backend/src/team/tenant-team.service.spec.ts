@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { TenantTeamService, ALL_MENU_PERMISSIONS } from './tenant-team.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { SmtpService } from '../smtp/smtp.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { ForbiddenException, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 
 const mockPrisma = {
@@ -13,6 +14,11 @@ const mockPrisma = {
 
 const mockSmtp = {
   triggerAgentCreatedEmail: jest.fn().mockResolvedValue(undefined),
+};
+
+const mockNotifications = {
+  createNotification: jest.fn().mockResolvedValue({}),
+  createSystemNotificationForSuperadmins: jest.fn().mockResolvedValue({}),
 };
 
 const TENANT_ID = 'tenant-uuid-001';
@@ -48,6 +54,7 @@ describe('TenantTeamService', () => {
         TenantTeamService,
         { provide: PrismaService, useValue: mockPrisma },
         { provide: SmtpService, useValue: mockSmtp },
+        { provide: NotificationsService, useValue: mockNotifications },
       ],
     }).compile();
 
@@ -93,6 +100,7 @@ describe('TenantTeamService', () => {
 
     it('should block creation when seat limit is reached', async () => {
       mockPrisma.user.count.mockResolvedValue(5); // At plan limit of 5
+      mockPrisma.user.findMany.mockResolvedValue([]); // No owners to notify in this test
       await expect(
         service.createAgent(TENANT_ID, { name: 'X', email: 'x@x.com', role: 'agent' })
       ).rejects.toThrow(ForbiddenException);

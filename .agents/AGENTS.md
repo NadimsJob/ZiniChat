@@ -252,4 +252,10 @@ This rule summarizes the core technical safeguards discovered and enforced durin
 * **Multi-Provider AI Fallbacks**: OpenAI/Gemini/Groq/Anthropic completion calls must handle dynamic base URLs (`v1beta/openai` for Gemini) and wrap requests in try-catch blocks with graceful fallbacks.
 * **Bilingual UI Parity**: All frontend React components MUST wrap text in `useLanguage()` conditional blocks (`{language === 'en' ? '...' : '...'}`) with `localStorage` persistence (`app-lang`).
 
+---
+
+## 29. Multi-Recipient Tenant Admin Notifications
+* **Rule**: Whenever an event occurs that affects a tenant workspace (such as ticket creation/reply, payment approval/rejection, plan customization, status change, channel connect/disconnect, team member addition/removal, or quota limit reached), the system MUST fetch and notify **ALL workspace Owners and Admins** (`role: { in: ['owner', 'admin'] }`), NOT just a single user or `users[0]`.
+* **Implementation**: Always use `this.prisma.user.findMany({ where: { tenantId, role: { in: ['owner', 'admin'] } } })` to resolve recipient lists for both in-app `NotificationsService` and `SmtpService` email dispatches. Wrap asynchronous email/notification calls in `.catch(() => {})` so delivery failures never block primary business logic.
+
 

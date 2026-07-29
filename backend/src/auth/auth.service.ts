@@ -156,22 +156,36 @@ export class AuthService {
         });
       }
 
+      const verifyToken = crypto.randomBytes(32).toString('hex');
+      const verifyExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
       const newUser = await prisma.user.create({
         data: {
           email,
           passwordHash,
           name,
           role: 'owner',
-          tenantId: tenant.id
+          tenantId: tenant.id,
+          emailVerificationToken: verifyToken,
+          emailVerificationExpires: verifyExpires
         }
       });
 
       return newUser;
     });
 
-    // Send welcome email (async fire-and-forget so signup doesn't block if SMTP is slow/failing)
-    this.smtpService.triggerWelcomeEmail(email, name).catch(err => {
+    // Send welcome email (async fire-and-forget so signup doesn't block if queue is slow/failing)
+    this.smtpService.triggerWelcomeEmail(email, businessName).catch(err => {
       console.error('Welcome email dispatch failed:', err);
+    });
+
+    // Send verification email
+    const frontendUrl = process.env.NEXT_PUBLIC_API_URL 
+      ? process.env.NEXT_PUBLIC_API_URL.replace(':3001', ':3000')
+      : 'https://zinichat.com';
+    const verifyLink = `${frontendUrl}/verify-email?token=${user.emailVerificationToken}`;
+    this.smtpService.triggerVerifyEmail(email, name, verifyLink).catch(err => {
+      console.error('Verify email dispatch failed:', err);
     });
 
     // Send superadmin notification about new signup
@@ -454,14 +468,40 @@ export class AuthService {
       throw new BadRequestException('Verification token is required');
     }
     const user = await this.prisma.user.findFirst({
-      where: { resetPasswordToken: token }
+      where: { 
+        emailVerificationToken: token,
+        emailVerificationExpires: { gt: new Date() }
+      }
     });
-    if (user) {
-      await this.prisma.user.update({
-        where: { id: user.id },
-        data: { resetPasswordToken: null }
-      });
+
+    if (!user) {
+      throw new BadRequestException('Invalid or expired verification token');
     }
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { 
+        emailVerificationToken: null,
+        emailVerificationExpires: null,
+        isEmailVerified: true
+      }
+    });
+
+    // Notify the user their email is verified
+    this.notificationsService.createNotification(
+      user.id,
+      '✅ Email Verified',
+      'Your email address has been successfully verified. Your account is now fully activated.',
+      'info'
+    ).catch(() => {});
+
+    // Notify superadmins
+    this.notificationsService.createSystemNotificationForSuperadmins(
+      'Tenant Email Verified',
+      `${user.name} (${user.email}) has verified their email address.`,
+      'signup'
+    ).catch(() => {});
+    
     return { success: true, message: 'Email verified successfully' };
   }
 
@@ -595,12 +635,13 @@ export class AuthService {
             passwordHash,
             role: 'admin', // Owner of the workspace
             tenantId: tenant.id,
-            profilePicUrl: picture || null
+            profilePicUrl: picture || null,
+            isEmailVerified: true // OAuth trusted
           }
         });
 
         // Trigger welcome email asynchronously
-        this.smtpService.triggerWelcomeEmail(email, name).catch(err => {
+        this.smtpService.triggerWelcomeEmail(email, tenant.businessName).catch(err => {
           console.error('OAuth welcome email dispatch failed:', err);
         });
 

@@ -27,7 +27,8 @@ const mockPrisma = {
     findUnique: jest.fn(),
   },
   user: {
-    findFirst: jest.fn(),
+    findFirst: jest.fn().mockResolvedValue({ id: 'user-1', email: 'test@example.com' }),
+    findMany: jest.fn().mockResolvedValue([{ id: 'user-1', email: 'test@example.com' }]),
   },
 };
 
@@ -36,6 +37,7 @@ const mockSmtpService = {
   triggerPaymentPendingAdminEmail: jest.fn().mockResolvedValue(true),
   triggerPaymentApprovedEmail: jest.fn().mockResolvedValue(true),
   triggerAddonPurchasedEmail: jest.fn().mockResolvedValue(true),
+  triggerPaymentRejectedEmail: jest.fn().mockResolvedValue(true),
 };
 
 const mockNotificationsService = {

@@ -79,6 +79,7 @@ describe('TenantsService - Plan Customization', () => {
 
     notificationsService = {
       createNotification: jest.fn().mockResolvedValue({}),
+      createSystemNotificationForSuperadmins: jest.fn().mockResolvedValue({}),
     };
 
     smtpService = {
@@ -239,6 +240,48 @@ describe('TenantsService - Plan Customization', () => {
 
       expect(res.isCustomized).toBe(true);
       expect(res.customPlanUpdatedByEmail).toBe('admin@zinichat.com');
+    });
+  });
+  describe('updateStatus', () => {
+    it('sends in-app notification to all tenant admins/owners when account is suspended', async () => {
+      const mockTenant = {
+        id: TENANT_ID,
+        status: 'suspended',
+        users: [{ id: 'user-1', email: 'owner@test.com' }],
+      };
+      prisma.tenant.update.mockResolvedValue(mockTenant);
+
+      await service.updateStatus(TENANT_ID, 'suspended', ACTOR_ID);
+
+      expect(prisma.tenant.update).toHaveBeenCalledWith(expect.objectContaining({
+        where: { id: TENANT_ID },
+        data: { status: 'suspended' },
+      }));
+      expect(prisma.auditLog.create).toHaveBeenCalled();
+      expect(notificationsService.createNotification).toHaveBeenCalledWith(
+        'user-1',
+        '⚠️ Account Suspended',
+        expect.stringContaining('suspended'),
+        'system'
+      );
+    });
+
+    it('sends reactivation notification when account is reactivated', async () => {
+      const mockTenant = {
+        id: TENANT_ID,
+        status: 'active',
+        users: [{ id: 'user-1', email: 'owner@test.com' }],
+      };
+      prisma.tenant.update.mockResolvedValue(mockTenant);
+
+      await service.updateStatus(TENANT_ID, 'active', ACTOR_ID);
+
+      expect(notificationsService.createNotification).toHaveBeenCalledWith(
+        'user-1',
+        '✅ Account Reactivated',
+        expect.stringContaining('Reactivated'),
+        'system'
+      );
     });
   });
 });

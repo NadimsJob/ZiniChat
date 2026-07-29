@@ -30,15 +30,15 @@ export class TicketsService {
       include: { tenant: true }
     });
 
-    // Notify tenant
-    const owner = await this.prisma.user.findFirst({ where: { tenantId, role: { in: ['owner', 'admin'] } } });
-    if (owner) {
+    // Notify tenant admins/owners
+    const admins = await this.prisma.user.findMany({ where: { tenantId, role: { in: ['owner', 'admin'] } } });
+    for (const admin of admins) {
       this.notificationsService.createNotification(
-        owner.id,
+        admin.id,
         'Ticket Created',
         `Your support ticket '${subject}' has been successfully submitted.`,
         'system'
-      );
+      ).catch(() => {});
     }
 
     // Notify superadmins
@@ -109,11 +109,11 @@ export class TicketsService {
       data: { status }
     });
 
-    // Notify tenant owner
-    const owner = ticket.tenant.users[0];
-    if (owner) {
-      this.notificationsService.createNotification(owner.id, `Ticket Status Updated`, `Your ticket '${ticket.subject}' is now ${status}.`, 'ticket');
-      await this.smtpService.triggerTicketStatusEmail(owner.email, ticket.subject, status);
+    // Notify tenant admins/owners
+    const admins = ticket.tenant.users || [];
+    for (const admin of admins) {
+      this.notificationsService.createNotification(admin.id, `Ticket Status Updated`, `Your ticket '${ticket.subject}' is now ${status}.`, 'ticket').catch(() => {});
+      await this.smtpService.triggerTicketStatusEmail(admin.email, ticket.subject, status).catch(() => {});
     }
 
     return updated;
@@ -163,22 +163,27 @@ export class TicketsService {
           `New Reply on Support Ticket`, 
           `Admin replied to your ticket '${ticket.subject}'`, 
           'ticket'
-        );
+        ).catch(() => {});
       }
-      const owner = tenantUsers.find(u => u.role === 'owner' || u.role === 'admin') || tenantUsers[0];
-      if (owner) {
-        await this.smtpService.triggerTicketRepliedEmail(owner.email, ticket.subject, message);
+      const tenantAdmins = tenantUsers.filter(u => u.role === 'owner' || u.role === 'admin');
+      const recipients = tenantAdmins.length > 0 ? tenantAdmins : tenantUsers;
+      for (const admin of recipients) {
+        await this.smtpService.triggerTicketRepliedEmail(admin.email, ticket.subject, message).catch(() => {});
       }
     } else {
       await this.prisma.ticket.update({ where: { id }, data: { status: 'open' } });
       if (ticket.assignedToId) {
         const assignedAdmin = await this.prisma.user.findUnique({ where: { id: ticket.assignedToId } });
         if (assignedAdmin) {
-          this.notificationsService.createNotification(assignedAdmin.id, `Ticket Reply`, `${ticket.tenant.businessName} replied to ticket '${ticket.subject}'`, 'system');
-          await this.smtpService.triggerTicketRepliedEmail(assignedAdmin.email, ticket.subject, message);
+          this.notificationsService.createNotification(assignedAdmin.id, `Ticket Reply`, `${ticket.tenant.businessName} replied to ticket '${ticket.subject}'`, 'system').catch(() => {});
+          await this.smtpService.triggerTicketRepliedEmail(assignedAdmin.email, ticket.subject, message).catch(() => {});
         }
       } else {
         await this.notificationsService.createSystemNotificationForSuperadmins(`Ticket Reply`, `${ticket.tenant.businessName} replied to ticket '${ticket.subject}'`, 'system');
+        const superadminEmails = await this.smtpService.getAdminNotificationEmails();
+        for (const email of superadminEmails) {
+          await this.smtpService.triggerTicketRepliedEmail(email, ticket.subject, message).catch(() => {});
+        }
       }
     }
 

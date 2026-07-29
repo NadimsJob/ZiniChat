@@ -1,7 +1,8 @@
 import { Injectable, Logger, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as nodemailer from 'nodemailer';
-
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 // ─── Default Email Templates ──────────────────────────────────────────────────
 const TEMPLATES = {
   welcomeSubject: 'ZiniChat প্ল্যাটফর্মে স্বাগতম! 🎉',
@@ -160,7 +161,10 @@ Password: {{password}}
 export class SmtpService {
   private readonly logger = new Logger(SmtpService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @InjectQueue('email') private emailQueue: Queue
+  ) {}
 
   async getConfig() {
     let config = await this.prisma.smtpConfig.findFirst();
@@ -327,58 +331,90 @@ export class SmtpService {
   }
 
   private generateMasterHtml(rawText: string, config: any): string {
-    // Convert newlines to breaks and simple links
-    const formattedText = rawText
-      .replace(/\n/g, '<br/>')
-      .replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" style="color:#3b82f6;text-decoration:none;">$1</a>');
-
     const platformUrl = process.env.NEXT_PUBLIC_API_URL 
       ? process.env.NEXT_PUBLIC_API_URL.replace(':3001', ':3000') 
       : 'https://zinichat.com';
 
-    return `
-<div style="font-family:'Inter', sans-serif; background-color:#f4f4f5; padding:40px 20px; min-height:100vh;">
-  <div style="max-width:550px; margin:0 auto; background-color:#ffffff; border-radius:16px; overflow:hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); border: 1px solid #e4e4e7;">
+    // Format paragraphs and convert URLs to styled buttons or clear links
+    let formattedText = rawText
+      .split('\n\n')
+      .map(p => `<p style="margin: 0 0 16px 0;">${p.replace(/\n/g, '<br/>')}</p>`)
+      .join('');
+
+    // Convert raw HTTP links into styled buttons
+    formattedText = formattedText.replace(
+      /(<p[^>]*>)?(https?:\/\/[^\s<]+)(<\/p>)?/g,
+      (match, pStart, url, pEnd) => {
+        if (url.includes('/login') || url.includes('/verify') || url.includes('/reset-password')) {
+          return `<div style="text-align: center; margin: 24px 0;">
+            <a href="${url}" target="_blank" style="background-color: #1F824A; color: #ffffff; padding: 12px 28px; font-weight: 600; font-size: 14px; text-decoration: none; border-radius: 8px; display: inline-block; box-shadow: 0 2px 4px rgba(31, 130, 74, 0.2);">এখানে ক্লিক করুন</a>
+          </div>`;
+        }
+        return `<a href="${url}" style="color: #1F824A; text-decoration: underline; font-weight: 500;">${url}</a>`;
+      }
+    );
+
+    return `<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZiniChat Notification</title>
+</head>
+<body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f5; margin: 0; padding: 40px 16px; -webkit-font-smoothing: antialiased;">
+  <div style="max-width: 580px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e4e4e7; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);">
     
+    <!-- Header Banner -->
+    <div style="background: linear-gradient(135deg, #1F824A 0%, #155E34 100%); padding: 28px 32px; text-align: center;">
+      <span style="color: #ffffff; font-size: 24px; font-weight: 800; letter-spacing: -0.5px; display: inline-block;">
+        Zini<span style="color: #EE8D27;">Chat</span>
+      </span>
+      <p style="color: rgba(255,255,255,0.85); font-size: 12px; margin: 4px 0 0 0; font-weight: 500;">Omnichannel AI Business Platform</p>
+    </div>
+
     <!-- Body Content -->
-    <div style="padding:32px; color:#3f3f46; font-size:15px; line-height:1.7;">
+    <div style="padding: 36px 32px; color: #27272a; font-size: 15px; line-height: 1.7;">
       ${formattedText}
     </div>
-    
+
     <!-- Footer -->
-    <div style="padding:24px 32px; text-align:center; background-color:#fafafa; border-top:1px solid #f4f4f5; color:#71717a; font-size:12px; line-height:1.6;">
-      <p style="margin:0;">এই ইমেইলটি স্বয়ংক্রিয়ভাবে পাঠানো হয়েছে। অনুগ্রহ করে রিপ্লাই করবেন না।</p>
-      <p style="margin:8px 0 0;">
-        <strong>ZiniChat Platform</strong><br/>
-        <a href="${platformUrl}" style="color:#71717a; text-decoration:none;">www.zinichat.com</a> • support@zinichat.com
+    <div style="padding: 24px 32px; text-align: center; background-color: #fafafa; border-top: 1px solid #f4f4f5; color: #71717a; font-size: 12px; line-height: 1.6;">
+      <p style="margin: 0 0 8px 0; font-weight: 500;">এই ইমেইলটি স্বয়ংক্রিয়ভাবে পাঠানো হয়েছে। অনুগ্রহ করে রিপ্লাই করবেন না।</p>
+      <p style="margin: 0; color: #a1a1aa;">
+        © ${new Date().getFullYear()} <strong style="color: #52525b;">ZiniChat Platform</strong> • <a href="${platformUrl}" style="color: #1F824A; text-decoration: none;">www.zinichat.com</a>
       </p>
     </div>
+
   </div>
-</div>`;
+</body>
+</html>`;
+  }
+
+  async internalExecuteSendMail({ to, subject, html, plainText }: { to: string; subject: string; html?: string; plainText?: string }) {
+    const config = await this.getConfig();
+    if (!config.host || !config.fromEmail) {
+      this.logger.warn('SMTP is not fully configured. Skipping mail dispatch.');
+      return;
+    }
+    const transporter = await this.createTransporter(config);
+    
+    const finalHtml = plainText ? this.generateMasterHtml(plainText, config) : html;
+
+    const info = await transporter.sendMail({
+      from: `"${config.fromName || 'ZiniChat'}" <${config.fromEmail}>`,
+      to,
+      subject,
+      html: finalHtml
+    });
+    this.logger.log(`Email sent: ${info.messageId} | Server Response: ${info.response}`);
+    return info;
   }
 
   async sendMail({ to, subject, html, plainText }: { to: string; subject: string; html?: string; plainText?: string }) {
-    try {
-      const config = await this.getConfig();
-      if (!config.host || !config.fromEmail) {
-        this.logger.warn('SMTP is not fully configured. Skipping mail dispatch.');
-        return;
-      }
-      const transporter = await this.createTransporter(config);
-      
-      const finalHtml = plainText ? this.generateMasterHtml(plainText, config) : html;
-
-      const info = await transporter.sendMail({
-        from: `"${config.fromName || 'ZiniChat'}" <${config.fromEmail}>`,
-        to,
-        subject,
-        html: finalHtml
-      });
-      this.logger.log(`Email sent: ${info.messageId} | Server Response: ${info.response} | Accepted: ${JSON.stringify(info.accepted)} | Rejected: ${JSON.stringify(info.rejected)}`);
-      return info;
-    } catch (err) {
-      this.logger.error('Failed to send email:', err);
-    }
+    await this.emailQueue.add('send-email', { to, subject, html, plainText }, { 
+      attempts: 3, 
+      backoff: { type: 'exponential', delay: 2000 } 
+    });
   }
 
   private replacePlaceholders(template: string, vars: Record<string, string>): string {
@@ -414,7 +450,7 @@ export class SmtpService {
     await this.sendMail({ to: toEmail, subject, plainText: bodyText });
   }
 
-  private async getAdminNotificationEmails(): Promise<string[]> {
+  async getAdminNotificationEmails(): Promise<string[]> {
     const admins = await this.prisma.user.findMany({ where: { role: 'superadmin' } });
     const emailSet = new Set<string>();
     emailSet.add('support@zinichat.com');
@@ -452,6 +488,12 @@ export class SmtpService {
     const subject = this.replacePlaceholders(config.addonPurchasedSubject || TEMPLATES.addonPurchasedSubject, vars);
     const bodyText = this.replacePlaceholders(config.addonPurchasedBody || TEMPLATES.addonPurchasedBody, vars);
     await this.sendMail({ to: toEmail, subject, plainText: bodyText });
+  }
+
+  async triggerPaymentRejectedEmail(toEmail: string, tenantName: string, trxId: string, reason?: string) {
+    const subject = `❌ পেমেন্ট বাতিল করা হয়েছে (TrxID: ${trxId}) – ZiniChat`;
+    const plainText = `প্রিয় ${tenantName},\n\nআপনার পেমেন্ট রিকোয়েস্টটি (TrxID: ${trxId}) পর্যালোচনা করার পর বাতিল করা হয়েছে।\n${reason ? `\nকারণ: ${reason}\n` : ''}\nযেকোনো প্রয়োজনে সাপোর্ট টিমের সাথে যোগাযোগ করুন।\n\nধন্যবাদ,\nZiniChat টিম`;
+    await this.sendMail({ to: toEmail, subject, plainText });
   }
 
   async triggerExpiryReminderEmail(toEmail: string, tenantName: string, daysLeft: number, expiryDate: string) {
@@ -555,6 +597,12 @@ export class SmtpService {
   async triggerPlanCustomizedEmail(toEmail: string, tenantName: string, customDetails: string) {
     const subject = `Your ZiniChat plan limits have been updated for ${tenantName}`;
     const plainText = `Hi ${tenantName},\n\nYour ZiniChat subscription plan limits have been customized by support.\n\nUpdated Limits:\n${customDetails}\n\nLog in to your dashboard to view your updated plan details.\n\nBest regards,\nZiniChat Team`;
+    await this.sendMail({ to: toEmail, subject, plainText });
+  }
+
+  async triggerVerifyEmail(toEmail: string, userName: string, verifyLink: string) {
+    const subject = '📧 ইমেইল ভেরিফাই করুন – ZiniChat';
+    const plainText = `প্রিয় ${userName},\n\nআপনার ZiniChat অ্যাকাউন্টের ইমেইল ঠিকানা ভেরিফাই করতে নিচের লিংকে ক্লিক করুন:\n\n${verifyLink}\n\nএই লিংকটি আগামী ২৪ ঘণ্টার জন্য কার্যকর থাকবে।\n\nধন্যবাদ,\nZiniChat টিম`;
     await this.sendMail({ to: toEmail, subject, plainText });
   }
 }

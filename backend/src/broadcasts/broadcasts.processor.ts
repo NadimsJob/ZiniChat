@@ -4,6 +4,7 @@ import { Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { InjectQueue } from '@nestjs/bullmq';
 import { SmtpService } from '../smtp/smtp.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Processor('broadcasts')
 export class BroadcastsProcessor extends WorkerHost {
@@ -12,7 +13,8 @@ export class BroadcastsProcessor extends WorkerHost {
   constructor(
     private prisma: PrismaService,
     @InjectQueue('whatsapp-outbound') private whatsappQueue: Queue,
-    private smtpService: SmtpService
+    private smtpService: SmtpService,
+    private notificationsService: NotificationsService
   ) {
     super();
   }
@@ -36,19 +38,18 @@ export class BroadcastsProcessor extends WorkerHost {
         data: { status: 'processing' }
       });
 
-      // 2. Fetch contacts matching segmentFilter (assuming empty filter means all contacts for now)
+      // 2. Fetch contacts matching segmentFilter
       const contacts = await this.prisma.contact.findMany({
-        where: { tenantId } // In a real app, apply segmentFilter logic here
+        where: { tenantId }
       });
 
       this.logger.log(`Found ${contacts.length} recipients for broadcast ${broadcastId}`);
 
       // 3. Process recipients and enqueue messages
       let delayMs = 0;
-      const DELAY_BETWEEN_MESSAGES = 1000; // 1 message per second to prevent rate limit blocks
+      const DELAY_BETWEEN_MESSAGES = 1000;
 
       for (const contact of contacts) {
-        // Create recipient record
         const recipient = await this.prisma.broadcastRecipient.create({
           data: {
             broadcastId,
@@ -57,7 +58,6 @@ export class BroadcastsProcessor extends WorkerHost {
           }
         });
 
-        // Enqueue to whatsapp-outbound with delay
         await this.whatsappQueue.add('send-message', {
           tenantId,
           messageId: `broadcast_${recipient.id}`,
@@ -71,7 +71,6 @@ export class BroadcastsProcessor extends WorkerHost {
           delay: delayMs
         });
 
-        // Increase delay for the next message
         delayMs += DELAY_BETWEEN_MESSAGES;
       }
 
@@ -81,30 +80,64 @@ export class BroadcastsProcessor extends WorkerHost {
         data: { status: 'completed' }
       });
 
-      // Send email to owner
+      // Send email & in-app notifications to all workspace owners and admins
       const tenant = await this.prisma.tenant.findUnique({
         where: { id: tenantId },
-        include: { users: { where: { role: 'owner' } } }
+        include: { users: { where: { role: { in: ['owner', 'admin'] } } } }
       });
 
-      const ownerEmail = tenant?.users?.[0]?.email;
+      const admins = tenant?.users || [];
 
-      if (ownerEmail) {
+      for (const admin of admins) {
         await this.smtpService.triggerBroadcastCompletedEmail(
-          ownerEmail,
-          tenant.businessName,
+          admin.email,
+          tenant?.businessName || 'Tenant',
           broadcast.template?.name || 'Unnamed Broadcast',
           contacts.length
-        );
+        ).catch(err => this.logger.error(`Failed to send broadcast completion email to ${admin.email}`, err));
+
+        await this.notificationsService.createNotification(
+          admin.id,
+          '🚀 ব্রডকাস্ট ক্যাম্পেইন সম্পন্ন হয়েছে',
+          `আপনার ব্রডকাস্ট ক্যাম্পেইন (${broadcast.template?.name || 'Campaign'}) মোট ${contacts.length} জন গ্রহীতার কাছে সফলভাবে প্রেরণ করা হয়েছে।`,
+          'info'
+        ).catch(() => {});
       }
 
       this.logger.log(`Broadcast ${broadcastId} processing completed.`);
     } catch (error) {
       this.logger.error(`Error processing broadcast ${broadcastId}:`, error);
+
       await this.prisma.broadcast.update({
         where: { id: broadcastId },
         data: { status: 'failed' }
       });
+
+      // Send failure notification & email to all workspace admins/owners
+      try {
+        const tenant = await this.prisma.tenant.findUnique({
+          where: { id: tenantId },
+          include: { users: { where: { role: { in: ['owner', 'admin'] } } } }
+        });
+
+        const admins = tenant?.users || [];
+        for (const admin of admins) {
+          const subject = `❌ ব্রডকাস্ট ক্যাম্পেইন ব্যর্থ হয়েছে – ZiniChat`;
+          const plainText = `প্রিয় ${tenant?.businessName || 'User'},\n\nআপনার প্রেরিত ব্রডকাস্ট ক্যাম্পেইন প্রক্রিয়া করার সময় একটি ত্রুটি ঘটেছে এবং ক্যাম্পেইনটি ব্যর্থ হয়েছে।\n\nবিস্তারিত জানতে ড্যাশবোর্ডে লগ ইন করুন বা সাপোর্ট টিমের সাথে যোগাযোগ করুন।\n\nধন্যবাদ,\nZiniChat টিম`;
+
+          await this.smtpService.sendMail({ to: admin.email, subject, plainText }).catch(() => {});
+
+          await this.notificationsService.createNotification(
+            admin.id,
+            '❌ ব্রডকাস্ট ক্যাম্পেইন ব্যর্থ হয়েছে',
+            `আপনার ব্রডকাস্ট ক্যাম্পেইন প্রক্রিয়া করার সময় ত্রুটি ঘটেছে। দয়া করে সেটিংস বা সাপোর্ট চেক করুন।`,
+            'info'
+          ).catch(() => {});
+        }
+      } catch (notifyErr) {
+        this.logger.error('Failed to dispatch broadcast failure alerts:', notifyErr);
+      }
+
       throw error;
     }
   }

@@ -388,33 +388,35 @@ export class MfsPaymentsService {
         });
       }
 
-      // 5. Notify tenant owner & superadmins
-      const owner = await tx.user.findFirst({
+      // 5. Notify tenant owners/admins & superadmins
+      const admins = await tx.user.findMany({
         where: { tenantId, role: { in: ['owner', 'admin'] } },
       });
 
-      if (owner) {
+      for (const admin of admins) {
         if (payment.addonId && payment.addon) {
-          if ((this.smtpService as any).triggerAddonPurchasedEmail) {
-            (this.smtpService as any).triggerAddonPurchasedEmail(owner.email, tenant?.businessName || 'Tenant', payment.addon.name, String(actualAmount)).catch(() => {});
-          }
+          this.smtpService.triggerAddonPurchasedEmail(
+            admin.email,
+            tenant?.businessName || 'Tenant',
+            payment.addon.name,
+            String(actualAmount)
+          ).catch(() => {});
+
           await this.notificationsService.createNotification(
-            owner.id,
+            admin.id,
             '🎉 অ্যাড-অন সক্রিয়!',
             `আপনার অ্যাড-অন পেমেন্ট (TrxID: ${cleanTrxId}) অটো-ভেরিফাই করা হয়েছে এবং "${payment.addon.name}" অ্যাড-অন সচল হয়েছে।`,
             'billing',
           );
         } else {
-          this.smtpService
-            .triggerPaymentApprovedEmail(
-              owner.email,
-              tenant?.businessName || 'Tenant',
-              payment.subscription?.plan?.name || 'Package',
-            )
-            .catch(() => {});
+          this.smtpService.triggerPaymentApprovedEmail(
+            admin.email,
+            tenant?.businessName || 'Tenant',
+            payment.subscription?.plan?.name || 'Package',
+          ).catch(() => {});
 
           await this.notificationsService.createNotification(
-            owner.id,
+            admin.id,
             '🎉 পেমেন্ট সফল ও সাবস্ক্রিপশন সক্রিয়!',
             `আপনার পেমেন্ট (TrxID: ${cleanTrxId}) অটো-ভেরিফাই করা হয়েছে এবং "${payment.subscription?.plan?.name}" প্ল্যান সচল হয়েছে।`,
             'billing',
@@ -450,6 +452,11 @@ export class MfsPaymentsService {
         `টেন্যান্ট ${tenant?.businessName || 'Tenant'} এর TrxID ${cleanTrxId} এর BDT ${actualAmount} পেমেন্ট অটো-ভেরিফাই সফল হয়েছে।`,
         'billing',
       );
+      this.smtpService.triggerPaymentPendingAdminEmail(
+        tenant?.businessName || 'Tenant',
+        String(actualAmount),
+        cleanTrxId || 'N/A'
+      ).catch(() => {});
 
       return { success: true, message: 'Payment successfully verified and activated' };
     });
@@ -537,6 +544,45 @@ export class MfsPaymentsService {
         data: { status: 'cancelled' },
       });
     }
+
+    // Notify tenant admins/owners
+    const admins = await this.prisma.user.findMany({
+      where: { tenantId: payment.tenantId, role: { in: ['owner', 'admin'] } },
+    });
+    for (const admin of admins) {
+      if (payment.addonId && payment.addon) {
+        this.smtpService.triggerAddonPurchasedEmail(
+          admin.email,
+          tenant?.businessName || 'Tenant',
+          payment.addon.name,
+          String(payment.amountBdt)
+        ).catch(() => {});
+        this.notificationsService.createNotification(
+          admin.id,
+          '🧩 অ্যাড-অন সক্রিয় হয়েছে! (Admin Claim)',
+          `আপনার অ্যাড-অন পেমেন্ট (TrxID: ${cleanTrxId}) ম্যানুয়ালি অনুমোদন করা হয়েছে এবং "${payment.addon.name}" সক্রিয় হয়েছে।`,
+          'billing'
+        ).catch(() => {});
+      } else {
+        this.smtpService.triggerPaymentApprovedEmail(
+          admin.email,
+          tenant?.businessName || 'Tenant',
+          payment.subscription?.plan?.name || 'Plan'
+        ).catch(() => {});
+        this.notificationsService.createNotification(
+          admin.id,
+          '🎉 পেমেন্ট অনুমোদিত হয়েছে! (Admin Claim)',
+          `আপনার পেমেন্ট (TrxID: ${cleanTrxId}) ম্যানুয়ালি অনুমোদন করা হয়েছে এবং "${payment.subscription?.plan?.name || 'Plan'}" সক্রিয় হয়েছে।`,
+          'billing'
+        ).catch(() => {});
+      }
+    }
+
+    await this.notificationsService.createSystemNotificationForSuperadmins(
+      '🟡 পেমেন্ট ম্যানুয়ালি ক্লেম করা হয়েছে',
+      `টেন্যান্ট ${tenant?.businessName || 'Tenant'} এর TrxID ${cleanTrxId} ম্যানুয়ালি ক্লেম করা হয়েছে।`,
+      'billing'
+    );
 
     return { success: true, message: 'Payment manually claimed and approved' };
   }

@@ -36,7 +36,9 @@ describe('AuthService', () => {
 
   const mockSmtpService = {
     triggerWelcomeEmail: jest.fn().mockResolvedValue(true),
-    triggerPasswordResetEmail: jest.fn().mockResolvedValue(true)
+    triggerVerifyEmail: jest.fn().mockResolvedValue(true),
+    triggerPasswordResetEmail: jest.fn().mockResolvedValue(true),
+    triggerAgentCreatedEmail: jest.fn().mockResolvedValue(true)
   };
 
   const mockNotificationsService = {

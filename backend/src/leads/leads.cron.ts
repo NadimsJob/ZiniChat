@@ -33,33 +33,32 @@ export class LeadsCronService {
       this.logger.log(`Found ${pendingLeads.length} leads requiring follow-up notifications.`);
       
       for (const lead of pendingLeads) {
-        let targetUserId = lead.assignedUserId;
+        const targetUserIds: string[] = [];
 
-        if (targetUserId) {
-          // Verify if the explicitly assigned user actually belongs to this tenant
-          // Prevents superadmins who created test leads from receiving notifications
-          const user = await this.prisma.user.findUnique({ where: { id: targetUserId } });
-          if (!user || user.tenantId !== lead.tenantId) {
-             targetUserId = null; // Fallback to notifying the tenant owner
+        if (lead.assignedUserId) {
+          const user = await this.prisma.user.findUnique({ where: { id: lead.assignedUserId } });
+          if (user && user.tenantId === lead.tenantId) {
+            targetUserIds.push(lead.assignedUserId);
           }
         }
 
-        // If no user is explicitly assigned (or invalid), notify the tenant owner/admin
-        if (!targetUserId) {
-          const owner = await this.prisma.user.findFirst({
+        if (targetUserIds.length === 0) {
+          const admins = await this.prisma.user.findMany({
             where: { tenantId: lead.tenantId, role: { in: ['owner', 'admin'] } }
           });
-          targetUserId = owner?.id || null;
+          targetUserIds.push(...admins.map(a => a.id));
         }
 
-        if (targetUserId) {
+        if (targetUserIds.length > 0) {
           const message = `It's time to follow up with ${lead.name || lead.externalContactId}.`;
-          await this.notificationsService.createNotification(
-            targetUserId,
-            'Lead Follow-up Due',
-            message,
-            'info'
-          );
+          for (const uid of targetUserIds) {
+            await this.notificationsService.createNotification(
+              uid,
+              'Lead Follow-up Due',
+              message,
+              'info'
+            ).catch(() => {});
+          }
 
           await this.prisma.contact.update({
             where: { id: lead.id },

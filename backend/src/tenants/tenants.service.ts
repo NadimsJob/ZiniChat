@@ -313,6 +313,9 @@ export class TenantsService {
     const tenant = await this.prisma.tenant.update({
       where: { id },
       data: { status },
+      include: {
+        users: { where: { role: { in: ['owner', 'admin'] } }, select: { id: true, email: true } }
+      }
     });
 
     await this.prisma.auditLog.create({
@@ -320,9 +323,20 @@ export class TenantsService {
         actorUserId,
         targetTenantId: id,
         action: `UPDATED_TENANT_STATUS_TO_${status.toUpperCase()}`,
-        metadataJson: { previousStatus: tenant.status, newStatus: status },
+        metadataJson: { newStatus: status },
       },
     });
+
+    // Notify tenant admins/owners
+    const statusLabel = status === 'suspended' ? 'Suspended' : status === 'active' ? 'Reactivated' : status;
+    const notifTitle = status === 'suspended' ? '⚠️ Account Suspended' : '✅ Account Reactivated';
+    const notifMsg = status === 'suspended'
+      ? 'Your ZiniChat account has been suspended. Please contact support for assistance.'
+      : `Your ZiniChat account status has been updated to: ${statusLabel}.`;
+
+    for (const user of (tenant as any).users || []) {
+      this.notificationsService.createNotification(user.id, notifTitle, notifMsg, 'system').catch(() => {});
+    }
 
     return tenant;
   }

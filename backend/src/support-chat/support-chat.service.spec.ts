@@ -193,7 +193,8 @@ describe('SupportChatService', () => {
         })
       },
       user: {
-        findFirst: jest.fn().mockResolvedValue({ id: 'user-123' })
+        findFirst: jest.fn().mockResolvedValue({ id: 'user-123' }),
+        findMany: jest.fn().mockResolvedValue([{ id: 'user-123', email: 'owner@zinitech.com', role: 'owner' }])
       },
       plan: {
         findMany: jest.fn().mockResolvedValue([
@@ -204,6 +205,7 @@ describe('SupportChatService', () => {
     };
 
     notificationsService = {
+      createNotification: jest.fn().mockResolvedValue(true),
       createSystemNotificationForSuperadmins: jest.fn().mockResolvedValue(true)
     };
 

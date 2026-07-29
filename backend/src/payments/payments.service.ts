@@ -24,6 +24,12 @@ export class PaymentsService {
     return this.prisma.paymentGatewayConfig.update({ where: { id: config.id }, data });
   }
 
+  private async getTenantAdminsAndOwners(tenantId: string) {
+    return this.prisma.user.findMany({
+      where: { tenantId, role: { in: ['owner', 'admin'] } }
+    });
+  }
+
   async submitManualPayment(tenantId: string, planId: string, trxId: string, billingCycle: string, couponCode?: string) {
     // 1. Get plan info
     const plan = await this.prisma.plan.findUnique({ where: { id: planId } });
@@ -97,14 +103,14 @@ export class PaymentsService {
       }
     });
 
-    // 4. Get tenant owner info
-    const owner = await this.prisma.user.findFirst({ where: { tenantId, role: { in: ['owner', 'admin'] } } });
+    // 4. Get tenant owner/admin info
+    const admins = await this.getTenantAdminsAndOwners(tenantId);
 
     // 5. Send emails (fire & forget)
     if (!trxId.startsWith('PENDING_')) {
-      if (owner) {
+      for (const admin of admins) {
         this.smtpService.triggerPaymentSubmittedEmail(
-          owner.email, tenant?.businessName || 'Tenant', String(amount), trxId
+          admin.email, tenant?.businessName || 'Tenant', String(amount), trxId
         ).catch(() => {});
       }
       this.smtpService.triggerPaymentPendingAdminEmail(
@@ -114,9 +120,9 @@ export class PaymentsService {
 
     // 6. In-app notifications
     if (!trxId.startsWith('PENDING_')) {
-      if (owner) {
+      for (const admin of admins) {
         await this.notificationsService.createNotification(
-          owner.id,
+          admin.id,
           '✅ পেমেন্ট সাবমিট হয়েছে',
           `আপনার পেমেন্ট (TrxID: ${trxId}) গ্রহণ করা হয়েছে। অনুমোদনের অপেক্ষায় আছে।`,
           'billing'
@@ -193,13 +199,13 @@ export class PaymentsService {
     });
 
     // Notify tenant
-    const owner = await this.prisma.user.findFirst({ where: { tenantId, role: { in: ['owner', 'admin'] } } });
-    if (owner) {
+    const admins = await this.getTenantAdminsAndOwners(tenantId);
+    for (const admin of admins) {
       this.smtpService.triggerPaymentApprovedEmail(
-        owner.email, tenant?.businessName || 'Tenant', plan?.name || 'Sandbox Plan'
+        admin.email, tenant?.businessName || 'Tenant', plan?.name || 'Sandbox Plan'
       ).catch(() => {});
       await this.notificationsService.createNotification(
-        owner.id,
+        admin.id,
         '🎉 সাবস্ক্রিপশন সক্রিয়!',
         `আপনার "${plan?.name}" প্ল্যান সফলভাবে সক্রিয় হয়েছে।`,
         'billing'
@@ -228,16 +234,16 @@ export class PaymentsService {
       }
     });
 
-    const owner = await this.prisma.user.findFirst({ where: { tenantId, role: { in: ['owner', 'admin'] } } });
+    const admins = await this.getTenantAdminsAndOwners(tenantId);
 
     if (!trxId.startsWith('PENDING_')) {
-      if (owner) {
+      for (const admin of admins) {
         this.smtpService.triggerPaymentSubmittedEmail(
-          owner.email, tenant?.businessName || 'Tenant', String(amount), trxId
+          admin.email, tenant?.businessName || 'Tenant', String(amount), trxId
         ).catch(() => {});
         
         await this.notificationsService.createNotification(
-          owner.id,
+          admin.id,
           '✅ অ্যাড-অন পেমেন্ট সাবমিট হয়েছে',
           `আপনার অ্যাড-অন পেমেন্ট (TrxID: ${trxId}) গ্রহণ করা হয়েছে। অনুমোদনের অপেক্ষায় আছে।`,
           'billing'
@@ -293,13 +299,13 @@ export class PaymentsService {
       await this.prisma.tenant.update({ where: { id: tenantId }, data: { customStorageLimitMb: newLimit } });
     }
 
-    const owner = await this.prisma.user.findFirst({ where: { tenantId, role: { in: ['owner', 'admin'] } } });
-    if (owner) {
-      if ((this.smtpService as any).triggerAddonPurchasedEmail) {
-        (this.smtpService as any).triggerAddonPurchasedEmail(owner.email, tenant?.businessName || 'Tenant', addon.name, String(amount)).catch(() => {});
-      }
+    const admins = await this.getTenantAdminsAndOwners(tenantId);
+    for (const admin of admins) {
+      this.smtpService.triggerAddonPurchasedEmail(
+        admin.email, tenant?.businessName || 'Tenant', addon.name, String(amount)
+      ).catch(() => {});
       await this.notificationsService.createNotification(
-        owner.id,
+        admin.id,
         '🎉 অ্যাড-অন সক্রিয়!',
         `আপনার "${addon.name}" সফলভাবে কেনা হয়েছে।`,
         'billing'
@@ -365,7 +371,7 @@ export class PaymentsService {
     // Update payment
     await this.prisma.payment.update({ where: { id: paymentId }, data: { status: 'success' } });
 
-    const owner = await this.prisma.user.findFirst({ where: { tenantId: payment.tenantId, role: { in: ['owner', 'admin'] } } });
+    const admins = await this.getTenantAdminsAndOwners(payment.tenantId);
     const tenant = await this.prisma.tenant.findUnique({ 
       where: { id: payment.tenantId }, 
       include: { subscriptions: { include: { plan: true } } } 
@@ -379,13 +385,13 @@ export class PaymentsService {
         include: { plan: true }
       });
 
-      if (owner) {
+      for (const admin of admins) {
         this.smtpService.triggerPaymentApprovedEmail(
-          owner.email, tenant?.businessName || 'Tenant', subscription.plan?.name || 'Plan'
+          admin.email, tenant?.businessName || 'Tenant', subscription.plan?.name || 'Plan'
         ).catch(() => {});
 
         await this.notificationsService.createNotification(
-          owner.id,
+          admin.id,
           '🎉 পেমেন্ট অনুমোদিত হয়েছে!',
           `আপনার "${subscription.plan?.name || 'Plan'}" সাবস্ক্রিপশন সক্রিয় হয়েছে।`,
           'billing'
@@ -408,13 +414,13 @@ export class PaymentsService {
         
         await this.prisma.tenant.update({ where: { id: tenant.id }, data: updates });
 
-        if (owner) {
+        for (const admin of admins) {
           this.smtpService.triggerAddonPurchasedEmail(
-            owner.email, tenant.businessName, addon.name, payment.amountBdt.toString()
+            admin.email, tenant.businessName, addon.name, payment.amountBdt.toString()
           ).catch(() => {});
 
           await this.notificationsService.createNotification(
-            owner.id,
+            admin.id,
             '🧩 অ্যাড-অন সক্রিয় হয়েছে!',
             `আপনার কেনা অ্যাড-অন (${addon.name}) অ্যাকাউন্টে যোগ করা হয়েছে।`,
             'billing'
@@ -424,6 +430,32 @@ export class PaymentsService {
     }
 
     return { message: 'Payment approved' };
+  }
+
+  async rejectManualPayment(paymentId: string, reason?: string) {
+    const payment = await this.prisma.payment.findUnique({ where: { id: paymentId } });
+    if (!payment) throw new NotFoundException('Payment not found');
+    if (payment.status !== 'pending') throw new BadRequestException('Payment is not pending');
+
+    await this.prisma.payment.update({ where: { id: paymentId }, data: { status: 'failed' } });
+
+    const admins = await this.getTenantAdminsAndOwners(payment.tenantId);
+    const tenant = await this.prisma.tenant.findUnique({ where: { id: payment.tenantId } });
+
+    for (const admin of admins) {
+      this.smtpService.triggerPaymentRejectedEmail(
+        admin.email, tenant?.businessName || 'Tenant', payment.trxId || 'N/A', reason
+      ).catch(() => {});
+
+      await this.notificationsService.createNotification(
+        admin.id,
+        '❌ পেমেন্ট বাতিল করা হয়েছে',
+        `আপনার পেমেন্ট (TrxID: ${payment.trxId}) বাতিল করা হয়েছে।${reason ? ` কারণ: ${reason}` : ''}`,
+        'billing'
+      );
+    }
+
+    return { message: 'Payment rejected' };
   }
 
   async getUpcomingBill(tenantId: string) {
