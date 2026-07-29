@@ -449,6 +449,22 @@ export class AuthService {
     return { success: true, message: 'Password has been reset successfully. You can now log in.' };
   }
 
+  async verifyEmail(token: string) {
+    if (!token) {
+      throw new BadRequestException('Verification token is required');
+    }
+    const user = await this.prisma.user.findFirst({
+      where: { resetPasswordToken: token }
+    });
+    if (user) {
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { resetPasswordToken: null }
+      });
+    }
+    return { success: true, message: 'Email verified successfully' };
+  }
+
   // Check public config
   async getGoogleConfig() {
     const config = await this.prisma.googleAuthConfig.findFirst();

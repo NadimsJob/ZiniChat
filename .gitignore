@@ -50,3 +50,4 @@ redis-local/
 
 # Logs
 *.log
+repomix-output.xml

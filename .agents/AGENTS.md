@@ -241,3 +241,15 @@ This rule documents the transition away from third-party SMS Forwarders and the 
 * **Mathematical Consistency**: Since every automated AI response sends an outbound message, `messages.used` in `subscriptionHealth` MUST always be calculated as `Math.max(messagesUsed, aiUsedInPeriod)` to prevent `Messages Usage` from ever appearing smaller than `AI Response Usage`.
 * **Terminology**: Use **"AI Response Usage" / "এআই রেসপন্স কোটা"** for AI quota labels rather than "AI Credits Usage" across all UI cards and modals.
 
+---
+
+## 28. Master Production Audit & Quality Assurance Guidelines
+This rule summarizes the core technical safeguards discovered and enforced during the 25-phase full-platform audit:
+
+* **100% Jest Test Coverage**: Every NestJS backend service MUST have a corresponding `.spec.ts` unit test file in the same directory. Never leave a backend service without unit test coverage.
+* **Prisma Foreign Key Deletion Safety**: When deleting a parent entity (e.g. `Tenant` or `User`), inspect for dependent records without `onDelete: Cascade` (such as `auditLogs`, `sessions`, `notifications`). Delete dependent child records prior to parent deletion to prevent 500 Foreign Key constraint errors.
+* **MFS Payment Transaction Locks**: All MFS payment claims and SMS webhook sync logic MUST be wrapped inside atomic `prisma.$transaction(async (tx) => { ... })` blocks to prevent race conditions and double claims.
+* **Multi-Provider AI Fallbacks**: OpenAI/Gemini/Groq/Anthropic completion calls must handle dynamic base URLs (`v1beta/openai` for Gemini) and wrap requests in try-catch blocks with graceful fallbacks.
+* **Bilingual UI Parity**: All frontend React components MUST wrap text in `useLanguage()` conditional blocks (`{language === 'en' ? '...' : '...'}`) with `localStorage` persistence (`app-lang`).
+
+

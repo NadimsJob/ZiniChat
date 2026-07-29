@@ -21,14 +21,14 @@ describe('LanguageProvider', () => {
     window.localStorage.clear();
   });
 
-  it('provides default language "en"', () => {
+  it('provides default language "bn"', () => {
     render(
       <LanguageProvider>
         <TestConsumer />
       </LanguageProvider>
     );
 
-    expect(screen.getByTestId('lang-display')).toHaveTextContent('en');
+    expect(screen.getByTestId('lang-display')).toHaveTextContent('bn');
   });
 
   it('updates language and saves to localStorage when setLanguage is called', () => {
@@ -39,17 +39,17 @@ describe('LanguageProvider', () => {
     );
 
     // Initial state
-    expect(screen.getByTestId('lang-display')).toHaveTextContent('en');
-
-    // Change to Bengali
-    fireEvent.click(screen.getByText('Set Bengali'));
     expect(screen.getByTestId('lang-display')).toHaveTextContent('bn');
-    expect(window.localStorage.getItem('app-lang')).toBe('bn');
 
-    // Change back to English
+    // Change to English
     fireEvent.click(screen.getByText('Set English'));
     expect(screen.getByTestId('lang-display')).toHaveTextContent('en');
     expect(window.localStorage.getItem('app-lang')).toBe('en');
+
+    // Change back to Bengali
+    fireEvent.click(screen.getByText('Set Bengali'));
+    expect(screen.getByTestId('lang-display')).toHaveTextContent('bn');
+    expect(window.localStorage.getItem('app-lang')).toBe('bn');
   });
 
   it('loads language from localStorage on mount', () => {

@@ -39,6 +39,11 @@ export class AuthController {
     return this.authService.resetPassword(body.token, body.newPassword);
   }
 
+  @Post('verify-email')
+  async verifyEmail(@Body('token') token: string) {
+    return this.authService.verifyEmail(token);
+  }
+
   @Post('seed-superadmin')
   async seedSuperadmin(@Body('setupKey') setupKey: string) {
     // Guard: only allow if the correct setup key is provided

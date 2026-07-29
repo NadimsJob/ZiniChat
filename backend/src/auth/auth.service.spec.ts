@@ -17,7 +17,7 @@ describe('AuthService', () => {
   const mockPrismaService = {
     $transaction: jest.fn(),
     tenant: { create: jest.fn() },
-    user: { create: jest.fn(), findUnique: jest.fn() },
+    user: { create: jest.fn(), findUnique: jest.fn(), findFirst: jest.fn(), update: jest.fn() },
     plan: { findFirst: jest.fn() },
     subscription: { create: jest.fn() },
     googleAuthConfig: { findFirst: jest.fn() },
@@ -35,11 +35,13 @@ describe('AuthService', () => {
   };
 
   const mockSmtpService = {
-    triggerWelcomeEmail: jest.fn().mockResolvedValue(true)
+    triggerWelcomeEmail: jest.fn().mockResolvedValue(true),
+    triggerPasswordResetEmail: jest.fn().mockResolvedValue(true)
   };
 
   const mockNotificationsService = {
-    createSystemNotificationForSuperadmins: jest.fn().mockResolvedValue(true)
+    createSystemNotificationForSuperadmins: jest.fn().mockResolvedValue(true),
+    createNotification: jest.fn().mockResolvedValue(true)
   };
 
   beforeEach(async () => {
@@ -219,6 +221,67 @@ describe('AuthService', () => {
         })
       );
       expect(result).toEqual(expect.objectContaining({ appId: '987654' }));
+    });
+  });
+
+  describe('forgotPassword', () => {
+    it('should generate token and dispatch reset email if user exists', async () => {
+      mockUsersService.findByEmail.mockResolvedValue({ id: 'user-1', email: 'user@test.com', name: 'User Test' });
+      mockPrismaService.user.update.mockResolvedValue({});
+
+      const result = await service.forgotPassword('user@test.com');
+      expect(mockPrismaService.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'user-1' },
+          data: expect.objectContaining({ resetPasswordToken: expect.any(String) })
+        })
+      );
+      expect(mockSmtpService.triggerPasswordResetEmail).toHaveBeenCalled();
+      expect(result.success).toBe(true);
+    });
+
+    it('should return success message without failing if email does not exist', async () => {
+      mockUsersService.findByEmail.mockResolvedValue(null);
+
+      const result = await service.forgotPassword('nonexistent@test.com');
+      expect(result.success).toBe(true);
+      expect(mockSmtpService.triggerPasswordResetEmail).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('resetPassword', () => {
+    it('should update password when token is valid and not expired', async () => {
+      mockPrismaService.user.findFirst.mockResolvedValue({ id: 'user-1', email: 'user@test.com' });
+      mockPrismaService.user.update.mockResolvedValue({});
+
+      const result = await service.resetPassword('valid-token', 'newPassword123');
+      expect(mockPrismaService.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'user-1' },
+          data: expect.objectContaining({ resetPasswordToken: null, resetPasswordExpires: null })
+        })
+      );
+      expect(result.success).toBe(true);
+    });
+
+    it('should throw BadRequestException if token is invalid', async () => {
+      mockPrismaService.user.findFirst.mockResolvedValue(null);
+
+      await expect(service.resetPassword('invalid-token', 'newPassword123')).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('verifyEmail', () => {
+    it('should verify email and clear token if valid', async () => {
+      mockPrismaService.user.findFirst.mockResolvedValue({ id: 'user-1' });
+      mockPrismaService.user.update.mockResolvedValue({});
+
+      const result = await service.verifyEmail('verify-token');
+      expect(result.success).toBe(true);
+    });
+
+    it('should throw BadRequestException if no token is provided', async () => {
+      await expect(service.verifyEmail('')).rejects.toThrow(BadRequestException);
     });
   });
 });
