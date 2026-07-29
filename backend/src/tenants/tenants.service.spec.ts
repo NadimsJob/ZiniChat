@@ -26,6 +26,7 @@ describe('TenantsService - Plan Customization', () => {
       },
       user: {
         findUnique: jest.fn(),
+        count: jest.fn().mockResolvedValue(1),
       },
       plan: {
         findFirst: jest.fn(),

@@ -13,19 +13,27 @@ import toast from 'react-hot-toast';
 
 // Complete feature map — must stay in sync with packages/page.tsx and tenants/page.tsx
 const FEATURE_MAP: Record<string, { en: string; bn: string; icon: any }> = {
-  'ai_assistant':   { en: 'AI Assistant',           bn: 'এআই অ্যাসিস্ট্যান্ট',    icon: Bot },
-  'whatsapp':       { en: 'WhatsApp Integration',   bn: 'হোয়াটসঅ্যাপ ইন্টিগ্রেশন', icon: Wifi },
-  'messenger':      { en: 'Messenger Integration',  bn: 'মেসেঞ্জার ইন্টিগ্রেশন',   icon: MessageSquare },
-  'instagram':      { en: 'Instagram Integration',  bn: 'ইন্সটাগ্রাম ইন্টিগ্রেশন', icon: Globe },
-  'lead_manage':    { en: 'Leads CRM',              bn: 'লিডস সিআরএম',            icon: BarChart2 },
-  'commerce':       { en: 'Products & Orders',       bn: 'প্রোডাক্টস ও অর্ডারস',    icon: Package },
-  'broadcast':      { en: 'Broadcast Campaigns',    bn: 'ব্রডকাস্ট ক্যাম্পেইন',     icon: Megaphone },
-  'team':           { en: 'Team Management',        bn: 'টিম ম্যানেজমেন্ট',         icon: Users },
-  'labels':         { en: 'Labels & Tagging',       bn: 'লেবেল ও ট্যাগিং',         icon: Tag },
-  'support_ai':     { en: 'Support AI Agent',       bn: 'সাপোর্ট এআই এজেন্ট',      icon: Headphones },
-  'own_api':        { en: 'Bring Your Own API Key', bn: 'নিজস্ব এপিআই কি',         icon: ShieldCheck },
-  'storage':        { en: 'File Storage',           bn: 'ফাইল স্টোরেজ',            icon: HardDrive },
-  'analytics':      { en: 'Analytics & Reports',   bn: 'অ্যানালিটিক্স ও রিপোর্ট',  icon: BarChart2 },
+  'ai_assistant':         { en: 'AI Assistant',               bn: 'এআই অ্যাসিস্ট্যান্ট',        icon: Bot },
+  'platform_support_ai':  { en: 'Platform Support AI Widget', bn: 'প্ল্যাটফর্ম সাপোর্ট এআই',     icon: Headphones },
+  'messenger':            { en: 'Messenger Integration',      bn: 'মেসেঞ্জার ইন্টিগ্রেশন',       icon: MessageSquare },
+  'whatsapp':             { en: 'WhatsApp API (Official)',    bn: 'হোয়াটসঅ্যাপ অফিসিয়াল API',  icon: Wifi },
+  'whatsapp_qr':          { en: 'WhatsApp Web (Unofficial)',  bn: 'হোয়াটসঅ্যাপ ওয়েব (QR)',     icon: Wifi },
+  'whatsapp_widget':      { en: 'WhatsApp Website Widget',    bn: 'হোয়াটসঅ্যাপ সাইট উইজেট',    icon: Globe },
+  'website_widget':       { en: 'Website Live Chat Widget',   bn: 'ওয়েবসাইট লাইভ চ্যাট উইজেট',  icon: Globe },
+  'instagram_dm':         { en: 'Instagram DM Integration',   bn: 'ইন্সটাগ্রাম ডিএম ইন্টিগ্রেশন', icon: Globe },
+  'lead_manage':          { en: 'Leads CRM',                  bn: 'লিডস সিআরএম',                icon: BarChart2 },
+  'commerce':             { en: 'Products & Orders',          bn: 'প্রোডাক্টস ও অর্ডারস',        icon: Package },
+  'broadcast':            { en: 'Broadcast Campaigns',        bn: 'ব্রডকাস্ট ক্যাম্পেইন',         icon: Megaphone },
+  'team_management':      { en: 'Team Members & Roles',       bn: 'টিম মেম্বারস ও রোলস',         icon: Users },
+  'contact_labels':       { en: 'Custom Contact Labels',      bn: 'কাস্টম কন্টাক্ট লেবেল',       icon: Tag },
+  // Backward compatibility keys
+  'instagram':            { en: 'Instagram DM Integration',   bn: 'ইন্সটাগ্রাম ডিএম ইন্টিগ্রেশন', icon: Globe },
+  'team':                 { en: 'Team Members & Roles',       bn: 'টিম মেম্বারস ও রোলস',         icon: Users },
+  'labels':               { en: 'Custom Contact Labels',      bn: 'কাস্টম কন্টাক্ট লেবেল',       icon: Tag },
+  'support_ai':           { en: 'Platform Support AI Widget', bn: 'প্ল্যাটফর্ম সাপোর্ট এআই',     icon: Headphones },
+  'own_api':              { en: 'Bring Your Own API Key',     bn: 'নিজস্ব এপিআই কি',             icon: ShieldCheck },
+  'storage':              { en: 'File Storage',               bn: 'ফাইল স্টোরেজ',                icon: HardDrive },
+  'analytics':            { en: 'Analytics & Reports',       bn: 'অ্যানালিটিক্স ও রিপোর্ট',      icon: BarChart2 },
 };
 
 export default function SubscriptionSettingsPage() {

@@ -72,6 +72,19 @@ export class TenantsController {
     return this.tenantsService.customizePlan(id, customizationData, actorUserId);
   }
 
+  @Post(':id/customize-plan')
+  @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
+  @Roles('superadmin')
+  @RequirePermissions('manage:tenants')
+  customizePlanPost(
+    @Param('id') id: string,
+    @Body() customizationData: any,
+    @Req() req: any,
+  ) {
+    const actorUserId = req.user.userId;
+    return this.tenantsService.customizePlan(id, customizationData, actorUserId);
+  }
+
   @Post(':id/reset-customizations')
   @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
   @Roles('superadmin')

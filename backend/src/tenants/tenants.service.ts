@@ -359,9 +359,22 @@ export class TenantsService {
       }
     }
 
-    // Validation 2: numeric limits minimum bounds
-    if (data.customSeatLimit !== undefined && data.customSeatLimit !== null && parseInt(String(data.customSeatLimit), 10) < 1) {
-      throw new BadRequestException('Seat limit must be at least 1.');
+    // Validation 2: customSeatLimit cannot be less than current active team members
+    if (data.customSeatLimit !== undefined && data.customSeatLimit !== null) {
+      const newSeats = parseInt(String(data.customSeatLimit), 10);
+      if (!isNaN(newSeats)) {
+        if (newSeats < 1) {
+          throw new BadRequestException('Seat limit must be at least 1.');
+        }
+        const activeUsersCount = await this.prisma.user.count({
+          where: { tenantId: id }
+        });
+        if (newSeats < activeUsersCount) {
+          throw new BadRequestException(
+            `Cannot reduce seat limit to ${newSeats}. Tenant currently has ${activeUsersCount} active team members.`
+          );
+        }
+      }
     }
     if (data.customAiQuota !== undefined && data.customAiQuota !== null && parseInt(String(data.customAiQuota), 10) < 0) {
       throw new BadRequestException('AI quota cannot be negative.');
