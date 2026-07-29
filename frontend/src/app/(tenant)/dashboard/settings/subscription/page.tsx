@@ -115,60 +115,95 @@ export default function SubscriptionSettingsPage() {
         </p>
       </div>
 
-      {/* Current Subscription Card */}
-      <div className={`rounded-2xl p-5 border ${
-        currentSubscription
-          ? 'bg-gradient-to-r from-primary/15 via-primary/5 to-secondary/10 border-primary/30'
-          : 'bg-surface/50 border-surface-hover'
-      } backdrop-blur-xl`}>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-widest text-primary mb-1">
-              {language === 'en' ? 'Current Plan' : 'বর্তমান প্ল্যান'}
-            </p>
-            <h2 className="text-3xl font-black text-foreground">
-              {quotaData?.customPlanName || quotaData?.basePlan?.name || (language === 'en' ? 'Free Tier' : 'ফ্রি টায়ার')}
-            </h2>
-            {currentSubscription ? (
-              <div className="flex flex-wrap items-center gap-3 mt-2">
-                <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
-                  currentSubscription.status === 'active' ? 'bg-green-500/15 text-green-400' :
-                  currentSubscription.status === 'trialing' ? 'bg-blue-500/15 text-blue-400' :
-                  'bg-orange-500/15 text-orange-400'
-                }`}>
-                  {currentSubscription.status?.toUpperCase()}
-                </span>
-                <span className="text-[12px] text-zinc-400">
-                  {language === 'en' ? 'Renews:' : 'রিনিউ হবে:'}{' '}
-                  <span className="text-zinc-200 font-medium">
-                    {new Date(currentSubscription.currentPeriodEnd).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                  </span>
-                </span>
-              </div>
-            ) : (
-              <p className="text-[12px] text-zinc-400 mt-2">
-                {language === 'en' ? 'No active subscription. Upgrade to unlock more features.' : 'কোনো সক্রিয় সাবস্ক্রিপশন নেই। আরো ফিচার পেতে আপগ্রেড করুন।'}
+        {/* Current Subscription Card */}
+        <div className={`rounded-2xl p-5 border ${
+          currentSubscription
+            ? 'bg-gradient-to-r from-primary/15 via-primary/5 to-secondary/10 border-primary/30'
+            : 'bg-surface/50 border-surface-hover'
+        } backdrop-blur-xl`}>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-widest text-primary mb-1">
+                {language === 'en' ? 'Current Plan' : 'বর্তমান প্ল্যান'}
               </p>
+              <div className="flex items-center gap-2">
+                <h2 className="text-3xl font-black text-foreground">
+                  {quotaData?.customPlanName || quotaData?.basePlan?.name || (language === 'en' ? 'Free Tier' : 'ফ্রি টায়ার')}
+                </h2>
+                {(quotaData?.customPlanName || (quotaData?.basePlan && (
+                  quotaData.messageQuota !== quotaData.basePlan.messageQuota ||
+                  quotaData.aiQuota !== quotaData.basePlan.aiQuota ||
+                  quotaData.seatLimit !== quotaData.basePlan.seatLimit ||
+                  quotaData.whatsappLimit !== quotaData.basePlan.whatsappLimit
+                ))) && (
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                    {language === 'en' ? 'CUSTOMIZED' : 'কাস্টমাইজড'}
+                  </span>
+                )}
+              </div>
+              {currentSubscription ? (
+                <div className="flex flex-wrap items-center gap-3 mt-2">
+                  <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+                    currentSubscription.status === 'active' ? 'bg-green-500/15 text-green-400' :
+                    currentSubscription.status === 'trialing' ? 'bg-blue-500/15 text-blue-400' :
+                    'bg-orange-500/15 text-orange-400'
+                  }`}>
+                    {currentSubscription.status?.toUpperCase()}
+                  </span>
+                  <span className="text-[12px] text-zinc-400">
+                    {language === 'en' ? 'Renews:' : 'রিনিউ হবে:'}{' '}
+                    <span className="text-zinc-200 font-medium">
+                      {new Date(currentSubscription.currentPeriodEnd).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    </span>
+                  </span>
+                </div>
+              ) : (
+                <p className="text-[12px] text-zinc-400 mt-2">
+                  {language === 'en' ? 'No active subscription. Upgrade to unlock more features.' : 'কোনো সক্রিয় সাবস্ক্রিপশন নেই। আরো ফিচার পেতে আপগ্রেড করুন।'}
+                </p>
+              )}
+            </div>
+
+            {/* Quick Quotas */}
+            {quotaData && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-center">
+                {[
+                  { label: language === 'en' ? 'Messages' : 'মেসেজ', value: formatNumber(quotaData.messageQuota), icon: MessageSquare },
+                  { label: language === 'en' ? 'AI Credits' : 'এআই ক্রেডিট', value: formatNumber(quotaData.aiQuota), icon: Bot },
+                  { label: language === 'en' ? 'Seats' : 'সিট', value: formatNumber(quotaData.seatLimit), icon: Users },
+                ].map(({ label, value, icon: Icon }) => (
+                  <div key={label} className="bg-surface/60 backdrop-blur-sm border border-surface-hover rounded-xl px-3 py-2">
+                    <Icon className="w-3.5 h-3.5 text-primary mx-auto mb-0.5" />
+                    <div className="text-lg font-black text-foreground">{value}</div>
+                    <div className="text-[10px] text-zinc-400">{label}/mo</div>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
 
-          {/* Quick Quotas */}
-          {quotaData && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-center">
-              {[
-                { label: language === 'en' ? 'Messages' : 'মেসেজ', value: formatNumber(quotaData.messageQuota), icon: MessageSquare },
-                { label: language === 'en' ? 'AI Credits' : 'এআই ক্রেডিট', value: formatNumber(quotaData.aiQuota), icon: Bot },
-                { label: language === 'en' ? 'Seats' : 'সিট', value: formatNumber(quotaData.seatLimit), icon: Users },
-              ].map(({ label, value, icon: Icon }) => (
-                <div key={label} className="bg-surface/60 backdrop-blur-sm border border-surface-hover rounded-xl px-3 py-2">
-                  <Icon className="w-3.5 h-3.5 text-primary mx-auto mb-0.5" />
-                  <div className="text-lg font-black text-foreground">{value}</div>
-                  <div className="text-[10px] text-zinc-400">{label}/mo</div>
+          {(quotaData?.customPlanName || (quotaData?.basePlan && (
+            quotaData.messageQuota !== quotaData.basePlan.messageQuota ||
+            quotaData.aiQuota !== quotaData.basePlan.aiQuota ||
+            quotaData.seatLimit !== quotaData.basePlan.seatLimit ||
+            quotaData.whatsappLimit !== quotaData.basePlan.whatsappLimit
+          ))) && (
+            <div className="mt-4 flex items-center justify-between p-3 bg-amber-500/10 border border-amber-500/25 rounded-xl">
+              <div className="flex items-center gap-2">
+                <Star className="w-4 h-4 text-amber-400 shrink-0 fill-amber-400" />
+                <div>
+                  <div className="text-xs font-bold text-amber-300">
+                    {language === 'en' ? 'Custom Plan Active' : 'কাস্টম প্ল্যান সক্রিয়'}
+                  </div>
+                  <div className="text-[11px] text-amber-400/80">
+                    {language === 'en'
+                      ? 'Your plan limits have been customized by ZiniChat support for your business needs.'
+                      : 'আপনার ব্যবসার সুবিধার জন্য জিনিচ্যাট সাপোর্ট থেকে কাস্টম লিমিট সেট করা হয়েছে।'}
+                  </div>
                 </div>
-              ))}
+              </div>
             </div>
           )}
-        </div>
 
         {currentSubscription?.status === 'past_due' && (
           <div className="mt-3 flex items-center gap-2 p-2.5 bg-red-500/10 border border-red-500/20 rounded-xl">

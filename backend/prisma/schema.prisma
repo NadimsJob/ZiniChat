@@ -44,7 +44,9 @@ model Tenant {
   customContactsLimit       Int?
   customAllowByok           Boolean?
   customFeatures            Json?
-  customAiConfigId          String?  @db.Uuid
+  customAiConfigId          String?   @db.Uuid
+  customPlanUpdatedAt       DateTime?
+  customPlanUpdatedBy       String?   @db.Uuid
 
   createdAt DateTime @default(now())
 

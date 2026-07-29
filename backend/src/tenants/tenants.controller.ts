@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Param, Body, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Patch, Post, Param, Body, UseGuards, Req } from '@nestjs/common';
 import { TenantsService } from './tenants.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -15,12 +15,27 @@ export class TenantsController {
     return this.tenantsService.getPublicClientLogos();
   }
 
+  @Get('me/effective-plan')
+  @UseGuards(JwtAuthGuard)
+  getEffectivePlan(@Req() req: any) {
+    const tenantId = req.user.tenantId;
+    return this.tenantsService.getEffectivePlan(tenantId);
+  }
+
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
   @Roles('superadmin')
   @RequirePermissions('manage:tenants')
   findAll() {
     return this.tenantsService.findAll();
+  }
+
+  @Get(':id/customization')
+  @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
+  @Roles('superadmin')
+  @RequirePermissions('manage:tenants')
+  getForCustomizeModal(@Param('id') id: string) {
+    return this.tenantsService.getForCustomizeModal(id);
   }
 
   @Get(':id')
@@ -57,6 +72,18 @@ export class TenantsController {
     return this.tenantsService.customizePlan(id, customizationData, actorUserId);
   }
 
+  @Post(':id/reset-customizations')
+  @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
+  @Roles('superadmin')
+  @RequirePermissions('manage:tenants')
+  resetCustomizations(
+    @Param('id') id: string,
+    @Req() req: any,
+  ) {
+    const actorUserId = req.user.userId;
+    return this.tenantsService.resetCustomizations(id, actorUserId);
+  }
+
   @Patch(':id/ai-config')
   @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
   @Roles('superadmin')
@@ -70,4 +97,5 @@ export class TenantsController {
     return this.tenantsService.updateAiConfig(id, customAiConfigId, actorUserId);
   }
 }
+
 

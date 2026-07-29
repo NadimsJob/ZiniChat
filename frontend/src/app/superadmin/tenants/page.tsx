@@ -119,8 +119,13 @@ export default function TenantsPage() {
     }
   };
 
-  const openCustomizeModal = (tenant: any) => {
+  const [modalUsage, setModalUsage] = useState<any>(null);
+  const [modalLoading, setModalLoading] = useState(false);
+
+  const openCustomizeModal = async (tenant: any) => {
     setEditingTenant(tenant);
+    setModalLoading(true);
+
     const activeFeatures = tenant.customFeatures !== null 
       ? parseFeaturesArray(tenant.customFeatures) 
       : parseFeaturesArray(tenant.basePlan?.features);
@@ -142,47 +147,45 @@ export default function TenantsPage() {
       billingCycleStart: tenant.trialEndsAt ? new Date(tenant.trialEndsAt).toISOString().split('T')[0] : '',
       customAllowByok: tenant.customAllowByok ?? (tenant.basePlan?.allowByok ?? false),
       customFeatures: activeFeatures,
-      hasFeaturesOverride: true,
+      hasFeaturesOverride: tenant.customFeatures !== null,
     });
+
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/tenants/${tenant.id}/customization`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setModalUsage(data.currentUsage);
+      }
+    } catch (e) {
+      console.error('Failed to load customization details:', e);
+    } finally {
+      setModalLoading(false);
+    }
   };
 
   const handleResetCustomPlan = async () => {
     if (!editingTenant || !confirm('Are you sure you want to reset this tenant to default plan limits?')) return;
     setSaving(true);
     
-    const payload = {
-      customPlanName: null,
-      customPriceUsd: null,
-      customMessageQuota: null,
-      customAiQuota: null,
-      customStorageLimitMb: null,
-      customSeatLimit: null,
-      customWhatsappLimit: null,
-      customMessengerLimit: null,
-      customInstagramLimit: null,
-      customProductCatalogLimit: null,
-      customContactsLimit: null,
-      customFeatures: null,
-      customAllowByok: null,
-    };
-
     try {
       const token = Cookies.get('access_token');
-      const res = await fetch(`${API}/tenants/${editingTenant.id}/customize`, {
-        method: 'PATCH',
+      const res = await fetch(`${API}/tenants/${editingTenant.id}/reset-customizations`, {
+        method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
+        }
       });
       
       if (res.ok) {
-        toast.success('Reset to default plan successfully');
+        toast.success('Reset to default plan limits successfully');
         setEditingTenant(null);
         fetchTenantsAndConfigs();
       } else {
-        toast.error('Failed to reset custom plan');
+        const errData = await res.json().catch(() => ({}));
+        toast.error(errData.message || 'Failed to reset custom plan');
       }
     } catch (error) {
       toast.error('An error occurred');
@@ -196,7 +199,6 @@ export default function TenantsPage() {
     if (!editingTenant) return;
     setSaving(true);
     
-    // Clean up empty strings to undefined/null for API
     const payload: any = {
       logoUrl: customData.logoUrl || null,
     };
@@ -217,10 +219,8 @@ export default function TenantsPage() {
     }
     if (customData.billingCycleStart) payload.billingCycleStart = customData.billingCycleStart;
     
-    // Always include features if the override flag is true, otherwise pass null to remove override
     payload.customFeatures = customData.hasFeaturesOverride ? customData.customFeatures : null;
     payload.customAllowByok = customData.hasFeaturesOverride ? customData.customAllowByok : null;
-
 
     try {
       const token = Cookies.get('access_token');
@@ -234,11 +234,12 @@ export default function TenantsPage() {
       });
       
       if (res.ok) {
-        toast.success('Custom plan saved successfully');
+        toast.success('Custom plan saved & notification sent to owner');
         setEditingTenant(null);
         fetchTenantsAndConfigs();
       } else {
-        toast.error('Failed to save custom plan');
+        const errData = await res.json().catch(() => ({}));
+        toast.error(errData.message || 'Failed to save custom plan');
       }
     } catch (error) {
       toast.error('An error occurred');
@@ -428,7 +429,10 @@ export default function TenantsPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-zinc-400">Message Quota /mo</label>
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-medium text-zinc-400">Message Quota /mo</label>
+                    {modalUsage && <span className="text-[10px] text-emerald-400">Used: {modalUsage.messagesUsed}</span>}
+                  </div>
                   <input
                     type="number"
                     value={customData.customMessageQuota}
@@ -438,7 +442,10 @@ export default function TenantsPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-zinc-400">AI Quota /mo</label>
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-medium text-zinc-400">AI Quota /mo</label>
+                    {modalUsage && <span className="text-[10px] text-emerald-400">Used: {modalUsage.aiUsed}</span>}
+                  </div>
                   <input
                     type="number"
                     value={customData.customAiQuota}
@@ -448,7 +455,10 @@ export default function TenantsPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-zinc-400">Team Members</label>
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-medium text-zinc-400">Team Members</label>
+                    {modalUsage && <span className="text-[10px] text-emerald-400">Active: {modalUsage.seatsUsed}</span>}
+                  </div>
                   <input
                     type="number"
                     value={customData.customSeatLimit}
@@ -458,7 +468,10 @@ export default function TenantsPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-zinc-400">WhatsApp Limit</label>
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-medium text-zinc-400">WhatsApp Limit</label>
+                    {modalUsage && <span className="text-[10px] text-emerald-400">Active: {modalUsage.currentWhatsapp}</span>}
+                  </div>
                   <input
                     type="number"
                     value={customData.customWhatsappLimit}
@@ -468,7 +481,10 @@ export default function TenantsPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-zinc-400">Messenger Limit</label>
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-medium text-zinc-400">Messenger Limit</label>
+                    {modalUsage && <span className="text-[10px] text-emerald-400">Active: {modalUsage.currentMessenger}</span>}
+                  </div>
                   <input
                     type="number"
                     value={customData.customMessengerLimit}
@@ -478,7 +494,10 @@ export default function TenantsPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-zinc-400">Instagram Limit</label>
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-medium text-zinc-400">Instagram Limit</label>
+                    {modalUsage && <span className="text-[10px] text-emerald-400">Active: {modalUsage.currentInstagram}</span>}
+                  </div>
                   <input
                     type="number"
                     value={customData.customInstagramLimit}
@@ -488,7 +507,10 @@ export default function TenantsPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-zinc-400">Products Limit</label>
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-medium text-zinc-400">Products Limit</label>
+                    {modalUsage && <span className="text-[10px] text-emerald-400 font-mono">Count: {modalUsage.productsCount}</span>}
+                  </div>
                   <input
                     type="number"
                     value={customData.customProductCatalogLimit}
@@ -498,7 +520,10 @@ export default function TenantsPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-zinc-400">Contacts Limit (Empty = ∞)</label>
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-medium text-zinc-400">Contacts Limit</label>
+                    {modalUsage && <span className="text-[10px] text-emerald-400 font-mono">Saved: {modalUsage.contactsCount}</span>}
+                  </div>
                   <input
                     type="number"
                     value={customData.customContactsLimit}
@@ -508,7 +533,10 @@ export default function TenantsPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-zinc-400">Storage Limit (MB)</label>
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-medium text-zinc-400">Storage Limit (MB)</label>
+                    {modalUsage && <span className="text-[10px] text-emerald-400">Used: {modalUsage.storageUsedMb} MB</span>}
+                  </div>
                   <input
                     type="number"
                     value={customData.customStorageLimitMb}

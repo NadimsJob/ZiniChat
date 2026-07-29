@@ -551,4 +551,10 @@ export class SmtpService {
     const bodyText = this.replacePlaceholders(config.broadcastCompletedBody || TEMPLATES.broadcastCompletedBody, vars);
     await this.sendMail({ to: toEmail, subject, plainText: bodyText });
   }
+
+  async triggerPlanCustomizedEmail(toEmail: string, tenantName: string, customDetails: string) {
+    const subject = `Your ZiniChat plan limits have been updated for ${tenantName}`;
+    const plainText = `Hi ${tenantName},\n\nYour ZiniChat subscription plan limits have been customized by support.\n\nUpdated Limits:\n${customDetails}\n\nLog in to your dashboard to view your updated plan details.\n\nBest regards,\nZiniChat Team`;
+    await this.sendMail({ to: toEmail, subject, plainText });
+  }
 }

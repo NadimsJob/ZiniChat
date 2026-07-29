@@ -1,9 +1,18 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { BillingService } from '../billing/billing.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { SmtpService } from '../smtp/smtp.service';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class TenantsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private billingService: BillingService,
+    private notificationsService: NotificationsService,
+    private smtpService: SmtpService,
+  ) {}
 
   async findAll() {
     const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
@@ -44,8 +53,21 @@ export class TenantsService {
       const latestSub = t.subscriptions[0];
       const effectivePlan = activeSub?.plan || defaultPlan || latestSub?.plan || null;
       const subStatus = activeSub ? activeSub.status : (latestSub ? latestSub.status : 'none');
-      const aiLimit = effectivePlan?.aiQuota || 50;
+      const aiLimit = t.customAiQuota ?? effectivePlan?.aiQuota ?? 50;
       const aiUsed = t.usageLogs.length;
+
+      const isCustomized = t.customFeatures !== null || 
+        t.customPriceUsd !== null || 
+        t.customMessageQuota !== null || 
+        t.customPlanName !== null || 
+        t.customSeatLimit !== null || 
+        t.customWhatsappLimit !== null ||
+        t.customMessengerLimit !== null ||
+        t.customInstagramLimit !== null ||
+        t.customStorageLimitMb !== null ||
+        t.customProductCatalogLimit !== null ||
+        t.customContactsLimit !== null ||
+        t.customAllowByok !== null;
 
       return {
         id: t.id,
@@ -76,6 +98,9 @@ export class TenantsService {
         customInstagramLimit: t.customInstagramLimit,
         customAllowByok: t.customAllowByok,
         customFeatures: t.customFeatures,
+        customPlanUpdatedAt: t.customPlanUpdatedAt,
+        customPlanUpdatedBy: t.customPlanUpdatedBy,
+        isCustomized,
         trialEndsAt: t.trialEndsAt,
         basePlan: effectivePlan
       };
@@ -103,8 +128,6 @@ export class TenantsService {
         logoUrl: t.logoUrl || null,
       }));
   }
-
-
 
   async findOne(id: string) {
     const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
@@ -139,7 +162,6 @@ export class TenantsService {
       _count: { _all: true }
     });
 
-    // Convert BigInt to string/number to avoid JSON serialization errors
     return {
       ...tenant,
       storageUsedBytes: Number(tenant.storageUsedBytes),
@@ -151,13 +173,148 @@ export class TenantsService {
     };
   }
 
+  async getForCustomizeModal(id: string) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id },
+      include: {
+        users: {
+          select: { id: true, name: true, email: true, role: true }
+        },
+        subscriptions: {
+          orderBy: { currentPeriodEnd: 'desc' },
+          include: { plan: true }
+        }
+      }
+    });
+
+    if (!tenant) throw new NotFoundException('Tenant not found');
+
+    const quotas = await this.billingService.getTenantQuotas(id);
+    const activeSub = tenant.subscriptions.find((s: any) => s.status === 'active' || s.status === 'trialing');
+    const basePlan = activeSub?.plan || tenant.subscriptions[0]?.plan || null;
+
+    // Current usage calculations
+    const { periodStart } = await this.billingService.getActivePeriod(id);
+    
+    const [directMessages, broadcastMessages, aiUsed, productsCount, contactsCount] = await Promise.all([
+      this.prisma.message.count({
+        where: { direction: 'outbound', conversation: { tenantId: id }, createdAt: { gte: periodStart } }
+      }),
+      this.prisma.broadcastRecipient.count({
+        where: { broadcast: { tenantId: id, createdAt: { gte: periodStart } }, status: { notIn: ['pending', 'failed'] } }
+      }),
+      this.prisma.aiUsageLog.count({
+        where: { tenantId: id, createdAt: { gte: periodStart } }
+      }),
+      this.prisma.product.count({ where: { tenantId: id } }),
+      this.prisma.contact.count({ where: { tenantId: id } })
+    ]);
+
+    const messagesUsed = directMessages + broadcastMessages;
+    const seatsUsed = tenant.users.length;
+    const storageUsedMb = Math.round(Number(tenant.storageUsedBytes) / (1024 * 1024));
+
+    return {
+      tenant: {
+        id: tenant.id,
+        businessName: tenant.businessName,
+        brandName: tenant.brandName,
+        logoUrl: tenant.logoUrl,
+        customPlanName: tenant.customPlanName,
+        customPriceUsd: tenant.customPriceUsd,
+        customMessageQuota: tenant.customMessageQuota,
+        customAiQuota: tenant.customAiQuota,
+        customSeatLimit: tenant.customSeatLimit,
+        customStorageLimitMb: tenant.customStorageLimitMb,
+        customWhatsappLimit: tenant.customWhatsappLimit,
+        customMessengerLimit: tenant.customMessengerLimit,
+        customInstagramLimit: tenant.customInstagramLimit,
+        customProductCatalogLimit: tenant.customProductCatalogLimit,
+        customContactsLimit: tenant.customContactsLimit,
+        customAllowByok: tenant.customAllowByok,
+        customFeatures: tenant.customFeatures,
+        customPlanUpdatedAt: tenant.customPlanUpdatedAt,
+        customPlanUpdatedBy: tenant.customPlanUpdatedBy,
+        trialEndsAt: tenant.trialEndsAt,
+      },
+      basePlan,
+      currentUsage: {
+        seatsUsed,
+        messagesUsed,
+        aiUsed,
+        storageUsedMb,
+        currentWhatsapp: quotas.currentWhatsapp,
+        currentMessenger: quotas.currentMessenger,
+        currentInstagram: quotas.currentInstagram,
+        currentWebsiteWidget: quotas.currentWebsiteWidget,
+        productsCount,
+        contactsCount,
+      }
+    };
+  }
+
+  async getEffectivePlan(tenantId: string) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      include: {
+        users: { where: { role: { in: ['owner', 'admin'] } }, select: { name: true, email: true } }
+      }
+    });
+
+    if (!tenant) throw new NotFoundException('Tenant not found');
+
+    const quotas = await this.billingService.getTenantQuotas(tenantId);
+    
+    // Resolve email of superadmin who updated custom plan if set
+    let customPlanUpdatedByEmail: string | null = null;
+    if (tenant.customPlanUpdatedBy) {
+      const actor = await this.prisma.user.findUnique({
+        where: { id: tenant.customPlanUpdatedBy },
+        select: { email: true, name: true }
+      });
+      if (actor) customPlanUpdatedByEmail = actor.email;
+    }
+
+    const isCustomized = tenant.customFeatures !== null || 
+      tenant.customPriceUsd !== null || 
+      tenant.customMessageQuota !== null || 
+      tenant.customPlanName !== null || 
+      tenant.customSeatLimit !== null || 
+      tenant.customWhatsappLimit !== null ||
+      tenant.customMessengerLimit !== null ||
+      tenant.customInstagramLimit !== null ||
+      tenant.customStorageLimitMb !== null ||
+      tenant.customProductCatalogLimit !== null ||
+      tenant.customContactsLimit !== null ||
+      tenant.customAllowByok !== null;
+
+    return {
+      isCustomized,
+      customPlanUpdatedAt: tenant.customPlanUpdatedAt,
+      customPlanUpdatedByEmail,
+      planName: tenant.customPlanName || quotas.basePlan?.name || 'Standard Plan',
+      seatLimit: quotas.seatLimit,
+      whatsappLimit: quotas.whatsappLimit,
+      messengerLimit: quotas.messengerLimit,
+      instagramLimit: quotas.instagramLimit,
+      websiteWidgetLimit: quotas.websiteWidgetLimit,
+      messageQuota: quotas.messageQuota,
+      aiQuota: quotas.aiQuota,
+      storageLimitMb: quotas.storageLimitMb,
+      productCatalogLimit: quotas.productCatalogLimit,
+      contactsLimit: quotas.contactsLimit,
+      allowByok: quotas.allowByok,
+      features: quotas.features,
+      basePlan: quotas.basePlan,
+    };
+  }
+
   async updateStatus(id: string, status: string, actorUserId: string) {
     const tenant = await this.prisma.tenant.update({
       where: { id },
       data: { status },
     });
 
-    // Log the audit action
     await this.prisma.auditLog.create({
       data: {
         actorUserId,
@@ -171,13 +328,57 @@ export class TenantsService {
   }
 
   async customizePlan(id: string, data: any, actorUserId: string) {
-    const updateData: any = {};
-    if (data.logoUrl !== undefined) updateData.logoUrl = data.logoUrl;
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id },
+      include: {
+        users: { where: { role: { in: ['owner', 'admin'] } }, select: { id: true, email: true, name: true } }
+      }
+    });
 
+    if (!tenant) throw new NotFoundException('Tenant not found');
+
+    // Validation 1: customMessageQuota cannot be less than current usage this period
+    if (data.customMessageQuota !== undefined && data.customMessageQuota !== null) {
+      const newQuota = parseInt(String(data.customMessageQuota), 10);
+      if (!isNaN(newQuota)) {
+        const { periodStart } = await this.billingService.getActivePeriod(id);
+        const [directMessages, broadcastMessages] = await Promise.all([
+          this.prisma.message.count({
+            where: { direction: 'outbound', conversation: { tenantId: id }, createdAt: { gte: periodStart } }
+          }),
+          this.prisma.broadcastRecipient.count({
+            where: { broadcast: { tenantId: id, createdAt: { gte: periodStart } }, status: { notIn: ['pending', 'failed'] } }
+          })
+        ]);
+        const currentUsage = directMessages + broadcastMessages;
+        if (newQuota < currentUsage) {
+          throw new BadRequestException(
+            `Cannot reduce message quota to ${newQuota}. Tenant has already used ${currentUsage} messages in the current billing period.`
+          );
+        }
+      }
+    }
+
+    // Validation 2: numeric limits minimum bounds
+    if (data.customSeatLimit !== undefined && data.customSeatLimit !== null && parseInt(String(data.customSeatLimit), 10) < 1) {
+      throw new BadRequestException('Seat limit must be at least 1.');
+    }
+    if (data.customAiQuota !== undefined && data.customAiQuota !== null && parseInt(String(data.customAiQuota), 10) < 0) {
+      throw new BadRequestException('AI quota cannot be negative.');
+    }
+    if (data.customStorageLimitMb !== undefined && data.customStorageLimitMb !== null && parseInt(String(data.customStorageLimitMb), 10) < 10) {
+      throw new BadRequestException('Storage limit must be at least 10 MB.');
+    }
+
+    const updateData: any = {
+      customPlanUpdatedAt: new Date(),
+      customPlanUpdatedBy: actorUserId,
+    };
+
+    if (data.logoUrl !== undefined) updateData.logoUrl = data.logoUrl;
     if (data.businessName !== undefined) updateData.businessName = data.businessName;
     if (data.brandName !== undefined) updateData.brandName = data.brandName;
     if (data.customPlanName !== undefined) updateData.customPlanName = data.customPlanName;
-
     if (data.customPriceUsd !== undefined) updateData.customPriceUsd = data.customPriceUsd;
     if (data.customMessageQuota !== undefined) updateData.customMessageQuota = data.customMessageQuota;
     if (data.customAiQuota !== undefined) updateData.customAiQuota = data.customAiQuota;
@@ -189,11 +390,11 @@ export class TenantsService {
     if (data.customWebsiteWidgetLimit !== undefined) updateData.customWebsiteWidgetLimit = data.customWebsiteWidgetLimit;
     if (data.customProductCatalogLimit !== undefined) updateData.customProductCatalogLimit = data.customProductCatalogLimit;
     if (data.customContactsLimit !== undefined) updateData.customContactsLimit = data.customContactsLimit;
-    if (data.customFeatures !== undefined) updateData.customFeatures = data.customFeatures;
+    if (data.customFeatures !== undefined) updateData.customFeatures = data.customFeatures === null ? Prisma.DbNull : data.customFeatures;
     if (data.customAllowByok !== undefined) updateData.customAllowByok = data.customAllowByok;
-    if (data.billingCycleStart !== undefined) updateData.trialEndsAt = new Date(data.billingCycleStart); // using trialEndsAt to mark billing start if needed or just use it to track overriding.
+    if (data.billingCycleStart !== undefined) updateData.trialEndsAt = new Date(data.billingCycleStart);
 
-    const tenant = await this.prisma.tenant.update({
+    const updatedTenant = await this.prisma.tenant.update({
       where: { id },
       data: updateData,
     });
@@ -207,7 +408,96 @@ export class TenantsService {
       },
     });
 
-    return tenant;
+    // Notify tenant admins/owners
+    const notificationTitle = 'Your Subscription Plan Limits Have Been Updated';
+    const notificationMsg = `ZiniChat Support has updated your subscription plan limits. Check your Subscription settings for details.`;
+
+    const customDetailsList: string[] = [];
+    if (data.customSeatLimit !== undefined) customDetailsList.push(`• Team Members: ${data.customSeatLimit}`);
+    if (data.customMessageQuota !== undefined) customDetailsList.push(`• Message Quota: ${data.customMessageQuota}/mo`);
+    if (data.customAiQuota !== undefined) customDetailsList.push(`• AI Responses: ${data.customAiQuota}/mo`);
+    if (data.customWhatsappLimit !== undefined) customDetailsList.push(`• WhatsApp Channels: ${data.customWhatsappLimit}`);
+    if (data.customMessengerLimit !== undefined) customDetailsList.push(`• Messenger Channels: ${data.customMessengerLimit}`);
+    if (data.customInstagramLimit !== undefined) customDetailsList.push(`• Instagram Channels: ${data.customInstagramLimit}`);
+    if (data.customStorageLimitMb !== undefined) customDetailsList.push(`• Storage: ${data.customStorageLimitMb} MB`);
+    
+    const customDetailsStr = customDetailsList.length > 0 ? customDetailsList.join('\n') : '• Custom plan overrides applied.';
+
+    for (const u of tenant.users) {
+      try {
+        await this.notificationsService.createNotification(u.id, notificationTitle, notificationMsg, 'info');
+      } catch (e) {
+        console.error(`Failed to create notification for user ${u.id}:`, e);
+      }
+
+      if (u.email) {
+        try {
+          await this.smtpService.triggerPlanCustomizedEmail(u.email, tenant.businessName, customDetailsStr);
+        } catch (e) {
+          console.error(`Failed to send customization email to ${u.email}:`, e);
+        }
+      }
+    }
+
+    return updatedTenant;
+  }
+
+  async resetCustomizations(id: string, actorUserId: string) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id },
+      include: {
+        users: { where: { role: { in: ['owner', 'admin'] } }, select: { id: true, email: true } }
+      }
+    });
+
+    if (!tenant) throw new NotFoundException('Tenant not found');
+
+    const resetData = {
+      customPlanName: null,
+      customPriceUsd: null,
+      customMessageQuota: null,
+      customAiQuota: null,
+      customStorageLimitMb: null,
+      customSeatLimit: null,
+      customWhatsappLimit: null,
+      customMessengerLimit: null,
+      customInstagramLimit: null,
+      customWebsiteWidgetLimit: null,
+      customProductCatalogLimit: null,
+      customContactsLimit: null,
+      customFeatures: Prisma.DbNull,
+      customAllowByok: null,
+      customPlanUpdatedAt: new Date(),
+      customPlanUpdatedBy: actorUserId,
+    };
+
+    const updatedTenant = await this.prisma.tenant.update({
+      where: { id },
+      data: resetData,
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        actorUserId,
+        targetTenantId: id,
+        action: 'RESET_TENANT_CUSTOM_PLAN',
+        metadataJson: { resetToDefault: true },
+      },
+    });
+
+    // Notify tenant admins/owners
+    for (const u of tenant.users) {
+      try {
+        await this.notificationsService.createNotification(
+          u.id,
+          'Plan Customizations Reset to Default',
+          'Your account limits have been reset to your base plan default values.',
+          'info'
+        );
+      } catch (e) {}
+    }
+
+    return updatedTenant;
   }
 
   async updateAiConfig(id: string, customAiConfigId: string | null, actorUserId: string) {
@@ -228,3 +518,4 @@ export class TenantsService {
     return tenant;
   }
 }
+

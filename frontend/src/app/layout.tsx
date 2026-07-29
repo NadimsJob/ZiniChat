@@ -14,8 +14,39 @@ const hind = Hind_Siliguri({
 });
 
 export const metadata: Metadata = {
-  title: "ZiniChat | Omnichannel AI Business Assistant",
-  description: "ZiniChat - Omnichannel AI Assistant Platform",
+  title: "ZiniChat | Best AI Chat, AI Chatbot & Chat Assistant Platform",
+  description: "ZiniChat is the ultimate AI Chatbot and Chat Assistant for your business. Automate customer support with WhatsApp Official API, Meta API, and a 5 min setup. Start your free trial today!",
+  keywords: [
+    "chat", "ai chat", "ai chatbot", "chat assistent", "chat assistant", 
+    "business chat", "customer support bot", "WhatsApp chatbot", 
+    "ZiniChat", "omnichannel ai", "whatsapp official api", "meta api", 
+    "5 min setup", "auto reply", "selling agent", "ai sales agent", 
+    "automated customer support", "free trial", "try for free", "free ai chatbot",
+    "ai chatbot bangladesh", "whatsapp auto reply bd", "facebook auto reply bd", "business automation bd",
+    "এআই চ্যাটবট", "অটো রিপ্লাই", "চ্যাট এসিস্ট্যান্ট", "কাস্টমার সাপোর্ট", "বিজনেস চ্যাট"
+  ],
+  openGraph: {
+    title: "ZiniChat | AI Chatbot & Chat Assistant",
+    description: "Automate your business with the ultimate AI Chatbot and Chat Assistant. Fast replies 24/7 on WhatsApp, Messenger, and Instagram. 5 Min Setup. Try it for free!",
+    url: "https://zinichat.com",
+    siteName: "ZiniChat",
+    images: [
+      {
+        url: "/logo.png",
+        width: 800,
+        height: 600,
+        alt: "ZiniChat AI Chatbot",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ZiniChat | AI Chatbot & Chat Assistant",
+    description: "Automate your business with the ultimate AI Chatbot and Chat Assistant.",
+    images: ["/logo.png"],
+  },
   icons: {
     icon: "/logo.png",
     apple: "/logo.png",
