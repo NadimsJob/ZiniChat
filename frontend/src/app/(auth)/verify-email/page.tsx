@@ -4,12 +4,14 @@ import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useMetaPixel } from '@/context/MetaPixelContext';
+import { useGoogleAnalytics } from '@/context/GoogleAnalyticsContext';
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 
 function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { trackEvent } = useMetaPixel();
+  const { trackEvent: trackGaEvent } = useGoogleAnalytics();
   const token = searchParams.get('token');
   const email = searchParams.get('email');
 
@@ -22,6 +24,7 @@ function VerifyEmailContent() {
         setStatus('success'); // Fallback demo verification view if no token URL param
         if (email) {
           trackEvent('CompleteRegistration', { email });
+          trackGaEvent('view_item', { email, items: [{ item_id: 'email_verification', item_name: 'Email Verified' }] });
         }
         return;
       }
@@ -37,6 +40,7 @@ function VerifyEmailContent() {
           setStatus('success');
           if (email) {
             trackEvent('CompleteRegistration', { email });
+            trackGaEvent('view_item', { email, items: [{ item_id: 'email_verification', item_name: 'Email Verified' }] });
           }
         } else {
           const errData = await res.json();

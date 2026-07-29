@@ -57,6 +57,7 @@ import { ThemeProvider } from '@/components/ThemeProvider';
 import { LanguageProvider } from '@/components/LanguageProvider';
 import { CurrencyProvider } from '@/components/CurrencyProvider';
 import { MetaPixelProvider } from '@/context/MetaPixelContext';
+import { GoogleAnalyticsProvider } from '@/context/GoogleAnalyticsContext';
 
 export default function RootLayout({
   children,
@@ -70,7 +71,9 @@ export default function RootLayout({
           <LanguageProvider>
             <CurrencyProvider>
               <MetaPixelProvider>
-                {children}
+                <GoogleAnalyticsProvider>
+                  {children}
+                </GoogleAnalyticsProvider>
               </MetaPixelProvider>
             </CurrencyProvider>
           </LanguageProvider>

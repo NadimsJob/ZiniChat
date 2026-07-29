@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useLanguage } from '@/components/LanguageProvider';
 import { useCurrency } from '@/components/CurrencyProvider';
 import { useMetaPixel } from '@/context/MetaPixelContext';
+import { useGoogleAnalytics } from '@/context/GoogleAnalyticsContext';
 import Link from 'next/link';
 import { Bot, ShieldCheck, ArrowRight, CheckCircle2, MessageSquare, Zap, Globe, Users, ShoppingCart, Star, Send, CheckCheck, PlayCircle, Timer, Sparkles } from 'lucide-react';
 import { InteractiveFeatureTabs, processFeatures } from '@/components/InteractiveFeatureTabs';
@@ -87,6 +88,7 @@ export default function HomePage() {
   const { language } = useLanguage();
   const { formatBDT } = useCurrency();
   const { trackEvent } = useMetaPixel();
+  const { trackEvent: trackGaEvent } = useGoogleAnalytics();
   const [activeFeature, setActiveFeature] = useState(0);
   const [config, setConfig] = useState<any>(null);
   const [plans, setPlans] = useState<any[]>([]);
@@ -97,6 +99,10 @@ export default function HomePage() {
 
   useEffect(() => {
     trackEvent('PageView');
+    trackGaEvent('page_view', {
+      page_title: 'ZiniChat Landing',
+      page_location: typeof window !== 'undefined' ? window.location.href : '',
+    });
 
     fetch(`${API}/tenants/public/client-logos`)
       .then(res => res.ok ? res.json() : [])

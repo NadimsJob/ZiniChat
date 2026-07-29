@@ -6,10 +6,12 @@ import Cookies from 'js-cookie';
 import Link from 'next/link';
 import Script from 'next/script';
 import { useMetaPixel } from '@/context/MetaPixelContext';
+import { useGoogleAnalytics } from '@/context/GoogleAnalyticsContext';
 
 export default function SignupPage() {
   const router = useRouter();
   const { trackEvent } = useMetaPixel();
+  const { trackEvent: trackGaEvent } = useGoogleAnalytics();
   const [formData, setFormData] = useState({
     businessName: '',
     name: '',
@@ -107,8 +109,9 @@ export default function SignupPage() {
     setError('');
     setLoading(true);
 
-    // Track Lead event on submit
+    // Track Lead & SignUp events on submit
     trackEvent('Lead', { email: formData.email });
+    trackGaEvent('sign_up', { method: 'email', email: formData.email });
 
     let planId = '';
     if (typeof window !== 'undefined') {

@@ -28,7 +28,8 @@ import {
   Landmark,
   Clock,
   MessageSquare,
-  Activity
+  Activity,
+  BarChart3
 } from 'lucide-react';
 import NotificationBell from '@/components/NotificationBell';
 
@@ -122,6 +123,7 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
         { name: language === 'en' ? 'Google Login' : 'গুগল লগইন সেটিংস', icon: Key, href: '/superadmin/settings/google-auth', show: hasPermission('manage:site') },
         { name: language === 'en' ? 'Facebook Login' : 'ফেসবুক লগইন সেটিংস', icon: Globe, href: '/superadmin/settings/facebook-auth', show: hasPermission('manage:site') },
         { name: language === 'en' ? 'Meta Pixel & CAPI' : 'মেটা পিক্সেল ও CAPI', icon: Activity, href: '/superadmin/settings/meta-pixel', show: hasPermission('manage:site') },
+        { name: language === 'en' ? 'Google Analytics' : 'গুগল অ্যানালিটিক্স', icon: BarChart3, href: '/superadmin/settings/google-analytics', show: hasPermission('manage:site') },
       ].filter(sub => sub.show)
     }
   ];

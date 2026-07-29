@@ -17,7 +17,8 @@ export class AuthService {
     private prisma: PrismaService,
     private smtpService: SmtpService,
     private notificationsService: NotificationsService,
-    @Optional() @InjectQueue('meta-pixel') private metaPixelQueue?: Queue
+    @Optional() @InjectQueue('meta-pixel') private metaPixelQueue?: Queue,
+    @Optional() @InjectQueue('google-analytics') private gaQueue?: Queue
   ) {}
 
   async validateUser(email: string, pass: string): Promise<any> {
@@ -51,7 +52,17 @@ export class AuthService {
             tenantId: user.tenantId,
             eventValue: 1,
           }, { attempts: 3, backoff: { type: 'exponential', delay: 3000 } }).catch(err => {
-            console.error('Error queueing first login acquisition event:', err);
+            console.error('Error queueing first login Meta acquisition event:', err);
+          });
+        }
+        if (this.gaQueue) {
+          this.gaQueue.add('sendGAEvent', {
+            eventName: 'purchase', // GA standard conversion event name
+            tenantEmail: user.email,
+            tenantId: user.tenantId,
+            eventParams: { value: 1, currency: 'BDT' }
+          }, { attempts: 2, backoff: { type: 'exponential', delay: 1000 } }).catch(err => {
+            console.error('Error queueing first login GA acquisition event:', err);
           });
         }
       }).catch(err => {

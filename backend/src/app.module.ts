@@ -45,6 +45,7 @@ import { InstagramAuthModule } from './channels/instagram/instagram-auth.module'
 import { MfsPaymentsModule } from './mfs-payments/mfs-payments.module';
 import { WebsiteWidgetModule } from './website-widget/website-widget.module';
 import { MetaPixelModule } from './meta-pixel/meta-pixel.module';
+import { GoogleAnalyticsModule } from './google-analytics/google-analytics.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { MetaPixelModule } from './meta-pixel/meta-pixel.module';
     }]),
     WebsiteWidgetModule,
     MetaPixelModule,
+    GoogleAnalyticsModule,
     ScheduleModule.forRoot(),
     BullModule.forRoot({
       connection: {

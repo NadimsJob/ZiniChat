@@ -23,6 +23,7 @@ import { BullModule } from '@nestjs/bullmq';
     SmtpModule,
     NotificationsModule,
     BullModule.registerQueue({ name: 'meta-pixel' }),
+    BullModule.registerQueue({ name: 'google-analytics' }),
   ],
   providers: [AuthService, JwtStrategy],
   controllers: [AuthController],

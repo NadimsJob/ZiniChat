@@ -1003,3 +1003,40 @@ model TenantAcquisitionEvent {
   @@map("tenant_acquisition_events")
 }
 
+model GoogleAnalyticsConfig {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  measurementId   String?
+  apiSecret        String?   @db.Text
+  isActive         Boolean   @default(false)
+  trackPageView    Boolean   @default(true)
+  trackSignup      Boolean   @default(true)
+  trackCompleteReg Boolean   @default(true)
+  trackLogin       Boolean   @default(true)
+  setupCompletedAt DateTime?
+  lastTestedAt     DateTime?
+  testResult       String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@map("google_analytics_configs")
+}
+
+model GoogleAnalyticsEvent {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String?  @db.Uuid
+  tenantEmail    String?
+  eventName      String   // "page_view" | "sign_up" | "view_item" | "purchase"
+  eventParams    Json?
+  status         String   // "pending" | "sent" | "failed"
+  sentToGA       Boolean  @default(false)
+  responseStatus Int?
+  errorMessage   String?  @db.Text
+  createdAt      DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([eventName])
+  @@index([createdAt])
+  @@map("google_analytics_events")
+}
+
+
