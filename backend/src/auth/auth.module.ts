@@ -9,6 +9,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { PrismaModule } from '../prisma/prisma.module';
 import { SmtpModule } from '../smtp/smtp.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { BullModule } from '@nestjs/bullmq';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
     }),
     SmtpModule,
     NotificationsModule,
+    BullModule.registerQueue({ name: 'meta-pixel' }),
   ],
   providers: [AuthService, JwtStrategy],
   controllers: [AuthController],

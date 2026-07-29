@@ -27,7 +27,8 @@ import {
   Key,
   Landmark,
   Clock,
-  MessageSquare
+  MessageSquare,
+  Activity
 } from 'lucide-react';
 import NotificationBell from '@/components/NotificationBell';
 
@@ -120,6 +121,7 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
         { name: language === 'en' ? 'MFS & Bank Gateway' : 'এমএফএস ও ব্যাংক গেটওয়ে', icon: Landmark, href: '/superadmin/settings/mfs', show: hasPermission('manage:site') },
         { name: language === 'en' ? 'Google Login' : 'গুগল লগইন সেটিংস', icon: Key, href: '/superadmin/settings/google-auth', show: hasPermission('manage:site') },
         { name: language === 'en' ? 'Facebook Login' : 'ফেসবুক লগইন সেটিংস', icon: Globe, href: '/superadmin/settings/facebook-auth', show: hasPermission('manage:site') },
+        { name: language === 'en' ? 'Meta Pixel & CAPI' : 'মেটা পিক্সেল ও CAPI', icon: Activity, href: '/superadmin/settings/meta-pixel', show: hasPermission('manage:site') },
       ].filter(sub => sub.show)
     }
   ];

@@ -1,4 +1,6 @@
-import { Injectable, UnauthorizedException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, BadRequestException, Optional, Inject } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
@@ -14,7 +16,8 @@ export class AuthService {
     private jwtService: JwtService,
     private prisma: PrismaService,
     private smtpService: SmtpService,
-    private notificationsService: NotificationsService
+    private notificationsService: NotificationsService,
+    @Optional() @InjectQueue('meta-pixel') private metaPixelQueue?: Queue
   ) {}
 
   async validateUser(email: string, pass: string): Promise<any> {
@@ -34,6 +37,28 @@ export class AuthService {
       tenantId: user.tenantId,
       permissions: user.permissions || [] 
     };
+
+    // First Login Acquisition Tracking (Fire and forget)
+    if (user.id && user.firstLoginAt === null) {
+      this.prisma.user.update({
+        where: { id: user.id },
+        data: { firstLoginAt: new Date() }
+      }).then(() => {
+        if (this.metaPixelQueue) {
+          this.metaPixelQueue.add('trackAcquisitionEvent', {
+            eventName: 'Purchase', // Facebook treats key conversion as Purchase
+            tenantEmail: user.email,
+            tenantId: user.tenantId,
+            eventValue: 1,
+          }, { attempts: 3, backoff: { type: 'exponential', delay: 3000 } }).catch(err => {
+            console.error('Error queueing first login acquisition event:', err);
+          });
+        }
+      }).catch(err => {
+        console.error('Error updating user firstLoginAt:', err);
+      });
+    }
+
     return {
       access_token: this.jwtService.sign(payload),
       user: {

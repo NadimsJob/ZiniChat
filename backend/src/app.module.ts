@@ -44,6 +44,7 @@ import { BroadcastsModule } from './broadcasts/broadcasts.module';
 import { InstagramAuthModule } from './channels/instagram/instagram-auth.module';
 import { MfsPaymentsModule } from './mfs-payments/mfs-payments.module';
 import { WebsiteWidgetModule } from './website-widget/website-widget.module';
+import { MetaPixelModule } from './meta-pixel/meta-pixel.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { WebsiteWidgetModule } from './website-widget/website-widget.module';
       limit: 60,
     }]),
     WebsiteWidgetModule,
+    MetaPixelModule,
     ScheduleModule.forRoot(),
     BullModule.forRoot({
       connection: {

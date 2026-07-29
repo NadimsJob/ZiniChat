@@ -56,6 +56,7 @@ export const metadata: Metadata = {
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { LanguageProvider } from '@/components/LanguageProvider';
 import { CurrencyProvider } from '@/components/CurrencyProvider';
+import { MetaPixelProvider } from '@/context/MetaPixelContext';
 
 export default function RootLayout({
   children,
@@ -68,7 +69,9 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
           <LanguageProvider>
             <CurrencyProvider>
-              {children}
+              <MetaPixelProvider>
+                {children}
+              </MetaPixelProvider>
             </CurrencyProvider>
           </LanguageProvider>
         </ThemeProvider>

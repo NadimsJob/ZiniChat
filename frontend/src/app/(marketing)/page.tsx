@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useLanguage } from '@/components/LanguageProvider';
 import { useCurrency } from '@/components/CurrencyProvider';
+import { useMetaPixel } from '@/context/MetaPixelContext';
 import Link from 'next/link';
 import { Bot, ShieldCheck, ArrowRight, CheckCircle2, MessageSquare, Zap, Globe, Users, ShoppingCart, Star, Send, CheckCheck, PlayCircle, Timer, Sparkles } from 'lucide-react';
 import { InteractiveFeatureTabs, processFeatures } from '@/components/InteractiveFeatureTabs';
@@ -85,6 +86,7 @@ function WhatsAppBotMockup({ language }: { language: string }) {
 export default function HomePage() {
   const { language } = useLanguage();
   const { formatBDT } = useCurrency();
+  const { trackEvent } = useMetaPixel();
   const [activeFeature, setActiveFeature] = useState(0);
   const [config, setConfig] = useState<any>(null);
   const [plans, setPlans] = useState<any[]>([]);
@@ -94,11 +96,13 @@ export default function HomePage() {
   const [dashboardTab, setDashboardTab] = useState<'overview' | 'inbox'>('overview');
 
   useEffect(() => {
+    trackEvent('PageView');
+
     fetch(`${API}/tenants/public/client-logos`)
       .then(res => res.ok ? res.json() : [])
       .then(data => setClientLogos(data))
       .catch(() => {});
-  }, []);
+  }, [trackEvent]);
 
   const displayLogos = clientLogos.length > 0 ? clientLogos : DEFAULT_BRANDS;
 

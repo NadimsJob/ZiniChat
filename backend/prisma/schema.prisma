@@ -89,6 +89,7 @@ model User {
   agentAccessMode      String    @default("ALL_CHANNELS") // ALL_CHANNELS, ASSIGNED_CHANNELS
   resetPasswordToken   String?
   resetPasswordExpires DateTime?
+  firstLoginAt         DateTime?
   createdAt            DateTime  @default(now())
 
   tenant             Tenant?                  @relation(fields: [tenantId], references: [id])
@@ -962,3 +963,43 @@ model MfsPayment {
 
   @@map("mfs_payments")
 }
+
+model MetaPixelConfig {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  pixelId            String?
+  pixelAccessToken   String?   @db.Text
+  isActive           Boolean   @default(false)
+  isCapiEnabled      Boolean   @default(false)
+  capiAccessToken    String?   @db.Text
+  datasetId          String?
+  trackPageView      Boolean   @default(true)
+  trackSignup        Boolean   @default(true)
+  trackCompleteReg   Boolean   @default(true)
+  trackLogin         Boolean   @default(true)
+  setupCompletedAt   DateTime?
+  lastTestedAt       DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@map("meta_pixel_configs")
+}
+
+model TenantAcquisitionEvent {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String?  @db.Uuid
+  tenantEmail String?
+  eventName   String   // "PageView" | "SignUp" | "CompleteRegistration" | "Login"
+  eventData   Json     // Full event payload
+  status      String   // "pending" | "sent" | "failed"
+  sentToMeta  Boolean  @default(false)
+  metaEventId String?  // For deduplication
+  fbClickId   String?  // From fb_clid URL param
+  fbPageId    String?  // From fbp cookie
+  createdAt   DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([eventName])
+  @@index([createdAt])
+  @@map("tenant_acquisition_events")
+}
+

@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 import Link from 'next/link';
 import Script from 'next/script';
+import { useMetaPixel } from '@/context/MetaPixelContext';
 
 export default function SignupPage() {
   const router = useRouter();
+  const { trackEvent } = useMetaPixel();
   const [formData, setFormData] = useState({
     businessName: '',
     name: '',
@@ -105,6 +107,9 @@ export default function SignupPage() {
     setError('');
     setLoading(true);
 
+    // Track Lead event on submit
+    trackEvent('Lead', { email: formData.email });
+
     let planId = '';
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -124,6 +129,9 @@ export default function SignupPage() {
       }
 
       const data = await res.json();
+
+      // Track SignUp conversion event
+      trackEvent('SignUp', { email: formData.email, tenantId: data?.user?.tenantId });
       
       Cookies.set('access_token', data.access_token, { expires: 7 });
       Cookies.set('user_role', data.user.role, { expires: 7 });
