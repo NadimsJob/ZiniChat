@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AiTrainingService } from './ai-training.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { QuotaService } from '../tenants/quota.service';
 import { NotFoundException } from '@nestjs/common';
 
 describe('AiTrainingService', () => {
@@ -47,6 +48,7 @@ describe('AiTrainingService', () => {
       providers: [
         AiTrainingService,
         { provide: PrismaService, useValue: mockPrisma },
+        { provide: QuotaService, useValue: { checkFeature: jest.fn().mockResolvedValue(true) } },
       ],
     }).compile();
 

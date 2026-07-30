@@ -43,6 +43,12 @@ This document tracks the phased production-readiness testing architecture and li
   - **Detailed Report**: [`testing-reports/phase-T3-live-inbox.md`](file:///d:/ZiniChat/testing-reports/phase-T3-live-inbox.md)
   - **Key Details**: Multi-channel inbox, mediaUrl parsing, per-conversation & per-channel AI toggle, real-time socket events & toasts, RBAC agent access modes. 9/9 unit tests passed.
 
+- [x] **Phase T3b — Inbox CRM Upgrade** (`inbox`, `conversations`)
+  - **Scope**: Smart Tabs navigation, Collaborators, AI Assistant picker, Activity Timeline, Star/Archive/Follow-up flags.
+  - **Status**: ✅ **COMPLETED & VERIFIED** (2026-07-30)
+  - **Detailed Report**: [`testing-reports/phase-T3b-inbox-crm-upgrade.md`](file:///d:/ZiniChat/testing-reports/phase-T3b-inbox-crm-upgrade.md)
+  - **Key Details**: Multi-agent collaboration, dynamic AI branding, DB schema models, backend feature guards.
+
 - [x] **Phase T4 — Channel Connections** (`channels/*`, `whatsapp-web`)
   - **Scope**: `settings/inboxes` list + `inboxes/new` wizard — WhatsApp Official API, WhatsApp Web (QR + Pairing code), Messenger, Instagram connect/disconnect/reconnect.
   - **Status**: ✅ **COMPLETED & VERIFIED** (2026-07-29)
@@ -84,6 +90,12 @@ This document tracks the phased production-readiness testing architecture and li
   - **Status**: ✅ **COMPLETED & VERIFIED** (2026-07-29)
   - **Detailed Report**: [`testing-reports/phase-T10-ai-training.md`](file:///d:/ZiniChat/testing-reports/phase-T10-ai-training.md)
   - **Key Details**: Knowledge base PDF/DOCX/TXT/OCR parsing, `KnowledgeChunk` vector embeddings (`pgvector`), QnA CRUD, system prompt tuning, BYOK config. 21/21 unit tests passed.
+
+- [x] **Phase T10b — AI Event Toggles & Strict Isolation** (`orchestrator`, `ai-training`)
+  - **Scope**: Event-wise behavior toggles (Order placement, Vision image reading, Support detection, Product photo matching), minMatchConfidence verification, Two-stage JSON classification.
+  - **Status**: ✅ **COMPLETED & VERIFIED** (2026-07-30)
+  - **Detailed Report**: [`testing-reports/phase-T10b-ai-event-toggles.md`](file:///d:/ZiniChat/testing-reports/phase-T10b-ai-event-toggles.md)
+  - **Key Details**: Double-gate plan & DB feature checking, defensive tenant isolation guards, token similarity product matching.
 
 - [x] **Phase T11 — Support** (`tickets`, `support-chat`)
   - **Scope**: Ticket create, Support AI widget (function calling, session memory), chat history.

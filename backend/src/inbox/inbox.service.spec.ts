@@ -6,6 +6,7 @@ import { AiService } from '../ai/ai.service';
 import { OrchestratorService } from '../orchestrator/orchestrator.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { ActivityLogService } from './activity-log.service';
+import { QuotaService } from '../tenants/quota.service';
 import { getQueueToken } from '@nestjs/bullmq';
 
 describe('InboxService', () => {
@@ -89,6 +90,7 @@ describe('InboxService', () => {
         { provide: AiService, useValue: { transcribeAudio: jest.fn(), extractTextFromPdf: jest.fn(), generateCompletion: jest.fn().mockResolvedValue('AI Summary') } },
         { provide: OrchestratorService, useValue: { processMessage: jest.fn().mockResolvedValue(true) } },
         { provide: NotificationsService, useValue: { createNotification: jest.fn().mockResolvedValue(true) } },
+        { provide: QuotaService, useValue: { checkFeature: jest.fn().mockResolvedValue(true) } },
       ],
     }).compile();
 

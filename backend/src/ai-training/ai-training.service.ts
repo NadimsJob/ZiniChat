@@ -5,9 +5,14 @@ import * as mammoth from 'mammoth';
 import OpenAI from 'openai';
 import { createWorker } from 'tesseract.js';
 
+import { QuotaService } from '../tenants/quota.service';
+
 @Injectable()
 export class AiTrainingService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private quotaService: QuotaService
+  ) {}
 
   private async ensureAiAssistantExists(tenantId: string) {
     let assistant = await this.prisma.aiAssistant.findFirst({
@@ -84,6 +89,22 @@ export class AiTrainingService {
   async updateTool(tenantId: string, toolType: string, isEnabled?: boolean, configJson?: any) {
     const assistant = await this.ensureAiAssistantExists(tenantId);
     
+    if (isEnabled === true) {
+      const toolFeatureMap: Record<string, string> = {
+        order_placement: 'ai_tool_order_placement',
+        image_reading: 'ai_tool_image_reading',
+        support_detection: 'ai_tool_support_detection',
+        product_matching: 'ai_tool_product_matching'
+      };
+      const featureKey = toolFeatureMap[toolType];
+      if (featureKey) {
+        const allowed = await this.quotaService.checkFeature(tenantId, featureKey).catch(() => false);
+        if (!allowed) {
+          throw new BadRequestException(`Your current subscription plan does not allow enabling the ${toolType} AI tool.`);
+        }
+      }
+    }
+
     const existing = await this.prisma.aiAssistantTool.findFirst({
       where: { assistantId: assistant.id, toolType }
     });

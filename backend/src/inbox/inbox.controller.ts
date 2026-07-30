@@ -232,6 +232,8 @@ export class InboxController {
     return updated;
   }
 
+  @UseGuards(FeatureGuard)
+  @RequireFeature('inbox_multi_agent_collaborators')
   @Post('conversations/:id/collaborators')
   async addCollaborator(
     @Request() req: any,
@@ -247,6 +249,8 @@ export class InboxController {
     return collaborator;
   }
 
+  @UseGuards(FeatureGuard)
+  @RequireFeature('inbox_multi_agent_collaborators')
   @Delete('conversations/:id/collaborators/:userId')
   async removeCollaborator(
     @Request() req: any,
@@ -257,6 +261,8 @@ export class InboxController {
     return this.inboxService.removeCollaborator(tenantId, conversationId, targetUserId, req.user);
   }
 
+  @UseGuards(FeatureGuard)
+  @RequireFeature('inbox_multi_ai_assistant_picker')
   @Patch('conversations/:id/assistant')
   async setConversationAssistant(
     @Request() req: any,
@@ -321,6 +327,8 @@ export class InboxController {
     );
   }
 
+  @UseGuards(FeatureGuard)
+  @RequireFeature('agent_presence')
   @Patch('presence')
   async updatePresence(@Request() req: any, @Body() body: { status: string }) {
     const userId = req.user.userId || req.user.id;

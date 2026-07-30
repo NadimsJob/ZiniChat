@@ -224,7 +224,8 @@ export class OrchestratorService {
 
       // Handler 3: Product Photo Matching
       if (isProductMatchingActive) {
-        await this.handleProductMatching(tenantId, message.conversationId, classification);
+        const minConf = toolMap['product_matching']?.configJson?.minMatchConfidence ?? 0.6;
+        await this.handleProductMatching(tenantId, message.conversationId, classification, minConf);
       }
 
       // 6. Response Dispatch
@@ -453,7 +454,12 @@ export class OrchestratorService {
     });
   }
 
-  private async handleProductMatching(tenantId: string, conversationId: string, classification: StructuredAiClassification) {
+  private async handleProductMatching(
+    tenantId: string,
+    conversationId: string,
+    classification: StructuredAiClassification,
+    minConfidence: number = 0.6
+  ) {
     const searchQuery = classification.imageProductDescription;
     if (!searchQuery && classification.intent !== 'product_lookup') return;
 
@@ -461,25 +467,47 @@ export class OrchestratorService {
     if (!queryStr || queryStr.length < 3) return;
 
     // Search tenant product catalog for photo
-    const matchedProduct = await this.prisma.product.findFirst({
+    const products = await this.prisma.product.findMany({
       where: {
         tenantId,
         isActive: true,
-        imageUrl: { not: null },
-        OR: [
-          { name: { contains: queryStr, mode: 'insensitive' } },
-          { description: { contains: queryStr, mode: 'insensitive' } }
-        ]
+        imageUrl: { not: null }
       }
     });
 
-    if (matchedProduct && matchedProduct.imageUrl) {
+    if (products.length === 0) return;
+
+    const qTokens = queryStr.toLowerCase().split(/\s+/).filter(t => t.length > 2);
+    if (qTokens.length === 0) return;
+
+    let bestMatch: any = null;
+    let bestScore = 0;
+
+    for (const p of products) {
+      const pText = `${p.name} ${p.description || ''}`.toLowerCase();
+      const pTokens = pText.split(/\s+/).filter(t => t.length > 2);
+
+      let matches = 0;
+      for (const q of qTokens) {
+        if (pTokens.some(pt => pt.includes(q) || q.includes(pt))) {
+          matches++;
+        }
+      }
+
+      const score = matches / qTokens.length;
+      if (score > bestScore) {
+        bestScore = score;
+        bestMatch = p;
+      }
+    }
+
+    if (bestMatch && bestMatch.imageUrl && bestScore >= minConfidence) {
       await this.inboxService.saveOutboundMessage(
         tenantId,
         conversationId,
         JSON.stringify({
-          mediaUrl: matchedProduct.imageUrl,
-          body: `📸 ${matchedProduct.name} — BDT ${matchedProduct.price}`
+          mediaUrl: bestMatch.imageUrl,
+          body: `📸 ${bestMatch.name} — BDT ${bestMatch.price}`
         }),
         'image'
       );
@@ -488,7 +516,7 @@ export class OrchestratorService {
         tenantId,
         conversationId,
         type: 'PRODUCT_MATCH_SENT',
-        metadataJson: { productId: matchedProduct.id, name: matchedProduct.name }
+        metadataJson: { productId: bestMatch.id, name: bestMatch.name, confidenceScore: bestScore }
       });
     }
   }

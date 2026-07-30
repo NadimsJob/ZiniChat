@@ -8,6 +8,8 @@ import { ActivityLogService } from './activity-log.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import * as path from 'path';
 
+import { QuotaService } from '../tenants/quota.service';
+
 @Injectable()
 export class InboxService {
   private readonly logger = new Logger(InboxService.name);
@@ -20,7 +22,8 @@ export class InboxService {
     @Inject(forwardRef(() => OrchestratorService))
     private orchestratorService: OrchestratorService,
     private activityLogService: ActivityLogService,
-    private notificationsService: NotificationsService
+    private notificationsService: NotificationsService,
+    private quotaService: QuotaService
   ) {}
 
   async getActiveChannels(tenantId: string) {
@@ -78,6 +81,13 @@ export class InboxService {
   }
 
   async getConversations(tenantId: string, user: any, view: string = 'all', channel: string = 'all') {
+    if (view && view !== 'all') {
+      const allowed = await this.quotaService.checkFeature(tenantId, 'inbox_smart_tabs').catch(() => false);
+      if (!allowed) {
+        throw new ForbiddenException('Your current plan does not allow Smart Inbox Tabs filtering.');
+      }
+    }
+
     let whereClause: any = { tenantId };
 
     if (user.role === 'agent' && user.agentAccessMode === 'ASSIGNED_CHANNELS') {

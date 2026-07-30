@@ -19,8 +19,8 @@ async function main() {
     const result = await client.callTool({
       name: "deploy_to_server",
       arguments: {
-        target: "live",
-        branch: "main"
+        target: "test",
+        branch: "staging"
       }
     }, undefined, { timeout: 600000 }); // 10 minutes timeout
 

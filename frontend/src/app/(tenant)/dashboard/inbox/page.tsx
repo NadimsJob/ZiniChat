@@ -39,6 +39,18 @@ export default function InboxPage() {
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
   const [agents, setAgents] = useState<any[]>([]);
   const [aiAssistants, setAiAssistants] = useState<any[]>([]);
+  const [tenantBusinessName, setTenantBusinessName] = useState<string>('ZiniChat');
+
+  useEffect(() => {
+    try {
+      const userCookie = Cookies.get('user');
+      if (userCookie) {
+        const u = JSON.parse(userCookie);
+        if (u.businessName) setTenantBusinessName(u.businessName);
+        else if (u.tenant?.businessName) setTenantBusinessName(u.tenant.businessName);
+      }
+    } catch (e) {}
+  }, []);
 
   // Navigation & Filtering
   const [activeTab, setActiveTab] = useState<string>('all'); // all, order_requests, unreplied, tickets, resolved, archived
@@ -802,7 +814,7 @@ export default function InboxPage() {
                   {/* Sender Badge */}
                   {isAi && (
                     <span className="text-[10px] font-bold text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full mb-1 flex items-center gap-1">
-                      <Sparkles className="w-3 h-3" /> Replied by AI
+                      <Sparkles className="w-3 h-3" /> Replied by {tenantBusinessName} AI ✨
                     </span>
                   )}
                   {!isInbound && !isAi && m.senderUser && (
