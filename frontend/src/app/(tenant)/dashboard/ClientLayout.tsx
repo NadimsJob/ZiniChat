@@ -63,7 +63,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  const [showFeatureLockedModal, setShowFeatureLockedModal] = useState(false);
  const [allowedFeatures, setAllowedFeatures] = useState<string[]>(['*']);
  const [avatarError, setAvatarError] = useState(false);
- const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
+
 
  const hasAgentPresence = useFeature('agent_presence');
  const [presenceStatus, setPresenceStatus] = useState<'available' | 'busy' | 'away' | 'offline'>('available');
@@ -243,10 +243,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  router.push('/login');
  };
 
- const toggleSubmenu = (menuName: string, e: React.MouseEvent) => {
- e.preventDefault();
- setOpenMenus(prev => ({ ...prev, [menuName]: !prev[menuName] }));
- };
+
 
  // Map required features for each module
  const featureMap: Record<string, string[]> = {
@@ -267,29 +264,41 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  return requiredFeature.some(f => allowedFeatures.includes(f));
  };
 
- const navItems = [
+ const menuGroups = [
+ {
+ title: language === 'en' ? 'MY HOME' : 'আমার হোম',
+ items: [
  { name: language === 'en' ? 'Home' : 'হোম', icon: LayoutGrid, href: '/dashboard' },
  { name: language === 'en' ? 'Live Inbox' : 'লাইভ ইনবক্স', icon: Inbox, href: '/dashboard/inbox' },
  { name: language === 'en' ? 'Leads' : 'লিডস', icon: UserCircle, href: '/dashboard/leads' },
  { name: language === 'en' ? 'Product List' : 'প্রোডাক্ট লিস্ট', icon: ShoppingCart, href: '/dashboard/products' },
  { name: language === 'en' ? 'Manage Order' : 'ম্যানেজ অর্ডার', icon: ShoppingBag, href: '/dashboard/orders' },
  { name: language === 'en' ? 'Broadcasts' : 'ব্রডকাস্ট', icon: Megaphone, href: '/dashboard/broadcasts' },
- { name: language === 'en' ? 'Subscription' : 'সাবস্ক্রিপশন', icon: Crown, href: '/dashboard/settings/subscription' },
- { name: language === 'en' ? 'Billing History' : 'বিলিং হিস্ট্রি', icon: Receipt, href: '/dashboard/settings/billing-history' },
- { name: language === 'en' ? 'Support Ticket' : 'সাপোর্ট টিকিট', icon: MessageSquare, href: '/dashboard/support' },
- { 
- name: language === 'en' ? 'Settings' : 'সেটিংস', 
- icon: Settings2, 
- href: '/dashboard/settings', 
- hasSubmenu: true,
- subItems: [
- { name: language === 'en' ? 'Inboxes' : 'ইনবক্সসমূহ', icon: Webhook, href: '/dashboard/settings/inboxes' },
- { name: language === 'en' ? 'Team' : 'টিম', icon: UserCircle, href: '/dashboard/team' },
- { name: language === 'en' ? 'AI Training' : 'এআই ট্রেইনিং', icon: Zap, href: '/dashboard/settings/ai-training' },
- { name: language === 'en' ? 'Labels' : 'লেবেলস', icon: Tag, href: '/dashboard/settings/labels' },
- { name: language === 'en' ? 'Storage' : 'স্টোরেজ', icon: Settings2, href: '/dashboard/settings/storage' },
  ]
  },
+ {
+ title: language === 'en' ? 'AUTOMATIONS' : 'অটোমেশন',
+ items: [
+ { name: language === 'en' ? 'Inboxes' : 'ইনবক্সসমূহ', icon: Webhook, href: '/dashboard/settings/inboxes' },
+ { name: language === 'en' ? 'AI Training' : 'এআই ট্রেইনিং', icon: Zap, href: '/dashboard/settings/ai-training' },
+ ]
+ },
+ {
+ title: language === 'en' ? 'SETTINGS' : 'সেটিংস',
+ items: [
+ { name: language === 'en' ? 'Team' : 'টিম', icon: UserCircle, href: '/dashboard/team' },
+ { name: language === 'en' ? 'Labels' : 'লেবেলস', icon: Tag, href: '/dashboard/settings/labels' },
+ { name: language === 'en' ? 'Storage' : 'স্টোরেজ', icon: Settings2, href: '/dashboard/settings/storage' },
+ { name: language === 'en' ? 'Subscription' : 'সাবস্ক্রিপশন', icon: Crown, href: '/dashboard/settings/subscription' },
+ { name: language === 'en' ? 'Billing History' : 'বিলিং হিস্ট্রি', icon: Receipt, href: '/dashboard/settings/billing-history' },
+ ]
+ },
+ {
+ title: language === 'en' ? 'SUPPORT' : 'সাপোর্ট',
+ items: [
+ { name: language === 'en' ? 'Support Ticket' : 'সাপোর্ট টিকিট', icon: MessageSquare, href: '/dashboard/support' },
+ ]
+ }
  ];
 
  if (pathname === '/dashboard/onboarding') {
@@ -353,101 +362,69 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
         </div>
 
         {/* Navigation Links */}
-        <nav className="flex-1 px-1.5 py-1.5 space-y-0.5 overflow-y-auto custom-scrollbar">
-          {navItems.map((item) => {
-            const isActive = pathname === item.href || (item.subItems && item.subItems.some(sub => pathname.startsWith(sub.href)));
-            const isExpanded = openMenus[item.name] && !isSidebarCollapsed;
-            const isLocked = !item.hasSubmenu && !hasAccess(item.href);
+        <nav className="flex-1 px-1.5 py-2 space-y-3 overflow-y-auto custom-scrollbar">
+          {menuGroups.map((group, groupIdx) => (
+            <div key={groupIdx} className="flex flex-col">
+              {!isSidebarCollapsed && (
+                <div className="px-3 mb-1.5 mt-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  {group.title}
+                </div>
+              )}
+              <div className="space-y-0.5">
+                {group.items.map((item) => {
+                  const isActive = pathname === item.href;
+                  const isLocked = !hasAccess(item.href);
 
-            return (
-              <div key={item.name} className="flex flex-col relative">
-                <Link 
-                  href={item.hasSubmenu ? '#' : item.href}
-                  title={isSidebarCollapsed ? item.name : undefined}
-                  onClick={(e) => {
-                    if (item.hasSubmenu) {
-                      toggleSubmenu(item.name, e);
-                    } else if (isLocked) {
-                      e.preventDefault();
-                      setShowFeatureLockedModal(true);
-                    } else {
-                      setIsMobileMenuOpen(false);
-                    }
-                  }}
-                  className={`group flex items-center ${isSidebarCollapsed ? 'justify-center px-1 py-2' : 'justify-between px-2 py-1.5'} rounded-lg text-[12px] font-medium transition-all ${
-                    isActive && !item.hasSubmenu
-                      ? 'bg-gradient-to-r from-primary/15 via-primary/10 to-amber-500/10 text-primary shadow-[0_2px_10px_rgba(31,130,74,0.12)] border border-primary/25 font-bold'
-                      : 'text-slate-600 hover:bg-primary/5 hover:text-primary hover:border-primary/10 border border-transparent'
-
-                  } ${isLocked ? 'opacity-80' : ''}`}
-                >
-                  <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-2.5'}`}>
-                    <item.icon className={`w-4 h-4 transition-colors ${isActive ? 'text-primary' : 'text-slate-400 group-hover:text-primary/70'}`} />
-                    {!isSidebarCollapsed && (
-                      <>
-                        <span className={isActive ? 'text-primary font-bold' : ''}>{item.name}</span>
-                        {isLocked && <Lock className="w-3 h-3 text-amber-500 ml-1" />}
-                      </>
-                    )}
-                  </div>
-                  
-                  {/* Submenu Indicator or Inbox Badge */}
-                  {!isSidebarCollapsed ? (
-                    <div className="flex items-center gap-2">
-                      {(item.name === 'Live Inbox' || item.name === 'লাইভ ইনবক্স') && inboxUnreadCount > 0 && (
-                        <span className="flex h-5 items-center justify-center rounded-full bg-red-500 px-2 text-[10px] font-bold text-white">
-                          {inboxUnreadCount > 99 ? '99+' : inboxUnreadCount}
-                        </span>
-                      )}
-                      {item.hasSubmenu && (
-                        <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-                      )}
-                    </div>
-                  ) : (
-                    (item.name === 'Live Inbox' || item.name === 'লাইভ ইনবক্স') && inboxUnreadCount > 0 && (
-                      <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                    )
-                  )}
-                </Link>
-
-                {/* Submenu */}
-                {item.hasSubmenu && item.subItems && isExpanded && (
-                  <div className="mt-0.5 ml-3 pl-3 border-l border-slate-100 flex flex-col space-y-0.5">
-                    {item.subItems.map((subItem) => {
-                      const isSubActive = pathname === subItem.href;
-                      const isSubLocked = !hasAccess(subItem.href);
-                      
-                      return (
-                        <Link
-                          key={subItem.name}
-                          href={subItem.href}
-                          onClick={(e) => {
-                            if (isSubLocked) {
-                              e.preventDefault();
-                              setShowFeatureLockedModal(true);
-                            } else {
-                              setIsMobileMenuOpen(false);
-                            }
-                          }}
-                          className={`group flex items-center justify-between px-2 py-1 rounded-lg text-[12px] font-medium transition-all ${
-                            isSubActive
-                              ? 'text-primary bg-gradient-to-r from-primary/10 to-transparent shadow-sm border border-primary/10'
-                              : 'text-slate-500 hover:text-primary hover:bg-primary/5 border border-transparent'
-                          } ${isSubLocked ? 'opacity-80' : ''}`}
-                        >
+                  return (
+                    <div key={item.name} className="flex flex-col relative">
+                      <Link 
+                        href={item.href}
+                        title={isSidebarCollapsed ? item.name : undefined}
+                        onClick={(e) => {
+                          if (isLocked) {
+                            e.preventDefault();
+                            setShowFeatureLockedModal(true);
+                          } else {
+                            setIsMobileMenuOpen(false);
+                          }
+                        }}
+                        className={`group flex items-center ${isSidebarCollapsed ? 'justify-center px-1 py-2' : 'justify-between px-2 py-1.5'} rounded-lg text-[12px] font-medium transition-all ${
+                          isActive
+                            ? 'bg-gradient-to-r from-primary/15 via-primary/10 to-amber-500/10 text-primary shadow-[0_2px_10px_rgba(31,130,74,0.12)] border border-primary/25 font-bold'
+                            : 'text-slate-600 hover:bg-primary/5 hover:text-primary hover:border-primary/10 border border-transparent'
+                        } ${isLocked ? 'opacity-80' : ''}`}
+                      >
+                        <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-2.5'}`}>
+                          <item.icon className={`w-4 h-4 transition-colors ${isActive ? 'text-primary' : 'text-slate-400 group-hover:text-primary/70'}`} />
+                          {!isSidebarCollapsed && (
+                            <>
+                              <span className={isActive ? 'text-primary font-bold' : ''}>{item.name}</span>
+                              {isLocked && <Lock className="w-3 h-3 text-amber-500 ml-1" />}
+                            </>
+                          )}
+                        </div>
+                        
+                        {/* Inbox Badge */}
+                        {!isSidebarCollapsed ? (
                           <div className="flex items-center gap-2">
-                            <subItem.icon className={`w-3.5 h-3.5 transition-colors ${isSubActive ? 'text-primary' : 'text-slate-400 group-hover:text-primary/70'}`} />
-                            {subItem.name}
+                            {(item.name === 'Live Inbox' || item.name === 'লাইভ ইনবক্স') && inboxUnreadCount > 0 && (
+                              <span className="flex h-5 items-center justify-center rounded-full bg-red-500 px-2 text-[10px] font-bold text-white">
+                                {inboxUnreadCount > 99 ? '99+' : inboxUnreadCount}
+                              </span>
+                            )}
                           </div>
-                          {isSubLocked && <Lock className="w-3 h-3 text-amber-500" />}
-                        </Link>
-                      );
-                    })}
-                  </div>
-                )}
+                        ) : (
+                          (item.name === 'Live Inbox' || item.name === 'লাইভ ইনবক্স') && inboxUnreadCount > 0 && (
+                            <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                          )
+                        )}
+                      </Link>
+                    </div>
+                  );
+                })}
               </div>
-            );
-          })}
+            </div>
+          ))}
         </nav>
       </aside>
 
