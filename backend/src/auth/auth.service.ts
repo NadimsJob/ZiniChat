@@ -218,7 +218,7 @@ export class AuthService {
       tenantId: null, // Null for superadmin
       permissions: ['*']
     });
-    return { message: 'Superadmin created successfully. Email: admin@platform.com, Password: supersecret' };
+    return { message: 'Superadmin created successfully. Email: admin@platform.com' };
   }
   async getMe(userId: string) {
     const user = await this.prisma.user.findUnique({
@@ -311,7 +311,9 @@ export class AuthService {
       (user as any).features = features;
     }
 
-    return user;
+    if (!user) return null;
+    const { passwordHash, ...safeUser } = user as any;
+    return safeUser;
   }
 
   async updateOnboarding(userId: string, data: any) {

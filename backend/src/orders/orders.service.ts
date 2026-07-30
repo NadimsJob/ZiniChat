@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityLogService } from '../inbox/activity-log.service';
 
@@ -26,10 +26,47 @@ export class OrdersService {
 
   async createOrder(tenantId: string, data: any) {
     const { contactId, conversationId, items, notes } = data;
-    
-    const totalAmount = items.reduce((acc: number, item: any) => acc + (parseFloat(item.priceAtTime) * item.quantity), 0);
+
+    if (!Array.isArray(items) || items.length === 0) {
+      throw new BadRequestException('Order items must be a non-empty array');
+    }
 
     const order = await this.prisma.$transaction(async (tx) => {
+      let totalAmount = 0;
+      const validatedItems = [];
+
+      for (const item of items) {
+        // Enforce tenant scoping and active product check
+        const product = await tx.product.findFirst({
+          where: { id: item.productId, tenantId, isActive: true }
+        });
+
+        if (!product) {
+          throw new NotFoundException(`Product ${item.productId} not found or inactive for this workspace`);
+        }
+
+        const quantity = Number(item.quantity) || 1;
+        // Server-side price calculation ignoring client-passed priceAtTime
+        const priceAtTime = Number(product.price);
+        totalAmount += priceAtTime * quantity;
+
+        validatedItems.push({
+          productId: product.id,
+          quantity,
+          priceAtTime
+        });
+
+        if (product.trackInventory) {
+          if (product.stockCount < quantity) {
+            throw new BadRequestException(`Insufficient stock for product: ${product.name}`);
+          }
+          await tx.product.update({
+            where: { id: product.id },
+            data: { stockCount: { decrement: quantity } }
+          });
+        }
+      }
+
       const createdOrder = await tx.order.create({
         data: {
           tenantId,
@@ -39,11 +76,7 @@ export class OrdersService {
           notes,
           status: 'pending',
           items: {
-            create: items.map((item: any) => ({
-              productId: item.productId,
-              quantity: item.quantity,
-              priceAtTime: item.priceAtTime
-            }))
+            create: validatedItems
           }
         }
       });
@@ -55,16 +88,6 @@ export class OrdersService {
         });
       }
 
-      for (const item of items) {
-        const product = await tx.product.findUnique({ where: { id: item.productId } });
-        if (product && product.trackInventory) {
-          await tx.product.update({
-            where: { id: product.id },
-            data: { stockCount: { decrement: item.quantity } }
-          });
-        }
-      }
-
       return createdOrder;
     });
 
@@ -74,7 +97,7 @@ export class OrdersService {
         conversationId,
         contactId,
         type: 'ORDER_CREATED',
-        metadataJson: { orderId: order.id, totalAmount }
+        metadataJson: { orderId: order.id, totalAmount: order.totalAmount }
       });
     }
 
@@ -82,7 +105,7 @@ export class OrdersService {
   }
 
   async updateOrderStatus(tenantId: string, orderId: string, status: string) {
-    const order = await this.prisma.order.findUnique({
+    const order = await this.prisma.order.findFirst({
       where: { id: orderId, tenantId },
       include: { items: true }
     });
@@ -101,7 +124,7 @@ export class OrdersService {
 
       if (isCancelledOrRefunded && !wasCancelledOrRefunded) {
         for (const item of order.items) {
-          const product = await tx.product.findUnique({ where: { id: item.productId } });
+          const product = await tx.product.findFirst({ where: { id: item.productId, tenantId } });
           if (product && product.trackInventory) {
             await tx.product.update({
               where: { id: product.id },
@@ -111,7 +134,7 @@ export class OrdersService {
         }
       } else if (!isCancelledOrRefunded && wasCancelledOrRefunded) {
         for (const item of order.items) {
-          const product = await tx.product.findUnique({ where: { id: item.productId } });
+          const product = await tx.product.findFirst({ where: { id: item.productId, tenantId } });
           if (product && product.trackInventory) {
             await tx.product.update({
               where: { id: product.id },

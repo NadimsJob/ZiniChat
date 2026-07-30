@@ -42,6 +42,8 @@ Redis.zip
 *.swo
 
 # Project specific
+backend/sessions/
+backend/uploads/
 supabase/.temp/
 supabase/db/
 

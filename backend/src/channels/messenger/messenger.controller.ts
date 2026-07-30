@@ -1,5 +1,6 @@
-import { Controller, Get, Post, Query, Body, Res, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Query, Body, Res, Headers, HttpStatus } from '@nestjs/common';
 import type { Response } from 'express';
+import * as crypto from 'crypto';
 import { MessengerService } from './messenger.service';
 import { InboxService } from '../../inbox/inbox.service';
 import { InboxGateway } from '../../inbox/inbox.gateway';
@@ -19,8 +20,8 @@ export class MessengerController {
     @Query('hub.challenge') challenge: string,
     @Res() res: Response,
   ) {
-    const verifyToken = process.env.MESSENGER_VERIFY_TOKEN || process.env.WHATSAPP_VERIFY_TOKEN || 'zinichat_secret_webhook_token_2026';
-    if (mode === 'subscribe' && (token === verifyToken || token === 'zinichat_secret_webhook_token_2026')) {
+    const verifyToken = process.env.MESSENGER_VERIFY_TOKEN || process.env.WHATSAPP_VERIFY_TOKEN;
+    if (mode === 'subscribe' && verifyToken && token === verifyToken) {
       console.log('MESSENGER_WEBHOOK_VERIFIED');
       res.status(HttpStatus.OK).send(challenge);
     } else {
@@ -29,7 +30,20 @@ export class MessengerController {
   }
 
   @Post()
-  async receiveMessage(@Body() body: any, @Res() res: Response) {
+  async receiveMessage(
+    @Body() body: any,
+    @Headers('x-hub-signature-256') signature: string,
+    @Res() res: Response
+  ) {
+    const appSecret = process.env.META_APP_SECRET || process.env.MESSENGER_APP_SECRET;
+    if (appSecret && signature) {
+      const expectedSignature = 'sha256=' + crypto.createHmac('sha256', appSecret).update(JSON.stringify(body)).digest('hex');
+      if (signature !== expectedSignature) {
+        console.error('Messenger Webhook signature mismatch!');
+        return res.sendStatus(HttpStatus.UNAUTHORIZED);
+      }
+    }
+
     // Acknowledge receipt to Meta immediately (200 OK) to prevent retries
     res.sendStatus(HttpStatus.OK);
 

@@ -11,12 +11,17 @@ describe('OrdersService', () => {
   const mockPrisma: any = {
     order: {
       findMany: jest.fn(),
+      findFirst: jest.fn(),
       findUnique: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
     },
     product: {
+      findFirst: jest.fn(),
       findUnique: jest.fn(),
+      update: jest.fn(),
+    },
+    conversation: {
       update: jest.fn(),
     },
     $transaction: jest.fn(async (cb: (tx: any) => Promise<any>) => cb(mockPrisma)),
@@ -56,24 +61,45 @@ describe('OrdersService', () => {
   });
 
   describe('createOrder', () => {
-    it('should create order and decrement product stock for tracked items', async () => {
+    it('should create order using server DB price and decrement product stock for tracked items', async () => {
       const mockOrder = { id: 'order-1', totalAmount: 1000, status: 'pending' };
       mockPrisma.order.create.mockResolvedValue(mockOrder);
-      mockPrisma.product.findUnique.mockResolvedValue({ id: 'prod-1', trackInventory: true, stockCount: 10 });
+      mockPrisma.product.findFirst.mockResolvedValue({ id: 'prod-1', name: 'Shirt', price: 500, trackInventory: true, stockCount: 10, isActive: true });
       mockPrisma.product.update.mockResolvedValue({ id: 'prod-1', stockCount: 8 });
 
       const result = await service.createOrder('tenant-1', {
         contactId: 'contact-1',
-        items: [{ productId: 'prod-1', quantity: 2, priceAtTime: 500 }],
+        // Client sends forged priceAtTime: 1 BDT, server must ignore it and use DB price: 500
+        items: [{ productId: 'prod-1', quantity: 2, priceAtTime: 1 }],
         notes: 'Express delivery',
       });
 
-      expect(mockPrisma.order.create).toHaveBeenCalled();
+      expect(mockPrisma.product.findFirst).toHaveBeenCalledWith({
+        where: { id: 'prod-1', tenantId: 'tenant-1', isActive: true },
+      });
+      expect(mockPrisma.order.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          totalAmount: 1000,
+          items: {
+            create: [{ productId: 'prod-1', quantity: 2, priceAtTime: 500 }],
+          },
+        }),
+      });
       expect(mockPrisma.product.update).toHaveBeenCalledWith({
         where: { id: 'prod-1' },
         data: { stockCount: { decrement: 2 } },
       });
       expect(result).toEqual(mockOrder);
+    });
+
+    it('should throw NotFoundException if product is not found or inactive for tenant', async () => {
+      mockPrisma.product.findFirst.mockResolvedValue(null);
+      await expect(
+        service.createOrder('tenant-1', {
+          contactId: 'contact-1',
+          items: [{ productId: 'invalid-prod', quantity: 1 }],
+        })
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -85,9 +111,9 @@ describe('OrdersService', () => {
         status: 'pending',
         items: [{ productId: 'prod-1', quantity: 2 }],
       };
-      mockPrisma.order.findUnique.mockResolvedValue(mockOrder);
+      mockPrisma.order.findFirst.mockResolvedValue(mockOrder);
       mockPrisma.order.update.mockResolvedValue({ ...mockOrder, status: 'cancelled' });
-      mockPrisma.product.findUnique.mockResolvedValue({ id: 'prod-1', trackInventory: true });
+      mockPrisma.product.findFirst.mockResolvedValue({ id: 'prod-1', trackInventory: true });
 
       const result = await service.updateOrderStatus('tenant-1', 'order-1', 'cancelled');
       expect(mockPrisma.product.update).toHaveBeenCalledWith({
@@ -97,9 +123,10 @@ describe('OrdersService', () => {
       expect(result.status).toBe('cancelled');
     });
 
-    it('should throw NotFoundException if order does not exist', async () => {
-      mockPrisma.order.findUnique.mockResolvedValue(null);
+    it('should throw NotFoundException if order does not exist for tenant', async () => {
+      mockPrisma.order.findFirst.mockResolvedValue(null);
       await expect(service.updateOrderStatus('tenant-1', 'invalid-id', 'delivered')).rejects.toThrow(NotFoundException);
     });
   });
 });
+

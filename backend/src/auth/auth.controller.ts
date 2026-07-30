@@ -47,9 +47,9 @@ export class AuthController {
   @Post('seed-superadmin')
   async seedSuperadmin(@Body('setupKey') setupKey: string) {
     // Guard: only allow if the correct setup key is provided
-    const expectedKey = process.env.SETUP_SECRET_KEY || 'CHANGE_THIS_IN_PRODUCTION';
-    if (setupKey !== expectedKey) {
-      throw new UnauthorizedException('Invalid setup key');
+    const expectedKey = process.env.SETUP_SECRET_KEY;
+    if (!expectedKey || setupKey !== expectedKey) {
+      throw new UnauthorizedException('Invalid or unconfigured setup key');
     }
     return this.authService.seedSuperadmin();
   }
