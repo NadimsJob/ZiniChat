@@ -1,10 +1,18 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Cookies from 'js-cookie';
 import { io, Socket } from 'socket.io-client';
 import { useLanguage } from '@/components/LanguageProvider';
-import { Search, Send, User as UserIcon, Clock, MessageSquare, Phone, Info, Tag, Plus, Check, MessageCircle, MoreVertical, X, UserCircle, UserPlus, Mail, Building, MapPin, AlertCircle, Paperclip, File as FileIcon, Trash2, Bot, ToggleLeft, ToggleRight, Wand2, RefreshCw, ChevronLeft, PanelRight, Eye } from 'lucide-react';
+import { useFeature } from '@/hooks/useFeature';
+import ConversationSidebar from '@/components/inbox/ConversationSidebar';
+import { 
+  Search, Send, User as UserIcon, Clock, MessageSquare, Phone, Info, Tag, Plus, 
+  Check, MessageCircle, MoreVertical, X, UserCircle, UserPlus, Mail, Building, 
+  MapPin, AlertCircle, Paperclip, File as FileIcon, Trash2, Bot, ToggleLeft, 
+  ToggleRight, Wand2, RefreshCw, ChevronLeft, PanelRight, Eye, Star, Archive, 
+  CheckCircle2, Flag, UserCheck, Sparkles 
+} from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
 import LabelForm from '@/components/labels/LabelForm';
@@ -12,255 +20,351 @@ import LabelForm from '@/components/labels/LabelForm';
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function InboxPage() {
+  const { language } = useLanguage();
 
- const { language } = useLanguage();
- const [conversations, setConversations] = useState<any[]>([]);
- const [selectedConvId, setSelectedConvId] = useState<string | null>(null);
- const [messages, setMessages] = useState<any[]>([]);
- const [inputText, setInputText] = useState('');
- const [selectedFile, setSelectedFile] = useState<File | null>(null);
- const [loading, setLoading] = useState(true);
- const [availableLabels, setAvailableLabels] = useState<any[]>([]);
- const [showLabelsMenu, setShowLabelsMenu] = useState(false);
- const [isCreatingLabel, setIsCreatingLabel] = useState(false);
- const [syncingLabelId, setSyncingLabelId] = useState<string | null>(null);
- const [channelFilter, setChannelFilter] = useState<string>('all');
- const [activeChannels, setActiveChannels] = useState<any[]>([]);
- const [zoomedImage, setZoomedImage] = useState<string | null>(null);
- 
- const [agents, setAgents] = useState<any[]>([]);
- const [showAssignMenu, setShowAssignMenu] = useState(false);
- 
- const [showLeadInfo, setShowLeadInfo] = useState(false);
- const [stages, setStages] = useState<any[]>([]);
- const [editDetails, setEditDetails] = useState({
- stageId: '',
- followUpAt: '',
- phone: '',
- email: '',
- company: '',
- address: '',
- assignedUserId: ''
- });
- const [noteContent, setNoteContent] = useState('');
+  // Feature Flags
+  const hasSmartTabs = useFeature('inbox_smart_tabs');
+  const hasCollaborators = useFeature('inbox_multi_agent_collaborators');
+  const hasAiPicker = useFeature('inbox_multi_ai_assistant_picker');
 
- const socketRef = useRef<Socket | null>(null);
- const messagesEndRef = useRef<HTMLDivElement>(null);
- const fileInputRef = useRef<HTMLInputElement>(null);
+  // State
+  const [conversations, setConversations] = useState<any[]>([]);
+  const [selectedConvId, setSelectedConvId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [inputText, setInputText] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [availableLabels, setAvailableLabels] = useState<any[]>([]);
+  const [activeChannels, setActiveChannels] = useState<any[]>([]);
+  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
+  const [agents, setAgents] = useState<any[]>([]);
+  const [aiAssistants, setAiAssistants] = useState<any[]>([]);
 
- const fetchLabels = async () => {
+  // Navigation & Filtering
+  const [activeTab, setActiveTab] = useState<string>('all'); // all, order_requests, unreplied, tickets, resolved, archived
+  const [channelFilter, setChannelFilter] = useState<string>('all'); // all, whatsapp, messenger, instagram
+  const [tabCounts, setTabCounts] = useState<{ [key: string]: number }>({
+    all: 0, order_requests: 0, unreplied: 0, tickets: 0, resolved: 0, archived: 0
+  });
+
+  // UI Menus
+  const [showAssignMenu, setShowAssignMenu] = useState(false);
+  const [showCollaboratorMenu, setShowCollaboratorMenu] = useState(false);
+  const [showAiPickerMenu, setShowAiPickerMenu] = useState(false);
+  const [showRightSidebar, setShowRightSidebar] = useState(true);
+  const [isCreatingLabel, setIsCreatingLabel] = useState(false);
+
+  const socketRef = useRef<Socket | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch counts for tabs
+  const fetchCounts = useCallback(async () => {
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/inbox/counts`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const counts = await res.json();
+        setTabCounts(counts);
+      }
+    } catch (err) {
+      console.error('Failed to fetch inbox counts:', err);
+    }
+  }, []);
+
+  // Fetch conversations with active view & channel filter
+  const fetchConversations = useCallback(async () => {
+    try {
+      const token = Cookies.get('access_token');
+      const view = hasSmartTabs ? activeTab : 'all';
+      const res = await fetch(`${API}/inbox/conversations?view=${view}&channel=${channelFilter}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setConversations(data);
+        if (data.length > 0 && !selectedConvId) {
+          setSelectedConvId(data[0].id);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch conversations:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [activeTab, channelFilter, hasSmartTabs, selectedConvId]);
+
+  const fetchLabels = async () => {
     const token = Cookies.get('access_token');
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/labels`, { headers: { 'Authorization': `Bearer ${token}` } });
+    const res = await fetch(`${API}/labels`, { headers: { Authorization: `Bearer ${token}` } });
     if (res.ok) setAvailableLabels(await res.json());
   };
 
- // Connect to Socket and fetch conversations
- useEffect(() => {
- const token = Cookies.get('access_token');
- if (!token) return;
+  // Connect socket and load auxiliary metadata
+  useEffect(() => {
+    const token = Cookies.get('access_token');
+    if (!token) return;
 
- // Connect to /inbox namespace
- const socket = io(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/inbox`, {
- auth: { token }
- });
- socketRef.current = socket;
+    const socket = io(`${API}/inbox`, { auth: { token } });
+    socketRef.current = socket;
 
- socket.on('new_message', (data) => {
- console.log('New message received via socket:', data);
- 
- // Update conversations list (move to top, update last message)
- setConversations(prev => {
- const convIndex = prev.findIndex(c => c.id === data.conversationId);
- if (convIndex > -1) {
- const updatedConv = { ...prev[convIndex], lastMessageAt: new Date().toISOString() };
- if (data.contact) {
- updatedConv.contact = { ...updatedConv.contact, ...data.contact };
- }
- const newConvs = [...prev];
- newConvs.splice(convIndex, 1);
- newConvs.unshift(updatedConv);
- return newConvs;
- } else if (data.conversation) {
- if (prev.some(c => c.id === data.conversation.id)) return prev;
- const newConv = { ...data.conversation };
- if (data.contact) {
- newConv.contact = data.contact;
- }
- return [newConv, ...prev];
- }
- return prev;
- });
-
- // If this message belongs to the currently active conversation, append it
- setSelectedConvId(currentSelectedId => {
- if (currentSelectedId === data.conversationId) {
- setMessages(prev => {
- if (prev.some(m => m.id === data.message.id)) return prev;
- return [...prev, data.message];
- });
- }
- return currentSelectedId;
- });
- });
-
- // Fetch labels, agents, stages, and active channels
- Promise.all([
- fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/labels`, { headers: { 'Authorization': `Bearer ${token}` } }),
- fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/tenant/team`, { headers: { 'Authorization': `Bearer ${token}` } }),
- fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/leads/stages`, { headers: { 'Authorization': `Bearer ${token}` } }),
- fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/inbox/channels`, { headers: { 'Authorization': `Bearer ${token}` } })
- ])
- .then(async ([labelsRes, agentsRes, stagesRes, channelsRes]) => {
- if (labelsRes.ok) setAvailableLabels(await labelsRes.json());
- if (agentsRes.ok) setAgents(await agentsRes.json());
- if (stagesRes.ok) setStages(await stagesRes.json());
- if (channelsRes.ok) setActiveChannels(await channelsRes.json());
- })
- .catch(err => console.error(err));
-
- // Fetch initial conversations
- fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/inbox/conversations`, {
- headers: { 'Authorization': `Bearer ${token}` }
- })
- .then(res => res.json())
- .then(data => {
- setConversations(data);
- setLoading(false);
- 
- // Handle contactId from URL
- if (typeof window !== 'undefined') {
- const params = new URLSearchParams(window.location.search);
- const contactId = params.get('contactId');
- if (contactId) {
- const conv = data.find((c: any) => c.contactId === contactId);
- if (conv) {
- setSelectedConvId(conv.id);
- }
- } else if (data.length > 0) {
-    setSelectedConvId(data[0].id);
-  }
- }
- })
- .catch(err => {
- console.error('Failed to fetch conversations:', err);
- setLoading(false);
- });
-
- return () => {
- socket.disconnect();
- };
- }, []);
-
- // Fetch messages when a conversation is selected
- useEffect(() => {
- if (!selectedConvId) return;
-
- const token = Cookies.get('access_token');
- fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/inbox/conversations/${selectedConvId}/messages`, {
- headers: { 'Authorization': `Bearer ${token}` }
- })
- .then(res => res.json())
- .then(data => {
- setMessages(data);
- })
- .catch(err => console.error(err));
- }, [selectedConvId]);
-
- const scrollToBottom = () => {
- messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
- };
-
- useEffect(() => {
- if (selectedConvId) {
- const conv = conversations.find(c => c.id === selectedConvId);
- if (conv?.contact) {
- setEditDetails({
- stageId: conv.contact.stageId || '',
- followUpAt: conv.contact.followUpAt ? new Date(conv.contact.followUpAt).toISOString().split('T')[0] : '',
- phone: conv.contact.phone || '',
- email: conv.contact.email || '',
- company: conv.contact.company || '',
- address: conv.contact.address || '',
- assignedUserId: conv.contact.assignedUserId || ''
- });
- }
- }
- }, [selectedConvId, conversations]);
-
-  const handleDeleteConversation = async () => {
-    const selectedConv = conversations.find(c => c.id === selectedConvId);
-    if (!selectedConv) return;
-    if (!window.confirm(language === 'en' ? 'Are you sure you want to delete this conversation? This cannot be undone.' : 'আপনি কি নিশ্চিত যে এই কনভারসেশনটি মুছতে চান? এটি পূর্বাবস্থায় ফিরিয়ে আনা যাবে না।')) return;
-    
-    try {
-      const token = Cookies.get('access_token');
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/inbox/conversations/${selectedConv.id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
+    socket.on('new_message', (data) => {
+      setConversations(prev => {
+        const convIndex = prev.findIndex(c => c.id === data.conversationId);
+        if (convIndex > -1) {
+          const updatedConv = { ...prev[convIndex], lastMessageAt: new Date().toISOString() };
+          if (data.contact) updatedConv.contact = { ...updatedConv.contact, ...data.contact };
+          const newConvs = [...prev];
+          newConvs.splice(convIndex, 1);
+          newConvs.unshift(updatedConv);
+          return newConvs;
+        } else if (data.conversation) {
+          if (prev.some(c => c.id === data.conversation.id)) return prev;
+          return [data.conversation, ...prev];
+        }
+        return prev;
       });
-      if (res.ok) {
-        setConversations(conversations.filter(c => c.id !== selectedConv.id));
-        setSelectedConvId(null);
-      }
-    } catch (err) {
-      console.error(err);
-    }
+
+      setSelectedConvId(currentSelectedId => {
+        if (currentSelectedId === data.conversationId) {
+          setMessages(prev => {
+            if (prev.some(m => m.id === data.message.id)) return prev;
+            return [...prev, data.message];
+          });
+        }
+        return currentSelectedId;
+      });
+
+      fetchCounts();
+    });
+
+    socket.on('conversation:starred', ({ conversationId, isStarred }) => {
+      setConversations(prev => prev.map(c => c.id === conversationId ? { ...c, isStarred } : c));
+    });
+
+    socket.on('conversation:archived', ({ conversationId, isArchived }) => {
+      setConversations(prev => prev.map(c => c.id === conversationId ? { ...c, isArchived } : c));
+      fetchCounts();
+    });
+
+    socket.on('conversation:resolved', ({ conversationId, resolvedAt }) => {
+      setConversations(prev => prev.map(c => c.id === conversationId ? { ...c, status: resolvedAt ? 'resolved' : 'open', resolvedAt } : c));
+      fetchCounts();
+    });
+
+    socket.on('conversation:followUpFlagged', ({ conversationId, requiresFollowUp }) => {
+      setConversations(prev => prev.map(c => c.id === conversationId ? { ...c, requiresFollowUp } : c));
+      fetchCounts();
+    });
+
+    socket.on('conversation:collaboratorAdded', () => {
+      fetchConversations();
+    });
+
+    // Fetch initial auxiliary metadata
+    Promise.all([
+      fetch(`${API}/labels`, { headers: { Authorization: `Bearer ${token}` } }),
+      fetch(`${API}/tenant/team`, { headers: { Authorization: `Bearer ${token}` } }),
+      fetch(`${API}/inbox/channels`, { headers: { Authorization: `Bearer ${token}` } }),
+      fetch(`${API}/ai-config`, { headers: { Authorization: `Bearer ${token}` } }),
+    ]).then(async ([labelsRes, agentsRes, channelsRes, aiRes]) => {
+      if (labelsRes.ok) setAvailableLabels(await labelsRes.json());
+      if (agentsRes.ok) setAgents(await agentsRes.json());
+      if (channelsRes.ok) setActiveChannels(await channelsRes.json());
+      if (aiRes.ok) setAiAssistants(await aiRes.json());
+    }).catch(console.error);
+
+    fetchCounts();
+    fetchConversations();
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
+
+  // Refetch conversations when tab or channel changes
+  useEffect(() => {
+    fetchConversations();
+  }, [activeTab, channelFilter]);
+
+  // Fetch messages for active conversation
+  useEffect(() => {
+    if (!selectedConvId) return;
+
+    const token = Cookies.get('access_token');
+    fetch(`${API}/inbox/conversations/${selectedConvId}/messages`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setMessages(data);
+      })
+      .catch(console.error);
+  }, [selectedConvId]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const handleUpdateLeadDetails = async () => {
- const conv = conversations.find(c => c.id === selectedConvId);
- if (!conv || !conv.contact) return;
- 
- const payload: any = { ...editDetails };
- if (!payload.stageId) payload.stageId = null;
- if (!payload.assignedUserId) payload.assignedUserId = null;
-
- try {
- const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/leads/${conv.contact.id}`, {
- method: 'PATCH',
- headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${Cookies.get('access_token')}` },
- body: JSON.stringify(payload)
- });
- if (res.ok) {
- const updatedContact = await res.json();
- setConversations(prev => prev.map(c => c.id === selectedConvId ? { ...c, contact: { ...c.contact, ...updatedContact } } : c));
- }
- } catch (err) {
- console.error(err);
- }
- };
-
- const handleSaveNote = async () => {
- if (!noteContent.trim()) return;
- const conv = conversations.find(c => c.id === selectedConvId);
- if (!conv || !conv.contact) return;
- try {
- const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/leads/${conv.contact.id}/notes`, {
- method: 'POST',
- headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${Cookies.get('access_token')}` },
- body: JSON.stringify({ content: noteContent })
- });
- if (res.ok) {
- const newNote = await res.json();
- const currentNotes = conv.contact.notes || [];
- setConversations(prev => prev.map(c => c.id === selectedConvId ? { ...c, contact: { ...c.contact, notes: [newNote, ...currentNotes] } } : c));
- setNoteContent('');
- }
- } catch (err) {
- console.error(err);
- }
- };
-
-  // Auto-scroll to bottom of messages
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  const activeConv = conversations.find(c => c.id === selectedConvId);
+
+  // Actions
+  const handleToggleStar = async () => {
+    if (!selectedConvId) return;
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/inbox/conversations/${selectedConvId}/star`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setConversations(prev => prev.map(c => c.id === selectedConvId ? { ...c, isStarred: updated.isStarred } : c));
+        toast.success(updated.isStarred ? 'Starred' : 'Unstarred');
+      }
+    } catch (err) {
+      toast.error('Failed to update star');
+    }
+  };
+
+  const handleToggleArchive = async () => {
+    if (!selectedConvId || !activeConv) return;
+    const isArchived = activeConv.isArchived;
+    const endpoint = isArchived ? 'unarchive' : 'archive';
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/inbox/conversations/${selectedConvId}/${endpoint}`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setConversations(prev => prev.map(c => c.id === selectedConvId ? { ...c, isArchived: !isArchived } : c));
+        fetchCounts();
+        toast.success(isArchived ? 'Unarchived' : 'Archived');
+      }
+    } catch (err) {
+      toast.error('Failed to update archive status');
+    }
+  };
+
+  const handleToggleResolve = async () => {
+    if (!selectedConvId || !activeConv) return;
+    const isResolved = activeConv.status === 'resolved';
+    const endpoint = isResolved ? 'reopen' : 'resolve';
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/inbox/conversations/${selectedConvId}/${endpoint}`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setConversations(prev => prev.map(c => c.id === selectedConvId ? { ...c, status: updated.status, resolvedAt: updated.resolvedAt } : c));
+        fetchCounts();
+        toast.success(isResolved ? 'Reopened' : 'Resolved');
+      }
+    } catch (err) {
+      toast.error('Failed to update resolve status');
+    }
+  };
+
+  const handleToggleFollowUp = async () => {
+    if (!selectedConvId || !activeConv) return;
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/inbox/conversations/${selectedConvId}/follow-up`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setConversations(prev => prev.map(c => c.id === selectedConvId ? { ...c, requiresFollowUp: updated.requiresFollowUp } : c));
+        fetchCounts();
+        toast.success(updated.requiresFollowUp ? 'Flagged for follow-up' : 'Unflagged follow-up');
+      }
+    } catch (err) {
+      toast.error('Failed to update follow-up status');
+    }
+  };
+
+  const handleAssignAgent = async (agentId: string | null) => {
+    if (!selectedConvId) return;
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/inbox/conversations/${selectedConvId}/assign`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ agentId })
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setConversations(prev => prev.map(c => c.id === selectedConvId ? { ...c, assignedAgentId: agentId, assignedAgent: updated.assignedAgent } : c));
+        toast.success('Agent assigned');
+      }
+    } catch (err) {
+      toast.error('Failed to assign agent');
+    }
+    setShowAssignMenu(false);
+  };
+
+  const handleAddCollaborator = async (userId: string) => {
+    if (!selectedConvId) return;
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/inbox/conversations/${selectedConvId}/collaborators`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ userId })
+      });
+      if (res.ok) {
+        fetchConversations();
+        toast.success('Collaborator added');
+      }
+    } catch (err) {
+      toast.error('Failed to add collaborator');
+    }
+    setShowCollaboratorMenu(false);
+  };
+
+  const handleSetAssistant = async (aiAssistantId: string | null) => {
+    if (!selectedConvId) return;
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/inbox/conversations/${selectedConvId}/assistant`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ aiAssistantId })
+      });
+      if (res.ok) {
+        setConversations(prev => prev.map(c => c.id === selectedConvId ? { ...c, aiAssistantId } : c));
+        toast.success('AI Assistant updated');
+      }
+    } catch (err) {
+      toast.error('Failed to set AI Assistant');
+    }
+    setShowAiPickerMenu(false);
+  };
 
   const handleToggleAiReply = async (isAiEnabled: boolean) => {
     if (!selectedConvId) return;
     try {
       const token = Cookies.get('access_token');
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/inbox/conversations/${selectedConvId}/toggle-ai`, {
+      const res = await fetch(`${API}/inbox/conversations/${selectedConvId}/toggle-ai`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -270,718 +374,605 @@ export default function InboxPage() {
       });
       if (res.ok) {
         setConversations(prev => prev.map(c => c.id === selectedConvId ? { ...c, isAiEnabled } : c));
+        toast.success(`AI Auto-Reply ${isAiEnabled ? 'ON' : 'OFF'}`);
       }
     } catch (err) {
-      console.error(err);
+      toast.error('Failed to toggle AI');
     }
   };
 
- const handleToggleLabel = async (labelId: string) => {
- if (!selectedConvId) return;
- try {
- const token = Cookies.get('access_token');
- const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/inbox/conversations/${selectedConvId}/labels`, {
- method: 'POST',
- headers: {
- 'Authorization': `Bearer ${token}`,
- 'Content-Type': 'application/json'
- },
- body: JSON.stringify({ labelId })
- });
- if (res.ok) {
- const { added } = await res.json();
- setConversations(prev => prev.map(conv => {
- if (conv.id === selectedConvId) {
- let newLabels = [...(conv.labels || [])];
- if (added) {
- const lbl = availableLabels.find(l => l.id === labelId);
- if (lbl) newLabels.push({ label: lbl, labelId });
- } else {
- newLabels = newLabels.filter(l => l.labelId !== labelId);
- }
- return { ...conv, labels: newLabels };
- }
- return conv;
- }));
- }
- } catch (err) {
- console.error(err);
- }
- };
-
- const handleSendMessage = async (e: React.FormEvent) => {
- e.preventDefault();
- if ((!inputText.trim() && !selectedFile) || !selectedConvId) return;
-
- const token = Cookies.get('access_token');
- const content = inputText;
- setInputText('');
- const fileToSend = selectedFile;
- setSelectedFile(null);
-
- try {
- let res;
- if (fileToSend) {
- const formData = new FormData();
- formData.append('conversationId', selectedConvId);
- if (content) formData.append('content', content);
- formData.append('file', fileToSend);
- 
- res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/inbox/messages/media`, {
- method: 'POST',
- headers: {
- 'Authorization': `Bearer ${token}`
- },
- body: formData
- });
- } else {
- res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/inbox/messages`, {
- method: 'POST',
- headers: {
- 'Authorization': `Bearer ${token}`,
- 'Content-Type': 'application/json'
- },
- body: JSON.stringify({
- conversationId: selectedConvId,
- content
- })
- });
- }
-
- if (!res.ok) {
- throw new Error('Failed to send message');
- }
- } catch (err) {
- console.error(err);
- }
- };
-
- const handleAssignAgent = async (agentId: string | null) => {
- if (!selectedConvId) return;
- try {
- const token = Cookies.get('access_token');
- const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/inbox/conversations/${selectedConvId}/assign`, {
- method: 'PATCH',
- headers: {
- 'Authorization': `Bearer ${token}`,
- 'Content-Type': 'application/json'
- },
- body: JSON.stringify({ agentId })
- });
- if (res.ok) {
- const updatedConv = await res.json();
- setConversations(prev => prev.map(conv => conv.id === selectedConvId ? { ...conv, assignedAgentId: agentId, assignedAgent: updatedConv.assignedAgent } : conv));
- }
- } catch (err) {
- console.error(err);
- }
- setShowAssignMenu(false);
- };
-
-  const handleSaveLabel = async (data: { name: string; color: string; aiPrompt?: string }) => {
+  const handleToggleLabel = async (labelId: string) => {
+    if (!selectedConvId) return;
     try {
       const token = Cookies.get('access_token');
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/labels`, {
+      const res = await fetch(`${API}/inbox/conversations/${selectedConvId}/labels`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(data)
+        body: JSON.stringify({ labelId })
       });
       if (res.ok) {
-        setIsCreatingLabel(false);
-        fetchLabels();
-        toast.success(language === 'en' ? 'Label created' : 'লেবেল তৈরি হয়েছে');
-      } else {
-        toast.error('Failed to create label');
+        const { added } = await res.json();
+        setConversations(prev => prev.map(conv => {
+          if (conv.id === selectedConvId) {
+            let newLabels = [...(conv.labels || [])];
+            if (added) {
+              const lbl = availableLabels.find(l => l.id === labelId);
+              if (lbl) newLabels.push({ label: lbl, labelId });
+            } else {
+              newLabels = newLabels.filter(l => l.labelId !== labelId);
+            }
+            return { ...conv, labels: newLabels };
+          }
+          return conv;
+        }));
       }
     } catch (err) {
       console.error(err);
-      toast.error('Error creating label');
     }
   };
 
-  const handleSyncAi = async (id: string) => {
-    setSyncingLabelId(id);
+  const handleCreateLabel = async (data: { name: string; color: string; aiPrompt?: string }) => {
+    const token = Cookies.get('access_token');
+    const res = await fetch(`${API}/labels`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data)
+    });
+    if (res.ok) {
+      const created = await res.json();
+      fetchLabels();
+      return created;
+    }
+    return null;
+  };
+
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if ((!inputText.trim() && !selectedFile) || !selectedConvId) return;
+
+    const token = Cookies.get('access_token');
+    const content = inputText;
+    setInputText('');
+    const fileToSend = selectedFile;
+    setSelectedFile(null);
+
+    try {
+      let res;
+      if (fileToSend) {
+        const formData = new FormData();
+        formData.append('conversationId', selectedConvId);
+        if (content) formData.append('content', content);
+        formData.append('file', fileToSend);
+        
+        res = await fetch(`${API}/inbox/messages/media`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: formData
+        });
+      } else {
+        res = await fetch(`${API}/inbox/messages`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ conversationId: selectedConvId, content })
+        });
+      }
+
+      if (!res.ok) throw new Error('Failed to send message');
+    } catch (err) {
+      toast.error('Failed to send message');
+    }
+  };
+
+  const handleDeleteConversation = async () => {
+    if (!selectedConvId || !activeConv) return;
+    if (!window.confirm(language === 'en' ? 'Are you sure you want to delete this conversation?' : 'কনভারসেশনটি মুছে ফেলতে চান?')) return;
+
     try {
       const token = Cookies.get('access_token');
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/labels/${id}/sync-ai`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
+      const res = await fetch(`${API}/inbox/conversations/${selectedConvId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
-        toast.success(language === 'en' ? 'Synced to AI Training!' : 'এআই ট্রেনিং এ সিঙ্ক হয়েছে!');
-      } else {
-        toast.error('Failed to sync to AI');
+        setConversations(prev => prev.filter(c => c.id !== selectedConvId));
+        setSelectedConvId(null);
+        fetchCounts();
+        toast.success('Conversation deleted');
       }
     } catch (err) {
-      console.error(err);
-      toast.error('Error syncing to AI');
-    } finally {
-      setSyncingLabelId(null);
+      toast.error('Failed to delete conversation');
     }
   };
 
-  const selectedConv = conversations.find(c => c.id === selectedConvId);
- const filteredConversations = conversations.filter(c => channelFilter === 'all' || c.channelConnectionId === channelFilter || (channelFilter === c.channel && !c.channelConnectionId));
-
- if (loading) {
- return (
- <div className="flex flex-col items-center justify-center h-full bg-white/40 backdrop-blur-2xl">
- <div className="w-12 h-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin mb-4"></div>
- <p className="text-[13px] font-medium text-zinc-500 ">
- {language === 'en' ? 'Loading Inbox...' : 'ইনবক্স লোড হচ্ছে...'}
- </p>
- </div>
- );
- }
-
- if (activeChannels.length === 0) {
- return (
- <div className="flex flex-col items-center justify-center h-full bg-white/40 backdrop-blur-2xl p-6 relative">
- <div className="absolute inset-0 bg-grid-pattern opacity-10 pointer-events-none" />
- <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-emerald-500/20 flex items-center justify-center mb-6 shadow-lg shadow-primary/5 ring-1 ring-primary/20">
- <MessageSquare className="w-10 h-10 text-primary" />
- </div>
- <h2 className="text-2xl font-bold text-zinc-900 mb-3 text-center">
- {language === 'en' ? 'Inbox requires a connected channel' : 'ইনবক্স ব্যবহার করতে একটি চ্যানেল কানেক্ট করুন'}
- </h2>
- <p className="text-[14px] text-zinc-500 mb-8 text-center max-w-md leading-relaxed">
- {language === 'en' 
- ? 'To start receiving and sending messages to your leads, you must connect at least one active channel like WhatsApp or Messenger.' 
- : 'লিডদের মেসেজ আদান-প্রদান শুরু করতে, আপনাকে অন্তত একটি অ্যাক্টিভ চ্যানেল (WhatsApp বা Messenger) কানেক্ট করতে হবে।'}
- </p>
- <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
- <Link href="/dashboard/settings/whatsapp" className="px-6 py-2.5 bg-gradient-to-r from-primary to-emerald-500 text-white rounded-xl font-medium shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">
- <Phone className="w-4 h-4" />
- {language === 'en' ? 'Connect WhatsApp' : 'WhatsApp কানেক্ট করুন'}
- </Link>
- <Link href="/dashboard/settings/messenger" className="px-6 py-2.5 bg-white text-zinc-700 border border-slate-200 rounded-xl font-medium shadow-sm hover:bg-slate-50 :bg-zinc-700 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">
- <MessageCircle className="w-4 h-4" />
- {language === 'en' ? 'Connect Messenger' : 'Messenger কানেক্ট করুন'}
- </Link>
- </div>
- </div>
- );
- }
+  const handleUpdateContactInList = (contactId: string, updatedContactData: any) => {
+    setConversations(prev => prev.map(c => {
+      if (c.contactId === contactId) {
+        return { ...c, contact: { ...c.contact, ...updatedContactData } };
+      }
+      return c;
+    }));
+  };
 
   return (
-  <div className="flex h-[calc(100vh-64px)] w-full bg-slate-50 overflow-hidden relative">
- {/* Left Pane - Conversations List */}
- <div className={`w-full md:w-48 xl:w-52 flex-shrink-0 border-r border-slate-200 flex flex-col bg-white relative z-10 ${selectedConvId ? 'hidden md:flex' : 'flex'}`}>
- <div className="px-2 py-1.5 border-b border-surface-hover">
- <div className="flex items-center justify-between mb-1.5">
- <h2 className="text-[14px] font-bold">{language === 'en' ? 'Inbox' : 'ইনবক্স'}</h2>
- </div>
- <div className="relative">
- <Search className="w-3 h-3 absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400" />
- <input 
- type="text" 
- placeholder={language === 'en' ? 'Search contacts...' : 'কন্টাক্ট খুঁজুন...'} 
- className="w-full bg-surface border border-primary/10 hover:border-primary/20 transition-all rounded-md pl-7 pr-2 py-1 text-[12px] focus:outline-none focus:border-primary"
- />
- </div>
- 
- <div className="flex flex-wrap gap-1 bg-surface-hover p-1 rounded-md mt-1.5">
- <button 
- onClick={() => setChannelFilter('all')}
- className={`flex-1 py-1 px-2 min-w-[60px] text-[11px] font-medium rounded-md transition-colors ${channelFilter === 'all' ? 'bg-white shadow-sm text-slate-900 ' : 'text-slate-500 hover:text-slate-700 '}`}
- >
- All
- </button>
- {activeChannels.map(channel => (
- <button 
- key={channel.id}
- onClick={() => setChannelFilter(channel.id)}
- className={`relative flex-1 py-1 px-2 min-w-[80px] text-[11px] font-medium rounded-md transition-colors flex justify-center items-center gap-1 ${channelFilter === channel.id ? 'bg-white shadow-sm text-slate-900 ' : 'text-slate-500 hover:text-slate-700 '}`}
- >
- {channel.channelType === 'whatsapp' ? <Phone className="w-3 h-3" /> : <MessageCircle className="w-3 h-3" />}
- <span className="truncate max-w-[80px]">{channel.displayName || channel.phoneNumber || channel.channelType}</span>
- {channel.status === 'active' && (
-   <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
- )}
- </button>
- ))}
- </div>
- </div>
- 
- <div className="flex-1 overflow-y-auto custom-scrollbar p-1.5 space-y-0.5">
- {loading ? (
- <div className="p-4 text-center text-sm text-zinc-500 font-medium animate-pulse">Loading...</div>
- ) : conversations.length === 0 ? (
- <div className="p-8 text-center flex flex-col items-center text-zinc-400 bg-white/30 rounded-2xl border border-dashed border-zinc-300 mt-4">
- <MessageSquare className="w-8 h-8 mb-3 opacity-50 text-primary" />
- <p className="text-sm font-medium">{language === 'en' ? 'No conversations yet' : 'কোনো কথোপকথন নেই'}</p>
- </div>
- ) : (
- filteredConversations.map((conv) => (
- <button
- key={conv.id}
- onClick={() => {
- setSelectedConvId(conv.id);
- if (conv.unreadCount > 0) {
- setConversations(prev => prev.map(c => c.id === conv.id ? { ...c, unreadCount: 0 } : c));
- }
- }}
- className={`w-full flex items-center gap-2 p-1.5 rounded-lg transition-all text-left border ${
- selectedConvId === conv.id 
- ? 'bg-white/90 shadow-sm border-primary/20 ring-1 ring-primary/10' 
- : 'bg-transparent border-transparent hover:bg-white/40 :bg-zinc-800/40'
- }`}
- >
- <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-white font-bold text-[10px] shadow-inner ${selectedConvId === conv.id ? 'bg-gradient-to-br from-primary to-emerald-500' : 'bg-gradient-to-br from-slate-300 to-slate-400 '}`}>
- {conv.contact?.name ? conv.contact.name.charAt(0) : <UserIcon className="w-3 h-3" />}
- </div>
- <div className="flex-1 min-w-0">
- <div className="flex justify-between items-baseline leading-none">
- <h3 className="text-[12px] font-semibold truncate text-zinc-900 ">
- {conv.contact?.name || conv.contact?.externalContactId || 'Unknown'}
- </h3>
- <div className="flex flex-col items-end flex-shrink-0 ml-1 gap-1">
-   <span className="text-[9px] text-zinc-400">
-     {new Date(conv.lastMessageAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-   </span>
-   {conv.unreadCount > 0 && (
-     <span className="flex h-4 items-center justify-center rounded-full bg-primary px-1.5 text-[9px] font-bold text-white leading-none shadow-sm">
-       {conv.unreadCount > 99 ? '99+' : conv.unreadCount}
-     </span>
-   )}
- </div>
- </div>
- <p className="text-[10px] text-zinc-500 truncate mt-0.5 leading-tight flex items-center gap-1">
- {conv.channel === 'whatsapp' ? <Phone className="w-3 h-3" /> : <MessageCircle className="w-3 h-3" />}
- {conv.channelConnection ? (conv.channelConnection.displayName || conv.channelConnection.phoneNumber) : conv.channel}
- </p>
- {conv.labels && conv.labels.length > 0 && (
- <div className="flex flex-wrap gap-1 mt-1">
- {conv.labels.map((cl: any) => (
- <span key={cl.labelId} className="px-1.5 py-0.5 rounded text-[10px] font-medium border"
- style={{ backgroundColor: `${cl.label.color}15`, color: cl.label.color, borderColor: `${cl.label.color}30` }}>
- {cl.label.name}
- </span>
- ))}
- </div>
- )}
- {conv.assignedAgent && (
- <div className="text-[10px] text-zinc-500 mt-1 flex items-center gap-1">
- <UserIcon className="w-3 h-3" />
- {conv.assignedAgent.name}
- </div>
- )}
- </div>
- </button>
- ))
- )}
- </div>
- </div>
+    <div className="flex h-[calc(100vh-4rem)] overflow-hidden bg-background text-foreground">
+      
+      {/* LEFT COLUMN: Conversation List */}
+      <div className="w-full md:w-80 lg:w-96 border-r border-border flex flex-col bg-surface/70 backdrop-blur-xl shrink-0">
+        
+        {/* Smart Tabs Bar */}
+        {hasSmartTabs && (
+          <div className="flex items-center gap-1 p-2 border-b border-border overflow-x-auto custom-scrollbar text-[11px] font-medium shrink-0 bg-muted/30">
+            {[
+              { id: 'all', label: language === 'en' ? 'All' : 'সব', count: tabCounts.all },
+              { id: 'order_requests', label: language === 'en' ? 'Orders' : 'অর্ডার', count: tabCounts.order_requests },
+              { id: 'unreplied', label: language === 'en' ? 'Unreplied' : 'আনরিপ্লাইড', count: tabCounts.unreplied },
+              { id: 'tickets', label: language === 'en' ? 'Tickets' : 'টিকিট', count: tabCounts.tickets },
+              { id: 'resolved', label: language === 'en' ? 'Resolved' : 'সমাধানকৃত', count: tabCounts.resolved },
+              { id: 'archived', label: language === 'en' ? 'Archived' : 'আর্কাইভ', count: tabCounts.archived },
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-2.5 py-1 rounded-lg transition-all shrink-0 flex items-center gap-1 cursor-pointer ${
+                  activeTab === tab.id 
+                    ? 'bg-primary text-primary-foreground font-bold shadow-xs' 
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                }`}
+              >
+                {tab.label}
+                {tab.count !== undefined && (
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                    activeTab === tab.id ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-muted text-muted-foreground'
+                  }`}>
+                    {tab.count}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
 
-  {/* Right Pane - Chat Window & Lead Info */}
-  <div className={`flex-1 min-w-0 bg-[#eef2f5] relative overflow-hidden ${selectedConvId ? 'flex flex-col md:flex-row h-full' : 'hidden md:flex md:flex-row md:h-full'}`}>
-  {selectedConvId ? (
-  <>
-  {/* Middle Pane - Active Chat Board */}
-  <div className="flex-1 flex flex-col min-w-0 relative h-full overflow-hidden">
-  {/* Sticky Pinned Chat Header */}
-  <div className="h-[48px] md:h-[44px] px-3 border-b border-slate-200/80 flex items-center justify-between bg-white shrink-0 z-30 sticky top-0 shadow-sm">
-  <div className="flex items-center gap-2 min-w-0">
-  <button 
-  onClick={() => setSelectedConvId(null)}
-  className="md:hidden p-1.5 -ml-1 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors shrink-0"
-  title={language === 'en' ? 'Back to conversations' : 'ইনবক্স লিস্টে ফিরে যান'}
-  >
-  <ChevronLeft className="w-5 h-5 text-primary" />
-  </button>
-  <div className="w-8 h-8 md:w-7 md:h-7 rounded-full bg-gradient-to-br from-[#1F824A] to-teal-700 text-white flex items-center justify-center font-bold text-[11px] md:text-[10px] uppercase shadow-sm shrink-0">
-  {selectedConv?.contact?.name ? selectedConv.contact.name.charAt(0) : <UserIcon className="w-3.5 h-3.5" />}
-  </div>
-  <div className="min-w-0 flex-1">
-  <h2 className="font-bold text-[13px] md:text-[12px] text-slate-900 leading-none mb-0.5 truncate">
-  {selectedConv?.contact?.name || selectedConv?.contact?.externalContactId || 'Unknown Contact'}
-  </h2>
-  <div className="flex items-center gap-1.5 text-[10px] text-slate-500 leading-none truncate">
-  <span className="flex w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-  <span className="truncate">{selectedConv?.channelConnection ? (selectedConv.channelConnection.displayName || selectedConv.channelConnection.phoneNumber) : (selectedConv?.channel === 'whatsapp' ? 'WhatsApp' : selectedConv?.channel)}</span>
-  </div>
-  </div>
-  </div>
-  <div className="flex items-center gap-1.5 text-slate-500 relative shrink-0">
-  {/* AI Toggle */}
-  <button
-  onClick={() => handleToggleAiReply(selectedConv?.isAiEnabled === false ? true : false)}
-  className={`px-2 py-1 rounded-lg transition-colors flex items-center gap-1 text-xs border ${selectedConv?.isAiEnabled !== false ? 'bg-primary/10 text-primary border-primary/30 font-semibold' : 'hover:bg-slate-100 border-slate-200 text-slate-500'}`}
-  title={selectedConv?.isAiEnabled !== false ? 'AI Auto-Reply: ON' : 'AI Auto-Reply: OFF'}
-  >
-  <Bot className="w-3.5 h-3.5 text-primary" />
-  <span className="text-[11px] font-semibold whitespace-nowrap hidden sm:inline-block">
-  {language === 'en' ? 'AI Reply' : 'এআই রিপ্লাই'}
-  </span>
-  {selectedConv?.isAiEnabled !== false ? <ToggleRight className="w-4 h-4 text-primary" /> : <ToggleLeft className="w-4 h-4 text-slate-400" />}
-  </button>  
-  
-  <button 
-     onClick={() => { setShowLabelsMenu(!showLabelsMenu); setShowAssignMenu(false); setIsCreatingLabel(false); }}
-     className={`p-1.5 rounded-lg transition-colors flex items-center gap-1 text-sm ${showLabelsMenu ? 'bg-primary/10 text-primary' : 'hover:bg-slate-100 text-slate-600'}`}
-     title={language === 'en' ? 'Labels' : 'লেবেলস'}
-   >
-  <Tag className="w-4 h-4" />
-  </button>
-   {showLabelsMenu && (
-     <div className="absolute right-0 top-full mt-2 w-72 bg-white border border-slate-200 rounded-xl shadow-xl z-40 p-2 animate-in fade-in zoom-in duration-200">
-       {isCreatingLabel ? (
-         <LabelForm 
-           onSave={handleSaveLabel} 
-           onCancel={() => setIsCreatingLabel(false)} 
-         />
-       ) : (
-         <>
-           <div className="flex items-center justify-between px-2 py-1.5 mb-1 border-b border-slate-100">
-             <span className="text-xs font-bold text-slate-600">
-               {language === 'en' ? 'Toggle Labels' : 'লেবেল পরিবর্তন করুন'}
-             </span>
-             <button
-               onClick={() => setIsCreatingLabel(true)}
-               className="text-xs text-primary hover:text-primary/80 font-medium flex items-center gap-1"
-             >
-               <Plus className="w-3 h-3" />
-               {language === 'en' ? 'Add' : 'যুক্ত করুন'}
-             </button>
-           </div>
-           <div className="max-h-64 overflow-y-auto">
-             {availableLabels.length === 0 ? (
-               <div className="text-xs px-2 py-4 text-slate-400 text-center">No labels found</div>
-             ) : (
-               availableLabels.map(label => {
-                 const isApplied = selectedConv?.labelIds?.includes(label.id);
-                 return (
-                   <div key={label.id} className="flex items-center group hover:bg-slate-50 rounded-lg pr-1">
-                     <button
-                       onClick={() => handleToggleLabel(label.id)}
-                       className="flex-1 flex items-center gap-2 px-2 py-1.5 transition-colors text-left text-sm"
-                     >
-                       <div className="w-3 h-3 rounded-full" style={{ backgroundColor: label.color || '#3b82f6' }}></div>
-                       <span className="flex-1 truncate text-slate-700 group-hover:text-slate-900">
-                         {label.name}
-                       </span>
-                       {isApplied && <Check className="w-3.5 h-3.5 text-primary" />}
-                     </button>
-                   </div>
-                 );
-               })
-             )}
-           </div>
-         </>
-       )}
-     </div>
-   )}
+        {/* Channel Filter Row */}
+        <div className="flex items-center gap-1.5 px-3 py-2 border-b border-border bg-background/50 shrink-0 text-xs">
+          <button
+            onClick={() => setChannelFilter('all')}
+            className={`px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors cursor-pointer ${
+              channelFilter === 'all' ? 'bg-secondary text-secondary-foreground font-bold' : 'text-muted-foreground hover:bg-muted'
+            }`}
+          >
+            {language === 'en' ? 'All Channels' : 'সব চ্যানেল'}
+          </button>
+          {activeChannels.map(ch => (
+            <button
+              key={ch.id}
+              onClick={() => setChannelFilter(ch.channelType)}
+              className={`px-2 py-0.5 rounded-full text-[10px] font-medium capitalize transition-colors cursor-pointer ${
+                channelFilter === ch.channelType ? 'bg-secondary text-secondary-foreground font-bold' : 'text-muted-foreground hover:bg-muted'
+              }`}
+            >
+              {ch.channelType}
+            </button>
+          ))}
+        </div>
 
-  <button onClick={() => setShowLeadInfo(!showLeadInfo)} className={`p-1.5 rounded-lg transition-colors flex items-center gap-1 ${showLeadInfo ? 'bg-primary/10 text-primary' : 'hover:bg-slate-100 text-slate-600'}`} title={language === 'en' ? 'Lead Details' : 'লিড ডিটেইলস'}>
-  <PanelRight className="w-4 h-4" />
-  </button>
-  </div>
-  </div>
+        {/* Conversation Items List */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar divide-y divide-border/40">
+          {loading ? (
+            <div className="p-4 text-center text-xs text-muted-foreground animate-pulse">
+              {language === 'en' ? 'Loading inbox...' : 'ইনবক্স লোড হচ্ছে...'}
+            </div>
+          ) : conversations.length === 0 ? (
+            <div className="p-8 text-center text-xs text-muted-foreground space-y-1">
+              <MessageCircle className="w-8 h-8 mx-auto text-muted-foreground/40 mb-2" />
+              <p className="font-semibold">{language === 'en' ? 'No conversations found' : 'কোন কনভারসেশন নেই'}</p>
+              <p className="text-[11px] text-muted-foreground">{language === 'en' ? 'Messages will appear here when customers message you.' : 'কাস্টমার মেসেজ দিলে তা এখানে আসবে।'}</p>
+            </div>
+          ) : (
+            conversations.map(conv => {
+              const isSelected = conv.id === selectedConvId;
+              const lastMsg = conv.messages?.[0];
+              const lastText = lastMsg ? (typeof lastMsg.content === 'object' ? (lastMsg.content.body || lastMsg.content.text || JSON.stringify(lastMsg.content)) : String(lastMsg.content)) : '';
 
-  {/* Messages Area */}
-  <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2 custom-scrollbar bg-gradient-to-b from-[#eef2f5] via-[#e8ecef] to-[#e4e8ec] relative z-0">
-  {loading ? (
-  <div className="h-full flex items-center justify-center text-slate-500 font-medium text-[12px] relative z-10">
-  {language === 'en' ? 'Loading messages...' : 'মেসেজ লোড হচ্ছে...'}
-  </div>
-  ) : messages.length === 0 ? (
-  <div className="h-full flex items-center justify-center text-slate-500 font-medium text-[12px] relative z-10">
-  {language === 'en' ? 'No messages in this conversation' : 'এই কনভার্সেশনে কোনো মেসেজ নেই'}
-  </div>
-  ) : (
-  messages.map((msg, idx) => {
-  const isOutbound = msg.direction === 'outbound';
-  const isFailed = msg.status === 'failed' || msg.status === 'rate_limited';
+              return (
+                <div
+                  key={conv.id}
+                  onClick={() => setSelectedConvId(conv.id)}
+                  className={`p-3 cursor-pointer transition-all hover:bg-muted/50 ${
+                    isSelected ? 'bg-primary/10 border-l-4 border-primary' : ''
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="relative shrink-0">
+                        <div className="w-9 h-9 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-xs border border-primary/20">
+                          {conv.contact?.name ? conv.contact.name[0].toUpperCase() : 'C'}
+                        </div>
+                        <span className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-background text-[9px] font-bold text-white flex items-center justify-center uppercase ${
+                          conv.channel === 'whatsapp' ? 'bg-emerald-600' : conv.channel === 'messenger' ? 'bg-blue-600' : 'bg-pink-600'
+                        }`}>
+                          {conv.channel[0]}
+                        </span>
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1">
+                          <h4 className="text-xs font-bold text-foreground truncate">
+                            {conv.contact?.name || conv.contact?.phone || 'Customer'}
+                          </h4>
+                          {conv.isStarred && <Star className="w-3 h-3 text-amber-500 fill-amber-500 shrink-0" />}
+                          {conv.requiresFollowUp && <Flag className="w-3 h-3 text-red-500 shrink-0" />}
+                        </div>
+                        <p className="text-[11px] text-muted-foreground truncate max-w-[180px]">
+                          {lastText || (language === 'en' ? 'No messages' : 'কোন মেসেজ নেই')}
+                        </p>
+                      </div>
+                    </div>
 
-  // Parse message content (handles object, JSON string, or raw string)
-  let contentObj = msg.content;
-  if (typeof contentObj === 'string') {
-    try {
-      contentObj = JSON.parse(contentObj);
-    } catch (e) {
-      contentObj = { body: msg.content, text: msg.content };
-    }
-  }
+                    <div className="text-right shrink-0 space-y-1">
+                      <span className="text-[10px] text-muted-foreground">
+                        {conv.lastMessageAt ? new Date(conv.lastMessageAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                      </span>
+                      {conv.unreadCount > 0 && (
+                        <div>
+                          <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full shadow-xs">
+                            {conv.unreadCount}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
 
-  let mediaUrl = contentObj?.mediaUrl || contentObj?.url || contentObj?.fileUrl || contentObj?.image;
-  if (mediaUrl && typeof mediaUrl === 'string') {
-    if (!mediaUrl.startsWith('http://') && !mediaUrl.startsWith('https://') && !mediaUrl.startsWith('data:')) {
-      mediaUrl = `${API}${mediaUrl.startsWith('/') ? '' : '/'}${mediaUrl}`;
-    }
-  }
+                  {/* Badges & Collaborators footer */}
+                  <div className="mt-2 flex items-center justify-between text-[10px] pt-1">
+                    <div className="flex flex-wrap items-center gap-1">
+                      {conv.labels?.map((l: any) => (
+                        <span key={l.labelId} style={{ backgroundColor: `${l.label.color}20`, color: l.label.color, borderColor: l.label.color }} className="px-1.5 py-0.2 rounded border text-[9px] font-medium">
+                          {l.label.name}
+                        </span>
+                      ))}
+                      {conv.assignedAgentId === null && (
+                        <span className="text-amber-600 bg-amber-50 px-1 rounded text-[9px]">Unassigned</span>
+                      )}
+                    </div>
 
-  const textBody = contentObj?.body || contentObj?.text || (typeof contentObj === 'string' ? '' : (contentObj?.caption || ''));
-  const isImage = msg.type === 'image' || !!mediaUrl;
+                    {/* Collaborator Avatar Chips */}
+                    {hasCollaborators && conv.collaborators && conv.collaborators.length > 0 && (
+                      <div className="flex -space-x-1 overflow-hidden">
+                        {conv.collaborators.map((col: any) => (
+                          <div key={col.userId} title={col.user?.name} className="inline-block h-4 w-4 rounded-full ring-1 ring-background bg-secondary/20 text-secondary text-[8px] font-bold text-center leading-4">
+                            {col.user?.name?.[0] || 'A'}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
 
-  return (
-  <div key={msg.id || idx} className={`flex relative z-10 ${isOutbound ? 'justify-end' : 'justify-start'}`}>
-  <div className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-3.5 py-2 text-[12px] relative shadow-md transition-all ${
-  isFailed
-  ? 'bg-red-50 border border-red-300 text-red-900 rounded-br-none'
-  : isOutbound 
-  ? 'bg-gradient-to-r from-[#1F824A] to-[#166538] text-white rounded-br-none border border-emerald-600/30' 
-  : 'bg-white border border-slate-200/90 text-slate-900 rounded-bl-none'
-  }`}>
-  <div className="whitespace-pre-wrap leading-relaxed flex flex-col">
-  {contentObj?.quotedMsg && (
-  <div className="mb-2 p-2 rounded-lg bg-black/10 border-l-4 border-emerald-300 text-[11px] opacity-90">
-  <div className="font-semibold mb-0.5">{contentObj.quotedMsg.participant?.split('@')[0] || 'Someone'}</div>
-  <div className="truncate max-w-[200px]">{contentObj.quotedMsg.text}</div>
-  </div>
-  )}
+      {/* MIDDLE COLUMN: Active Chat Panel */}
+      {selectedConvId && activeConv ? (
+        <div className="flex-1 flex flex-col min-w-0 bg-background">
+          
+          {/* Header */}
+          <div className="h-14 px-4 border-b border-border bg-surface/80 backdrop-blur-xl flex items-center justify-between shrink-0 shadow-2xs">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-9 h-9 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-xs border border-primary/20 shrink-0">
+                {activeConv.contact?.name ? activeConv.contact.name[0].toUpperCase() : 'C'}
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-xs font-bold text-foreground truncate flex items-center gap-2">
+                  {activeConv.contact?.name || activeConv.contact?.phone || 'Customer'}
+                  <span className="text-[10px] text-muted-foreground font-normal capitalize">({activeConv.channel})</span>
+                </h3>
+                <p className="text-[10px] text-muted-foreground flex items-center gap-2">
+                  <span>{activeConv.contact?.phone || activeConv.contact?.externalContactId}</span>
+                  {activeConv.assignedAgent && (
+                    <span className="text-primary font-medium">· Assigned to: {activeConv.assignedAgent.name}</span>
+                  )}
+                </p>
+              </div>
+            </div>
 
-  {/* AI Vision Badge: ONLY show for INBOUND customer images */}
-  {!isOutbound && (isImage || msg.isVisionRead) && (
-  <div className="flex items-center gap-1 text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/80 mb-1.5 w-fit font-semibold shadow-xs">
-  <Eye className="w-3 h-3 text-emerald-600 shrink-0" />
-  <span>{language === 'en' ? 'AI Vision Image Read (5 Responses)' : 'এআই ভিশন ইমেজ রিড (৫ রেসপন্স)'}</span>
-  </div>
-  )}
+            {/* Header Control Buttons */}
+            <div className="flex items-center gap-1 text-muted-foreground">
+              {/* Star */}
+              <button
+                onClick={handleToggleStar}
+                className={`p-1.5 rounded-lg hover:bg-muted transition-colors ${activeConv.isStarred ? 'text-amber-500' : ''}`}
+                title={activeConv.isStarred ? 'Unstar' : 'Star'}
+              >
+                <Star className={`w-4 h-4 ${activeConv.isStarred ? 'fill-amber-500' : ''}`} />
+              </button>
 
-  {contentObj?.thumbnail && !mediaUrl && (
-  <img 
-  src={`data:image/jpeg;base64,${contentObj.thumbnail}`} 
-  alt="Media thumbnail" 
-  onClick={() => setZoomedImage(`data:image/jpeg;base64,${contentObj.thumbnail}`)}
-  className="max-w-[200px] rounded-lg mb-2 shadow-sm border border-black/10 cursor-pointer hover:opacity-90 transition-opacity" 
-  />
-  )}
+              {/* Follow-up flag */}
+              <button
+                onClick={handleToggleFollowUp}
+                className={`p-1.5 rounded-lg hover:bg-muted transition-colors ${activeConv.requiresFollowUp ? 'text-red-500' : ''}`}
+                title="Flag for follow-up"
+              >
+                <Flag className={`w-4 h-4 ${activeConv.requiresFollowUp ? 'fill-red-500' : ''}`} />
+              </button>
 
-  {mediaUrl && (
-  <img 
-  src={mediaUrl} 
-  alt="Media image" 
-  onClick={() => setZoomedImage(mediaUrl)}
-  className="max-w-[250px] max-h-[250px] object-cover rounded-lg mb-2 shadow-sm border border-black/10 cursor-pointer hover:opacity-90 transition-opacity" 
-  />
-  )}
+              {/* Resolve */}
+              <button
+                onClick={handleToggleResolve}
+                className={`p-1.5 rounded-lg hover:bg-muted transition-colors ${activeConv.status === 'resolved' ? 'text-emerald-600' : ''}`}
+                title={activeConv.status === 'resolved' ? 'Reopen' : 'Resolve'}
+              >
+                <CheckCircle2 className="w-4 h-4" />
+              </button>
 
-  <div>
-  {textBody}
-  <span className={`inline-block text-[9px] ml-2 float-right mt-1 font-medium ${isOutbound && !isFailed ? 'text-emerald-100' : 'text-slate-400'}`}>
-  {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-  </span>
-  </div>
-  </div>
+              {/* Archive */}
+              <button
+                onClick={handleToggleArchive}
+                className={`p-1.5 rounded-lg hover:bg-muted transition-colors ${activeConv.isArchived ? 'text-blue-600' : ''}`}
+                title={activeConv.isArchived ? 'Unarchive' : 'Archive'}
+              >
+                <Archive className="w-4 h-4" />
+              </button>
 
-  {msg.status === 'rate_limited' && (
-  <div className="flex items-center gap-1 text-[10px] text-red-600 font-semibold mt-1.5 border-t border-red-200 pt-1">
-  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-  {language === 'en' ? 'Blocked: Rate Limit Exceeded (10/min).' : 'ব্লকড: লিমিট ক্রস করায় মেসেজ পাঠানো হয়নি।'}
-  </div>
-  )}
-  {msg.status === 'failed' && (
-  <div className="flex items-center gap-1 text-[10px] text-red-600 font-semibold mt-1.5 border-t border-red-200 pt-1">
-  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-  {language === 'en' ? 'Failed to send.' : 'পাঠাতে ব্যর্থ হয়েছে।'}
-  </div>
-  )}
-  </div>
-  </div>
+              {/* Assign Agent */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowAssignMenu(!showAssignMenu)}
+                  className="p-1.5 rounded-lg hover:bg-muted transition-colors"
+                  title="Assign Agent"
+                >
+                  <UserPlus className="w-4 h-4" />
+                </button>
+                {showAssignMenu && (
+                  <div className="absolute right-0 mt-1 w-44 bg-card border border-border rounded-xl shadow-lg p-1 z-50 animate-in fade-in zoom-in-95 duration-100 text-xs">
+                    <button onClick={() => handleAssignAgent(null)} className="w-full text-left px-2.5 py-1.5 hover:bg-muted rounded-lg text-amber-600 font-medium">
+                      Unassign
+                    </button>
+                    {agents.map(a => (
+                      <button key={a.id} onClick={() => handleAssignAgent(a.id)} className="w-full text-left px-2.5 py-1.5 hover:bg-muted rounded-lg text-foreground">
+                        {a.name} ({a.role})
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Add Collaborator */}
+              {hasCollaborators && (
+                <div className="relative">
+                  <button
+                    onClick={() => setShowCollaboratorMenu(!showCollaboratorMenu)}
+                    className="p-1.5 rounded-lg hover:bg-muted transition-colors"
+                    title="Add Collaborator"
+                  >
+                    <UserCheck className="w-4 h-4" />
+                  </button>
+                  {showCollaboratorMenu && (
+                    <div className="absolute right-0 mt-1 w-44 bg-card border border-border rounded-xl shadow-lg p-1 z-50 animate-in fade-in zoom-in-95 duration-100 text-xs">
+                      <p className="px-2.5 py-1 text-[10px] text-muted-foreground font-bold uppercase">Add Collaborator</p>
+                      {agents.map(a => (
+                        <button key={a.id} onClick={() => handleAddCollaborator(a.id)} className="w-full text-left px-2.5 py-1.5 hover:bg-muted rounded-lg text-foreground">
+                          {a.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Toggle Right Sidebar */}
+              <button
+                onClick={() => setShowRightSidebar(!showRightSidebar)}
+                className={`p-1.5 rounded-lg hover:bg-muted transition-colors ${showRightSidebar ? 'text-primary' : ''}`}
+                title="Toggle Sidebar"
+              >
+                <PanelRight className="w-4 h-4" />
+              </button>
+
+              {/* Delete */}
+              <button
+                onClick={handleDeleteConversation}
+                className="p-1.5 rounded-lg hover:bg-red-50 text-red-500 transition-colors"
+                title="Delete Conversation"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Messages Feed */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar bg-slate-50/50">
+            {messages.map((m, idx) => {
+              const isInbound = m.direction === 'inbound';
+              const isAi = m.senderType === 'ai';
+              const contentText = typeof m.content === 'object' ? (m.content.body || m.content.text || JSON.stringify(m.content)) : String(m.content);
+              const mediaUrl = typeof m.content === 'object' ? m.content.mediaUrl : null;
+
+              return (
+                <div key={m.id || idx} className={`flex flex-col ${isInbound ? 'items-start' : 'items-end'}`}>
+                  {/* Sender Badge */}
+                  {isAi && (
+                    <span className="text-[10px] font-bold text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full mb-1 flex items-center gap-1">
+                      <Sparkles className="w-3 h-3" /> Replied by AI
+                    </span>
+                  )}
+                  {!isInbound && !isAi && m.senderUser && (
+                    <span className="text-[9px] text-muted-foreground mb-0.5">
+                      {m.senderUser.name}
+                    </span>
+                  )}
+
+                  <div className={`max-w-[75%] rounded-2xl px-3.5 py-2 text-xs shadow-2xs ${
+                    isInbound 
+                      ? 'bg-card text-foreground border border-border rounded-tl-xs' 
+                      : isAi 
+                        ? 'bg-purple-600 text-white rounded-tr-xs' 
+                        : 'bg-primary text-primary-foreground rounded-tr-xs'
+                  }`}>
+                    {mediaUrl && (
+                      <div className="mb-2">
+                        {m.type === 'image' ? (
+                          <img 
+                            src={`${API}${mediaUrl}`} 
+                            alt="attachment" 
+                            onClick={() => setZoomedImage(`${API}${mediaUrl}`)}
+                            className="max-h-48 rounded-lg cursor-pointer hover:opacity-90 object-cover" 
+                          />
+                        ) : (
+                          <a href={`${API}${mediaUrl}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 underline text-[11px]">
+                            <FileIcon className="w-4 h-4" /> Download File
+                          </a>
+                        )}
+                      </div>
+                    )}
+                    <p className="whitespace-pre-wrap leading-relaxed">{contentText}</p>
+                    <span className={`block text-[9px] mt-1 text-right ${isInbound ? 'text-muted-foreground' : 'text-white/70'}`}>
+                      {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Compose Bar */}
+          <div className="p-3 border-t border-border bg-surface/80 backdrop-blur-xl shrink-0 space-y-2">
+            
+            {/* Compose Controls Row */}
+            <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2">
+                {/* AI Toggle */}
+                <button
+                  type="button"
+                  onClick={() => handleToggleAiReply(!activeConv.isAiEnabled)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all cursor-pointer ${
+                    activeConv.isAiEnabled 
+                      ? 'bg-purple-100 text-purple-700 border border-purple-300' 
+                      : 'bg-muted text-muted-foreground border border-border'
+                  }`}
+                >
+                  <Bot className="w-3.5 h-3.5" />
+                  {activeConv.isAiEnabled ? 'AI Auto-Reply ON' : 'AI Auto-Reply OFF'}
+                </button>
+
+                {/* Multiple AI Assistant Picker Dropdown */}
+                {hasAiPicker && aiAssistants.length > 1 && (
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setShowAiPickerMenu(!showAiPickerMenu)}
+                      className="px-2 py-1 bg-muted border border-border rounded-lg text-[10px] font-medium flex items-center gap-1 text-muted-foreground hover:text-foreground"
+                    >
+                      <span>AI Model: {activeConv.aiAssistant?.agentName || 'Default'}</span>
+                      <ChevronLeft className="-rotate-90 w-3 h-3" />
+                    </button>
+                    {showAiPickerMenu && (
+                      <div className="absolute bottom-full mb-1 left-0 w-48 bg-card border border-border rounded-xl shadow-lg p-1 z-50 text-xs">
+                        <button onClick={() => handleSetAssistant(null)} className="w-full text-left px-2.5 py-1.5 hover:bg-muted rounded-lg text-foreground font-medium">
+                          Default System Model
+                        </button>
+                        {aiAssistants.map(ast => (
+                          <button key={ast.id} onClick={() => handleSetAssistant(ast.id)} className="w-full text-left px-2.5 py-1.5 hover:bg-muted rounded-lg text-foreground">
+                            {ast.name || ast.modelName} ({ast.provider})
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {selectedFile && (
+                <div className="flex items-center gap-1 text-[11px] bg-muted px-2 py-0.5 rounded text-foreground">
+                  <Paperclip className="w-3 h-3" />
+                  <span className="truncate max-w-[120px]">{selectedFile.name}</span>
+                  <button onClick={() => setSelectedFile(null)} className="text-red-500"><X className="w-3 h-3" /></button>
+                </div>
+              )}
+            </div>
+
+            {/* Input Form */}
+            <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                className="hidden" 
+                onChange={e => e.target.files?.[0] && setSelectedFile(e.target.files[0])} 
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="p-2 text-muted-foreground hover:text-primary hover:bg-muted rounded-lg transition-colors cursor-pointer"
+                title="Attach file"
+              >
+                <Paperclip className="w-4 h-4" />
+              </button>
+
+              <input
+                type="text"
+                placeholder={language === 'en' ? 'Type a message...' : 'মেসেজ লিখুন...'}
+                value={inputText}
+                onChange={e => setInputText(e.target.value)}
+                className="flex-1 bg-background border border-border rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-primary text-foreground"
+              />
+
+              <button
+                type="submit"
+                disabled={!inputText.trim() && !selectedFile}
+                className="p-2 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50 cursor-pointer shadow-xs"
+              >
+                <Send className="w-4 h-4" />
+              </button>
+            </form>
+          </div>
+        </div>
+      ) : (
+        <div className="flex-1 flex items-center justify-center p-8 text-center text-muted-foreground bg-slate-50/50">
+          <div>
+            <MessageSquare className="w-12 h-12 mx-auto text-muted-foreground/30 mb-2" />
+            <h3 className="text-sm font-bold text-foreground">
+              {language === 'en' ? 'Select a conversation' : 'একটি কনভারসেশন সিলেক্ট করুন'}
+            </h3>
+            <p className="text-xs text-muted-foreground mt-1">
+              {language === 'en' ? 'Choose a chat from the left panel to start messaging.' : 'মেসেজিং শুরু করতে বাঁপাশের প্যানেল থেকে চ্যাট বাছুন।'}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* RIGHT COLUMN: CRM Sidebar Component */}
+      {selectedConvId && activeConv && showRightSidebar && (
+        <ConversationSidebar
+          conversation={activeConv}
+          availableLabels={availableLabels}
+          onToggleLabel={handleToggleLabel}
+          onCreateLabel={handleCreateLabel}
+          onUpdateContact={handleUpdateContactInList}
+        />
+      )}
+
+      {/* Image Zoom Modal */}
+      {zoomedImage && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-xs z-50 flex items-center justify-center p-4" onClick={() => setZoomedImage(null)}>
+          <div className="relative max-w-4xl max-h-[90vh]">
+            <img src={zoomedImage} alt="Zoomed" className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl" />
+            <button onClick={() => setZoomedImage(null)} className="absolute top-2 right-2 p-2 bg-black/50 text-white rounded-full hover:bg-black">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
+
+    </div>
   );
-  })
-
-  )}
-  <div ref={messagesEndRef} />
-  </div>
-
- {/* Chat Input */}
- <div className="px-2 py-1.5 bg-white/60 backdrop-blur-xl border-t border-white/40 z-20 flex flex-col">
- {selectedFile && (
- <div className="flex items-center gap-2 mb-2 p-2 bg-surface-hover rounded-md border border-slate-200 w-max max-w-full">
- {selectedFile.type.startsWith('image/') ? (
- <img src={URL.createObjectURL(selectedFile)} alt="preview" className="h-10 w-10 object-cover rounded shadow-sm" />
- ) : (
- <div className="h-10 w-10 bg-primary/10 rounded flex items-center justify-center text-primary">
- <FileIcon className="w-5 h-5" />
- </div>
- )}
- <div className="flex flex-col overflow-hidden">
- <span className="text-[11px] font-medium truncate">{selectedFile.name}</span>
- <span className="text-[9px] text-zinc-500">{(selectedFile.size / 1024).toFixed(1)} KB</span>
- </div>
- <button type="button" onClick={() => setSelectedFile(null)} className="p-1 hover:bg-black/5 :bg-white/10 rounded-full text-zinc-500 hover:text-red-500 transition-colors ml-2">
- <X className="w-4 h-4" />
- </button>
- </div>
- )}
- <form onSubmit={handleSendMessage} className="flex gap-1.5 max-w-full mx-auto w-full items-end pr-10 sm:pr-12">
- <input 
- type="file" 
- ref={fileInputRef} 
- className="hidden" 
- accept="image/*,video/*,application/pdf"
- onChange={(e) => {
- if (e.target.files && e.target.files.length > 0) {
- setSelectedFile(e.target.files[0]);
- }
- }}
- />
- <button
- type="button"
- onClick={() => fileInputRef.current?.click()}
- className="p-2 text-zinc-500 hover:text-primary hover:bg-primary/10 rounded-md transition-colors"
- >
- <Paperclip className="w-5 h-5" />
- </button>
- <div className="flex-1 relative">
- <input
- type="text"
- value={inputText}
- onChange={(e) => setInputText(e.target.value)}
- placeholder={language === 'en' ? 'Type a message...' : 'মেসেজ টাইপ করুন...'}
- className="w-full bg-white/90 border border-slate-200 shadow-inner rounded-md px-3 py-2 text-[12px] focus:outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary transition-all text-slate-800 placeholder:text-slate-400"
- />
- </div>
- <button
- type="submit"
- disabled={!inputText.trim() && !selectedFile}
- className="bg-gradient-to-r from-primary to-emerald-500 text-white px-3 py-2 rounded-md hover:brightness-110 transition-all disabled:opacity-50 flex items-center justify-center"
- >
- <Send className="w-5 h-5" />
- </button>
- </form>
- </div>
- </div>
- 
-  {/* Lead Details Side-by-Side Panel */}
-  {showLeadInfo && (
-  <div className="w-full md:w-52 xl:w-56 shrink-0 bg-white shadow-xl md:shadow-none border-l border-slate-200 flex flex-col z-40 fixed inset-y-0 right-0 md:static transition-all duration-300 pb-16 md:pb-0">
-  <div className="px-3 border-b border-slate-200 flex justify-between items-center bg-white shrink-0 h-[48px] md:h-[44px] gap-1">
-  <div className="flex items-center gap-1.5">
-  <button onClick={() => setShowLeadInfo(false)} className="flex items-center gap-0.5 text-[12px] font-bold text-slate-700 hover:text-slate-900 md:hidden mr-1 bg-slate-100 px-2 py-1 rounded-md">
-    <ChevronLeft className="w-4 h-4 text-primary" /> {language === 'en' ? 'Back' : 'পিছনে'}
-  </button>
-  <h2 className="text-[13px] md:text-[12px] font-bold text-slate-800 shrink-0 whitespace-nowrap">Lead Details</h2>
-  </div>
-  <div className="flex items-center gap-1.5 shrink-0">
-  <button onClick={handleUpdateLeadDetails} className="px-3 py-1.5 md:px-2.5 md:py-1 text-[11px] md:text-[10px] bg-primary text-white font-semibold rounded-md hover:bg-primary/90 transition-colors whitespace-nowrap shadow-sm">
-    {language === 'en' ? 'Save' : 'সেভ'}
-  </button>
-  <button onClick={() => setShowLeadInfo(false)} className="hidden md:block text-slate-400 hover:text-slate-700 p-1 rounded-md hover:bg-slate-100 transition-colors">
-    <X className="w-4 h-4" />
-  </button>
-  </div>
-  </div>
-   
-  <div className="flex-1 overflow-y-auto p-3 md:p-2 space-y-3 md:space-y-2 custom-scrollbar">
-   
-  <div className="flex items-center gap-2.5 pb-2 border-b border-slate-100">
-  <div className="h-8 w-8 md:h-7 md:w-7 bg-primary/10 rounded-full flex items-center justify-center border border-primary/20 shrink-0">
-  <UserCircle className="h-5 w-5 md:h-4 md:w-4 text-primary" />
-  </div>
-  <div className="flex-1 min-w-0">
-  <h3 className="text-[13px] md:text-[11px] font-bold text-slate-900 leading-tight truncate">{selectedConv?.contact?.name || 'Unknown'}</h3>
-  <p className="text-[11px] md:text-[9px] text-slate-500 truncate">{selectedConv?.contact?.externalContactId}</p>
-  </div>
-  </div>
-
-  <div className="bg-slate-50 rounded-lg p-2.5 md:p-2 border border-slate-200/70 space-y-1.5">
-  <h4 className="text-[10px] md:text-[9px] font-bold text-slate-500 uppercase tracking-wider">Assigned Agent</h4>
-  <select value={selectedConv?.assignedAgentId || ''} onChange={(e) => handleAssignAgent(e.target.value || null)} className="w-full bg-white border border-slate-200 rounded-md py-1 md:py-0.5 px-2 md:px-1.5 text-[12px] md:text-[10px] focus:ring-1 focus:ring-primary focus:outline-none text-slate-800">
-   <option value="">🤖 AI Assistant (Default)</option>
-   {agents.map(agent => <option key={agent.id} value={agent.id}>{agent.name}</option>)}
-  </select>
-  </div>
-
-  <div className="bg-slate-50 rounded-lg p-2.5 md:p-2 border border-slate-200/70 space-y-1.5">
-  <h4 className="text-[10px] md:text-[9px] font-bold text-slate-500 uppercase tracking-wider">Lead Status</h4>
-   
-  <div className="grid grid-cols-2 gap-2 md:gap-1.5">
-  <div>
-  <label className="block text-[11px] md:text-[10px] font-medium text-slate-600 mb-0.5">Stage</label>
-  <select value={editDetails.stageId} onChange={(e) => setEditDetails({...editDetails, stageId: e.target.value})} className="w-full bg-white border border-slate-200 rounded-md py-1 md:py-0.5 px-2 md:px-1 text-[12px] md:text-[10px] focus:ring-1 focus:ring-primary focus:outline-none text-slate-800">
-  <option value="">Select Stage...</option>
-  {stages.map(stage => <option key={stage.id} value={stage.id}>{stage.name}</option>)}
-  </select>
-  </div>
-  <div>
-  <label className="block text-[11px] md:text-[10px] font-medium text-slate-600 mb-0.5">Follow-up</label>
-  <input type="date" value={editDetails.followUpAt} onChange={(e) => setEditDetails({...editDetails, followUpAt: e.target.value})} className="w-full bg-white border border-slate-200 rounded-md py-1 md:py-0.5 px-2 md:px-1 text-[12px] md:text-[10px] focus:ring-1 focus:outline-none text-slate-800" />
-  </div>
-  </div>
-  </div>
-
-  {/* Notes Section (Moved UP for quick access) */}
-  <div className="bg-slate-50 rounded-lg p-2.5 md:p-2 border border-slate-200/70 space-y-1.5">
-  <h4 className="text-[10px] md:text-[9px] font-bold text-slate-500 uppercase tracking-wider flex items-center">
-  <Tag className="w-3 h-3 md:w-2.5 md:h-2.5 mr-1 text-primary" /> Notes
-  </h4>
-  <div className="relative">
-  <textarea value={noteContent} onChange={(e) => setNoteContent(e.target.value)} placeholder="Type a note..." className="w-full bg-white border border-slate-200 rounded-md p-2 md:p-1.5 text-[12px] md:text-[10px] focus:ring-1 focus:ring-primary focus:outline-none min-h-[55px] md:min-h-[45px] resize-none pb-6 text-slate-800" />
-  <button onClick={handleSaveNote} className="absolute bottom-1.5 right-1.5 md:bottom-1 md:right-1 bg-primary text-white px-2.5 py-1 md:px-2 md:py-0.5 rounded text-[10px] md:text-[8px] font-semibold hover:bg-primary/90">Add</button>
-  </div>
-  <div className="space-y-1 max-h-36 md:max-h-28 overflow-y-auto custom-scrollbar">
-  {selectedConv?.contact?.notes?.map((note: any) => (
-  <div key={note.id} className="bg-white border border-slate-200 p-2 md:p-1.5 rounded-md">
-  <p className="text-[11px] md:text-[10px] text-slate-800 whitespace-pre-wrap leading-tight">{note.content}</p>
-  <p className="text-[9px] md:text-[8px] text-slate-400 mt-0.5">{new Date(note.createdAt).toLocaleDateString()}</p>
-  </div>
-  ))}
-  {(!selectedConv?.contact?.notes || selectedConv.contact.notes.length === 0) && (
-  <p className="text-[10px] md:text-[9px] text-center text-slate-400 py-1">No notes added yet.</p>
-  )}
-  </div>
-  </div>
-
-  <div className="bg-slate-50 rounded-lg p-2.5 md:p-2 border border-slate-200/70 space-y-2 md:space-y-1.5">
-  <h4 className="text-[10px] md:text-[9px] font-bold text-slate-500 uppercase tracking-wider">Contact Info</h4>
-   
-  <div>
-  <label className="block text-[11px] md:text-[10px] font-medium text-slate-600 mb-0.5 flex items-center"><Phone className="w-3 h-3 md:w-2.5 md:h-2.5 mr-1 text-slate-400" /> Phone</label>
-  <input type="text" value={editDetails.phone} onChange={(e) => setEditDetails({...editDetails, phone: e.target.value})} placeholder="+123456789" className="w-full bg-white border border-slate-200 rounded-md py-1 md:py-0.5 px-2 md:px-1.5 text-[12px] md:text-[10px] focus:ring-1 focus:ring-primary focus:outline-none text-slate-800" />
-  </div>
-  <div>
-  <label className="block text-[11px] md:text-[10px] font-medium text-slate-600 mb-0.5 flex items-center"><Mail className="w-3 h-3 md:w-2.5 md:h-2.5 mr-1 text-slate-400" /> Email</label>
-  <input type="email" value={editDetails.email} onChange={(e) => setEditDetails({...editDetails, email: e.target.value})} placeholder="email@example.com" className="w-full bg-white border border-slate-200 rounded-md py-1 md:py-0.5 px-2 md:px-1.5 text-[12px] md:text-[10px] focus:ring-1 focus:ring-primary focus:outline-none text-slate-800" />
-  </div>
-  <div>
-  <label className="block text-[11px] md:text-[10px] font-medium text-slate-600 mb-0.5 flex items-center"><Building className="w-3 h-3 md:w-2.5 md:h-2.5 mr-1 text-slate-400" /> Company</label>
-  <input type="text" value={editDetails.company} onChange={(e) => setEditDetails({...editDetails, company: e.target.value})} placeholder="Company Ltd." className="w-full bg-white border border-slate-200 rounded-md py-1 md:py-0.5 px-2 md:px-1.5 text-[12px] md:text-[10px] focus:ring-1 focus:ring-primary focus:outline-none text-slate-800" />
-  </div>
-  <div>
-  <label className="block text-[11px] md:text-[10px] font-medium text-slate-600 mb-0.5 flex items-center"><MapPin className="w-3 h-3 md:w-2.5 md:h-2.5 mr-1 text-slate-400" /> Address</label>
-  <input type="text" value={editDetails.address} onChange={(e) => setEditDetails({...editDetails, address: e.target.value})} placeholder="Full Address..." className="w-full bg-white border border-slate-200 rounded-md py-1 md:py-0.5 px-2 md:px-1.5 text-[12px] md:text-[10px] focus:ring-1 focus:ring-primary focus:outline-none text-slate-800" />
-  </div>
-  </div>
-  </div>
-  </div>
-  )}
- </>
- ) : (
- <div className="h-full flex flex-col items-center justify-center text-zinc-400 space-y-4">
- <div className="w-16 h-16 rounded-full bg-surface-hover flex items-center justify-center">
- <MessageSquare className="w-8 h-8 opacity-50" />
- </div>
- <p>{language === 'en' ? 'Select a conversation to start messaging' : 'মেসেজ করা শুরু করতে একটি কনভার্সেশন বেছে নিন'}</p>
- </div>
- )}
- </div>
- {/* Zoomed Image Modal */}
- {zoomedImage && (
- <div 
- className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm cursor-zoom-out"
- onClick={() => setZoomedImage(null)}
- >
- <div className="relative max-w-4xl max-h-[90vh] w-full flex items-center justify-center">
- <button 
- className="absolute -top-12 right-0 p-2 text-white/70 hover:text-white bg-white/10 hover:bg-white/20 rounded-full backdrop-blur-md transition-all"
- onClick={() => setZoomedImage(null)}
- >
- <X className="w-6 h-6" />
- </button>
- <img 
- src={zoomedImage} 
- className="max-w-full max-h-[90vh] rounded-lg shadow-2xl object-contain ring-1 ring-white/20 cursor-default" 
- alt="Zoomed media" 
- onClick={(e) => e.stopPropagation()}
- />
- </div>
- </div>
- )}
- </div>
- );
 }

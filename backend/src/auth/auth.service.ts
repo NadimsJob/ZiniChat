@@ -283,6 +283,32 @@ export class AuthService {
 
     if (user) {
       (user as any).hasPassword = !!user.passwordHash;
+      
+      let features: string[] = [];
+      if (user.role === 'superadmin') {
+        features = [
+          'inbox_smart_tabs', 'inbox_notes', 'inbox_ai_summary', 'inbox_activity_timeline',
+          'inbox_shared_files', 'inbox_multi_agent_collaborators', 'inbox_multi_ai_assistant_picker', 'agent_presence',
+          'ai_tool_order_placement', 'ai_tool_image_reading', 'ai_tool_support_detection', 'ai_tool_product_matching',
+          'ai_assistant', 'platform_support_ai', 'messenger', 'whatsapp', 'whatsapp_qr', 'whatsapp_widget',
+          'website_widget', 'instagram_dm', 'lead_manage', 'commerce', 'broadcast', 'team_management', 'contact_labels'
+        ];
+      } else if (user.tenantId) {
+        const tenant = await this.prisma.tenant.findUnique({
+          where: { id: user.tenantId },
+          include: {
+            subscriptions: { where: { status: { in: ['active', 'trialing'] } }, include: { plan: true }, take: 1 }
+          }
+        });
+        if (tenant) {
+          if (tenant.customFeatures !== null && Array.isArray(tenant.customFeatures)) {
+            features = tenant.customFeatures as string[];
+          } else if (tenant.subscriptions?.[0]?.plan?.features && Array.isArray(tenant.subscriptions[0].plan.features)) {
+            features = tenant.subscriptions[0].plan.features as string[];
+          }
+        }
+      }
+      (user as any).features = features;
     }
 
     return user;

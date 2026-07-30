@@ -13,6 +13,12 @@ describe('AiTrainingService', () => {
       create: jest.fn(),
       update: jest.fn(),
     },
+    aiAssistantTool: {
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
     tenant: {
       findUnique: jest.fn(),
     },
@@ -65,6 +71,7 @@ describe('AiTrainingService', () => {
         agentName: 'Zini',
       };
       mockPrisma.aiAssistant.findFirst.mockResolvedValue(mockAssistant);
+      mockPrisma.aiAssistantTool.findMany.mockResolvedValue([]);
       mockPrisma.tenant.findUnique.mockResolvedValue({
         id: 'tenant-1',
         customAllowByok: null,
@@ -84,9 +91,38 @@ describe('AiTrainingService', () => {
     });
   });
 
+  describe('getTools & updateTool', () => {
+    it('should return tools array for tenant assistant', async () => {
+      mockPrisma.aiAssistant.findFirst.mockResolvedValue({ id: 'ast-1', aiOrderEnabled: true });
+      mockPrisma.aiAssistantTool.findMany.mockResolvedValue([
+        { toolType: 'order_placement', isEnabled: true },
+        { toolType: 'image_reading', isEnabled: true },
+      ]);
+
+      const tools = await service.getTools('tenant-1');
+      expect(tools).toHaveLength(2);
+      expect(tools[0].toolType).toBe('order_placement');
+    });
+
+    it('should update tool state', async () => {
+      mockPrisma.aiAssistant.findFirst.mockResolvedValue({ id: 'ast-1', aiOrderEnabled: true });
+      mockPrisma.aiAssistantTool.findMany.mockResolvedValue([]);
+      mockPrisma.aiAssistantTool.findFirst.mockResolvedValue({ id: 'tool-1', toolType: 'support_detection', isEnabled: false });
+      mockPrisma.aiAssistantTool.update.mockResolvedValue({ id: 'tool-1', toolType: 'support_detection', isEnabled: true });
+
+      const updated = await service.updateTool('tenant-1', 'support_detection', true);
+      expect(mockPrisma.aiAssistantTool.update).toHaveBeenCalledWith({
+        where: { id: 'tool-1' },
+        data: { isEnabled: true },
+      });
+      expect(updated.isEnabled).toBe(true);
+    });
+  });
+
   describe('updateSystemPrompt', () => {
     it('should update assistant system prompt', async () => {
       mockPrisma.aiAssistant.findFirst.mockResolvedValue({ id: 'ast-1' });
+      mockPrisma.aiAssistantTool.findMany.mockResolvedValue([]);
       mockPrisma.aiAssistant.update.mockResolvedValue({ id: 'ast-1', systemPrompt: 'New prompt' });
 
       const result = await service.updateSystemPrompt('tenant-1', 'New prompt');

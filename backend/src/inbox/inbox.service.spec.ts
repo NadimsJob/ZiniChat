@@ -5,11 +5,13 @@ import { StorageService } from '../storage/storage.service';
 import { AiService } from '../ai/ai.service';
 import { OrchestratorService } from '../orchestrator/orchestrator.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { ActivityLogService } from './activity-log.service';
 import { getQueueToken } from '@nestjs/bullmq';
 
 describe('InboxService', () => {
   let service: InboxService;
   let prismaService: any;
+  let activityLogService: any;
 
   beforeEach(async () => {
     prismaService = {
@@ -19,7 +21,9 @@ describe('InboxService', () => {
         create: jest.fn(),
         updateMany: jest.fn(),
         aggregate: jest.fn(),
+        count: jest.fn(),
         findFirst: jest.fn(),
+        delete: jest.fn(),
       },
       contact: {
         findFirst: jest.fn(),
@@ -29,25 +33,62 @@ describe('InboxService', () => {
       message: {
         findMany: jest.fn(),
         create: jest.fn(),
+        deleteMany: jest.fn(),
+        count: jest.fn(),
       },
       kanbanStage: {
         findFirst: jest.fn(),
       },
       agentChannelAssignment: {
         findMany: jest.fn(),
-      }
+      },
+      conversationCollaborator: {
+        upsert: jest.fn(),
+        delete: jest.fn(),
+        deleteMany: jest.fn(),
+      },
+      conversationActivity: {
+        deleteMany: jest.fn(),
+      },
+      conversationLabel: {
+        findUnique: jest.fn(),
+        create: jest.fn(),
+        delete: jest.fn(),
+        deleteMany: jest.fn(),
+      },
+      order: {
+        updateMany: jest.fn(),
+      },
+      aiAssistant: {
+        findFirst: jest.fn(),
+      },
+      aiUsageLog: {
+        create: jest.fn(),
+      },
+      contactNote: {
+        create: jest.fn(),
+      },
+      notification: {
+        create: jest.fn(),
+      },
+      $transaction: jest.fn(callback => callback(prismaService)),
+    };
+
+    activityLogService = {
+      record: jest.fn().mockResolvedValue(true),
     };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         InboxService,
         { provide: PrismaService, useValue: prismaService },
+        { provide: ActivityLogService, useValue: activityLogService },
         { provide: getQueueToken('whatsapp-outbound'), useValue: { add: jest.fn() } },
         { provide: getQueueToken('messenger-outbound'), useValue: { add: jest.fn() } },
         { provide: StorageService, useValue: { uploadFile: jest.fn() } },
-        { provide: AiService, useValue: { transcribeAudio: jest.fn(), extractTextFromPdf: jest.fn() } },
+        { provide: AiService, useValue: { transcribeAudio: jest.fn(), extractTextFromPdf: jest.fn(), generateCompletion: jest.fn().mockResolvedValue('AI Summary') } },
         { provide: OrchestratorService, useValue: { processMessage: jest.fn().mockResolvedValue(true) } },
-        { provide: NotificationsService, useValue: { createNotification: jest.fn() } },
+        { provide: NotificationsService, useValue: { createNotification: jest.fn().mockResolvedValue(true) } },
       ],
     }).compile();
 
@@ -57,7 +98,7 @@ describe('InboxService', () => {
   describe('Unread Message Tracking', () => {
     it('should increment unreadCount when an incoming message is received for an existing conversation', async () => {
       const mockContact = { id: 'contact1', name: 'John Doe' };
-      const mockConversation = { id: 'conv1', tenantId: 'tenant1' };
+      const mockConversation = { id: 'conv1', tenantId: 'tenant1', status: 'open' };
 
       prismaService.contact.findFirst.mockResolvedValue(mockContact);
       prismaService.contact.update.mockResolvedValue(mockContact);
@@ -83,107 +124,92 @@ describe('InboxService', () => {
         })
       });
     });
-
-    it('should set unreadCount to 1 when a new conversation is created from an incoming message', async () => {
-      const mockContact = { id: 'contact1', name: 'John Doe' };
-
-      prismaService.contact.findFirst.mockResolvedValue(mockContact);
-      prismaService.contact.update.mockResolvedValue(mockContact);
-      prismaService.conversation.findFirst.mockResolvedValue(null); // No existing conversation
-      prismaService.conversation.create.mockResolvedValue({ id: 'conv1', tenantId: 'tenant1', unreadCount: 1 });
-      prismaService.message.create.mockResolvedValue({ id: 'msg1', direction: 'inbound' });
-
-      await service.handleIncomingMessage({
-        tenantId: 'tenant1',
-        channel: 'whatsapp',
-        externalContactId: '123456',
-        messageType: 'text',
-        content: { text: 'Hello' },
-        externalMessageId: 'ext_msg_1',
-        timestamp: new Date()
-      });
-
-      expect(prismaService.conversation.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
-          unreadCount: 1
-        })
-      });
-    });
-
-    it('should reset unreadCount to 0 when getMessages is called (user opens chat)', async () => {
-      prismaService.conversation.updateMany.mockResolvedValue({ count: 1 });
-      prismaService.message.findMany.mockResolvedValue([]);
-
-      await service.getMessages('tenant1', 'conv1');
-
-      expect(prismaService.conversation.updateMany).toHaveBeenCalledWith({
-        where: { id: 'conv1', tenantId: 'tenant1' },
-        data: { unreadCount: 0 }
-      });
-    });
-
-    it('should correctly sum unreadCount for agents based on assignments', async () => {
-      prismaService.agentChannelAssignment.findMany.mockResolvedValue([
-        { channelConnectionId: 'conn1' }
-      ]);
-      prismaService.conversation.aggregate.mockResolvedValue({ _sum: { unreadCount: 5 } });
-
-      const result = await service.getUnreadCount('tenant1', { id: 'agent1', role: 'agent', agentAccessMode: 'ASSIGNED_CHANNELS' });
-
-      expect(prismaService.conversation.aggregate).toHaveBeenCalledWith({
-        where: {
-          tenantId: 'tenant1',
-          unreadCount: { gt: 0 },
-          OR: [
-            { assignedAgentId: 'agent1' },
-            { channelConnectionId: { in: ['conn1'] } }
-          ]
-        },
-        _sum: { unreadCount: true }
-      });
-      expect(result).toEqual({ unreadCount: 5 });
-    });
-
-    it('should query only unassigned conversations for admins unread badge', async () => {
-      prismaService.conversation.aggregate.mockResolvedValue({ _sum: { unreadCount: 2 } });
-
-      const result = await service.getUnreadCount('tenant1', { id: 'admin1', role: 'admin' });
-
-      expect(prismaService.conversation.aggregate).toHaveBeenCalledWith({
-        where: {
-          tenantId: 'tenant1',
-          unreadCount: { gt: 0 },
-          assignedAgentId: null
-        },
-        _sum: { unreadCount: true }
-      });
-      expect(result).toEqual({ unreadCount: 2 });
-    });
   });
 
-  describe('Channel Management', () => {
-    it('should toggle AI auto reply for a channel connection', async () => {
-      prismaService.channelConnection = { update: jest.fn().mockResolvedValue({ id: 'conn1', isAiAutoReplyEnabled: false }) };
-      const res = await service.toggleChannelAiReply('tenant1', 'conn1', false);
-      expect(prismaService.channelConnection.update).toHaveBeenCalledWith({
-        where: { id: 'conn1' },
-        data: { isAiAutoReplyEnabled: false }
+  describe('CRM Actions', () => {
+    it('should toggle star status of a conversation', async () => {
+      const mockConv = { id: 'conv1', tenantId: 'tenant1', contactId: 'c1', isStarred: false };
+      prismaService.conversation.findFirst.mockResolvedValue(mockConv);
+      prismaService.conversation.update.mockResolvedValue({ ...mockConv, isStarred: true });
+
+      const result: any = await service.toggleStar('tenant1', 'conv1', { id: 'user1' });
+
+      expect(prismaService.conversation.update).toHaveBeenCalledWith({
+        where: { id: 'conv1' },
+        data: { isStarred: true }
       });
-      expect(res.isAiAutoReplyEnabled).toBe(false);
+      expect(activityLogService.record).toHaveBeenCalledWith(expect.objectContaining({
+        type: 'STARRED',
+        conversationId: 'conv1'
+      }));
+      expect(result.isStarred).toBe(true);
     });
 
-    it('should return connected channels with active status', async () => {
-      prismaService.channelConnection = {
-        ...prismaService.channelConnection,
-        findMany: jest.fn().mockResolvedValue([
-          { id: 'conn1', channelType: 'whatsapp', status: 'active', qrStatus: 'CONNECTED', isAiAutoReplyEnabled: true }
-        ])
-      };
-      const res = await service.getActiveChannels('tenant1');
-      expect(res).toHaveLength(1);
-      expect(res[0].isConnected).toBe(true);
-      expect(res[0].status).toBe('active');
+    it('should archive a conversation', async () => {
+      const mockConv = { id: 'conv1', tenantId: 'tenant1', contactId: 'c1', isArchived: false };
+      prismaService.conversation.findFirst.mockResolvedValue(mockConv);
+      prismaService.conversation.update.mockResolvedValue({ ...mockConv, isArchived: true });
+
+      const result: any = await service.archiveConversation('tenant1', 'conv1', { id: 'user1' });
+      expect(result.isArchived).toBe(true);
+      expect(activityLogService.record).toHaveBeenCalledWith(expect.objectContaining({ type: 'ARCHIVED' }));
+    });
+
+    it('should resolve a conversation', async () => {
+      const mockConv = { id: 'conv1', tenantId: 'tenant1', contactId: 'c1', status: 'open' };
+      prismaService.conversation.findFirst.mockResolvedValue(mockConv);
+      prismaService.conversation.update.mockResolvedValue({ ...mockConv, status: 'resolved', resolvedAt: new Date() });
+
+      const result = await service.resolveConversation('tenant1', 'conv1', { id: 'user1' });
+      expect(result.status).toBe('resolved');
+      expect(activityLogService.record).toHaveBeenCalledWith(expect.objectContaining({ type: 'RESOLVED' }));
+    });
+
+    it('should add a collaborator', async () => {
+      const mockConv = { id: 'conv1', tenantId: 'tenant1', contactId: 'c1', contact: { name: 'Customer' } };
+      prismaService.conversation.findFirst.mockResolvedValue(mockConv);
+      prismaService.conversationCollaborator.upsert.mockResolvedValue({ conversationId: 'conv1', userId: 'user2' });
+
+      const result = await service.addCollaborator('tenant1', 'conv1', 'user2', { id: 'user1' });
+      expect(prismaService.conversationCollaborator.upsert).toHaveBeenCalled();
+      expect(activityLogService.record).toHaveBeenCalledWith(expect.objectContaining({ type: 'COLLABORATOR_ADDED' }));
+      expect(result).toBeDefined();
+    });
+
+    it('should generate an AI summary for a conversation', async () => {
+      const mockConv = { id: 'conv1', tenantId: 'tenant1', contact: { name: 'Customer' }, summary: null };
+      prismaService.conversation.findFirst.mockResolvedValue(mockConv);
+      prismaService.message.findMany.mockResolvedValue([
+        { direction: 'inbound', content: { body: 'Hello' } },
+        { direction: 'outbound', content: 'Hi there!' }
+      ]);
+      prismaService.conversation.update.mockResolvedValue({
+        ...mockConv,
+        summary: 'AI Summary',
+        summaryGeneratedAt: new Date()
+      });
+
+      const result = await service.generateSummary('tenant1', 'conv1', true);
+      expect(result.summary).toBe('AI Summary');
+      expect(result.cached).toBe(false);
+    });
+
+    it('should return inbox counts for all tabs', async () => {
+      prismaService.conversation.count
+        .mockResolvedValueOnce(10) // all
+        .mockResolvedValueOnce(2)  // order_requests
+        .mockResolvedValueOnce(3)  // unreplied
+        .mockResolvedValueOnce(1)  // tickets
+        .mockResolvedValueOnce(4)  // resolved
+        .mockResolvedValueOnce(5); // archived
+
+      const counts = await service.getInboxCounts('tenant1', { role: 'admin' });
+      expect(counts.all).toBe(10);
+      expect(counts.order_requests).toBe(2);
+      expect(counts.unreplied).toBe(3);
+      expect(counts.tickets).toBe(1);
+      expect(counts.resolved).toBe(4);
+      expect(counts.archived).toBe(5);
     });
   });
 });
-

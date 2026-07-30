@@ -67,6 +67,21 @@ export class NotificationsService {
     return Promise.all(creations);
   }
 
+  async createNotificationForTenantAdmins(tenantId: string, title: string, message: string, type = 'info') {
+    const tenantAdmins = await this.prisma.user.findMany({
+      where: {
+        tenantId,
+        role: { in: ['owner', 'admin'] }
+      }
+    });
+
+    const creations = tenantAdmins.map(admin =>
+      this.createNotification(admin.id, title, message, type)
+    );
+
+    return Promise.all(creations);
+  }
+
   async markAsRead(id: string, userId: string) {
     const notif = await this.prisma.notification.findUnique({ where: { id } });
     if (!notif) throw new NotFoundException('Notification not found');

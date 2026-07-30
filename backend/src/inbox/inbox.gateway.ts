@@ -66,11 +66,22 @@ export class InboxGateway implements OnGatewayConnection, OnGatewayDisconnect {
   handleTyping(client: Socket, payload: { conversationId: string, isTyping: boolean }) {
     const tenantId = client.data?.tenantId;
     if (tenantId) {
-      // Broadcast to others in the same tenant room (excluding sender)
       client.broadcast.to(`tenant_${tenantId}`).emit('agent_typing', {
         conversationId: payload.conversationId,
         userId: client.data.userId,
         isTyping: payload.isTyping
+      });
+    }
+  }
+
+  @SubscribeMessage('presence:update')
+  handlePresenceUpdate(client: Socket, payload: { status: string }) {
+    const tenantId = client.data?.tenantId;
+    const userId = client.data?.userId;
+    if (tenantId && userId) {
+      this.server.to(`tenant_${tenantId}`).emit('presence:changed', {
+        userId,
+        status: payload.status
       });
     }
   }

@@ -25,7 +25,87 @@ export class AiTrainingService {
         }
       });
     }
+
+    await this.ensureDefaultTools(assistant.id, assistant.aiOrderEnabled);
     return assistant;
+  }
+
+  async ensureDefaultTools(assistantId: string, assistantAiOrderEnabled: boolean = true) {
+    const existingTools = await this.prisma.aiAssistantTool.findMany({
+      where: { assistantId }
+    });
+
+    const existingTypes = new Set(existingTools.map(t => t.toolType));
+
+    const defaultTools = [
+      {
+        toolType: 'order_placement',
+        isEnabled: assistantAiOrderEnabled,
+        configJson: { requireExplicitConfirmation: true }
+      },
+      {
+        toolType: 'image_reading',
+        isEnabled: true,
+        configJson: {}
+      },
+      {
+        toolType: 'support_detection',
+        isEnabled: false,
+        configJson: { reasonCategories: ['general', 'complaint', 'refund_return', 'delivery_issue'] }
+      },
+      {
+        toolType: 'product_matching',
+        isEnabled: false,
+        configJson: { minMatchConfidence: 0.6 }
+      }
+    ];
+
+    for (const toolDef of defaultTools) {
+      if (!existingTypes.has(toolDef.toolType)) {
+        await this.prisma.aiAssistantTool.create({
+          data: {
+            assistantId,
+            toolType: toolDef.toolType,
+            isEnabled: toolDef.isEnabled,
+            configJson: toolDef.configJson
+          }
+        });
+      }
+    }
+  }
+
+  async getTools(tenantId: string) {
+    const assistant = await this.ensureAiAssistantExists(tenantId);
+    return this.prisma.aiAssistantTool.findMany({
+      where: { assistantId: assistant.id }
+    });
+  }
+
+  async updateTool(tenantId: string, toolType: string, isEnabled?: boolean, configJson?: any) {
+    const assistant = await this.ensureAiAssistantExists(tenantId);
+    
+    const existing = await this.prisma.aiAssistantTool.findFirst({
+      where: { assistantId: assistant.id, toolType }
+    });
+
+    if (existing) {
+      return this.prisma.aiAssistantTool.update({
+        where: { id: existing.id },
+        data: {
+          ...(isEnabled !== undefined ? { isEnabled } : {}),
+          ...(configJson !== undefined ? { configJson } : {})
+        }
+      });
+    } else {
+      return this.prisma.aiAssistantTool.create({
+        data: {
+          assistantId: assistant.id,
+          toolType,
+          isEnabled: isEnabled ?? false,
+          configJson: configJson ?? null
+        }
+      });
+    }
   }
 
   async getConfig(tenantId: string) {

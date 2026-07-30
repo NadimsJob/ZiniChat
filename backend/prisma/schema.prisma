@@ -104,6 +104,9 @@ model User {
   channelAssignments AgentChannelAssignment[]
   Ticket             Ticket[]
   TicketMessage      TicketMessage[]
+  collaboratingConvs ConversationCollaborator[]
+  presence           UserPresence?
+  sentMessages       Message[]                @relation("SentMessages")
 
   @@map("users")
 }
@@ -238,19 +241,37 @@ model Conversation {
   channel             String
   channelConnectionId String?  @db.Uuid
   assignedAgentId     String?  @db.Uuid
-  status              String   @default("open") // open, closed, bot
+  status              String   @default("open") // open, closed, bot, resolved
   isAiEnabled         Boolean  @default(true) // Per-conversation AI toggle
   unreadCount         Int      @default(0) // Tracks unread inbound messages
   lastMessageAt       DateTime @default(now())
 
-  tenant            Tenant              @relation(fields: [tenantId], references: [id])
-  contact           Contact             @relation(fields: [contactId], references: [id])
-  channelConnection ChannelConnection?  @relation(fields: [channelConnectionId], references: [id], onDelete: SetNull)
-  assignedAgent     User?               @relation(fields: [assignedAgentId], references: [id])
+  isStarred          Boolean   @default(false)
+  isArchived         Boolean   @default(false)
+  hasOrderRequest    Boolean   @default(false)
+  requiresFollowUp   Boolean   @default(false)
+  resolvedAt         DateTime?
+  aiAssistantId      String?   @db.Uuid
+  summary            String?   @db.Text
+  summaryGeneratedAt DateTime?
+  pendingOrderProposal Json?
+
+  tenant            Tenant                    @relation(fields: [tenantId], references: [id])
+  contact           Contact                   @relation(fields: [contactId], references: [id])
+  channelConnection ChannelConnection?        @relation(fields: [channelConnectionId], references: [id], onDelete: SetNull)
+  assignedAgent     User?                     @relation(fields: [assignedAgentId], references: [id])
+  aiAssistant       AiAssistant?              @relation(fields: [aiAssistantId], references: [id], onDelete: SetNull)
   messages          Message[]
   orders            Order[]
   labels            ConversationLabel[]
+  collaborators     ConversationCollaborator[]
+  activities        ConversationActivity[]
 
+  @@index([tenantId, status])
+  @@index([tenantId, isArchived])
+  @@index([tenantId, hasOrderRequest])
+  @@index([tenantId, requiresFollowUp])
+  @@index([tenantId, isStarred])
   @@map("conversations")
 }
 
@@ -289,8 +310,15 @@ model Message {
   status            String // sent, delivered, read, failed
   createdAt         DateTime @default(now())
 
-  conversation Conversation @relation(fields: [conversationId], references: [id])
+  senderType    String       @default("customer") // customer, agent, ai
+  senderUserId  String?      @db.Uuid
+  aiAssistantId String?      @db.Uuid
 
+  conversation Conversation @relation(fields: [conversationId], references: [id])
+  senderUser   User?        @relation("SentMessages", fields: [senderUserId], references: [id], onDelete: SetNull)
+  aiAssistant  AiAssistant? @relation(fields: [aiAssistantId], references: [id], onDelete: SetNull)
+
+  @@index([conversationId, type])
   @@map("messages")
 }
 
@@ -309,9 +337,12 @@ model AiAssistant {
   isActive            Boolean  @default(true)
   createdAt           DateTime @default(now())
 
-  tenant    Tenant            @relation(fields: [tenantId], references: [id])
-  tools     AiAssistantTool[]
-  usageLogs AiUsageLog[]
+  tenant        Tenant         @relation(fields: [tenantId], references: [id])
+  tools         AiAssistantTool[]
+  usageLogs     AiUsageLog[]
+  conversations Conversation[]
+  messages      Message[]
+  orders        Order[]
 
   @@map("ai_assistants")
 }
@@ -504,12 +535,15 @@ model Order {
   totalAmount    Decimal  @db.Decimal(10, 2)
   currency       String   @default("BDT")
   notes          String?  @db.Text
+  createdBy      String   @default("agent") // agent, ai, customer_widget
+  aiAssistantId  String?  @db.Uuid
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   conversation Conversation? @relation(fields: [conversationId], references: [id])
   contact      Contact       @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  aiAssistant  AiAssistant?  @relation(fields: [aiAssistantId], references: [id], onDelete: SetNull)
   items        OrderItem[]
 
   @@map("orders")
@@ -1041,5 +1075,44 @@ model GoogleAnalyticsEvent {
   @@index([createdAt])
   @@map("google_analytics_events")
 }
+
+model ConversationCollaborator {
+  conversationId String   @db.Uuid
+  userId         String   @db.Uuid
+  addedAt        DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, userId])
+  @@map("conversation_collaborators")
+}
+
+model ConversationActivity {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String   @db.Uuid
+  conversationId String   @db.Uuid
+  contactId      String?  @db.Uuid
+  type           String   // ASSIGNED, LABEL_ADDED, LABEL_REMOVED, NOTE_ADDED, ORDER_CREATED, TICKET_CREATED, RESOLVED, REOPENED, ARCHIVED, AI_HANDOVER, STARRED, COLLABORATOR_ADDED, FOLLOW_UP_FLAGGED
+  actorUserId    String?  @db.Uuid
+  metadataJson   Json?
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, conversationId, createdAt])
+  @@map("conversation_activities")
+}
+
+model UserPresence {
+  userId    String   @id @db.Uuid
+  status    String   @default("available") // available, busy, away, offline
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_presence")
+}
+
 
 

@@ -394,7 +394,19 @@ export default function PackagesPage() {
                     { id: 'commerce', label: 'Products & Orders' },
                     { id: 'broadcast', label: 'Broadcast Campaigns' },
                     { id: 'team_management', label: 'Team Members & Roles' },
-                    { id: 'contact_labels', label: 'Custom Contact Labels' }
+                    { id: 'contact_labels', label: 'Custom Contact Labels' },
+                    { id: 'inbox_smart_tabs', label: 'Smart Inbox Tabs' },
+                    { id: 'inbox_notes', label: 'Inbox Contact Notes' },
+                    { id: 'inbox_ai_summary', label: 'AI Conversation Summary' },
+                    { id: 'inbox_activity_timeline', label: 'Activity Timeline' },
+                    { id: 'inbox_shared_files', label: 'Shared Files Gallery' },
+                    { id: 'inbox_multi_agent_collaborators', label: 'Multi-Agent Collaborators' },
+                    { id: 'inbox_multi_ai_assistant_picker', label: 'Multiple AI Assistant Picker' },
+                    { id: 'agent_presence', label: 'Agent Presence Status' },
+                    { id: 'ai_tool_order_placement', label: 'AI Tool: Auto Order Placement' },
+                    { id: 'ai_tool_image_reading', label: 'AI Tool: Image Reading' },
+                    { id: 'ai_tool_support_detection', label: 'AI Tool: Support Detection' },
+                    { id: 'ai_tool_product_matching', label: 'AI Tool: Product Photo Matching' }
                   ].map(feature => (
                     <label key={feature.id} className="flex items-center gap-2 cursor-pointer bg-background border border-surface-hover p-3 rounded-xl hover:border-primary/50 transition-colors">
                       <input 

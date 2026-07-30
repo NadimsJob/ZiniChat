@@ -23,6 +23,20 @@ export class AiTrainingController {
     return this.aiTrainingService.generateSamplePrompt(req.user.tenantId);
   }
 
+  @Get('tools')
+  async getTools(@Request() req: any) {
+    return this.aiTrainingService.getTools(req.user.tenantId);
+  }
+
+  @Patch('tools/:toolType')
+  async updateTool(
+    @Request() req: any,
+    @Param('toolType') toolType: string,
+    @Body() data: { isEnabled?: boolean; configJson?: any }
+  ) {
+    return this.aiTrainingService.updateTool(req.user.tenantId, toolType, data.isEnabled, data.configJson);
+  }
+
   @Post('config/byok')
   async updateByokConfig(@Request() req: any, @Body() data: { routingMode: string; apiKey?: string; aiOrderEnabled?: boolean; isActive?: boolean; replyWhenAssigned?: boolean; agentName?: string }) {
     return this.aiTrainingService.updateByokConfig(req.user.tenantId, data.routingMode, data.apiKey, data.aiOrderEnabled, data.isActive, data.replyWhenAssigned, data.agentName);

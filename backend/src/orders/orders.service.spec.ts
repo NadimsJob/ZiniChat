@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { OrdersService } from './orders.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { ActivityLogService } from '../inbox/activity-log.service';
 import { NotFoundException } from '@nestjs/common';
 
 describe('OrdersService', () => {
@@ -27,6 +28,7 @@ describe('OrdersService', () => {
       providers: [
         OrdersService,
         { provide: PrismaService, useValue: mockPrisma },
+        { provide: ActivityLogService, useValue: { record: jest.fn().mockResolvedValue(true) } },
       ],
     }).compile();
 

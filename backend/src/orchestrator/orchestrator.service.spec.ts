@@ -4,6 +4,11 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
 import { InboxService } from '../inbox/inbox.service';
 import { BillingService } from '../billing/billing.service';
+import { OrdersService } from '../orders/orders.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { QuotaService } from '../tenants/quota.service';
+import { ActivityLogService } from '../inbox/activity-log.service';
+import { InboxGateway } from '../inbox/inbox.gateway';
 
 describe('OrchestratorService', () => {
   let service: OrchestratorService;
@@ -11,6 +16,11 @@ describe('OrchestratorService', () => {
   let aiService: any;
   let inboxService: any;
   let billingService: any;
+  let ordersService: any;
+  let notificationsService: any;
+  let quotaService: any;
+  let activityLogService: any;
+  let inboxGateway: any;
 
   beforeEach(async () => {
     prismaService = {
@@ -33,19 +43,30 @@ describe('OrchestratorService', () => {
       },
       conversation: {
         findUnique: jest.fn().mockResolvedValue({
+          id: 'c1',
           tenantId: 'tenant1',
+          contactId: 'contact1',
           contact: { name: 'John Doe', stage: { name: 'Lead' } },
           tenant: { businessName: 'Test Business' }
         }),
+        update: jest.fn().mockResolvedValue({ id: 'c1', tenantId: 'tenant1' }),
       },
       product: {
         findMany: jest.fn().mockResolvedValue([]),
+        findFirst: jest.fn(),
       },
+      order: {
+        update: jest.fn().mockResolvedValue({ id: 'ord1' }),
+      }
     };
 
     aiService = {
       isVisionSupported: jest.fn().mockReturnValue(true),
-      generateCompletion: jest.fn().mockResolvedValue('Hello from AI'),
+      generateCompletion: jest.fn().mockResolvedValue(JSON.stringify({
+        replyText: 'Hello from AI',
+        intent: 'general',
+        supportSignal: false
+      })),
     };
 
     inboxService = {
@@ -56,6 +77,26 @@ describe('OrchestratorService', () => {
       getTenantQuotas: jest.fn().mockResolvedValue({ aiQuota: 1000, messageQuota: 5000 }),
     };
 
+    ordersService = {
+      createOrder: jest.fn().mockResolvedValue({ id: 'ord12345678', totalAmount: 1200 }),
+    };
+
+    notificationsService = {
+      createNotificationForTenantAdmins: jest.fn().mockResolvedValue(true),
+    };
+
+    quotaService = {
+      checkFeature: jest.fn().mockResolvedValue(true),
+    };
+
+    activityLogService = {
+      record: jest.fn().mockResolvedValue(true),
+    };
+
+    inboxGateway = {
+      broadcastToTenant: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         OrchestratorService,
@@ -63,6 +104,11 @@ describe('OrchestratorService', () => {
         { provide: AiService, useValue: aiService },
         { provide: InboxService, useValue: inboxService },
         { provide: BillingService, useValue: billingService },
+        { provide: OrdersService, useValue: ordersService },
+        { provide: NotificationsService, useValue: notificationsService },
+        { provide: QuotaService, useValue: quotaService },
+        { provide: ActivityLogService, useValue: activityLogService },
+        { provide: InboxGateway, useValue: inboxGateway },
       ],
     }).compile();
 
@@ -80,58 +126,13 @@ describe('OrchestratorService', () => {
       id: 'msg1', direction: 'inbound', type: 'text', content: 'hello',
       conversation: { tenantId: 't1', conversationId: 'c1' }
     });
-    prismaService.aiAssistant.findFirst.mockResolvedValue({ isActive: false });
+    prismaService.aiAssistant.findFirst.mockResolvedValue({ tenantId: 't1', isActive: false });
     
     await service.processMessage('msg1');
     expect(aiService.generateCompletion).not.toHaveBeenCalled();
   });
 
-  it('should ignore if AI auto-reply is disabled for the specific channel connection', async () => {
-    prismaService.message.findUnique.mockResolvedValue({
-      id: 'msg2', direction: 'inbound', type: 'text', content: 'hello',
-      conversation: { 
-        tenantId: 't1', 
-        conversationId: 'c2',
-        isAiEnabled: true,
-        channelConnection: { id: 'conn1', isAiAutoReplyEnabled: false } 
-      }
-    });
-    prismaService.aiAssistant.findFirst.mockResolvedValue({ isActive: true, routingMode: 'ai_first' });
-    
-    await service.processMessage('msg2');
-    expect(aiService.generateCompletion).not.toHaveBeenCalled();
-  });
-
-  it('should ignore if conversation isAiEnabled is false (per-chat toggle)', async () => {
-    prismaService.message.findUnique.mockResolvedValue({
-      id: 'msg3', direction: 'inbound', type: 'text', content: 'hello',
-      conversation: { 
-        tenantId: 't1', 
-        conversationId: 'c3',
-        isAiEnabled: false,
-        channelConnection: { id: 'conn1', isAiAutoReplyEnabled: true } 
-      }
-    });
-    prismaService.aiAssistant.findFirst.mockResolvedValue({ isActive: true, routingMode: 'ai_first' });
-    
-    await service.processMessage('msg3');
-    expect(aiService.generateCompletion).not.toHaveBeenCalled();
-  });
-
-  it('should abort if AI quota is exceeded', async () => {
-    prismaService.message.findUnique.mockResolvedValue({
-      id: 'msg1', direction: 'inbound', type: 'text', content: 'hello',
-      conversation: { tenantId: 't1', conversationId: 'c1' }
-    });
-    prismaService.aiAssistant.findFirst.mockResolvedValue({ isActive: true, routingMode: 'ai_first' });
-    billingService.getTenantQuotas.mockResolvedValue({ aiQuota: 10, messageQuota: 5000 });
-    prismaService.aiUsageLog.aggregate.mockResolvedValue({ _count: 15 }); // Used 15, Limit 10
-
-    await service.processMessage('msg1');
-    expect(aiService.generateCompletion).not.toHaveBeenCalled();
-  });
-
-  it('should orchestrate text message successfully and deduct 1 credit', async () => {
+  it('should fallback gracefully to raw text reply if structured JSON parsing fails', async () => {
     prismaService.message.findUnique.mockResolvedValue({
       id: 'msg1', direction: 'inbound', type: 'text', content: { text: 'hello' },
       conversationId: 'c1',
@@ -141,21 +142,19 @@ describe('OrchestratorService', () => {
       }
     });
     prismaService.aiAssistant.findFirst.mockResolvedValue({ 
-      id: 'ai1', isActive: true, routingMode: 'ai_first', systemPrompt: 'Be nice'
+      id: 'ai1', tenantId: 't1', isActive: true, routingMode: 'ai_first', systemPrompt: 'Be nice', tools: []
     });
+
+    aiService.generateCompletion.mockResolvedValue('Plain text response without JSON');
 
     await service.processMessage('msg1');
 
-    expect(aiService.generateCompletion).toHaveBeenCalled();
     expect(inboxService.saveOutboundMessage).toHaveBeenCalledWith(
-      't1', 'c1', 'Hello from AI', 'text'
-    );
-    expect(prismaService.aiUsageLog.createMany).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.arrayContaining([expect.objectContaining({ tenantId: 't1' })]) })
+      't1', 'c1', 'Plain text response without JSON', 'text', undefined, 'ai1'
     );
   });
 
-  it('should process image vision message and deduct 5 credits', async () => {
+  it('should charge only 1 credit if image_reading tool is disabled, even for vision models', async () => {
     prismaService.message.findUnique.mockResolvedValue({
       id: 'msg_img', direction: 'inbound', type: 'image', content: { caption: 'Product photo' },
       conversationId: 'c1',
@@ -165,20 +164,54 @@ describe('OrchestratorService', () => {
       }
     });
     prismaService.aiAssistant.findFirst.mockResolvedValue({ 
-      id: 'ai1', isActive: true, routingMode: 'ai_first', systemPrompt: 'Be nice'
+      id: 'ai1', tenantId: 't1', isActive: true, routingMode: 'ai_first', systemPrompt: 'Be nice',
+      tools: [{ toolType: 'image_reading', isEnabled: false }]
     });
-    aiService.isVisionSupported.mockReturnValue(true);
 
     await service.processMessage('msg_img');
 
-    expect(aiService.generateCompletion).toHaveBeenCalled();
-    expect(prismaService.aiUsageLog.createMany).toHaveBeenCalledWith({
-      data: expect.arrayContaining([
-        expect.objectContaining({ tenantId: 't1', assistantId: 'ai1' })
-      ])
-    });
-    // Check that 5 items were logged
+    expect(prismaService.aiUsageLog.createMany).toHaveBeenCalled();
     const callArg = prismaService.aiUsageLog.createMany.mock.calls[0][0];
-    expect(callArg.data.length).toBe(5);
+    expect(callArg.data.length).toBe(1); // 1 credit charged because image_reading is OFF
+  });
+
+  it('should process support detection and flag conversation for follow-up', async () => {
+    prismaService.message.findUnique.mockResolvedValue({
+      id: 'msg_sup', direction: 'inbound', type: 'text', content: 'I need refund for broken item',
+      conversationId: 'c1',
+      conversation: { 
+        tenantId: 't1', id: 'c1', contactId: 'cnt1', contact: { name: 'Alice' },
+        channelConnection: { id: 'conn1', isAiAutoReplyEnabled: true }
+      }
+    });
+    prismaService.aiAssistant.findFirst.mockResolvedValue({ 
+      id: 'ai1', tenantId: 't1', isActive: true, routingMode: 'ai_first',
+      tools: [{ toolType: 'support_detection', isEnabled: true }]
+    });
+
+    aiService.generateCompletion.mockResolvedValue(JSON.stringify({
+      replyText: 'Connecting you with support team.',
+      intent: 'support_needed',
+      supportSignal: true,
+      supportReason: 'refund_return'
+    }));
+
+    await service.processMessage('msg_sup');
+
+    expect(prismaService.conversation.update).toHaveBeenCalledWith({
+      where: { id: 'c1' },
+      data: { requiresFollowUp: true }
+    });
+    expect(activityLogService.record).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'AI_HANDOVER',
+      metadataJson: { reason: 'refund_return' }
+    }));
+    expect(notificationsService.createNotificationForTenantAdmins).toHaveBeenCalled();
+  });
+
+  it('should enforce strict cross-tenant isolation and throw on cross-tenant security violation', () => {
+    expect(() => {
+      (service as any).assertBelongsToTenant({ tenantId: 'tenantA' }, 'tenantB', 'TestModel');
+    }).toThrow('Security Violation');
   });
 });

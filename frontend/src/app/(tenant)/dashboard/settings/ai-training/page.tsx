@@ -3,651 +3,768 @@
 import { useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
 import { useLanguage } from '@/components/LanguageProvider';
-import { Bot, Key, Save, AlertCircle, RefreshCw, MessageSquare, Plus, Edit2, Trash2, X, Check, Wand2, Eye } from 'lucide-react';
+import { useFeature } from '@/hooks/useFeature';
+import { Bot, Key, Save, AlertCircle, RefreshCw, MessageSquare, Plus, Edit2, Trash2, X, Check, Wand2, Eye, Lock, Sliders, Sparkles, ShieldCheck } from 'lucide-react';
 import InstructionBanner from '@/components/InstructionBanner';
 
 export default function AiTrainingPage() {
- const { language } = useLanguage();
- const [loading, setLoading] = useState(true);
- const [saving, setSaving] = useState(false);
- const [activeTab, setActiveTab] = useState<'api' | 'default' | 'custom'>('default');
- 
- // Config state
- const [config, setConfig] = useState<any>({
- routingMode: 'system_only',
- hasCustomKey: false,
- allowByok: false,
- planName: '',
- aiQuota: 0,
- isActive: true,
- replyWhenAssigned: false,
- agentName: ''
- });
- const [apiKey, setApiKey] = useState('');
- 
- // Q&A state
- const [qnas, setQnas] = useState<any[]>([]);
- const [isQnaModalOpen, setIsQnaModalOpen] = useState(false);
- const [qnaForm, setQnaForm] = useState({ id: '', question: '', answer: '', isDefault: false });
+  const { language } = useLanguage();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState<'api' | 'default' | 'custom'>('default');
+  
+  // Feature Gating Checks
+  const canOrderPlacement = useFeature('ai_tool_order_placement');
+  const canImageReading = useFeature('ai_tool_image_reading');
+  const canSupportDetection = useFeature('ai_tool_support_detection');
+  const canProductMatching = useFeature('ai_tool_product_matching');
 
- // Document state
- const [documents, setDocuments] = useState<any[]>([]);
- const [uploadingDoc, setUploadingDoc] = useState(false);
+  // Config state
+  const [config, setConfig] = useState<any>({
+    routingMode: 'system_only',
+    hasCustomKey: false,
+    allowByok: false,
+    planName: '',
+    aiQuota: 0,
+    isActive: true,
+    replyWhenAssigned: false,
+    agentName: ''
+  });
+  const [apiKey, setApiKey] = useState('');
+  
+  // Event-wise AI Tools state
+  const [tools, setTools] = useState<Record<string, { isEnabled: boolean; configJson: any }>>({
+    order_placement: { isEnabled: true, configJson: {} },
+    image_reading: { isEnabled: true, configJson: {} },
+    support_detection: { isEnabled: false, configJson: {} },
+    product_matching: { isEnabled: false, configJson: {} }
+  });
 
- const fetchData = async () => {
- setLoading(true);
- try {
- const token = Cookies.get('access_token');
- const headers = { 'Authorization': `Bearer ${token}` };
- 
- const [configRes, qnaRes, docsRes] = await Promise.all([
- fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai-training/config`, { headers }),
- fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai-training/qna`, { headers }),
- fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai-training/documents`, { headers })
- ]);
- 
- if (configRes.ok) setConfig(await configRes.json());
- if (qnaRes.ok) setQnas(await qnaRes.json());
- if (docsRes.ok) setDocuments(await docsRes.json());
- } catch (err) {
- console.error(err);
- } finally {
- setLoading(false);
- }
- };
+  // Q&A state
+  const [qnas, setQnas] = useState<any[]>([]);
+  const [isQnaModalOpen, setIsQnaModalOpen] = useState(false);
+  const [qnaForm, setQnaForm] = useState({ id: '', question: '', answer: '', isDefault: false });
 
- useEffect(() => {
- fetchData();
- }, []);
+  // Document state
+  const [documents, setDocuments] = useState<any[]>([]);
+  const [uploadingDoc, setUploadingDoc] = useState(false);
 
- const handleSaveConfig = async () => {
- setSaving(true);
- try {
- const token = Cookies.get('access_token');
- const body: any = { 
- routingMode: config.routingMode,
- aiOrderEnabled: config.aiOrderEnabled,
- isActive: config.isActive,
- replyWhenAssigned: config.replyWhenAssigned,
- agentName: config.agentName
- };
- if (apiKey) body.apiKey = apiKey;
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const token = Cookies.get('access_token');
+      const headers = { 'Authorization': `Bearer ${token}` };
+      
+      const [configRes, toolsRes, qnaRes, docsRes] = await Promise.all([
+        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai-training/config`, { headers }),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai-training/tools`, { headers }),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai-training/qna`, { headers }),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai-training/documents`, { headers })
+      ]);
+      
+      if (configRes.ok) setConfig(await configRes.json());
+      if (toolsRes.ok) {
+        const toolsList = await toolsRes.json();
+        const map: Record<string, { isEnabled: boolean; configJson: any }> = {};
+        (toolsList || []).forEach((t: any) => {
+          map[t.toolType] = { isEnabled: t.isEnabled, configJson: t.configJson };
+        });
+        setTools(prev => ({ ...prev, ...map }));
+      }
+      if (qnaRes.ok) setQnas(await qnaRes.json());
+      if (docsRes.ok) setDocuments(await docsRes.json());
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
- const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai-training/config/byok`, {
- method: 'POST',
- headers: {
- 'Authorization': `Bearer ${token}`,
- 'Content-Type': 'application/json'
- },
- body: JSON.stringify(body)
- });
- 
- if (res.ok) {
- setApiKey(''); // Clear input for security
- fetchData();
- alert(language === 'en' ? 'Settings saved successfully' : 'সেটিংস সফলভাবে সংরক্ষিত হয়েছে');
- }
- } catch (err) {
- console.error(err);
- } finally {
- setSaving(false);
- }
- };
+  useEffect(() => {
+    fetchData();
+  }, []);
 
- const handleQuickSave = async (updates: any) => {
- try {
- const token = Cookies.get('access_token');
- const body: any = { 
- routingMode: config.routingMode,
- aiOrderEnabled: config.aiOrderEnabled,
- isActive: config.isActive,
- replyWhenAssigned: config.replyWhenAssigned,
- agentName: config.agentName,
- ...updates
- };
+  const handleToggleTool = async (toolType: string, newEnabled: boolean) => {
+    // Optimistic UI update
+    setTools(prev => ({
+      ...prev,
+      [toolType]: { ...prev[toolType], isEnabled: newEnabled }
+    }));
 
- await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai-training/config/byok`, {
- method: 'POST',
- headers: {
- 'Authorization': `Bearer ${token}`,
- 'Content-Type': 'application/json'
- },
- body: JSON.stringify(body)
- });
- } catch (err) {
- console.error(err);
- }
- };
+    try {
+      const token = Cookies.get('access_token');
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai-training/tools/${toolType}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ isEnabled: newEnabled })
+      });
+    } catch (err) {
+      console.error('Failed to toggle AI tool', err);
+      fetchData(); // Rollback on error
+    }
+  };
 
- const handleSaveQna = async () => {
- try {
- const token = Cookies.get('access_token');
- const url = qnaForm.id 
- ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai-training/qna/${qnaForm.id}`
- : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai-training/qna`;
- const method = qnaForm.id ? 'PATCH' : 'POST';
+  const handleSaveConfig = async () => {
+    setSaving(true);
+    try {
+      const token = Cookies.get('access_token');
+      const body: any = { 
+        routingMode: config.routingMode,
+        aiOrderEnabled: config.aiOrderEnabled,
+        isActive: config.isActive,
+        replyWhenAssigned: config.replyWhenAssigned,
+        agentName: config.agentName
+      };
+      if (apiKey) body.apiKey = apiKey;
 
- const res = await fetch(url, {
- method,
- headers: {
- 'Authorization': `Bearer ${token}`,
- 'Content-Type': 'application/json'
- },
- body: JSON.stringify({ question: qnaForm.question, answer: qnaForm.answer })
- });
- 
- if (res.ok) {
- setIsQnaModalOpen(false);
- fetchData();
- }
- } catch (err) {
- console.error(err);
- }
- };
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai-training/config/byok`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+      });
+      
+      if (res.ok) {
+        setApiKey(''); // Clear input for security
+        fetchData();
+        alert(language === 'en' ? 'Settings saved successfully' : 'সেটিংস সফলভাবে সংরক্ষিত হয়েছে');
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSaving(false);
+    }
+  };
 
- const openQnaModal = (qna?: any) => {
- if (qna) {
- setQnaForm({ id: qna.id, question: qna.question, answer: qna.answer || '', isDefault: qna.isDefault });
- } else {
- setQnaForm({ id: '', question: '', answer: '', isDefault: false });
- }
- setIsQnaModalOpen(true);
- };
+  const handleQuickSave = async (updates: any) => {
+    try {
+      const token = Cookies.get('access_token');
+      const body: any = { 
+        routingMode: config.routingMode,
+        aiOrderEnabled: config.aiOrderEnabled,
+        isActive: config.isActive,
+        replyWhenAssigned: config.replyWhenAssigned,
+        agentName: config.agentName,
+        ...updates
+      };
 
- const defaultQnas = qnas.filter(q => q.isDefault);
- const customQnas = qnas.filter(q => !q.isDefault);
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai-training/config/byok`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
- if (loading) {
- return <div className="flex h-64 items-center justify-center"><RefreshCw className="w-6 h-6 animate-spin text-zinc-500" /></div>;
- }
+  const handleSaveQna = async () => {
+    try {
+      const token = Cookies.get('access_token');
+      const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
+      
+      let res;
+      if (qnaForm.id) {
+        res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai-training/qna/${qnaForm.id}`, {
+          method: 'PATCH',
+          headers,
+          body: JSON.stringify({ question: qnaForm.question, answer: qnaForm.answer })
+        });
+      } else {
+        res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai-training/qna`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ question: qnaForm.question, answer: qnaForm.answer })
+        });
+      }
 
- return (
-  <div className="bg-white/70 backdrop-blur-xl border border-white/50 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] max-w-4xl mx-auto space-y-4 animate-in fade-in duration-500 pb-4">
-  <div className="flex items-start justify-between gap-4">
-    <div>
-      <h1 className="text-2xl font-bold tracking-tight text-slate-900">{language === 'en' ? 'AI Training & Configuration' : 'এআই ট্রেইনিং ও কনফিগারেশন'}</h1>
-      <p className="text-zinc-500 mt-2">{language === 'en' ? 'Train your AI assistant with business-specific knowledge and manage API settings.' : 'আপনার ব্যবসার তথ্য দিয়ে AI কে ট্রেইন করুন এবং API সেটিংস পরিচালনা করুন।'}</p>
-    </div>
-  </div>
+      if (res.ok) {
+        setIsQnaModalOpen(false);
+        fetchData();
+      } else {
+        const data = await res.json();
+        alert(data.message || 'Error saving Q&A');
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
-  <InstructionBanner 
-    title={language === 'en' ? 'AI Training Instructions' : 'এআই ট্রেনিং নির্দেশনা'}
-    description={language === 'en' ? 'Welcome to the AI Brain setup! Here you can configure your AI Agent\'s name, turn it on/off, and train it by adding Q&A pairs. Go to the "Custom Q&A" tab to add specific questions your customers frequently ask. You can also upload PDF/TXT documents in the "Knowledge Documents" tab so the AI can read and answer from those files automatically.' : 'এআই ব্রেইন সেটআপে স্বাগতম! এখান থেকে আপনি আপনার এআই এজেন্টের নাম সেট করতে পারবেন, এআই চালু বা বন্ধ করতে পারবেন এবং কাস্টম প্রশ্ন-উত্তর (Q&A) যোগ করে এআইকে ট্রেনিং দিতে পারবেন। "Knowledge Documents" ট্যাবে গিয়ে আপনি PDF বা TXT ফাইল আপলোড করতে পারেন।'}
-    icon={Wand2}
-    variant="purple"
-  />
+  const handleDeleteQna = async (id: string) => {
+    if (!confirm(language === 'en' ? 'Are you sure you want to delete this question?' : 'আপনি কি নিশ্চিত যে এই প্রশ্নটি মুছে ফেলতে চান?')) return;
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai-training/qna/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) fetchData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
- {/* Master Toggle */}
- <div className="bg-surface border border-primary/10 shadow-sm rounded-xl p-4 flex flex-col gap-4 animate-in fade-in">
- <div className="flex items-center justify-between">
- <div className="flex items-center gap-3">
- <div className={`p-2 rounded-lg ${config.isActive ? 'bg-primary/20 text-primary' : 'bg-zinc-800 text-zinc-500'}`}>
- <Bot className="w-5 h-5" />
- </div>
- <div>
- <h2 className="font-bold text-slate-900 ">
- {language === 'en' ? 'Enable AI Agent' : 'এআই এজেন্ট চালু করুন'}
- </h2>
- <p className="text-[13px] text-zinc-500">
- {language === 'en' ? 'Turn this off to completely pause AI responses.' : 'এআই রিপ্লাই সম্পূর্ণ বন্ধ করতে এটি অফ করুন।'}
- </p>
- </div>
- </div>
- <label className="relative inline-flex items-center cursor-pointer">
- <input 
- type="checkbox" 
- checked={config.isActive ?? true}
- onChange={(e) => {
- const val = e.target.checked;
- setConfig({ ...config, isActive: val });
- handleQuickSave({ isActive: val });
- }}
- className="sr-only peer" 
- />
- <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
- </label>
- </div>
+  const handleUploadDoc = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
- {/* AI Agent Name */}
- <div className="pt-3 mt-3 border-t border-surface-hover">
- <label className="block text-[13px] font-bold text-slate-900 mb-1">
- {language === 'en' ? 'AI Agent Name' : 'এআই এজেন্টের নাম'}
- </label>
- <div className="flex gap-2">
- <input 
- type="text" 
- placeholder={language === 'en' ? 'e.g., Zini, Sarah, SupportBot' : 'যেমন: জিনী, সারা, সাপোর্টবট'}
- value={config.agentName || ''}
- onChange={(e) => setConfig({ ...config, agentName: e.target.value })}
- className="w-full bg-surface border border-surface-hover rounded-xl px-3 py-1.5 text-[13px] text-slate-900 focus:outline-none focus:border-primary"
- />
- <button 
- onClick={() => handleQuickSave({ agentName: config.agentName })}
- className="px-4 py-1.5 bg-secondary text-white rounded-xl text-[12px] font-bold hover:bg-secondary/90 transition-all shrink-0"
- >
- {language === 'en' ? 'Save Name' : 'নাম সেভ করুন'}
- </button>
- </div>
- <p className="text-[11px] text-zinc-500 mt-1">
- {language === 'en' ? 'Give your AI assistant a human-like name so it feels more natural to your customers.' : 'আপনার এআই অ্যাসিস্ট্যান্টকে একটি মানুষের মতো নাম দিন যেন কাস্টমারদের কাছে এটি ন্যাচারাল মনে হয়।'}
- </p>
- </div>
- </div>
+    setUploadingDoc(true);
+    try {
+      const token = Cookies.get('access_token');
+      const formData = new FormData();
+      formData.append('file', file);
 
- {/* Tabs */}
- <div className="flex border-b border-surface-hover mb-3">
- <button 
- onClick={() => setActiveTab('default')}
- className={`px-1.5 py-1 font-medium text-[13px] border-b-2 transition-colors ${activeTab === 'default' ? 'border-primary text-primary' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
- >
- {language === 'en' ? 'Business Info' : 'ব্যবসার তথ্য'}
- </button>
- <button 
- onClick={() => setActiveTab('custom')}
- className={`px-1.5 py-1 font-medium text-[13px] border-b-2 transition-colors ${activeTab === 'custom' ? 'border-primary text-primary' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
- >
- {language === 'en' ? 'Custom Prompt & Docs' : 'কাস্টম প্রম্পট ও ফাইল'}
- </button>
- <button 
- onClick={() => setActiveTab('api')}
- className={`px-1.5 py-1 font-medium text-[13px] border-b-2 transition-colors ${activeTab === 'api' ? 'border-primary text-primary' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
- >
- {language === 'en' ? 'API Settings' : 'API সেটিংস'}
- </button>
- </div>
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai-training/documents`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData
+      });
 
- {/* Section 1: API Routing Settings */}
- {activeTab === 'api' && (
- <div className="bg-surface border border-primary/10 shadow-xl shadow-primary/5 hover:border-primary/20 hover:shadow-primary/10 transition-all rounded-2xl p-1.5 animate-in fade-in duration-300">
- <h2 className="text-lg font-bold flex items-center gap-2 mb-3">
- <Key className="w-4 h-4 text-primary" /> 
- {language === 'en' ? 'AI Usage & API Settings' : 'এআই ব্যবহার ও API সেটিংস'}
- </h2>
+      if (res.ok) {
+        fetchData();
+      } else {
+        const data = await res.json();
+        alert(data.message || 'Upload failed');
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setUploadingDoc(false);
+    }
+  };
 
- <div className="bg-background rounded-xl p-1.5 mb-3 flex items-center justify-between border border-surface-hover">
- <div>
- <div className="text-[13px] text-zinc-400">{language === 'en' ? 'Current Plan' : 'বর্তমান প্যাকেজ'}</div>
- <div className="font-bold text-[13px]">{config.planName}</div>
- </div>
- <div className="text-right">
- <div className="text-[13px] text-zinc-400">{language === 'en' ? 'Platform AI Quota' : 'প্ল্যাটফর্ম এআই কোটা'}</div>
- <div className="font-bold text-[13px] text-primary">{config.aiQuota.toLocaleString()} {language === 'en' ? 'মেসেজ/মাস' : 'মেসেজ/মাস'}</div>
- </div>
- </div>
+  const handleDeleteDoc = async (id: string) => {
+    if (!confirm(language === 'en' ? 'Delete this document?' : 'এই ডকুমেন্টটি কি মুছে ফেলতে চান?')) return;
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai-training/documents/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) fetchData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
- <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 mb-3 flex items-center justify-between">
- <div className="flex items-center gap-2">
- <Eye className="w-5 h-5 text-emerald-500 shrink-0" />
- <div>
- <div className="font-bold text-[13px] text-slate-900">{language === 'en' ? 'AI Product Image Vision' : 'এআই প্রডাক্ট ইমেজ ভিশন'}</div>
- <div className="text-[11px] text-zinc-500">
- {language === 'en' ? 'Customers can send product photos. AI inspects the image and matches it with your Product Catalog (5 credits per image analysis).' : 'কাস্টমার পণ্যের ছবি পাঠালে AI ছবি দেখে ক্যাটালগের সাথে মিলিয়ে প্রোডাক্ট নাম ও দাম রিপ্লাই দেবে (প্রতি ইমেজ রিডে ৫ ক্রাডিট কাটা হবে)।'}
- </div>
- </div>
- </div>
- </div>
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <RefreshCw className="w-6 h-6 animate-spin text-primary" />
+      </div>
+    );
+  }
 
- {config.allowByok ? (
- <div className="space-y-3">
- <div>
- <label className="block text-[13px] font-medium mb-1.5 text-zinc-300">
- {language === 'en' ? 'API Routing Mode' : 'API রাউটিং মোড'}
- </label>
- <div className="grid grid-cols-1 md:grid-cols-3 gap-1.5">
- <label className={`flex flex-col p-1.5 rounded-xl border-2 cursor-pointer transition-colors ${config.routingMode === 'system_only' ? 'border-primary bg-primary/5' : 'border-surface-hover bg-background hover:border-zinc-500'}`}>
- <div className="flex items-center gap-2 mb-2">
- <input type="radio" name="routing" value="system_only" checked={config.routingMode === 'system_only'} onChange={e => setConfig({...config, routingMode: e.target.value})} className="text-primary focus:ring-primary bg-background border-zinc-600" />
- <span className="font-bold text-[13px]">System Quota Only</span>
- </div>
- <span className="text-[11px] text-zinc-500">Uses platform quota. Stops if quota is exceeded.</span>
- </label>
- 
- <label className={`flex flex-col p-1.5 rounded-xl border-2 cursor-pointer transition-colors ${config.routingMode === 'custom_only' ? 'border-primary bg-primary/5' : 'border-surface-hover bg-background hover:border-zinc-500'}`}>
- <div className="flex items-center gap-2 mb-2">
- <input type="radio" name="routing" value="custom_only" checked={config.routingMode === 'custom_only'} onChange={e => setConfig({...config, routingMode: e.target.value})} className="text-primary focus:ring-primary bg-background border-zinc-600" />
- <span className="font-bold text-[13px]">Custom API Key Only</span>
- </div>
- <span className="text-[11px] text-zinc-500">Uses your OpenAI key. Saves platform quota.</span>
- </label>
+  const toolDefinitions = [
+    {
+      type: 'order_placement',
+      titleEn: 'Order Placement',
+      titleBn: 'অর্ডার প্লেসমেন্ট',
+      descEn: 'AI will place confirmed orders directly and reply with an order number.',
+      descBn: 'এআই কনফার্ম করা কাস্টমার অর্ডারের অটো প্লেসমেন্ট করবে এবং অর্ডার নম্বর দেবে।',
+      allowed: canOrderPlacement
+    },
+    {
+      type: 'image_reading',
+      titleEn: 'Image Reading',
+      titleBn: 'ইমেজ রিডিং (ভিশন)',
+      descEn: 'AI will look at photos customers send and analyze products.',
+      descBn: 'কাস্টমারদের পাঠানো পণ্যের ছবি দেখে এআই প্রডাক্ট নাম ও বিবরণ বিশ্লেষণ করবে।',
+      allowed: canImageReading
+    },
+    {
+      type: 'support_detection',
+      titleEn: 'Support Detection',
+      titleBn: 'সাপোর্ট ডিটেকশন',
+      descEn: 'AI will detect when a customer needs a human (including refund/returns) and flag for your team.',
+      descBn: 'কাস্টমারের রিফান্ড/রিটার্ন বা সরাসরি হিউম্যান এজেন্ট সহায়তার প্রয়োজন হলে টিমের কাছে টিকিট ফ্ল্যাগ করবে।',
+      allowed: canSupportDetection
+    },
+    {
+      type: 'product_matching',
+      titleEn: 'Product Photo Matching',
+      titleBn: 'প্রডাক্ট ফটো ম্যাচিং',
+      descEn: 'AI will suggest a matching product photo from your catalog when relevant.',
+      descBn: 'কাস্টমারের চাহিদা অনুযায়ী প্রাসঙ্গিক পণ্যের ছবি ক্যাটালগ থেকে অটো রিগ্রুপ করে পাঠাবে।',
+      allowed: canProductMatching
+    }
+  ];
 
- <label className={`flex flex-col p-1.5 rounded-xl border-2 cursor-pointer transition-colors ${config.routingMode === 'hybrid' ? 'border-primary bg-primary/5' : 'border-surface-hover bg-background hover:border-zinc-500'}`}>
- <div className="flex items-center gap-2 mb-2">
- <input type="radio" name="routing" value="hybrid" checked={config.routingMode === 'hybrid'} onChange={e => setConfig({...config, routingMode: e.target.value})} className="text-primary focus:ring-primary bg-background border-zinc-600" />
- <span className="font-bold text-[13px]">Hybrid (Both)</span>
- </div>
- <span className="text-[11px] text-zinc-500">Uses quota first. Switches to custom key if quota runs out.</span>
- </label>
- </div>
- </div>
+  return (
+    <div className="space-y-4 max-w-5xl mx-auto pb-10">
+      {/* Header */}
+      <div>
+        <h1 className="text-xl font-bold flex items-center gap-2 text-slate-900">
+          <Bot className="w-6 h-6 text-primary" />
+          {language === 'en' ? 'AI Assistant Training & Tools' : 'এআই অ্যাসিস্ট্যান্ট ট্রেইনিং ও টুলস'}
+        </h1>
+        <p className="text-[13px] text-zinc-500 mt-1">
+          {language === 'en'
+            ? 'Configure your business information, event-wise AI behavior toggles, and knowledge base.'
+            : 'আপনার ব্যবসার তথ্য, ইভেন্ট-ভিত্তিক এআই আচরণ এবং নলেজ বেস কনফিগার করুন।'}
+        </p>
+      </div>
 
- {(config.routingMode === 'custom_only' || config.routingMode === 'hybrid') && (
- <div className="animate-in fade-in slide-in-from-top-4 duration-300">
- <label className="block text-[13px] font-medium mb-1 text-zinc-300">
- OpenAI API Key
- </label>
- <div className="flex gap-2">
- <input 
- type="password" 
- placeholder={config.hasCustomKey ? '•••••••••••••••• (Key saved)' : 'sk-...'}
- value={apiKey} 
- onChange={e => setApiKey(e.target.value)} 
- className="flex-1 bg-background border border-surface-hover rounded-lg px-1.5 py-2 focus:border-primary focus:outline-none" 
- />
- </div>
- <p className="text-[11px] text-zinc-500 mt-1">
- Your key is securely stored. Leave blank if you don't want to change the currently saved key.
- </p>
- </div>
- )}
+      <InstructionBanner
+        title={language === 'en' ? 'How to Train Your AI Agent' : 'কীভাবে আপনার এআই এজেন্টকে ট্রেইন করবেন'}
+        description={
+          language === 'en'
+            ? '1. Keep "Enable AI Agent" ON to answer customer queries. 2. Fill out Business Info Q&A so AI knows your delivery policy, timing & store location. 3. Enable Event-Wise AI Behavior toggles below to control order placement, image reading & support handover.'
+            : '১. কাস্টমার মেসেজের অটো রিপ্লাইয়ের জন্য "এআই এজেন্ট चालू" রাখুন। ২. ব্যবসার সময়সূচী, ডেলিভারি চার্জ ও ঠিকানা জানাতে Q&A সেকশন পূরণ করুন। ৩. অটো অর্ডার প্লেসমেন্ট ও সাপোর্ট হ্যান্ডওভার কন্ট্রোল করতে নিচের ইভেন্ট টগলসমূহ অন করুন।'
+        }
+      />
 
- <div className="pt-4 border-t border-surface-hover">
- <label className="flex items-start gap-1.5 p-1.5 rounded-xl border border-surface-hover bg-background cursor-pointer hover:border-primary/50 transition-colors">
- <div className="pt-0.5">
- <input type="checkbox" checked={config.aiOrderEnabled ?? true} onChange={e => setConfig({...config, aiOrderEnabled: e.target.checked})} className="w-5 h-5 text-primary rounded border-zinc-600 focus:ring-primary focus:ring-offset-0 bg-background" />
- </div>
- <div>
- <div className="font-bold text-[13px] text-zinc-200">
- {language === 'en' ? 'Allow AI to create orders automatically' : 'AI-কে অটোমেটিক অর্ডার কাটার পারমিশন দিন'}
- </div>
- <div className="text-[11px] text-zinc-400 mt-1">
- {language === 'en' 
- ? 'If enabled, the AI will understand purchase intent and automatically create an order in the Orders tab after asking the customer for confirmation.' 
- : 'এটি চালু থাকলে, কাস্টমার কিছু কিনতে চাইলে AI নিজে থেকেই অর্ডার কনফার্ম করে Orders পেজে সেভ করে দিবে।'}
- </div>
- </div>
- </label>
- </div>
- 
- <div className="flex justify-end">
- <button 
- onClick={handleSaveConfig} 
- disabled={saving}
- className="flex items-center gap-2 px-1.5 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium disabled:opacity-50"
- >
- {saving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
- {language === 'en' ? 'Save Settings' : 'সেটিংস সেভ করুন'}
- </button>
- </div>
- </div>
- ) : (
- <div className="bg-primary/5 border border-primary/20 rounded-xl p-1.5 flex items-start gap-1.5">
- <AlertCircle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
- <div>
- <h4 className="font-bold text-primary">{language === 'en' ? 'BYOK Not Supported' : 'BYOK সাপোর্ট করে না'}</h4>
- <p className="text-[13px] text-zinc-400 mt-1">
- {language === 'en' ? 'Your current plan does not allow Bring Your Own Key (BYOK). The AI will strictly use the platform quota.' : 'আপনার বর্তমান প্যাকেজে নিজস্ব API Key ব্যবহার করার সুবিধা নেই। AI শুধু প্ল্যাটফর্মের কোটা ব্যবহার করবে।'}
- </p>
- </div>
- </div>
- )}
- </div>
- )}
+      {/* Master Toggle */}
+      <div className="bg-surface border border-primary/10 shadow-sm rounded-xl p-4 flex flex-col gap-4 animate-in fade-in">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-lg ${config.isActive ? 'bg-primary/20 text-primary' : 'bg-zinc-800 text-zinc-500'}`}>
+              <Bot className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="font-bold text-slate-900">
+                {language === 'en' ? 'Enable AI Agent' : 'এআই এজেন্ট চালু করুন'}
+              </h2>
+              <p className="text-[13px] text-zinc-500">
+                {language === 'en' ? 'Turn this off to completely pause AI responses.' : 'এআই রিপ্লাই সম্পূর্ণ বন্ধ করতে এটি অফ করুন।'}
+              </p>
+            </div>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input 
+              type="checkbox" 
+              checked={config.isActive ?? true}
+              onChange={(e) => {
+                const val = e.target.checked;
+                setConfig({ ...config, isActive: val });
+                handleQuickSave({ isActive: val });
+              }}
+              className="sr-only peer" 
+            />
+            <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+          </label>
+        </div>
 
- {/* Section 2: Default Q&A */}
- {activeTab === 'default' && (
- <div className="bg-surface border border-primary/10 shadow-xl shadow-primary/5 hover:border-primary/20 hover:shadow-primary/10 transition-all rounded-2xl p-1.5 animate-in fade-in duration-300">
- <h2 className="text-lg font-bold flex items-center gap-2 mb-1">
- <MessageSquare className="w-4 h-4 text-secondary" /> 
- {language === 'en' ? 'Business Information' : 'ব্যবসার তথ্য'}
- </h2>
- <p className="text-[13px] text-zinc-400 mb-6">
- {language === 'en' ? 'Answer these standard questions so the AI knows how to reply to your customers.' : 'এই সাধারণ প্রশ্নগুলোর উত্তর দিয়ে দিন, যাতে AI বুঝতে পারে কাস্টমারকে কী রিপ্লাই দিতে হবে।'}
- </p>
+        {/* AI Agent Name */}
+        <div className="pt-3 mt-1 border-t border-surface-hover">
+          <label className="block text-[13px] font-bold text-slate-900 mb-1">
+            {language === 'en' ? 'AI Agent Name' : 'এআই এজেন্টের নাম'}
+          </label>
+          <div className="flex gap-2">
+            <input 
+              type="text" 
+              placeholder={language === 'en' ? 'e.g., Zini, Sarah, SupportBot' : 'যেমন: জিনী, সারা, সাপোর্টবট'}
+              value={config.agentName || ''}
+              onChange={(e) => setConfig({ ...config, agentName: e.target.value })}
+              className="w-full bg-surface border border-surface-hover rounded-xl px-3 py-1.5 text-[13px] text-slate-900 focus:outline-none focus:border-primary"
+            />
+            <button 
+              onClick={() => handleQuickSave({ agentName: config.agentName })}
+              className="px-4 py-1.5 bg-secondary text-white rounded-xl text-[12px] font-bold hover:bg-secondary/90 transition-all shrink-0"
+            >
+              {language === 'en' ? 'Save Name' : 'নাম সেভ করুন'}
+            </button>
+          </div>
+        </div>
+      </div>
 
- <div className="space-y-2">
- {defaultQnas.map(qna => (
-          <div key={qna.id} className="bg-white border border-slate-200 rounded-xl p-3 flex items-start justify-between gap-3 shadow-sm">
-            <div className="flex-1">
-              <div className="font-bold text-[14px] text-slate-900">{qna.question}</div>
-              {qna.answer ? (
-                <div className="text-[13px] text-slate-800 mt-2 bg-slate-50 p-2.5 rounded-lg border border-slate-200/90 leading-relaxed font-medium">{qna.answer}</div>
-              ) : (
-                <div className="text-[12px] text-red-500 mt-1.5 font-medium italic">{language === 'en' ? 'Not answered yet' : 'এখনও উত্তর দেওয়া হয়নি'}</div>
+      {/* NEW: Event-Wise AI Behavior Section */}
+      <div className="bg-surface border border-primary/10 shadow-sm rounded-xl p-4 animate-in fade-in">
+        <div className="flex items-center gap-2 mb-3">
+          <Sliders className="w-5 h-5 text-primary" />
+          <div>
+            <h2 className="font-bold text-slate-900 text-sm">
+              {language === 'en' ? 'Event-Wise AI Behavior' : 'ইভেন্ট-ভিত্তিক এআই আচরণ'}
+            </h2>
+            <p className="text-[12px] text-zinc-500">
+              {language === 'en' ? 'Control exactly when and how the AI executes actions for your customers.' : 'কাস্টমার মেসেজের নির্দিষ্ট ইভেন্টে এআই কীভাবে সিদ্ধান্ত নেবে তা অন/অফ করুন।'}
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {toolDefinitions.map(tool => {
+            const toolState = tools[tool.type] || { isEnabled: false };
+            const isAllowed = tool.allowed;
+
+            return (
+              <div 
+                key={tool.type} 
+                className={`border rounded-xl p-3 flex flex-col justify-between transition-colors ${
+                  !isAllowed 
+                    ? 'bg-muted/40 border-muted opacity-75' 
+                    : toolState.isEnabled 
+                    ? 'bg-primary/5 border-primary/30' 
+                    : 'bg-background border-surface-hover'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div>
+                    <div className="flex items-center gap-1.5 font-bold text-[13px] text-foreground">
+                      {tool.type === 'order_placement' && <Sparkles className="w-4 h-4 text-emerald-600" />}
+                      {tool.type === 'image_reading' && <Eye className="w-4 h-4 text-blue-600" />}
+                      {tool.type === 'support_detection' && <ShieldCheck className="w-4 h-4 text-amber-600" />}
+                      {tool.type === 'product_matching' && <Wand2 className="w-4 h-4 text-purple-600" />}
+                      {language === 'en' ? tool.titleEn : tool.titleBn}
+                      {!isAllowed && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-700 bg-amber-100 dark:bg-amber-900/30 px-1.5 py-0.2 rounded-full">
+                          <Lock className="w-3 h-3" /> Plan Upgrade Required
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      {language === 'en' ? tool.descEn : tool.descBn}
+                    </p>
+                  </div>
+
+                  <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                    <input 
+                      type="checkbox" 
+                      disabled={!isAllowed}
+                      checked={isAllowed && toolState.isEnabled}
+                      onChange={(e) => handleToggleTool(tool.type, e.target.checked)}
+                      className="sr-only peer" 
+                    />
+                    <div className={`w-9 h-5 bg-zinc-700 peer-focus:outline-none rounded-full peer ${
+                      isAllowed ? 'peer-checked:after:translate-x-full peer-checked:bg-primary cursor-pointer' : 'cursor-not-allowed opacity-50'
+                    } after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all`}></div>
+                  </label>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex border-b border-surface-hover mb-3">
+        <button 
+          onClick={() => setActiveTab('default')}
+          className={`px-3 py-2 font-medium text-[13px] border-b-2 transition-colors ${activeTab === 'default' ? 'border-primary text-primary' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
+        >
+          {language === 'en' ? 'Business Info' : 'ব্যবসার তথ্য'}
+        </button>
+        <button 
+          onClick={() => setActiveTab('custom')}
+          className={`px-3 py-2 font-medium text-[13px] border-b-2 transition-colors ${activeTab === 'custom' ? 'border-primary text-primary' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
+        >
+          {language === 'en' ? 'Custom Prompt & Docs' : 'কাস্টম প্রম্পট ও ফাইল'}
+        </button>
+        <button 
+          onClick={() => setActiveTab('api')}
+          className={`px-3 py-2 font-medium text-[13px] border-b-2 transition-colors ${activeTab === 'api' ? 'border-primary text-primary' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
+        >
+          {language === 'en' ? 'API Settings' : 'API সেটিংস'}
+        </button>
+      </div>
+
+      {/* Section 1: API Routing Settings */}
+      {activeTab === 'api' && (
+        <div className="bg-surface border border-primary/10 shadow-xl shadow-primary/5 rounded-2xl p-4 animate-in fade-in duration-300">
+          <h2 className="text-lg font-bold flex items-center gap-2 mb-3">
+            <Key className="w-4 h-4 text-primary" /> 
+            {language === 'en' ? 'AI Usage & API Settings' : 'এআই ব্যবহার ও API সেটিংস'}
+          </h2>
+
+          <div className="bg-background rounded-xl p-3 mb-3 flex items-center justify-between border border-surface-hover">
+            <div>
+              <div className="text-[13px] text-zinc-400">{language === 'en' ? 'Current Plan' : 'বর্তমান প্যাকেজ'}</div>
+              <div className="font-bold text-[13px]">{config.planName}</div>
+            </div>
+            <div className="text-right">
+              <div className="text-[13px] text-zinc-400">{language === 'en' ? 'Platform AI Quota' : 'প্ল্যাটফর্ম এআই কোটা'}</div>
+              <div className="font-bold text-[13px] text-primary">{config.aiQuota.toLocaleString()} {language === 'en' ? 'মেসেজ/মাস' : 'মেসেজ/মাস'}</div>
+            </div>
+          </div>
+
+          {config.allowByok ? (
+            <div className="space-y-3">
+              <div>
+                <label className="block text-[13px] font-medium mb-1.5 text-zinc-300">
+                  {language === 'en' ? 'API Routing Mode' : 'API রাউটিং মোড'}
+                </label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-1.5">
+                  <label className={`flex flex-col p-3 rounded-xl border-2 cursor-pointer transition-colors ${config.routingMode === 'system_only' ? 'border-primary bg-primary/5' : 'border-surface-hover bg-background hover:border-zinc-500'}`}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <input type="radio" name="routing" value="system_only" checked={config.routingMode === 'system_only'} onChange={e => setConfig({...config, routingMode: e.target.value})} className="text-primary focus:ring-primary bg-background border-zinc-600" />
+                      <span className="font-bold text-[13px]">System Quota Only</span>
+                    </div>
+                    <span className="text-[11px] text-zinc-400">Use ZiniChat platform monthly credits. No API key required.</span>
+                  </label>
+
+                  <label className={`flex flex-col p-3 rounded-xl border-2 cursor-pointer transition-colors ${config.routingMode === 'custom_only' ? 'border-primary bg-primary/5' : 'border-surface-hover bg-background hover:border-zinc-500'}`}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <input type="radio" name="routing" value="custom_only" checked={config.routingMode === 'custom_only'} onChange={e => setConfig({...config, routingMode: e.target.value})} className="text-primary focus:ring-primary bg-background border-zinc-600" />
+                      <span className="font-bold text-[13px]">Your Own Key Only</span>
+                    </div>
+                    <span className="text-[11px] text-zinc-400">Route 100% of AI requests through your personal OpenAI API key.</span>
+                  </label>
+
+                  <label className={`flex flex-col p-3 rounded-xl border-2 cursor-pointer transition-colors ${config.routingMode === 'hybrid' ? 'border-primary bg-primary/5' : 'border-surface-hover bg-background hover:border-zinc-500'}`}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <input type="radio" name="routing" value="hybrid" checked={config.routingMode === 'hybrid'} onChange={e => setConfig({...config, routingMode: e.target.value})} className="text-primary focus:ring-primary bg-background border-zinc-600" />
+                      <span className="font-bold text-[13px]">Hybrid (Fallback)</span>
+                    </div>
+                    <span className="text-[11px] text-zinc-400">Use System credits first, then fallback to your API key if quota is full.</span>
+                  </label>
+                </div>
+              </div>
+
+              {config.routingMode !== 'system_only' && (
+                <div className="bg-background p-3 rounded-xl border border-surface-hover space-y-3">
+                  <div>
+                    <label className="block text-[13px] font-medium mb-1">
+                      {language === 'en' ? 'OpenAI API Key' : 'OpenAI API Key'}
+                    </label>
+                    <input 
+                      type="password"
+                      placeholder={config.hasCustomKey ? '•••••••••••••••••••• (Saved - enter new key to replace)' : 'sk-proj-...'}
+                      value={apiKey}
+                      onChange={e => setApiKey(e.target.value)}
+                      className="w-full bg-surface border border-surface-hover rounded-xl px-3 py-2 text-[13px] text-slate-900 focus:outline-none focus:border-primary"
+                    />
+                    <span className="text-[11px] text-zinc-500 mt-1 block">
+                      {language === 'en' ? 'Your API key is encrypted securely with AES-256 before storage.' : 'আপনার API Key নিরাপদভাবে AES-256 দিয়ে এনক্রিপ্ট করা থাকে।'}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              <button
+                onClick={handleSaveConfig}
+                disabled={saving}
+                className="px-5 py-2 bg-primary text-white font-bold rounded-xl text-[13px] hover:bg-primary/90 transition-all flex items-center gap-2"
+              >
+                {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                {language === 'en' ? 'Save API Routing' : 'API সেভ করুন'}
+              </button>
+            </div>
+          ) : (
+            <div className="bg-zinc-800/50 p-4 rounded-xl border border-zinc-700 text-center space-y-2">
+              <AlertCircle className="w-6 h-6 text-amber-400 mx-auto" />
+              <div className="font-bold text-[13px] text-zinc-200">
+                {language === 'en' ? 'BYOK (Bring Your Own Key) is disabled on your plan' : 'আপনার প্যাকেজে BYOK অন করার অনুমতি নেই'}
+              </div>
+              <p className="text-[12px] text-zinc-400 max-w-md mx-auto">
+                {language === 'en' 
+                  ? 'Your current plan uses ZiniChat system AI quota. Upgrade your plan to use your custom OpenAI API key.'
+                  : 'আপনার বর্তমান প্যাকেজে প্ল্যাটফর্মের এআই কোটা ব্যবহার হচ্ছে। নিজের API Key ব্যবহার করতে প্যাকেজ আপগ্রেড করুন।'}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Section 2: Default Business Questions */}
+      {activeTab === 'default' && (
+        <div className="bg-surface border border-primary/10 shadow-xl shadow-primary/5 rounded-2xl p-4 animate-in fade-in duration-300">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-lg font-bold flex items-center gap-2">
+                <MessageSquare className="w-5 h-5 text-primary" />
+                {language === 'en' ? 'Business Q&A Knowledge Base' : 'ব্যবসার সাধারণ প্রশ্নোত্তর (Q&A)'}
+              </h2>
+              <p className="text-[12px] text-zinc-400">
+                {language === 'en' ? 'Answer these questions so AI can respond accurately to customers.' : 'এই সাধারণ প্রশ্নগুলোর উত্তর লিখে রাখুন যেন কাস্টমার জিজ্ঞাসা করলে এআই সঠিক রিপ্লাই দেয়।'}
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setQnaForm({ id: '', question: '', answer: '', isDefault: false });
+                setIsQnaModalOpen(true);
+              }}
+              className="px-3 py-1.5 bg-primary text-white font-bold rounded-xl text-[12px] hover:bg-primary/90 transition-all flex items-center gap-1.5"
+            >
+              <Plus className="w-4 h-4" />
+              {language === 'en' ? 'Add Q&A' : 'প্রশ্ন যোগ করুন'}
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            {qnas.map((qna) => (
+              <div key={qna.id} className="bg-background border border-surface-hover rounded-xl p-3.5 space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="font-bold text-[13px] text-slate-900 flex items-center gap-2">
+                    <span>{qna.question}</span>
+                    {qna.isDefault && (
+                      <span className="text-[10px] bg-primary/20 text-primary font-bold px-2 py-0.5 rounded-full">Default</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      onClick={() => {
+                        setQnaForm({ id: qna.id, question: qna.question, answer: qna.answer || '', isDefault: qna.isDefault });
+                        setIsQnaModalOpen(true);
+                      }}
+                      className="p-1 text-zinc-400 hover:text-primary transition-colors"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    {!qna.isDefault && (
+                      <button
+                        onClick={() => handleDeleteQna(qna.id)}
+                        className="p-1 text-zinc-400 hover:text-red-400 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="text-[12px] text-zinc-300 bg-surface p-2.5 rounded-lg border border-surface-hover/50">
+                  {qna.answer ? qna.answer : <span className="text-zinc-500 italic">{language === 'en' ? 'No answer provided yet. Click edit to add.' : 'এখনও উত্তর লেখা হয়নি। এডিট বাটনে ক্লিক করুন।'}</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Section 3: Custom System Prompt & Document Upload */}
+      {activeTab === 'custom' && (
+        <div className="space-y-4 animate-in fade-in duration-300">
+          <div className="bg-surface border border-primary/10 shadow-xl shadow-primary/5 rounded-2xl p-4">
+            <h2 className="text-lg font-bold flex items-center gap-2 mb-2">
+              <Bot className="w-5 h-5 text-primary" />
+              {language === 'en' ? 'System Prompt Instructions' : 'সিস্টেম প্রম্পট ইনস্ট্রাকশন'}
+            </h2>
+            <p className="text-[12px] text-zinc-400 mb-3">
+              {language === 'en' ? 'Guide the AI on its personality, tone, and specific rules.' : 'এআই-এর আচরণ, টোন এবং বিশেষ নির্দেশনাসমূহ লিখে দিন।'}
+            </p>
+
+            <textarea
+              rows={6}
+              value={config.systemPrompt || ''}
+              onChange={(e) => setConfig({ ...config, systemPrompt: e.target.value })}
+              className="w-full bg-background border border-surface-hover rounded-xl p-3 text-[13px] text-slate-900 focus:outline-none focus:border-primary font-mono"
+              placeholder="You are a polite sales assistant..."
+            />
+
+            <div className="flex justify-end mt-3">
+              <button
+                onClick={() => handleQuickSave({ systemPrompt: config.systemPrompt })}
+                className="px-4 py-2 bg-primary text-white font-bold rounded-xl text-[12px] hover:bg-primary/90 transition-all flex items-center gap-1.5"
+              >
+                <Save className="w-4 h-4" />
+                {language === 'en' ? 'Save Prompt' : 'প্রম্পট সেভ করুন'}
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-surface border border-primary/10 shadow-xl shadow-primary/5 rounded-2xl p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h2 className="text-lg font-bold flex items-center gap-2">
+                  <Wand2 className="w-5 h-5 text-primary" />
+                  {language === 'en' ? 'Document Upload (PDF/Word/Images)' : 'ডকুমেন্ট আপলোড (PDF/Word/ছবি)'}
+                </h2>
+                <p className="text-[12px] text-zinc-400">
+                  {language === 'en' ? 'Upload up to 2 documents (max 1MB each) for AI context.' : 'সর্বোচ্চ ২টি ফাইল (প্রতিটি ১ মেগাবাইট) আপলোড করতে পারবেন।'}
+                </p>
+              </div>
+
+              {documents.length < 2 && (
+                <label className="px-3 py-1.5 bg-primary text-white font-bold rounded-xl text-[12px] hover:bg-primary/90 transition-all cursor-pointer flex items-center gap-1.5">
+                  {uploadingDoc ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                  {language === 'en' ? 'Upload File' : 'ফাইল আপলোড'}
+                  <input type="file" onChange={handleUploadDoc} className="hidden" accept=".pdf,.docx,.txt,image/*" />
+                </label>
               )}
             </div>
- <button 
- onClick={() => openQnaModal(qna)}
- className="px-1.5 py-1.5 bg-secondary/10 text-secondary rounded-lg hover:bg-secondary/20 transition-colors text-[13px] font-medium shrink-0 flex items-center gap-2"
- >
- <Edit2 className="w-3.5 h-3.5" /> {language === 'en' ? (qna.answer ? 'Edit' : 'Answer') : (qna.answer ? 'এডিট' : 'উত্তর দিন')}
- </button>
- </div>
- ))}
- </div>
- </div>
- )}
 
- {/* Section 3: Custom Prompt & Docs */}
- {activeTab === 'custom' && (
- <div className="space-y-3 animate-in fade-in duration-300">
- <div className="bg-surface border border-primary/10 shadow-xl shadow-primary/5 hover:border-primary/20 hover:shadow-primary/10 transition-all rounded-2xl p-1.5">
- <div className="flex justify-between items-start mb-2">
- <div>
- <h2 className="text-[13px] font-bold flex items-center gap-2">
- <Bot className="w-5 h-5 text-purple-500" /> 
- {language === 'en' ? 'Custom Prompt (AI Persona)' : 'কাস্টম প্রম্পট (AI এর চরিত্র)'}
- </h2>
- <p className="text-[13px] text-zinc-400 mt-1">
- {language === 'en' ? 'Define exactly how the AI should behave, talk, and reply to customers.' : 'AI ঠিক কীভাবে কথা বলবে এবং কাস্টমারকে কীভাবে রিপ্লাই দেবে, তার বিস্তারিত নিয়মাবলি এখানে লিখে দিন।'}
- </p>
- </div>
- <button 
- onClick={async () => {
- try {
- const token = Cookies.get('access_token');
- const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai-training/generate-sample-prompt`, {
- headers: { 'Authorization': `Bearer ${token}` }
- });
- if (res.ok) {
- const data = await res.json();
- setConfig({...config, systemPrompt: data.prompt});
- }
- } catch (err) {
- console.error(err);
- }
- }}
- className="px-1.5 py-1.5 bg-purple-500/10 text-purple-500 rounded-lg hover:bg-purple-500/20 transition-colors text-[13px] font-medium shrink-0 flex items-center gap-2"
- >
- <Wand2 className="w-3.5 h-3.5" /> {language === 'en' ? 'Generate Sample Prompt' : 'স্যাম্পল প্রম্পট তৈরি করুন'}
- </button>
- </div>
+            <div className="space-y-2">
+              {documents.map((doc) => (
+                <div key={doc.id} className="bg-background border border-surface-hover rounded-xl p-3 flex items-center justify-between">
+                  <div>
+                    <div className="font-bold text-[13px] text-slate-900">{doc.filename}</div>
+                    <div className="text-[11px] text-zinc-400">Status: <span className="text-emerald-400 font-semibold">{doc.status}</span></div>
+                  </div>
+                  <button
+                    onClick={() => handleDeleteDoc(doc.id)}
+                    className="p-1.5 text-zinc-400 hover:text-red-400 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+              {documents.length === 0 && (
+                <div className="text-center py-6 text-zinc-500 text-[12px]">
+                  {language === 'en' ? 'No documents uploaded yet.' : 'এখনও কোনো ফাইল আপলোড করা হয়নি।'}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
- <textarea 
- rows={10} 
- value={config.systemPrompt || ''}
- onChange={(e) => setConfig({...config, systemPrompt: e.target.value})}
- placeholder={language === 'en' ? 'Enter system instructions here...' : 'এখানে AI এর জন্য নিয়মাবলি লিখুন...'}
- className="w-full bg-background border border-surface-hover rounded-xl px-1.5 py-1 focus:border-purple-500 focus:outline-none text-[13px] text-zinc-300 leading-relaxed font-mono" 
- />
+      {/* Q&A Modal */}
+      {isQnaModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-surface border border-surface-hover rounded-2xl max-w-lg w-full p-4 space-y-4 shadow-2xl animate-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-surface-hover pb-3">
+              <h3 className="font-bold text-slate-900 text-base">
+                {qnaForm.id 
+                  ? (language === 'en' ? 'Edit Question & Answer' : 'প্রশ্ন ও উত্তর এডিট করুন') 
+                  : (language === 'en' ? 'Add Custom Question' : 'নতুন প্রশ্ন যোগ করুন')}
+              </h3>
+              <button onClick={() => setIsQnaModalOpen(false)} className="text-zinc-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
- <div className="mt-4 flex justify-end">
- <button 
- onClick={async () => {
- setSaving(true);
- try {
- const token = Cookies.get('access_token');
- await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai-training/prompt`, {
- method: 'PATCH',
- headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
- body: JSON.stringify({ systemPrompt: config.systemPrompt })
- });
- alert(language === 'en' ? 'Prompt saved!' : 'প্রম্পট সেভ হয়েছে!');
- } catch(err) { console.error(err); }
- setSaving(false);
- }}
- disabled={saving}
- className="flex items-center gap-2 px-5 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors font-medium disabled:opacity-50"
- >
- {saving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
- {language === 'en' ? 'Save Prompt' : 'সেভ করুন'}
- </button>
- </div>
- </div>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-[12px] font-medium text-zinc-300 mb-1">
+                  {language === 'en' ? 'Question' : 'প্রশ্ন'}
+                </label>
+                <input
+                  type="text"
+                  disabled={qnaForm.isDefault}
+                  value={qnaForm.question}
+                  onChange={(e) => setQnaForm({ ...qnaForm, question: e.target.value })}
+                  className="w-full bg-background border border-surface-hover rounded-xl px-3 py-2 text-[13px] text-slate-900 focus:outline-none focus:border-primary disabled:opacity-60"
+                />
+              </div>
 
- {/* Document Upload Area */}
- <div className="bg-surface border border-primary/10 shadow-xl shadow-primary/5 hover:border-primary/20 hover:shadow-primary/10 transition-all rounded-2xl p-1.5">
- <h2 className="text-[13px] font-bold flex items-center gap-2 mb-2">
- <Bot className="w-5 h-5 text-blue-500" /> 
- {language === 'en' ? 'Knowledge Documents' : 'নলেজ ডকুমেন্টস'}
- </h2>
- <p className="text-[13px] text-zinc-400 mb-4">
- {language === 'en' ? 'Upload up to 2 files (PDF, DOCX, TXT, IMG). Max size: 1MB each.' : 'সর্বোচ্চ ২টি ফাইল আপলোড করতে পারবেন (PDF, DOCX, TXT, IMG)। সাইজ লিমিট: ১ এমবি।'}
- </p>
- <div className="space-y-4">
- {documents.length > 0 ? (
- <div className="space-y-3">
- {documents.map(doc => (
- <div key={doc.id} className="flex items-center justify-between bg-background border border-surface-hover p-1.5 rounded-lg">
- <div className="flex items-center gap-1.5">
- <div className="w-8 h-8 bg-blue-500/10 rounded-lg flex items-center justify-center">
- <span className="text-blue-500 font-bold text-[11px] uppercase">{doc.filename.split('.').pop()}</span>
- </div>
- <div>
- <div className="font-medium text-[13px] text-zinc-200">{doc.filename}</div>
- <div className="text-[11px] text-zinc-500 capitalize">{doc.status}</div>
- </div>
- </div>
- <button 
- onClick={async () => {
- if(!confirm(language === 'en' ? 'Delete this document?' : 'এই ডকুমেন্টটি মুছে ফেলবেন?')) return;
- try {
- const token = Cookies.get('access_token');
- await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai-training/documents/${doc.id}`, {
- method: 'DELETE',
- headers: { 'Authorization': `Bearer ${token}` }
- });
- fetchData();
- } catch(err) { console.error(err); }
- }}
- className="p-2 text-zinc-400 hover:text-red-500 transition-colors"
- >
- <Trash2 className="w-3.5 h-3.5" />
- </button>
- </div>
- ))}
- </div>
- ) : (
- <div className="text-center py-2.5 text-zinc-500 border border-dashed border-surface-hover rounded-xl bg-background/50">
- {language === 'en' ? 'No documents uploaded yet.' : 'এখনও কোনো ডকুমেন্ট আপলোড করা হয়নি।'}
- </div>
- )}
+              <div>
+                <label className="block text-[12px] font-medium text-zinc-300 mb-1">
+                  {language === 'en' ? 'Answer' : 'উত্তর'}
+                </label>
+                <textarea
+                  rows={4}
+                  value={qnaForm.answer}
+                  onChange={(e) => setQnaForm({ ...qnaForm, answer: e.target.value })}
+                  className="w-full bg-background border border-surface-hover rounded-xl p-3 text-[13px] text-slate-900 focus:outline-none focus:border-primary font-sans"
+                  placeholder={language === 'en' ? 'Enter the answer for AI to use...' : 'এআই যা উত্তর দেবে তা স্পষ্ট করে লিখুন...'}
+                />
+              </div>
+            </div>
 
- <div>
- <label className="relative flex justify-center w-full cursor-pointer appearance-none items-center rounded-xl border-2 border-dashed border-surface-hover bg-background/50 p-1.5 transition-all hover:border-blue-500">
- <div className="space-y-1 text-center">
- <div className="mx-auto inline-flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/10">
- {uploadingDoc ? <RefreshCw className="w-5 h-5 text-blue-500 animate-spin" /> : <Plus className="w-5 h-5 text-blue-500" />}
- </div>
- <div className="text-[13px] text-zinc-400 font-medium">
- {uploadingDoc 
- ? (language === 'en' ? 'Uploading & Processing...' : 'আপলোড হচ্ছে...')
- : (documents.length >= 2 
- ? (language === 'en' ? 'Upload limit reached (Max 2)' : 'আপলোড লিমিট শেষ (সর্বোচ্চ ২টি)')
- : (language === 'en' ? 'Click to upload a document' : 'ডকুমেন্ট আপলোড করতে ক্লিক করুন')
- )
- }
- </div>
- </div>
- <input 
- type="file" 
- className="hidden" 
- accept=".pdf,.doc,.docx,.txt,image/*"
- disabled={uploadingDoc || documents.length >= 2}
- onChange={async (e) => {
- const file = e.target.files?.[0];
- if (!file) return;
- 
- // Check file size (1MB max)
- if (file.size > 1024 * 1024) {
- alert(language === 'en' ? 'File must be under 1MB' : 'ফাইলের সাইজ ১ এমবির কম হতে হবে');
- e.target.value = '';
- return;
- }
-
- setUploadingDoc(true);
- try {
- const token = Cookies.get('access_token');
- const formData = new FormData();
- formData.append('file', file);
- 
- const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai-training/documents`, {
- method: 'POST',
- headers: { 'Authorization': `Bearer ${token}` },
- body: formData
- });
- 
- if (!res.ok) {
- const errData = await res.json();
- throw new Error(errData.message || 'Upload failed');
- }
- 
- alert(language === 'en' ? 'Document uploaded & processed!' : 'ডকুমেন্ট আপলোড ও প্রসেস হয়েছে!');
- fetchData();
- } catch(err: any) {
- alert(err.message || 'Error uploading file');
- console.error(err);
- } finally {
- setUploadingDoc(false);
- e.target.value = '';
- }
- }}
- />
- </label>
- </div>
- </div>
- </div>
- </div>
- )}
-
- {/* QnA Modal */}
- {isQnaModalOpen && (
- <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
- <div className="bg-surface w-full max-w-lg rounded-2xl shadow-2xl border border-surface-hover p-1.5 animate-in zoom-in-95 duration-200">
- <div className="flex justify-between items-center mb-6">
- <h3 className="text-xl font-bold">{qnaForm.id ? (language === 'en' ? 'Edit Q&A' : 'এডিট করুন') : (language === 'en' ? 'New Q&A' : 'নতুন প্রশ্ন যোগ করুন')}</h3>
- <button onClick={() => setIsQnaModalOpen(false)} className="text-zinc-400 hover:text-zinc-200 p-1"><X className="w-5 h-5" /></button>
- </div>
- 
- <div className="space-y-4">
- <div>
- <label className="block text-[13px] font-medium mb-1 text-zinc-400">
- {language === 'en' ? 'Question / Topic' : 'প্রশ্ন / বিষয়'}
- </label>
- <input 
- type="text" 
- value={qnaForm.question} 
- onChange={e => setQnaForm({...qnaForm, question: e.target.value})} 
- disabled={qnaForm.isDefault}
- className="w-full bg-background border border-surface-hover rounded-lg px-1.5 py-2 focus:border-primary focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed" 
- placeholder={language === 'en' ? 'e.g. Do you deliver outside Dhaka?' : 'যেমন: আপনারা কি ঢাকার বাইরে ডেলিভারি দেন?'}
- />
- </div>
- 
- <div>
- <label className="block text-[13px] font-medium mb-1 text-zinc-400">
- {language === 'en' ? 'Answer / Instructions for AI' : 'উত্তর / AI এর জন্য নির্দেশনা'}
- </label>
- <textarea 
- rows={4} 
- value={qnaForm.answer} 
- onChange={e => setQnaForm({...qnaForm, answer: e.target.value})} 
- className="w-full bg-background border border-surface-hover rounded-lg px-1.5 py-2 focus:border-primary focus:outline-none" 
- placeholder={language === 'en' ? 'Yes, we deliver outside Dhaka via Pathao Courier. It takes 2-3 days.' : 'হ্যাঁ, আমরা পাঠাও কুরিয়ারের মাধ্যমে ঢাকার বাইরে ডেলিভারি দেই। সময় লাগে ২-৩ দিন।'}
- />
- </div>
- </div>
-
- <div className="mt-8 flex justify-end gap-1.5">
- <button onClick={() => setIsQnaModalOpen(false)} className="px-1.5 py-2 rounded-lg font-medium text-zinc-400 hover:text-zinc-200 transition-colors">
- {language === 'en' ? 'Cancel' : 'বাতিল'}
- </button>
- <button onClick={handleSaveQna} className="flex items-center gap-2 px-1.5 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium">
- <Check className="w-3.5 h-3.5" /> {language === 'en' ? 'Save' : 'সেভ করুন'}
- </button>
- </div>
- </div>
- </div>
- )}
- </div>
- );
+            <div className="flex justify-end gap-2 border-t border-surface-hover pt-3">
+              <button
+                onClick={() => setIsQnaModalOpen(false)}
+                className="px-4 py-2 bg-zinc-800 text-zinc-300 rounded-xl text-[12px] font-bold hover:bg-zinc-700"
+              >
+                {language === 'en' ? 'Cancel' : 'বাতিল'}
+              </button>
+              <button
+                onClick={handleSaveQna}
+                className="px-4 py-2 bg-primary text-white font-bold rounded-xl text-[12px] hover:bg-primary/90"
+              >
+                {language === 'en' ? 'Save Q&A' : 'সেভ করুন'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }

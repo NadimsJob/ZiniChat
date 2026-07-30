@@ -258,4 +258,15 @@ This rule summarizes the core technical safeguards discovered and enforced durin
 * **Rule**: Whenever an event occurs that affects a tenant workspace (such as ticket creation/reply, payment approval/rejection, plan customization, status change, channel connect/disconnect, team member addition/removal, or quota limit reached), the system MUST fetch and notify **ALL workspace Owners and Admins** (`role: { in: ['owner', 'admin'] }`), NOT just a single user or `users[0]`.
 * **Implementation**: Always use `this.prisma.user.findMany({ where: { tenantId, role: { in: ['owner', 'admin'] } } })` to resolve recipient lists for both in-app `NotificationsService` and `SmtpService` email dispatches. Wrap asynchronous email/notification calls in `.catch(() => {})` so delivery failures never block primary business logic.
 
+---
+
+## 30. Inbox AI Two-Stage Classification & Deterministic Backend Handlers
+* **Core Rule**: "The AI Proposes, Code Decides." LLMs MUST NOT execute financial transactions, create database orders, deduct product stock, or mutate tenant configurations directly.
+* **Stage A (Structured Output)**: LLM outputs MUST be parsed into a strict TypeScript interface (`StructuredAiClassification`). If JSON parsing fails, the raw text is treated strictly as a conversational reply with zero tool execution.
+* **Stage B (Deterministic Handlers)**: Actions like Order Placement, Support Ticket Handover, Vision Image Reading, and Product Photo Matching MUST be validated by backend TypeScript handlers:
+  - Check tenant plan feature flags via `QuotaService.checkFeature(tenantId, 'ai_tool_*')`.
+  - Validate exact DB product prices, active status, and inventory stock before order creation.
+  - Enforce explicit `assertBelongsToTenant(record, tenantId)` security assertions on all modified entities.
+
+
 

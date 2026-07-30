@@ -1,9 +1,13 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { ActivityLogService } from '../inbox/activity-log.service';
 
 @Injectable()
 export class OrdersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject(forwardRef(() => ActivityLogService)) private activityLogService: ActivityLogService
+  ) {}
 
   async getOrders(tenantId: string) {
     return this.prisma.order.findMany({
@@ -23,14 +27,10 @@ export class OrdersService {
   async createOrder(tenantId: string, data: any) {
     const { contactId, conversationId, items, notes } = data;
     
-    // items should be array of { productId, quantity, priceAtTime }
-    
-    // Calculate total
     const totalAmount = items.reduce((acc: number, item: any) => acc + (parseFloat(item.priceAtTime) * item.quantity), 0);
 
-    return this.prisma.$transaction(async (tx) => {
-      // Create order
-      const order = await tx.order.create({
+    const order = await this.prisma.$transaction(async (tx) => {
+      const createdOrder = await tx.order.create({
         data: {
           tenantId,
           contactId,
@@ -48,7 +48,13 @@ export class OrdersService {
         }
       });
 
-      // Deduct inventory
+      if (conversationId) {
+        await tx.conversation.update({
+          where: { id: conversationId },
+          data: { hasOrderRequest: true }
+        });
+      }
+
       for (const item of items) {
         const product = await tx.product.findUnique({ where: { id: item.productId } });
         if (product && product.trackInventory) {
@@ -59,8 +65,20 @@ export class OrdersService {
         }
       }
 
-      return order;
+      return createdOrder;
     });
+
+    if (conversationId) {
+      await this.activityLogService.record({
+        tenantId,
+        conversationId,
+        contactId,
+        type: 'ORDER_CREATED',
+        metadataJson: { orderId: order.id, totalAmount }
+      });
+    }
+
+    return order;
   }
 
   async updateOrderStatus(tenantId: string, orderId: string, status: string) {
@@ -81,9 +99,7 @@ export class OrdersService {
         data: { status }
       });
 
-      // Handle inventory sync if status toggles between active and inactive states
       if (isCancelledOrRefunded && !wasCancelledOrRefunded) {
-        // Return stock
         for (const item of order.items) {
           const product = await tx.product.findUnique({ where: { id: item.productId } });
           if (product && product.trackInventory) {
@@ -94,7 +110,6 @@ export class OrdersService {
           }
         }
       } else if (!isCancelledOrRefunded && wasCancelledOrRefunded) {
-        // Deduct stock again
         for (const item of order.items) {
           const product = await tx.product.findUnique({ where: { id: item.productId } });
           if (product && product.trackInventory) {

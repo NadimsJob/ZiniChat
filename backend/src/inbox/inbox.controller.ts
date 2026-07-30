@@ -1,12 +1,15 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Request, Patch, UseInterceptors, UploadedFile, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards, Request, Patch, UseInterceptors, UploadedFile, Delete, Query } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import * as path from 'path';
 import * as fs from 'fs';
 import { InboxService } from './inbox.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { FeatureGuard, RequireFeature } from '../auth/guards/feature.guard';
 import { InboxGateway } from './inbox.gateway';
 import { QuotaService } from '../tenants/quota.service';
+import { ActivityLogService } from './activity-log.service';
+import { UserPresenceService } from './user-presence.service';
 
 @Controller('inbox')
 @UseGuards(JwtAuthGuard)
@@ -14,7 +17,9 @@ export class InboxController {
   constructor(
     private readonly inboxService: InboxService,
     private readonly inboxGateway: InboxGateway,
-    private readonly quotaService: QuotaService
+    private readonly quotaService: QuotaService,
+    private readonly activityLogService: ActivityLogService,
+    private readonly userPresenceService: UserPresenceService
   ) {}
 
   @Get('channels')
@@ -45,11 +50,20 @@ export class InboxController {
     return this.inboxService.deleteChannel(tenantId, channelConnectionId);
   }
 
-
   @Get('conversations')
-  async getConversations(@Request() req: any) {
+  async getConversations(
+    @Request() req: any,
+    @Query('view') view?: string,
+    @Query('channel') channel?: string
+  ) {
     const tenantId = req.user.tenantId;
-    return this.inboxService.getConversations(tenantId, req.user);
+    return this.inboxService.getConversations(tenantId, req.user, view, channel);
+  }
+
+  @Get('counts')
+  async getInboxCounts(@Request() req: any) {
+    const tenantId = req.user.tenantId;
+    return this.inboxService.getInboxCounts(tenantId, req.user);
   }
 
   @Get('unread-count')
@@ -69,9 +83,14 @@ export class InboxController {
     const tenantId = req.user.tenantId;
     await this.quotaService.checkMessageQuota(tenantId);
 
-    const { message, conversation } = await this.inboxService.saveOutboundMessage(tenantId, body.conversationId, body.content);
+    const { message, conversation } = await this.inboxService.saveOutboundMessage(
+      tenantId,
+      body.conversationId,
+      body.content,
+      'text',
+      req.user.userId || req.user.id
+    );
     
-    // Broadcast the new outbound message to all agents in the tenant (so their UI updates)
     this.inboxGateway.broadcastToTenant(tenantId, 'new_message', {
       message,
       conversationId: conversation.id
@@ -110,7 +129,13 @@ export class InboxController {
       body: body.content || '',
       mediaUrl
     };
-    const { message, conversation } = await this.inboxService.saveOutboundMessage(tenantId, body.conversationId, contentPayload as any, type);
+    const { message, conversation } = await this.inboxService.saveOutboundMessage(
+      tenantId,
+      body.conversationId,
+      contentPayload as any,
+      type,
+      req.user.userId || req.user.id
+    );
     
     this.inboxGateway.broadcastToTenant(tenantId, 'new_message', {
       message,
@@ -124,7 +149,9 @@ export class InboxController {
   @Patch('conversations/:id/assign')
   async assignAgent(@Request() req: any, @Param('id') conversationId: string, @Body() body: { agentId: string | null }) {
     const tenantId = req.user.tenantId;
-    return this.inboxService.assignAgent(tenantId, conversationId, body.agentId, req.user);
+    const conversation = await this.inboxService.assignAgent(tenantId, conversationId, body.agentId, req.user);
+    this.inboxGateway.broadcastToTenant(tenantId, 'conversation:collaboratorAdded', { conversationId });
+    return conversation;
   }
 
   @Patch('conversations/:id/toggle-ai')
@@ -136,7 +163,184 @@ export class InboxController {
   @Post('conversations/:id/labels')
   async toggleLabel(@Request() req: any, @Param('id') conversationId: string, @Body() body: { labelId: string }) {
     const tenantId = req.user.tenantId;
-    return this.inboxService.toggleLabel(tenantId, conversationId, body.labelId);
+    return this.inboxService.toggleLabel(tenantId, conversationId, body.labelId, req.user);
+  }
+
+  @Patch('conversations/:id/star')
+  async toggleStar(@Request() req: any, @Param('id') conversationId: string) {
+    const tenantId = req.user.tenantId;
+    const updated: any = await this.inboxService.toggleStar(tenantId, conversationId, req.user);
+    this.inboxGateway.broadcastToTenant(tenantId, 'conversation:starred', {
+      conversationId,
+      isStarred: updated.isStarred
+    });
+    return updated;
+  }
+
+  @Patch('conversations/:id/archive')
+  async archiveConversation(@Request() req: any, @Param('id') conversationId: string) {
+    const tenantId = req.user.tenantId;
+    const updated: any = await this.inboxService.archiveConversation(tenantId, conversationId, req.user);
+    this.inboxGateway.broadcastToTenant(tenantId, 'conversation:archived', {
+      conversationId,
+      isArchived: true
+    });
+    return updated;
+  }
+
+  @Patch('conversations/:id/unarchive')
+  async unarchiveConversation(@Request() req: any, @Param('id') conversationId: string) {
+    const tenantId = req.user.tenantId;
+    const updated: any = await this.inboxService.unarchiveConversation(tenantId, conversationId, req.user);
+    this.inboxGateway.broadcastToTenant(tenantId, 'conversation:archived', {
+      conversationId,
+      isArchived: false
+    });
+    return updated;
+  }
+
+  @Patch('conversations/:id/resolve')
+  async resolveConversation(@Request() req: any, @Param('id') conversationId: string) {
+    const tenantId = req.user.tenantId;
+    const updated: any = await this.inboxService.resolveConversation(tenantId, conversationId, req.user);
+    this.inboxGateway.broadcastToTenant(tenantId, 'conversation:resolved', {
+      conversationId,
+      resolvedAt: updated.resolvedAt
+    });
+    return updated;
+  }
+
+  @Patch('conversations/:id/reopen')
+  async reopenConversation(@Request() req: any, @Param('id') conversationId: string) {
+    const tenantId = req.user.tenantId;
+    const updated: any = await this.inboxService.reopenConversation(tenantId, conversationId, req.user);
+    this.inboxGateway.broadcastToTenant(tenantId, 'conversation:resolved', {
+      conversationId,
+      resolvedAt: null
+    });
+    return updated;
+  }
+
+  @Patch('conversations/:id/follow-up')
+  async toggleFollowUp(@Request() req: any, @Param('id') conversationId: string) {
+    const tenantId = req.user.tenantId;
+    const updated: any = await this.inboxService.toggleFollowUp(tenantId, conversationId, req.user);
+    this.inboxGateway.broadcastToTenant(tenantId, 'conversation:followUpFlagged', {
+      conversationId,
+      requiresFollowUp: updated.requiresFollowUp
+    });
+    return updated;
+  }
+
+  @Post('conversations/:id/collaborators')
+  async addCollaborator(
+    @Request() req: any,
+    @Param('id') conversationId: string,
+    @Body() body: { userId: string }
+  ) {
+    const tenantId = req.user.tenantId;
+    const collaborator = await this.inboxService.addCollaborator(tenantId, conversationId, body.userId, req.user);
+    this.inboxGateway.broadcastToTenant(tenantId, 'conversation:collaboratorAdded', {
+      conversationId,
+      userId: body.userId
+    });
+    return collaborator;
+  }
+
+  @Delete('conversations/:id/collaborators/:userId')
+  async removeCollaborator(
+    @Request() req: any,
+    @Param('id') conversationId: string,
+    @Param('userId') targetUserId: string
+  ) {
+    const tenantId = req.user.tenantId;
+    return this.inboxService.removeCollaborator(tenantId, conversationId, targetUserId, req.user);
+  }
+
+  @Patch('conversations/:id/assistant')
+  async setConversationAssistant(
+    @Request() req: any,
+    @Param('id') conversationId: string,
+    @Body() body: { aiAssistantId: string | null }
+  ) {
+    const tenantId = req.user.tenantId;
+    return this.inboxService.setConversationAssistant(tenantId, conversationId, body.aiAssistantId);
+  }
+
+  @UseGuards(FeatureGuard)
+  @RequireFeature('inbox_ai_summary')
+  @Post('conversations/:id/summary')
+  async generateSummary(
+    @Request() req: any,
+    @Param('id') conversationId: string,
+    @Body() body: { force?: boolean }
+  ) {
+    const tenantId = req.user.tenantId;
+    const result = await this.inboxService.generateSummary(tenantId, conversationId, !!body?.force);
+    this.inboxGateway.broadcastToTenant(tenantId, 'conversation:summaryReady', {
+      conversationId,
+      summary: result.summary,
+      summaryGeneratedAt: result.summaryGeneratedAt
+    });
+    return result;
+  }
+
+  @UseGuards(FeatureGuard)
+  @RequireFeature('inbox_activity_timeline')
+  @Get('conversations/:id/activity')
+  async getActivity(
+    @Request() req: any,
+    @Param('id') conversationId: string,
+    @Query('page') page?: string,
+    @Query('pageSize') pageSize?: string
+  ) {
+    const tenantId = req.user.tenantId;
+    return this.activityLogService.getActivityForConversation(
+      tenantId,
+      conversationId,
+      page ? parseInt(page, 10) : 1,
+      pageSize ? parseInt(pageSize, 10) : 20
+    );
+  }
+
+  @UseGuards(FeatureGuard)
+  @RequireFeature('inbox_shared_files')
+  @Get('conversations/:id/files')
+  async getSharedFiles(
+    @Request() req: any,
+    @Param('id') conversationId: string,
+    @Query('page') page?: string,
+    @Query('pageSize') pageSize?: string
+  ) {
+    const tenantId = req.user.tenantId;
+    return this.inboxService.getSharedFiles(
+      tenantId,
+      conversationId,
+      page ? parseInt(page, 10) : 1,
+      pageSize ? parseInt(pageSize, 10) : 20
+    );
+  }
+
+  @Patch('presence')
+  async updatePresence(@Request() req: any, @Body() body: { status: string }) {
+    const userId = req.user.userId || req.user.id;
+    const tenantId = req.user.tenantId;
+    const result = await this.userPresenceService.updatePresence(userId, body.status);
+    if (tenantId) {
+      this.inboxGateway.broadcastToTenant(tenantId, 'presence:changed', {
+        userId,
+        status: result.status
+      });
+    }
+    return result;
+  }
+
+  @UseGuards(FeatureGuard)
+  @RequireFeature('agent_presence')
+  @Get('presence')
+  async getTeamPresence(@Request() req: any) {
+    const tenantId = req.user.tenantId;
+    return this.userPresenceService.getTeamPresence(tenantId);
   }
 
   @Delete('conversations/:id')

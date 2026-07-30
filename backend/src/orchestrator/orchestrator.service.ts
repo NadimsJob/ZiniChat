@@ -3,8 +3,22 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
 import { InboxService } from '../inbox/inbox.service';
 import { BillingService } from '../billing/billing.service';
+import { OrdersService } from '../orders/orders.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { QuotaService } from '../tenants/quota.service';
+import { ActivityLogService } from '../inbox/activity-log.service';
+import { InboxGateway } from '../inbox/inbox.gateway';
 import * as path from 'path';
 import * as fs from 'fs';
+
+export interface StructuredAiClassification {
+  replyText: string;
+  intent: 'general' | 'order_intent' | 'order_confirmation' | 'support_needed' | 'product_lookup';
+  orderProposal?: { productNameGuess: string; quantity: number }[];
+  imageProductDescription?: string;
+  supportSignal?: boolean;
+  supportReason?: 'general' | 'complaint' | 'refund_return' | 'delivery_issue';
+}
 
 @Injectable()
 export class OrchestratorService {
@@ -14,9 +28,21 @@ export class OrchestratorService {
     private prisma: PrismaService,
     private aiService: AiService,
     private billingService: BillingService,
+    private ordersService: OrdersService,
+    private notificationsService: NotificationsService,
+    private quotaService: QuotaService,
+    private activityLogService: ActivityLogService,
     @Inject(forwardRef(() => InboxService))
-    private inboxService: InboxService
+    private inboxService: InboxService,
+    @Inject(forwardRef(() => InboxGateway))
+    private inboxGateway: InboxGateway
   ) {}
+
+  private assertBelongsToTenant(record: { tenantId: string }, tenantId: string, entityName: string) {
+    if (!record || record.tenantId !== tenantId) {
+      throw new Error(`Security Violation: ${entityName} does not belong to tenant ${tenantId}`);
+    }
+  }
 
   async processMessage(messageId: string) {
     try {
@@ -31,32 +57,55 @@ export class OrchestratorService {
       });
 
       if (!message || message.direction !== 'inbound' || (message.type !== 'text' && message.type !== 'image')) {
-        return; // Only process inbound text or image messages
-      }
-
-      const tenantId = message.conversation.tenantId;
-
-      if (message.conversation.channelConnection && message.conversation.channelConnection.isAiAutoReplyEnabled === false) {
-        this.logger.debug(`AI Auto-Reply is disabled for connection ${message.conversation.channelConnection.id}. Skipping message ${messageId}.`);
-        return; 
-      }
-
-      if (message.conversation.isAiEnabled === false) {
-        this.logger.debug(`AI Auto-Reply is specifically disabled for conversation ${message.conversation.id}. Skipping.`);
         return;
       }
 
-      // 2. Check AI Assistant, Tenant Settings, and Routing Mode
+      const tenantId = message.conversation.tenantId;
+      this.assertBelongsToTenant(message.conversation, tenantId, 'Conversation');
+
+      if (message.conversation.channelConnection && message.conversation.channelConnection.isAiAutoReplyEnabled === false) {
+        this.logger.debug(`AI Auto-Reply is disabled for connection ${message.conversation.channelConnection.id}. Skipping.`);
+        return;
+      }
+
+      if (message.conversation.isAiEnabled === false) {
+        this.logger.debug(`AI Auto-Reply is disabled for conversation ${message.conversation.id}. Skipping.`);
+        return;
+      }
+
+      // 2. Fetch AI Assistant & Assistant Tools
       const assistant = await this.prisma.aiAssistant.findFirst({
         where: { tenantId },
-        include: { tenant: { select: { customAiConfigId: true } } }
+        include: {
+          tools: true,
+          tenant: { select: { customAiConfigId: true } }
+        }
       });
 
       if (!assistant || !assistant.isActive || assistant.routingMode === 'custom_only') {
-        return; // Tenant doesn't use the system AI Orchestrator or AI is disabled
+        return;
       }
 
-      // Resolve AI Config to check Vision capability
+      this.assertBelongsToTenant(assistant, tenantId, 'AiAssistant');
+
+      // Map tool states
+      const toolMap: Record<string, { isEnabled: boolean; configJson: any }> = {};
+      (assistant.tools || []).forEach(t => {
+        toolMap[t.toolType] = { isEnabled: t.isEnabled, configJson: t.configJson };
+      });
+
+      // Check plan feature gating for each tool
+      const planOrderPlacement = await this.quotaService.checkFeature(tenantId, 'ai_tool_order_placement').catch(() => false);
+      const planImageReading = await this.quotaService.checkFeature(tenantId, 'ai_tool_image_reading').catch(() => false);
+      const planSupportDetection = await this.quotaService.checkFeature(tenantId, 'ai_tool_support_detection').catch(() => false);
+      const planProductMatching = await this.quotaService.checkFeature(tenantId, 'ai_tool_product_matching').catch(() => false);
+
+      const isOrderPlacementActive = (toolMap['order_placement']?.isEnabled ?? assistant.aiOrderEnabled) && planOrderPlacement;
+      const isImageReadingActive = (toolMap['image_reading']?.isEnabled ?? true) && planImageReading;
+      const isSupportDetectionActive = (toolMap['support_detection']?.isEnabled ?? false) && planSupportDetection;
+      const isProductMatchingActive = (toolMap['product_matching']?.isEnabled ?? false) && planProductMatching;
+
+      // Resolve AI Config
       const customAiConfigId = assistant.tenant?.customAiConfigId || undefined;
       let targetConfig: any = null;
       if (customAiConfigId) {
@@ -67,23 +116,26 @@ export class OrchestratorService {
 
       const isVisionSupported = this.aiService.isVisionSupported(targetConfig?.provider, targetConfig?.modelName);
       const isImageMessage = message.type === 'image';
-      const creditsNeeded = (isImageMessage && isVisionSupported) ? 5 : 1;
+      
+      // Vision only runs if vision model supported AND image_reading tool is active
+      const canRunVision = isImageMessage && isVisionSupported && isImageReadingActive;
+      const creditsNeeded = canRunVision ? 5 : 1;
 
       // 3. Check AI Quota
       const quotas = await this.billingService.getTenantQuotas(tenantId);
       const usage = await this.prisma.aiUsageLog.aggregate({
-        where: { 
+        where: {
           tenantId,
           createdAt: {
-            gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) // Start of month
+            gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
           }
         },
         _count: true
       });
 
       if (usage._count + creditsNeeded > quotas.aiQuota) {
-        this.logger.warn(`Tenant ${tenantId} has insufficient AI quota (needs ${creditsNeeded}, has ${quotas.aiQuota - usage._count}). Message ${messageId} ignored by AI.`);
-        return; 
+        this.logger.warn(`Tenant ${tenantId} has insufficient AI quota.`);
+        return;
       }
 
       // Check Global Message Quota
@@ -97,11 +149,11 @@ export class OrchestratorService {
       });
 
       if (messagesUsed >= quotas.messageQuota) {
-        this.logger.warn(`Tenant ${tenantId} exceeded global Message quota. Message ${messageId} ignored by AI.`);
+        this.logger.warn(`Tenant ${tenantId} exceeded global Message quota.`);
         return;
       }
 
-      // Extract image path and caption if image
+      // Extract image path if image
       let imagePathsToPass: string[] = [];
       let userCaption = '';
       if (isImageMessage) {
@@ -120,13 +172,16 @@ export class OrchestratorService {
         }
       }
 
-      // 4. Gather Context
+      const actualImagePaths = canRunVision && imagePathsToPass.length > 0 ? imagePathsToPass : undefined;
+
+      // 4. Stage A — Structured Context & Prompt Building
       const prompt = await this.buildContextPrompt(message.conversationId, assistant, {
-        isImage: isImageMessage && isVisionSupported && imagePathsToPass.length > 0,
-        caption: userCaption
+        isImage: canRunVision && imagePathsToPass.length > 0,
+        caption: userCaption,
+        isOrderPlacementActive,
+        isSupportDetectionActive
       });
 
-      // 5. LLM Execution
       let userText = '';
       if (!isImageMessage) {
         if (typeof message.content === 'object' && message.content !== null) {
@@ -140,17 +195,44 @@ export class OrchestratorService {
 
       const fullPrompt = `${prompt}\n\nCustomer: ${userText}`;
 
-      const actualImagePaths = (isImageMessage && isVisionSupported && imagePathsToPass.length > 0) ? imagePathsToPass : undefined;
-      const replyText = await this.aiService.generateCompletion(fullPrompt, customAiConfigId, actualImagePaths);
+      // Call LLM
+      const rawLlmOutput = await this.aiService.generateCompletion(fullPrompt, customAiConfigId, actualImagePaths);
 
-      if (!replyText || replyText.trim() === '') {
+      if (!rawLlmOutput || rawLlmOutput.trim() === '') {
         return;
       }
 
-      // 6. Action / Response Dispatch
-      await this.inboxService.saveOutboundMessage(tenantId, message.conversationId, replyText, 'text');
+      // Parse JSON Stage A Output
+      const classification = this.parseClassificationOutput(rawLlmOutput);
 
-      // 7. Log Usage (5 entries for Vision image analysis, 1 for standard text or text fallback)
+      // 5. Stage B — Deterministic Backend Handlers
+
+      // Handler 1: Order Placement Flow
+      let finalReplyText = classification.replyText;
+
+      if (isOrderPlacementActive) {
+        const orderResult = await this.handleOrderPlacement(tenantId, message.conversation, classification, message.conversationId);
+        if (orderResult?.overrideReplyText) {
+          finalReplyText = orderResult.overrideReplyText;
+        }
+      }
+
+      // Handler 2: Support Detection & Handover
+      if (isSupportDetectionActive && classification.supportSignal) {
+        await this.handleSupportDetection(tenantId, message.conversation, classification.supportReason || 'general');
+      }
+
+      // Handler 3: Product Photo Matching
+      if (isProductMatchingActive) {
+        await this.handleProductMatching(tenantId, message.conversationId, classification);
+      }
+
+      // 6. Response Dispatch
+      if (finalReplyText && finalReplyText.trim() !== '') {
+        await this.inboxService.saveOutboundMessage(tenantId, message.conversationId, finalReplyText, 'text', undefined, assistant.id);
+      }
+
+      // 7. Log AI Usage Credits
       const logsToCreate = Array.from({ length: creditsNeeded }).map(() => ({
         tenantId,
         assistantId: assistant.id,
@@ -165,14 +247,256 @@ export class OrchestratorService {
       this.logger.log(`AI Orchestration completed for message ${messageId}. Deducted ${creditsNeeded} credit(s).`);
 
     } catch (error) {
-      this.logger.error(`Error orchestrating message ${messageId}: ${error.message}`);
+      this.logger.error(`Error orchestrating message ${messageId}: ${error.message}`, error.stack);
+    }
+  }
+
+  private parseClassificationOutput(rawText: string): StructuredAiClassification {
+    try {
+      // Clean JSON markers if present
+      let cleaned = rawText.trim();
+      if (cleaned.startsWith('```json')) {
+        cleaned = cleaned.replace(/^```json/, '').replace(/```$/, '').trim();
+      } else if (cleaned.startsWith('```')) {
+        cleaned = cleaned.replace(/^```/, '').replace(/```$/, '').trim();
+      }
+
+      const parsed = JSON.parse(cleaned);
+
+      if (typeof parsed.replyText === 'string') {
+        return {
+          replyText: parsed.replyText,
+          intent: ['general', 'order_intent', 'order_confirmation', 'support_needed', 'product_lookup'].includes(parsed.intent)
+            ? parsed.intent
+            : 'general',
+          orderProposal: Array.isArray(parsed.orderProposal) ? parsed.orderProposal : undefined,
+          imageProductDescription: parsed.imageProductDescription,
+          supportSignal: !!parsed.supportSignal,
+          supportReason: ['general', 'complaint', 'refund_return', 'delivery_issue'].includes(parsed.supportReason)
+            ? parsed.supportReason
+            : 'general'
+        };
+      }
+    } catch (e) {
+      // Fallback: If JSON parsing fails, use raw text directly as plain conversation
+    }
+
+    return {
+      replyText: rawText,
+      intent: 'general',
+      supportSignal: false
+    };
+  }
+
+  private async handleOrderPlacement(
+    tenantId: string,
+    conversation: any,
+    classification: StructuredAiClassification,
+    conversationId: string
+  ): Promise<{ overrideReplyText?: string } | void> {
+    this.assertBelongsToTenant(conversation, tenantId, 'Conversation');
+
+    // Path A: Customer confirms an existing order proposal
+    if (classification.intent === 'order_confirmation' && conversation.pendingOrderProposal) {
+      const proposal = conversation.pendingOrderProposal as any;
+      
+      // Check expiration (30 minutes expiry)
+      const isExpired = proposal.expiresAt && new Date(proposal.expiresAt).getTime() < Date.now();
+      if (!isExpired && proposal.items && Array.isArray(proposal.items) && proposal.items.length > 0) {
+        
+        // Re-validate price and stock from live DB
+        const validatedItems: { productId: string; quantity: number; priceAtTime: number }[] = [];
+        let grandTotal = 0;
+
+        for (const item of proposal.items) {
+          const liveProduct = await this.prisma.product.findFirst({
+            where: { id: item.productId, tenantId, isActive: true }
+          });
+          if (liveProduct) {
+            const price = Number(liveProduct.price);
+            validatedItems.push({
+              productId: liveProduct.id,
+              quantity: item.quantity || 1,
+              priceAtTime: price
+            });
+            grandTotal += price * (item.quantity || 1);
+          }
+        }
+
+        if (validatedItems.length > 0) {
+          // Create real order
+          const createdOrder = await this.ordersService.createOrder(tenantId, {
+            contactId: conversation.contactId,
+            conversationId: conversation.id,
+            items: validatedItems,
+            notes: 'Placed via AI Assistant'
+          });
+
+          // Update Order provenance
+          await (this.prisma as any).order.update({
+            where: { id: createdOrder.id },
+            data: { createdBy: 'ai' }
+          });
+
+          // Clear proposal & set hasOrderRequest
+          await (this.prisma as any).conversation.update({
+            where: { id: conversationId },
+            data: {
+              pendingOrderProposal: null,
+              hasOrderRequest: true
+            }
+          });
+
+          // Activity Log
+          await this.activityLogService.record({
+            tenantId,
+            conversationId,
+            contactId: conversation.contactId,
+            type: 'ORDER_CREATED',
+            metadataJson: { orderId: createdOrder.id, source: 'ai', totalAmount: grandTotal }
+          });
+
+          return {
+            overrideReplyText: `ধন্যবাদ! আপনার অর্ডারটি নিশ্চিত করা হয়েছে (অর্ডার নম্বর: #${createdOrder.id.slice(0, 8)})। মোট মূল্য: BDT ${grandTotal}।\n\nThank you! Your order has been placed (Order #${createdOrder.id.slice(0, 8)}). Total: BDT ${grandTotal}.`
+          };
+        }
+      }
+
+      // Proposal expired or invalid
+      await (this.prisma as any).conversation.update({
+        where: { id: conversationId },
+        data: { pendingOrderProposal: null }
+      });
+    }
+
+    // Path B: New order intent proposed by customer
+    if (classification.intent === 'order_intent' && classification.orderProposal && classification.orderProposal.length > 0) {
+      const proposalItems: { productId: string; name: string; price: number; quantity: number }[] = [];
+      let totalAmount = 0;
+
+      for (const item of classification.orderProposal) {
+        if (!item.productNameGuess) continue;
+        
+        // Fuzzy search tenant products
+        const matchedProduct = await this.prisma.product.findFirst({
+          where: {
+            tenantId,
+            isActive: true,
+            OR: [
+              { name: { contains: item.productNameGuess, mode: 'insensitive' } },
+              { sku: { contains: item.productNameGuess, mode: 'insensitive' } }
+            ]
+          }
+        });
+
+        if (matchedProduct) {
+          const price = Number(matchedProduct.price);
+          const qty = item.quantity || 1;
+          proposalItems.push({
+            productId: matchedProduct.id,
+            name: matchedProduct.name,
+            price,
+            quantity: qty
+          });
+          totalAmount += price * qty;
+        }
+      }
+
+      if (proposalItems.length > 0) {
+        const proposalJson = {
+          items: proposalItems,
+          totalAmount,
+          expiresAt: new Date(Date.now() + 30 * 60 * 1000).toISOString() // 30 mins
+        };
+
+        await (this.prisma as any).conversation.update({
+          where: { id: conversationId },
+          data: { pendingOrderProposal: proposalJson }
+        });
+
+        const itemsListStr = proposalItems.map(i => `${i.quantity}x ${i.name} (${i.price} BDT)`).join(', ');
+        return {
+          overrideReplyText: `আমি আপনার অর্ডার প্রপোজাল তৈরি করেছি:\n📦 ${itemsListStr}\n💰 মোট: BDT ${totalAmount}\n\nআপনি কি অর্ডারটি নিশ্চিত করতে চান? ('হ্যাঁ' লিখুন)\n\nShall I place this order for ${itemsListStr}? Total: BDT ${totalAmount}. Reply 'Yes' to confirm.`
+        };
+      }
+    }
+  }
+
+  private async handleSupportDetection(tenantId: string, conversation: any, reason: string) {
+    this.assertBelongsToTenant(conversation, tenantId, 'Conversation');
+
+    await (this.prisma as any).conversation.update({
+      where: { id: conversation.id },
+      data: { requiresFollowUp: true }
+    });
+
+    await this.activityLogService.record({
+      tenantId,
+      conversationId: conversation.id,
+      contactId: conversation.contactId,
+      type: 'AI_HANDOVER',
+      metadataJson: { reason }
+    });
+
+    // Notify tenant admins
+    await this.notificationsService.createNotificationForTenantAdmins(
+      tenantId,
+      'Support Required',
+      `Customer ${conversation.contact.name || 'User'} needs assistance (${reason}).`,
+      'inbox'
+    ).catch(() => {});
+
+    // Broadcast socket event
+    this.inboxGateway.broadcastToTenant(tenantId, 'conversation:followUpFlagged', {
+      conversationId: conversation.id,
+      requiresFollowUp: true
+    });
+  }
+
+  private async handleProductMatching(tenantId: string, conversationId: string, classification: StructuredAiClassification) {
+    const searchQuery = classification.imageProductDescription;
+    if (!searchQuery && classification.intent !== 'product_lookup') return;
+
+    const queryStr = searchQuery || classification.replyText;
+    if (!queryStr || queryStr.length < 3) return;
+
+    // Search tenant product catalog for photo
+    const matchedProduct = await this.prisma.product.findFirst({
+      where: {
+        tenantId,
+        isActive: true,
+        imageUrl: { not: null },
+        OR: [
+          { name: { contains: queryStr, mode: 'insensitive' } },
+          { description: { contains: queryStr, mode: 'insensitive' } }
+        ]
+      }
+    });
+
+    if (matchedProduct && matchedProduct.imageUrl) {
+      await this.inboxService.saveOutboundMessage(
+        tenantId,
+        conversationId,
+        JSON.stringify({
+          mediaUrl: matchedProduct.imageUrl,
+          body: `📸 ${matchedProduct.name} — BDT ${matchedProduct.price}`
+        }),
+        'image'
+      );
+
+      await this.activityLogService.record({
+        tenantId,
+        conversationId,
+        type: 'PRODUCT_MATCH_SENT',
+        metadataJson: { productId: matchedProduct.id, name: matchedProduct.name }
+      });
     }
   }
 
   private async buildContextPrompt(
-    conversationId: string, 
-    assistant: any, 
-    imageOptions?: { isImage: boolean; caption: string }
+    conversationId: string,
+    assistant: any,
+    options?: { isImage: boolean; caption: string; isOrderPlacementActive: boolean; isSupportDetectionActive: boolean }
   ): Promise<string> {
     const conversation = await this.prisma.conversation.findUnique({
       where: { id: conversationId },
@@ -181,13 +505,11 @@ export class OrchestratorService {
 
     if (!conversation) return assistant.systemPrompt || '';
 
-    // Fetch active products
     const products = await this.prisma.product.findMany({
       where: { tenantId: conversation.tenantId, isActive: true },
-      take: 50 // Limit to avoid huge prompts
+      take: 50
     });
 
-    // Fetch conversation history (last 10 messages)
     const history = await this.prisma.message.findMany({
       where: { conversationId },
       orderBy: { createdAt: 'desc' },
@@ -196,7 +518,6 @@ export class OrchestratorService {
 
     let prompt = `You are a helpful AI assistant for ${conversation.tenant.businessName}.\n`;
     
-    // Inject agent name if configured
     let systemPrompt = assistant.systemPrompt || '';
     if (assistant.agentName) {
       systemPrompt = `Your name is ${assistant.agentName}. ${systemPrompt}`;
@@ -206,14 +527,11 @@ export class OrchestratorService {
       prompt += `\nYour Core Instructions:\n${systemPrompt}\n`;
     }
 
-    if (imageOptions?.isImage) {
-      prompt += `\n--- IMPORTANT IMAGE ANALYSIS INSTRUCTIONS ---\n`;
-      prompt += `The customer has sent an image in the conversation. Look closely at the image provided.\n`;
-      prompt += `1. Identify the product or item shown in the image.\n`;
-      prompt += `2. Cross-reference it with our PRODUCT CATALOG below to find the matching product name, price, and availability.\n`;
-      prompt += `3. Give a helpful response confirming the product details, stock status, and price in BDT.\n`;
-      if (imageOptions.caption) {
-        prompt += `Customer's caption for image: "${imageOptions.caption}"\n`;
+    if (options?.isImage) {
+      prompt += `\n--- IMAGE ANALYSIS INSTRUCTIONS ---\n`;
+      prompt += `The customer sent an image. Examine it carefully and describe the product seen in 'imageProductDescription'.\n`;
+      if (options.caption) {
+        prompt += `Caption: "${options.caption}"\n`;
       }
     }
 
@@ -223,6 +541,11 @@ export class OrchestratorService {
     if (conversation.contact.email) prompt += `Email: ${conversation.contact.email}\n`;
     prompt += `Stage: ${conversation.contact.stage?.name || 'Lead'}\n`;
 
+    if (conversation.pendingOrderProposal) {
+      prompt += `\n--- ACTIVE PENDING ORDER PROPOSAL ---\n`;
+      prompt += `${JSON.stringify(conversation.pendingOrderProposal)}\n`;
+    }
+
     if (products.length > 0) {
       prompt += `\n--- PRODUCT CATALOG ---\n`;
       products.forEach(p => {
@@ -231,7 +554,6 @@ export class OrchestratorService {
     }
 
     prompt += `\n--- CONVERSATION HISTORY ---\n`;
-    // Reverse to chronological
     [...history].reverse().forEach(msg => {
       const sender = msg.direction === 'inbound' ? 'Customer' : 'Assistant';
       let text = '';
@@ -245,7 +567,16 @@ export class OrchestratorService {
       }
     });
 
-    prompt += `\nInstructions: Given the conversation history and context above, write the next 'Assistant:' response. Do not prefix your output with 'Assistant:', just write the message body directly.\n`;
+    prompt += `\n--- MANDATORY STRUCTURED JSON RESPONSE OUTPUT FORMAT ---\n`;
+    prompt += `You MUST output a single valid JSON object with NO preamble. The JSON schema must strictly follow:\n`;
+    prompt += `{\n`;
+    prompt += `  "replyText": "your friendly response to customer",\n`;
+    prompt += `  "intent": "general | order_intent | order_confirmation | support_needed | product_lookup",\n`;
+    prompt += `  "orderProposal": [ { "productNameGuess": "Product Name", "quantity": 1 } ],\n`;
+    prompt += `  "imageProductDescription": "short description of product seen in image",\n`;
+    prompt += `  "supportSignal": false,\n`;
+    prompt += `  "supportReason": "general | complaint | refund_return | delivery_issue"\n`;
+    prompt += `}\n`;
 
     return prompt;
   }

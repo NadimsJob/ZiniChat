@@ -7,6 +7,7 @@ import { useCurrency } from '@/components/CurrencyProvider';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 import Cookies from 'js-cookie';
+import { useFeature } from '@/hooks/useFeature';
 import { 
  MessageSquare,
  MessageCircle,
@@ -63,6 +64,28 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  const [allowedFeatures, setAllowedFeatures] = useState<string[]>(['*']);
  const [avatarError, setAvatarError] = useState(false);
  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
+
+ const hasAgentPresence = useFeature('agent_presence');
+ const [presenceStatus, setPresenceStatus] = useState<'available' | 'busy' | 'away' | 'offline'>('available');
+ const [showPresenceMenu, setShowPresenceMenu] = useState(false);
+
+ const handlePresenceChange = async (status: string) => {
+   setPresenceStatus(status as any);
+   setShowPresenceMenu(false);
+   try {
+     const token = Cookies.get('access_token');
+     await fetch(`${API}/inbox/presence`, {
+       method: 'PATCH',
+       headers: {
+         'Content-Type': 'application/json',
+         Authorization: `Bearer ${token}`
+       },
+       body: JSON.stringify({ status })
+     });
+   } catch (err) {
+     console.error(err);
+   }
+ };
 
  // Auto-collapsible sidebar state for Inbox page
  const isInboxPage = pathname.startsWith('/dashboard/inbox');
@@ -469,7 +492,44 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  
 
  
- {mounted && <NotificationBell />}
+  {mounted && <NotificationBell />}
+
+  {mounted && hasAgentPresence && (
+    <div className="relative z-50">
+      <button
+        onClick={() => setShowPresenceMenu(!showPresenceMenu)}
+        className="flex items-center gap-1.5 px-2.5 py-1 bg-white/80 border border-slate-200 hover:border-slate-300 rounded-full text-[11px] font-medium text-slate-700 shadow-2xs transition-all cursor-pointer"
+      >
+        <span className={`w-2 h-2 rounded-full ${
+          presenceStatus === 'available' ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.6)]' :
+          presenceStatus === 'busy' ? 'bg-amber-500' :
+          presenceStatus === 'away' ? 'bg-yellow-500' : 'bg-slate-400'
+        }`} />
+        <span className="capitalize">{presenceStatus}</span>
+        <ChevronDown className="w-3 h-3 text-slate-400" />
+      </button>
+
+      {showPresenceMenu && (
+        <div className="absolute right-0 mt-1 w-32 bg-white border border-slate-200 rounded-xl shadow-lg py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
+          {[
+            { id: 'available', label: 'Available', color: 'bg-emerald-500' },
+            { id: 'busy', label: 'Busy', color: 'bg-amber-500' },
+            { id: 'away', label: 'Away', color: 'bg-yellow-500' },
+            { id: 'offline', label: 'Offline', color: 'bg-slate-400' },
+          ].map(item => (
+            <button
+              key={item.id}
+              onClick={() => handlePresenceChange(item.id)}
+              className={`w-full flex items-center gap-2 px-3 py-1.5 text-[11px] text-left hover:bg-slate-50 transition-colors cursor-pointer ${presenceStatus === item.id ? 'font-bold text-slate-900 bg-slate-50' : 'text-slate-600'}`}
+            >
+              <span className={`w-2 h-2 rounded-full ${item.color}`} />
+              {item.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )}
 
  {isProfileMenuOpen && (
  <div 
