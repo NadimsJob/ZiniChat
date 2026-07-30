@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import {
   PhoneCall, MessageCircle, Camera, ChevronRight, CheckCircle2, ArrowLeft,
   Loader2, Sparkles, AlertCircle, Lock, TrendingUp, Crown, QrCode as QrIcon, Smartphone, RefreshCw,
-  Globe, Copy, Check, Zap, ExternalLink
+  Globe, Copy, Check, Zap, ExternalLink, ShieldCheck
 } from 'lucide-react';
 import { toast, Toaster } from 'react-hot-toast';
 import QRCode from 'react-qr-code';
@@ -830,6 +830,7 @@ export default function NewInboxStepper() {
                 )}
 
               </div>
+            </div>
             )}
           </div>
         )}
