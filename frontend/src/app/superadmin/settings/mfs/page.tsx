@@ -267,8 +267,7 @@ export default function MfsSettingsPage() {
   );
 
   return (
-    <div className="p-3 space-y-3 max-w-7xl mx-auto text-[13px]">
-      <Toaster position="top-right" />
+    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
       
       {/* Header */}
       <div className="flex justify-between items-center bg-surface/50 border border-zinc-800 rounded-xl p-3 backdrop-blur-xl">

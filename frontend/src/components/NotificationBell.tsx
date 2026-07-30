@@ -150,9 +150,9 @@ export default function NotificationBell() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 bg-surface border border-surface-hover rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="absolute right-0 mt-2 w-80 bg-background/95 backdrop-blur-2xl border border-surface-hover rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="px-4 py-3 border-b border-surface-hover flex items-center justify-between">
-            <span className="font-bold text-sm">{language === 'en' ? 'Notifications' : 'নোটিফিকেশন'}</span>
+            <span className="font-bold text-sm text-foreground">{language === 'en' ? 'Notifications' : 'নোটিফিকেশন'}</span>
             {unreadCount > 0 && (
               <button 
                 onClick={handleMarkAllAsRead}
@@ -168,20 +168,20 @@ export default function NotificationBell() {
               notifications.map((notif) => (
                 <div 
                   key={notif.id} 
-                  className={`p-4 border-b border-surface-hover flex gap-3 items-start transition-colors relative group hover:bg-surface-hover/30 ${!notif.isRead ? 'bg-primary/5' : ''}`}
+                  className={`p-4 border-b border-surface-hover flex gap-3 items-start transition-colors relative group hover:bg-surface-hover/50 ${!notif.isRead ? 'bg-primary/10' : ''}`}
                 >
                   <div className="mt-0.5 shrink-0">
                     {getIcon(notif.type)}
                   </div>
                   <div className="flex-1 space-y-1 pr-6">
-                    <h4 className={`text-xs font-bold ${!notif.isRead ? 'text-zinc-100' : 'text-zinc-400'}`}>{notif.title}</h4>
-                    <p className="text-[11px] text-zinc-400 leading-relaxed">{notif.message}</p>
-                    <span className="text-[9px] text-zinc-500 block">{new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    <h4 className={`text-xs font-bold ${!notif.isRead ? 'text-foreground' : 'text-zinc-500'}`}>{notif.title}</h4>
+                    <p className="text-[11px] text-zinc-500 leading-relaxed">{notif.message}</p>
+                    <span className="text-[9px] text-zinc-400 block">{new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
                   {!notif.isRead && (
                     <button 
                       onClick={(e) => handleMarkAsRead(notif.id, e)}
-                      className="absolute right-3 top-4 p-1 text-zinc-500 hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute right-3 top-4 p-1 text-zinc-400 hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity"
                     >
                       <Check className="w-3.5 h-3.5" />
                     </button>

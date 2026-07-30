@@ -38,6 +38,16 @@ export class InboxController {
     return this.inboxService.toggleChannelAiReply(tenantId, channelConnectionId, body.isAiAutoReplyEnabled);
   }
 
+  @Patch('channels/:id/ignore-groups')
+  async toggleIgnoreGroupMessages(
+    @Request() req: any,
+    @Param('id') channelConnectionId: string,
+    @Body() body: { ignoreGroupMessages: boolean }
+  ) {
+    const tenantId = req.user.tenantId;
+    return this.inboxService.toggleIgnoreGroupMessages(tenantId, channelConnectionId, body.ignoreGroupMessages);
+  }
+
   @Post('channels/:id/reconnect')
   async reconnectChannel(@Request() req: any, @Param('id') channelConnectionId: string) {
     const tenantId = req.user.tenantId;
@@ -75,7 +85,15 @@ export class InboxController {
   @Get('conversations/:id/messages')
   async getMessages(@Request() req: any, @Param('id') id: string) {
     const tenantId = req.user.tenantId;
-    return this.inboxService.getMessages(tenantId, id);
+    const messages = await this.inboxService.getMessages(tenantId, id);
+    
+    // Broadcast conversation read event to update UI badge in real-time
+    this.inboxGateway.broadcastToTenant(tenantId, 'conversation:read', { conversationId: id });
+    
+    // Send read receipts to the messaging provider (e.g. Baileys WhatsApp)
+    await this.inboxService.markMessagesRead(tenantId, id);
+    
+    return messages;
   }
 
   @Post('messages')

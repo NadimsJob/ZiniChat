@@ -149,6 +149,7 @@ model ChannelConnection {
   qrSessionId          String? // Unique session ID for Baileys
   qrStatus             String? // CONNECTING, CONNECTED, DISCONNECTED
   isAiAutoReplyEnabled Boolean          @default(true) // Tenant can toggle AI auto-reply for this specific connection
+  ignoreGroupMessages  Boolean          @default(true) // Ignore WhatsApp group messages completely (no inbox, no AI)
   createdAt            DateTime         @default(now())
 
   tenant           Tenant                   @relation(fields: [tenantId], references: [id])

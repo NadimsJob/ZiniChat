@@ -38,6 +38,7 @@ export class InboxService {
         status: true,
         qrStatus: true,
         isAiAutoReplyEnabled: true,
+        ignoreGroupMessages: true,
         connectionMethod: true,
         createdAt: true,
       }
@@ -57,6 +58,13 @@ export class InboxService {
     return this.prisma.channelConnection.update({
       where: { id },
       data: { isAiAutoReplyEnabled }
+    });
+  }
+
+  async toggleIgnoreGroupMessages(tenantId: string, id: string, ignoreGroupMessages: boolean) {
+    return this.prisma.channelConnection.update({
+      where: { id },
+      data: { ignoreGroupMessages }
     });
   }
 
@@ -610,6 +618,19 @@ export class InboxService {
       } as any,
       orderBy: { createdAt: 'asc' },
     });
+  }
+
+  async markMessagesRead(tenantId: string, conversationId: string) {
+    const conversation = await this.prisma.conversation.findUnique({
+      where: { id: conversationId }
+    });
+    if (!conversation) return;
+
+    if (conversation.channel === 'whatsapp') {
+      await this.whatsappQueue.add('mark-read', { tenantId, conversationId });
+    } else if (conversation.channel === 'messenger' || conversation.channel === 'instagram') {
+      await this.messengerQueue.add('mark-read', { tenantId, conversationId });
+    }
   }
 
   async handleIncomingMessage(data: {

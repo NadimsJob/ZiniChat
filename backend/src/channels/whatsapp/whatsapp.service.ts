@@ -42,6 +42,12 @@ export class WhatsappService implements IChannelAdapter {
 
           for (const msg of change.value.messages) {
             this.logger.log(`Received message: ${JSON.stringify(msg)}`);
+
+            const isGroup = msg.from?.includes('@g.us') || msg.group_id || false;
+            if (isGroup && (connection.ignoreGroupMessages ?? true)) {
+              this.logger.log(`Skipping group message from ${msg.from} as ignoreGroupMessages=true`);
+              continue;
+            }
             
             // Extract contact name if available
             const contactInfo = contacts.find((c: any) => c.wa_id === msg.from);

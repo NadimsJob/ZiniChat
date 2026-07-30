@@ -57,7 +57,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
     try {
       const ssh = new NodeSSH();
-      const sshConfig = { host, username };
+      const sshConfig = { host, username, readyTimeout: 60000 };
       const fs = require('fs');
       if (privateKeyPath) {
         sshConfig.privateKey = fs.readFileSync(privateKeyPath, 'utf8');

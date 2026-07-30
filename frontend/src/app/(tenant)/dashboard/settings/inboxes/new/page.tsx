@@ -454,7 +454,6 @@ export default function NewInboxStepper() {
 
   return (
     <div className="min-h-full flex bg-background">
-      <Toaster position="top-right" />
       
       {/* Sidebar Stepper */}
       <div className="w-64 shrink-0 bg-surface/70 backdrop-blur-xl border-r border-surface-hover p-6 hidden md:flex flex-col">
@@ -609,15 +608,21 @@ export default function NewInboxStepper() {
 
               <button
                 onClick={() => { setProvider('web'); setStep(3); }}
-                className="bg-surface/70 backdrop-blur-sm p-6 rounded-2xl border border-surface-hover hover:border-primary/50 hover:shadow-lg transition-all text-left group">
-                <div className="w-11 h-11 rounded-xl bg-surface-hover flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                  <PhoneCall className="w-5 h-5 text-zinc-400" />
+                className="bg-surface/70 backdrop-blur-sm p-6 rounded-2xl border border-surface-hover hover:border-amber-500/50 hover:shadow-lg transition-all text-left group relative">
+                <div className="absolute top-3 right-3 px-2 py-0.5 bg-amber-500/15 text-amber-400 rounded-full text-[10px] font-bold border border-amber-500/20">
+                  {language === 'en' ? 'Unofficial (QR)' : 'আনঅফিশিয়াল (QR)'}
+                </div>
+                <div className="w-11 h-11 rounded-xl bg-amber-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <PhoneCall className="w-5 h-5 text-amber-400" />
                 </div>
                 <h3 className="font-bold text-[14px] text-foreground mb-1">WhatsApp Web</h3>
-
-                <p className="text-[12px] text-zinc-400 leading-relaxed">
-                  {language === 'en' ? 'Connect via QR scan or Pairing Code. Suitable for small businesses.' : 'QR স্ক্যান বা পেয়ারিং কোড দিয়ে কানেক্ট করুন। ছোট ব্যবসার জন্য।'}
+                <p className="text-[12px] text-zinc-400 leading-relaxed mb-3">
+                  {language === 'en' ? 'Connect via QR scan or Pairing Code. Rate limited (10 msgs/min) for account protection.' : 'QR স্ক্যান বা পেয়ারিং কোড দিয়ে কানেক্ট করুন। নাম্বার সুরক্ষায় রেট লিমিটেড (১০ মেসেজ/মিনিট)।'}
                 </p>
+                <div className="flex items-center gap-1.5 text-amber-400 text-[11px] font-bold">
+                  <AlertCircle className="w-3.5 h-3.5" />
+                  <span>{language === 'en' ? 'Rate Limit: 10 msgs/min' : 'রেট লিমিট: ১০ মেসেজ/মিনিট'}</span>
+                </div>
               </button>
             </div>
           </div>
@@ -634,45 +639,80 @@ export default function NewInboxStepper() {
             </h1>
 
             {provider === 'cloud' ? (
-              <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-6">
-                <div className="mb-6">
-                  <ConnectWhatsAppButton onConnected={handleConnectedSuccess} />
+              <div className="space-y-4">
+                {/* Instruction Banner for Cloud API */}
+                <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-2xl space-y-2">
+                  <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs">
+                    <ShieldCheck className="w-4 h-4" />
+                    <span>{language === 'en' ? 'Official Meta API (100% Safe & Zero Ban Risk)' : 'অফিশিয়াল Meta API (১০০% নিরাপদ ও অ্যাকাউন্ট সুরক্ষার নিশ্চয়তা)'}</span>
+                  </div>
+                  <ul className="text-[11px] text-zinc-300 space-y-1 pl-5 list-disc leading-relaxed">
+                    <li>{language === 'en' ? 'Supports unlimited high-volume messaging and Broadcast Campaigns.' : 'আনলিমিটেড হাই-ভলিউম মেসেজিং ও ব্রডকাস্ট ক্যাম্পেইন সাপোর্ট করে।'}</li>
+                    <li>{language === 'en' ? 'Get credentials from developers.facebook.com → WhatsApp → API Setup.' : 'মেটা ডেভেলপার ড্যাশবোর্ড থেকে Phone Number ID & Permanent Token সংগ্রহ করুন।'}</li>
+                    <li>{language === 'en' ? 'Or use "Connect WhatsApp" button below to log in directly via Meta.' : 'অথবা নিচে "Connect WhatsApp" বাটনে ক্লিক করে সরাসরি মেটা লগইন সম্পন্ন করুন।'}</li>
+                  </ul>
                 </div>
-                <div className="relative flex items-center py-4">
-                  <div className="flex-grow border-t border-surface-hover" />
-                  <span className="flex-shrink-0 mx-4 text-zinc-500 text-[11px] font-medium uppercase tracking-wider">
-                    {language === 'en' ? 'Or Manual Setup' : 'অথবা ম্যানুয়াল সেটআপ'}
-                  </span>
-                  <div className="flex-grow border-t border-surface-hover" />
+
+                <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-6">
+                  <div className="mb-6">
+                    <ConnectWhatsAppButton onConnected={handleConnectedSuccess} />
+                  </div>
+                  <div className="relative flex items-center py-4">
+                    <div className="flex-grow border-t border-surface-hover" />
+                    <span className="flex-shrink-0 mx-4 text-zinc-500 text-[11px] font-medium uppercase tracking-wider">
+                      {language === 'en' ? 'Or Manual Setup' : 'অথবা ম্যানুয়াল সেটআপ'}
+                    </span>
+                    <div className="flex-grow border-t border-surface-hover" />
+                  </div>
+                  <form onSubmit={handleConnectWhatsApp} className="space-y-4">
+                    {[
+                      { label: language === 'en' ? 'Inbox Name' : 'ইনবক্সের নাম', value: waData.displayName, key: 'displayName', placeholder: 'e.g. Sales Support', type: 'text' },
+                      { label: language === 'en' ? 'Phone Number' : 'ফোন নম্বর', value: waData.phoneNumber, key: 'phoneNumber', placeholder: '+8801700000000', type: 'text' },
+                      { label: 'Phone Number ID', value: waData.phoneNumberId, key: 'phoneNumberId', placeholder: 'From Meta Dashboard', type: 'text' },
+                      { label: 'Business Account ID (WABA)', value: waData.wabaId, key: 'wabaId', placeholder: 'Optional', type: 'text' },
+                      { label: 'Permanent Access Token', value: waData.accessToken, key: 'accessToken', placeholder: 'EAA...', type: 'password' },
+                    ].map(field => (
+                      <div key={field.key}>
+                        <label className="block text-[12px] font-bold text-zinc-400 mb-1">{field.label}</label>
+                        <input
+                          required={field.key !== 'wabaId'}
+                          type={field.type}
+                          value={field.value}
+                          onChange={e => setWaData({ ...waData, [field.key]: e.target.value })}
+                          placeholder={field.placeholder}
+                          className="w-full bg-background border border-surface-hover rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-primary transition-colors"
+                        />
+                      </div>
+                    ))}
+                    <button disabled={loading} type="submit" className="w-full bg-primary text-primary-foreground py-2.5 rounded-xl font-bold hover:bg-primary/90 flex items-center justify-center mt-4 disabled:opacity-50 transition-all">
+                      {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (language === 'en' ? 'Create Inbox' : 'ইনবক্স তৈরি করুন')}
+                    </button>
+                  </form>
                 </div>
-                <form onSubmit={handleConnectWhatsApp} className="space-y-4">
-                  {[
-                    { label: language === 'en' ? 'Inbox Name' : 'ইনবক্সের নাম', value: waData.displayName, key: 'displayName', placeholder: 'e.g. Sales Support', type: 'text' },
-                    { label: language === 'en' ? 'Phone Number' : 'ফোন নম্বর', value: waData.phoneNumber, key: 'phoneNumber', placeholder: '+8801700000000', type: 'text' },
-                    { label: 'Phone Number ID', value: waData.phoneNumberId, key: 'phoneNumberId', placeholder: 'From Meta Dashboard', type: 'text' },
-                    { label: 'Business Account ID (WABA)', value: waData.wabaId, key: 'wabaId', placeholder: 'Optional', type: 'text' },
-                    { label: 'Permanent Access Token', value: waData.accessToken, key: 'accessToken', placeholder: 'EAA...', type: 'password' },
-                  ].map(field => (
-                    <div key={field.key}>
-                      <label className="block text-[12px] font-bold text-zinc-400 mb-1">{field.label}</label>
-                      <input
-                        required={field.key !== 'wabaId'}
-                        type={field.type}
-                        value={field.value}
-                        onChange={e => setWaData({ ...waData, [field.key]: e.target.value })}
-                        placeholder={field.placeholder}
-                        className="w-full bg-background border border-surface-hover rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-primary transition-colors"
-                      />
-                    </div>
-                  ))}
-                  <button disabled={loading} type="submit" className="w-full bg-primary text-primary-foreground py-2.5 rounded-xl font-bold hover:bg-primary/90 flex items-center justify-center mt-4 disabled:opacity-50 transition-all">
-                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (language === 'en' ? 'Create Inbox' : 'ইনবক্স তৈরি করুন')}
-                  </button>
-                </form>
               </div>
             ) : (
               /* FULL INTERACTIVE WHATSAPP WEB (BAILEYS) AUTHENTICATION FLOW */
-              <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-6 space-y-6">
+              <div className="space-y-4">
+                {/* Rate Limit & Precautions Banner for WhatsApp Web */}
+                <div className="bg-amber-500/10 border border-amber-500/25 p-4 rounded-2xl space-y-2">
+                  <div className="flex items-center gap-2 text-amber-400 font-bold text-xs">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span>{language === 'en' ? 'WhatsApp Web (Unofficial QR) Notice & Rate Limits' : 'হোয়াটসঅ্যাপ ওয়েব (আনঅফিশিয়াল QR) রেট লিমিট ও সতর্কতা'}</span>
+                  </div>
+                  <div className="text-[11px] text-amber-200/90 leading-relaxed space-y-1">
+                    <p className="font-semibold text-amber-300">
+                      ⚡ {language === 'en' ? 'System Rate Limit: Max 10 messages per minute per tenant.' : 'সিস্টেম রেট লিমিট: সর্বোচ্চ ১০ মেসেজ প্রতি মিনিটে (প্রতি ১০ সেকেন্ডে ১টি)।'}
+                    </p>
+                    <ul className="pl-4 list-disc space-y-1 text-zinc-300">
+                      <li>{language === 'en' ? 'This is an unofficial web-socket connection (Baileys). Designed strictly for 1-on-1 customer replies.' : 'এটি আনঅফিশিয়াল ওয়েব-সকেট কানেকশন। এটি শুধুমাত্র কাস্টমারদের ১-অন-১ প্রশ্নের উত্তর দেওয়ার জন্য।'}</li>
+                      <li>{language === 'en' ? 'Bulk broadcast campaigns are DISABLED on WhatsApp Web to prevent WhatsApp bot detection and account bans.' : 'হোয়াটসঅ্যাপ নাম্বার ব্যান হওয়া থেকে সুরক্ষার জন্য WhatsApp Web-এ বাল্ক ব্রডকাস্ট বন্ধ রাখা হয়েছে।'}</li>
+                      <li>{language === 'en' ? 'Avoid sending un-solicited spam messages or cold bulk texts to unknown numbers.' : 'অপরিচিত নম্বরে এক সাথে স্প্যাম বা প্রমোশনাল বার্তা পাঠানো থেকে বিরত থাকুন।'}</li>
+                      <li>{language === 'en' ? 'Keep your main phone connected to the internet to maintain active sync.' : 'লাইভ সিঙ্ক বজায় রাখতে মূল ফোনটি ইন্টারনেটে যুক্ত রাখুন।'}</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-6 space-y-6">
                 
                 {/* Method selector tabs */}
                 <div className="flex bg-background border border-surface-hover p-1 rounded-xl">
@@ -803,32 +843,47 @@ export default function NewInboxStepper() {
             <h1 className="text-2xl font-black text-foreground mb-6">
               {language === 'en' ? 'Configure Messenger' : 'Messenger কনফিগার করুন'}
             </h1>
-            <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-6 space-y-5">
-              <div>
-                <ConnectFacebookPageButton onConnected={handleConnectedSuccess} />
+            <div className="space-y-4">
+              {/* Instruction banner for Messenger */}
+              <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-2xl space-y-2">
+                <div className="flex items-center gap-2 text-blue-400 font-bold text-xs">
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>{language === 'en' ? 'Meta Official Messenger Integration Setup' : 'মেটা অফিশিয়াল মেসেঞ্জার ইন্টিগ্রেশন নির্দেশনা'}</span>
+                </div>
+                <ul className="text-[11px] text-zinc-300 space-y-1 pl-5 list-disc leading-relaxed">
+                  <li>{language === 'en' ? 'Click "Connect Facebook Page" to authorize using your Facebook account with Page Management permissions.' : '"Connect Facebook Page" বাটনে ক্লিক করে ফেসবুক পেজের পারমিশন দিন।'}</li>
+                  <li>{language === 'en' ? 'Supports Meta Page messaging, automated AI responses, and Meta Broadcast Campaigns.' : 'মেটা মেসেজিং, অটোমেটেড এআই রেসপন্স এবং ব্রডকাস্ট ক্যাম্পেইন সাপোর্ট করে।'}</li>
+                  <li>{language === 'en' ? 'For manual setup, paste your Facebook Page ID and Page Access Token from Facebook Business Manager.' : 'ম্যানুয়াল সেটআপের ক্ষেত্রে ফেসবুক পেজ আইডি এবং পেজ এক্সেস টোকেন দিন।'}</li>
+                </ul>
               </div>
-              <div className="relative flex items-center py-2">
-                <div className="flex-grow border-t border-surface-hover" />
-                <span className="flex-shrink-0 mx-4 text-zinc-500 text-[11px] font-medium uppercase tracking-wider">
-                  {language === 'en' ? 'Or Manual Setup' : 'অথবা ম্যানুয়াল সেটআপ'}
-                </span>
-                <div className="flex-grow border-t border-surface-hover" />
+
+              <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-6 space-y-5">
+                <div>
+                  <ConnectFacebookPageButton onConnected={handleConnectedSuccess} />
+                </div>
+                <div className="relative flex items-center py-2">
+                  <div className="flex-grow border-t border-surface-hover" />
+                  <span className="flex-shrink-0 mx-4 text-zinc-500 text-[11px] font-medium uppercase tracking-wider">
+                    {language === 'en' ? 'Or Manual Setup' : 'অথবা ম্যানুয়াল সেটআপ'}
+                  </span>
+                  <div className="flex-grow border-t border-surface-hover" />
+                </div>
+                <form onSubmit={handleConnectMessenger} className="space-y-4">
+                  {[
+                    { label: language === 'en' ? 'Page Name / Inbox Name' : 'পেজের নাম / ইনবক্সের নাম', value: fbData.pageName, key: 'pageName', placeholder: 'My Business Page', type: 'text' },
+                    { label: 'Facebook Page ID', value: fbData.pageId, key: 'pageId', placeholder: 'e.g. 104561239845', type: 'text' },
+                    { label: 'Page Access Token', value: fbData.accessToken, key: 'accessToken', placeholder: 'EAA...', type: 'password' },
+                  ].map(field => (
+                    <div key={field.key}>
+                      <label className="block text-[12px] font-bold text-zinc-400 mb-1">{field.label}</label>
+                      <input required type={field.type} value={field.value} onChange={e => setFbData({ ...fbData, [field.key]: e.target.value })} placeholder={field.placeholder} className="w-full bg-background border border-surface-hover rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-primary transition-colors text-foreground" />
+                    </div>
+                  ))}
+                  <button disabled={loading} type="submit" className="w-full bg-blue-600 text-white py-2.5 rounded-xl font-bold hover:bg-blue-700 flex items-center justify-center disabled:opacity-50 transition-all">
+                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (language === 'en' ? 'Connect Manually' : 'ম্যানুয়ালি কানেক্ট করুন')}
+                  </button>
+                </form>
               </div>
-              <form onSubmit={handleConnectMessenger} className="space-y-4">
-                {[
-                  { label: language === 'en' ? 'Page Name / Inbox Name' : 'পেজের নাম / ইনবক্সের নাম', value: fbData.pageName, key: 'pageName', placeholder: 'My Business Page', type: 'text' },
-                  { label: 'Facebook Page ID', value: fbData.pageId, key: 'pageId', placeholder: 'e.g. 104561239845', type: 'text' },
-                  { label: 'Page Access Token', value: fbData.accessToken, key: 'accessToken', placeholder: 'EAA...', type: 'password' },
-                ].map(field => (
-                  <div key={field.key}>
-                    <label className="block text-[12px] font-bold text-zinc-400 mb-1">{field.label}</label>
-                    <input required type={field.type} value={field.value} onChange={e => setFbData({ ...fbData, [field.key]: e.target.value })} placeholder={field.placeholder} className="w-full bg-background border border-surface-hover rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-primary transition-colors text-foreground" />
-                  </div>
-                ))}
-                <button disabled={loading} type="submit" className="w-full bg-blue-600 text-white py-2.5 rounded-xl font-bold hover:bg-blue-700 flex items-center justify-center disabled:opacity-50 transition-all">
-                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (language === 'en' ? 'Connect Manually' : 'ম্যানুয়ালি কানেক্ট করুন')}
-                </button>
-              </form>
             </div>
           </div>
         )}
@@ -842,32 +897,47 @@ export default function NewInboxStepper() {
             <h1 className="text-2xl font-black text-foreground mb-6">
               {language === 'en' ? 'Configure Instagram' : 'Instagram কনফিগার করুন'}
             </h1>
-            <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-6 space-y-5">
-              <div>
-                <ConnectFacebookInstagramButton onConnected={handleConnectedSuccess} />
+            <div className="space-y-4">
+              {/* Instruction banner for Instagram */}
+              <div className="bg-pink-500/10 border border-pink-500/20 p-4 rounded-2xl space-y-2">
+                <div className="flex items-center gap-2 text-pink-400 font-bold text-xs">
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>{language === 'en' ? 'Instagram Professional Account Setup Guidelines' : 'ইন্সটাগ্রাম বিজনেস অ্যাকাউন্ট ইন্সট্রাকশন'}</span>
+                </div>
+                <ul className="text-[11px] text-zinc-300 space-y-1 pl-5 list-disc leading-relaxed">
+                  <li>{language === 'en' ? 'Your Instagram Account MUST be converted to a Business or Creator Account.' : 'আপনার ইন্সটাগ্রাম অ্যাকাউন্টটি অবশ্যই Business বা Creator অ্যাকাউন্ট হতে হবে।'}</li>
+                  <li>{language === 'en' ? 'The Instagram Account MUST be linked to an active Facebook Page.' : 'ইন্সটাগ্রাম অ্যাকাউন্টটি অবশ্যই আপনার ফেসবুক পেজের সাথে কানেক্টেড থাকতে হবে।'}</li>
+                  <li>{language === 'en' ? 'Click "Connect Instagram" button below to log in via Facebook and authorize Instagram DM access.' : 'নিচে "Connect Instagram" বাটনে ক্লিক করে মেটা ড্যাশবোর্ডের মাধ্যমে অনুমোদন সম্পন্ন করুন।'}</li>
+                </ul>
               </div>
-              <div className="relative flex items-center py-2">
-                <div className="flex-grow border-t border-surface-hover" />
-                <span className="flex-shrink-0 mx-4 text-zinc-500 text-[11px] font-medium uppercase tracking-wider">
-                  {language === 'en' ? 'Or Manual Setup' : 'অথবা ম্যানুয়াল সেটআপ'}
-                </span>
-                <div className="flex-grow border-t border-surface-hover" />
+
+              <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-6 space-y-5">
+                <div>
+                  <ConnectFacebookInstagramButton onConnected={handleConnectedSuccess} />
+                </div>
+                <div className="relative flex items-center py-2">
+                  <div className="flex-grow border-t border-surface-hover" />
+                  <span className="flex-shrink-0 mx-4 text-zinc-500 text-[11px] font-medium uppercase tracking-wider">
+                    {language === 'en' ? 'Or Manual Setup' : 'অথবা ম্যানুয়াল সেটআপ'}
+                  </span>
+                  <div className="flex-grow border-t border-surface-hover" />
+                </div>
+                <form onSubmit={handleConnectInstagram} className="space-y-4">
+                  {[
+                    { label: language === 'en' ? 'Account / Inbox Name' : 'অ্যাকাউন্টের নাম', value: igData.pageName, key: 'pageName', placeholder: 'My IG Page', type: 'text' },
+                    { label: 'Instagram Account ID', value: igData.instagramId, key: 'instagramId', placeholder: 'e.g. 1784140000000', type: 'text' },
+                    { label: 'Access Token', value: igData.accessToken, key: 'accessToken', placeholder: 'EAA...', type: 'password' },
+                  ].map(field => (
+                    <div key={field.key}>
+                      <label className="block text-[12px] font-bold text-zinc-400 mb-1">{field.label}</label>
+                      <input required type={field.type} value={field.value} onChange={e => setIgData({ ...igData, [field.key]: e.target.value })} placeholder={field.placeholder} className="w-full bg-background border border-surface-hover rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-primary transition-colors text-foreground" />
+                    </div>
+                  ))}
+                  <button disabled={loading} type="submit" className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-2.5 rounded-xl font-bold flex items-center justify-center disabled:opacity-50 transition-all hover:opacity-90">
+                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (language === 'en' ? 'Connect Manually' : 'ম্যানুয়ালি কানেক্ট করুন')}
+                  </button>
+                </form>
               </div>
-              <form onSubmit={handleConnectInstagram} className="space-y-4">
-                {[
-                  { label: language === 'en' ? 'Account / Inbox Name' : 'অ্যাকাউন্টের নাম', value: igData.pageName, key: 'pageName', placeholder: 'My IG Page', type: 'text' },
-                  { label: 'Instagram Account ID', value: igData.instagramId, key: 'instagramId', placeholder: 'e.g. 1784140000000', type: 'text' },
-                  { label: 'Access Token', value: igData.accessToken, key: 'accessToken', placeholder: 'EAA...', type: 'password' },
-                ].map(field => (
-                  <div key={field.key}>
-                    <label className="block text-[12px] font-bold text-zinc-400 mb-1">{field.label}</label>
-                    <input required type={field.type} value={field.value} onChange={e => setIgData({ ...igData, [field.key]: e.target.value })} placeholder={field.placeholder} className="w-full bg-background border border-surface-hover rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-primary transition-colors text-foreground" />
-                  </div>
-                ))}
-                <button disabled={loading} type="submit" className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-2.5 rounded-xl font-bold flex items-center justify-center disabled:opacity-50 transition-all hover:opacity-90">
-                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (language === 'en' ? 'Connect Manually' : 'ম্যানুয়ালি কানেক্ট করুন')}
-                </button>
-              </form>
             </div>
           </div>
         )}

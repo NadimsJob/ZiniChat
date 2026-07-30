@@ -58,6 +58,7 @@ import { LanguageProvider } from '@/components/LanguageProvider';
 import { CurrencyProvider } from '@/components/CurrencyProvider';
 import { MetaPixelProvider } from '@/context/MetaPixelContext';
 import { GoogleAnalyticsProvider } from '@/context/GoogleAnalyticsContext';
+import { ToastProvider } from '@/components/ToastProvider';
 
 export default function RootLayout({
   children,
@@ -72,6 +73,7 @@ export default function RootLayout({
             <CurrencyProvider>
               <MetaPixelProvider>
                 <GoogleAnalyticsProvider>
+                  <ToastProvider />
                   {children}
                 </GoogleAnalyticsProvider>
               </MetaPixelProvider>

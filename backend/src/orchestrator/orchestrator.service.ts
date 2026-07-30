@@ -73,6 +73,13 @@ export class OrchestratorService {
         return;
       }
 
+      // Never process AI auto-reply for group conversations
+      const externalContactId = message.conversation.contact?.externalContactId || '';
+      if (externalContactId.includes('@g.us')) {
+        this.logger.debug(`Group conversation detected (${externalContactId}). Skipping AI auto-reply.`);
+        return;
+      }
+
       // 2. Fetch AI Assistant & Assistant Tools
       const assistant = await this.prisma.aiAssistant.findFirst({
         where: { tenantId },

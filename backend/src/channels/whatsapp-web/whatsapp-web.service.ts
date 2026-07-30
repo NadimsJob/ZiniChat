@@ -210,9 +210,31 @@ export class WhatsappWebService implements OnModuleInit {
           remoteJid = msg.key.remoteJidAlt;
         }
 
-        if (!remoteJid || remoteJid.includes('@g.us')) continue;
+        if (!remoteJid) continue;
 
-        const externalContactId = remoteJid.split('@')[0];
+        const isGroup = remoteJid.includes('@g.us');
+
+        // Fetch connection settings to check ignoreGroupMessages
+        let channelConnectionId: string | undefined = this.connectionIds.get(tenantId);
+        let connection = await this.prisma.channelConnection.findFirst({
+          where: channelConnectionId 
+            ? { id: channelConnectionId }
+            : { tenantId, provider: 'WEB_QR', status: { in: ['active', 'connected'] } },
+          select: { id: true, ignoreGroupMessages: true }
+        });
+
+        if (connection?.id) {
+          this.connectionIds.set(tenantId, connection.id);
+          channelConnectionId = connection.id;
+        }
+
+        // If ignoreGroupMessages is true (default), ignore group messages completely
+        if (isGroup && (connection?.ignoreGroupMessages ?? true)) {
+          this.debugLog(`Skipping group message from ${remoteJid} for tenant ${tenantId} (ignoreGroupMessages=true)`);
+          continue;
+        }
+
+        const externalContactId = isGroup ? remoteJid : remoteJid.split('@')[0];
         const contactName = msg.pushName || externalContactId;
         
         let messageType = 'text';
@@ -399,7 +421,33 @@ export class WhatsappWebService implements OnModuleInit {
     } else {
       result = await sock.sendMessage(jid, { text: content });
     }
+    this.debugLog(`Message sent to ${jid}, result: ${JSON.stringify(result)}`);
+    return result?.key?.id || `msg_${Date.now()}`;
+  }
+
+  async markRead(tenantId: string, jid: string, messageIds: string[]) {
+    const sock = this.sockets.get(tenantId);
+    if (!sock || !this.isSocketConnected(tenantId)) {
+      this.debugLog(`markRead skipped for ${tenantId}: socket not ready`);
+      return;
+    }
     
-    return result?.key?.id || `baileys_${Date.now()}`;
+    // Clean recipient phone number
+    const cleanNumber = jid.split('@')[0].split(':')[0].replace(/\D/g, '');
+    if (!cleanNumber) return;
+    const remoteJid = `${cleanNumber}@s.whatsapp.net`;
+    
+    const keys = messageIds.map(id => ({
+      remoteJid,
+      id,
+      participant: undefined
+    }));
+    
+    try {
+      await sock.readMessages(keys);
+      this.debugLog(`Sent read receipt for ${keys.length} messages to ${remoteJid}`);
+    } catch (err: any) {
+      this.debugLog(`Failed to send read receipt to ${remoteJid}: ${err.message}`);
+    }
   }
 }

@@ -25,7 +25,7 @@ export default function PackagesPage() {
     priceMonthlyBdt: 0, priceYearlyBdt: 0,
     promoPriceMonthlyBdt: 0, promoMonths: 0, yearlyDiscountPercent: 0,
     messageQuota: 1000, aiQuota: 500, seatLimit: 1, storageLimitMb: 500,
-    whatsappLimit: 1, messengerLimit: 1, instagramLimit: 1, productCatalogLimit: 50, contactsLimit: null as number | null,
+    whatsappLimit: 1, messengerLimit: 1, instagramLimit: 1, websiteWidgetLimit: 0, productCatalogLimit: 50, contactsLimit: null as number | null,
     trialDays: 0,
     allowByok: false,
     features: [] as string[],
@@ -150,7 +150,7 @@ export default function PackagesPage() {
         promoPriceMonthlyBdt: Number(plan.promoPriceMonthlyBdt) || 0, 
         promoMonths: Number(plan.promoMonths) || 0, 
         yearlyDiscountPercent: Number(plan.yearlyDiscountPercent) || 0,
-        messageQuota: plan.messageQuota, aiQuota: plan.aiQuota, seatLimit: plan.seatLimit, storageLimitMb: plan.storageLimitMb ?? 500, whatsappLimit: plan.whatsappLimit ?? 1, messengerLimit: plan.messengerLimit ?? 1, instagramLimit: plan.instagramLimit ?? 1, productCatalogLimit: plan.productCatalogLimit ?? 50, contactsLimit: plan.contactsLimit ?? null, trialDays: plan.trialDays || 0,
+        messageQuota: plan.messageQuota, aiQuota: plan.aiQuota, seatLimit: plan.seatLimit, storageLimitMb: plan.storageLimitMb ?? 500, whatsappLimit: plan.whatsappLimit ?? 1, messengerLimit: plan.messengerLimit ?? 1, instagramLimit: plan.instagramLimit ?? 1, websiteWidgetLimit: plan.websiteWidgetLimit ?? 0, productCatalogLimit: plan.productCatalogLimit ?? 50, contactsLimit: plan.contactsLimit ?? null, trialDays: plan.trialDays || 0,
         allowByok: plan.allowByok || false,
         features: Array.isArray(plan.features) ? plan.features : [],
         featuresJson: Array.isArray(plan.featuresJson) ? plan.featuresJson : (typeof plan.featuresJson === 'string' ? (()=>{ try { const parsed = JSON.parse(plan.featuresJson); return Array.isArray(parsed) ? parsed : []; } catch { return []; } })() : []),
@@ -162,7 +162,7 @@ export default function PackagesPage() {
         name: '', nameBn: '', description: '', descriptionBn: '', 
         priceMonthlyBdt: 0, priceYearlyBdt: 0,
         promoPriceMonthlyBdt: 0, promoMonths: 0, yearlyDiscountPercent: 0,
-        messageQuota: 1000, aiQuota: 500, seatLimit: 1, storageLimitMb: 500, whatsappLimit: 1, messengerLimit: 1, instagramLimit: 1, productCatalogLimit: 50, contactsLimit: null, trialDays: 0, allowByok: false,
+        messageQuota: 1000, aiQuota: 500, seatLimit: 1, storageLimitMb: 500, whatsappLimit: 1, messengerLimit: 1, instagramLimit: 1, websiteWidgetLimit: 0, productCatalogLimit: 50, contactsLimit: null, trialDays: 0, allowByok: false,
         features: [],
         featuresJson: [], 
         isActive: true, isPopular: false
@@ -230,7 +230,7 @@ export default function PackagesPage() {
                 
                 <div className="mt-2 space-y-2 text-[12px] text-zinc-400">
                   <div className="flex justify-between"><span>Team Members:</span> <span className="font-medium text-zinc-200">{plan.seatLimit}</span></div>
-                  <div className="flex justify-between"><span>Channels (WA/FB/IG):</span> <span className="font-medium text-zinc-200">{plan.whatsappLimit ?? 1} / {plan.messengerLimit ?? 1} / {plan.instagramLimit ?? 1}</span></div>
+                  <div className="flex justify-between"><span>Channels (WA/FB/IG/Widget):</span> <span className="font-medium text-zinc-200">{plan.whatsappLimit ?? 1} / {plan.messengerLimit ?? 1} / {plan.instagramLimit ?? 1} / {plan.websiteWidgetLimit ?? 0}</span></div>
                   <div className="flex justify-between"><span>Messages:</span> <span className="font-medium text-zinc-200">{plan.messageQuota}</span></div>
                   <div className="flex justify-between"><span>AI Responses:</span> <span className="font-medium text-zinc-200">{plan.aiQuota}</span></div>
                   <div className="flex justify-between"><span>Features:</span> <span className="font-medium text-zinc-200">{plan.featuresJson?.length || 0} items</span></div>
@@ -324,22 +324,26 @@ export default function PackagesPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-4 gap-2.5 mt-2.5">
+              <div className="grid grid-cols-5 gap-2 mt-2.5">
                 <div>
                   <label className="block text-[12px] font-medium mb-1 text-zinc-400">Team Members</label>
-                  <input type="number" value={planForm.seatLimit} onChange={e => setPlanForm({...planForm, seatLimit: Number(e.target.value)})} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none" />
+                  <input type="number" value={planForm.seatLimit} onChange={e => setPlanForm({...planForm, seatLimit: Number(e.target.value)})} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none text-xs" />
                 </div>
                 <div>
                   <label className="block text-[12px] font-medium mb-1 text-zinc-400">WhatsApp Limit</label>
-                  <input type="number" value={planForm.whatsappLimit} onChange={e => setPlanForm({...planForm, whatsappLimit: Number(e.target.value)})} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none" />
+                  <input type="number" value={planForm.whatsappLimit} onChange={e => setPlanForm({...planForm, whatsappLimit: Number(e.target.value)})} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none text-xs" />
                 </div>
                 <div>
                   <label className="block text-[12px] font-medium mb-1 text-zinc-400">Messenger Limit</label>
-                  <input type="number" value={planForm.messengerLimit} onChange={e => setPlanForm({...planForm, messengerLimit: Number(e.target.value)})} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none" />
+                  <input type="number" value={planForm.messengerLimit} onChange={e => setPlanForm({...planForm, messengerLimit: Number(e.target.value)})} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none text-xs" />
                 </div>
                 <div>
                   <label className="block text-[12px] font-medium mb-1 text-zinc-400">Instagram Limit</label>
-                  <input type="number" value={planForm.instagramLimit} onChange={e => setPlanForm({...planForm, instagramLimit: Number(e.target.value)})} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none" />
+                  <input type="number" value={planForm.instagramLimit} onChange={e => setPlanForm({...planForm, instagramLimit: Number(e.target.value)})} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none text-xs" />
+                </div>
+                <div>
+                  <label className="block text-[12px] font-medium mb-1 text-zinc-400">Website Widget</label>
+                  <input type="number" value={planForm.websiteWidgetLimit} onChange={e => setPlanForm({...planForm, websiteWidgetLimit: Number(e.target.value)})} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none text-xs" />
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-2.5 mt-2.5">

@@ -414,6 +414,19 @@ export default function BroadcastsPage() {
         )}
       </div>
 
+      {/* Meta API Exclusive Policy Notice */}
+      <div className="flex items-start gap-3 p-3.5 bg-amber-500/10 border border-amber-500/20 rounded-2xl">
+        <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+        <div className="text-xs text-amber-200/90 leading-relaxed">
+          <span className="font-bold text-amber-300">
+            {language === 'en' ? 'Meta Official API Only:' : 'শুধু অফিশিয়াল Meta API-এর জন্য:'}
+          </span>{' '}
+          {language === 'en'
+            ? 'Broadcast campaigns are supported ONLY for Official Meta APIs (WhatsApp Cloud API & Meta Messenger). Unofficial WhatsApp Web (QR Code) connections do NOT support bulk broadcast campaigns to prevent WhatsApp account bans by Meta.'
+            : 'ব্রডকাস্ট ক্যাম্পেইন শুধুমাত্র অফিশিয়াল Meta API (WhatsApp Cloud API ও Meta Messenger)-এর মাধ্যমে পাঠানো যায়। অ্যাকাউন্ট ব্যান হওয়া থেকে সুরক্ষার জন্য হোয়াটসঅ্যাপ ওয়েব (Unofficial QR)-এ ব্রডকাস্ট ক্যাম্পেইন স্থায়ীভাবে বন্ধ রাখা হয়েছে।'}
+        </div>
+      </div>
+
       {/* Guidelines Accordion */}
       <InstructionBanner 
         title={language === 'en' ? 'Meta Official Template Guidelines' : 'মেটা (Meta) অফিশিয়াল টেমপ্লেট নিয়মাবলী'}

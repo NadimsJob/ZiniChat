@@ -150,8 +150,6 @@ export default function BillingHistoryPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-12 text-foreground">
-      <Toaster position="top-right" />
-
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-surface/70 backdrop-blur-xl p-6 rounded-2xl border border-surface-hover shadow-sm">
         <div>

@@ -279,7 +279,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  {
  title: language === 'en' ? 'AUTOMATIONS' : 'অটোমেশন',
  items: [
- { name: language === 'en' ? 'Inboxes' : 'ইনবক্সসমূহ', icon: Webhook, href: '/dashboard/settings/inboxes' },
+ { name: language === 'en' ? 'Channel Integration' : 'চ্যানেল ইন্টিগ্রেশন', icon: Webhook, href: '/dashboard/settings/inboxes' },
  { name: language === 'en' ? 'AI Training' : 'এআই ট্রেইনিং', icon: Zap, href: '/dashboard/settings/ai-training' },
  ]
  },
@@ -311,7 +311,6 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-transparent text-foreground">
-      <Toaster position="bottom-right" />
       
       {/* Mobile Sidebar Overlay */}
       {isMobileMenuOpen && (

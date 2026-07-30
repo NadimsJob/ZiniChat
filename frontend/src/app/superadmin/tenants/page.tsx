@@ -213,6 +213,11 @@ export default function TenantsPage() {
     if (customData.customWhatsappLimit) payload.customWhatsappLimit = parseInt(customData.customWhatsappLimit);
     if (customData.customMessengerLimit) payload.customMessengerLimit = parseInt(customData.customMessengerLimit);
     if (customData.customInstagramLimit) payload.customInstagramLimit = parseInt(customData.customInstagramLimit);
+    if (customData.customWebsiteWidgetLimit !== undefined && customData.customWebsiteWidgetLimit !== '') {
+      payload.customWebsiteWidgetLimit = parseInt(customData.customWebsiteWidgetLimit);
+    } else if (customData.customWebsiteWidgetLimit === '') {
+      payload.customWebsiteWidgetLimit = null;
+    }
     if (customData.customProductCatalogLimit) payload.customProductCatalogLimit = parseInt(customData.customProductCatalogLimit);
     if (customData.customContactsLimit !== undefined && customData.customContactsLimit !== '') {
       payload.customContactsLimit = parseInt(customData.customContactsLimit);

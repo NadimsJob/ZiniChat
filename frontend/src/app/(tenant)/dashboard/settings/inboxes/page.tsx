@@ -85,6 +85,36 @@ export default function InboxesPage() {
     }
   };
 
+  const handleToggleIgnoreGroups = async (id: string, currentStatus: boolean) => {
+    const nextStatus = !currentStatus;
+    // Optimistic UI update
+    setConnections(prev => prev.map(c => c.id === id ? { ...c, ignoreGroupMessages: nextStatus } : c));
+
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/inbox/channels/${id}/ignore-groups`, {
+        method: 'PATCH',
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ ignoreGroupMessages: nextStatus })
+      });
+
+      if (res.ok) {
+        toast.success(language === 'en' 
+          ? `Ignore Group Messages ${nextStatus ? 'Enabled' : 'Disabled'}` 
+          : `গ্রুপ মেসেজ ইগনোর ${nextStatus ? 'চালু' : 'বন্ধ'} হয়েছে`);
+      } else {
+        toast.error(language === 'en' ? 'Failed to update Group setting' : 'গ্রুপ সেটিং আপডেট করতে ব্যর্থ হয়েছে');
+        fetchConnections();
+      }
+    } catch (err) {
+      toast.error(language === 'en' ? 'Error updating Group setting' : 'গ্রুপ সেটিং আপডেট করতে সমস্যা হয়েছে');
+      fetchConnections();
+    }
+  };
+
   const getChannelIcon = (type: string) => {
     switch(type?.toLowerCase()) {
       case 'whatsapp': return <PhoneCall className="w-5 h-5 text-emerald-500" />;
@@ -105,7 +135,6 @@ export default function InboxesPage() {
 
   return (
     <div className="min-h-full bg-slate-50/50 p-2 sm:p-4 md:p-8">
-      <Toaster position="top-right" />
       <div className="max-w-5xl mx-auto space-y-4">
         
         {/* Header Section */}
@@ -219,6 +248,28 @@ export default function InboxesPage() {
                           />
                         </button>
                       </div>
+
+                      {conn.channelType?.toLowerCase() === 'whatsapp' && (
+                        <div className="flex items-center gap-2 mr-2">
+                          <span className="text-[11px] text-slate-600 font-semibold">
+                            {language === 'en' ? 'Ignore Group Msgs' : 'গ্রুপ মেসেজ ইগনোর'}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleToggleIgnoreGroups(conn.id, conn.ignoreGroupMessages ?? true)}
+                            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${
+                              (conn.ignoreGroupMessages ?? true) ? 'bg-emerald-600' : 'bg-slate-300'
+                            }`}
+                            title={language === 'en' ? 'Ignore WhatsApp Group Messages' : 'হোয়াটসঅ্যাপ গ্রুপ মেসেজ ইগনোর করুন'}
+                          >
+                            <span
+                              className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform shadow-sm ${
+                                (conn.ignoreGroupMessages ?? true) ? 'translate-x-4.5' : 'translate-x-1'
+                              }`}
+                            />
+                          </button>
+                        </div>
+                      )}
 
                       <button 
                         onClick={() => handleDelete(conn.id)}

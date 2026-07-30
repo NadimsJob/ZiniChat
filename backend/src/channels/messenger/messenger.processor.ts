@@ -12,6 +12,10 @@ export class MessengerProcessor extends WorkerHost {
   }
 
   async process(job: Job<any, any, string>): Promise<any> {
+    if (job.name === 'mark-read') {
+      return this.handleMarkRead(job);
+    }
+
     this.logger.log(`Processing outbound messenger job ${job.id}`);
     
     const { tenantId, messageId, to, type, content, conversationId } = job.data;
@@ -94,6 +98,55 @@ export class MessengerProcessor extends WorkerHost {
       });
       
       throw error; // Will be caught by BullMQ for retries if configured
+    }
+  }
+
+  private async handleMarkRead(job: Job): Promise<any> {
+    const { tenantId, conversationId } = job.data;
+    try {
+      const conversation = await this.prisma.conversation.findUnique({
+        where: { id: conversationId },
+        include: { contact: true }
+      });
+      if (!conversation || !['messenger', 'instagram'].includes(conversation.channel)) return { success: false };
+
+      const connection = await this.prisma.channelConnection.findFirst({
+        where: { tenantId, channelType: conversation.channel, status: 'active' }
+      });
+
+      if (!connection || !connection.accessTokenEncrypted || !connection.externalAccountId) {
+        return { success: false, reason: 'No active connection' };
+      }
+
+      const unreadMessages = await this.prisma.message.findMany({
+        where: { conversationId, direction: 'inbound', status: { not: 'read' } },
+        select: { id: true, externalMessageId: true }
+      });
+
+      if (unreadMessages.length === 0) return { success: true, count: 0 };
+
+      // Send mark_seen via Meta Graph API
+      if (!connection.accessTokenEncrypted.startsWith('mock_')) {
+        await fetch(`https://graph.facebook.com/v21.0/${connection.externalAccountId}/messages?access_token=${connection.accessTokenEncrypted}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            recipient: { id: conversation.contact.externalContactId },
+            sender_action: 'mark_seen'
+          })
+        }).catch(err => this.logger.error(`Failed mark_seen Meta API: ${err.message}`));
+      }
+
+      await this.prisma.message.updateMany({
+        where: { id: { in: unreadMessages.map(m => m.id) } },
+        data: { status: 'read' }
+      });
+
+      this.logger.log(`Marked ${unreadMessages.length} messenger/instagram messages as read for ${conversationId}`);
+      return { success: true, count: unreadMessages.length };
+    } catch (err: any) {
+      this.logger.error(`Failed mark-read for messenger ${conversationId}: ${err.message}`);
+      throw err;
     }
   }
 }

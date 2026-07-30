@@ -18,6 +18,10 @@ export class WhatsappProcessor extends WorkerHost {
   }
 
   async process(job: Job<any, any, string>): Promise<any> {
+    if (job.name === 'mark-read') {
+      return this.handleMarkRead(job);
+    }
+    
     this.logger.log(`Processing outbound message job ${job.id}`);
     
     const { tenantId, messageId, to, type, content, conversationId, channelConnectionId } = job.data;
@@ -152,6 +156,61 @@ export class WhatsappProcessor extends WorkerHost {
         throw error;
       }
       throw error; 
+    }
+  }
+
+  private async handleMarkRead(job: Job): Promise<any> {
+    const { tenantId, conversationId } = job.data;
+    try {
+      const conversation = await this.prisma.conversation.findUnique({
+        where: { id: conversationId },
+        include: { contact: true }
+      });
+      if (!conversation || conversation.channel !== 'whatsapp') return { success: false };
+
+      const unreadMessages = await this.prisma.message.findMany({
+        where: { conversationId, direction: 'inbound', status: { not: 'read' }, externalMessageId: { not: null } },
+        select: { id: true, externalMessageId: true }
+      });
+      
+      if (unreadMessages.length === 0) return { success: true, count: 0 };
+
+      const messageIds = unreadMessages.map(m => m.externalMessageId as string);
+      
+      const connection = await this.prisma.channelConnection.findFirst({
+        where: { tenantId, channelType: 'whatsapp', status: 'active' }
+      });
+
+      if (connection?.provider === 'WEB_QR') {
+        await this.whatsappWebService.markRead(tenantId, conversation.contact.externalContactId, messageIds);
+      } else if (connection && connection.accessTokenEncrypted && !connection.accessTokenEncrypted.startsWith('mock_')) {
+        // Meta Official WhatsApp Cloud API read receipt
+        for (const wamid of messageIds) {
+          await fetch(`https://graph.facebook.com/v21.0/${connection.phoneNumberId}/messages`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${connection.accessTokenEncrypted}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              messaging_product: 'whatsapp',
+              status: 'read',
+              message_id: wamid
+            })
+          }).catch(err => this.logger.error(`Cloud API mark-read error for ${wamid}: ${err.message}`));
+        }
+      }
+      
+      await this.prisma.message.updateMany({
+        where: { id: { in: unreadMessages.map(m => m.id) } },
+        data: { status: 'read' }
+      });
+      
+      this.logger.log(`Marked ${messageIds.length} messages as read for conversation ${conversationId}`);
+      return { success: true, count: messageIds.length };
+    } catch (err: any) {
+      this.logger.error(`Failed to process mark-read for ${conversationId}: ${err.message}`);
+      throw err;
     }
   }
 }

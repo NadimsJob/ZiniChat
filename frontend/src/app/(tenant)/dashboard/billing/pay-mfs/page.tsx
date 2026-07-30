@@ -385,7 +385,6 @@ function PayMfsContent() {
 
  return (
  <div className="min-h-screen bg-slate-100 text-foreground py-8 px-4 flex flex-col items-center justify-center font-sans">
- <Toaster position="top-right" />
 
  {/* Main Container Card matching Epay / Paystation Portal design */}
  <div className="w-full max-w-xl space-y-5">

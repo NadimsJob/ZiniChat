@@ -26,6 +26,12 @@ describe('InboxService', () => {
         findFirst: jest.fn(),
         delete: jest.fn(),
       },
+      channelConnection: {
+        findMany: jest.fn(),
+        update: jest.fn(),
+        delete: jest.fn(),
+        findFirst: jest.fn(),
+      },
       contact: {
         findFirst: jest.fn(),
         create: jest.fn(),
@@ -212,6 +218,16 @@ describe('InboxService', () => {
       expect(counts.tickets).toBe(1);
       expect(counts.resolved).toBe(4);
       expect(counts.archived).toBe(5);
+    });
+
+    it('should toggle ignoreGroupMessages for a channel connection', async () => {
+      prismaService.channelConnection.update.mockResolvedValue({ id: 'conn1', ignoreGroupMessages: false });
+      const result = await service.toggleIgnoreGroupMessages('tenant1', 'conn1', false);
+      expect(prismaService.channelConnection.update).toHaveBeenCalledWith({
+        where: { id: 'conn1' },
+        data: { ignoreGroupMessages: false }
+      });
+      expect(result.ignoreGroupMessages).toBe(false);
     });
   });
 });
