@@ -36,6 +36,28 @@ export class WhatsappWebService implements OnModuleInit {
     return isWsOpen && hasUser;
   }
 
+  async destroySocket(tenantId: string) {
+    if (this.sockets.has(tenantId)) {
+      const oldSock = this.sockets.get(tenantId);
+      this.sockets.delete(tenantId);
+      if (oldSock) {
+        try {
+          if (oldSock.ev && typeof oldSock.ev.removeAllListeners === 'function') {
+            oldSock.ev.removeAllListeners('connection.update');
+            oldSock.ev.removeAllListeners('creds.update');
+            oldSock.ev.removeAllListeners('messages.upsert');
+          }
+          if (oldSock.ws && typeof oldSock.ws.close === 'function') {
+            oldSock.ws.close();
+          }
+          if (typeof oldSock.end === 'function') {
+            oldSock.end();
+          }
+        } catch (e) {}
+      }
+    }
+  }
+
   async onModuleInit() {
     this.debugLog('Initializing WhatsappWebService...');
     const activeConnections = await this.prisma.channelConnection.findMany({
@@ -85,12 +107,14 @@ export class WhatsappWebService implements OnModuleInit {
         await this.logout(tenantId).catch(() => {});
       }
     }
-
-
-
   }
 
   async initSocket(tenantId: string) {
+    if (this.isSocketConnected(tenantId)) {
+      return this.sockets.get(tenantId);
+    }
+    await this.destroySocket(tenantId);
+
     const { state, saveCreds } = await useMultiFileAuthState(`./sessions/whatsapp_web/${tenantId}`);
     const { version } = await fetchLatestBaileysVersion();
     
@@ -120,6 +144,7 @@ export class WhatsappWebService implements OnModuleInit {
       if (connection === 'close') {
         const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
         const isLoggedOut = statusCode === DisconnectReason.loggedOut;
+        const isReplaced = statusCode === (DisconnectReason as any)?.connectionReplaced || statusCode === 440 || statusCode === 409;
         this.debugLog(`Connection closed for ${tenantId}. Error: ${lastDisconnect?.error}, statusCode: ${statusCode}`);
 
         if (isLoggedOut) {
@@ -129,12 +154,14 @@ export class WhatsappWebService implements OnModuleInit {
             where: { tenantId, provider: 'WEB_QR' },
             data: { status: 'disconnected', qrStatus: 'DISCONNECTED' }
           }).catch(() => {});
+        } else if (isReplaced) {
+          this.debugLog(`Connection replaced/conflict (${statusCode}) for tenant ${tenantId}. Halting automatic reconnect loop.`);
+          // Do NOT schedule reconnect on replaced/conflict sockets to prevent endless ping-pong duplicate connection loop
         } else {
-          const shouldReconnect = statusCode !== 409;
-          this.debugLog(`Connection closed for tenant ${tenantId}, scheduling automatic reconnect...`);
-          if (shouldReconnect) {
+          if (this.sockets.get(tenantId) === sock) {
+            this.debugLog(`Connection closed for tenant ${tenantId}, scheduling automatic reconnect...`);
             setTimeout(() => {
-              if (!this.isSocketConnected(tenantId)) {
+              if (this.sockets.get(tenantId) === sock && !this.isSocketConnected(tenantId)) {
                 this.initSocket(tenantId).catch(err => {
                   this.debugLog(`Reconnect attempt failed for ${tenantId}: ${err.message}`);
                 });
@@ -259,61 +286,54 @@ export class WhatsappWebService implements OnModuleInit {
           }
         } else if (msg.message.imageMessage) {
           messageType = 'image';
-          contentStr = msg.message.imageMessage.caption || '[Image received]';
-          const thumbBytes = msg.message.imageMessage.jpegThumbnail;
-          if (thumbBytes) thumbnail = Buffer.from(thumbBytes).toString('base64');
-        } else if (msg.message.documentMessage) {
-          messageType = 'document';
-          contentStr = msg.message.documentMessage.fileName || '[Document received]';
+          contentStr = msg.message.imageMessage.caption || '[Photo]';
+          try {
+            const buffer = await downloadMediaMessage(msg, 'buffer', {});
+            thumbnail = buffer.toString('base64');
+
+            // Save high-resolution media file to disk
+            const uploadPath = path.join(process.cwd(), 'uploads');
+            if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true });
+            const fileName = `wa_${Date.now()}_${Math.round(Math.random() * 1E6)}.jpg`;
+            const filePath = path.join(uploadPath, fileName);
+            fs.writeFileSync(filePath, buffer);
+            mediaUrl = `/uploads/${fileName}`;
+          } catch (err) {
+            this.logger.error(`Failed to download image media for ${tenantId}: ${err.message}`);
+          }
         } else if (msg.message.videoMessage) {
           messageType = 'video';
-          contentStr = msg.message.videoMessage.caption || '[Video received]';
-          const thumbBytes = msg.message.videoMessage.jpegThumbnail;
-          if (thumbBytes) thumbnail = Buffer.from(thumbBytes).toString('base64');
-        } else {
-          messageType = 'other';
-          contentStr = '[Media or Unsupported Message]';
-        }
-
-        if (messageType === 'image' || messageType === 'video' || messageType === 'document') {
+          contentStr = msg.message.videoMessage.caption || '[Video]';
           try {
-            this.debugLog(`Attempting to download media for msg ${msg.key.id}`);
-            const buffer = await downloadMediaMessage(msg, 'buffer', {}, { 
-              reuploadRequest: sock.updateMediaMessage,
-              logger: this.logger as any
-            });
-            this.debugLog(`Downloaded media buffer of size ${buffer.length}`);
-            const ext = messageType === 'image' ? 'jpg' : (messageType === 'video' ? 'mp4' : 'bin');
-            const filename = `wa_${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`;
-            const uploadsDir = path.join(process.cwd(), 'uploads');
-            if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-            const filepath = path.join(uploadsDir, filename);
-            fs.writeFileSync(filepath, buffer);
-            mediaUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/uploads/${filename}`;
-            this.debugLog(`Saved media to ${mediaUrl}`);
-          } catch (e) {
-            this.logger.error('Failed to download media: ' + e.message);
-            this.debugLog(`Failed to download media: ${e.message} ${e.stack}`);
+            const buffer = await downloadMediaMessage(msg, 'buffer', {});
+            const uploadPath = path.join(process.cwd(), 'uploads');
+            if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true });
+            const fileName = `wa_${Date.now()}_${Math.round(Math.random() * 1E6)}.mp4`;
+            const filePath = path.join(uploadPath, fileName);
+            fs.writeFileSync(filePath, buffer);
+            mediaUrl = `/uploads/${fileName}`;
+          } catch (err) {
+            this.logger.error(`Failed to download video media for ${tenantId}: ${err.message}`);
           }
+        } else if (msg.message.documentMessage) {
+          messageType = 'document';
+          contentStr = msg.message.documentMessage.fileName || msg.message.documentMessage.caption || '[Document]';
+          try {
+            const buffer = await downloadMediaMessage(msg, 'buffer', {});
+            const uploadPath = path.join(process.cwd(), 'uploads');
+            if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true });
+            const fileName = msg.message.documentMessage.fileName || `wa_${Date.now()}_doc.pdf`;
+            const filePath = path.join(uploadPath, fileName);
+            fs.writeFileSync(filePath, buffer);
+            mediaUrl = `/uploads/${fileName}`;
+          } catch (err) {
+            this.logger.error(`Failed to download document media for ${tenantId}: ${err.message}`);
+          }
+        } else {
+          contentStr = '[Unsupported Message Type]';
         }
 
         try {
-          // Use cached connectionId first (avoids race condition on first message after reconnect)
-          let channelConnectionId: string | undefined = this.connectionIds.get(tenantId);
-
-          if (!channelConnectionId) {
-            // Fallback: query DB (handles edge cases where cache was lost after restart)
-            const connection = await this.prisma.channelConnection.findFirst({
-              where: { tenantId, provider: 'WEB_QR', status: { in: ['active', 'connected'] } }
-            });
-            channelConnectionId = connection?.id;
-            if (channelConnectionId) {
-              this.connectionIds.set(tenantId, channelConnectionId);
-            }
-          }
-
-          this.debugLog(`Using channelConnectionId=${channelConnectionId} for incoming message`);
-
           const savedData = await this.inboxService.handleIncomingMessage({
             tenantId,
             channel: 'whatsapp',
@@ -349,11 +369,8 @@ export class WhatsappWebService implements OnModuleInit {
   async startPairing(tenantId: string, phoneNumber: string): Promise<string> {
     // Enforce quota + duplicate guard
     await this.checkWhatsappWebQuota(tenantId);
+    await this.destroySocket(tenantId);
 
-    if (this.sockets.has(tenantId)) {
-      this.sockets.get(tenantId).ws?.close();
-      this.sockets.delete(tenantId);
-    }
     const sock = await this.initSocket(tenantId);
     await new Promise(resolve => setTimeout(resolve, 3000));
     return await sock.requestPairingCode(phoneNumber);
@@ -362,23 +379,15 @@ export class WhatsappWebService implements OnModuleInit {
   async startQr(tenantId: string): Promise<void> {
     // Enforce quota + duplicate guard
     await this.checkWhatsappWebQuota(tenantId);
+    await this.destroySocket(tenantId);
 
-    if (this.sockets.has(tenantId)) {
-      this.sockets.get(tenantId).ws?.close();
-      this.sockets.delete(tenantId);
-    }
     await this.initSocket(tenantId);
     // The QR will be emitted via connection.update event
   }
 
   async logout(tenantId: string) {
-    if (this.sockets.has(tenantId)) {
-      try {
-        await this.sockets.get(tenantId).logout();
-      } catch (e) {}
-      this.sockets.get(tenantId).ws?.close();
-      this.sockets.delete(tenantId);
-    }
+    await this.destroySocket(tenantId);
+
     // Clear cached connectionId
     this.connectionIds.delete(tenantId);
 
@@ -392,6 +401,7 @@ export class WhatsappWebService implements OnModuleInit {
     let sock = this.sockets.get(tenantId);
     if (!sock || !this.isSocketConnected(tenantId)) {
       this.debugLog(`Socket for tenant ${tenantId} not ready, initializing socket connection...`);
+      await this.destroySocket(tenantId);
       sock = await this.initSocket(tenantId);
       let waits = 0;
       while (!this.isSocketConnected(tenantId) && waits < 10) {
@@ -407,20 +417,37 @@ export class WhatsappWebService implements OnModuleInit {
     const jid = `${cleanNumber}@s.whatsapp.net`;
     this.debugLog(`Sending WhatsApp message via Baileys to ${jid}`);
     
-    let result;
-    if (mediaPath && fs.existsSync(mediaPath)) {
-      const buffer = fs.readFileSync(mediaPath);
-      if (messageType === 'video') {
-        result = await sock.sendMessage(jid, { video: buffer, caption: content || undefined });
-      } else if (messageType === 'document') {
-        const fileName = path.basename(mediaPath);
-        result = await sock.sendMessage(jid, { document: buffer, mimetype: 'application/octet-stream', fileName, caption: content || undefined });
+    const doSend = async (targetSock: any) => {
+      if (mediaPath && fs.existsSync(mediaPath)) {
+        const buffer = fs.readFileSync(mediaPath);
+        if (messageType === 'video') {
+          return await targetSock.sendMessage(jid, { video: buffer, caption: content || undefined });
+        } else if (messageType === 'document') {
+          const fileName = path.basename(mediaPath);
+          return await targetSock.sendMessage(jid, { document: buffer, mimetype: 'application/octet-stream', fileName, caption: content || undefined });
+        } else {
+          return await targetSock.sendMessage(jid, { image: buffer, caption: content || undefined });
+        }
       } else {
-        result = await sock.sendMessage(jid, { image: buffer, caption: content || undefined });
+        return await targetSock.sendMessage(jid, { text: content });
       }
-    } else {
-      result = await sock.sendMessage(jid, { text: content });
+    };
+
+    let result;
+    try {
+      result = await doSend(sock);
+    } catch (err: any) {
+      this.debugLog(`sendMessage initial attempt failed for ${tenantId}: ${err.message}. Retrying with fresh socket...`);
+      await this.destroySocket(tenantId);
+      sock = await this.initSocket(tenantId);
+      let waits = 0;
+      while (!this.isSocketConnected(tenantId) && waits < 10) {
+        await new Promise(r => setTimeout(r, 500));
+        waits++;
+      }
+      result = await doSend(sock);
     }
+
     this.debugLog(`Message sent to ${jid}, result: ${JSON.stringify(result)}`);
     return result?.key?.id || `msg_${Date.now()}`;
   }

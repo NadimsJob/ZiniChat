@@ -268,5 +268,13 @@ This rule summarizes the core technical safeguards discovered and enforced durin
   - Validate exact DB product prices, active status, and inventory stock before order creation.
   - Enforce explicit `assertBelongsToTenant(record, tenantId)` security assertions on all modified entities.
 
+---
+
+## 31. Baileys WhatsApp Web Duplicate Socket Conflict (statusCode: 440) Prevention
+* **Conflict Prevention**: When handling Baileys WebSocket connection lifecycle, if `connection === 'close'` has `statusCode === 440` (connectionReplaced) or `409` (conflict), you MUST NOT schedule automatic socket reconnect timers. Reconnecting on 440/409 creates a perpetual ping-pong conflict cascade where two sockets endlessly kick each other out.
+* **Socket Cleanup (`destroySocket`)**: Before creating a new `makeWASocket` instance for a tenant, always unbind event listeners (`removeAllListeners`) and call `.ws?.close()`. Never leave zombie socket instances in memory.
+* **Outbound Send Retry**: Wrap `sendMessage()` in a single-retry recovery block: if the initial send fails due to a closed or dropped socket, safely destroy the stale socket, instantiate a new healthy connection, wait for connection open, and retry sending the outbound message.
+
+
 
 
