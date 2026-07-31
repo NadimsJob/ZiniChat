@@ -861,6 +861,11 @@ export class InboxService {
       }
     });
 
+    if ((contact as any).isBlocked || (conversation && (conversation as any).isBlocked)) {
+      this.logger.warn(`Message dropped for blocked contact/conversation: ${contact.id}`);
+      return { dropped: true, reason: 'blocked' };
+    }
+
     if (!conversation) {
       conversation = await this.prisma.conversation.create({
         data: {
@@ -935,6 +940,10 @@ export class InboxService {
 
     if (!conversation) {
       throw new Error('Conversation not found');
+    }
+
+    if ((conversation as any).isBlocked || (conversation.contact as any)?.isBlocked) {
+      throw new Error('Cannot send messages to a blocked contact');
     }
 
     const senderType = aiAssistantId ? 'ai' : (senderUserId ? 'agent' : 'agent');

@@ -376,11 +376,13 @@ export class WhatsappWebService implements OnModuleInit {
             timestamp: new Date()
           });
 
+          if ((savedData as any).dropped) return;
+
           this.inboxGateway.broadcastToTenant(tenantId, 'new_message', {
-            message: savedData.message,
-            conversation: savedData.conversation,
-            contact: savedData.contact,
-            conversationId: savedData.conversation.id
+            message: (savedData as any).message,
+            conversation: (savedData as any).conversation,
+            contact: (savedData as any).contact,
+            conversationId: (savedData as any).conversation.id
           });
         } catch (error) {
           this.logger.error(`Failed to process incoming message: ${error.message}`);

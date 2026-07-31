@@ -114,7 +114,7 @@ export default function TenantSupportPage() {
  }
  };
 
- if (loading) return <div className="p-8 text-center text-zinc-500">Loading support...</div>;
+ if (loading) return <div className="p-8 text-center text-muted-foreground">Loading support...</div>;
 
   return (
   <div className="p-2 md:p-3 w-full animate-in fade-in h-[calc(100vh-64px)] flex flex-col gap-2 relative">
@@ -124,7 +124,7 @@ export default function TenantSupportPage() {
        <Info className="w-4 h-4" />
      </div>
      <div className="flex-1 min-w-0">
-       <p className="text-[11px] text-slate-700 leading-tight">
+       <p className="text-[11px] text-foreground/90 leading-tight">
          <span className="font-bold text-primary mr-1">
            {language === 'en' ? 'Support Center Instructions:' : 'সাপোর্ট সেন্টার নির্দেশনা:'}
          </span>
@@ -137,11 +137,11 @@ export default function TenantSupportPage() {
 
    <div className="flex-1 flex gap-3 min-h-0">
   {/* Left List */}
-  <div className={`flex-1 md:max-w-xs flex flex-col bg-white border border-slate-200 rounded-xl overflow-hidden ${selectedTicket ? 'hidden md:flex' : 'flex'}`}>
-  <div className="p-3 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+  <div className={`flex-1 md:max-w-xs flex flex-col bg-card border border-border rounded-xl overflow-hidden ${selectedTicket ? 'hidden md:flex' : 'flex'}`}>
+  <div className="p-3 border-b border-border flex justify-between items-center bg-muted/50">
   <div>
-  <h1 className="text-[14px] font-bold text-slate-900">{language === 'en' ? 'Support Tickets' : 'সাপোর্ট টিকিট'}</h1>
-  <p className="text-[11px] text-slate-500">{language === 'en' ? 'Manage your requests' : 'আপনার রিকোয়েস্ট ম্যানেজ করুন'}</p>
+  <h1 className="text-[14px] font-bold text-foreground">{language === 'en' ? 'Support Tickets' : 'সাপোর্ট টিকিট'}</h1>
+  <p className="text-[11px] text-muted-foreground">{language === 'en' ? 'Manage your requests' : 'আপনার রিকোয়েস্ট ম্যানেজ করুন'}</p>
   </div>
   <button 
   onClick={() => setIsNewTicketOpen(true)}
@@ -154,24 +154,24 @@ export default function TenantSupportPage() {
   
   <div className="flex-1 overflow-y-auto p-2 space-y-2 custom-scrollbar">
   {tickets.length === 0 ? (
-  <div className="text-center py-8 text-slate-400 text-[12px]">{language === 'en' ? 'No tickets found.' : 'কোনো টিকিট পাওয়া যায়নি'}</div>
+  <div className="text-center py-8 text-muted-foreground text-[12px]">{language === 'en' ? 'No tickets found.' : 'কোনো টিকিট পাওয়া যায়নি'}</div>
   ) : (
   tickets.map(ticket => (
   <div 
   key={ticket.id} 
   onClick={() => fetchTicketDetails(ticket.id)}
-  className={`p-2.5 rounded-lg border cursor-pointer transition-all ${selectedTicket?.id === ticket.id ? 'bg-primary/5 border-primary/30 shadow-sm' : 'bg-white hover:bg-slate-50 border-slate-200'}`}
+  className={`p-2.5 rounded-lg border cursor-pointer transition-all ${selectedTicket?.id === ticket.id ? 'bg-primary/5 border-primary/30 shadow-sm' : 'bg-card hover:bg-muted border-border'}`}
   >
   <div className="flex justify-between items-start mb-1">
-  <div className="text-[12px] font-semibold truncate flex-1 text-slate-900">{ticket.subject}</div>
-  <div className={`text-[9px] px-1.5 py-0.5 font-bold rounded-full uppercase ml-1 ${ticket.status === 'open' ? 'bg-red-100 text-red-700' : ticket.status === 'answered' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'}`}>
+  <div className="text-[12px] font-semibold truncate flex-1 text-foreground">{ticket.subject}</div>
+  <div className={`text-[9px] px-1.5 py-0.5 font-bold rounded-full uppercase ml-1 ${ticket.status === 'open' ? 'bg-red-500/10 text-red-500' : ticket.status === 'answered' ? 'bg-blue-500/10 text-blue-500' : 'bg-muted text-muted-foreground'}`}>
   {ticket.status}
   </div>
   </div>
-  <div className="flex justify-between items-center text-[10px] text-slate-500">
+  <div className="flex justify-between items-center text-[10px] text-muted-foreground">
   <div className="flex gap-1.5 items-center">
-  <span className="capitalize bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">{ticket.priority}</span>
-  <span className="text-slate-400">{ticket.type}</span>
+  <span className="capitalize bg-muted px-1.5 py-0.5 rounded text-muted-foreground">{ticket.priority}</span>
+  <span className="text-muted-foreground/60">{ticket.type}</span>
   </div>
   <span>{format(new Date(ticket.createdAt), 'MMM d')}</span>
   </div>
@@ -183,34 +183,34 @@ export default function TenantSupportPage() {
  
   {/* Right Detail Pane */}
   {selectedTicket ? (
-  <div className="flex-1 flex flex-col bg-white border border-slate-200 rounded-xl overflow-hidden">
+  <div className="flex-1 flex flex-col bg-card border border-border rounded-xl overflow-hidden">
   {/* Header */}
-  <div className="p-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between gap-3">
+  <div className="p-3 border-b border-border bg-muted/50 flex items-center justify-between gap-3">
   <div className="flex items-center gap-2">
-  <button className="md:hidden text-slate-500 hover:text-slate-900" onClick={() => setSelectedTicket(null)}><X className="w-4 h-4"/></button>
+  <button className="md:hidden text-muted-foreground hover:text-foreground" onClick={() => setSelectedTicket(null)}><X className="w-4 h-4"/></button>
   <div>
-  <h2 className="text-[13px] font-bold text-slate-900">{selectedTicket.subject}</h2>
-  <span className="text-[10px] text-slate-500">{selectedTicket.type}</span>
+  <h2 className="text-[13px] font-bold text-foreground">{selectedTicket.subject}</h2>
+  <span className="text-[10px] text-muted-foreground">{selectedTicket.type}</span>
   </div>
   </div>
-  <div className={`text-[10px] px-2 py-0.5 font-bold rounded-full uppercase ${selectedTicket.status === 'open' ? 'bg-red-100 text-red-700' : selectedTicket.status === 'answered' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'}`}>
+  <div className={`text-[10px] px-2 py-0.5 font-bold rounded-full uppercase ${selectedTicket.status === 'open' ? 'bg-red-500/10 text-red-500' : selectedTicket.status === 'answered' ? 'bg-blue-500/10 text-blue-500' : 'bg-muted text-muted-foreground'}`}>
   {selectedTicket.status}
   </div>
   </div>
  
   {/* Messages Thread */}
-  <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50">
+  <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/5">
   {selectedTicket.messages?.map((msg: any) => (
   <div key={msg.id} className={`flex gap-2.5 ${msg.senderType === 'tenant' ? 'flex-row-reverse' : ''}`}>
-  <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-xs font-bold ${msg.senderType === 'admin' ? 'bg-primary text-white' : 'bg-slate-200 text-slate-600'}`}>
+  <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-xs font-bold ${msg.senderType === 'admin' ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}`}>
   {msg.senderType === 'admin' ? <CheckCircle className="w-3.5 h-3.5"/> : <AlertCircle className="w-3.5 h-3.5"/>}
   </div>
   <div className={`max-w-[80%] ${msg.senderType === 'tenant' ? 'items-end flex flex-col' : ''}`}>
-  <div className="text-[10px] text-slate-500 mb-0.5 flex items-center gap-1.5">
-  <span className="font-semibold text-slate-700">{msg.senderType === 'admin' ? msg.sender?.name || 'Support Team' : language === 'en' ? 'You' : 'আপনি'}</span>
+  <div className="text-[10px] text-muted-foreground mb-0.5 flex items-center gap-1.5">
+  <span className="font-semibold text-foreground">{msg.senderType === 'admin' ? msg.sender?.name || 'Support Team' : language === 'en' ? 'You' : 'আপনি'}</span>
   <span>{format(new Date(msg.createdAt), 'p')}</span>
   </div>
-  <div className={`text-[12px] p-3 rounded-xl whitespace-pre-wrap leading-relaxed shadow-sm ${msg.senderType === 'tenant' ? 'bg-primary text-white rounded-tr-none' : 'bg-white border border-slate-200 text-slate-800 rounded-tl-none'}`}>
+  <div className={`text-[12px] p-3 rounded-xl whitespace-pre-wrap leading-relaxed shadow-sm ${msg.senderType === 'tenant' ? 'bg-primary text-primary-foreground rounded-tr-none' : 'bg-card border border-border text-foreground rounded-tl-none'}`}>
   {msg.message}
   </div>
   {msg.attachmentUrl && (
@@ -225,12 +225,12 @@ export default function TenantSupportPage() {
  
   {/* Reply Box */}
   {selectedTicket.status !== 'closed' && (
-  <div className="p-3 bg-white border-t border-slate-200">
+  <div className="p-3 bg-card border-t border-border">
   <form onSubmit={handleSendReply} className="flex gap-2 items-end">
   <button 
   type="button" 
   onClick={() => document.getElementById('reply-file')?.click()}
-  className="p-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-500 hover:text-primary transition-colors shrink-0 mb-0.5"
+  className="p-2 bg-muted border border-border rounded-lg text-muted-foreground hover:text-foreground transition-colors shrink-0 mb-0.5 cursor-pointer"
   title="Attach file"
   >
   <Paperclip className="w-4 h-4" />
@@ -239,7 +239,7 @@ export default function TenantSupportPage() {
   
   <div className="flex-1 flex flex-col gap-1">
   {replyFile && (
-  <div className="text-[11px] text-slate-600 flex items-center gap-1.5 bg-slate-100 px-2 py-0.5 rounded w-max">
+  <div className="text-[11px] text-muted-foreground flex items-center gap-1.5 bg-muted px-2 py-0.5 rounded w-max">
   <Paperclip className="w-3 h-3 text-primary" /> {replyFile.name}
   <button type="button" onClick={() => setReplyFile(null)} className="text-red-500 hover:text-red-700 ml-1 font-bold">×</button>
   </div>
@@ -248,7 +248,7 @@ export default function TenantSupportPage() {
   value={replyMessage}
   onChange={(e) => setReplyMessage(e.target.value)}
   placeholder={language === 'en' ? 'Type your reply...' : 'আপনার মেসেজ লিখুন...'}
-  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-[12px] outline-none focus:ring-1 focus:ring-primary focus:border-primary resize-none text-slate-800"
+  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-[12px] outline-none focus:ring-1 focus:ring-primary focus:border-primary resize-none text-foreground"
   rows={2}
   />
   </div>
@@ -256,7 +256,7 @@ export default function TenantSupportPage() {
   <button 
   type="submit" 
   disabled={sending || (!replyMessage.trim() && !replyFile)}
-  className="bg-primary text-white p-2.5 rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors shrink-0 mb-0.5"
+  className="bg-primary text-white p-2.5 rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors shrink-0 mb-0.5 cursor-pointer"
   >
   <Send className="w-4 h-4" />
   </button>
@@ -265,7 +265,7 @@ export default function TenantSupportPage() {
   )}
   </div>
   ) : (
-  <div className="hidden md:flex flex-1 bg-white border border-slate-200 rounded-xl items-center justify-center text-slate-400">
+  <div className="hidden md:flex flex-1 bg-card border border-border rounded-xl items-center justify-center text-muted-foreground">
   <div className="text-center">
   <Mail className="w-10 h-10 mx-auto mb-2 opacity-30 text-primary" />
   <p className="text-[12px] font-medium">{language === 'en' ? 'Select a ticket to view conversation' : 'মেসেজ দেখতে একটি টিকিট সিলেক্ট করুন'}</p>
@@ -279,13 +279,13 @@ export default function TenantSupportPage() {
   <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[999] flex items-center justify-center p-4">
   <div className="bg-surface border border-surface-hover rounded-2xl max-w-md w-full max-h-[90vh] overflow-hidden flex flex-col">
   <div className="p-5 border-b border-surface-hover flex justify-between items-center bg-background shrink-0">
-  <h3 className="text-[15px] font-bold">{language === 'en' ? 'Create Support Ticket' : 'নতুন সাপোর্ট টিকিট'}</h3>
-  <button type="button" onClick={() => setIsNewTicketOpen(false)} className="text-zinc-400 hover:text-white"><X className="w-5 h-5"/></button>
+  <h3 className="text-[15px] font-bold text-foreground">{language === 'en' ? 'Create Support Ticket' : 'নতুন সাপোর্ট টিকিট'}</h3>
+  <button type="button" onClick={() => setIsNewTicketOpen(false)} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5"/></button>
   </div>
   <form onSubmit={handleCreateTicket} className="flex flex-col overflow-hidden">
   <div className="p-5 space-y-4 overflow-y-auto custom-scrollbar">
  <div>
- <label className="block text-[12px] text-zinc-400 mb-1">{language === 'en' ? 'Subject' : 'বিষয়'}</label>
+ <label className="block text-[12px] text-muted-foreground mb-1">{language === 'en' ? 'Subject' : 'বিষয়'}</label>
  <input 
  type="text"
  required
@@ -295,7 +295,7 @@ export default function TenantSupportPage() {
  />
  </div>
  <div>
- <label className="block text-[12px] text-zinc-400 mb-1">{language === 'en' ? 'Service / Type' : 'সার্ভিস / ধরন'}</label>
+ <label className="block text-[12px] text-muted-foreground mb-1">{language === 'en' ? 'Service / Type' : 'সার্ভিস / ধরন'}</label>
  <select 
  value={newType}
  onChange={e => setNewType(e.target.value)}
@@ -310,7 +310,7 @@ export default function TenantSupportPage() {
  </select>
  </div>
  <div>
- <label className="block text-[12px] text-zinc-400 mb-1">{language === 'en' ? 'Priority' : 'গুরুত্ব'}</label>
+ <label className="block text-[12px] text-muted-foreground mb-1">{language === 'en' ? 'Priority' : 'গুরুত্ব'}</label>
  <select 
  value={newPriority}
  onChange={e => setNewPriority(e.target.value)}
@@ -322,7 +322,7 @@ export default function TenantSupportPage() {
  </select>
  </div>
  <div>
- <label className="block text-[12px] text-zinc-400 mb-1">{language === 'en' ? 'Message' : 'মেসেজ'}</label>
+ <label className="block text-[12px] text-muted-foreground mb-1">{language === 'en' ? 'Message' : 'মেসেজ'}</label>
  <textarea 
  required
  rows={4}
@@ -332,11 +332,11 @@ export default function TenantSupportPage() {
  />
  </div>
  <div>
- <label className="block text-[12px] text-zinc-400 mb-1">{language === 'en' ? 'Attachment (Optional)' : 'অ্যাটাচমেন্ট (অপশনাল)'}</label>
+ <label className="block text-[12px] text-muted-foreground mb-1">{language === 'en' ? 'Attachment (Optional)' : 'অ্যাটাচমেন্ট (অপশনাল)'}</label>
  <input 
  type="file"
  onChange={e => setNewFile(e.target.files?.[0] || null)}
- className="w-full text-[12px] file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-[12px] file:font-medium file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+ className="w-full text-[12px] file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-[12px] file:font-medium file:bg-primary/10 file:text-primary hover:file:bg-primary/20 text-muted-foreground"
  />
  </div>
   </div>

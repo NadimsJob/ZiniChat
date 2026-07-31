@@ -347,16 +347,10 @@ export default function ConversationSidebar({
         </div>
 
         {openSections.orders && (
-          <div className="grid grid-cols-2 gap-2 pt-1">
-            <Link 
-              href={`/dashboard/orders?contactId=${contact?.id || ''}`}
-              className="flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-muted hover:bg-muted/80 text-foreground text-[11px] font-medium rounded-lg transition-colors border border-border"
-            >
-              {language === 'en' ? 'Manage Orders' : 'অর্ডার ম্যানেজ'}
-            </Link>
+          <div className="pt-1">
             <Link 
               href={`/dashboard/orders?new=1&contactId=${contact?.id || ''}&conversationId=${conversation?.id || ''}`}
-              className="flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-primary text-primary-foreground text-[11px] font-medium rounded-lg hover:bg-primary/90 transition-colors shadow-xs"
+              className="flex items-center justify-center w-full px-2 py-1 bg-primary text-primary-foreground text-[11px] font-medium rounded-md hover:bg-primary/90 transition-colors shadow-xs"
             >
               {language === 'en' ? 'Create Order' : 'অর্ডার তৈরি'}
             </Link>
@@ -528,13 +522,7 @@ export default function ConversationSidebar({
                     ))}
                   </select>
                 </div>
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <User className="w-3.5 h-3.5 text-teal-600 shrink-0" />
-                  <span className="font-medium text-[10px] uppercase tracking-wider">{language === 'en' ? 'Assigned To:' : 'এজেন্ট:'}</span>
-                  <span className="text-foreground font-semibold">
-                    {contact?.assignedUser?.name || (language === 'en' ? 'Unassigned' : 'অ্যাসাইন করা হয়নি')}
-                  </span>
-                </div>
+
                 <div className="flex items-center justify-between text-muted-foreground pt-1 border-t border-border/40 gap-2">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <Calendar className="w-3.5 h-3.5 text-purple-600 shrink-0" />

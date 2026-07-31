@@ -134,7 +134,7 @@ export default function LabelsPage() {
  </div>
 
  {isCreating && (
- <div className="bg-white border border-slate-200 rounded-2xl p-1.5 shadow-sm animate-in zoom-in-95 duration-200">
+ <div className="bg-card border border-border rounded-2xl p-1.5 shadow-sm animate-in zoom-in-95 duration-200">
   <LabelForm 
     initialData={editingLabel} 
     onSave={(data) => handleSaveLabel(data, editingLabel?.id)} 

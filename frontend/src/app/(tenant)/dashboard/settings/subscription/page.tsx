@@ -128,7 +128,7 @@ export default function SubscriptionSettingsPage() {
           <Crown className="w-6 h-6 text-yellow-500 shrink-0" />
           {language === 'en' ? 'Subscription & Add-ons' : 'সাবস্ক্রিপশন এবং অ্যাড-অন'}
         </h1>
-        <p className="text-[13px] text-zinc-400 mt-1">
+        <p className="text-[13px] text-muted-foreground mt-1">
           {language === 'en'
             ? 'View your current plan, upgrade, or purchase extra add-ons.'
             : 'আপনার বর্তমান প্ল্যান দেখুন, আপগ্রেড করুন বা অতিরিক্ত লিমিট কিনুন।'}
@@ -170,15 +170,15 @@ export default function SubscriptionSettingsPage() {
                   }`}>
                     {currentSubscription.status?.toUpperCase()}
                   </span>
-                  <span className="text-[12px] text-zinc-400">
+                  <span className="text-[12px] text-muted-foreground">
                     {language === 'en' ? 'Renews:' : 'রিনিউ হবে:'}{' '}
-                    <span className="text-zinc-200 font-medium">
+                    <span className="text-foreground font-medium">
                       {new Date(currentSubscription.currentPeriodEnd).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </span>
                   </span>
                 </div>
               ) : (
-                <p className="text-[12px] text-zinc-400 mt-2">
+                <p className="text-[12px] text-muted-foreground mt-2">
                   {language === 'en' ? 'No active subscription. Upgrade to unlock more features.' : 'কোনো সক্রিয় সাবস্ক্রিপশন নেই। আরো ফিচার পেতে আপগ্রেড করুন।'}
                 </p>
               )}
@@ -195,7 +195,7 @@ export default function SubscriptionSettingsPage() {
                   <div key={label} className="bg-surface/60 backdrop-blur-sm border border-surface-hover rounded-xl px-3 py-2">
                     <Icon className="w-3.5 h-3.5 text-primary mx-auto mb-0.5" />
                     <div className="text-lg font-black text-foreground">{value}</div>
-                    <div className="text-[10px] text-zinc-400">{label}/mo</div>
+                    <div className="text-[10px] text-muted-foreground">{label}/mo</div>
                   </div>
                 ))}
               </div>
@@ -249,7 +249,7 @@ export default function SubscriptionSettingsPage() {
               {['BDT', 'USD'].map(c => (
                 <button key={c}
                   onClick={() => setDisplayCurrency(c as 'BDT' | 'USD')}
-                  className={`px-3 py-1 rounded-lg text-[11px] font-bold transition-all ${displayCurrency === c ? 'bg-primary text-primary-foreground shadow-sm' : 'text-zinc-400 hover:text-zinc-200'}`}>
+                  className={`px-3 py-1 rounded-lg text-[11px] font-bold transition-all ${displayCurrency === c ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
                   {c}
                 </button>
               ))}
@@ -258,11 +258,11 @@ export default function SubscriptionSettingsPage() {
             {/* Billing Cycle Toggle */}
             <div className="bg-surface-hover/50 border border-surface-hover rounded-xl p-1 flex">
               <button onClick={() => setBillingCycle('monthly')}
-                className={`px-3 py-1 rounded-lg text-[11px] font-bold transition-all ${billingCycle === 'monthly' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-zinc-400 hover:text-zinc-200'}`}>
+                className={`px-3 py-1 rounded-lg text-[11px] font-bold transition-all ${billingCycle === 'monthly' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
                 {language === 'en' ? 'Monthly' : 'মাসিক'}
               </button>
               <button onClick={() => setBillingCycle('yearly')}
-                className={`px-3 py-1 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 ${billingCycle === 'yearly' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-zinc-400 hover:text-zinc-200'}`}>
+                className={`px-3 py-1 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 ${billingCycle === 'yearly' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
                 {language === 'en' ? 'Yearly' : 'বার্ষিক'}
                 {maxDiscountPercent > 0 && (
                   <span className="text-[9px] bg-green-500/20 text-green-500 px-1.5 py-0.5 rounded-full font-bold">
@@ -275,7 +275,7 @@ export default function SubscriptionSettingsPage() {
         </div>
 
         {plans.length === 0 ? (
-          <p className="text-center py-8 text-[13px] text-zinc-500">
+          <p className="text-center py-8 text-[13px] text-muted-foreground">
             {language === 'en' ? 'No plans available.' : 'কোনো প্ল্যান পাওয়া যায়নি।'}
           </p>
         ) : (
@@ -325,11 +325,11 @@ export default function SubscriptionSettingsPage() {
                   <div className="mt-2 flex items-end gap-1">
                     <span className="text-lg font-bold text-primary mt-1">{displayCurrency === 'BDT' ? '৳' : '$'}</span>
                     <span className="text-4xl font-black text-primary leading-none">{formatNumber(displayPrice)}</span>
-                    <span className="text-[12px] text-zinc-400 mb-1">/{language === 'en' ? 'mo' : 'মাস'}</span>
+                    <span className="text-[12px] text-muted-foreground mb-1">/{language === 'en' ? 'mo' : 'মাস'}</span>
                   </div>
 
                   {promoMonthly && (
-                    <div className="text-[11px] text-zinc-500 line-through">
+                    <div className="text-[11px] text-muted-foreground line-through">
                       ৳{formatNumber(mBdt)}
                     </div>
                   )}
@@ -353,20 +353,20 @@ export default function SubscriptionSettingsPage() {
 
                   {/* Quotas */}
                   <ul className="space-y-1.5 flex-1">
-                    <li className="flex items-center gap-2 text-[12px] text-zinc-300">
+                    <li className="flex items-center gap-2 text-[12px] text-foreground/90">
                       <Users className="w-3.5 h-3.5 text-secondary shrink-0" />
                       {formatNumber(plan.seatLimit)} {language === 'en' ? 'Team Members' : 'টিম মেম্বার'}
                     </li>
-                    <li className="flex items-center gap-2 text-[12px] text-zinc-300">
+                    <li className="flex items-center gap-2 text-[12px] text-foreground/90">
                       <MessageSquare className="w-3.5 h-3.5 text-secondary shrink-0" />
                       {formatNumber(plan.messageQuota)} {language === 'en' ? 'Messages/mo' : 'মেসেজ/মাস'}
                     </li>
-                    <li className="flex items-center gap-2 text-[12px] text-zinc-300">
+                    <li className="flex items-center gap-2 text-[12px] text-foreground/90">
                       <Bot className="w-3.5 h-3.5 text-secondary shrink-0" />
                       {formatNumber(plan.aiQuota)} {language === 'en' ? 'AI Credits/mo' : 'এআই ক্রেডিট/মাস'}
                     </li>
                     {plan.storageLimitMb && (
-                      <li className="flex items-center gap-2 text-[12px] text-zinc-300">
+                      <li className="flex items-center gap-2 text-[12px] text-foreground/90">
                         <HardDrive className="w-3.5 h-3.5 text-secondary shrink-0" />
                         {plan.storageLimitMb >= 1024
                           ? `${(plan.storageLimitMb / 1024).toFixed(1)} GB`
@@ -379,7 +379,7 @@ export default function SubscriptionSettingsPage() {
                       if (!meta) return null;
                       const Icon = meta.icon;
                       return (
-                        <li key={f} className="flex items-center gap-2 text-[12px] text-zinc-300">
+                        <li key={f} className="flex items-center gap-2 text-[12px] text-foreground/90">
                           <Icon className="w-3.5 h-3.5 text-secondary shrink-0" />
                           {language === 'en' ? meta.en : meta.bn}
                         </li>
@@ -413,7 +413,7 @@ export default function SubscriptionSettingsPage() {
             <Puzzle className="w-4 h-4 text-secondary shrink-0" />
             {language === 'en' ? 'Available Add-ons' : 'উপলব্ধ অ্যাড-অনসমূহ'}
           </h2>
-          <p className="text-[12px] text-zinc-400 mb-4">
+          <p className="text-[12px] text-muted-foreground mb-4">
             {language === 'en'
               ? 'Purchase additional limits on top of your current plan without upgrading.'
               : 'আপগ্রেড না করেই বর্তমান প্ল্যানের উপরে অতিরিক্ত লিমিট কিনুন।'}
@@ -428,27 +428,27 @@ export default function SubscriptionSettingsPage() {
                 <div className="text-2xl font-black text-secondary mt-1">
                   {formatBdtDirect(addon.priceBdt)}
                 </div>
-                <p className="text-[11px] text-zinc-400 mt-1 mb-3 flex-1">
+                <p className="text-[11px] text-muted-foreground mt-1 mb-3 flex-1">
                   {language === 'en' ? addon.description : (addon.descriptionBn || addon.description)}
                 </p>
                 <div className="space-y-1 mb-4">
                   {addon.type === 'seat' && (
-                    <div className="flex items-center gap-1.5 text-[12px] text-zinc-300">
+                    <div className="flex items-center gap-1.5 text-[12px] text-foreground/90">
                       <Users className="w-3.5 h-3.5 text-secondary" /> +{formatNumber(addon.limit)} {language === 'en' ? 'Team Members' : 'টিম মেম্বার'}
                     </div>
                   )}
                   {addon.type === 'message' && (
-                    <div className="flex items-center gap-1.5 text-[12px] text-zinc-300">
+                    <div className="flex items-center gap-1.5 text-[12px] text-foreground/90">
                       <MessageSquare className="w-3.5 h-3.5 text-secondary" /> +{formatNumber(addon.limit)} {language === 'en' ? 'Messages' : 'মেসেজ'}
                     </div>
                   )}
                   {addon.type === 'ai_response' && (
-                    <div className="flex items-center gap-1.5 text-[12px] text-zinc-300">
+                    <div className="flex items-center gap-1.5 text-[12px] text-foreground/90">
                       <Bot className="w-3.5 h-3.5 text-secondary" /> +{formatNumber(addon.limit)} {language === 'en' ? 'AI Credits' : 'এআই ক্রেডিট'}
                     </div>
                   )}
                   {addon.type === 'storage' && (
-                    <div className="flex items-center gap-1.5 text-[12px] text-zinc-300">
+                    <div className="flex items-center gap-1.5 text-[12px] text-foreground/90">
                       <HardDrive className="w-3.5 h-3.5 text-secondary" /> +{addon.limit >= 1024 ? `${(addon.limit / 1024).toFixed(1)} GB` : `${addon.limit} MB`} {language === 'en' ? 'Storage' : 'স্টোরেজ'}
                     </div>
                   )}
@@ -467,7 +467,7 @@ export default function SubscriptionSettingsPage() {
       {/* Info note */}
       <div className="flex items-start gap-3 p-4 bg-blue-500/5 border border-blue-500/20 rounded-2xl">
         <RefreshCw className="w-4 h-4 text-blue-400 mt-0.5 shrink-0" />
-        <p className="text-[12px] text-zinc-400 leading-relaxed">
+        <p className="text-[12px] text-muted-foreground leading-relaxed">
           {language === 'en'
             ? 'After completing payment, your subscription will be activated automatically. You can view your payment history from the Billing History page.'
             : 'পেমেন্ট সম্পন্ন করার পর আপনার সাবস্ক্রিপশন স্বয়ংক্রিয়ভাবে সক্রিয় হয়ে যাবে। পেমেন্ট ইতিহাস দেখতে Billing History পেজে যান।'}

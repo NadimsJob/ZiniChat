@@ -148,7 +148,7 @@ export default function OrdersPage() {
  if (s === 'delivered') return <span className="px-2 py-1 bg-emerald-100 text-emerald-700 text-[11px] font-bold rounded-full flex items-center gap-1 w-fit"><CheckCircle2 className="w-3 h-3" /> Delivered</span>;
  if (s === 'cancelled') return <span className="px-2 py-1 bg-red-100 text-red-700 text-[11px] font-bold rounded-full flex items-center gap-1 w-fit"><XCircle className="w-3 h-3" /> Cancelled</span>;
  if (s === 'refunded') return <span className="px-2 py-1 bg-orange-100 text-orange-700 text-[11px] font-bold rounded-full flex items-center gap-1 w-fit"><RotateCcw className="w-3 h-3" /> Refunded</span>;
- return <span className="px-2 py-1 bg-zinc-100 text-zinc-700 text-[11px] font-bold rounded-full">{status}</span>;
+ return <span className="px-2 py-1 bg-muted text-muted-foreground text-[11px] font-bold rounded-full">{status}</span>;
  };
 
  const calculateTotal = () => {
@@ -159,23 +159,23 @@ export default function OrdersPage() {
  <div className="flex h-[calc(100vh-4rem)] md:h-[calc(100vh-5rem)] bg-background overflow-hidden">
  
  {/* Left Pane: Order List */}
- <div className={`w-full ${selectedOrder ? 'hidden md:flex md:w-[40%] lg:w-[35%]' : 'flex'} flex-col border-r border-surface-hover bg-surface shrink-0`}>
- <div className="p-1.5 md:p-1.5 border-b border-surface-hover shrink-0 bg-background z-10">
+ <div className={`w-full ${selectedOrder ? 'hidden md:flex md:w-[40%] lg:w-[35%]' : 'flex'} flex-col border-r border-border bg-surface shrink-0`}>
+ <div className="p-1.5 md:p-1.5 border-b border-border shrink-0 bg-background z-10">
  <div className="flex items-center justify-between mb-4">
  <div>
- <h1 className="text-2xl font-bold text-zinc-900 flex items-center gap-2">
+ <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
  <ShoppingBag className="w-6 h-6 text-primary" />
  {language === 'en' ? 'Orders' : 'অর্ডারস'}
  </h1>
- <p className="text-[11px] text-zinc-500 mt-1">
+ <p className="text-[11px] text-muted-foreground mt-1">
  {orders.length} {language === 'en' ? 'orders total' : 'টি অর্ডার আছে'}
  </p>
  </div>
  <div className="flex gap-2">
- <button onClick={() => setIsCreatingOrder(true)} className="flex items-center px-1.5 py-2 bg-primary text-primary-foreground text-[13px] font-semibold rounded-lg hover:bg-primary/90 transition-all shadow-sm">
+ <button onClick={() => setIsCreatingOrder(true)} className="flex items-center px-1.5 py-2 bg-primary text-primary-foreground text-[13px] font-semibold rounded-lg hover:bg-primary/90 transition-all shadow-sm cursor-pointer">
  <Plus className="w-3.5 h-3.5 mr-1" /> New Order
  </button>
- <button onClick={fetchOrders} className="p-2 text-zinc-500 hover:text-primary transition-colors bg-surface border border-surface-hover rounded-lg">
+ <button onClick={fetchOrders} className="p-2 text-muted-foreground hover:text-primary transition-colors bg-muted border border-border rounded-lg cursor-pointer">
  <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
  </button>
  </div>
@@ -183,17 +183,17 @@ export default function OrdersPage() {
  
  <div className="flex gap-2">
  <div className="relative flex-1">
- <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400" />
- <input type="text" placeholder={language === 'en' ? 'Search orders...' : 'অর্ডার খুঁজুন...'} className="w-full pl-9 pr-3 py-2 bg-background border border-surface-hover rounded-lg text-[13px] focus:border-primary focus:outline-none" />
+ <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+ <input type="text" placeholder={language === 'en' ? 'Search orders...' : 'অর্ডার খুঁজুন...'} className="w-full pl-9 pr-3 py-2 bg-background border border-border rounded-lg text-[13px] focus:border-primary focus:outline-none text-foreground" />
  </div>
  </div>
  </div>
 
- <div className="flex-1 overflow-y-auto custom-scrollbar bg-zinc-50/50 p-2 md:p-1.5 space-y-2">
+ <div className="flex-1 overflow-y-auto custom-scrollbar bg-muted/10 p-2 md:p-1.5 space-y-2">
  {loading ? (
- <div className="flex justify-center p-4 text-zinc-400"><RefreshCw className="w-5 h-5 animate-spin" /></div>
+ <div className="flex justify-center p-4 text-muted-foreground"><RefreshCw className="w-5 h-5 animate-spin" /></div>
  ) : orders.length === 0 ? (
- <div className="text-center p-4 text-zinc-500">
+ <div className="text-center p-4 text-muted-foreground">
  <ShoppingBag className="w-8 h-8 mx-auto mb-3 opacity-20" />
  <p className="text-[13px]">{language === 'en' ? 'No orders found' : 'কোনো অর্ডার নেই'}</p>
  </div>
@@ -202,17 +202,17 @@ export default function OrdersPage() {
  <div 
  key={order.id} 
  onClick={() => setSelectedOrder(order)}
- className={`p-1.5 bg-white border rounded-xl cursor-pointer hover:shadow-md transition-all ${selectedOrder?.id === order.id ? 'border-primary ring-1 ring-primary/20' : 'border-surface-hover'}`}
+ className={`p-1.5 bg-card border rounded-xl cursor-pointer hover:shadow-md transition-all ${selectedOrder?.id === order.id ? 'border-primary ring-1 ring-primary/20' : 'border-border'}`}
  >
  <div className="flex items-start justify-between mb-2">
  <div>
- <div className="font-bold text-zinc-900 text-[13px]">{order.contact?.name || 'Unknown Contact'}</div>
- <div className="text-[10px] text-zinc-500 mt-0.5">{format(new Date(order.createdAt), 'MMM dd, yyyy • hh:mm a')}</div>
+ <div className="font-bold text-foreground text-[13px]">{order.contact?.name || 'Unknown Contact'}</div>
+ <div className="text-[10px] text-muted-foreground mt-0.5">{format(new Date(order.createdAt), 'MMM dd, yyyy • hh:mm a')}</div>
  </div>
  {getStatusBadge(order.status)}
  </div>
- <div className="flex items-end justify-between mt-3 pt-3 border-t border-surface-hover border-dashed">
- <div className="text-[11px] text-zinc-500">{order.items?.length || 0} items</div>
+ <div className="flex items-end justify-between mt-3 pt-3 border-t border-border border-dashed">
+ <div className="text-[11px] text-muted-foreground">{order.items?.length || 0} items</div>
  <div className="font-bold text-primary">{order.currency || 'BDT'} {parseFloat(order.totalAmount).toLocaleString()}</div>
  </div>
  </div>
@@ -224,30 +224,30 @@ export default function OrdersPage() {
  {/* Right Pane: Order Details */}
  <div className={`w-full ${!selectedOrder ? 'hidden md:flex items-center justify-center' : 'flex'} flex-col bg-background relative md:w-[60%] lg:w-[65%] h-full`}>
  {!selectedOrder ? (
- <div className="text-center text-zinc-500 flex flex-col items-center p-4">
- <div className="w-16 h-16 bg-surface border border-surface-hover rounded-full flex items-center justify-center mb-3 shadow-sm">
- <ShoppingBag className="w-8 h-8 text-zinc-400" />
+ <div className="text-center text-muted-foreground flex flex-col items-center p-4">
+ <div className="w-16 h-16 bg-surface border border-border rounded-full flex items-center justify-center mb-3 shadow-sm">
+ <ShoppingBag className="w-8 h-8 text-muted-foreground/60" />
  </div>
- <h3 className="text-[13px] font-bold text-zinc-700 mb-2">Select an order</h3>
+ <h3 className="text-[13px] font-bold text-foreground mb-2">Select an order</h3>
  <p className="text-[13px] max-w-xs">Click on an order from the list to view its details and update status.</p>
  </div>
  ) : (
  <>
- <div className="h-16 px-1.5 md:px-1.5 border-b border-surface-hover flex items-center justify-between bg-surface shrink-0 z-10 shadow-sm">
+ <div className="h-16 px-1.5 md:px-1.5 border-b border-border flex items-center justify-between bg-surface shrink-0 z-10 shadow-sm">
  <div className="flex items-center gap-1.5">
- <button onClick={() => setSelectedOrder(null)} className="md:hidden p-2 -ml-2 text-zinc-500 hover:text-zinc-900 transition-colors">
+ <button onClick={() => setSelectedOrder(null)} className="md:hidden p-2 -ml-2 text-muted-foreground hover:text-foreground transition-colors">
  <ChevronLeft className="w-5 h-5" />
  </button>
  <div>
- <h2 className="font-bold text-zinc-800 text-[13px]">Order Details</h2>
- <div className="text-[10px] text-zinc-500 font-mono">ID: {selectedOrder.id.split('-')[0]}...</div>
+ <h2 className="font-bold text-foreground text-[13px]">Order Details</h2>
+ <div className="text-[10px] text-muted-foreground font-mono">ID: {selectedOrder.id.split('-')[0]}...</div>
  </div>
  </div>
  <select 
  value={selectedOrder.status}
  onChange={(e) => updateStatus(e.target.value)}
  disabled={statusUpdating}
- className="bg-background border border-surface-hover rounded-lg px-1.5 py-1.5 text-[13px] font-medium focus:border-primary focus:outline-none"
+ className="bg-background border border-border rounded-lg px-1.5 py-1.5 text-[13px] font-medium focus:border-primary focus:outline-none text-foreground"
  >
  <option value="pending">Pending</option>
  <option value="confirmed">Confirmed</option>
@@ -259,50 +259,50 @@ export default function OrdersPage() {
  </select>
  </div>
  
- <div className="flex-1 overflow-y-auto custom-scrollbar p-1.5 md:p-2 bg-zinc-50/30 ">
+ <div className="flex-1 overflow-y-auto custom-scrollbar p-1.5 md:p-2 bg-muted/5 ">
  <div className="max-w-3xl mx-auto space-y-3">
  
- <div className="bg-surface border border-primary/10 shadow-xl shadow-primary/5 hover:border-primary/20 hover:shadow-primary/10 transition-all rounded-2xl p-1.5 shadow-sm">
+ <div className="bg-surface border border-border shadow-md rounded-2xl p-1.5">
  <div className="flex items-start justify-between">
  <div>
- <h3 className="text-[13px] font-bold text-zinc-500 uppercase tracking-wider mb-1">Customer Info</h3>
- <div className="text-xl font-bold text-zinc-900 ">{selectedOrder.contact?.name || 'Unknown'}</div>
- <div className="text-[13px] text-zinc-500 mt-1">Platform: <span className="capitalize font-medium text-zinc-700 ">{selectedOrder.contact?.channel}</span></div>
+ <h3 className="text-[13px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Customer Info</h3>
+ <div className="text-xl font-bold text-foreground">{selectedOrder.contact?.name || 'Unknown'}</div>
+ <div className="text-[13px] text-muted-foreground mt-1">Platform: <span className="capitalize font-medium text-foreground">{selectedOrder.contact?.channel}</span></div>
  </div>
  <div className="text-right">
  {getStatusBadge(selectedOrder.status)}
- <div className="text-[11px] text-zinc-500 mt-2">Placed on {format(new Date(selectedOrder.createdAt), 'MMM dd, yyyy')}</div>
+ <div className="text-[11px] text-muted-foreground mt-2">Placed on {format(new Date(selectedOrder.createdAt), 'MMM dd, yyyy')}</div>
  </div>
  </div>
  </div>
 
- <div className="bg-surface border border-primary/10 shadow-xl shadow-primary/5 hover:border-primary/20 hover:shadow-primary/10 transition-all rounded-2xl overflow-hidden shadow-sm">
- <div className="p-1.5 border-b border-surface-hover bg-zinc-50/50 ">
- <h3 className="text-[13px] font-bold text-zinc-500 uppercase tracking-wider">Ordered Items</h3>
+ <div className="bg-surface border border-border shadow-md rounded-2xl overflow-hidden">
+ <div className="p-1.5 border-b border-border bg-muted/10">
+ <h3 className="text-[13px] font-bold text-muted-foreground uppercase tracking-wider">Ordered Items</h3>
  </div>
- <div className="divide-y divide-surface-hover">
+ <div className="divide-y divide-border">
  {selectedOrder.items?.map((item: any) => (
- <div key={item.id} className="p-1.5 flex items-center gap-2 hover:bg-zinc-50/50 transition-colors">
- <div className="w-16 h-16 bg-zinc-100 rounded-lg shrink-0 overflow-hidden border border-surface-hover">
- {item.product?.imageUrl ? <img src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}${item.product.imageUrl}`} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><Package className="w-6 h-6 text-zinc-300" /></div>}
+ <div key={item.id} className="p-1.5 flex items-center gap-2 hover:bg-muted/10 transition-colors">
+ <div className="w-16 h-16 bg-muted rounded-lg shrink-0 overflow-hidden border border-border">
+ {item.product?.imageUrl ? <img src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}${item.product.imageUrl}`} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><Package className="w-6 h-6 text-muted-foreground" /></div>}
  </div>
  <div className="flex-1">
- <div className="font-bold text-zinc-900 ">{item.product?.name || 'Unknown Product'}</div>
- {item.product?.sku && <div className="text-[11px] text-zinc-500">SKU: {item.product.sku}</div>}
+ <div className="font-bold text-foreground">{item.product?.name || 'Unknown Product'}</div>
+ {item.product?.sku && <div className="text-[11px] text-muted-foreground">SKU: {item.product.sku}</div>}
  <div className="mt-2 flex items-center justify-between">
- <div className="text-[13px] font-medium">{selectedOrder.currency || 'BDT'} {parseFloat(item.priceAtTime).toLocaleString()} <span className="text-zinc-400 font-normal">x {item.quantity}</span></div>
+ <div className="text-[13px] font-medium text-foreground">{selectedOrder.currency || 'BDT'} {parseFloat(item.priceAtTime).toLocaleString()} <span className="text-muted-foreground font-normal">x {item.quantity}</span></div>
  <div className="font-bold text-primary">{selectedOrder.currency || 'BDT'} {(parseFloat(item.priceAtTime) * item.quantity).toLocaleString()}</div>
  </div>
  </div>
  </div>
  ))}
  </div>
- <div className="p-1.5 md:p-1.5 bg-zinc-50/50 border-t border-surface-hover">
- <div className="flex items-center justify-between mb-2 text-[13px] text-zinc-500">
+ <div className="p-1.5 md:p-1.5 bg-muted/5 border-t border-border">
+ <div className="flex items-center justify-between mb-2 text-[13px] text-muted-foreground">
  <span>Subtotal</span>
  <span>{selectedOrder.currency || 'BDT'} {parseFloat(selectedOrder.totalAmount).toLocaleString()}</span>
  </div>
- <div className="flex items-center justify-between text-[13px] font-bold text-zinc-900 mt-4 pt-4 border-t border-surface-hover border-dashed">
+ <div className="flex items-center justify-between text-[13px] font-bold text-foreground mt-4 pt-4 border-t border-border border-dashed">
  <span>Total Amount</span>
  <span className="text-primary">{selectedOrder.currency || 'BDT'} {parseFloat(selectedOrder.totalAmount).toLocaleString()}</span>
  </div>
@@ -310,9 +310,9 @@ export default function OrdersPage() {
  </div>
 
  {selectedOrder.notes && (
- <div className="bg-surface border border-primary/10 shadow-xl shadow-primary/5 hover:border-primary/20 hover:shadow-primary/10 transition-all rounded-2xl p-1.5 shadow-sm">
- <h3 className="text-[13px] font-bold text-zinc-500 uppercase tracking-wider mb-2">Order Notes</h3>
- <p className="text-[13px] text-zinc-700 whitespace-pre-wrap">{selectedOrder.notes}</p>
+ <div className="bg-surface border border-border shadow-md rounded-2xl p-1.5">
+ <h3 className="text-[13px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Order Notes</h3>
+ <p className="text-[13px] text-foreground whitespace-pre-wrap">{selectedOrder.notes}</p>
  </div>
  )}
  </div>
@@ -325,21 +325,21 @@ export default function OrdersPage() {
  {isCreatingOrder && (
  <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-1.5">
  <div className="bg-surface border border-primary/10 shadow-xl shadow-primary/5 hover:border-primary/20 hover:shadow-primary/10 transition-all rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh]">
- <div className="px-1.5 py-2.5 border-b border-surface-hover flex justify-between items-center bg-background rounded-t-2xl">
- <h2 className="text-xl font-bold text-zinc-900 flex items-center">
+ <div className="px-1.5 py-2.5 border-b border-border flex justify-between items-center bg-background rounded-t-2xl">
+ <h2 className="text-xl font-bold text-foreground flex items-center">
  <ShoppingBag className="w-5 h-5 mr-2 text-primary" /> Create New Order
  </h2>
- <button onClick={() => setIsCreatingOrder(false)} className="text-zinc-500 hover:text-zinc-900 :text-white"><X className="w-5 h-5" /></button>
+ <button onClick={() => setIsCreatingOrder(false)} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
  </div>
  
  <form onSubmit={handleCreateOrder} className="flex-1 overflow-y-auto p-2 space-y-3">
  <div>
- <label className="block text-[13px] font-semibold text-zinc-700 mb-2">Customer (Lead)</label>
+ <label className="block text-[13px] font-semibold text-foreground/80 mb-2">Customer (Lead)</label>
  <select 
  required
  value={selectedContactId}
  onChange={(e) => setSelectedContactId(e.target.value)}
- className="w-full bg-background border border-surface-hover rounded-lg px-1.5 py-2.5 text-[13px] focus:ring-2 focus:ring-primary focus:outline-none"
+ className="w-full bg-background border border-border rounded-lg px-1.5 py-2.5 text-[13px] focus:ring-2 focus:ring-primary focus:outline-none text-foreground"
  >
  <option value="">Select a customer...</option>
  {contacts.map(c => <option key={c.id} value={c.id}>{c.name || c.externalContactId}</option>)}
@@ -348,20 +348,20 @@ export default function OrdersPage() {
 
  <div>
  <div className="flex justify-between items-center mb-2">
- <label className="block text-[13px] font-semibold text-zinc-700 ">Order Items</label>
+ <label className="block text-[13px] font-semibold text-foreground/80">Order Items</label>
  <button type="button" onClick={handleAddOrderItem} className="text-primary text-[13px] font-semibold hover:underline flex items-center">
  <Plus className="w-3.5 h-3.5 mr-1" /> Add Product
  </button>
  </div>
  
- <div className="space-y-3 bg-zinc-50 p-1.5 rounded-xl border border-surface-hover">
+ <div className="space-y-3 bg-muted/30 p-1.5 rounded-xl border border-border">
  {orderItems.map((item, index) => (
- <div key={index} className="flex items-center gap-1.5 bg-background p-1.5 rounded-lg border border-surface-hover shadow-sm">
+ <div key={index} className="flex items-center gap-1.5 bg-background p-1.5 rounded-lg border border-border shadow-sm">
  <select
  required
  value={item.productId}
  onChange={(e) => handleUpdateOrderItem(index, 'productId', e.target.value)}
- className="flex-1 bg-surface border border-surface-hover rounded-md px-1.5 py-2 text-[13px] focus:ring-2 focus:ring-primary focus:outline-none"
+ className="flex-1 bg-surface border border-border rounded-md px-1.5 py-2 text-[13px] focus:ring-2 focus:ring-primary focus:outline-none text-foreground"
  >
  <option value="">Select Product...</option>
  {products.map(p => <option key={p.id} value={p.id}>{p.name} (BDT {p.price})</option>)}
@@ -373,38 +373,38 @@ export default function OrdersPage() {
  required min="1"
  value={item.quantity}
  onChange={(e) => handleUpdateOrderItem(index, 'quantity', parseInt(e.target.value) || 1)}
- className="w-full bg-surface border border-surface-hover rounded-md px-1.5 py-2 text-[13px] focus:ring-2 focus:ring-primary focus:outline-none"
+ className="w-full bg-surface border border-border rounded-md px-1.5 py-2 text-[13px] focus:ring-2 focus:ring-primary focus:outline-none text-foreground"
  placeholder="Qty"
  />
  </div>
  
- <button type="button" onClick={() => handleRemoveOrderItem(index)} className="p-2 text-red-500 hover:bg-red-50 :bg-red-900/20 rounded-md">
+ <button type="button" onClick={() => handleRemoveOrderItem(index)} className="p-2 text-red-500 hover:bg-red-500/10 rounded-md">
  <Trash2 className="w-3.5 h-3.5" />
  </button>
  </div>
  ))}
- {orderItems.length === 0 && <p className="text-center text-[13px] text-zinc-500 py-2.5">No products added. Click 'Add Product'.</p>}
+ {orderItems.length === 0 && <p className="text-center text-[13px] text-muted-foreground py-2.5">No products added. Click 'Add Product'.</p>}
  </div>
  
  <div className="mt-4 text-right">
- <span className="text-[13px] font-semibold text-zinc-500 mr-4">Total Amount:</span>
+ <span className="text-[13px] font-semibold text-muted-foreground mr-4">Total Amount:</span>
  <span className="text-xl font-bold text-primary">BDT {calculateTotal().toLocaleString()}</span>
  </div>
  </div>
 
  <div>
- <label className="block text-[13px] font-semibold text-zinc-700 mb-2">Order Notes (Optional)</label>
+ <label className="block text-[13px] font-semibold text-foreground/80 mb-2">Order Notes (Optional)</label>
  <textarea 
  value={orderNotes}
  onChange={(e) => setOrderNotes(e.target.value)}
- className="w-full bg-background border border-surface-hover rounded-lg px-1.5 py-1 text-[13px] focus:ring-2 focus:ring-primary focus:outline-none min-h-[100px]"
+ className="w-full bg-background border border-border rounded-lg px-1.5 py-1 text-[13px] focus:ring-2 focus:ring-primary focus:outline-none min-h-[100px] text-foreground"
  placeholder="Any special instructions or notes..."
  />
  </div>
  </form>
  
- <div className="px-1.5 py-2.5 border-t border-surface-hover bg-background rounded-b-2xl flex justify-end gap-1.5">
- <button onClick={() => setIsCreatingOrder(false)} className="px-1.5 py-2 text-[13px] font-semibold text-zinc-600 hover:text-zinc-900">Cancel</button>
+ <div className="px-1.5 py-2.5 border-t border-border bg-background rounded-b-2xl flex justify-end gap-1.5">
+ <button onClick={() => setIsCreatingOrder(false)} className="px-1.5 py-2 text-[13px] font-semibold text-muted-foreground hover:text-foreground">Cancel</button>
  <button 
  onClick={handleCreateOrder} 
  disabled={isSubmitting || orderItems.length === 0 || !selectedContactId}

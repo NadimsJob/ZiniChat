@@ -157,16 +157,16 @@ export default function InboxesPage() {
   };
 
   return (
-    <div className="min-h-full bg-slate-50/50 p-2 sm:p-4 md:p-8">
+    <div className="min-h-full bg-background p-2 sm:p-4 md:p-8 text-foreground">
       <div className="max-w-5xl mx-auto space-y-4">
         
         {/* Header Section */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-card p-4 rounded-2xl border border-border shadow-sm">
           <div>
-            <h1 className="text-xl font-bold text-slate-900 mb-0.5">
+            <h1 className="text-xl font-bold text-foreground mb-0.5 font-sans">
               {language === 'en' ? 'Connected Inboxes' : 'সংযুক্ত ইনবক্সসমূহ'}
             </h1>
-            <p className="text-xs text-slate-500 max-w-2xl">
+            <p className="text-xs text-muted-foreground max-w-2xl font-sans">
               {language === 'en' 
                 ? 'Manage active channels (WhatsApp, Messenger, Instagram, Website Widgets) and check connection health.' 
                 : 'আপনার হোয়াটসঅ্যাপ, মেসেঞ্জার বা ওয়েবসাইট উইজেট চ্যানেলের কানেকশন স্ট্যাটাস এবং AI রিপ্লাই সেটিংস ম্যানেজ করুন।'}
@@ -175,7 +175,7 @@ export default function InboxesPage() {
           
           <Link 
             href="/dashboard/settings/inboxes/new"
-            className="px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary/90 transition-all shadow-sm flex items-center justify-center gap-2 whitespace-nowrap shrink-0"
+            className="px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary/90 transition-all shadow-sm flex items-center justify-center gap-2 whitespace-nowrap shrink-0 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             {language === 'en' ? 'Add Inbox' : 'ইনবক্স যুক্ত করুন'}
@@ -191,28 +191,28 @@ export default function InboxesPage() {
         />
 
         {/* List Section */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-            <h2 className="text-xs font-bold text-slate-700">
+        <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+          <div className="p-3.5 border-b border-border flex items-center justify-between bg-muted/50">
+            <h2 className="text-xs font-bold text-muted-foreground">
               {connections.length} {connections.length === 1 ? 'inbox' : 'inboxes'}
             </h2>
-            <button onClick={fetchConnections} className="p-1.5 text-slate-400 hover:text-primary transition-colors" title="Refresh Inbox Status">
+            <button onClick={fetchConnections} className="p-1.5 text-muted-foreground hover:text-primary transition-colors cursor-pointer" title="Refresh Inbox Status">
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             </button>
           </div>
 
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-border/50">
             {loading ? (
               <div className="p-12 flex justify-center">
                 <RefreshCw className="w-6 h-6 animate-spin text-primary" />
               </div>
             ) : connections.length === 0 ? (
-              <div className="p-12 text-center text-slate-500">
-                <Webhook className="w-12 h-12 mx-auto mb-4 opacity-20 text-slate-400" />
-                <p className="text-sm font-medium text-slate-600 mb-1">
+              <div className="p-12 text-center text-muted-foreground">
+                <Webhook className="w-12 h-12 mx-auto mb-4 opacity-20 text-muted-foreground" />
+                <p className="text-sm font-medium text-foreground mb-1">
                   {language === 'en' ? 'No inboxes found' : 'কোনো ইনবক্স পাওয়া যায়নি'}
                 </p>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-muted-foreground">
                   {language === 'en' ? 'Click "Add Inbox" to connect a channel.' : 'চ্যানেল কানেক্ট করতে "ইনবক্স যুক্ত করুন" এ ক্লিক করুন।'}
                 </p>
               </div>
@@ -221,34 +221,34 @@ export default function InboxesPage() {
                 const isActive = conn.isConnected === true || conn.status === 'active' || conn.qrStatus === 'CONNECTED';
                 
                 return (
-                  <div key={conn.id} className="p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/70 transition-colors group">
+                  <div key={conn.id} className="p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-muted/30 transition-colors group">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center shrink-0 border border-slate-200">
+                      <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center shrink-0 border border-border">
                         {getChannelIcon(conn.channelType)}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h3 className="font-bold text-slate-900 flex items-center gap-2 text-xs truncate">
+                        <h3 className="font-bold text-foreground flex items-center gap-2 text-xs truncate">
                           <span className="truncate">{conn.displayName || conn.phoneNumber || getChannelName(conn.channelType)}</span>
                           <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold inline-flex items-center gap-1 shrink-0 ${
                             isActive
-                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-300/80' 
-                              : 'bg-red-100 text-red-800 border border-red-300/80'
+                              ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' 
+                              : 'bg-red-500/10 text-red-500 border border-red-500/20'
                           }`}>
                             <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
                             {isActive ? (language === 'en' ? 'Active 🟢' : 'সক্রিয় 🟢') : (language === 'en' ? 'Disconnected 🔴' : 'ডিসকানেক্টেড 🔴')}
                           </span>
                         </h3>
-                        <p className="text-[11px] text-slate-500 mt-0.5 truncate">
+                        <p className="text-[11px] text-muted-foreground mt-0.5 truncate font-sans">
                           {getChannelName(conn.channelType)} {conn.provider ? `(${conn.provider})` : ''}
                         </p>
                       </div>
                     </div>
                     
-                    <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                    <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-border">
                       {!isActive && (
                         <Link
                           href="/dashboard/settings/inboxes/new"
-                          className="px-2.5 py-1 bg-amber-500/15 text-amber-700 hover:bg-amber-500/20 border border-amber-400/40 rounded-lg text-[11px] font-bold flex items-center gap-1 transition-all shrink-0"
+                          className="px-2.5 py-1 bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border border-amber-500/20 rounded-lg text-[11px] font-bold flex items-center gap-1 transition-all shrink-0 cursor-pointer font-sans"
                         >
                           <RotateCcw className="w-3 h-3" />
                           <span>{language === 'en' ? 'Reconnect / Scan QR' : 'পুনরায় কানেক্ট করুন'}</span>
@@ -259,7 +259,7 @@ export default function InboxesPage() {
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => setCodeModalWidget(conn)}
-                            className="px-2.5 py-1 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition-all shrink-0 cursor-pointer shadow-2xs"
+                            className="px-2.5 py-1 bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 border border-indigo-500/20 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition-all shrink-0 cursor-pointer shadow-2xs font-sans"
                             title="Customize Widget & View Code"
                           >
                             <Code className="w-3.5 h-3.5" />
@@ -267,7 +267,7 @@ export default function InboxesPage() {
                           </button>
                           <button
                             onClick={() => handleTestPing(conn.id)}
-                            className="px-2.5 py-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 rounded-lg text-[11px] font-bold flex items-center gap-1 transition-all shrink-0 cursor-pointer"
+                            className="px-2.5 py-1 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20 rounded-lg text-[11px] font-bold flex items-center gap-1 transition-all shrink-0 cursor-pointer font-sans"
                             title="Test Connection Ping"
                           >
                             <Zap className="w-3.5 h-3.5" />
@@ -277,12 +277,12 @@ export default function InboxesPage() {
                       )}
 
                       <div className="flex items-center gap-2 mr-2">
-                        <span className="text-[11px] text-slate-600 font-semibold">AI Auto-Reply</span>
+                        <span className="text-[11px] text-muted-foreground font-semibold font-sans">AI Auto-Reply</span>
                         <button
                           type="button"
                           onClick={() => handleToggleAiReply(conn.id, !!conn.isAiAutoReplyEnabled)}
-                          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${
-                            conn.isAiAutoReplyEnabled ? 'bg-primary' : 'bg-slate-300'
+                          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none cursor-pointer ${
+                            conn.isAiAutoReplyEnabled ? 'bg-primary' : 'bg-muted'
                           }`}
                         >
                           <span
@@ -295,14 +295,14 @@ export default function InboxesPage() {
 
                       {conn.channelType?.toLowerCase() === 'whatsapp' && (
                         <div className="flex items-center gap-2 mr-2">
-                          <span className="text-[11px] text-slate-600 font-semibold">
+                          <span className="text-[11px] text-muted-foreground font-semibold font-sans">
                             {language === 'en' ? 'Ignore Group Msgs' : 'গ্রুপ মেসেজ ইগনোর'}
                           </span>
                           <button
                             type="button"
                             onClick={() => handleToggleIgnoreGroups(conn.id, conn.ignoreGroupMessages ?? true)}
-                            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${
-                              (conn.ignoreGroupMessages ?? true) ? 'bg-emerald-600' : 'bg-slate-300'
+                            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none cursor-pointer ${
+                              (conn.ignoreGroupMessages ?? true) ? 'bg-emerald-600' : 'bg-muted'
                             }`}
                             title={language === 'en' ? 'Ignore WhatsApp Group Messages' : 'হোয়াটসঅ্যাপ গ্রুপ মেসেজ ইগনোর করুন'}
                           >
@@ -317,7 +317,7 @@ export default function InboxesPage() {
 
                       <button 
                         onClick={() => handleDelete(conn.id)}
-                        className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors shrink-0"
+                        className="p-1.5 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors shrink-0 cursor-pointer"
                         title="Delete Inbox"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -418,24 +418,24 @@ function WidgetConfigModal({ widget, onClose, onRefresh, language, API }: any) {
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto" onClick={onClose}>
-      <div className="bg-white rounded-2xl max-w-4xl w-full p-4 sm:p-6 space-y-6 shadow-2xl border border-slate-200 my-auto max-h-[92vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+      <div className="bg-card rounded-2xl max-w-4xl w-full p-4 sm:p-6 space-y-6 shadow-2xl border border-border my-auto max-h-[92vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         
         {/* Modal Header */}
-        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+        <div className="flex items-center justify-between border-b border-border pb-4">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold shadow-sm transition-colors" style={{ backgroundColor: primaryColor }}>
               <Globe className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-slate-900 text-base">
-                {name} <span className="text-xs text-slate-400 font-medium">({widget.type || 'LIVE_CHAT'})</span>
+              <h3 className="font-bold text-foreground text-base">
+                {name} <span className="text-xs text-muted-foreground font-medium">({widget.type || 'LIVE_CHAT'})</span>
               </h3>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-muted-foreground">
                 {language === 'en' ? 'Customize colors, headers, and embed code for your website' : 'আপনার ওয়েবসাইটের লাইভ চ্যাট কালার, হেডিং ও স্ক্রিপ্ট সেটিংস কাস্টমাইজ করুন'}
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100">
+          <button onClick={onClose} className="p-1 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -447,15 +447,15 @@ function WidgetConfigModal({ widget, onClose, onRefresh, language, API }: any) {
           <div className="lg:col-span-7 space-y-4">
             
             {/* Color & Theme Settings Card */}
-            <div className="bg-slate-50 border border-slate-200/80 p-4 rounded-xl space-y-3">
-              <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+            <div className="bg-muted/30 border border-border p-4 rounded-xl space-y-3">
+              <h4 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                 {language === 'en' ? 'Widget Design & Color' : 'উইজেটের থিম ও কালার'}
               </h4>
 
               {/* Primary Color Selector */}
               <div>
-                <label className="text-[11px] font-semibold text-slate-600 mb-1.5 block">
+                <label className="text-[11px] font-semibold text-muted-foreground mb-1.5 block">
                   {language === 'en' ? 'Primary Theme Color' : 'প্রধান ব্র্যান্ড কালার'}
                 </label>
                 <div className="flex items-center gap-2 flex-wrap">
@@ -466,18 +466,18 @@ function WidgetConfigModal({ widget, onClose, onRefresh, language, API }: any) {
                       onClick={() => setPrimaryColor(color)}
                       style={{ backgroundColor: color }}
                       className={`w-7 h-7 rounded-full border-2 transition-all cursor-pointer ${
-                        primaryColor === color ? 'border-slate-900 scale-110 shadow-sm' : 'border-transparent opacity-80 hover:opacity-100'
+                        primaryColor === color ? 'border-foreground scale-110 shadow-sm' : 'border-transparent opacity-80 hover:opacity-100'
                       }`}
                     />
                   ))}
-                  <div className="flex items-center gap-1.5 ml-2 border border-slate-300 rounded-lg px-2 py-1 bg-white">
+                  <div className="flex items-center gap-1.5 ml-2 border border-border rounded-lg px-2 py-1 bg-background">
                     <input
                       type="color"
                       value={primaryColor}
                       onChange={e => setPrimaryColor(e.target.value)}
                       className="w-5 h-5 rounded cursor-pointer border-0 bg-transparent"
                     />
-                    <span className="text-[11px] font-mono text-slate-700 uppercase">{primaryColor}</span>
+                    <span className="text-[11px] font-mono text-foreground uppercase">{primaryColor}</span>
                   </div>
                 </div>
               </div>
@@ -485,45 +485,45 @@ function WidgetConfigModal({ widget, onClose, onRefresh, language, API }: any) {
               {/* Name & Heading inputs */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                 <div>
-                  <label className="text-[11px] font-semibold text-slate-600 mb-1 block">
+                  <label className="text-[11px] font-semibold text-muted-foreground mb-1 block">
                     {language === 'en' ? 'Widget Name' : 'উইজেটের নাম'}
                   </label>
                   <input
                     type="text"
                     value={name}
                     onChange={e => setName(e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-primary"
+                    className="w-full bg-background border border-border rounded-lg px-3 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary"
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] font-semibold text-slate-600 mb-1 block">
+                  <label className="text-[11px] font-semibold text-muted-foreground mb-1 block">
                     {language === 'en' ? 'Header Title' : 'হেডিং শিরোনাম'}
                   </label>
                   <input
                     type="text"
                     value={heading}
                     onChange={e => setHeading(e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-primary"
+                    className="w-full bg-background border border-border rounded-lg px-3 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary"
                   />
                 </div>
               </div>
 
               {/* Tagline input */}
               <div>
-                <label className="text-[11px] font-semibold text-slate-600 mb-1 block">
+                <label className="text-[11px] font-semibold text-muted-foreground mb-1 block">
                   {language === 'en' ? 'Subheading / Tagline' : 'ট্যাগলাইন বিবরণ'}
                 </label>
                 <input
                   type="text"
                   value={tagline}
                   onChange={e => setTagline(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-primary"
+                  className="w-full bg-background border border-border rounded-lg px-3 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary"
                 />
               </div>
 
               {/* Greeting Toggle & Save Button */}
-              <div className="flex items-center justify-between pt-2 border-t border-slate-200/60">
-                <label className="flex items-center gap-2 cursor-pointer select-none text-xs font-semibold text-slate-700">
+              <div className="flex items-center justify-between pt-2 border-t border-border">
+                <label className="flex items-center gap-2 cursor-pointer select-none text-xs font-semibold text-foreground">
                   <input
                     type="checkbox"
                     checked={greetingEnabled}

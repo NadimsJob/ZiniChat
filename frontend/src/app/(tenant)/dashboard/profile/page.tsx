@@ -318,7 +318,7 @@ export default function TenantProfilePage() {
 
  {/* Page Header */}
  <div>
- <h1 className="text-2xl font-bold tracking-tight text-slate-900 ">
+ <h1 className="text-2xl font-bold tracking-tight text-foreground ">
  {t('My Profile', 'আমার প্রোফাইল')}
  </h1>
  <p className="text-slate-500 text-[13px] mt-1">
@@ -341,7 +341,7 @@ export default function TenantProfilePage() {
  )}
 
  {/* Profile Card */}
- <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+ <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
  
  {/* Banner Gradient */}
  <div className="h-28 bg-gradient-to-r from-primary via-primary/80 to-secondary relative">
@@ -393,7 +393,7 @@ export default function TenantProfilePage() {
  type="text"
  value={nameValue}
  onChange={(e) => setNameValue(e.target.value)}
- className="text-xl font-bold bg-slate-50 border border-slate-200 rounded-lg px-1.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary/50 text-slate-900 "
+ className="text-xl font-bold bg-muted/30 border border-border rounded-lg px-1.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground "
  autoFocus
  />
  <button
@@ -412,7 +412,7 @@ export default function TenantProfilePage() {
  </div>
  ) : (
  <div className="flex items-center gap-2">
- <h2 className="text-xl font-bold text-slate-900 ">{profile.name}</h2>
+ <h2 className="text-xl font-bold text-foreground ">{profile.name}</h2>
  <button
  onClick={() => setEditingName(true)}
  className="text-[11px] font-medium text-primary hover:text-primary/80 transition-colors"
@@ -439,13 +439,13 @@ export default function TenantProfilePage() {
  </div>
 
  {/* Change Password Section */}
- <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-1.5">
+ <div className="bg-card rounded-2xl border border-border shadow-sm p-1.5">
  <div className="flex items-center gap-1.5 mb-6">
  <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
  <Lock className="w-5 h-5" />
  </div>
  <div>
- <h3 className="font-bold text-slate-900 text-[13px]">
+ <h3 className="font-bold text-foreground text-[13px]">
  {t('Change Password', 'পাসওয়ার্ড পরিবর্তন')}
  </h3>
  <p className="text-[11px] text-slate-500 ">
@@ -467,7 +467,7 @@ export default function TenantProfilePage() {
  onChange={(e) => setCurrentPassword(e.target.value)}
  required
  placeholder={t('Enter current password', 'বর্তমান পাসওয়ার্ড লিখুন')}
- className="w-full bg-slate-50 border border-slate-200 rounded-xl px-1.5 py-1 pr-12 text-[13px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-slate-900 placeholder:text-slate-400 :text-zinc-500"
+ className="w-full bg-muted/30 border border-border rounded-xl px-1.5 py-1 pr-12 text-[13px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-foreground placeholder:text-slate-400 :text-zinc-500"
  />
  <button
  type="button"
@@ -493,7 +493,7 @@ export default function TenantProfilePage() {
  onChange={(e) => setNewPassword(e.target.value)}
  required
  placeholder={t('Enter new password', 'নতুন পাসওয়ার্ড লিখুন')}
- className="w-full bg-slate-50 border border-slate-200 rounded-xl px-1.5 py-1 pr-12 text-[13px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-slate-900 placeholder:text-slate-400 :text-zinc-500"
+ className="w-full bg-muted/30 border border-border rounded-xl px-1.5 py-1 pr-12 text-[13px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-foreground placeholder:text-slate-400 :text-zinc-500"
  />
  <button
  type="button"
@@ -515,7 +515,7 @@ export default function TenantProfilePage() {
  onChange={(e) => setConfirmPassword(e.target.value)}
  required
  placeholder={t('Confirm new password', 'নতুন পাসওয়ার্ড নিশ্চিত করুন')}
- className="w-full bg-slate-50 border border-slate-200 rounded-xl px-1.5 py-1 pr-12 text-[13px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-slate-900 placeholder:text-slate-400 :text-zinc-500"
+ className="w-full bg-muted/30 border border-border rounded-xl px-1.5 py-1 pr-12 text-[13px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-foreground placeholder:text-slate-400 :text-zinc-500"
  />
  <button
  type="button"
@@ -572,13 +572,13 @@ export default function TenantProfilePage() {
  </div>
 
  {/* Business Profile Section */}
- <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
+ <div className="bg-card rounded-2xl border border-border shadow-sm p-4">
  <div className="flex items-center gap-1.5 mb-6">
  <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
  <Building className="w-5 h-5" />
  </div>
  <div>
- <h3 className="font-bold text-slate-900 text-[13px]">
+ <h3 className="font-bold text-foreground text-[13px]">
  {t('Business Profile', 'বিজনেস প্রোফাইল')}
  </h3>
  <p className="text-[11px] text-slate-500 ">
@@ -589,17 +589,17 @@ export default function TenantProfilePage() {
 
  <form onSubmit={handleSaveBusiness} className="space-y-4">
     {/* Business Logo Upload */}
-    <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl space-y-2">
-      <label className="block text-[12px] font-bold text-slate-800">
+    <div className="p-3.5 bg-muted/30 border border-border/80 rounded-xl space-y-2">
+      <label className="block text-[12px] font-bold text-foreground">
         {t('Business Logo (Displayed on Landing Page Marquee)', 'ব্যবসার লোগো (ল্যান্ডিং পেজ স্লাইডারে প্রদর্শন হবে)')}
       </label>
       <div className="flex flex-col sm:flex-row items-center gap-3">
         {logoPreview || businessProfile.logoUrl ? (
-          <div className="w-16 h-16 rounded-xl border border-slate-300 bg-white p-1 shadow-sm shrink-0 flex items-center justify-center overflow-hidden">
+          <div className="w-16 h-16 rounded-xl border border-slate-300 bg-card p-1 shadow-sm shrink-0 flex items-center justify-center overflow-hidden">
             <img src={logoPreview || (businessProfile.logoUrl.startsWith('http') ? businessProfile.logoUrl : `${API}${businessProfile.logoUrl}`)} alt="Business Logo" className="w-full h-full object-contain" />
           </div>
         ) : (
-          <div className="w-16 h-16 rounded-xl border border-dashed border-slate-300 bg-white flex items-center justify-center text-slate-400 text-[10px] font-bold shrink-0">
+          <div className="w-16 h-16 rounded-xl border border-dashed border-slate-300 bg-card flex items-center justify-center text-slate-400 text-[10px] font-bold shrink-0">
             No Logo
           </div>
         )}
@@ -627,7 +627,7 @@ export default function TenantProfilePage() {
             value={businessProfile.logoUrl}
             onChange={(e) => setBusinessProfile({ ...businessProfile, logoUrl: e.target.value })}
             placeholder="https://example.com/logo.png or uploaded path"
-            className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-primary"
+            className="w-full bg-card border border-border rounded-lg px-3 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary"
           />
         </div>
       </div>
@@ -648,7 +648,7 @@ export default function TenantProfilePage() {
  value={businessProfile.businessName}
  readOnly
  disabled
- className="w-full bg-slate-100 border border-slate-200 rounded-xl pl-8 pr-3 py-1.5 text-[13px] text-slate-500 cursor-not-allowed focus:outline-none"
+ className="w-full bg-slate-100 border border-border rounded-xl pl-8 pr-3 py-1.5 text-[13px] text-slate-500 cursor-not-allowed focus:outline-none"
  title={language === 'en' ? 'Contact support to change business name' : 'ব্যবসার নাম পরিবর্তন করতে সাপোর্টে যোগাযোগ করুন'}
  />
  </div>
@@ -668,7 +668,7 @@ export default function TenantProfilePage() {
  value={businessProfile.brandName}
  readOnly
  disabled
- className="w-full bg-slate-100 border border-slate-200 rounded-xl pl-8 pr-3 py-1.5 text-[13px] text-slate-500 cursor-not-allowed focus:outline-none"
+ className="w-full bg-slate-100 border border-border rounded-xl pl-8 pr-3 py-1.5 text-[13px] text-slate-500 cursor-not-allowed focus:outline-none"
  title={language === 'en' ? 'Contact support to change brand name' : 'ব্র্যান্ডের নাম পরিবর্তন করতে সাপোর্টে যোগাযোগ করুন'}
  />
  </div>
@@ -687,7 +687,7 @@ export default function TenantProfilePage() {
  type="tel"
  value={businessProfile.phoneNo}
  onChange={e => setBusinessProfile({ ...businessProfile, phoneNo: e.target.value })}
- className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-1.5 text-[13px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 text-slate-900 "
+ className="w-full bg-muted/30 border border-border rounded-xl pl-8 pr-3 py-1.5 text-[13px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 text-foreground "
  />
  </div>
  </div>
@@ -704,7 +704,7 @@ export default function TenantProfilePage() {
  <select
  value={businessProfile.employeeCount}
  onChange={e => setBusinessProfile({ ...businessProfile, employeeCount: e.target.value })}
- className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-1.5 text-[13px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 text-slate-900 appearance-none"
+ className="w-full bg-muted/30 border border-border rounded-xl pl-8 pr-3 py-1.5 text-[13px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 text-foreground appearance-none"
  >
  <option value="1-10">1 - 10</option>
  <option value="11-50">11 - 50</option>
@@ -726,7 +726,7 @@ export default function TenantProfilePage() {
  <select
  value={businessProfile.businessNature}
  onChange={e => setBusinessProfile({ ...businessProfile, businessNature: e.target.value })}
- className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-1.5 text-[13px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 text-slate-900 appearance-none"
+ className="w-full bg-muted/30 border border-border rounded-xl pl-8 pr-3 py-1.5 text-[13px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 text-foreground appearance-none"
  >
  <option value="" disabled>Select</option>
  {businessNatures.map((bn) => (
@@ -751,7 +751,7 @@ export default function TenantProfilePage() {
  rows={2}
  value={businessProfile.address}
  onChange={e => setBusinessProfile({ ...businessProfile, address: e.target.value })}
- className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-1.5 text-[13px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 text-slate-900 resize-none"
+ className="w-full bg-muted/30 border border-border rounded-xl pl-8 pr-3 py-1.5 text-[13px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 text-foreground resize-none"
  />
  </div>
  </div>

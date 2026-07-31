@@ -186,17 +186,17 @@ export default function ProductsPage() {
  };
 
  return (
- <div className="flex h-[calc(100vh-130px)] bg-white/70 backdrop-blur-xl border border-white/50 rounded-2xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] _8px_30px_rgb(0,0,0,0.2)] relative text-[13px]">
+ <div className="flex h-[calc(100vh-130px)] bg-surface/70 backdrop-blur-xl border border-border rounded-2xl overflow-hidden shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.2)] relative text-[13px]">
  
  {/* Left Pane: Product List */}
- <div className={`w-full ${isEditing ? 'hidden md:flex md:w-1/2 lg:w-[45%]' : 'flex'} flex-col border-r border-slate-200/60 bg-slate-50/50 shrink-0`}>
- <div className="p-1.5 border-b border-surface-hover shrink-0 flex items-center justify-between bg-background z-10">
+ <div className={`w-full ${isEditing ? 'hidden md:flex md:w-1/2 lg:w-[45%]' : 'flex'} flex-col border-r border-border bg-muted/20 shrink-0`}>
+ <div className="p-1.5 border-b border-border shrink-0 flex items-center justify-between bg-background z-10">
  <div>
- <h1 className="text-2xl font-bold text-zinc-900 flex items-center gap-2">
+ <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
  <ShoppingCart className="w-6 h-6 text-primary" />
  {language === 'en' ? 'Products' : 'প্রডাক্টস'}
  </h1>
- <p className="text-[11px] text-zinc-500 mt-1">
+ <p className="text-[11px] text-muted-foreground mt-1">
  {products.length} {language === 'en' ? 'items found' : 'টি প্রডাক্ট আছে'}
  </p>
  </div>
@@ -209,13 +209,13 @@ export default function ProductsPage() {
  </button>
  </div>
 
- <div className="flex-1 overflow-y-auto custom-scrollbar p-1.5 md:p-1.5 bg-zinc-50/50 ">
+ <div className="flex-1 overflow-y-auto custom-scrollbar p-1.5 md:p-1.5 bg-muted/10">
  {loading ? (
- <div className="flex justify-center p-6 text-zinc-400">
+ <div className="flex justify-center p-6 text-muted-foreground">
  <RefreshCw className="w-6 h-6 animate-spin" />
  </div>
  ) : products.length === 0 ? (
- <div className="text-center p-4 text-zinc-500 flex flex-col items-center">
+ <div className="text-center p-4 text-muted-foreground flex flex-col items-center">
  <ShoppingCart className="w-9 h-9 mb-3 opacity-20" />
  <p>{language === 'en' ? 'No products found. Add one to get started!' : 'কোনো প্রডাক্ট পাওয়া যায়নি।'}</p>
  </div>
@@ -225,37 +225,37 @@ export default function ProductsPage() {
  <div 
  key={product.id} 
  onClick={() => openEditor(product)}
- className={`bg-white border rounded-2xl overflow-hidden hover:shadow-md transition-all cursor-pointer group flex flex-col ${
- formData.id === product.id && isEditing ? 'border-primary ring-1 ring-primary/20' : 'border-surface-hover'
+ className={`bg-card border rounded-2xl overflow-hidden hover:shadow-md transition-all cursor-pointer group flex flex-col ${
+ formData.id === product.id && isEditing ? 'border-primary ring-1 ring-primary/20' : 'border-border'
  }`}
  >
- <div className="aspect-[4/3] bg-zinc-100 relative shrink-0">
+ <div className="aspect-[4/3] bg-muted relative shrink-0">
  {product.imageUrl ? (
  <img src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}${product.imageUrl}`} alt={product.name} className="w-full h-full object-cover" />
  ) : (
- <div className="w-full h-full flex flex-col items-center justify-center text-zinc-400">
+ <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground">
  <ImageIcon className="w-8 h-8 mb-1 opacity-50" />
  </div>
  )}
  <button 
  onClick={(e) => handleDelete(product.id, e)} 
- className="absolute top-2 right-2 p-1.5 bg-white/90 text-red-600 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-50 transition-all shadow-sm"
+ className="absolute top-2 right-2 p-1.5 bg-background/90 text-red-500 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-500/10 transition-all shadow-sm"
  >
  <Trash2 className="w-3.5 h-3.5" />
  </button>
  {!product.isActive && (
- <div className="absolute top-2 left-2 px-1.5 py-0.5 bg-zinc-900/80 text-white text-[9px] font-bold rounded backdrop-blur">
+ <div className="absolute top-2 left-2 px-1.5 py-0.5 bg-black/80 text-white text-[9px] font-bold rounded backdrop-blur">
  INACTIVE
  </div>
  )}
  </div>
  <div className="p-1.5 flex-1 flex flex-col">
- <h3 className="font-bold text-[13px] text-zinc-900 line-clamp-1 mb-1">{product.name}</h3>
+ <h3 className="font-bold text-[13px] text-foreground line-clamp-1 mb-1">{product.name}</h3>
  <div className="font-bold text-primary text-[13px] mb-2">
  {product.currency} {parseFloat(product.price).toLocaleString()}
  </div>
  {product.trackInventory && (
- <div className="mt-auto text-[10px] text-zinc-500 flex justify-between">
+ <div className="mt-auto text-[10px] text-muted-foreground flex justify-between">
  <span>Stock:</span>
  <span className={`font-bold ${product.stockCount > 0 ? 'text-emerald-600' : 'text-red-500'}`}>
  {product.stockCount}
@@ -274,11 +274,11 @@ export default function ProductsPage() {
  <div className={`w-full ${!isEditing ? 'hidden md:flex items-center justify-center' : 'flex'} flex-col bg-background relative md:w-1/2 lg:w-[55%] h-full`}>
  
  {!isEditing ? (
- <div className="text-center text-zinc-500 flex flex-col items-center p-4">
- <div className="w-16 h-16 bg-surface border border-surface-hover rounded-full flex items-center justify-center mb-3 shadow-sm">
- <ShoppingCart className="w-8 h-8 text-zinc-400" />
+ <div className="text-center text-muted-foreground flex flex-col items-center p-4">
+ <div className="w-16 h-16 bg-surface border border-border rounded-full flex items-center justify-center mb-3 shadow-sm">
+ <ShoppingCart className="w-8 h-8 text-muted-foreground/60" />
  </div>
- <h3 className="text-[13px] font-bold text-zinc-700 mb-2">
+ <h3 className="text-[13px] font-bold text-foreground mb-2">
  {language === 'en' ? 'Select a product' : 'একটি প্রডাক্ট সিলেক্ট করুন'}
  </h3>
  <p className="text-[13px] max-w-xs">
@@ -287,16 +287,16 @@ export default function ProductsPage() {
  </div>
  ) : (
  <>
- <div className="h-14 px-1.5 border-b border-surface-hover flex items-center justify-between bg-surface shrink-0 sticky top-0 z-10 shadow-sm">
+ <div className="h-14 px-1.5 border-b border-border flex items-center justify-between bg-surface shrink-0 sticky top-0 z-10 shadow-sm">
  <div className="flex items-center gap-2">
- <button onClick={() => setIsEditing(false)} className="md:hidden p-2 -ml-2 text-zinc-500 hover:text-zinc-900 :text-white transition-colors">
+ <button onClick={() => setIsEditing(false)} className="md:hidden p-2 -ml-2 text-muted-foreground hover:text-foreground transition-colors">
  <ChevronLeft className="w-5 h-5" />
  </button>
- <h2 className="font-bold text-zinc-800 ">
+ <h2 className="font-bold text-foreground">
  {formData.id ? (language === 'en' ? 'Edit Product' : 'প্রডাক্ট এডিট') : (language === 'en' ? 'Add Product' : 'নতুন প্রডাক্ট')}
  </h2>
  </div>
- <button onClick={() => setIsEditing(false)} className="p-1.5 hover:bg-surface-hover rounded-lg transition-colors text-zinc-500 hidden md:block">
+ <button onClick={() => setIsEditing(false)} className="p-1.5 hover:bg-muted rounded-lg transition-colors text-muted-foreground hidden md:block">
  <X className="w-3.5 h-3.5" />
  </button>
  </div>
@@ -305,23 +305,23 @@ export default function ProductsPage() {
  <form id="productForm" onSubmit={handleSubmit} className="space-y-3 max-w-2xl mx-auto">
  
  {/* Image Upload */}
- <div className="bg-surface p-1.5 border border-primary/10 shadow-xl shadow-primary/5 hover:border-primary/20 hover:shadow-primary/10 transition-all rounded-2xl">
- <label className="block text-[11px] font-bold text-zinc-500 uppercase tracking-wider mb-3">
- {language === 'en' ? 'Product Image' : 'প্রডাক্ট ছবি'}
+ <div className="bg-surface p-1.5 border border-border shadow-md rounded-2xl">
+ <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-3">
+ {language === 'en' ? 'Product Image' : 'প্রداشت ছবি'}
  </label>
  <div 
  onClick={() => fileInputRef.current?.click()}
- className="h-24 bg-background border-2 border-dashed border-surface-hover hover:border-primary/50 transition-colors rounded-xl flex flex-col items-center justify-center cursor-pointer relative overflow-hidden group"
+ className="h-24 bg-background border-2 border-dashed border-border hover:border-primary/50 transition-colors rounded-xl flex flex-col items-center justify-center cursor-pointer relative overflow-hidden group"
  >
  {imagePreview ? (
  <>
- <img src={imagePreview} alt="Preview" className="w-full h-full object-contain bg-zinc-900" />
+ <img src={imagePreview} alt="Preview" className="w-full h-full object-contain bg-black" />
  <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white font-medium text-[13px] backdrop-blur-sm">
  Change Image
  </div>
  </>
  ) : (
- <div className="text-center text-zinc-400 group-hover:text-primary transition-colors flex flex-col items-center">
+ <div className="text-center text-muted-foreground group-hover:text-primary transition-colors flex flex-col items-center">
  <ImageIcon className="w-8 h-8 mb-2 opacity-50" />
  <span className="text-[11px] font-bold uppercase tracking-wider">Click to upload</span>
  </div>
@@ -331,78 +331,78 @@ export default function ProductsPage() {
  </div>
 
  {/* Basic Info */}
- <div className="bg-surface p-1.5 border border-primary/10 shadow-xl shadow-primary/5 hover:border-primary/20 hover:shadow-primary/10 transition-all rounded-2xl space-y-4">
- <label className="block text-[11px] font-bold text-zinc-500 uppercase tracking-wider mb-2">
+ <div className="bg-surface p-1.5 border border-border shadow-md rounded-2xl space-y-4">
+ <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2">
  {language === 'en' ? 'Basic Info' : 'প্রাথমিক তথ্য'}
  </label>
  <div>
- <label className="block text-[11px] font-medium text-zinc-500 mb-1">Name / Title *</label>
- <input type="text" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-background border border-surface-hover rounded-lg px-1.5 py-2 text-[13px] focus:border-primary focus:outline-none transition-colors" placeholder="e.g. Premium Cotton T-Shirt" />
+ <label className="block text-[11px] font-medium text-muted-foreground mb-1">Name / Title *</label>
+ <input type="text" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-background border border-border rounded-lg px-1.5 py-2 text-[13px] focus:border-primary focus:outline-none transition-colors text-foreground" placeholder="e.g. Premium Cotton T-Shirt" />
  </div>
  
  <div className="grid grid-cols-2 gap-1.5">
  <div>
- <label className="block text-[11px] font-medium text-zinc-500 mb-1">Price *</label>
+ <label className="block text-[11px] font-medium text-muted-foreground mb-1">Price *</label>
  <div className="relative">
- <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 text-[13px]">৳</span>
- <input type="number" step="0.01" required value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} className="w-full bg-background border border-surface-hover rounded-lg pl-7 pr-3 py-2 text-[13px] focus:border-primary focus:outline-none transition-colors" placeholder="0.00" />
+ <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-[13px]">৳</span>
+ <input type="number" step="0.01" required value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} className="w-full bg-background border border-border rounded-lg pl-7 pr-3 py-2 text-[13px] focus:border-primary focus:outline-none transition-colors text-foreground" placeholder="0.00" />
  </div>
  </div>
  <div>
- <label className="block text-[11px] font-medium text-zinc-500 mb-1">SKU (Optional)</label>
- <input type="text" value={formData.sku} onChange={e => setFormData({...formData, sku: e.target.value})} className="w-full bg-background border border-surface-hover rounded-lg px-1.5 py-2 text-[13px] focus:border-primary focus:outline-none transition-colors" placeholder="e.g. SHIRT-001" />
+ <label className="block text-[11px] font-medium text-muted-foreground mb-1">SKU (Optional)</label>
+ <input type="text" value={formData.sku} onChange={e => setFormData({...formData, sku: e.target.value})} className="w-full bg-background border border-border rounded-lg px-1.5 py-2 text-[13px] focus:border-primary focus:outline-none transition-colors text-foreground" placeholder="e.g. SHIRT-001" />
  </div>
  </div>
 
  <div>
- <label className="block text-[11px] font-medium text-zinc-500 mb-1">Description</label>
- <textarea rows={4} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full bg-background border border-surface-hover rounded-lg px-1.5 py-2 text-[13px] focus:border-primary focus:outline-none resize-none custom-scrollbar transition-colors" placeholder="Write a short description..." />
+ <label className="block text-[11px] font-medium text-muted-foreground mb-1">Description</label>
+ <textarea rows={4} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full bg-background border border-border rounded-lg px-1.5 py-2 text-[13px] focus:border-primary focus:outline-none resize-none custom-scrollbar transition-colors text-foreground" placeholder="Write a short description..." />
  </div>
  
- <label className="flex items-center gap-1.5 p-1.5 bg-background border border-surface-hover rounded-lg cursor-pointer hover:border-primary/50 transition-colors">
- <input type="checkbox" checked={formData.isActive} onChange={e => setFormData({...formData, isActive: e.target.checked})} className="w-3.5 h-3.5 text-primary rounded border-zinc-600 focus:ring-primary focus:ring-offset-0 bg-background" />
- <span className="text-[13px] font-medium">{language === 'en' ? 'Product is Active' : 'প্রডাক্ট অ্যাক্টিভ (Customers can see this)'}</span>
+ <label className="flex items-center gap-1.5 p-1.5 bg-background border border-border rounded-lg cursor-pointer hover:border-primary/50 transition-colors">
+ <input type="checkbox" checked={formData.isActive} onChange={e => setFormData({...formData, isActive: e.target.checked})} className="w-3.5 h-3.5 text-primary rounded border-border focus:ring-primary focus:ring-offset-0 bg-background" />
+ <span className="text-[13px] font-medium text-foreground">{language === 'en' ? 'Product is Active' : 'প্রডাক্ট অ্যাক্টিভ (Customers can see this)'}</span>
  </label>
  </div>
 
  {/* Inventory Tracking */}
- <div className="bg-surface p-1.5 border border-primary/10 shadow-xl shadow-primary/5 hover:border-primary/20 hover:shadow-primary/10 transition-all rounded-2xl">
- <label className="block text-[11px] font-bold text-zinc-500 uppercase tracking-wider mb-3">
+ <div className="bg-surface p-1.5 border border-border shadow-md rounded-2xl">
+ <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-3">
  {language === 'en' ? 'Inventory' : 'ইনভেন্টরি'}
  </label>
  <div className="flex flex-col gap-1.5">
- <label className="flex items-center gap-1.5 p-1.5 bg-background border border-surface-hover rounded-lg cursor-pointer hover:border-primary/50 transition-colors">
- <input type="checkbox" checked={formData.trackInventory} onChange={e => setFormData({...formData, trackInventory: e.target.checked})} className="w-3.5 h-3.5 text-primary rounded border-zinc-600 focus:ring-primary focus:ring-offset-0 bg-background" />
+ <label className="flex items-center gap-1.5 p-1.5 bg-background border border-border rounded-lg cursor-pointer hover:border-primary/50 transition-colors">
+ <input type="checkbox" checked={formData.trackInventory} onChange={e => setFormData({...formData, trackInventory: e.target.checked})} className="w-3.5 h-3.5 text-primary rounded border-border focus:ring-primary focus:ring-offset-0 bg-background" />
  <div>
- <div className="text-[13px] font-medium">{language === 'en' ? 'Track Stock' : 'স্টক ট্র্যাক করুন'}</div>
- <div className="text-[10px] text-zinc-500">Automatically reduce stock on sale</div>
+ <div className="text-[13px] font-medium text-foreground">{language === 'en' ? 'Track Stock' : 'স্টক ট্র্যাক করুন'}</div>
+ <div className="text-[10px] text-muted-foreground">Automatically reduce stock on sale</div>
  </div>
  </label>
  {formData.trackInventory && (
  <div className="animate-in slide-in-from-top-2 fade-in duration-200">
- <label className="block text-[11px] font-medium text-zinc-500 mb-1">Available Stock Count</label>
- <input type="number" value={formData.stockCount} onChange={e => setFormData({...formData, stockCount: e.target.value})} className="w-full md:w-1/2 bg-background border border-surface-hover rounded-lg px-1.5 py-2 text-[13px] focus:border-primary focus:outline-none transition-colors" />
+ <label className="block text-[11px] font-medium text-muted-foreground mb-1">Available Stock Count</label>
+ <input type="number" value={formData.stockCount} onChange={e => setFormData({...formData, stockCount: e.target.value})} className="w-full md:w-1/2 bg-background border border-border rounded-lg px-1.5 py-2 text-[13px] focus:border-primary focus:outline-none transition-colors text-foreground" />
  </div>
  )}
  </div>
  </div>
 
  {/* Custom Attributes */}
- <div className="bg-surface p-1.5 border border-primary/10 shadow-xl shadow-primary/5 hover:border-primary/20 hover:shadow-primary/10 transition-all rounded-2xl">
+ <div className="bg-surface p-1.5 border border-border shadow-md rounded-2xl">
  <div className="flex items-center justify-between mb-3">
- <label className="block text-[11px] font-bold text-zinc-500 uppercase tracking-wider">
+ <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
  {language === 'en' ? 'Custom Properties' : 'কাস্টম প্রপার্টি'}
  </label>
  <span className="px-2 py-0.5 bg-primary/10 text-primary text-[9px] font-bold rounded-full uppercase tracking-widest">Dynamic</span>
  </div>
- <p className="text-[11px] text-zinc-500 mb-3">
+ <p className="text-[11px] text-muted-foreground mb-3">
  Add flexible fields based on your industry. E.g. <b>Size: XL</b>, <b>Area: 1200 sqft</b>.
  </p>
  
  <div className="flex items-center gap-2 mb-4">
- <input type="text" placeholder="Key (e.g. Size)" value={attrKey} onChange={e => setAttrKey(e.target.value)} className="w-1/3 bg-background border border-surface-hover rounded-lg px-1.5 py-2 text-[13px] focus:border-primary focus:outline-none transition-colors" />
- <input type="text" placeholder="Value (e.g. XL)" value={attrValue} onChange={e => setAttrValue(e.target.value)} className="flex-1 bg-background border border-surface-hover rounded-lg px-1.5 py-2 text-[13px] focus:border-primary focus:outline-none transition-colors" onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAddAttribute())} />
- <button type="button" onClick={handleAddAttribute} className="p-2 bg-zinc-100 text-zinc-600 hover:bg-zinc-200 :bg-zinc-700 rounded-lg transition-colors shrink-0">
+ <input type="text" placeholder="Key (e.g. Size)" value={attrKey} onChange={e => setAttrKey(e.target.value)} className="w-1/3 bg-background border border-border rounded-lg px-1.5 py-2 text-[13px] focus:border-primary focus:outline-none transition-colors text-foreground" />
+ <input type="text" placeholder="Value (e.g. XL)" value={attrValue} onChange={e => setAttrValue(e.target.value)} className="flex-1 bg-background border border-border rounded-lg px-1.5 py-2 text-[13px] focus:border-primary focus:outline-none transition-colors text-foreground" onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAddAttribute())} />
+ <button type="button" onClick={handleAddAttribute} className="p-2 bg-muted text-muted-foreground hover:bg-muted/80 rounded-lg transition-colors shrink-0 cursor-pointer">
  <Plus className="w-3.5 h-3.5" />
  </button>
  </div>
@@ -410,11 +410,11 @@ export default function ProductsPage() {
  {Object.keys(formData.attributes || {}).length > 0 && (
  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
  {Object.entries(formData.attributes).map(([k, v]: any) => (
- <div key={k} className="flex items-center justify-between p-2.5 bg-background border border-surface-hover rounded-lg text-[13px] group">
+ <div key={k} className="flex items-center justify-between p-2.5 bg-background border border-border rounded-lg text-[13px] group">
  <div className="truncate pr-2">
- <span className="text-zinc-500">{k}:</span> <span className="font-bold text-zinc-800 ">{v}</span>
+ <span className="text-muted-foreground">{k}:</span> <span className="font-bold text-foreground">{v}</span>
  </div>
- <button type="button" onClick={() => handleRemoveAttribute(k)} className="text-zinc-400 hover:text-red-500 p-1 rounded transition-colors opacity-0 group-hover:opacity-100">
+ <button type="button" onClick={() => handleRemoveAttribute(k)} className="text-muted-foreground hover:text-red-500 p-1 rounded transition-colors opacity-0 group-hover:opacity-100 cursor-pointer">
  <X className="w-3.5 h-3.5" />
  </button>
  </div>
@@ -427,11 +427,11 @@ export default function ProductsPage() {
  </div>
 
  {/* Sticky Bottom Actions */}
- <div className="absolute bottom-0 left-0 right-0 p-1.5 border-t border-surface-hover bg-surface/80 backdrop-blur-md flex justify-end gap-1.5 z-20">
- <button type="button" onClick={() => setIsEditing(false)} className="px-5 py-2 rounded-xl text-[13px] font-medium text-zinc-600 hover:bg-zinc-100 :bg-zinc-800 transition-colors">
+ <div className="absolute bottom-0 left-0 right-0 p-1.5 border-t border-border bg-surface/80 backdrop-blur-md flex justify-end gap-1.5 z-20">
+ <button type="button" onClick={() => setIsEditing(false)} className="px-5 py-2 rounded-xl text-[13px] font-medium text-muted-foreground hover:bg-muted transition-colors">
  {language === 'en' ? 'Cancel' : 'বাতিল'}
  </button>
- <button type="submit" form="productForm" disabled={saving} className="bg-primary text-primary-foreground px-5 py-2 rounded-xl text-[13px] font-bold hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20 flex items-center gap-2 disabled:opacity-50">
+ <button type="submit" form="productForm" disabled={saving} className="bg-primary text-primary-foreground px-5 py-2 rounded-xl text-[13px] font-bold hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20 flex items-center gap-2 disabled:opacity-50 cursor-pointer">
  {saving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
  {language === 'en' ? 'Save Changes' : 'সেভ করুন'}
  </button>

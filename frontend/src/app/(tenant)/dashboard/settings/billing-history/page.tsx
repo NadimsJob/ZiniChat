@@ -134,7 +134,7 @@ export default function BillingHistoryPage() {
     }
     if (st === 'cancelled') {
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-500/10 text-slate-400 border border-slate-500/20">
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-muted text-muted-foreground border border-border">
           <XCircle className="w-3 h-3" />
           {language === 'en' ? 'Cancelled' : 'বাতিল'}
         </span>
@@ -302,7 +302,7 @@ export default function BillingHistoryPage() {
           </div>
         ) : filteredPayments.length === 0 ? (
           <div className="p-12 text-center space-y-3">
-            <CreditCard className="w-12 h-12 text-zinc-500/40 mx-auto" />
+            <CreditCard className="w-12 h-12 text-muted-foreground/40 mx-auto" />
             <h3 className="text-base font-bold">
               {language === 'en' ? 'No Matching Payments' : 'কোনো পেমেন্ট পাওয়া যায়নি'}
             </h3>
@@ -377,7 +377,7 @@ export default function BillingHistoryPage() {
                             {language === 'en' ? 'Completed' : 'সম্পন্ন'}
                           </span>
                         ) : (
-                          <span className="text-[11px] text-zinc-500 font-medium">
+                          <span className="text-[11px] text-muted-foreground font-medium">
                             {language === 'en' ? 'No Action' : 'কোনো অ্যাকশন নেই'}
                           </span>
                         )}

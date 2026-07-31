@@ -110,7 +110,7 @@ export default function OnboardingPage() {
  return (
  <div className="max-w-2xl mx-auto my-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
  <div className="text-center mb-8">
- <h1 className="text-3xl font-bold text-slate-900 mb-2">
+ <h1 className="text-3xl font-bold text-foreground mb-2">
  {language === 'en' ? 'Welcome to ZiniChat!' : 'জিনিচ্যাটে স্বাগতম!'}
  </h1>
  <p className="text-slate-500 ">
@@ -120,7 +120,7 @@ export default function OnboardingPage() {
  </p>
  </div>
 
- <div className="bg-white rounded-3xl p-6 md:p-8 shadow-xl shadow-primary/5 border border-slate-200 relative overflow-hidden">
+ <div className="bg-card rounded-3xl p-6 md:p-8 shadow-xl shadow-primary/5 border border-border relative overflow-hidden">
  
  {/* Decorative background element */}
  <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
@@ -148,7 +148,7 @@ export default function OnboardingPage() {
  required
  value={formData.ownerName}
  onChange={e => setFormData({ ...formData, ownerName: e.target.value })}
- className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 transition-all text-slate-900 "
+ className="w-full bg-muted/30 border border-border rounded-xl pl-9 pr-3 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 transition-all text-foreground "
  placeholder="John Doe"
  />
  </div>
@@ -168,7 +168,7 @@ export default function OnboardingPage() {
  required
  value={formData.brandName}
  onChange={e => setFormData({ ...formData, brandName: e.target.value })}
- className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 transition-all text-slate-900 "
+ className="w-full bg-muted/30 border border-border rounded-xl pl-9 pr-3 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 transition-all text-foreground "
  placeholder="Acme Clothing"
  />
  </div>
@@ -188,7 +188,7 @@ export default function OnboardingPage() {
  required
  value={formData.phoneNo}
  onChange={e => setFormData({ ...formData, phoneNo: e.target.value })}
- className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 transition-all text-slate-900 "
+ className="w-full bg-muted/30 border border-border rounded-xl pl-9 pr-3 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 transition-all text-foreground "
  placeholder="+8801XXXXXXXXX"
  />
  </div>
@@ -206,7 +206,7 @@ export default function OnboardingPage() {
  <select
  value={formData.employeeCount}
  onChange={e => setFormData({ ...formData, employeeCount: e.target.value })}
- className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 transition-all text-slate-900 appearance-none"
+ className="w-full bg-muted/30 border border-border rounded-xl pl-9 pr-3 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 transition-all text-foreground appearance-none"
  >
  <option value="1-10">1 - 10</option>
  <option value="11-50">11 - 50</option>
@@ -229,7 +229,7 @@ export default function OnboardingPage() {
  required
  value={formData.businessNature}
  onChange={e => setFormData({ ...formData, businessNature: e.target.value })}
- className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 transition-all text-slate-900 appearance-none"
+ className="w-full bg-muted/30 border border-border rounded-xl pl-9 pr-3 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 transition-all text-foreground appearance-none"
  >
  <option value="" disabled>Select your business nature</option>
  {businessNatures.map((bn) => (
@@ -255,7 +255,7 @@ export default function OnboardingPage() {
  rows={2}
  value={formData.address}
  onChange={e => setFormData({ ...formData, address: e.target.value })}
- className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 transition-all text-slate-900 resize-none"
+ className="w-full bg-muted/30 border border-border rounded-xl pl-9 pr-3 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 transition-all text-foreground resize-none"
  placeholder="Road 1, Block A, Dhaka"
  />
  </div>

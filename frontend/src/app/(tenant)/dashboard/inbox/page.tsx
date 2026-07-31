@@ -790,6 +790,28 @@ export default function InboxPage() {
                 <option value="unassigned">{language === 'en' ? '👤 Unassigned' : '👤 আনঅ্যাসাইনড'}</option>
                 <option value="blocked">{language === 'en' ? '🚫 Blocked' : '🚫 ব্লকড'}</option>
                 <option value="order_requests">{language === 'en' ? '🛍️ Orders' : '🛍️ অর্ডার'}</option>
+                
+                {availableLabels.length > 0 && (
+                  <optgroup label={language === 'en' ? 'Tags' : 'ট্যাগস'}>
+                    {availableLabels.map(l => (
+                      <option key={l.id} value={`tag_${l.id}`}>🏷️ {l.name}</option>
+                    ))}
+                  </optgroup>
+                )}
+
+                {agents.length > 0 && (
+                  <optgroup label={language === 'en' ? 'Agents' : 'এজেন্ট'}>
+                    {agents.map(a => (
+                      <option key={a.id} value={`agent_${a.id}`}>👤 {a.name}</option>
+                    ))}
+                  </optgroup>
+                )}
+
+                <optgroup label={language === 'en' ? 'Follow-up' : 'ফলো-আপ'}>
+                  <option value="followup_today">{language === 'en' ? '📅 Today' : '📅 আজকে'}</option>
+                  <option value="followup_upcoming">{language === 'en' ? '📅 Upcoming' : '📅 আগামীতে'}</option>
+                  <option value="followup_past">{language === 'en' ? '📅 Past Due' : '📅 অতীত'}</option>
+                </optgroup>
               </select>
             </div>
           </div>
@@ -806,6 +828,28 @@ export default function InboxPage() {
               if (filterParam === 'unassigned' && conv.assignedAgentId) return false;
               if (filterParam === 'blocked' && (!conv.isBlocked && !conv.contact?.isBlocked)) return false;
               if (filterParam === 'order_requests' && !conv.hasOrderRequest) return false;
+
+              if (filterParam.startsWith('tag_')) {
+                const tagId = filterParam.split('_')[1];
+                if (!conv.labels?.some((l: any) => l.labelId === tagId)) return false;
+              }
+
+              if (filterParam.startsWith('agent_')) {
+                const agentId = filterParam.split('_')[1];
+                if (conv.assignedAgentId !== agentId) return false;
+              }
+
+              if (filterParam.startsWith('followup_')) {
+                if (!conv.contact?.followUpAt) return false;
+                const fDate = new Date(conv.contact.followUpAt);
+                fDate.setHours(0,0,0,0);
+                const today = new Date();
+                today.setHours(0,0,0,0);
+                
+                if (filterParam === 'followup_today' && fDate.getTime() !== today.getTime()) return false;
+                if (filterParam === 'followup_upcoming' && fDate.getTime() <= today.getTime()) return false;
+                if (filterParam === 'followup_past' && fDate.getTime() >= today.getTime()) return false;
+              }
 
               if (!searchQuery.trim()) return true;
               const q = searchQuery.toLowerCase().trim();
@@ -1233,105 +1277,109 @@ export default function InboxPage() {
             )}
             
             {/* Compose Controls Row */}
-            <div className="flex items-center justify-between text-xs">
-              <div className="flex items-center gap-2">
-                {/* AI Toggle or Channel Setting Disabled Notice */}
-                {activeConv.channelConnection?.isAiAutoReplyEnabled === false ? (
-                  <div 
-                    className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9.5px] font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/25 cursor-help"
-                    title={language === 'en' ? 'AI Auto-Reply is turned OFF in Channel Integration settings for this channel' : 'চ্যানেল ইন্টিগ্রেশন সেটিংসে এই চ্যানেলের এআই অটো-রিপ্লাই বন্ধ করা আছে'}
-                  >
-                    <AlertCircle className="w-3 h-3 text-amber-500 shrink-0" />
-                    <span>
-                      {language === 'en' 
-                        ? 'AI Auto-Reply OFF (Disabled in Channel Settings)' 
-                        : 'চ্যানেল সেটিংসে AI Auto-Reply বন্ধ আছে'}
-                    </span>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => handleToggleAiReply(!activeConv.isAiEnabled)}
-                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all cursor-pointer ${
-                      activeConv.isAiEnabled 
-                        ? 'bg-purple-100 text-purple-700 border border-purple-300 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800' 
-                        : 'bg-muted text-muted-foreground border border-border'
-                    }`}
-                  >
-                    <Bot className="w-3.5 h-3.5" />
-                    {activeConv.isAiEnabled ? 'AI Auto-Reply ON' : 'AI Auto-Reply OFF'}
-                  </button>
-                )}
+            {!(activeConv.isBlocked || activeConv.contact?.isBlocked) && (
+              <>
+                <div className="flex items-center justify-between text-xs mt-3">
+                  <div className="flex items-center gap-2">
+                    {/* AI Toggle or Channel Setting Disabled Notice */}
+                    {activeConv.channelConnection?.isAiAutoReplyEnabled === false ? (
+                      <div 
+                        className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9.5px] font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/25 cursor-help"
+                        title={language === 'en' ? 'AI Auto-Reply is turned OFF in Channel Integration settings for this channel' : 'চ্যানেল ইন্টিগ্রেশন সেটিংসে এই চ্যানেলের এআই অটো-রিপ্লাই বন্ধ করা আছে'}
+                      >
+                        <AlertCircle className="w-3 h-3 text-amber-500 shrink-0" />
+                        <span>
+                          {language === 'en' 
+                            ? 'AI Auto-Reply OFF (Disabled in Channel Settings)' 
+                            : 'চ্যানেল সেটিংসে AI Auto-Reply বন্ধ আছে'}
+                        </span>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleToggleAiReply(!activeConv.isAiEnabled)}
+                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all cursor-pointer ${
+                          activeConv.isAiEnabled 
+                            ? 'bg-purple-100 text-purple-700 border border-purple-300 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800' 
+                            : 'bg-muted text-muted-foreground border border-border'
+                        }`}
+                      >
+                        <Bot className="w-3.5 h-3.5" />
+                        {activeConv.isAiEnabled ? 'AI Auto-Reply ON' : 'AI Auto-Reply OFF'}
+                      </button>
+                    )}
 
-                {/* Multiple AI Assistant Picker Dropdown */}
-                {hasAiPicker && aiAssistants.length > 1 && (
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setShowAiPickerMenu(!showAiPickerMenu)}
-                      className="px-2 py-1 bg-muted border border-border rounded-lg text-[10px] font-medium flex items-center gap-1 text-muted-foreground hover:text-foreground"
-                    >
-                      <span>AI Model: {activeConv.aiAssistant?.agentName || 'Default'}</span>
-                      <ChevronLeft className="-rotate-90 w-3 h-3" />
-                    </button>
-                    {showAiPickerMenu && (
-                      <div className="absolute bottom-full mb-1 left-0 w-48 bg-card border border-border rounded-xl shadow-lg p-1 z-50 text-xs">
-                        <button onClick={() => handleSetAssistant(null)} className="w-full text-left px-2.5 py-1.5 hover:bg-muted rounded-lg text-foreground font-medium">
-                          Default System Model
+                    {/* Multiple AI Assistant Picker Dropdown */}
+                    {hasAiPicker && aiAssistants.length > 1 && (
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setShowAiPickerMenu(!showAiPickerMenu)}
+                          className="px-2 py-1 bg-muted border border-border rounded-lg text-[10px] font-medium flex items-center gap-1 text-muted-foreground hover:text-foreground"
+                        >
+                          <span>AI Model: {activeConv.aiAssistant?.agentName || 'Default'}</span>
+                          <ChevronLeft className="-rotate-90 w-3 h-3" />
                         </button>
-                        {aiAssistants.map(ast => (
-                          <button key={ast.id} onClick={() => handleSetAssistant(ast.id)} className="w-full text-left px-2.5 py-1.5 hover:bg-muted rounded-lg text-foreground">
-                            {ast.name || ast.modelName} ({ast.provider})
-                          </button>
-                        ))}
+                        {showAiPickerMenu && (
+                          <div className="absolute bottom-full mb-1 left-0 w-48 bg-card border border-border rounded-xl shadow-lg p-1 z-50 text-xs">
+                            <button onClick={() => handleSetAssistant(null)} className="w-full text-left px-2.5 py-1.5 hover:bg-muted rounded-lg text-foreground font-medium">
+                              Default System Model
+                            </button>
+                            {aiAssistants.map(ast => (
+                              <button key={ast.id} onClick={() => handleSetAssistant(ast.id)} className="w-full text-left px-2.5 py-1.5 hover:bg-muted rounded-lg text-foreground">
+                                {ast.name || ast.modelName} ({ast.provider})
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
-                )}
-              </div>
 
-              {selectedFile && (
-                <div className="flex items-center gap-1 text-[11px] bg-muted px-2 py-0.5 rounded text-foreground">
-                  <Paperclip className="w-3 h-3" />
-                  <span className="truncate max-w-[120px]">{selectedFile.name}</span>
-                  <button onClick={() => setSelectedFile(null)} className="text-red-500"><X className="w-3 h-3" /></button>
+                  {selectedFile && (
+                    <div className="flex items-center gap-1 text-[11px] bg-muted px-2 py-0.5 rounded text-foreground">
+                      <Paperclip className="w-3 h-3" />
+                      <span className="truncate max-w-[120px]">{selectedFile.name}</span>
+                      <button onClick={() => setSelectedFile(null)} className="text-red-500"><X className="w-3 h-3" /></button>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
 
-            {/* Input Form */}
-            <form onSubmit={handleSendMessage} className="flex items-center gap-2">
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                className="hidden" 
-                onChange={e => e.target.files?.[0] && setSelectedFile(e.target.files[0])} 
-              />
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="p-2 text-muted-foreground hover:text-primary hover:bg-muted rounded-lg transition-colors cursor-pointer"
-                title="Attach file"
-              >
-                <Paperclip className="w-4 h-4" />
-              </button>
+                {/* Input Form */}
+                <form onSubmit={handleSendMessage} className="flex items-center gap-2 mt-2">
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    className="hidden" 
+                    onChange={e => e.target.files?.[0] && setSelectedFile(e.target.files[0])} 
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="p-2 text-muted-foreground hover:text-primary hover:bg-muted rounded-lg transition-colors cursor-pointer"
+                    title="Attach file"
+                  >
+                    <Paperclip className="w-4 h-4" />
+                  </button>
 
-              <input
-                type="text"
-                placeholder={language === 'en' ? 'Type a message...' : 'মেসেজ লিখুন...'}
-                value={inputText}
-                onChange={e => setInputText(e.target.value)}
-                className="flex-1 bg-background border border-border rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-primary text-foreground"
-              />
+                  <input
+                    type="text"
+                    placeholder={language === 'en' ? 'Type a message...' : 'মেসেজ লিখুন...'}
+                    value={inputText}
+                    onChange={e => setInputText(e.target.value)}
+                    className="flex-1 bg-background border border-border rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-primary text-foreground"
+                  />
 
-              <button
-                type="submit"
-                disabled={!inputText.trim() && !selectedFile}
-                className="p-2 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50 cursor-pointer shadow-xs"
-              >
-                <Send className="w-4 h-4" />
-              </button>
-            </form>
+                  <button
+                    type="submit"
+                    disabled={!inputText.trim() && !selectedFile}
+                    className="p-2 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50 cursor-pointer shadow-xs"
+                  >
+                    <Send className="w-4 h-4" />
+                  </button>
+                </form>
+              </>
+            )}
           </div>
         </div>
       ) : (

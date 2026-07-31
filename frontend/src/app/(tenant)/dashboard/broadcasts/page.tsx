@@ -371,7 +371,7 @@ export default function BroadcastsPage() {
         </div>
         <div>
           <h2 className="text-xl font-bold">{error}</h2>
-          <p className="text-zinc-400 mt-2">Access to this feature is restricted by your subscription plan.</p>
+          <p className="text-muted-foreground mt-2">Access to this feature is restricted by your subscription plan.</p>
         </div>
       </div>
     );
@@ -386,7 +386,7 @@ export default function BroadcastsPage() {
             <Megaphone className="w-5 h-5 shrink-0" /> 
             <span>{language === 'en' ? 'Broadcast Campaigns & Meta Templates' : 'ব্রডকাস্ট ক্যাম্পেইন ও মেটা টেমপ্লেট'}</span>
           </h1>
-          <p className="text-xs text-zinc-400 mt-0.5">
+          <p className="text-xs text-muted-foreground mt-0.5">
             {language === 'en' ? 'Create WhatsApp Meta-approved templates and execute bulk marketing campaigns.' : 'হোয়াটসঅ্যাপের মেটা-অ্যাপ্রুভড টেমপ্লেট তৈরি করুন এবং বাল্ক ব্রডকাস্ট পাঠান।'}
           </p>
         </div>
@@ -436,16 +436,16 @@ export default function BroadcastsPage() {
       />
 
       {/* Tabs */}
-      <div className="flex gap-1 p-1 bg-surface-hover/30 rounded-xl w-full sm:w-fit overflow-x-auto border border-surface-hover/50 shrink-0">
+      <div className="flex gap-1 p-1 bg-surface-hover/30 rounded-xl w-full sm:w-fit overflow-x-auto border border-border/50 shrink-0">
         <button 
           onClick={() => setActiveTab('campaigns')}
-          className={`px-3.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap shrink-0 transition-all ${activeTab === 'campaigns' ? 'bg-primary text-primary-foreground shadow-md' : 'text-zinc-400 hover:text-zinc-200'}`}
+          className={`px-3.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap shrink-0 transition-all ${activeTab === 'campaigns' ? 'bg-primary text-primary-foreground shadow-md cursor-pointer' : 'text-muted-foreground hover:text-foreground cursor-pointer'}`}
         >
           {language === 'en' ? 'Campaigns' : 'ক্যাম্পেইনস'}
         </button>
         <button 
           onClick={() => setActiveTab('templates')}
-          className={`px-3.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap shrink-0 transition-all ${activeTab === 'templates' ? 'bg-primary text-primary-foreground shadow-md' : 'text-zinc-400 hover:text-zinc-200'}`}
+          className={`px-3.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap shrink-0 transition-all ${activeTab === 'templates' ? 'bg-primary text-primary-foreground shadow-md cursor-pointer' : 'text-muted-foreground hover:text-foreground cursor-pointer'}`}
         >
           {language === 'en' ? 'My Templates' : 'আমার টেমপ্লেটস'}
         </button>
@@ -460,10 +460,10 @@ export default function BroadcastsPage() {
                 .finally(() => setLibLoading(false));
             }
           }}
-          className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[13px] font-bold transition-all ${
+          className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[13px] font-bold transition-all cursor-pointer ${
             activeTab === 'library'
               ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/30'
-              : 'text-zinc-400 hover:text-amber-400'
+              : 'text-muted-foreground hover:text-amber-400'
           }`}
         >
           <Library className="w-3.5 h-3.5" />
@@ -472,7 +472,7 @@ export default function BroadcastsPage() {
       </div>
 
       {/* Content List */}
-      <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-4">
+      <div className="bg-surface/70 backdrop-blur-xl border border-border rounded-2xl p-4">
         {loading ? (
           <div className="animate-pulse space-y-3">
             {[1, 2, 3].map(i => <div key={i} className="h-16 bg-surface-hover/50 rounded-xl"></div>)}
@@ -480,15 +480,15 @@ export default function BroadcastsPage() {
         ) : (
           <div className="space-y-3">
             {(activeTab === 'campaigns' ? broadcasts : templates).length === 0 ? (
-              <div className="text-center py-12 text-zinc-500 text-[13px]">
+              <div className="text-center py-12 text-muted-foreground text-[13px]">
                 {language === 'en' ? 'No items found.' : 'কোনো তথ্য পাওয়া যায়নি।'}
               </div>
             ) : (
               (activeTab === 'campaigns' ? broadcasts : templates).map((item) => (
-                <div key={item.id} className="flex justify-between items-center p-4 bg-background/50 border border-surface-hover rounded-xl hover:border-primary/30 transition-colors">
+                <div key={item.id} className="flex justify-between items-center p-4 bg-background/50 border border-border rounded-xl hover:border-primary/30 transition-colors">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-[14px] font-bold">{activeTab === 'campaigns' ? (item.template?.name || 'Unnamed Campaign') : item.name}</h3>
+                      <h3 className="text-[14px] font-bold text-foreground">{activeTab === 'campaigns' ? (item.template?.name || 'Unnamed Campaign') : item.name}</h3>
                       {activeTab === 'templates' && (
                         <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
                           item.status === 'APPROVED' ? 'bg-green-500/10 text-green-500' :
@@ -500,7 +500,7 @@ export default function BroadcastsPage() {
                       )}
                     </div>
 
-                    <div className="flex items-center gap-4 text-[12px] text-zinc-400">
+                    <div className="flex items-center gap-4 text-[12px] text-muted-foreground">
                       {activeTab === 'campaigns' ? (
                         <>
                           <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {new Date(item.scheduledAt).toLocaleString()}</span>
@@ -517,7 +517,7 @@ export default function BroadcastsPage() {
                     </div>
 
                     {activeTab === 'templates' && item.bodyText && (
-                      <p className="text-[12px] text-zinc-400 bg-surface-hover/30 p-2 rounded-lg font-mono line-clamp-2 max-w-2xl">
+                      <p className="text-[12px] text-muted-foreground bg-surface-hover/30 p-2 rounded-lg font-mono line-clamp-2 max-w-2xl">
                         {item.bodyText}
                       </p>
                     )}
@@ -557,28 +557,28 @@ export default function BroadcastsPage() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="bg-surface border border-surface-hover w-full max-w-lg rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
             <div className="flex justify-between items-center p-4 border-b border-surface-hover shrink-0">
-              <h2 className="text-lg font-bold">{language === 'en' ? 'Create New Broadcast Campaign' : 'নতুন ব্রডকাস্ট ক্যাম্পেইন'}</h2>
-              <button onClick={() => setIsCampaignModalOpen(false)} className="p-1 hover:bg-surface-hover rounded-lg text-zinc-400 hover:text-zinc-200 transition-colors">
+              <h2 className="text-lg font-bold text-foreground">{language === 'en' ? 'Create New Broadcast Campaign' : 'নতুন ব্রডকাস্ট ক্যাম্পেইন'}</h2>
+              <button onClick={() => setIsCampaignModalOpen(false)} className="p-1 hover:bg-surface-hover rounded-lg text-muted-foreground hover:text-foreground transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <div className="p-4 overflow-y-auto space-y-4">
               <div>
-                <label className="block text-[13px] font-bold text-zinc-400 mb-1">{language === 'en' ? 'Campaign Title' : 'ক্যাম্পেইনের নাম'}</label>
+                <label className="block text-[13px] font-bold text-muted-foreground mb-1">{language === 'en' ? 'Campaign Title' : 'ক্যাম্পেইনের নাম'}</label>
                 <input 
                   type="text" 
                   value={campaignName}
                   onChange={(e) => setCampaignName(e.target.value)}
-                  className="w-full bg-background border border-surface-hover rounded-xl px-3 py-2 text-[13px] outline-none focus:border-primary transition-colors" 
+                  className="w-full bg-background border border-surface-hover rounded-xl px-3 py-2 text-[13px] outline-none focus:border-primary transition-colors text-foreground" 
                   placeholder={language === 'en' ? 'e.g. Eid Discount Offer' : 'উদাঃ ঈদ ছাড় অফার'} 
                 />
               </div>
               <div>
-                <label className="block text-[13px] font-bold text-zinc-400 mb-1">{language === 'en' ? 'Select Meta-Approved Template' : 'অ্যাপ্রুভড টেমপ্লেট বেছে নিন'}</label>
+                <label className="block text-[13px] font-bold text-muted-foreground mb-1">{language === 'en' ? 'Select Meta-Approved Template' : 'অ্যাপ্রুভড টেমপ্লেট বেছে নিন'}</label>
                 <select 
                   value={selectedTemplateId}
                   onChange={(e) => setSelectedTemplateId(e.target.value)}
-                  className="w-full bg-background border border-surface-hover rounded-xl px-3 py-2 text-[13px] outline-none focus:border-primary transition-colors"
+                  className="w-full bg-background border border-surface-hover rounded-xl px-3 py-2 text-[13px] outline-none focus:border-primary transition-colors text-foreground"
                 >
                   <option value="">{language === 'en' ? 'Select an approved template...' : 'একটি অ্যাপ্রুভড টেমপ্লেট নির্বাচন করুন...'}</option>
                   {templates.filter(t => t.status === 'APPROVED').map(t => (
@@ -594,7 +594,7 @@ export default function BroadcastsPage() {
               </div>
             </div>
             <div className="p-4 border-t border-surface-hover flex justify-end gap-2 shrink-0">
-              <button onClick={() => setIsCampaignModalOpen(false)} className="px-4 py-2 text-[13px] font-bold text-zinc-400 hover:text-zinc-200 hover:bg-surface-hover rounded-xl transition-all">
+              <button onClick={() => setIsCampaignModalOpen(false)} className="px-4 py-2 text-[13px] font-bold text-muted-foreground hover:text-foreground hover:bg-surface-hover rounded-xl transition-all">
                 {language === 'en' ? 'Cancel' : 'বাতিল'}
               </button>
               <button 

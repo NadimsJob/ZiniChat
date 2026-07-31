@@ -91,56 +91,56 @@ export default function StorageSettingsPage() {
  };
 
  return (
- <div className="max-w-4xl mx-auto space-y-6">
+ <div className="max-w-4xl mx-auto space-y-6 text-foreground">
  <div>
- <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+ <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
  <HardDrive className="w-6 h-6 text-primary" />
  {language === 'en' ? 'Storage Management' : 'স্টোরেজ ম্যানেজমেন্ট'}
  </h1>
- <p className="text-slate-500 mt-1">
+ <p className="text-muted-foreground mt-1 font-sans">
  {language === 'en' 
  ? 'Monitor and clean up your storage usage to avoid hitting limits.' 
  : 'আপনার স্টোরেজ লিমিট চেক করুন এবং স্পেস ক্লিয়ার করুন।'}
  </p>
  </div>
 
- <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
- <h2 className="text-lg font-bold text-slate-900 mb-4">
- {language === 'en' ? 'Current Usage' : 'বর্তমান ব্যবহার'}
- </h2>
+  <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+  <h2 className="text-lg font-bold text-foreground mb-4">
+  {language === 'en' ? 'Current Usage' : 'বর্তমান ব্যবহার'}
+  </h2>
 
- <div className="flex justify-between text-sm font-medium mb-2">
- <span className="text-slate-600 ">
- {formatBytes(storageUsedBytes)} {language === 'en' ? 'used' : 'ব্যবহৃত'}
- </span>
- <span className="text-slate-600 ">
- {storageLimitMb} MB {language === 'en' ? 'total' : 'মোট'}
- </span>
- </div>
+  <div className="flex justify-between text-sm font-medium mb-2">
+  <span className="text-muted-foreground">
+  {formatBytes(storageUsedBytes)} {language === 'en' ? 'used' : 'ব্যবহৃত'}
+  </span>
+  <span className="text-muted-foreground">
+  {storageLimitMb} MB {language === 'en' ? 'total' : 'মোট'}
+  </span>
+  </div>
 
- <div className="w-full bg-slate-100 rounded-full h-4 overflow-hidden">
- <div 
- className={`h-4 transition-all duration-500 ${isNearLimit ? 'bg-red-500' : 'bg-primary'}`}
- style={{ width: `${usagePercentage}%` }}
- />
- </div>
+  <div className="w-full bg-muted rounded-full h-4 overflow-hidden">
+  <div 
+  className={`h-4 transition-all duration-500 ${isNearLimit ? 'bg-red-500' : 'bg-primary'}`}
+  style={{ width: `${usagePercentage}%` }}
+  />
+  </div>
 
- {isNearLimit && (
- <div className="mt-4 flex items-center gap-2 text-sm text-red-600 bg-red-50 p-3 rounded-xl border border-red-100 ">
- <AlertCircle className="w-4 h-4" />
- {language === 'en' 
- ? 'You are running out of storage. Please delete some old files or upgrade your plan.' 
- : 'আপনার স্টোরেজ প্রায় শেষের দিকে। কিছু পুরোনো ফাইল ডিলিট করুন অথবা আপগ্রেড করুন।'}
- </div>
- )}
- </div>
+  {isNearLimit && (
+  <div className="mt-4 flex items-center gap-2 text-sm text-red-500 bg-red-500/10 p-3 rounded-xl border border-red-500/20">
+  <AlertCircle className="w-4 h-4" />
+  {language === 'en' 
+  ? 'You are running out of storage. Please delete some old files or upgrade your plan.' 
+  : 'আপনার স্টোরেজ প্রায় শেষের দিকে। কিছু পুরোনো ফাইল ডিলিট করুন অথবা আপগ্রেড করুন।'}
+  </div>
+  )}
+  </div>
 
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-        <h2 className="text-lg font-bold text-slate-900 mb-2 flex items-center gap-2">
+      <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+        <h2 className="text-lg font-bold text-foreground mb-2 flex items-center gap-2">
           <Trash2 className="w-5 h-5 text-red-500" />
           {language === 'en' ? 'Clean Up Storage' : 'স্টোরেজ খালি করুন'}
         </h2>
-        <p className="text-sm text-slate-500 mb-4">
+        <p className="text-sm text-muted-foreground mb-4 font-sans">
           {language === 'en' 
             ? 'Click the button below to permanently delete all uploaded files (images, documents, etc.) and free up your storage space.' 
             : 'নিচের বাটনে ক্লিক করে সমস্ত আপলোড করা ফাইল ডিলিট করুন এবং আপনার স্টোরেজ স্পেস খালি করুন।'}
@@ -150,7 +150,7 @@ export default function StorageSettingsPage() {
           <button
             onClick={handleClearStorage}
             disabled={clearing}
-            className="flex items-center gap-2 px-4 py-2 bg-red-500/10 text-red-600 border border-red-500/20 rounded-xl font-medium hover:bg-red-500 hover:text-white transition-all disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 bg-red-500/10 text-red-500 border border-red-500/20 rounded-xl font-medium hover:bg-red-500 hover:text-white transition-all disabled:opacity-50 cursor-pointer"
           >
             {clearing ? (
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>

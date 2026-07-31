@@ -299,14 +299,14 @@ export default function AiTrainingPage() {
   ];
 
   return (
-    <div className="space-y-4 max-w-5xl mx-auto pb-10">
+    <div className="space-y-4 max-w-5xl mx-auto pb-10 text-foreground">
       {/* Header */}
       <div>
-        <h1 className="text-xl font-bold flex items-center gap-2 text-slate-900">
+        <h1 className="text-xl font-bold flex items-center gap-2 text-foreground">
           <Bot className="w-6 h-6 text-primary" />
           {language === 'en' ? 'AI Assistant Training & Tools' : 'এআই অ্যাসিস্ট্যান্ট ট্রেইনিং ও টুলস'}
         </h1>
-        <p className="text-[13px] text-zinc-500 mt-1">
+        <p className="text-[13px] text-muted-foreground mt-1 font-sans">
           {language === 'en'
             ? 'Configure your business information, event-wise AI behavior toggles, and knowledge base.'
             : 'আপনার ব্যবসার তথ্য, ইভেন্ট-ভিত্তিক এআই আচরণ এবং নলেজ বেস কনফিগার করুন।'}
@@ -323,17 +323,17 @@ export default function AiTrainingPage() {
       />
 
       {/* Master Toggle */}
-      <div className="bg-surface border border-primary/10 shadow-sm rounded-xl p-4 flex flex-col gap-4 animate-in fade-in">
+      <div className="bg-card border border-border shadow-md rounded-xl p-4 flex flex-col gap-4 animate-in fade-in">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-lg ${config.isActive ? 'bg-primary/20 text-primary' : 'bg-zinc-800 text-zinc-500'}`}>
+            <div className={`p-2 rounded-lg ${config.isActive ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}`}>
               <Bot className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="font-bold text-slate-900">
+              <h2 className="font-bold text-foreground">
                 {language === 'en' ? 'Enable AI Agent' : 'এআই এজেন্ট চালু করুন'}
               </h2>
-              <p className="text-[13px] text-zinc-500">
+              <p className="text-[13px] text-muted-foreground font-sans">
                 {language === 'en' ? 'Turn this off to completely pause AI responses.' : 'এআই রিপ্লাই সম্পূর্ণ বন্ধ করতে এটি অফ করুন।'}
               </p>
             </div>
@@ -354,8 +354,8 @@ export default function AiTrainingPage() {
         </div>
 
         {/* AI Agent Name */}
-        <div className="pt-3 mt-1 border-t border-surface-hover">
-          <label className="block text-[13px] font-bold text-slate-900 mb-1">
+        <div className="pt-3 mt-1 border-t border-border">
+          <label className="block text-[13px] font-bold text-foreground mb-1">
             {language === 'en' ? 'AI Agent Name' : 'এআই এজেন্টের নাম'}
           </label>
           <div className="flex gap-2">
@@ -364,11 +364,11 @@ export default function AiTrainingPage() {
               placeholder={language === 'en' ? 'e.g., Zini, Sarah, SupportBot' : 'যেমন: জিনী, সারা, সাপোর্টবট'}
               value={config.agentName || ''}
               onChange={(e) => setConfig({ ...config, agentName: e.target.value })}
-              className="w-full bg-surface border border-surface-hover rounded-xl px-3 py-1.5 text-[13px] text-slate-900 focus:outline-none focus:border-primary"
+              className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-[13px] text-foreground focus:outline-none focus:border-primary"
             />
             <button 
               onClick={() => handleQuickSave({ agentName: config.agentName })}
-              className="px-4 py-1.5 bg-secondary text-white rounded-xl text-[12px] font-bold hover:bg-secondary/90 transition-all shrink-0"
+              className="px-4 py-1.5 bg-secondary text-white rounded-xl text-[12px] font-bold hover:bg-secondary/90 transition-all shrink-0 cursor-pointer"
             >
               {language === 'en' ? 'Save Name' : 'নাম সেভ করুন'}
             </button>
@@ -377,14 +377,14 @@ export default function AiTrainingPage() {
       </div>
 
       {/* NEW: Event-Wise AI Behavior Section */}
-      <div className="bg-surface border border-primary/10 shadow-sm rounded-xl p-4 animate-in fade-in">
+      <div className="bg-card border border-border shadow-md rounded-xl p-4 animate-in fade-in">
         <div className="flex items-center gap-2 mb-3">
           <Sliders className="w-5 h-5 text-primary" />
           <div>
-            <h2 className="font-bold text-slate-900 text-sm">
+            <h2 className="font-bold text-foreground text-sm">
               {language === 'en' ? 'Event-Wise AI Behavior' : 'ইভেন্ট-ভিত্তিক এআই আচরণ'}
             </h2>
-            <p className="text-[12px] text-zinc-500">
+            <p className="text-[12px] text-muted-foreground font-sans">
               {language === 'en' ? 'Control exactly when and how the AI executes actions for your customers.' : 'কাস্টমার মেসেজের নির্দিষ্ট ইভেন্টে এআই কীভাবে সিদ্ধান্ত নেবে তা অন/অফ করুন।'}
             </p>
           </div>
@@ -400,10 +400,10 @@ export default function AiTrainingPage() {
                 key={tool.type} 
                 className={`border rounded-xl p-3 flex flex-col justify-between transition-colors ${
                   !isAllowed 
-                    ? 'bg-muted/40 border-muted opacity-75' 
+                    ? 'bg-muted/40 border-border opacity-75' 
                     : toolState.isEnabled 
                     ? 'bg-primary/5 border-primary/30' 
-                    : 'bg-background border-surface-hover'
+                    : 'bg-background border-border'
                 }`}
               >
                 <div className="flex items-start justify-between gap-2 mb-2">
@@ -415,12 +415,12 @@ export default function AiTrainingPage() {
                       {tool.type === 'product_matching' && <Wand2 className="w-4 h-4 text-purple-600" />}
                       {language === 'en' ? tool.titleEn : tool.titleBn}
                       {!isAllowed && (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-700 bg-amber-100 dark:bg-amber-900/30 px-1.5 py-0.2 rounded-full">
+                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-700 bg-amber-500/10 px-1.5 py-0.2 rounded-full">
                           <Lock className="w-3 h-3" /> Plan Upgrade Required
                         </span>
                       )}
                     </div>
-                    <p className="text-[11px] text-muted-foreground mt-1">
+                    <p className="text-[11px] text-muted-foreground mt-1 font-sans">
                       {language === 'en' ? tool.descEn : tool.descBn}
                     </p>
                   </div>
@@ -445,22 +445,22 @@ export default function AiTrainingPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-surface-hover mb-3">
+      <div className="flex border-b border-border mb-3">
         <button 
           onClick={() => setActiveTab('default')}
-          className={`px-3 py-2 font-medium text-[13px] border-b-2 transition-colors ${activeTab === 'default' ? 'border-primary text-primary' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
+          className={`px-3 py-2 font-medium text-[13px] border-b-2 transition-colors cursor-pointer ${activeTab === 'default' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
         >
           {language === 'en' ? 'Business Info' : 'ব্যবসার তথ্য'}
         </button>
         <button 
           onClick={() => setActiveTab('custom')}
-          className={`px-3 py-2 font-medium text-[13px] border-b-2 transition-colors ${activeTab === 'custom' ? 'border-primary text-primary' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
+          className={`px-3 py-2 font-medium text-[13px] border-b-2 transition-colors cursor-pointer ${activeTab === 'custom' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
         >
           {language === 'en' ? 'Custom Prompt & Docs' : 'কাস্টম প্রম্পট ও ফাইল'}
         </button>
         <button 
           onClick={() => setActiveTab('api')}
-          className={`px-3 py-2 font-medium text-[13px] border-b-2 transition-colors ${activeTab === 'api' ? 'border-primary text-primary' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
+          className={`px-3 py-2 font-medium text-[13px] border-b-2 transition-colors cursor-pointer ${activeTab === 'api' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
         >
           {language === 'en' ? 'API Settings' : 'API সেটিংস'}
         </button>
@@ -468,19 +468,19 @@ export default function AiTrainingPage() {
 
       {/* Section 1: API Routing Settings */}
       {activeTab === 'api' && (
-        <div className="bg-surface border border-primary/10 shadow-xl shadow-primary/5 rounded-2xl p-4 animate-in fade-in duration-300">
+        <div className="bg-card border border-border rounded-2xl p-4 animate-in fade-in duration-300">
           <h2 className="text-lg font-bold flex items-center gap-2 mb-3">
             <Key className="w-4 h-4 text-primary" /> 
             {language === 'en' ? 'AI Usage & API Settings' : 'এআই ব্যবহার ও API সেটিংস'}
           </h2>
 
-          <div className="bg-background rounded-xl p-3 mb-3 flex items-center justify-between border border-surface-hover">
+          <div className="bg-background rounded-xl p-3 mb-3 flex items-center justify-between border border-border">
             <div>
-              <div className="text-[13px] text-zinc-400">{language === 'en' ? 'Current Plan' : 'বর্তমান প্যাকেজ'}</div>
+              <div className="text-[13px] text-muted-foreground">{language === 'en' ? 'Current Plan' : 'বর্তমান প্যাকেজ'}</div>
               <div className="font-bold text-[13px]">{config.planName}</div>
             </div>
             <div className="text-right">
-              <div className="text-[13px] text-zinc-400">{language === 'en' ? 'Platform AI Quota' : 'প্ল্যাটফর্ম এআই কোটা'}</div>
+              <div className="text-[13px] text-muted-foreground">{language === 'en' ? 'Platform AI Quota' : 'প্ল্যাটফর্ম এআই কোটা'}</div>
               <div className="font-bold text-[13px] text-primary">{config.aiQuota.toLocaleString()} {language === 'en' ? 'মেসেজ/মাস' : 'মেসেজ/মাস'}</div>
             </div>
           </div>
@@ -488,38 +488,38 @@ export default function AiTrainingPage() {
           {config.allowByok ? (
             <div className="space-y-3">
               <div>
-                <label className="block text-[13px] font-medium mb-1.5 text-zinc-300">
+                <label className="block text-[13px] font-medium mb-1.5 text-foreground">
                   {language === 'en' ? 'API Routing Mode' : 'API রাউটিং মোড'}
                 </label>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-1.5">
-                  <label className={`flex flex-col p-3 rounded-xl border-2 cursor-pointer transition-colors ${config.routingMode === 'system_only' ? 'border-primary bg-primary/5' : 'border-surface-hover bg-background hover:border-zinc-500'}`}>
+                  <label className={`flex flex-col p-3 rounded-xl border-2 cursor-pointer transition-colors ${config.routingMode === 'system_only' ? 'border-primary bg-primary/5' : 'border-border bg-background hover:border-zinc-500'}`}>
                     <div className="flex items-center gap-2 mb-2">
-                      <input type="radio" name="routing" value="system_only" checked={config.routingMode === 'system_only'} onChange={e => setConfig({...config, routingMode: e.target.value})} className="text-primary focus:ring-primary bg-background border-zinc-600" />
+                      <input type="radio" name="routing" value="system_only" checked={config.routingMode === 'system_only'} onChange={e => setConfig({...config, routingMode: e.target.value})} className="text-primary focus:ring-primary bg-background border-border" />
                       <span className="font-bold text-[13px]">System Quota Only</span>
                     </div>
-                    <span className="text-[11px] text-zinc-400">Use ZiniChat platform monthly credits. No API key required.</span>
+                    <span className="text-[11px] text-muted-foreground font-sans">Use ZiniChat platform monthly credits. No API key required.</span>
                   </label>
 
-                  <label className={`flex flex-col p-3 rounded-xl border-2 cursor-pointer transition-colors ${config.routingMode === 'custom_only' ? 'border-primary bg-primary/5' : 'border-surface-hover bg-background hover:border-zinc-500'}`}>
+                  <label className={`flex flex-col p-3 rounded-xl border-2 cursor-pointer transition-colors ${config.routingMode === 'custom_only' ? 'border-primary bg-primary/5' : 'border-border bg-background hover:border-zinc-500'}`}>
                     <div className="flex items-center gap-2 mb-2">
-                      <input type="radio" name="routing" value="custom_only" checked={config.routingMode === 'custom_only'} onChange={e => setConfig({...config, routingMode: e.target.value})} className="text-primary focus:ring-primary bg-background border-zinc-600" />
+                      <input type="radio" name="routing" value="custom_only" checked={config.routingMode === 'custom_only'} onChange={e => setConfig({...config, routingMode: e.target.value})} className="text-primary focus:ring-primary bg-background border-border" />
                       <span className="font-bold text-[13px]">Your Own Key Only</span>
                     </div>
-                    <span className="text-[11px] text-zinc-400">Route 100% of AI requests through your personal OpenAI API key.</span>
+                    <span className="text-[11px] text-muted-foreground font-sans">Route 100% of AI requests through your personal OpenAI API key.</span>
                   </label>
 
-                  <label className={`flex flex-col p-3 rounded-xl border-2 cursor-pointer transition-colors ${config.routingMode === 'hybrid' ? 'border-primary bg-primary/5' : 'border-surface-hover bg-background hover:border-zinc-500'}`}>
+                  <label className={`flex flex-col p-3 rounded-xl border-2 cursor-pointer transition-colors ${config.routingMode === 'hybrid' ? 'border-primary bg-primary/5' : 'border-border bg-background hover:border-zinc-500'}`}>
                     <div className="flex items-center gap-2 mb-2">
-                      <input type="radio" name="routing" value="hybrid" checked={config.routingMode === 'hybrid'} onChange={e => setConfig({...config, routingMode: e.target.value})} className="text-primary focus:ring-primary bg-background border-zinc-600" />
+                      <input type="radio" name="routing" value="hybrid" checked={config.routingMode === 'hybrid'} onChange={e => setConfig({...config, routingMode: e.target.value})} className="text-primary focus:ring-primary bg-background border-border" />
                       <span className="font-bold text-[13px]">Hybrid (Fallback)</span>
                     </div>
-                    <span className="text-[11px] text-zinc-400">Use System credits first, then fallback to your API key if quota is full.</span>
+                    <span className="text-[11px] text-muted-foreground font-sans">Use System credits first, then fallback to your API key if quota is full.</span>
                   </label>
                 </div>
               </div>
 
               {config.routingMode !== 'system_only' && (
-                <div className="bg-background p-3 rounded-xl border border-surface-hover space-y-3">
+                <div className="bg-background p-3 rounded-xl border border-border space-y-3">
                   <div>
                     <label className="block text-[13px] font-medium mb-1">
                       {language === 'en' ? 'OpenAI API Key' : 'OpenAI API Key'}
@@ -529,9 +529,9 @@ export default function AiTrainingPage() {
                       placeholder={config.hasCustomKey ? '•••••••••••••••••••• (Saved - enter new key to replace)' : 'sk-proj-...'}
                       value={apiKey}
                       onChange={e => setApiKey(e.target.value)}
-                      className="w-full bg-surface border border-surface-hover rounded-xl px-3 py-2 text-[13px] text-slate-900 focus:outline-none focus:border-primary"
+                      className="w-full bg-background border border-border rounded-xl px-3 py-2 text-[13px] text-foreground focus:outline-none focus:border-primary"
                     />
-                    <span className="text-[11px] text-zinc-500 mt-1 block">
+                    <span className="text-[11px] text-muted-foreground mt-1 block">
                       {language === 'en' ? 'Your API key is encrypted securely with AES-256 before storage.' : 'আপনার API Key নিরাপদভাবে AES-256 দিয়ে এনক্রিপ্ট করা থাকে।'}
                     </span>
                   </div>
@@ -541,19 +541,19 @@ export default function AiTrainingPage() {
               <button
                 onClick={handleSaveConfig}
                 disabled={saving}
-                className="px-5 py-2 bg-primary text-white font-bold rounded-xl text-[13px] hover:bg-primary/90 transition-all flex items-center gap-2"
+                className="px-5 py-2 bg-primary text-white font-bold rounded-xl text-[13px] hover:bg-primary/90 transition-all flex items-center gap-2 cursor-pointer"
               >
                 {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                 {language === 'en' ? 'Save API Routing' : 'API সেভ করুন'}
               </button>
             </div>
           ) : (
-            <div className="bg-zinc-800/50 p-4 rounded-xl border border-zinc-700 text-center space-y-2">
+            <div className="bg-muted/10 p-4 rounded-xl border border-border text-center space-y-2">
               <AlertCircle className="w-6 h-6 text-amber-400 mx-auto" />
-              <div className="font-bold text-[13px] text-zinc-200">
+              <div className="font-bold text-[13px] text-foreground">
                 {language === 'en' ? 'BYOK (Bring Your Own Key) is disabled on your plan' : 'আপনার প্যাকেজে BYOK অন করার অনুমতি নেই'}
               </div>
-              <p className="text-[12px] text-zinc-400 max-w-md mx-auto">
+              <p className="text-[12px] text-muted-foreground max-w-md mx-auto font-sans">
                 {language === 'en' 
                   ? 'Your current plan uses ZiniChat system AI quota. Upgrade your plan to use your custom OpenAI API key.'
                   : 'আপনার বর্তমান প্যাকেজে প্ল্যাটফর্মের এআই কোটা ব্যবহার হচ্ছে। নিজের API Key ব্যবহার করতে প্যাকেজ আপগ্রেড করুন।'}
@@ -565,14 +565,14 @@ export default function AiTrainingPage() {
 
       {/* Section 2: Default Business Questions */}
       {activeTab === 'default' && (
-        <div className="bg-surface border border-primary/10 shadow-xl shadow-primary/5 rounded-2xl p-4 animate-in fade-in duration-300">
+        <div className="bg-card border border-border rounded-2xl p-4 shadow-sm animate-in fade-in duration-300">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-lg font-bold flex items-center gap-2">
                 <MessageSquare className="w-5 h-5 text-primary" />
                 {language === 'en' ? 'Business Q&A Knowledge Base' : 'ব্যবসার সাধারণ প্রশ্নোত্তর (Q&A)'}
               </h2>
-              <p className="text-[12px] text-zinc-400">
+              <p className="text-[12px] text-muted-foreground font-sans">
                 {language === 'en' ? 'Answer these questions so AI can respond accurately to customers.' : 'এই সাধারণ প্রশ্নগুলোর উত্তর লিখে রাখুন যেন কাস্টমার জিজ্ঞাসা করলে এআই সঠিক রিপ্লাই দেয়।'}
               </p>
             </div>
@@ -581,7 +581,7 @@ export default function AiTrainingPage() {
                 setQnaForm({ id: '', question: '', answer: '', isDefault: false });
                 setIsQnaModalOpen(true);
               }}
-              className="px-3 py-1.5 bg-primary text-white font-bold rounded-xl text-[12px] hover:bg-primary/90 transition-all flex items-center gap-1.5"
+              className="px-3 py-1.5 bg-primary text-white font-bold rounded-xl text-[12px] hover:bg-primary/90 transition-all flex items-center gap-1.5 cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               {language === 'en' ? 'Add Q&A' : 'প্রশ্ন যোগ করুন'}
@@ -590,9 +590,9 @@ export default function AiTrainingPage() {
 
           <div className="space-y-3">
             {qnas.map((qna) => (
-              <div key={qna.id} className="bg-background border border-surface-hover rounded-xl p-3.5 space-y-2">
+              <div key={qna.id} className="bg-background border border-border rounded-xl p-3.5 space-y-2">
                 <div className="flex items-start justify-between gap-2">
-                  <div className="font-bold text-[13px] text-slate-900 flex items-center gap-2">
+                  <div className="font-bold text-[13px] text-foreground flex items-center gap-2">
                     <span>{qna.question}</span>
                     {qna.isDefault && (
                       <span className="text-[10px] bg-primary/20 text-primary font-bold px-2 py-0.5 rounded-full">Default</span>
@@ -604,14 +604,14 @@ export default function AiTrainingPage() {
                         setQnaForm({ id: qna.id, question: qna.question, answer: qna.answer || '', isDefault: qna.isDefault });
                         setIsQnaModalOpen(true);
                       }}
-                      className="p-1 text-zinc-400 hover:text-primary transition-colors"
+                      className="p-1 text-muted-foreground hover:text-primary transition-colors cursor-pointer"
                     >
                       <Edit2 className="w-4 h-4" />
                     </button>
                     {!qna.isDefault && (
                       <button
                         onClick={() => handleDeleteQna(qna.id)}
-                        className="p-1 text-zinc-400 hover:text-red-400 transition-colors"
+                        className="p-1 text-muted-foreground hover:text-red-400 transition-colors cursor-pointer"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -619,8 +619,8 @@ export default function AiTrainingPage() {
                   </div>
                 </div>
 
-                <div className="text-[12px] text-zinc-300 bg-surface p-2.5 rounded-lg border border-surface-hover/50">
-                  {qna.answer ? qna.answer : <span className="text-zinc-500 italic">{language === 'en' ? 'No answer provided yet. Click edit to add.' : 'এখনও উত্তর লেখা হয়নি। এডিট বাটনে ক্লিক করুন।'}</span>}
+                <div className="text-[12px] text-foreground bg-card p-2.5 rounded-lg border border-border/50">
+                  {qna.answer ? qna.answer : <span className="text-muted-foreground italic font-sans">{language === 'en' ? 'No answer provided yet. Click edit to add.' : 'এখনও উত্তর লেখা হয়নি। এডিট বাটনে ক্লিক করুন।'}</span>}
                 </div>
               </div>
             ))}
@@ -631,12 +631,12 @@ export default function AiTrainingPage() {
       {/* Section 3: Custom System Prompt & Document Upload */}
       {activeTab === 'custom' && (
         <div className="space-y-4 animate-in fade-in duration-300">
-          <div className="bg-surface border border-primary/10 shadow-xl shadow-primary/5 rounded-2xl p-4">
+          <div className="bg-card border border-border shadow-md rounded-2xl p-4">
             <h2 className="text-lg font-bold flex items-center gap-2 mb-2">
               <Bot className="w-5 h-5 text-primary" />
               {language === 'en' ? 'System Prompt Instructions' : 'সিস্টেম প্রম্পট ইনস্ট্রাকশন'}
             </h2>
-            <p className="text-[12px] text-zinc-400 mb-3">
+            <p className="text-[12px] text-muted-foreground mb-3 font-sans">
               {language === 'en' ? 'Guide the AI on its personality, tone, and specific rules.' : 'এআই-এর আচরণ, টোন এবং বিশেষ নির্দেশনাসমূহ লিখে দিন।'}
             </p>
 
@@ -644,14 +644,14 @@ export default function AiTrainingPage() {
               rows={6}
               value={config.systemPrompt || ''}
               onChange={(e) => setConfig({ ...config, systemPrompt: e.target.value })}
-              className="w-full bg-background border border-surface-hover rounded-xl p-3 text-[13px] text-slate-900 focus:outline-none focus:border-primary font-mono"
+              className="w-full bg-background border border-border rounded-xl p-3 text-[13px] text-foreground focus:outline-none focus:border-primary font-mono"
               placeholder="You are a polite sales assistant..."
             />
 
             <div className="flex justify-end mt-3">
               <button
                 onClick={() => handleQuickSave({ systemPrompt: config.systemPrompt })}
-                className="px-4 py-2 bg-primary text-white font-bold rounded-xl text-[12px] hover:bg-primary/90 transition-all flex items-center gap-1.5"
+                className="px-4 py-2 bg-primary text-white font-bold rounded-xl text-[12px] hover:bg-primary/90 transition-all flex items-center gap-1.5 cursor-pointer"
               >
                 <Save className="w-4 h-4" />
                 {language === 'en' ? 'Save Prompt' : 'প্রম্পট সেভ করুন'}
@@ -659,14 +659,14 @@ export default function AiTrainingPage() {
             </div>
           </div>
 
-          <div className="bg-surface border border-primary/10 shadow-xl shadow-primary/5 rounded-2xl p-4">
+          <div className="bg-card border border-border shadow-md rounded-2xl p-4">
             <div className="flex items-center justify-between mb-3">
               <div>
                 <h2 className="text-lg font-bold flex items-center gap-2">
                   <Wand2 className="w-5 h-5 text-primary" />
                   {language === 'en' ? 'Document Upload (PDF/Word/Images)' : 'ডকুমেন্ট আপলোড (PDF/Word/ছবি)'}
                 </h2>
-                <p className="text-[12px] text-zinc-400">
+                <p className="text-[12px] text-muted-foreground font-sans">
                   {language === 'en' ? 'Upload up to 2 documents (max 1MB each) for AI context.' : 'সর্বোচ্চ ২টি ফাইল (প্রতিটি ১ মেগাবাইট) আপলোড করতে পারবেন।'}
                 </p>
               </div>
@@ -682,21 +682,21 @@ export default function AiTrainingPage() {
 
             <div className="space-y-2">
               {documents.map((doc) => (
-                <div key={doc.id} className="bg-background border border-surface-hover rounded-xl p-3 flex items-center justify-between">
+                <div key={doc.id} className="bg-background border border-border rounded-xl p-3 flex items-center justify-between">
                   <div>
-                    <div className="font-bold text-[13px] text-slate-900">{doc.filename}</div>
-                    <div className="text-[11px] text-zinc-400">Status: <span className="text-emerald-400 font-semibold">{doc.status}</span></div>
+                    <div className="font-bold text-[13px] text-foreground">{doc.filename}</div>
+                    <div className="text-[11px] text-muted-foreground">Status: <span className="text-emerald-400 font-semibold">{doc.status}</span></div>
                   </div>
                   <button
                     onClick={() => handleDeleteDoc(doc.id)}
-                    className="p-1.5 text-zinc-400 hover:text-red-400 transition-colors"
+                    className="p-1.5 text-muted-foreground hover:text-red-400 transition-colors cursor-pointer"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               ))}
               {documents.length === 0 && (
-                <div className="text-center py-6 text-zinc-500 text-[12px]">
+                <div className="text-center py-6 text-muted-foreground text-[12px]">
                   {language === 'en' ? 'No documents uploaded yet.' : 'এখনও কোনো ফাইল আপলোড করা হয়নি।'}
                 </div>
               )}
@@ -708,21 +708,21 @@ export default function AiTrainingPage() {
       {/* Q&A Modal */}
       {isQnaModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-surface border border-surface-hover rounded-2xl max-w-lg w-full p-4 space-y-4 shadow-2xl animate-in zoom-in-95">
-            <div className="flex items-center justify-between border-b border-surface-hover pb-3">
-              <h3 className="font-bold text-slate-900 text-base">
+          <div className="bg-card border border-border rounded-2xl max-w-lg w-full p-4 space-y-4 shadow-2xl animate-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <h3 className="font-bold text-foreground text-base">
                 {qnaForm.id 
                   ? (language === 'en' ? 'Edit Question & Answer' : 'প্রশ্ন ও উত্তর এডিট করুন') 
                   : (language === 'en' ? 'Add Custom Question' : 'নতুন প্রশ্ন যোগ করুন')}
               </h3>
-              <button onClick={() => setIsQnaModalOpen(false)} className="text-zinc-400 hover:text-white">
+              <button onClick={() => setIsQnaModalOpen(false)} className="text-muted-foreground hover:text-foreground">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="space-y-3">
               <div>
-                <label className="block text-[12px] font-medium text-zinc-300 mb-1">
+                <label className="block text-[12px] font-medium text-muted-foreground mb-1">
                   {language === 'en' ? 'Question' : 'প্রশ্ন'}
                 </label>
                 <input
@@ -730,19 +730,19 @@ export default function AiTrainingPage() {
                   disabled={qnaForm.isDefault}
                   value={qnaForm.question}
                   onChange={(e) => setQnaForm({ ...qnaForm, question: e.target.value })}
-                  className="w-full bg-background border border-surface-hover rounded-xl px-3 py-2 text-[13px] text-slate-900 focus:outline-none focus:border-primary disabled:opacity-60"
+                  className="w-full bg-background border border-surface-hover rounded-xl px-3 py-2 text-[13px] text-foreground focus:outline-none focus:border-primary disabled:opacity-60"
                 />
               </div>
 
               <div>
-                <label className="block text-[12px] font-medium text-zinc-300 mb-1">
+                <label className="block text-[12px] font-medium text-muted-foreground mb-1">
                   {language === 'en' ? 'Answer' : 'উত্তর'}
                 </label>
                 <textarea
                   rows={4}
                   value={qnaForm.answer}
                   onChange={(e) => setQnaForm({ ...qnaForm, answer: e.target.value })}
-                  className="w-full bg-background border border-surface-hover rounded-xl p-3 text-[13px] text-slate-900 focus:outline-none focus:border-primary font-sans"
+                  className="w-full bg-background border border-surface-hover rounded-xl p-3 text-[13px] text-foreground focus:outline-none focus:border-primary font-sans"
                   placeholder={language === 'en' ? 'Enter the answer for AI to use...' : 'এআই যা উত্তর দেবে তা স্পষ্ট করে লিখুন...'}
                 />
               </div>
@@ -751,7 +751,7 @@ export default function AiTrainingPage() {
             <div className="flex justify-end gap-2 border-t border-surface-hover pt-3">
               <button
                 onClick={() => setIsQnaModalOpen(false)}
-                className="px-4 py-2 bg-zinc-800 text-zinc-300 rounded-xl text-[12px] font-bold hover:bg-zinc-700"
+                className="px-4 py-2 bg-muted text-muted-foreground hover:text-foreground rounded-xl text-[12px] font-bold"
               >
                 {language === 'en' ? 'Cancel' : 'বাতিল'}
               </button>

@@ -773,16 +773,16 @@ export default function NewInboxStepper() {
                       </div>
                     ) : (
                       <div className="py-4 space-y-4 animate-in fade-in duration-300">
-                        <div className="bg-white p-4 rounded-2xl inline-block shadow-md border border-slate-200">
+                        <div className="bg-white p-4 rounded-2xl inline-block shadow-md border border-border">
                           <QRCode value={qrCodeData} size={200} />
                         </div>
-                        <div className="text-xs text-zinc-400 space-y-1">
+                        <div className="text-xs text-muted-foreground space-y-1">
                           <p className="font-bold text-foreground">{language === 'en' ? 'Scan with WhatsApp' : 'WhatsApp দিয়ে স্ক্যান করুন'}</p>
                           <p>{language === 'en' ? 'Open WhatsApp → Settings → Linked Devices → Link a Device' : 'WhatsApp খুলুন → Settings → Linked Devices → Link a Device'}</p>
                         </div>
                         <button
                           onClick={handleStartQr}
-                          className="px-3 py-1.5 bg-surface-hover text-zinc-300 hover:text-foreground rounded-lg text-[11px] font-bold inline-flex items-center gap-1 transition-colors"
+                          className="px-3 py-1.5 bg-surface-hover text-foreground hover:text-primary rounded-lg text-[11px] font-bold inline-flex items-center gap-1 transition-colors border border-border"
                         >
                           <RefreshCw className="w-3 h-3" />
                           <span>{language === 'en' ? 'Refresh QR Code' : 'QR রিফ্রেশ করুন'}</span>

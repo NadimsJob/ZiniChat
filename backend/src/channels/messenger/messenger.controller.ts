@@ -65,12 +65,14 @@ export class MessengerController {
           timestamp: msg.timestamp
         });
 
+        if ((savedData as any).dropped) return;
+
         // Broadcast to Inbox UI
         this.inboxGateway.broadcastToTenant(msg.tenantId, 'new_message', {
-          message: savedData.message,
-          conversation: savedData.conversation,
-          contact: savedData.contact,
-          conversationId: savedData.conversation.id
+          message: (savedData as any).message,
+          conversation: (savedData as any).conversation,
+          contact: (savedData as any).contact,
+          conversationId: (savedData as any).conversation.id
         });
       }
     } catch (error) {

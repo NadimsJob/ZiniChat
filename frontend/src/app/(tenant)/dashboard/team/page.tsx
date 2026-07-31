@@ -170,7 +170,7 @@ export default function TeamPage() {
   };
 
   return (
-    <div className="bg-white/70 backdrop-blur-xl border border-white/50 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] max-w-6xl mx-auto space-y-4">
+    <div className="bg-card border border-border rounded-2xl p-4 shadow-sm max-w-6xl mx-auto space-y-4">
       <InstructionBanner
         title={language === 'en' ? 'Team Management' : 'টিম ম্যানেজমেন্ট'}
         description={language === 'en'
@@ -183,11 +183,11 @@ export default function TeamPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <Users className="w-6 h-6 text-primary" />
             {language === 'en' ? 'Team Management' : 'টিম ম্যানেজমেন্ট'}
           </h1>
-          <p className="text-slate-500 text-[13px] mt-1">
+          <p className="text-muted-foreground text-[13px] mt-1">
             {language === 'en' ? 'Manage roles, menu permissions, and channel access.' : 'রোল, মেনু পারমিশন এবং চ্যানেল অ্যাক্সেস ম্যানেজ করুন।'}
           </p>
         </div>
@@ -221,11 +221,11 @@ export default function TeamPage() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
         </div>
       ) : (
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+        <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-[12px] text-slate-500">
+                <tr className="bg-muted/50 border-b border-border text-[12px] text-muted-foreground">
                   <th className="px-3 py-2 font-semibold">{language === 'en' ? 'Member' : 'মেম্বার'}</th>
                   <th className="px-3 py-2 font-semibold">{language === 'en' ? 'Role' : 'রোল'}</th>
                   <th className="px-3 py-2 font-semibold hidden md:table-cell">{language === 'en' ? 'Menu Access' : 'মেনু অ্যাক্সেস'}</th>
@@ -233,51 +233,51 @@ export default function TeamPage() {
                   <th className="px-3 py-2 font-semibold text-right">{language === 'en' ? 'Actions' : 'অ্যাকশন'}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-border/50">
                 {agents.map((agent) => (
-                  <tr key={agent.id} className="hover:bg-slate-50/50 transition-colors">
+                  <tr key={agent.id} className="hover:bg-muted/30 transition-colors">
                     <td className="px-3 py-2">
                       <div className="flex items-center gap-2">
                         <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-[12px] uppercase shrink-0">
                           {agent.name.substring(0, 2)}
                         </div>
                         <div>
-                          <div className="text-[13px] font-semibold text-slate-800 flex items-center gap-1">
+                          <div className="text-[13px] font-semibold text-foreground flex items-center gap-1">
                             {agent.name}
                             {agent.role === 'owner' && <Crown className="w-3 h-3 text-amber-500" />}
                           </div>
-                          <div className="text-[11px] text-slate-500">{agent.email}</div>
+                          <div className="text-[11px] text-muted-foreground">{agent.email}</div>
                         </div>
                       </div>
                     </td>
                     <td className="px-3 py-2">
                       {agent.role === 'owner' ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-[11px] font-bold">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-full text-[11px] font-bold">
                           <Crown className="w-3 h-3" /> Owner
                         </span>
                       ) : agent.role === 'admin' ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-violet-100 text-violet-700 rounded-full text-[11px] font-bold">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-violet-500/10 text-violet-500 border border-violet-500/20 rounded-full text-[11px] font-bold">
                           <ShieldCheck className="w-3 h-3" /> Admin
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-[11px] font-bold">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-500/10 text-blue-500 border border-blue-500/20 rounded-full text-[11px] font-bold">
                           <Shield className="w-3 h-3" /> Agent
                         </span>
                       )}
                     </td>
                     <td className="px-3 py-2 hidden md:table-cell">
                       {agent.role === 'admin' || agent.role === 'owner' ? (
-                        <span className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
+                        <span className="text-[11px] text-emerald-500 font-semibold flex items-center gap-1">
                           <CheckCircle2 className="w-3 h-3" /> {language === 'en' ? 'Full Access' : 'সম্পূর্ণ অ্যাক্সেস'}
                         </span>
                       ) : (
-                        <span className="text-[11px] text-slate-600">
+                        <span className="text-[11px] text-muted-foreground">
                           {getPermissionsSummary(agent) || (language === 'en' ? 'No access' : 'কোনো অ্যাক্সেস নেই')}
                         </span>
                       )}
                     </td>
                     <td className="px-3 py-2 hidden md:table-cell">
-                      <span className="text-[11px] text-slate-600">
+                      <span className="text-[11px] text-muted-foreground">
                         {agent.agentAccessMode === 'ASSIGNED_CHANNELS'
                           ? `${agent.channelAssignments?.length || 0} ${language === 'en' ? 'channel(s)' : 'চ্যানেল'}`
                           : (language === 'en' ? 'All Channels' : 'সব চ্যানেল')}
@@ -289,13 +289,13 @@ export default function TeamPage() {
                           <>
                             <button
                               onClick={() => openModal(agent)}
-                              className="p-1.5 text-slate-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                              className="p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-colors cursor-pointer"
                             >
                               <Edit2 className="w-3.5 h-3.5" />
                             </button>
                             <button
                               onClick={() => handleDelete(agent.id)}
-                              className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                              className="p-1.5 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -313,16 +313,16 @@ export default function TeamPage() {
 
       {/* Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-4 border-b border-slate-100">
-              <h2 className="text-[15px] font-bold text-slate-800">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <h2 className="text-[15px] font-bold text-foreground">
                 {editingAgent
                   ? (language === 'en' ? 'Edit Team Member' : 'মেম্বার এডিট করুন')
                   : (language === 'en' ? 'Add Team Member' : 'নতুন মেম্বার যোগ করুন')}
               </h2>
-              <button onClick={() => setIsModalOpen(false)} className="p-1.5 hover:bg-slate-100 rounded-lg">
-                <X className="w-4 h-4 text-slate-500" />
+              <button onClick={() => setIsModalOpen(false)} className="p-1.5 hover:bg-muted rounded-lg">
+                <X className="w-4 h-4 text-muted-foreground" />
               </button>
             </div>
 
@@ -336,31 +336,31 @@ export default function TeamPage() {
               <form id="agentForm" onSubmit={handleSubmit} className="space-y-3">
                 {/* Name */}
                 <div>
-                  <label className="block text-[12px] font-semibold text-slate-700 mb-1">
+                  <label className="block text-[12px] font-semibold text-foreground/80 mb-1">
                     {language === 'en' ? 'Name' : 'নাম'} <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text" required value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-[13px] focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                    className="w-full px-3 py-2 bg-background border border-border rounded-xl text-[13px] focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-foreground"
                     placeholder="John Doe"
                   />
                 </div>
 
                 {/* Email */}
                 <div>
-                  <label className="block text-[12px] font-semibold text-slate-700 mb-1">
+                  <label className="block text-[12px] font-semibold text-foreground/80 mb-1">
                     {language === 'en' ? 'Email' : 'ইমেইল'} {!editingAgent && <span className="text-red-500">*</span>}
                   </label>
                   <input
                     type="email" required={!editingAgent} disabled={!!editingAgent}
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-[13px] focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none disabled:opacity-50"
+                    className="w-full px-3 py-2 bg-background border border-border rounded-xl text-[13px] focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none disabled:opacity-50 text-foreground"
                     placeholder="john@example.com"
                   />
                   {!editingAgent && (
-                    <p className="text-[11px] text-slate-500 mt-1">
+                    <p className="text-[11px] text-muted-foreground mt-1">
                       {language === 'en' ? 'Login credentials will be sent to this email.' : 'লগইন ক্রেডেনশিয়াল এই ইমেইলে পাঠানো হবে।'}
                     </p>
                   )}
@@ -368,13 +368,13 @@ export default function TeamPage() {
 
                 {/* Password */}
                 <div>
-                  <label className="block text-[12px] font-semibold text-slate-700 mb-1">
+                  <label className="block text-[12px] font-semibold text-foreground/80 mb-1">
                     {language === 'en' ? 'Password (Optional)' : 'পাসওয়ার্ড (Optional)'}
                   </label>
                   <input
                     type="text" value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-[13px] focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                    className="w-full px-3 py-2 bg-background border border-border rounded-xl text-[13px] focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-foreground"
                     placeholder={language === 'en' ? 'Leave blank to auto-generate' : 'ফাঁকা রাখলে অটো তৈরি হবে'}
                   />
                 </div>
@@ -382,7 +382,7 @@ export default function TeamPage() {
                 {/* Role */}
                 {(!editingAgent || editingAgent?.role !== 'owner') && (
                   <div>
-                    <label className="block text-[12px] font-semibold text-slate-700 mb-1">
+                    <label className="block text-[12px] font-semibold text-foreground/80 mb-1">
                       {language === 'en' ? 'Role' : 'রোল'}
                     </label>
                     <div className="grid grid-cols-2 gap-2">
@@ -396,7 +396,7 @@ export default function TeamPage() {
                           className={`cursor-pointer p-2.5 border rounded-xl flex items-center gap-2 transition-all ${
                             formData.role === value
                               ? `border-${color}-400 bg-${color}-50 text-${color}-700`
-                              : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                              : 'border-border text-muted-foreground hover:bg-muted/50'
                           }`}
                         >
                           <Icon className="w-4 h-4" />
@@ -422,9 +422,9 @@ export default function TeamPage() {
                 {/* Agent: Menu Permissions */}
                 {formData.role === 'agent' && (
                   <>
-                    <div className="pt-2 border-t border-slate-100">
-                      <label className="block text-[12px] font-semibold text-slate-700 mb-2 flex items-center gap-1.5">
-                        <Lock className="w-3.5 h-3.5 text-slate-400" />
+                    <div className="pt-2 border-t border-border">
+                      <label className="block text-[12px] font-semibold text-foreground/80 mb-2 flex items-center gap-1.5">
+                        <Lock className="w-3.5 h-3.5 text-muted-foreground" />
                         {language === 'en' ? 'Menu Permissions' : 'মেনু পারমিশন'}
                       </label>
                       <div className="grid grid-cols-2 gap-1.5">
@@ -436,14 +436,14 @@ export default function TeamPage() {
                               className={`flex items-center gap-2 p-2 rounded-xl border cursor-pointer transition-all ${
                                 checked
                                   ? 'border-primary bg-primary/5 text-primary'
-                                  : 'border-slate-200 text-slate-500 hover:bg-slate-50'
+                                  : 'border-border text-muted-foreground hover:bg-muted/50'
                               }`}
                             >
                               <input
                                 type="checkbox"
                                 checked={checked}
                                 onChange={() => toggleMenuPermission(key)}
-                                className="w-3.5 h-3.5 text-primary rounded border-slate-300 focus:ring-primary"
+                                className="w-3.5 h-3.5 text-primary rounded border-border focus:ring-primary"
                               />
                               <Icon className="w-3.5 h-3.5 shrink-0" />
                               <span className="text-[11px] font-semibold">
@@ -456,9 +456,9 @@ export default function TeamPage() {
                     </div>
 
                     {/* Channel Access */}
-                    <div className="pt-2 border-t border-slate-100">
-                      <label className="block text-[12px] font-semibold text-slate-700 mb-2 flex items-center gap-1.5">
-                        <Wifi className="w-3.5 h-3.5 text-slate-400" />
+                    <div className="pt-2 border-t border-border">
+                      <label className="block text-[12px] font-semibold text-foreground/80 mb-2 flex items-center gap-1.5">
+                        <Wifi className="w-3.5 h-3.5 text-muted-foreground" />
                         {language === 'en' ? 'Inbox Channel Access' : 'ইনবক্স চ্যানেল অ্যাক্সেস'}
                       </label>
                       <div className="grid grid-cols-2 gap-1.5 mb-2">
@@ -472,11 +472,11 @@ export default function TeamPage() {
                             className={`cursor-pointer p-2 border rounded-xl flex items-start gap-2 transition-all ${
                               formData.agentAccessMode === value
                                 ? 'border-primary bg-primary/5 text-primary'
-                                : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                                : 'border-border text-muted-foreground hover:bg-muted/50'
                             }`}
                           >
                             <div className={`w-3.5 h-3.5 mt-0.5 rounded-full border flex items-center justify-center shrink-0 ${
-                              formData.agentAccessMode === value ? 'border-primary' : 'border-slate-300'
+                              formData.agentAccessMode === value ? 'border-primary' : 'border-border'
                             }`}>
                               {formData.agentAccessMode === value && <div className="w-2 h-2 rounded-full bg-primary" />}
                             </div>
@@ -495,18 +495,18 @@ export default function TeamPage() {
                               {language === 'en' ? 'No channels connected yet.' : 'এখনো কোনো চ্যানেল কানেক্ট করা হয়নি।'}
                             </p>
                           ) : channels.map(channel => (
-                            <label key={channel.id} className="flex items-center gap-2 p-2 bg-slate-50 rounded-xl border border-slate-100 cursor-pointer hover:bg-slate-100 transition-colors">
+                            <label key={channel.id} className="flex items-center gap-2 p-2 bg-muted/30 rounded-xl border border-border cursor-pointer hover:bg-muted/50 transition-colors">
                               <input
                                 type="checkbox"
                                 checked={formData.assignedChannels.includes(channel.id)}
                                 onChange={() => handleToggleChannel(channel.id)}
-                                className="w-3.5 h-3.5 text-primary rounded border-slate-300 focus:ring-primary"
+                                className="w-3.5 h-3.5 text-primary rounded border-border focus:ring-primary"
                               />
                               <div>
-                                <div className="text-[12px] font-semibold text-slate-800">
+                                <div className="text-[12px] font-semibold text-foreground">
                                   {channel.displayName || channel.externalAccountId}
                                 </div>
-                                <div className="text-[10px] text-slate-500 uppercase">{channel.channelType}</div>
+                                <div className="text-[10px] text-muted-foreground uppercase">{channel.channelType}</div>
                               </div>
                             </label>
                           ))}
@@ -518,11 +518,11 @@ export default function TeamPage() {
               </form>
             </div>
 
-            <div className="px-4 py-3 border-t border-slate-100 bg-slate-50 flex justify-end gap-2 rounded-b-2xl">
+            <div className="px-4 py-3 border-t border-border bg-muted/30 flex justify-end gap-2 rounded-b-2xl">
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 text-[13px] font-medium text-slate-600 hover:text-slate-800 transition-colors"
+                className="px-4 py-2 text-[13px] font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
                 {language === 'en' ? 'Cancel' : 'বাতিল'}
               </button>

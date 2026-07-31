@@ -297,7 +297,7 @@ export default function LeadsPage() {
  );
 
  return (
- <div className="flex h-full bg-white/70 backdrop-blur-xl border border-white/50 rounded-2xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] _8px_30px_rgb(0,0,0,0.2)] relative text-[13px]">
+ <div className="flex h-full bg-surface/70 backdrop-blur-xl border border-border rounded-2xl overflow-hidden shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.2)] relative text-[13px]">
  <div className={`flex-1 flex flex-col transition-all duration-300 min-w-0`}>
   {/* Bilingual Instruction Header */}
   <div className="bg-primary/10 border-b border-primary/20 p-3 flex gap-3 items-start shadow-sm shrink-0">
@@ -308,7 +308,7 @@ export default function LeadsPage() {
       <h3 className="font-semibold text-primary text-[12px] mb-0.5">
         {language === 'en' ? 'Leads Management Instructions' : 'লিড ম্যানেজমেন্ট নির্দেশনা'}
       </h3>
-       <p className="hidden md:block text-[11px] text-zinc-600 leading-relaxed max-w-4xl">
+       <p className="hidden md:block text-[11px] text-muted-foreground leading-relaxed max-w-4xl">
         {language === 'en' ? 'Here you can view and manage all your customer leads and contacts. You can manually create a new lead, assign leads to specific agents, set follow-up dates, and categorize them into custom stages (e.g., Interested, Not Interested). Click on any lead to see their full details or click the Chat button to open their conversation in the Inbox.' : 'এখান থেকে আপনি আপনার কাস্টমার বা লিডদের প্রোফাইল ম্যানেজ করতে পারবেন। আপনি চাইলে নিজে নতুন লিড তৈরি করতে পারেন, লিডগুলোকে বিভিন্ন এজেন্টের কাছে অ্যাসাইন করতে পারেন এবং লিডের বর্তমান অবস্থা (যেমন: আগ্রহী, আগ্রহী নয়) বোঝাতে স্টেজ পরিবর্তন করতে পারেন। যেকোনো লিডের উপর ক্লিক করে তার বিস্তারিত তথ্য দেখা যাবে এবং "Chat" বাটনে ক্লিক করে সরাসরি ইনবক্সে মেসেজ করা যাবে।'}
       </p>
     </div>
@@ -321,7 +321,7 @@ export default function LeadsPage() {
  {language === 'en' ? 'Leads' : 'লিডস'}
  </h1>
  <div className="relative flex-1 md:w-64">
- <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+ <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
  <input 
  type="text" 
  placeholder={language === 'en' ? "Search leads..." : "লিড খুঁজুন..."}
@@ -335,7 +335,7 @@ export default function LeadsPage() {
  <div className="flex items-center space-x-2">
               <button
                 onClick={handleExportLeads}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-700 text-[12px] font-medium rounded-lg hover:bg-slate-200 transition-colors shadow-sm"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-muted text-muted-foreground border border-border/80 text-[12px] font-medium rounded-lg hover:bg-muted/80 hover:text-foreground transition-colors shadow-sm"
               >
                 <Download className="w-3.5 h-3.5" />
                 {language === 'en' ? 'Export' : 'এক্সপোর্ট'}
@@ -466,7 +466,7 @@ export default function LeadsPage() {
  <div className="flex space-x-2">
  <input type="color" value={newStageColor} onChange={(e) => setNewStageColor(e.target.value)} className="w-6 h-6 rounded cursor-pointer p-0 border-0 bg-transparent" />
  <button type="submit" className="flex-1 bg-primary text-primary-foreground text-[11px] py-1 rounded-md">Save</button>
- <button type="button" onClick={() => setIsAddingStage(false)} className="flex-1 bg-surface border border-border text-[11px] py-1 rounded-md">Cancel</button>
+ <button type="button" onClick={() => setIsAddingStage(false)} className="flex-1 bg-muted hover:bg-muted/80 text-foreground border border-border text-[11px] py-1 rounded-md">{language === 'en' ? 'Cancel' : 'বাতিল'}</button>
  </div>
  </form>
  ) : (
@@ -548,7 +548,7 @@ export default function LeadsPage() {
  <button onClick={() => router.push(`/dashboard/inbox?contactId=${selectedLead.id}`)} className="flex items-center justify-center space-x-1.5 bg-primary text-primary-foreground py-2 rounded-lg text-[11px] font-semibold hover:bg-primary/90">
  <MessageSquare className="w-3.5 h-3.5" /> <span>Chat</span>
  </button>
- <button onClick={() => router.push('/dashboard/orders')} className="flex items-center justify-center space-x-1.5 bg-surface border border-border py-2 rounded-lg text-[11px] font-semibold hover:bg-accent/10 hover:text-accent hover:border-accent/30 transition-all">
+ <button onClick={() => router.push('/dashboard/orders')} className="flex items-center justify-center space-x-1.5 bg-muted hover:bg-muted/80 text-foreground border border-border py-2 rounded-lg text-[11px] font-semibold transition-all">
  <ShoppingBag className="w-3.5 h-3.5" /> <span>Order</span>
  </button>
  </div>
