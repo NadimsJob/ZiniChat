@@ -7,7 +7,7 @@ import { useFeature } from '@/hooks/useFeature';
 import { 
   ShoppingBag, ChevronDown, ChevronUp, User, Phone, Mail, Building, MapPin, 
   Tag, Plus, FileText, Sparkles, Activity, Folder, Trash2, Edit, Save, 
-  Check, Lock, RefreshCw, X, Image as ImageIcon, File as FileIcon 
+  Check, Lock, RefreshCw, X, Image as ImageIcon, File as FileIcon, Calendar
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
@@ -55,20 +55,49 @@ export default function ConversationSidebar({
   // Contact inline edit
   const contact = conversation?.contact;
   const [isEditingContact, setIsEditingContact] = useState(false);
+  const [stages, setStages] = useState<any[]>([]);
+  const [teamMembers, setTeamMembers] = useState<any[]>([]);
   const [contactForm, setContactForm] = useState({
+    name: '',
     phone: '',
     email: '',
     company: '',
     address: '',
+    stageId: '',
+    assignedUserId: '',
+    followUpAt: '',
   });
+
+  useEffect(() => {
+    const token = Cookies.get('access_token');
+    if (!token) return;
+
+    fetch(`${API}/leads/stages`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => { if (res.ok) return res.json(); })
+      .then(data => { if (Array.isArray(data)) setStages(data); })
+      .catch(console.error);
+
+    fetch(`${API}/tenant/team`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => { if (res.ok) return res.json(); })
+      .then(data => { if (Array.isArray(data)) setTeamMembers(data); })
+      .catch(console.error);
+  }, []);
 
   useEffect(() => {
     if (contact) {
       setContactForm({
-        phone: contact.phone || '',
+        name: contact.name || '',
+        phone: contact.phone || contact.externalContactId || '',
         email: contact.email || '',
         company: contact.company || '',
         address: contact.address || '',
+        stageId: contact.stageId || '',
+        assignedUserId: contact.assignedUserId || '',
+        followUpAt: contact.followUpAt ? new Date(contact.followUpAt).toISOString().split('T')[0] : '',
       });
     }
   }, [contact]);
@@ -83,7 +112,10 @@ export default function ConversationSidebar({
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(contactForm),
+        body: JSON.stringify({
+          ...contactForm,
+          followUpAt: contactForm.followUpAt || null,
+        }),
       });
       if (res.ok) {
         const updated = await res.json();
@@ -329,66 +361,140 @@ export default function ConversationSidebar({
             {isEditingContact ? (
               <div className="space-y-2">
                 <div>
-                  <label className="text-[10px] text-muted-foreground font-medium">Phone</label>
+                  <label className="text-[10px] text-muted-foreground font-medium">{language === 'en' ? 'Name' : 'নাম'}</label>
+                  <input 
+                    type="text" 
+                    value={contactForm.name} 
+                    onChange={e => setContactForm({ ...contactForm, name: e.target.value })}
+                    className="w-full bg-background border border-border rounded px-2 py-1 text-[11px] focus:outline-none focus:border-primary text-foreground" 
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-muted-foreground font-medium">{language === 'en' ? 'Phone' : 'ফোন'}</label>
                   <input 
                     type="text" 
                     value={contactForm.phone} 
                     onChange={e => setContactForm({ ...contactForm, phone: e.target.value })}
-                    className="w-full bg-background border border-border rounded px-2 py-1 text-[11px] focus:outline-none focus:border-primary" 
+                    className="w-full bg-background border border-border rounded px-2 py-1 text-[11px] focus:outline-none focus:border-primary text-foreground" 
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] text-muted-foreground font-medium">Email</label>
+                  <label className="text-[10px] text-muted-foreground font-medium">{language === 'en' ? 'Email' : 'ইমেইল'}</label>
                   <input 
                     type="email" 
                     value={contactForm.email} 
                     onChange={e => setContactForm({ ...contactForm, email: e.target.value })}
-                    className="w-full bg-background border border-border rounded px-2 py-1 text-[11px] focus:outline-none focus:border-primary" 
+                    className="w-full bg-background border border-border rounded px-2 py-1 text-[11px] focus:outline-none focus:border-primary text-foreground" 
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] text-muted-foreground font-medium">Company</label>
+                  <label className="text-[10px] text-muted-foreground font-medium">{language === 'en' ? 'Company' : 'কোম্পানি'}</label>
                   <input 
                     type="text" 
                     value={contactForm.company} 
                     onChange={e => setContactForm({ ...contactForm, company: e.target.value })}
-                    className="w-full bg-background border border-border rounded px-2 py-1 text-[11px] focus:outline-none focus:border-primary" 
+                    className="w-full bg-background border border-border rounded px-2 py-1 text-[11px] focus:outline-none focus:border-primary text-foreground" 
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] text-muted-foreground font-medium">Address</label>
+                  <label className="text-[10px] text-muted-foreground font-medium">{language === 'en' ? 'Address' : 'ঠিকানা'}</label>
                   <input 
                     type="text" 
                     value={contactForm.address} 
                     onChange={e => setContactForm({ ...contactForm, address: e.target.value })}
-                    className="w-full bg-background border border-border rounded px-2 py-1 text-[11px] focus:outline-none focus:border-primary" 
+                    className="w-full bg-background border border-border rounded px-2 py-1 text-[11px] focus:outline-none focus:border-primary text-foreground" 
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-muted-foreground font-medium">{language === 'en' ? 'Kanban Stage' : 'স্টেজ (Kanban Stage)'}</label>
+                  <select
+                    value={contactForm.stageId}
+                    onChange={e => setContactForm({ ...contactForm, stageId: e.target.value })}
+                    className="w-full bg-background border border-border rounded px-2 py-1 text-[11px] focus:outline-none focus:border-primary text-foreground"
+                  >
+                    <option value="">{language === 'en' ? 'Select Stage...' : 'স্টেজ সিলেক্ট করুন...'}</option>
+                    {stages.map(s => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] text-muted-foreground font-medium">{language === 'en' ? 'Assigned Agent' : 'অ্যাসাইনকৃত এজেন্ট'}</label>
+                  <select
+                    value={contactForm.assignedUserId}
+                    onChange={e => setContactForm({ ...contactForm, assignedUserId: e.target.value })}
+                    className="w-full bg-background border border-border rounded px-2 py-1 text-[11px] focus:outline-none focus:border-primary text-foreground"
+                  >
+                    <option value="">{language === 'en' ? 'Unassigned' : 'অ্যাসাইন করা হয়নি'}</option>
+                    {teamMembers.map(m => (
+                      <option key={m.id} value={m.id}>{m.name} ({m.role})</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] text-muted-foreground font-medium">{language === 'en' ? 'Follow-up Date' : 'ফলো-আপ তারিখ'}</label>
+                  <input 
+                    type="date" 
+                    value={contactForm.followUpAt} 
+                    onChange={e => setContactForm({ ...contactForm, followUpAt: e.target.value })}
+                    className="w-full bg-background border border-border rounded px-2 py-1 text-[11px] focus:outline-none focus:border-primary text-foreground" 
                   />
                 </div>
               </div>
             ) : (
-              <div className="space-y-1.5">
+              <div className="space-y-2 text-[11px]">
+                {contact?.name && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <User className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                    <span className="text-foreground font-semibold">{contact.name}</span>
+                  </div>
+                )}
                 <div className="flex items-center gap-2 text-muted-foreground">
-                  <Phone className="w-3 h-3 text-primary shrink-0" />
+                  <Phone className="w-3.5 h-3.5 text-primary shrink-0" />
                   <span className="text-foreground select-all">{contact?.phone || contact?.externalContactId || 'N/A'}</span>
                 </div>
                 {contact?.email && (
                   <div className="flex items-center gap-2 text-muted-foreground">
-                    <Mail className="w-3 h-3 text-secondary shrink-0" />
+                    <Mail className="w-3.5 h-3.5 text-secondary shrink-0" />
                     <span className="text-foreground select-all">{contact.email}</span>
                   </div>
                 )}
                 {contact?.company && (
                   <div className="flex items-center gap-2 text-muted-foreground">
-                    <Building className="w-3 h-3 text-emerald-600 shrink-0" />
+                    <Building className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                     <span className="text-foreground">{contact.company}</span>
                   </div>
                 )}
                 {contact?.address && (
                   <div className="flex items-center gap-2 text-muted-foreground">
-                    <MapPin className="w-3 h-3 text-amber-600 shrink-0" />
+                    <MapPin className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                     <span className="text-foreground">{contact.address}</span>
                   </div>
                 )}
+                <div className="flex items-center gap-2 text-muted-foreground border-t border-border/50 pt-1.5 mt-1.5">
+                  <Folder className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                  <span className="font-medium text-[10px] uppercase tracking-wider">{language === 'en' ? 'Stage:' : 'স্টেজ:'}</span>
+                  <span 
+                    style={{ color: contact?.stage?.color || '#6b7280' }}
+                    className="font-bold px-2 py-0.5 rounded text-[10px] bg-slate-100"
+                  >
+                    {contact?.stage?.name || (language === 'en' ? 'Unassigned' : 'কোন স্টেজ নেই')}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <User className="w-3.5 h-3.5 text-teal-600 shrink-0" />
+                  <span className="font-medium text-[10px] uppercase tracking-wider">{language === 'en' ? 'Assigned To:' : 'এজেন্ট:'}</span>
+                  <span className="text-foreground font-semibold">
+                    {contact?.assignedUser?.name || (language === 'en' ? 'Unassigned' : 'অ্যাসাইন করা হয়নি')}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Calendar className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                  <span className="font-medium text-[10px] uppercase tracking-wider">{language === 'en' ? 'Follow-up:' : 'ফলো-আপ:'}</span>
+                  <span className="text-purple-700 font-bold bg-purple-50 px-2 py-0.5 rounded text-[10px]">
+                    {contact?.followUpAt ? new Date(contact.followUpAt).toLocaleDateString(language === 'en' ? 'en-US' : 'bn-BD', { year: 'numeric', month: 'short', day: 'numeric' }) : (language === 'en' ? 'Not set' : 'সেট করা হয়নি')}
+                  </span>
+                </div>
               </div>
             )}
           </div>

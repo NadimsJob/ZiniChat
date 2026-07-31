@@ -149,6 +149,10 @@ export class ContactsService {
         stageId: data.stageId !== undefined ? data.stageId : contact.stageId,
         followUpAt: data.followUpAt !== undefined ? (data.followUpAt ? new Date(data.followUpAt) : null) : contact.followUpAt,
         assignedUserId: data.assignedUserId !== undefined ? data.assignedUserId : contact.assignedUserId,
+      },
+      include: {
+        stage: true,
+        assignedUser: true
       }
     });
   }
