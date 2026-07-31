@@ -173,6 +173,17 @@ async function main() {
               }
             },
             {
+              categoryId: 'ai',
+              question: { 
+                en: 'Will the AI give wrong answers or offer unauthorized discounts?', 
+                bn: 'এআই কি ভুল উত্তর বা ফেক ডিসকাউন্ট দেবে?' 
+              },
+              answer: { 
+                en: 'No. ZiniChat uses an enterprise-grade anti-hallucination framework. The AI strictly follows your uploaded documents and Q&A. It is programmed to ask for a human agent if it is unsure, ensuring zero liability for your business.', 
+                bn: 'না। ZiniChat এন্টারপ্রাইজ-গ্রেড অ্যান্টি-হ্যালুসিনেশন ফ্রেমওয়ার্ক ব্যবহার করে। এআই কঠোরভাবে আপনার আপলোড করা নথি এবং Q&A অনুসরণ করে। কোনো বিষয়ে নিশ্চিত না হলে এটি মানব এজেন্টের সহায়তা নেওয়ার জন্য প্রোগ্রাম করা হয়েছে, যা আপনার ব্যবসার জন্য শূন্য ঝুঁকি নিশ্চিত করে।' 
+              }
+            },
+            {
               categoryId: 'whatsapp',
               question: { en: 'Is there a risk of my WhatsApp number getting banned?', bn: 'আমার হোয়াটসঅ্যাপ নাম্বার ব্যান হওয়ার কি কোনো ঝুঁকি আছে?' },
               answer: {
