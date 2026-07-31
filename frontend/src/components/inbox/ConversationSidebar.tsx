@@ -291,7 +291,7 @@ export default function ConversationSidebar({
   const attachedLabelIds = (conversation?.labels || []).map((l: any) => l.labelId);
 
   return (
-    <div className="w-full md:w-80 bg-surface/90 backdrop-blur-xl border-l border-border h-full overflow-y-auto p-3 space-y-3 custom-scrollbar text-foreground">
+    <div className="w-full md:w-80 bg-card border border-border/80 shadow-sm dark:shadow-[0_0_15px_rgba(0,0,0,0.2)] rounded-2xl h-full overflow-y-auto p-3 space-y-3 custom-scrollbar text-foreground shrink-0">
       
       {/* 1. Order Actions */}
       <div className="bg-card border border-border rounded-xl p-3 shadow-xs">

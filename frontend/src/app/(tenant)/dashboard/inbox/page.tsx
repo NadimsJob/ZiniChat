@@ -640,9 +640,9 @@ export default function InboxPage() {
         </div>
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden gap-3 p-3 bg-background">
         {/* LEFT COLUMN: Conversation List */}
-        <div className="w-full md:w-80 lg:w-96 border-r border-border flex flex-col bg-surface/70 backdrop-blur-xl shrink-0">
+        <div className="w-full md:w-80 lg:w-96 border border-border/80 shadow-sm dark:shadow-[0_0_15px_rgba(0,0,0,0.2)] rounded-2xl flex flex-col bg-card shrink-0 overflow-hidden">
           
           {/* Header Search (Optional spacing if needed) */}
           <div className="p-3 border-b border-border/40 shrink-0 bg-background/50">
@@ -755,7 +755,7 @@ export default function InboxPage() {
 
       {/* MIDDLE COLUMN: Active Chat Panel */}
       {selectedConvId && activeConv ? (
-        <div className="flex-1 flex flex-col min-w-0 bg-background">
+        <div className="flex-1 flex flex-col min-w-0 bg-card border border-border/80 shadow-sm dark:shadow-[0_0_15px_rgba(0,0,0,0.2)] rounded-2xl overflow-hidden">
           
           {/* Header */}
           <div className="h-14 px-4 border-b border-border bg-surface/80 backdrop-blur-xl flex items-center justify-between shrink-0 shadow-2xs">
@@ -1045,7 +1045,7 @@ export default function InboxPage() {
           </div>
         </div>
       ) : (
-        <div className="flex-1 flex items-center justify-center p-8 text-center text-muted-foreground bg-background">
+        <div className="flex-1 flex items-center justify-center p-8 text-center text-muted-foreground bg-card border border-border/80 shadow-sm dark:shadow-[0_0_15px_rgba(0,0,0,0.2)] rounded-2xl overflow-hidden">
           <div>
             <MessageSquare className="w-12 h-12 mx-auto text-muted-foreground/30 mb-2" />
             <h3 className="text-sm font-bold text-foreground">
