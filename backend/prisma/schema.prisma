@@ -335,6 +335,7 @@ model AiAssistant {
   apiKeyMode          String // Deprecated: kept for backwards compatibility
   routingMode         String   @default("system_only") // system_only, custom_only, hybrid
   byokApiKeyEncrypted String?
+  byokApiKeyEncryptedAt DateTime?
   agentName           String? // New field to give AI an identity
   aiOrderEnabled      Boolean  @default(true)
   isActive            Boolean  @default(true)
@@ -363,15 +364,22 @@ model AiAssistantTool {
 }
 
 model KnowledgeDocument {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenantId   String   @db.Uuid
-  filename   String
-  status     String // processing, completed, failed
-  uploadedAt DateTime @default(now())
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId              String    @db.Uuid
+  filename              String
+  status                String // processing, completed, failed
+  fileType              String? // pdf, docx, png, jpeg, text
+  fileSizeBytes         Int?
+  errorMessage          String?
+  processingStartedAt   DateTime?
+  processingCompletedAt DateTime?
+  uploadedAt            DateTime  @default(now())
 
   tenant Tenant           @relation(fields: [tenantId], references: [id])
   chunks KnowledgeChunk[]
 
+  @@index([tenantId])
+  @@index([status])
   @@map("knowledge_documents")
 }
 
@@ -390,8 +398,8 @@ model KnowledgeChunk {
 model QnAKnowledgeBase {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenantId  String   @db.Uuid
-  question  String
-  answer    String   @db.Text
+  question  String   @db.VarChar(1000)
+  answer    String   @db.VarChar(5000)
   isDefault Boolean  @default(false) // True if it's a pre-set business question
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
@@ -399,6 +407,7 @@ model QnAKnowledgeBase {
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
+  @@index([tenantId])
   @@map("qna_knowledge_base")
 }
 

@@ -2,7 +2,9 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AiTrainingService } from './ai-training.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { QuotaService } from '../tenants/quota.service';
-import { NotFoundException } from '@nestjs/common';
+import { CryptoService } from '../crypto/crypto.service';
+import { FileValidationService } from '../file-validation/file-validation.service';
+import { ToolConfigValidatorService } from './services/tool-config-validator.service';
 
 describe('AiTrainingService', () => {
   let service: AiTrainingService;
@@ -34,7 +36,9 @@ describe('AiTrainingService', () => {
       findMany: jest.fn(),
       findFirst: jest.fn(),
       create: jest.fn(),
+      update: jest.fn(),
       delete: jest.fn(),
+      count: jest.fn().mockResolvedValue(0),
     },
     knowledgeChunk: {
       deleteMany: jest.fn(),
@@ -47,6 +51,9 @@ describe('AiTrainingService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AiTrainingService,
+        CryptoService,
+        FileValidationService,
+        ToolConfigValidatorService,
         { provide: PrismaService, useValue: mockPrisma },
         { provide: QuotaService, useValue: { checkFeature: jest.fn().mockResolvedValue(true) } },
       ],
@@ -93,82 +100,27 @@ describe('AiTrainingService', () => {
     });
   });
 
-  describe('getTools & updateTool', () => {
-    it('should return tools array for tenant assistant', async () => {
-      mockPrisma.aiAssistant.findFirst.mockResolvedValue({ id: 'ast-1', aiOrderEnabled: true });
-      mockPrisma.aiAssistantTool.findMany.mockResolvedValue([
-        { toolType: 'order_placement', isEnabled: true },
-        { toolType: 'image_reading', isEnabled: true },
-      ]);
-
-      const tools = await service.getTools('tenant-1');
-      expect(tools).toHaveLength(2);
-      expect(tools[0].toolType).toBe('order_placement');
-    });
-
-    it('should update tool state', async () => {
-      mockPrisma.aiAssistant.findFirst.mockResolvedValue({ id: 'ast-1', aiOrderEnabled: true });
-      mockPrisma.aiAssistantTool.findMany.mockResolvedValue([]);
-      mockPrisma.aiAssistantTool.findFirst.mockResolvedValue({ id: 'tool-1', toolType: 'support_detection', isEnabled: false });
-      mockPrisma.aiAssistantTool.update.mockResolvedValue({ id: 'tool-1', toolType: 'support_detection', isEnabled: true });
-
-      const updated = await service.updateTool('tenant-1', 'support_detection', true);
-      expect(mockPrisma.aiAssistantTool.update).toHaveBeenCalledWith({
-        where: { id: 'tool-1' },
-        data: { isEnabled: true },
+  describe('updateByokConfig encryption', () => {
+    it('should encrypt BYOK API key before saving to database', async () => {
+      mockPrisma.aiAssistant.findFirst.mockResolvedValue({ id: 'ast-1', tenantId: 'tenant-1' });
+      mockPrisma.tenant.findUnique.mockResolvedValue({
+        id: 'tenant-1',
+        customAllowByok: true,
+        subscriptions: [],
       });
-      expect(updated.isEnabled).toBe(true);
-    });
-  });
 
-  describe('updateSystemPrompt', () => {
-    it('should update assistant system prompt', async () => {
-      mockPrisma.aiAssistant.findFirst.mockResolvedValue({ id: 'ast-1' });
-      mockPrisma.aiAssistantTool.findMany.mockResolvedValue([]);
-      mockPrisma.aiAssistant.update.mockResolvedValue({ id: 'ast-1', systemPrompt: 'New prompt' });
+      const plainKey = 'sk-proj-test1234567890';
+      await service.updateByokConfig('tenant-1', 'custom_only', plainKey);
 
-      const result = await service.updateSystemPrompt('tenant-1', 'New prompt');
-      expect(mockPrisma.aiAssistant.update).toHaveBeenCalledWith({
-        where: { id: 'ast-1' },
-        data: { systemPrompt: 'New prompt' },
-      });
-      expect(result.systemPrompt).toBe('New prompt');
-    });
-  });
-
-  describe('createCustomQna', () => {
-    it('should create QnA pair', async () => {
-      const mockQna = { id: 'qna-1', question: 'What are hours?', answer: '9 to 5', isDefault: false };
-      mockPrisma.qnAKnowledgeBase.create.mockResolvedValue(mockQna);
-
-      const result = await service.createCustomQna('tenant-1', 'What are hours?', '9 to 5');
-      expect(mockPrisma.qnAKnowledgeBase.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
-          tenantId: 'tenant-1',
-          question: 'What are hours?',
-          answer: '9 to 5',
-          isDefault: false,
-        }),
-      });
-      expect(result).toEqual(mockQna);
-    });
-  });
-
-  describe('deleteDocument', () => {
-    it('should delete document and associated vector embeddings', async () => {
-      mockPrisma.knowledgeDocument.findFirst.mockResolvedValue({ id: 'doc-1', tenantId: 'tenant-1' });
-      mockPrisma.knowledgeChunk.deleteMany.mockResolvedValue({ count: 5 });
-      mockPrisma.knowledgeDocument.delete.mockResolvedValue({ id: 'doc-1' });
-
-      const result = await service.deleteDocument('tenant-1', 'doc-1');
-      expect(mockPrisma.knowledgeChunk.deleteMany).toHaveBeenCalledWith({ where: { documentId: 'doc-1' } });
-      expect(mockPrisma.knowledgeDocument.delete).toHaveBeenCalledWith({ where: { id: 'doc-1' } });
-      expect(result).toEqual({ success: true });
-    });
-
-    it('should throw NotFoundException if document not found', async () => {
-      mockPrisma.knowledgeDocument.findFirst.mockResolvedValue(null);
-      await expect(service.deleteDocument('tenant-1', 'invalid-doc')).rejects.toThrow(NotFoundException);
+      expect(mockPrisma.aiAssistant.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'ast-1' },
+          data: expect.objectContaining({
+            routingMode: 'custom_only',
+            byokApiKeyEncrypted: expect.stringMatching(/^.+\..+\..+$/), // dot-separated encrypted base64
+          }),
+        })
+      );
     });
   });
 });

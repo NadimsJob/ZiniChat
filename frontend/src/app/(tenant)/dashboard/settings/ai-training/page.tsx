@@ -4,8 +4,12 @@ import { useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
 import { useLanguage } from '@/components/LanguageProvider';
 import { useFeature } from '@/hooks/useFeature';
-import { Bot, Key, Save, AlertCircle, RefreshCw, MessageSquare, Plus, Edit2, Trash2, X, Check, Wand2, Eye, Lock, Sliders, Sparkles, ShieldCheck } from 'lucide-react';
+import { Bot, Key, Save, AlertCircle, RefreshCw, MessageSquare, Plus, Edit2, Trash2, X, Check, Wand2, Eye, Lock, Sliders, Sparkles, ShieldCheck, FileText, AlertTriangle } from 'lucide-react';
 import InstructionBanner from '@/components/InstructionBanner';
+
+const MAX_PROMPT_LENGTH = 50000;
+const MAX_QUESTION_LENGTH = 1000;
+const MAX_ANSWER_LENGTH = 5000;
 
 export default function AiTrainingPage() {
   const { language } = useLanguage();
@@ -28,16 +32,17 @@ export default function AiTrainingPage() {
     aiQuota: 0,
     isActive: true,
     replyWhenAssigned: false,
-    agentName: ''
+    agentName: '',
+    systemPrompt: ''
   });
   const [apiKey, setApiKey] = useState('');
   
   // Event-wise AI Tools state
   const [tools, setTools] = useState<Record<string, { isEnabled: boolean; configJson: any }>>({
-    order_placement: { isEnabled: true, configJson: {} },
+    order_placement: { isEnabled: true, configJson: { requireExplicitConfirmation: true } },
     image_reading: { isEnabled: true, configJson: {} },
-    support_detection: { isEnabled: false, configJson: {} },
-    product_matching: { isEnabled: false, configJson: {} }
+    support_detection: { isEnabled: false, configJson: { reasonCategories: ['general', 'complaint', 'refund_return', 'delivery_issue'] } },
+    product_matching: { isEnabled: false, configJson: { minMatchConfidence: 0.6 } }
   });
 
   // Q&A state
@@ -67,7 +72,7 @@ export default function AiTrainingPage() {
         const toolsList = await toolsRes.json();
         const map: Record<string, { isEnabled: boolean; configJson: any }> = {};
         (toolsList || []).forEach((t: any) => {
-          map[t.toolType] = { isEnabled: t.isEnabled, configJson: t.configJson };
+          map[t.toolType] = { isEnabled: t.isEnabled, configJson: t.configJson || {} };
         });
         setTools(prev => ({ ...prev, ...map }));
       }
@@ -84,26 +89,31 @@ export default function AiTrainingPage() {
     fetchData();
   }, []);
 
-  const handleToggleTool = async (toolType: string, newEnabled: boolean) => {
-    // Optimistic UI update
+  const handleToggleTool = async (toolType: string, newEnabled: boolean, configJson?: any) => {
+    const targetConfig = configJson !== undefined ? configJson : tools[toolType]?.configJson;
     setTools(prev => ({
       ...prev,
-      [toolType]: { ...prev[toolType], isEnabled: newEnabled }
+      [toolType]: { isEnabled: newEnabled, configJson: targetConfig }
     }));
 
     try {
       const token = Cookies.get('access_token');
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai-training/tools/${toolType}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai-training/tools/${toolType}`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ isEnabled: newEnabled })
+        body: JSON.stringify({ isEnabled: newEnabled, configJson: targetConfig })
       });
+      if (!res.ok) {
+        const err = await res.json();
+        alert(err.message || 'Failed to update tool setting');
+        fetchData();
+      }
     } catch (err) {
       console.error('Failed to toggle AI tool', err);
-      fetchData(); // Rollback on error
+      fetchData();
     }
   };
 
@@ -133,6 +143,9 @@ export default function AiTrainingPage() {
         setApiKey(''); // Clear input for security
         fetchData();
         alert(language === 'en' ? 'Settings saved successfully' : 'সেটিংস সফলভাবে সংরক্ষিত হয়েছে');
+      } else {
+        const err = await res.json();
+        alert(err.message || 'Failed to save configuration');
       }
     } catch (err) {
       console.error(err);
@@ -153,7 +166,7 @@ export default function AiTrainingPage() {
         ...updates
       };
 
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai-training/config/byok`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai-training/config/byok`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -161,12 +174,55 @@ export default function AiTrainingPage() {
         },
         body: JSON.stringify(body)
       });
+
+      if (!res.ok) {
+        const err = await res.json();
+        alert(err.message || 'Failed to save changes');
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleSavePrompt = async () => {
+    if (config.systemPrompt && config.systemPrompt.length > MAX_PROMPT_LENGTH) {
+      alert(`System prompt cannot exceed ${MAX_PROMPT_LENGTH.toLocaleString()} characters.`);
+      return;
+    }
+
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai-training/prompt`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ systemPrompt: config.systemPrompt })
+      });
+
+      if (res.ok) {
+        alert(language === 'en' ? 'System prompt saved!' : 'প্রম্পট সেভ হয়েছে!');
+        fetchData();
+      } else {
+        const err = await res.json();
+        alert(err.message || 'Failed to save prompt');
+      }
     } catch (err) {
       console.error(err);
     }
   };
 
   const handleSaveQna = async () => {
+    if (qnaForm.question.length > MAX_QUESTION_LENGTH) {
+      alert(`Question cannot exceed ${MAX_QUESTION_LENGTH} characters.`);
+      return;
+    }
+    if (qnaForm.answer.length > MAX_ANSWER_LENGTH) {
+      alert(`Answer cannot exceed ${MAX_ANSWER_LENGTH} characters.`);
+      return;
+    }
+
     try {
       const token = Cookies.get('access_token');
       const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
@@ -191,7 +247,7 @@ export default function AiTrainingPage() {
         fetchData();
       } else {
         const data = await res.json();
-        alert(data.message || 'Error saving Q&A');
+        alert(Array.isArray(data.message) ? data.message.join('; ') : (data.message || 'Error saving Q&A'));
       }
     } catch (err) {
       console.error(err);
@@ -263,6 +319,9 @@ export default function AiTrainingPage() {
     );
   }
 
+  const promptLength = config.systemPrompt?.length || 0;
+  const promptPercent = (promptLength / MAX_PROMPT_LENGTH) * 100;
+
   const toolDefinitions = [
     {
       type: 'order_placement',
@@ -318,7 +377,7 @@ export default function AiTrainingPage() {
         description={
           language === 'en'
             ? '1. Keep "Enable AI Agent" ON to answer customer queries. 2. Fill out Business Info Q&A so AI knows your delivery policy, timing & store location. 3. Enable Event-Wise AI Behavior toggles below to control order placement, image reading & support handover.'
-            : '১. কাস্টমার মেসেজের অটো রিপ্লাইয়ের জন্য "এআই এজেন্ট चालू" রাখুন। ২. ব্যবসার সময়সূচী, ডেলিভারি চার্জ ও ঠিকানা জানাতে Q&A সেকশন পূরণ করুন। ৩. অটো অর্ডার প্লেসমেন্ট ও সাপোর্ট হ্যান্ডওভার কন্ট্রোল করতে নিচের ইভেন্ট টগলসমূহ অন করুন।'
+            : '১. কাস্টমার মেসেজের অটো রিপ্লাইয়ের জন্য "এআই এজেন্ট চালু" রাখুন। ২. ব্যবসার সময়সূচী, ডেলিভারি চার্জ ও ঠিকানা জানাতে Q&A সেকশন পূরণ করুন। ৩. অটো অর্ডার প্লেসমেন্ট ও সাপোর্ট হ্যান্ডওভার কন্ট্রোল করতে নিচের ইভেন্ট টগলসমূহ অন করুন।'
         }
       />
 
@@ -376,7 +435,7 @@ export default function AiTrainingPage() {
         </div>
       </div>
 
-      {/* NEW: Event-Wise AI Behavior Section */}
+      {/* Event-Wise AI Behavior Section */}
       <div className="bg-card border border-border shadow-md rounded-xl p-4 animate-in fade-in">
         <div className="flex items-center gap-2 mb-3">
           <Sliders className="w-5 h-5 text-primary" />
@@ -392,7 +451,7 @@ export default function AiTrainingPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {toolDefinitions.map(tool => {
-            const toolState = tools[tool.type] || { isEnabled: false };
+            const toolState = tools[tool.type] || { isEnabled: false, configJson: {} };
             const isAllowed = tool.allowed;
 
             return (
@@ -438,6 +497,25 @@ export default function AiTrainingPage() {
                     } after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all`}></div>
                   </label>
                 </div>
+
+                {/* Additional Tool Config Options */}
+                {isAllowed && toolState.isEnabled && tool.type === 'product_matching' && (
+                  <div className="mt-2 pt-2 border-t border-border/50 text-[11px]">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="font-semibold text-muted-foreground">Min Match Confidence:</span>
+                      <span className="font-bold text-primary">{((toolState.configJson?.minMatchConfidence ?? 0.6) * 100).toFixed(0)}%</span>
+                    </div>
+                    <input 
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.05"
+                      value={toolState.configJson?.minMatchConfidence ?? 0.6}
+                      onChange={(e) => handleToggleTool(tool.type, true, { ...toolState.configJson, minMatchConfidence: parseFloat(e.target.value) })}
+                      className="w-full h-1 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+                    />
+                  </div>
+                )}
               </div>
             );
           })}
@@ -526,13 +604,14 @@ export default function AiTrainingPage() {
                     </label>
                     <input 
                       type="password"
-                      placeholder={config.hasCustomKey ? '•••••••••••••••••••• (Saved - enter new key to replace)' : 'sk-proj-...'}
+                      placeholder={config.hasCustomKey ? '•••••••••••••••••••• (Saved securely - enter new key to replace)' : 'sk-proj-...'}
                       value={apiKey}
                       onChange={e => setApiKey(e.target.value)}
-                      className="w-full bg-background border border-border rounded-xl px-3 py-2 text-[13px] text-foreground focus:outline-none focus:border-primary"
+                      className="w-full bg-background border border-border rounded-xl px-3 py-2 text-[13px] text-foreground focus:outline-none focus:border-primary font-mono"
                     />
-                    <span className="text-[11px] text-muted-foreground mt-1 block">
-                      {language === 'en' ? 'Your API key is encrypted securely with AES-256 before storage.' : 'আপনার API Key নিরাপদভাবে AES-256 দিয়ে এনক্রিপ্ট করা থাকে।'}
+                    <span className="text-[11px] text-emerald-500 mt-1 flex items-center gap-1">
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                      {language === 'en' ? 'Encrypted with AES-256-GCM before storage.' : 'AES-256-GCM এনক্রিপশন দ্বারা সম্পূর্ণ নিরাপদ।'}
                     </span>
                   </div>
                 </div>
@@ -640,17 +719,35 @@ export default function AiTrainingPage() {
               {language === 'en' ? 'Guide the AI on its personality, tone, and specific rules.' : 'এআই-এর আচরণ, টোন এবং বিশেষ নির্দেশনাসমূহ লিখে দিন।'}
             </p>
 
-            <textarea
-              rows={6}
-              value={config.systemPrompt || ''}
-              onChange={(e) => setConfig({ ...config, systemPrompt: e.target.value })}
-              className="w-full bg-background border border-border rounded-xl p-3 text-[13px] text-foreground focus:outline-none focus:border-primary font-mono"
-              placeholder="You are a polite sales assistant..."
-            />
+            <div className="space-y-1">
+              <textarea
+                rows={6}
+                maxLength={MAX_PROMPT_LENGTH}
+                value={config.systemPrompt || ''}
+                onChange={(e) => setConfig({ ...config, systemPrompt: e.target.value })}
+                className={`w-full bg-background border rounded-xl p-3 text-[13px] text-foreground focus:outline-none font-mono ${
+                  promptPercent > 90 ? 'border-red-500 focus:border-red-500' :
+                  promptPercent > 70 ? 'border-amber-500 focus:border-amber-500' :
+                  'border-border focus:border-primary'
+                }`}
+                placeholder="You are a polite sales assistant..."
+              />
+              <div className="flex justify-between items-center pt-1 text-[11px]">
+                <span className={promptPercent > 90 ? 'text-red-500 font-bold' : promptPercent > 70 ? 'text-amber-500 font-medium' : 'text-muted-foreground'}>
+                  {promptLength.toLocaleString()} / {MAX_PROMPT_LENGTH.toLocaleString()} characters
+                </span>
+                <div className="w-32 h-1.5 bg-muted rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full transition-all ${promptPercent > 90 ? 'bg-red-500' : promptPercent > 70 ? 'bg-amber-500' : 'bg-primary'}`}
+                    style={{ width: `${Math.min(promptPercent, 100)}%` }}
+                  />
+                </div>
+              </div>
+            </div>
 
             <div className="flex justify-end mt-3">
               <button
-                onClick={() => handleQuickSave({ systemPrompt: config.systemPrompt })}
+                onClick={handleSavePrompt}
                 className="px-4 py-2 bg-primary text-white font-bold rounded-xl text-[12px] hover:bg-primary/90 transition-all flex items-center gap-1.5 cursor-pointer"
               >
                 <Save className="w-4 h-4" />
@@ -667,7 +764,7 @@ export default function AiTrainingPage() {
                   {language === 'en' ? 'Document Upload (PDF/Word/Images)' : 'ডকুমেন্ট আপলোড (PDF/Word/ছবি)'}
                 </h2>
                 <p className="text-[12px] text-muted-foreground font-sans">
-                  {language === 'en' ? 'Upload up to 2 documents (max 1MB each) for AI context.' : 'সর্বোচ্চ ২টি ফাইল (প্রতিটি ১ মেগাবাইট) আপলোড করতে পারবেন।'}
+                  {language === 'en' ? 'Upload up to 2 validated documents for AI context.' : 'সর্বোচ্চ ২টি যাচাইকৃত ফাইল আপলোড করতে পারবেন।'}
                 </p>
               </div>
 
@@ -683,9 +780,27 @@ export default function AiTrainingPage() {
             <div className="space-y-2">
               {documents.map((doc) => (
                 <div key={doc.id} className="bg-background border border-border rounded-xl p-3 flex items-center justify-between">
-                  <div>
-                    <div className="font-bold text-[13px] text-foreground">{doc.filename}</div>
-                    <div className="text-[11px] text-muted-foreground">Status: <span className="text-emerald-400 font-semibold">{doc.status}</span></div>
+                  <div className="space-y-0.5">
+                    <div className="font-bold text-[13px] text-foreground flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-primary" />
+                      <span>{doc.filename}</span>
+                      {doc.fileType && <span className="text-[10px] uppercase font-mono px-1.5 py-0.2 bg-muted rounded border border-border text-muted-foreground">{doc.fileType}</span>}
+                    </div>
+                    <div className="text-[11px] text-muted-foreground flex items-center gap-2">
+                      <span>Status:</span>
+                      <span className={`font-semibold ${
+                        doc.status === 'completed' ? 'text-emerald-500' :
+                        doc.status === 'processing' ? 'text-blue-500 animate-pulse' :
+                        'text-red-500'
+                      }`}>
+                        {doc.status}
+                      </span>
+                      {doc.errorMessage && (
+                        <span className="text-red-400 text-[10px] flex items-center gap-1" title={doc.errorMessage}>
+                          <AlertTriangle className="w-3 h-3" /> {doc.errorMessage}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <button
                     onClick={() => handleDeleteDoc(doc.id)}
@@ -722,11 +837,17 @@ export default function AiTrainingPage() {
 
             <div className="space-y-3">
               <div>
-                <label className="block text-[12px] font-medium text-muted-foreground mb-1">
-                  {language === 'en' ? 'Question' : 'প্রশ্ন'}
-                </label>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="text-[12px] font-medium text-muted-foreground">
+                    {language === 'en' ? 'Question' : 'প্রশ্ন'}
+                  </label>
+                  <span className={`text-[10px] ${qnaForm.question.length > MAX_QUESTION_LENGTH * 0.9 ? 'text-red-500 font-bold' : 'text-muted-foreground'}`}>
+                    {qnaForm.question.length} / {MAX_QUESTION_LENGTH}
+                  </span>
+                </div>
                 <input
                   type="text"
+                  maxLength={MAX_QUESTION_LENGTH}
                   disabled={qnaForm.isDefault}
                   value={qnaForm.question}
                   onChange={(e) => setQnaForm({ ...qnaForm, question: e.target.value })}
@@ -735,11 +856,17 @@ export default function AiTrainingPage() {
               </div>
 
               <div>
-                <label className="block text-[12px] font-medium text-muted-foreground mb-1">
-                  {language === 'en' ? 'Answer' : 'উত্তর'}
-                </label>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="text-[12px] font-medium text-muted-foreground">
+                    {language === 'en' ? 'Answer' : 'উত্তর'}
+                  </label>
+                  <span className={`text-[10px] ${qnaForm.answer.length > MAX_ANSWER_LENGTH * 0.9 ? 'text-red-500 font-bold' : 'text-muted-foreground'}`}>
+                    {qnaForm.answer.length} / {MAX_ANSWER_LENGTH}
+                  </span>
+                </div>
                 <textarea
                   rows={4}
+                  maxLength={MAX_ANSWER_LENGTH}
                   value={qnaForm.answer}
                   onChange={(e) => setQnaForm({ ...qnaForm, answer: e.target.value })}
                   className="w-full bg-background border border-surface-hover rounded-xl p-3 text-[13px] text-foreground focus:outline-none focus:border-primary font-sans"

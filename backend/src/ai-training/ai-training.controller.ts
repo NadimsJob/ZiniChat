@@ -2,6 +2,9 @@ import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, Request, 
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AiTrainingService } from './ai-training.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { UpdateSystemPromptDto } from './dto/update-system-prompt.dto';
+import { CreateQnaDto, UpdateQnaDto } from './dto/qna.dto';
+import { UpdateToolDto } from './dto/tool-config.dto';
 
 @Controller('ai-training')
 @UseGuards(JwtAuthGuard)
@@ -14,8 +17,8 @@ export class AiTrainingController {
   }
 
   @Patch('prompt')
-  async updateSystemPrompt(@Request() req: any, @Body() data: { systemPrompt: string }) {
-    return this.aiTrainingService.updateSystemPrompt(req.user.tenantId, data.systemPrompt);
+  async updateSystemPrompt(@Request() req: any, @Body() dto: UpdateSystemPromptDto) {
+    return this.aiTrainingService.updateSystemPrompt(req.user.tenantId, dto.systemPrompt);
   }
 
   @Get('generate-sample-prompt')
@@ -32,14 +35,25 @@ export class AiTrainingController {
   async updateTool(
     @Request() req: any,
     @Param('toolType') toolType: string,
-    @Body() data: { isEnabled?: boolean; configJson?: any }
+    @Body() dto: UpdateToolDto
   ) {
-    return this.aiTrainingService.updateTool(req.user.tenantId, toolType, data.isEnabled, data.configJson);
+    return this.aiTrainingService.updateTool(req.user.tenantId, toolType, dto.isEnabled, dto.configJson);
   }
 
   @Post('config/byok')
-  async updateByokConfig(@Request() req: any, @Body() data: { routingMode: string; apiKey?: string; aiOrderEnabled?: boolean; isActive?: boolean; replyWhenAssigned?: boolean; agentName?: string }) {
-    return this.aiTrainingService.updateByokConfig(req.user.tenantId, data.routingMode, data.apiKey, data.aiOrderEnabled, data.isActive, data.replyWhenAssigned, data.agentName);
+  async updateByokConfig(
+    @Request() req: any, 
+    @Body() data: { routingMode: string; apiKey?: string; aiOrderEnabled?: boolean; isActive?: boolean; replyWhenAssigned?: boolean; agentName?: string }
+  ) {
+    return this.aiTrainingService.updateByokConfig(
+      req.user.tenantId, 
+      data.routingMode, 
+      data.apiKey, 
+      data.aiOrderEnabled, 
+      data.isActive, 
+      data.replyWhenAssigned, 
+      data.agentName
+    );
   }
 
   @Get('qna')
@@ -48,13 +62,13 @@ export class AiTrainingController {
   }
 
   @Post('qna')
-  async createQna(@Request() req: any, @Body() data: { question: string; answer: string }) {
-    return this.aiTrainingService.createCustomQna(req.user.tenantId, data.question, data.answer);
+  async createQna(@Request() req: any, @Body() dto: CreateQnaDto) {
+    return this.aiTrainingService.createCustomQna(req.user.tenantId, dto.question, dto.answer);
   }
 
   @Patch('qna/:id')
-  async updateQna(@Request() req: any, @Param('id') id: string, @Body() data: { question?: string; answer?: string }) {
-    return this.aiTrainingService.updateQna(req.user.tenantId, id, data.question, data.answer);
+  async updateQna(@Request() req: any, @Param('id') id: string, @Body() dto: UpdateQnaDto) {
+    return this.aiTrainingService.updateQna(req.user.tenantId, id, dto.question, dto.answer);
   }
 
   @Delete('qna/:id')

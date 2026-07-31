@@ -6,12 +6,18 @@ import OpenAI from 'openai';
 import { createWorker } from 'tesseract.js';
 
 import { QuotaService } from '../tenants/quota.service';
+import { CryptoService } from '../crypto/crypto.service';
+import { FileValidationService } from '../file-validation/file-validation.service';
+import { ToolConfigValidatorService } from './services/tool-config-validator.service';
 
 @Injectable()
 export class AiTrainingService {
   constructor(
     private prisma: PrismaService,
-    private quotaService: QuotaService
+    private quotaService: QuotaService,
+    private cryptoService: CryptoService,
+    private fileValidationService: FileValidationService,
+    private toolConfigValidator: ToolConfigValidatorService
   ) {}
 
   private async ensureAiAssistantExists(tenantId: string) {
@@ -65,14 +71,14 @@ export class AiTrainingService {
       }
     ];
 
-    for (const toolDef of defaultTools) {
-      if (!existingTypes.has(toolDef.toolType)) {
+    for (const tool of defaultTools) {
+      if (!existingTypes.has(tool.toolType)) {
         await this.prisma.aiAssistantTool.create({
           data: {
             assistantId,
-            toolType: toolDef.toolType,
-            isEnabled: toolDef.isEnabled,
-            configJson: toolDef.configJson
+            toolType: tool.toolType,
+            isEnabled: tool.isEnabled,
+            configJson: tool.configJson
           }
         });
       }
@@ -86,9 +92,20 @@ export class AiTrainingService {
     });
   }
 
-  async updateTool(tenantId: string, toolType: string, isEnabled?: boolean, configJson?: any) {
+  async updateTool(
+    tenantId: string,
+    toolType: string,
+    isEnabled?: boolean,
+    configJson?: any
+  ) {
     const assistant = await this.ensureAiAssistantExists(tenantId);
     
+    // Schema validation for tool config
+    let validatedConfig = configJson;
+    if (configJson !== undefined && configJson !== null) {
+      validatedConfig = await this.toolConfigValidator.validateToolConfig(toolType, configJson);
+    }
+
     if (isEnabled === true) {
       const toolFeatureMap: Record<string, string> = {
         order_placement: 'ai_tool_order_placement',
@@ -114,7 +131,7 @@ export class AiTrainingService {
         where: { id: existing.id },
         data: {
           ...(isEnabled !== undefined ? { isEnabled } : {}),
-          ...(configJson !== undefined ? { configJson } : {})
+          ...(validatedConfig !== undefined ? { configJson: validatedConfig } : {})
         }
       });
     } else {
@@ -123,7 +140,7 @@ export class AiTrainingService {
           assistantId: assistant.id,
           toolType,
           isEnabled: isEnabled ?? false,
-          configJson: configJson ?? null
+          configJson: validatedConfig ?? this.toolConfigValidator.getDefaultConfigForTool(toolType)
         }
       });
     }
@@ -145,13 +162,14 @@ export class AiTrainingService {
       }
     });
 
-    const activeSub = tenant?.subscriptions[0];
+    const activeSub = tenant?.subscriptions?.[0];
     const allowByok = tenant?.customAllowByok ?? activeSub?.plan?.allowByok ?? false;
 
     return {
       routingMode: assistant.routingMode,
       systemPrompt: assistant.systemPrompt,
       hasCustomKey: !!assistant.byokApiKeyEncrypted,
+      byokApiKeyEncryptedAt: assistant.byokApiKeyEncryptedAt,
       aiOrderEnabled: assistant.aiOrderEnabled,
       isActive: assistant.isActive,
       agentName: assistant.agentName,
@@ -208,10 +226,15 @@ export class AiTrainingService {
 
     const dataToUpdate: any = { routingMode };
     
-    // Only update API key if provided (don't overwrite with null if they just change routing mode)
+    // Encrypt API key using AES-256-GCM before saving to database
     if (apiKey !== undefined) {
-      // In a real production app, encrypt this using AES-256 before saving
-      dataToUpdate.byokApiKeyEncrypted = apiKey ? apiKey : null;
+      if (apiKey && apiKey.trim().length > 0) {
+        dataToUpdate.byokApiKeyEncrypted = this.cryptoService.encrypt(apiKey.trim());
+        dataToUpdate.byokApiKeyEncryptedAt = new Date();
+      } else {
+        dataToUpdate.byokApiKeyEncrypted = null;
+        dataToUpdate.byokApiKeyEncryptedAt = null;
+      }
     }
     
     if (aiOrderEnabled !== undefined) {
@@ -238,6 +261,19 @@ export class AiTrainingService {
     }
 
     return { success: true };
+  }
+
+  async getDecryptedByokKey(tenantId: string): Promise<string | null> {
+    const assistant = await this.ensureAiAssistantExists(tenantId);
+    if (!assistant.byokApiKeyEncrypted) {
+      return null;
+    }
+    try {
+      return this.cryptoService.decrypt(assistant.byokApiKeyEncrypted);
+    } catch (error) {
+      console.error(`[SECURITY] Failed to decrypt BYOK key for tenant ${tenantId}`);
+      throw new InternalServerErrorException('Failed to decrypt custom API key');
+    }
   }
 
   async getQnaList(tenantId: string) {
@@ -287,10 +323,6 @@ export class AiTrainingService {
   }
 
   async createCustomQna(tenantId: string, question: string, answer: string) {
-    if (!question || !answer) {
-      throw new BadRequestException('Question and answer are required');
-    }
-
     const qna = await this.prisma.qnAKnowledgeBase.create({
       data: {
         tenantId,
@@ -352,32 +384,70 @@ export class AiTrainingService {
     return this.prisma.knowledgeDocument.findMany({
       where: { tenantId },
       orderBy: { uploadedAt: 'desc' },
-      select: { id: true, filename: true, status: true, uploadedAt: true }
+      select: {
+        id: true,
+        filename: true,
+        status: true,
+        fileType: true,
+        fileSizeBytes: true,
+        errorMessage: true,
+        uploadedAt: true
+      }
     });
   }
 
   async uploadDocument(tenantId: string, file: any) {
     const existingCount = await this.prisma.knowledgeDocument.count({ where: { tenantId } });
-    if (existingCount >= 2) throw new BadRequestException('Maximum 2 documents allowed');
+    if (existingCount >= 2) throw new BadRequestException('Maximum 2 documents allowed per tenant');
 
-    if (file.size > 1024 * 1024) throw new BadRequestException('File size exceeds 1MB limit');
+    // Strict file & magic number validation
+    const { detectedType } = this.fileValidationService.validateFile(file);
 
-    // Create DB entry
+    // Create DB entry with metadata
     const doc = await this.prisma.knowledgeDocument.create({
-      data: { tenantId, filename: file.originalname, status: 'processing' }
+      data: {
+        tenantId,
+        filename: file.originalname,
+        fileType: detectedType,
+        fileSizeBytes: file.size,
+        status: 'processing',
+        processingStartedAt: new Date()
+      }
     });
 
-    // Parse async
-    this.processDocument(doc.id, file).catch(err => console.error('Processing error', err));
+    // Parse async with 60s timeout
+    this.processDocumentWithTimeout(doc.id, file, 60000).catch(err => {
+      console.error(`[DOCUMENT TIMEOUT ERROR] Document ${doc.id}:`, err.message);
+    });
 
     return doc;
+  }
+
+  private async processDocumentWithTimeout(docId: string, file: any, timeoutMs: number = 60000) {
+    try {
+      await Promise.race([
+        this.processDocument(docId, file),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error(`Document processing timeout after ${timeoutMs / 1000}s`)), timeoutMs)
+        )
+      ]);
+    } catch (error: any) {
+      console.error(`Document processing failed for ${docId}:`, error.message);
+      await this.prisma.knowledgeDocument.update({
+        where: { id: docId },
+        data: {
+          status: 'failed',
+          errorMessage: error.message?.substring(0, 500) || 'Processing failed'
+        }
+      });
+    }
   }
 
   private async processDocument(docId: string, file: any) {
     try {
       let text = '';
       const mime = file.mimetype;
-      const ext = file.originalname.split('.').pop()?.toLowerCase();
+      const ext = file.originalname?.split('.').pop()?.toLowerCase();
 
       if (mime === 'application/pdf' || ext === 'pdf') {
         const data = await pdfParse(file.buffer);
@@ -385,9 +455,13 @@ export class AiTrainingService {
       } else if (mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || ext === 'docx') {
         const result = await mammoth.extractRawText({ buffer: file.buffer });
         text = result.value;
-      } else if (mime.startsWith('image/')) {
+      } else if (mime?.startsWith('image/')) {
         const worker = await createWorker('eng');
-        const ret = await worker.recognize(file.buffer);
+        const ocrPromise = worker.recognize(file.buffer);
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('OCR processing timed out after 30 seconds')), 30000)
+        );
+        const ret: any = await Promise.race([ocrPromise, timeoutPromise]);
         text = ret.data.text;
         await worker.terminate();
       } else {
@@ -395,7 +469,10 @@ export class AiTrainingService {
       }
 
       if (!text || text.trim() === '') {
-        await this.prisma.knowledgeDocument.update({ where: { id: docId }, data: { status: 'failed' } });
+        await this.prisma.knowledgeDocument.update({
+          where: { id: docId },
+          data: { status: 'failed', errorMessage: 'Document contains no extractable text content' }
+        });
         return;
       }
 
@@ -430,10 +507,22 @@ export class AiTrainingService {
         }
       }
 
-      await this.prisma.knowledgeDocument.update({ where: { id: docId }, data: { status: 'completed' } });
-    } catch (e) {
+      await this.prisma.knowledgeDocument.update({
+        where: { id: docId },
+        data: {
+          status: 'completed',
+          processingCompletedAt: new Date()
+        }
+      });
+    } catch (e: any) {
       console.error(e);
-      await this.prisma.knowledgeDocument.update({ where: { id: docId }, data: { status: 'failed' } });
+      await this.prisma.knowledgeDocument.update({
+        where: { id: docId },
+        data: {
+          status: 'failed',
+          errorMessage: e.message?.substring(0, 500) || 'Parsing error'
+        }
+      });
     }
   }
 
@@ -441,7 +530,6 @@ export class AiTrainingService {
     const existing = await this.prisma.knowledgeDocument.findFirst({ where: { id, tenantId } });
     if (!existing) throw new NotFoundException('Document not found');
 
-    // Chunks are implicitly removed if we add ON DELETE CASCADE to DB, but schema didn't have it so we delete manually
     await this.prisma.knowledgeChunk.deleteMany({ where: { documentId: id } });
     await this.prisma.knowledgeDocument.delete({ where: { id } });
 
