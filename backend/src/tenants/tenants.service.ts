@@ -64,6 +64,7 @@ export class TenantsService {
         t.customWhatsappLimit !== null ||
         t.customMessengerLimit !== null ||
         t.customInstagramLimit !== null ||
+        t.customWebsiteWidgetLimit !== null ||
         t.customStorageLimitMb !== null ||
         t.customProductCatalogLimit !== null ||
         t.customContactsLimit !== null ||
@@ -96,6 +97,9 @@ export class TenantsService {
         customWhatsappLimit: t.customWhatsappLimit,
         customMessengerLimit: t.customMessengerLimit,
         customInstagramLimit: t.customInstagramLimit,
+        customWebsiteWidgetLimit: t.customWebsiteWidgetLimit,
+        customProductCatalogLimit: t.customProductCatalogLimit,
+        customContactsLimit: t.customContactsLimit,
         customAllowByok: t.customAllowByok,
         customFeatures: t.customFeatures,
         customPlanUpdatedAt: t.customPlanUpdatedAt,
@@ -229,6 +233,7 @@ export class TenantsService {
         customWhatsappLimit: tenant.customWhatsappLimit,
         customMessengerLimit: tenant.customMessengerLimit,
         customInstagramLimit: tenant.customInstagramLimit,
+        customWebsiteWidgetLimit: tenant.customWebsiteWidgetLimit,
         customProductCatalogLimit: tenant.customProductCatalogLimit,
         customContactsLimit: tenant.customContactsLimit,
         customAllowByok: tenant.customAllowByok,

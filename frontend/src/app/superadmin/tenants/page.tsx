@@ -160,6 +160,30 @@ export default function TenantsPage() {
       if (res.ok) {
         const data = await res.json();
         setModalUsage(data.currentUsage);
+        if (data.tenant) {
+          const t = data.tenant;
+          setCustomData(prev => ({
+            ...prev,
+            customWebsiteWidgetLimit: t.customWebsiteWidgetLimit !== null && t.customWebsiteWidgetLimit !== undefined 
+              ? String(t.customWebsiteWidgetLimit) 
+              : prev.customWebsiteWidgetLimit,
+            customWhatsappLimit: t.customWhatsappLimit !== null && t.customWhatsappLimit !== undefined 
+              ? String(t.customWhatsappLimit) 
+              : prev.customWhatsappLimit,
+            customMessengerLimit: t.customMessengerLimit !== null && t.customMessengerLimit !== undefined 
+              ? String(t.customMessengerLimit) 
+              : prev.customMessengerLimit,
+            customInstagramLimit: t.customInstagramLimit !== null && t.customInstagramLimit !== undefined 
+              ? String(t.customInstagramLimit) 
+              : prev.customInstagramLimit,
+            customProductCatalogLimit: t.customProductCatalogLimit !== null && t.customProductCatalogLimit !== undefined 
+              ? String(t.customProductCatalogLimit) 
+              : prev.customProductCatalogLimit,
+            customContactsLimit: t.customContactsLimit !== null && t.customContactsLimit !== undefined 
+              ? String(t.customContactsLimit) 
+              : prev.customContactsLimit,
+          }));
+        }
       }
     } catch (e) {
       console.error('Failed to load customization details:', e);
