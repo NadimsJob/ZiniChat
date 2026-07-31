@@ -68,6 +68,16 @@ export class OrchestratorService {
         return;
       }
 
+      if (message.conversation.channel === 'website') {
+        const widget = await this.prisma.websiteWidget.findFirst({
+          where: { tenantId, type: 'LIVE_CHAT', isActive: true }
+        });
+        if (widget && widget.isAiAutoReplyEnabled === false) {
+          this.logger.debug(`AI Auto-Reply is disabled for website widget ${widget.id}. Skipping.`);
+          return;
+        }
+      }
+
       if (message.conversation.isAiEnabled === false) {
         this.logger.debug(`AI Auto-Reply is disabled for conversation ${message.conversation.id}. Skipping.`);
         return;
