@@ -1166,38 +1166,21 @@ export default function InboxPage() {
               const quoted = typeof parsedContent === 'object' && parsedContent !== null ? parsedContent.quotedMessage : null;
 
               return (
-                <div key={m.id || idx} className={`flex flex-col relative group ${isInbound ? 'items-start' : 'items-end'}`}>
+                <div key={m.id || idx} className={`flex flex-col group ${isInbound ? 'items-start' : 'items-end'} w-full`}>
                   {!isInbound && !isAi && m.senderUser && (
                     <span className="text-[9px] text-muted-foreground mb-0.5">
                       {m.senderUser.name}
                     </span>
                   )}
 
-                  {/* Hover Quick Action Buttons (Reply / Quote & Forward) */}
-                  <div className={`absolute top-1 z-10 hidden group-hover:flex items-center gap-1 bg-card border border-border shadow-md rounded-full px-2 py-0.5 ${isInbound ? 'left-[76%] ml-2' : 'right-[76%] mr-2'}`}>
-                    <button 
-                      onClick={() => setReplyingToMessage(m)}
-                      className="p-1 text-muted-foreground hover:text-primary transition-colors cursor-pointer"
-                      title={language === 'en' ? 'Reply / Quote Message' : 'রিপ্লাই / কোড মেসেজ'}
-                    >
-                      <Reply className="w-3.5 h-3.5" />
-                    </button>
-                    <button 
-                      onClick={() => setForwardingMessage(m)}
-                      className="p-1 text-muted-foreground hover:text-primary transition-colors cursor-pointer"
-                      title={language === 'en' ? 'Forward Message' : 'ফরোয়ার্ড করুন'}
-                    >
-                      <Share2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-
-                  <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-xs shadow-sm ${
-                    isInbound 
-                      ? 'bg-muted/50 dark:bg-muted/30 text-foreground border border-border/60 rounded-tl-xs' 
-                      : isAi 
-                        ? 'bg-purple-500/5 dark:bg-purple-500/10 text-foreground border border-purple-500/30 rounded-tr-xs shadow-[0_0_15px_rgba(168,85,247,0.08)]' 
-                        : 'bg-primary text-primary-foreground rounded-tr-xs shadow-md shadow-primary/20'
-                  }`}>
+                  <div className={`flex items-center gap-2 max-w-full ${isInbound ? 'flex-row' : 'flex-row-reverse'}`}>
+                    <div className={`max-w-[75vw] md:max-w-[45vw] lg:max-w-[600px] rounded-2xl px-4 py-2.5 text-xs shadow-sm ${
+                      isInbound 
+                        ? 'bg-muted/50 dark:bg-muted/30 text-foreground border border-border/60 rounded-tl-xs' 
+                        : isAi 
+                          ? 'bg-purple-500/5 dark:bg-purple-500/10 text-foreground border border-purple-500/30 rounded-tr-xs shadow-[0_0_15px_rgba(168,85,247,0.08)]' 
+                          : 'bg-primary text-primary-foreground rounded-tr-xs shadow-md shadow-primary/20'
+                    }`}>
                     {/* Quoted Message Card */}
                     {quoted && (
                       <div className={`mb-2 p-2 rounded-lg text-[11px] border-l-4 ${isInbound ? 'bg-background/80 border-primary text-foreground' : 'bg-black/20 border-white text-white'}`}>
@@ -1235,6 +1218,25 @@ export default function InboxPage() {
                         <span>{new Date(m.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                         {renderMessageStatus(m)}
                       </span>
+                    </div>
+                    </div>
+                    
+                    {/* Hover Quick Action Buttons (Reply / Quote & Forward) */}
+                    <div className="hidden group-hover:flex items-center gap-1 bg-card border border-border shadow-md rounded-full px-2 py-0.5 shrink-0 z-10">
+                      <button 
+                        onClick={() => setReplyingToMessage(m)}
+                        className="p-1 text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+                        title={language === 'en' ? 'Reply / Quote Message' : 'রিপ্লাই / কোট মেসেজ'}
+                      >
+                        <Reply className="w-3.5 h-3.5" />
+                      </button>
+                      <button 
+                        onClick={() => setForwardingMessage(m)}
+                        className="p-1 text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+                        title={language === 'en' ? 'Forward Message' : 'ফরোয়ার্ড করুন'}
+                      >
+                        <Share2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
                 </div>
