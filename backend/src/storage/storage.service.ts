@@ -151,28 +151,48 @@ export class StorageService {
    */
   async deleteMedia(publicUrl: string, tenantId: string): Promise<boolean> {
     try {
-      if (!publicUrl.includes(`/uploads/tenants/${tenantId}/`)) return false;
+      if (!publicUrl || !publicUrl.startsWith('/uploads/')) return false;
+
+      // Security check: if URL is scoped to a specific tenant directory, verify match
+      if (publicUrl.startsWith('/uploads/tenants/') && !publicUrl.startsWith(`/uploads/tenants/${tenantId}/`)) {
+        return false;
+      }
+
       const fileName = publicUrl.split('/').pop();
       if (!fileName) return false;
 
-      const filePath = path.join(this.uploadDir, 'tenants', tenantId, fileName);
-      let freedBytes = 0;
+      // Check potential physical file locations on VPS disk
+      const candidatePaths = [
+        path.join(this.uploadDir, 'tenants', tenantId, fileName),
+        path.join(process.cwd(), publicUrl),
+        path.join(this.uploadDir, fileName),
+        path.join(this.uploadDir, 'media', fileName),
+        path.join(this.uploadDir, 'tickets', fileName)
+      ];
 
-      // 1. Physically delete file from disk using fs.promises.unlink
-      if (fs.existsSync(filePath)) {
-        try {
-          const stats = fs.statSync(filePath);
-          freedBytes = stats.size;
-          await fs.promises.unlink(filePath);
-          this.logger.log(`Physically unlinked file from disk: ${filePath}`);
-        } catch (unlinkErr) {
-          this.logger.warn(`File unlink warning for ${filePath}: ${unlinkErr.message}`);
+      let freedBytes = 0;
+      let unlinked = false;
+
+      for (const filePath of candidatePaths) {
+        if (fs.existsSync(filePath)) {
+          try {
+            const stats = fs.statSync(filePath);
+            freedBytes = stats.size;
+            await fs.promises.unlink(filePath);
+            unlinked = true;
+            this.logger.log(`Physically unlinked file from disk: ${filePath}`);
+            break;
+          } catch (unlinkErr) {
+            this.logger.warn(`File unlink warning for ${filePath}: ${unlinkErr.message}`);
+          }
         }
-      } else {
-        this.logger.log(`File already missing from disk: ${filePath}`);
       }
 
-      // 2. Clean up DB references so dead links aren't left in models
+      if (!unlinked) {
+        this.logger.log(`File missing from disk: ${publicUrl}`);
+      }
+
+      // Clean up DB references so dead links aren't left in models
       await Promise.all([
         // Clear product image
         this.prisma.product.updateMany({
@@ -223,17 +243,13 @@ export class StorageService {
   }
 
   /**
-   * Helper function to scan disk files and classify into categories based on DB queries.
+   * Helper function to scan disk files and DB records to classify into categories.
    */
   private async getAllTenantFiles(tenantId: string): Promise<StorageFileItem[]> {
-    const tenantDir = path.join(this.uploadDir, 'tenants', tenantId);
-    if (!fs.existsSync(tenantDir)) return [];
+    const itemsMap = new Map<string, StorageFileItem>();
 
-    const fileNames = fs.readdirSync(tenantDir);
-    if (fileNames.length === 0) return [];
-
-    // Query DB for known category mappings
-    const [docs, products, ticketMsgs] = await Promise.all([
+    // 1. Query DB for known category mappings
+    const [docs, products, ticketMsgs, chatMessages] = await Promise.all([
       this.prisma.knowledgeDocument.findMany({
         where: { tenantId },
         select: { id: true, filename: true, uploadedAt: true }
@@ -245,6 +261,13 @@ export class StorageService {
       this.prisma.ticketMessage.findMany({
         where: { ticket: { tenantId }, attachmentUrl: { not: null } },
         select: { id: true, attachmentUrl: true, createdAt: true }
+      }),
+      this.prisma.message.findMany({
+        where: {
+          conversation: { tenantId },
+          type: { in: ['image', 'video', 'document', 'audio', 'file'] }
+        },
+        select: { id: true, type: true, content: true, createdAt: true }
       })
     ]);
 
@@ -252,46 +275,98 @@ export class StorageService {
     const productUrlMap = new Map(products.map(p => [(p.imageUrl || '').toLowerCase(), p.createdAt]));
     const ticketUrlMap = new Map(ticketMsgs.map(t => [(t.attachmentUrl || '').toLowerCase(), t.createdAt]));
 
-    const items: StorageFileItem[] = [];
+    // 2. Scan disk files in uploads/tenants/${tenantId}
+    const tenantDir = path.join(this.uploadDir, 'tenants', tenantId);
+    if (fs.existsSync(tenantDir)) {
+      const fileNames = fs.readdirSync(tenantDir);
+      for (const fileName of fileNames) {
+        const filePath = path.join(tenantDir, fileName);
+        if (!fs.existsSync(filePath)) continue;
 
-    for (const fileName of fileNames) {
-      const filePath = path.join(tenantDir, fileName);
-      if (!fs.existsSync(filePath)) continue;
+        try {
+          const stats = fs.statSync(filePath);
+          const publicUrl = `/uploads/tenants/${tenantId}/${fileName}`;
+          const lowerUrl = publicUrl.toLowerCase();
+          const lowerName = fileName.toLowerCase();
 
-      try {
-        const stats = fs.statSync(filePath);
-        const publicUrl = `/uploads/tenants/${tenantId}/${fileName}`;
-        const lowerUrl = publicUrl.toLowerCase();
-        const lowerName = fileName.toLowerCase();
+          let category: 'chatMedia' | 'aiDocuments' | 'products' | 'tickets' = 'chatMedia';
+          let createdAt = stats.birthtime ? stats.birthtime.toISOString() : stats.mtime.toISOString();
 
-        let category: 'chatMedia' | 'aiDocuments' | 'products' | 'tickets' = 'chatMedia';
-        let createdAt = stats.birthtime ? stats.birthtime.toISOString() : stats.mtime.toISOString();
+          if (docNameMap.has(lowerName) || docNameMap.has(lowerUrl)) {
+            category = 'aiDocuments';
+            createdAt = docNameMap.get(lowerName)?.toISOString() || createdAt;
+          } else if (productUrlMap.has(lowerUrl)) {
+            category = 'products';
+            createdAt = productUrlMap.get(lowerUrl)?.toISOString() || createdAt;
+          } else if (ticketUrlMap.has(lowerUrl)) {
+            category = 'tickets';
+            createdAt = ticketUrlMap.get(lowerUrl)?.toISOString() || createdAt;
+          }
 
-        if (docNameMap.has(lowerName) || docNameMap.has(lowerUrl)) {
-          category = 'aiDocuments';
-          createdAt = docNameMap.get(lowerName)?.toISOString() || createdAt;
-        } else if (productUrlMap.has(lowerUrl)) {
-          category = 'products';
-          createdAt = productUrlMap.get(lowerUrl)?.toISOString() || createdAt;
-        } else if (ticketUrlMap.has(lowerUrl)) {
-          category = 'tickets';
-          createdAt = ticketUrlMap.get(lowerUrl)?.toISOString() || createdAt;
+          itemsMap.set(publicUrl, {
+            id: publicUrl,
+            url: publicUrl,
+            name: fileName,
+            sizeBytes: stats.size,
+            createdAt,
+            category
+          });
+        } catch (err) {
+          this.logger.warn(`Error statting file ${fileName}: ${err.message}`);
         }
-
-        items.push({
-          id: publicUrl,
-          url: publicUrl,
-          name: fileName,
-          sizeBytes: stats.size,
-          createdAt,
-          category
-        });
-      } catch (err) {
-        this.logger.warn(`Error statting file ${fileName}: ${err.message}`);
       }
     }
 
-    return items;
+    // 3. Scan chat media messages from DB to catch files in legacy uploads paths
+    for (const msg of chatMessages) {
+      let mediaUrl: string | undefined;
+      const content = msg.content as any;
+
+      if (typeof content === 'object' && content !== null) {
+        mediaUrl = content.mediaUrl || content.url || content.fileUrl || content.localUrl;
+      } else if (typeof content === 'string' && content.startsWith('/uploads/')) {
+        mediaUrl = content;
+      }
+
+      if (!mediaUrl || !mediaUrl.startsWith('/uploads/')) continue;
+      if (itemsMap.has(mediaUrl)) continue; // Already scanned from tenant dir
+
+      const fileName = mediaUrl.split('/').pop() || `chat_file_${msg.id}`;
+
+      // Check physical file existence across uploads locations
+      const candidatePaths = [
+        path.join(process.cwd(), mediaUrl),
+        path.join(this.uploadDir, fileName),
+        path.join(this.uploadDir, 'media', fileName),
+        path.join(this.uploadDir, 'tenants', tenantId, fileName)
+      ];
+
+      let sizeBytes = 0;
+      let foundPath: string | null = null;
+
+      for (const p of candidatePaths) {
+        if (fs.existsSync(p)) {
+          try {
+            const stats = fs.statSync(p);
+            sizeBytes = stats.size;
+            foundPath = p;
+            break;
+          } catch (e) {}
+        }
+      }
+
+      if (foundPath || sizeBytes > 0) {
+        itemsMap.set(mediaUrl, {
+          id: mediaUrl,
+          url: mediaUrl,
+          name: fileName,
+          sizeBytes,
+          createdAt: msg.createdAt ? msg.createdAt.toISOString() : new Date().toISOString(),
+          category: 'chatMedia'
+        });
+      }
+    }
+
+    return Array.from(itemsMap.values());
   }
 }
-

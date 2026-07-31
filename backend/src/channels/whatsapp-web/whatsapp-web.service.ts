@@ -305,7 +305,7 @@ export class WhatsappWebService implements OnModuleInit {
             thumbnail = buffer.toString('base64');
 
             // Compress and save high-clarity media file to disk (~10-30KB)
-            const uploadPath = path.join(process.cwd(), 'uploads');
+            const uploadPath = path.join(process.cwd(), 'uploads', 'tenants', tenantId);
             if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true });
             const fileName = `wa_${Date.now()}_${Math.round(Math.random() * 1E6)}.webp`;
             const filePath = path.join(uploadPath, fileName);
@@ -339,7 +339,7 @@ export class WhatsappWebService implements OnModuleInit {
             }
 
             fs.writeFileSync(filePath, compressedBuffer);
-            mediaUrl = `/uploads/${fileName}`;
+            mediaUrl = `/uploads/tenants/${tenantId}/${fileName}`;
           } catch (err) {
             this.logger.error(`Failed to download image media for ${tenantId}: ${err.message}`);
           }
@@ -348,12 +348,12 @@ export class WhatsappWebService implements OnModuleInit {
           contentStr = msg.message.videoMessage.caption || '[Video]';
           try {
             const buffer = await downloadMediaMessage(msg, 'buffer', {});
-            const uploadPath = path.join(process.cwd(), 'uploads');
+            const uploadPath = path.join(process.cwd(), 'uploads', 'tenants', tenantId);
             if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true });
             const fileName = `wa_${Date.now()}_${Math.round(Math.random() * 1E6)}.mp4`;
             const filePath = path.join(uploadPath, fileName);
             fs.writeFileSync(filePath, buffer);
-            mediaUrl = `/uploads/${fileName}`;
+            mediaUrl = `/uploads/tenants/${tenantId}/${fileName}`;
           } catch (err) {
             this.logger.error(`Failed to download video media for ${tenantId}: ${err.message}`);
           }
@@ -362,12 +362,12 @@ export class WhatsappWebService implements OnModuleInit {
           contentStr = msg.message.documentMessage.fileName || msg.message.documentMessage.caption || '[Document]';
           try {
             const buffer = await downloadMediaMessage(msg, 'buffer', {});
-            const uploadPath = path.join(process.cwd(), 'uploads');
+            const uploadPath = path.join(process.cwd(), 'uploads', 'tenants', tenantId);
             if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true });
             const fileName = msg.message.documentMessage.fileName || `wa_${Date.now()}_doc.pdf`;
             const filePath = path.join(uploadPath, fileName);
             fs.writeFileSync(filePath, buffer);
-            mediaUrl = `/uploads/${fileName}`;
+            mediaUrl = `/uploads/tenants/${tenantId}/${fileName}`;
           } catch (err) {
             this.logger.error(`Failed to download document media for ${tenantId}: ${err.message}`);
           }

@@ -35,6 +35,9 @@ describe('StorageService', () => {
       findMany: jest.fn().mockResolvedValue([]),
       updateMany: jest.fn().mockResolvedValue({ count: 0 }),
     },
+    message: {
+      findMany: jest.fn().mockResolvedValue([]),
+    },
   };
 
   beforeEach(async () => {

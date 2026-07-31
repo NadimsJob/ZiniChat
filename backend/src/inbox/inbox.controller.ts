@@ -136,8 +136,9 @@ export class InboxController {
   @Post('messages/media')
   @UseInterceptors(FileInterceptor('file', {
     storage: diskStorage({
-      destination: (req, file, cb) => {
-        const uploadPath = path.join(process.cwd(), 'uploads');
+      destination: (req: any, file, cb) => {
+        const tenantId = req.user?.tenantId || 'general';
+        const uploadPath = path.join(process.cwd(), 'uploads', 'tenants', tenantId);
         if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true });
         cb(null, uploadPath);
       },
@@ -171,7 +172,7 @@ export class InboxController {
     await this.quotaService.checkMessageQuota(tenantId);
     await this.quotaService.checkStorageQuota(tenantId, file.size);
 
-    const mediaUrl = `/uploads/${file.filename}`;
+    const mediaUrl = `/uploads/tenants/${tenantId}/${file.filename}`;
     const type = body.type || (file.mimetype.startsWith('video') ? 'video' : (file.mimetype.startsWith('image') ? 'image' : 'document'));
     const contentPayload = {
       body: body.content || '',
