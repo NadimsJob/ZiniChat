@@ -333,36 +333,30 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
           ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
         `}
       >
-        {/* Placeholder for Absolute Logo */}
-        <div className="h-12 shrink-0 border-b border-transparent"></div>
-
-        {/* Logo Area (Absolute to break out of collapsed sidebar) */}
-        <div className={`h-12 flex items-center justify-between border-b border-border/50 shrink-0 absolute top-0 left-0 bg-surface z-50 transition-all duration-300 overflow-hidden ${isSidebarCollapsed ? 'w-[165px] border-r border-border' : 'w-full'}`}>
-          <Link href="/dashboard" className="flex items-center justify-start h-full py-0.5 hover:opacity-90 transition-opacity w-full">
-            <img 
-              src="/logo.png" 
-              alt="ZiniChat Logo" 
-              className="h-full w-[165px] max-w-none object-contain object-left scale-[1.3] origin-left ml-2" 
-            />
-          </Link>
-          
-          <div className="flex items-center justify-end absolute right-2.5 top-0 bottom-0 z-20">
-            {isInboxPage && !isSidebarCollapsed && (
-              <button 
-                onClick={() => setSidebarPinned(!sidebarPinned)}
-                title={sidebarPinned ? (language === 'en' ? 'Unpin Sidebar' : 'সাইডবার আনপিন করুন') : (language === 'en' ? 'Pin Sidebar' : 'সাইডবার পিন করুন')}
-                className="hidden md:flex p-1 text-slate-400 hover:text-slate-700 rounded-md hover:bg-slate-100 transition-colors bg-surface/80 backdrop-blur-sm"
-              >
-                <Pin className={`w-3.5 h-3.5 ${sidebarPinned ? 'text-primary rotate-45' : ''}`} />
-              </button>
+        {/* Logo Area */}
+        <div className="h-12 px-2.5 flex items-center justify-between gap-1 border-b border-border/50 shrink-0">
+          <Link href="/dashboard" className="flex-1 flex items-center justify-start h-full py-0.5 hover:opacity-90 transition-opacity overflow-hidden">
+            {isSidebarCollapsed ? (
+              <img src="/icon.png" alt="ZiniChat" className="w-8 h-8 object-contain mx-auto" />
+            ) : (
+              <img src="/logo.png" alt="ZiniChat Logo" className="h-full w-full object-contain object-left scale-[1.3] origin-left ml-2" />
             )}
+          </Link>
+          {isInboxPage && !isSidebarCollapsed && (
             <button 
-              className="md:hidden text-slate-400 hover:text-slate-600 bg-surface/80 backdrop-blur-sm"
-              onClick={() => setIsMobileMenuOpen(false)}
+              onClick={() => setSidebarPinned(!sidebarPinned)}
+              title={sidebarPinned ? (language === 'en' ? 'Unpin Sidebar' : 'সাইডবার আনপিন করুন') : (language === 'en' ? 'Pin Sidebar' : 'সাইডবার পিন করুন')}
+              className="hidden md:flex p-1 text-slate-400 hover:text-slate-700 rounded-md hover:bg-slate-100 transition-colors"
             >
-              <ChevronDown className="w-5 h-5 rotate-90" />
+              <Pin className={`w-3.5 h-3.5 ${sidebarPinned ? 'text-primary rotate-45' : ''}`} />
             </button>
-          </div>
+          )}
+          <button 
+            className="md:hidden text-slate-400 hover:text-slate-600"
+            onClick={() => setIsMobileMenuOpen(false)}
+          >
+            <ChevronDown className="w-5 h-5 rotate-90" />
+          </button>
         </div>
 
         {/* Navigation Links */}
@@ -437,7 +431,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  <main className="flex-1 flex flex-col min-w-0">
  
  {/* Topbar */}
- <header className={`h-12 px-3 flex items-center justify-between shrink-0 bg-surface/70 backdrop-blur-xl border-b border-border shadow-sm relative z-40 transition-all duration-300 ${isSidebarCollapsed ? 'pl-[120px]' : ''}`}>
+ <header className="h-12 px-3 flex items-center justify-between shrink-0 bg-surface/70 backdrop-blur-xl border-b border-border shadow-sm relative z-40">
  <div className="flex items-center gap-2">
  <button 
  className="md:hidden p-1.5 -ml-1.5 text-slate-500 hover:bg-primary/10 hover:text-primary rounded-lg transition-colors"
