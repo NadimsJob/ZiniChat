@@ -11,7 +11,7 @@ import {
   Check, CheckCheck, MessageCircle, MoreVertical, X, UserCircle, UserPlus, Mail, Building, 
   MapPin, AlertCircle, Paperclip, File as FileIcon, Trash2, Bot, ToggleLeft, 
   ToggleRight, Wand2, RefreshCw, ChevronLeft, PanelRight, Eye, Star, Archive, 
-  CheckCircle2, Flag, UserCheck, Sparkles 
+  CheckCircle2, Flag, UserCheck, Sparkles, Calendar 
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
@@ -65,6 +65,7 @@ export default function InboxPage() {
   const [showAiPickerMenu, setShowAiPickerMenu] = useState(false);
   const [showRightSidebar, setShowRightSidebar] = useState(true);
   const [isCreatingLabel, setIsCreatingLabel] = useState(false);
+  const [followUpPickerConvId, setFollowUpPickerConvId] = useState<string | null>(null);
 
   const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -576,6 +577,26 @@ export default function InboxPage() {
     }));
   };
 
+  const handleQuickFollowUpUpdate = async (conv: any, dateValue: string) => {
+    if (!conv?.contact?.id) return;
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/contacts/${conv.contact.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ followUpAt: dateValue ? new Date(dateValue).toISOString() : null }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        handleUpdateContactInList(conv.contact.id, updated);
+        setFollowUpPickerConvId(null);
+        toast.success(language === 'en' ? 'Follow-up date saved!' : 'ফলো-আপ তারিখ সেভ হয়েছে!');
+      }
+    } catch (err) {
+      toast.error('Failed to update follow-up date');
+    }
+  };
+
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] overflow-hidden bg-background text-foreground">
       
@@ -731,7 +752,7 @@ export default function InboxPage() {
                         </span>
                       ))}
                       {conv.assignedAgentId === null && (
-                        <span className="text-amber-600 bg-amber-50 px-1 rounded text-[9px]">Unassigned</span>
+                        <span className="text-amber-600 bg-amber-50 dark:bg-amber-500/10 dark:text-amber-400 px-1 rounded text-[9px]">Unassigned</span>
                       )}
                     </div>
 
@@ -744,6 +765,39 @@ export default function InboxPage() {
                           </div>
                         ))}
                       </div>
+                    )}
+                  </div>
+
+                  {/* Quick Follow-Up Date Picker */}
+                  <div className="mt-1.5 flex items-center gap-1">
+                    {followUpPickerConvId === conv.id ? (
+                      <div className="flex items-center gap-1 w-full" onClick={e => e.stopPropagation()}>
+                        <input
+                          type="date"
+                          autoFocus
+                          defaultValue={conv.contact?.followUpAt ? new Date(conv.contact.followUpAt).toISOString().split('T')[0] : ''}
+                          className="flex-1 text-[10px] bg-background border border-primary/40 rounded-md px-2 py-0.5 text-foreground focus:outline-none focus:border-primary"
+                          onChange={e => handleQuickFollowUpUpdate(conv, e.target.value)}
+                          onBlur={() => setFollowUpPickerConvId(null)}
+                        />
+                        <button onClick={() => setFollowUpPickerConvId(null)} className="text-muted-foreground hover:text-foreground">
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={e => { e.stopPropagation(); setFollowUpPickerConvId(conv.id); }}
+                        className={`flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-md transition-colors ${
+                          conv.contact?.followUpAt
+                            ? 'text-purple-500 bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/20'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                        }`}
+                      >
+                        <Calendar className="w-3 h-3" />
+                        {conv.contact?.followUpAt
+                          ? new Date(conv.contact.followUpAt).toLocaleDateString([], { month: 'short', day: 'numeric' })
+                          : (language === 'en' ? 'Follow-up' : 'ফলো-আপ')}
+                      </button>
                     )}
                   </div>
                 </div>
