@@ -1,10 +1,12 @@
 const { Client } = require("@modelcontextprotocol/sdk/client/index.js");
 const { StdioClientTransport } = require("@modelcontextprotocol/sdk/client/stdio.js");
 
+const path = require("path");
+
 async function deploy(target) {
   const transport = new StdioClientTransport({
     command: "node",
-    args: ["mcp-deploy-server.js"]
+    args: [path.join(__dirname, "mcp-deploy-server.js")]
   });
 
   const client = new Client(
