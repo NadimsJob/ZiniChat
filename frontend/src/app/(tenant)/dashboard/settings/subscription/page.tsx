@@ -25,7 +25,7 @@ const FEATURE_MAP: Record<string, { en: string; bn: string; icon: any }> = {
   'commerce':                        { en: 'Products & Orders',                    bn: 'প্রোডাক্টস ও অর্ডারস',            icon: Package },
   'broadcast':                       { en: 'Broadcast Campaigns',                  bn: 'ব্রডকাস্ট ক্যাম্পেইন',             icon: Megaphone },
   'team_management':                 { en: 'Team Members & Roles',                 bn: 'টিম মেম্বারস ও রোলস',             icon: Users },
-  'contact_labels':                  { en: 'Custom Contact Labels',                bn: 'কাস্টম কন্টাক্ট লেবেল',           icon: Tag },
+  'contact_labels':                  { en: 'Custom Contact Tags',                  bn: 'কাস্টম কন্টাক্ট ট্যাগ',            icon: Tag },
   'inbox_smart_tabs':                { en: 'Smart Inbox Tabs',                     bn: 'স্মার্ট ইনবক্স ট্যাবস',           icon: BarChart2 },
   'inbox_notes':                     { en: 'Inbox Contact Notes',                  bn: 'ইনবক্স কন্টাক্ট নোটস',           icon: Tag },
   'inbox_ai_summary':                { en: 'AI Conversation Summary',              bn: 'এআই কথোপকথন সামারি',            icon: Bot },

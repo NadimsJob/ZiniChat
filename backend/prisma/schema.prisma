@@ -616,8 +616,9 @@ model WebsiteWidget {
   tagline         String   @default("We are here to help you.")
   greetingEnabled Boolean  @default(false)
   whatsappInboxId String?  @db.Uuid // for WHATSAPP type only
-  isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now())
+  isActive             Boolean  @default(true)
+  isAiAutoReplyEnabled Boolean  @default(true)
+  createdAt            DateTime @default(now())
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 

@@ -54,6 +54,8 @@ export class InboxService {
         domain: true,
         primaryColor: true,
         heading: true,
+        whatsappInboxId: true,
+        isAiAutoReplyEnabled: true,
         createdAt: true,
       }
     });
@@ -67,34 +69,72 @@ export class InboxService {
       };
     });
 
-    const mappedWidgets = websiteWidgets.map(w => ({
-      id: w.id,
-      channelType: 'website',
-      displayName: w.name || 'Website Widget',
-      phoneNumber: w.type === 'WHATSAPP' ? 'WhatsApp Widget' : 'Live Chat Widget',
-      provider: w.type,
-      status: 'active',
-      qrStatus: 'CONNECTED',
-      isAiAutoReplyEnabled: true,
-      ignoreGroupMessages: false,
-      connectionMethod: 'embed_script',
-      createdAt: w.createdAt,
-      isConnected: true,
-      widgetToken: w.widgetToken,
-      domain: w.domain,
-      primaryColor: w.primaryColor,
-      heading: w.heading,
-      type: w.type,
-    }));
+    const mappedWidgets = websiteWidgets.map(w => {
+      let aiEnabled = w.isAiAutoReplyEnabled ?? true;
+      if (w.whatsappInboxId) {
+        const linkedConn = connections.find(c => c.id === w.whatsappInboxId);
+        if (linkedConn) {
+          aiEnabled = linkedConn.isAiAutoReplyEnabled;
+        }
+      }
+      return {
+        id: w.id,
+        channelType: 'website',
+        displayName: w.name || 'Website Widget',
+        phoneNumber: w.type === 'WHATSAPP' ? 'WhatsApp Widget' : 'Live Chat Widget',
+        provider: w.type,
+        status: 'active',
+        qrStatus: 'CONNECTED',
+        isAiAutoReplyEnabled: aiEnabled,
+        ignoreGroupMessages: false,
+        connectionMethod: 'embed_script',
+        createdAt: w.createdAt,
+        isConnected: true,
+        widgetToken: w.widgetToken,
+        domain: w.domain,
+        primaryColor: w.primaryColor,
+        heading: w.heading,
+        type: w.type,
+        whatsappInboxId: w.whatsappInboxId,
+      };
+    });
 
     return [...mappedConnections, ...mappedWidgets];
   }
 
   async toggleChannelAiReply(tenantId: string, id: string, isAiAutoReplyEnabled: boolean) {
-    return this.prisma.channelConnection.update({
-      where: { id },
-      data: { isAiAutoReplyEnabled }
+    const conn = await this.prisma.channelConnection.findFirst({
+      where: { id, tenantId }
     });
+
+    if (conn) {
+      return this.prisma.channelConnection.update({
+        where: { id },
+        data: { isAiAutoReplyEnabled }
+      });
+    }
+
+    const widget = await this.prisma.websiteWidget.findFirst({
+      where: { id, tenantId }
+    });
+
+    if (widget) {
+      await this.prisma.websiteWidget.update({
+        where: { id },
+        data: { isAiAutoReplyEnabled }
+      });
+
+      if (widget.whatsappInboxId) {
+        await this.prisma.channelConnection.updateMany({
+          where: { id: widget.whatsappInboxId, tenantId },
+          data: { isAiAutoReplyEnabled }
+        });
+      }
+
+      return { id: widget.id, isAiAutoReplyEnabled };
+    }
+
+    throw new Error('Channel or Widget not found');
   }
 
   async toggleIgnoreGroupMessages(tenantId: string, id: string, ignoreGroupMessages: boolean) {

@@ -287,7 +287,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  title: language === 'en' ? 'SETTINGS' : 'সেটিংস',
  items: [
  { name: language === 'en' ? 'Team' : 'টিম', icon: UserCircle, href: '/dashboard/team' },
- { name: language === 'en' ? 'Labels' : 'লেবেলস', icon: Tag, href: '/dashboard/settings/labels' },
+    { name: language === 'en' ? 'Tags' : 'ট্যাগ', icon: Tag, href: '/dashboard/settings/labels' },
  { name: language === 'en' ? 'Storage' : 'স্টোরেজ', icon: Settings2, href: '/dashboard/settings/storage' },
  { name: language === 'en' ? 'Subscription' : 'সাবস্ক্রিপশন', icon: Crown, href: '/dashboard/settings/subscription' },
  { name: language === 'en' ? 'Billing History' : 'বিলিং হিস্ট্রি', icon: Receipt, href: '/dashboard/settings/billing-history' },

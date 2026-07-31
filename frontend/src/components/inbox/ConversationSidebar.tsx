@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
+import LabelForm from '@/components/labels/LabelForm';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -266,27 +267,6 @@ export default function ConversationSidebar({
 
   // Inline Tag Creation Modal State
   const [showNewTagModal, setShowNewTagModal] = useState(false);
-  const [newTagName, setNewTagName] = useState('');
-  const [newTagColor, setNewTagColor] = useState('#3b82f6');
-  const [creatingTag, setCreatingTag] = useState(false);
-
-  const handleCreateNewTag = async () => {
-    if (!newTagName.trim()) return;
-    setCreatingTag(true);
-    try {
-      const created = await onCreateLabel({ name: newTagName, color: newTagColor });
-      if (created && created.id) {
-        onToggleLabel(created.id);
-        setShowNewTagModal(false);
-        setNewTagName('');
-        toast.success(language === 'en' ? 'Tag created & attached' : 'ট্যাগ তৈরি ও যুক্ত হয়েছে');
-      }
-    } catch (err) {
-      toast.error('Failed to create tag');
-    } finally {
-      setCreatingTag(false);
-    }
-  };
 
   const attachedLabelIds = (conversation?.labels || []).map((l: any) => l.labelId);
 
@@ -787,57 +767,21 @@ export default function ConversationSidebar({
         )}
       </div>
 
-      {/* Inline Create New Tag Modal */}
+      {/* Inline Create New Tag Modal with AI Prompt support */}
       {showNewTagModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-card border border-border rounded-xl p-4 w-72 space-y-3 shadow-xl animate-in zoom-in-95 duration-150">
-            <div className="flex justify-between items-center border-b border-border pb-2">
-              <h4 className="text-xs font-bold text-foreground">
-                {language === 'en' ? 'Create New Tag' : 'নতুন ট্যাগ তৈরি করুন'}
-              </h4>
-              <button onClick={() => setShowNewTagModal(false)} className="text-muted-foreground hover:text-foreground">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="space-y-2">
-              <div>
-                <label className="text-[10px] text-muted-foreground font-medium">Tag Name</label>
-                <input 
-                  type="text"
-                  placeholder="e.g. VIP Client, High Priority"
-                  value={newTagName}
-                  onChange={e => setNewTagName(e.target.value)}
-                  className="w-full bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] text-muted-foreground font-medium">Color</label>
-                <div className="flex items-center gap-2">
-                  <input 
-                    type="color"
-                    value={newTagColor}
-                    onChange={e => setNewTagColor(e.target.value)}
-                    className="w-8 h-8 rounded cursor-pointer border border-border bg-transparent p-0"
-                  />
-                  <span className="text-xs font-mono text-muted-foreground">{newTagColor}</span>
-                </div>
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 pt-2 border-t border-border">
-              <button 
-                onClick={() => setShowNewTagModal(false)}
-                className="px-3 py-1 text-xs text-muted-foreground hover:text-foreground font-medium"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={handleCreateNewTag}
-                disabled={creatingTag}
-                className="px-3 py-1 bg-primary text-primary-foreground text-xs font-medium rounded-lg hover:bg-primary/90"
-              >
-                {creatingTag ? 'Creating...' : 'Save & Attach'}
-              </button>
-            </div>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-md">
+            <LabelForm
+              onSave={async (data) => {
+                const created = await onCreateLabel(data);
+                if (created && created.id) {
+                  onToggleLabel(created.id);
+                  setShowNewTagModal(false);
+                  toast.success(language === 'en' ? 'Tag created & attached' : 'ট্যাগ তৈরি ও যুক্ত হয়েছে');
+                }
+              }}
+              onCancel={() => setShowNewTagModal(false)}
+            />
           </div>
         </div>
       )}
