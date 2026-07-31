@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Cookies from 'js-cookie';
 import { useLanguage } from '@/components/LanguageProvider';
 import { useFeature } from '@/hooks/useFeature';
@@ -110,6 +110,7 @@ export default function ConversationSidebar({
         const updated = await res.json();
         onUpdateContact(contact.id, updated);
         setIsPickingFollowUp(false);
+        setTimeout(() => fetchActivities(), 250);
         toast.success(language === 'en' ? 'Follow-up date saved' : 'ফলো-আপ তারিখ সেভ হয়েছে');
       }
     } catch (err) {
@@ -194,6 +195,7 @@ export default function ConversationSidebar({
         const created = await res.json();
         setNotes(prev => [created, ...prev]);
         setNewNoteText('');
+        setTimeout(() => fetchActivities(), 250);
         toast.success(language === 'en' ? 'Note added' : 'নোট যুক্ত হয়েছে');
       }
     } catch (err) {
@@ -260,7 +262,7 @@ export default function ConversationSidebar({
   const [activities, setActivities] = useState<any[]>([]);
   const [loadingActivities, setLoadingActivities] = useState(false);
 
-  useEffect(() => {
+  const fetchActivities = useCallback(() => {
     if (!conversation?.id || !hasActivity) return;
     const token = Cookies.get('access_token');
     setLoadingActivities(true);
@@ -274,6 +276,10 @@ export default function ConversationSidebar({
       .catch(console.error)
       .finally(() => setLoadingActivities(false));
   }, [conversation?.id, hasActivity]);
+
+  useEffect(() => {
+    fetchActivities();
+  }, [fetchActivities]);
 
   // Shared Files state
   const [files, setFiles] = useState<any[]>([]);
@@ -497,40 +503,18 @@ export default function ConversationSidebar({
                     {contact?.assignedUser?.name || (language === 'en' ? 'Unassigned' : 'অ্যাসাইন করা হয়নি')}
                   </span>
                 </div>
-                <div className="flex items-center justify-between text-muted-foreground pt-1 border-t border-border/40">
-                  <div className="flex items-center gap-2 min-w-0">
+                <div className="flex items-center justify-between text-muted-foreground pt-1 border-t border-border/40 gap-2">
+                  <div className="flex items-center gap-1.5 min-w-0">
                     <Calendar className="w-3.5 h-3.5 text-purple-600 shrink-0" />
                     <span className="font-medium text-[10px] uppercase tracking-wider shrink-0">{language === 'en' ? 'Follow-up:' : 'ফলো-আপ:'}</span>
                   </div>
-                  {isPickingFollowUp ? (
-                    <div className="flex items-center gap-1">
-                      <input
-                        type="date"
-                        autoFocus
-                        defaultValue={contact?.followUpAt ? new Date(contact.followUpAt).toISOString().split('T')[0] : ''}
-                        className="text-[10px] bg-background border border-primary/60 rounded px-1.5 py-0.5 text-foreground focus:outline-none"
-                        onChange={e => handleDirectFollowUpSave(e.target.value)}
-                        onBlur={() => setIsPickingFollowUp(false)}
-                      />
-                      <button onClick={() => setIsPickingFollowUp(false)} className="p-0.5 text-muted-foreground hover:text-foreground">
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => setIsPickingFollowUp(true)}
-                      className="group flex items-center gap-1 text-purple-700 dark:text-purple-300 font-bold bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 px-2 py-0.5 rounded text-[10px] hover:bg-purple-100 dark:hover:bg-purple-900/60 transition-all cursor-pointer shadow-xs"
-                      title={language === 'en' ? 'Click to set or change follow-up date' : 'ফলো-আপ তারিখ সেভ বা পরিবর্তন করতে ক্লিক করুন'}
-                    >
-                      <span>
-                        {contact?.followUpAt 
-                          ? new Date(contact.followUpAt).toLocaleDateString(language === 'en' ? 'en-US' : 'bn-BD', { year: 'numeric', month: 'short', day: 'numeric' }) 
-                          : (language === 'en' ? 'Not set (Click to set)' : 'সেট করা হয়নি (ক্লিক করুন)')}
-                      </span>
-                      <Edit className="w-2.5 h-2.5 opacity-60 group-hover:opacity-100" />
-                    </button>
-                  )}
+                  <input
+                    type="date"
+                    value={contact?.followUpAt ? new Date(contact.followUpAt).toISOString().split('T')[0] : ''}
+                    onChange={e => handleDirectFollowUpSave(e.target.value)}
+                    className="text-[10px] bg-background border border-border/80 dark:border-border/60 rounded px-1.5 py-0.5 text-foreground focus:outline-none focus:border-primary cursor-pointer shrink-0"
+                    title={language === 'en' ? 'Select follow-up date' : 'ফলো-আপ তারিখ নির্বাচন করুন'}
+                  />
                 </div>
               </div>
             )}
@@ -566,7 +550,10 @@ export default function ConversationSidebar({
               return (
                 <button
                   key={lbl.id}
-                  onClick={() => onToggleLabel(lbl.id)}
+                  onClick={async () => {
+                    await onToggleLabel(lbl.id);
+                    setTimeout(() => fetchActivities(), 250);
+                  }}
                   style={{ 
                     backgroundColor: isAttached ? `${lbl.color}20` : 'transparent',
                     borderColor: lbl.color,
@@ -753,7 +740,9 @@ export default function ConversationSidebar({
               {activities.map(act => (
                 <div key={act.id} className="flex gap-2 text-[10px] items-start border-l-2 border-primary/40 pl-2 py-0.5">
                   <div className="flex-1">
-                    <span className="font-semibold text-foreground uppercase tracking-tight">{act.type.replace('_', ' ')}</span>
+                    <span className="font-semibold text-foreground uppercase tracking-tight">
+                      {act.type.replace('LABEL_ADDED', 'TAG_ADDED').replace('LABEL_REMOVED', 'TAG_REMOVED').replace(/_/g, ' ')}
+                    </span>
                     <p className="text-muted-foreground text-[9.5px]">
                       {new Date(act.createdAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
                     </p>

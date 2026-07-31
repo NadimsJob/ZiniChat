@@ -4,6 +4,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
+import sharp from 'sharp';
 
 @Injectable()
 export class WhatsappService implements IChannelAdapter {
@@ -124,15 +125,30 @@ export class WhatsappService implements IChannelAdapter {
     if (extension === 'jpeg') extension = 'jpg';
     if (extension === 'vnd.openxmlformats-officedocument.wordprocessingml.document') extension = 'docx';
 
-    const fileName = `${mediaId}_${Date.now()}.${extension}`;
-    
     const uploadsDir = path.join(process.cwd(), 'uploads', 'media');
     if (!fs.existsSync(uploadsDir)) {
       fs.mkdirSync(uploadsDir, { recursive: true });
     }
-    
-    const filePath = path.join(uploadsDir, fileName);
-    fs.writeFileSync(filePath, buffer);
+
+    let fileName = `${mediaId}_${Date.now()}.${extension}`;
+    let filePath = path.join(uploadsDir, fileName);
+
+    if (mimeType && mimeType.startsWith('image/') && mimeType !== 'image/svg+xml') {
+      try {
+        fileName = `${mediaId}_${Date.now()}.webp`;
+        filePath = path.join(uploadsDir, fileName);
+        const compressedBuffer = await sharp(buffer)
+          .resize({ width: 800, height: 800, fit: 'inside', withoutEnlargement: true })
+          .webp({ quality: 60, effort: 4 })
+          .toBuffer();
+        fs.writeFileSync(filePath, compressedBuffer);
+      } catch (cErr) {
+        this.logger.warn(`Image compression skipped, saving raw buffer: ${cErr.message}`);
+        fs.writeFileSync(filePath, buffer);
+      }
+    } else {
+      fs.writeFileSync(filePath, buffer);
+    }
     
     return `/uploads/media/${fileName}`;
   }

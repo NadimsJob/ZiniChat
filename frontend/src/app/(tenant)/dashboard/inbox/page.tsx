@@ -696,79 +696,90 @@ export default function InboxPage() {
             conversations.map(conv => {
               const isSelected = conv.id === selectedConvId;
               const lastMsg = conv.messages?.[0];
-              const lastText = lastMsg ? (typeof lastMsg.content === 'object' ? (lastMsg.content.body || lastMsg.content.text || JSON.stringify(lastMsg.content)) : String(lastMsg.content)) : '';
+              let lastText = '';
+              if (lastMsg) {
+                let parsed: any = lastMsg.content;
+                if (typeof lastMsg.content === 'string' && lastMsg.content.trim().startsWith('{')) {
+                  try { parsed = JSON.parse(lastMsg.content); } catch (e) {}
+                }
+                if (typeof parsed === 'object' && parsed !== null) {
+                  lastText = parsed.body || parsed.text || parsed.caption || (lastMsg.type === 'image' ? '📷 Photo' : lastMsg.type === 'video' ? '🎥 Video' : lastMsg.type === 'document' ? '📄 Document' : '');
+                } else if (typeof lastMsg.content === 'string') {
+                  if (lastMsg.content.trim().startsWith('{') && lastMsg.content.includes('"mediaUrl"')) {
+                    lastText = lastMsg.type === 'image' ? '📷 Photo' : lastMsg.type === 'video' ? '🎥 Video' : '📄 Document';
+                  } else {
+                    lastText = lastMsg.content;
+                  }
+                }
+              }
 
               return (
                 <div
                   key={conv.id}
                   onClick={() => setSelectedConvId(conv.id)}
-                  className={`p-3 cursor-pointer transition-all hover:bg-muted/50 ${
+                  className={`px-3 py-2.5 cursor-pointer transition-all hover:bg-muted/50 ${
                     isSelected ? 'bg-primary/10 border-l-4 border-primary' : ''
                   }`}
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    {/* Left Info: Avatar + Name + Snippet */}
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
                       <div className="relative shrink-0">
-                        <div className="w-9 h-9 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-xs border border-primary/20">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-xs border border-primary/20">
                           {conv.contact?.name ? conv.contact.name[0].toUpperCase() : 'C'}
                         </div>
-                        <span className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-background text-[9px] font-bold text-white flex items-center justify-center uppercase ${
+                        <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-background text-[8px] font-bold text-white flex items-center justify-center uppercase ${
                           conv.channel === 'whatsapp' ? 'bg-emerald-600' : conv.channel === 'messenger' ? 'bg-blue-600' : 'bg-pink-600'
                         }`}>
                           {conv.channel[0]}
                         </span>
                       </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 min-w-0">
                           <h4 className="text-xs font-bold text-foreground truncate">
                             {conv.contact?.name || conv.contact?.phone || 'Customer'}
                           </h4>
                           {conv.isStarred && <Star className="w-3 h-3 text-amber-500 fill-amber-500 shrink-0" />}
                           {conv.requiresFollowUp && <Flag className="w-3 h-3 text-red-500 shrink-0" />}
                         </div>
-                        <p className="text-[11px] text-muted-foreground truncate max-w-[180px]">
+                        <p className="text-[11px] text-muted-foreground truncate max-w-[160px]">
                           {lastText || (language === 'en' ? 'No messages' : 'কোন মেসেজ নেই')}
                         </p>
                       </div>
                     </div>
 
-                    <div className="text-right shrink-0 space-y-1">
+                    {/* Right Side: Timestamp + Badges / Unassigned / Tags */}
+                    <div className="text-right shrink-0 flex flex-col items-end gap-1">
                       <span className="text-[10px] text-muted-foreground whitespace-nowrap">
                         {conv.lastMessageAt ? new Date(conv.lastMessageAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
                       </span>
-                      {conv.unreadCount > 0 && (
-                        <div>
-                          <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full shadow-xs">
+                      <div className="flex items-center justify-end gap-1 flex-wrap">
+                        {conv.labels?.slice(0, 2).map((l: any) => (
+                          <span key={l.labelId} style={{ backgroundColor: `${l.label.color}20`, color: l.label.color, borderColor: l.label.color }} className="px-1.5 py-0.2 rounded border text-[9px] font-medium">
+                            {l.label.name}
+                          </span>
+                        ))}
+                        {conv.assignedAgentId === null && (
+                          <span className="text-amber-600 bg-amber-500/10 dark:bg-amber-500/20 text-[9px] font-medium px-1.5 py-0.2 rounded border border-amber-500/30 whitespace-nowrap">
+                            Unassigned
+                          </span>
+                        )}
+                        {hasCollaborators && conv.collaborators && conv.collaborators.length > 0 && (
+                          <div className="flex -space-x-1 overflow-hidden shrink-0">
+                            {conv.collaborators.map((col: any) => (
+                              <div key={col.userId} title={col.user?.name} className="inline-block h-3.5 w-3.5 rounded-full ring-1 ring-background bg-secondary/20 text-secondary text-[7px] font-bold text-center leading-3.5">
+                                {col.user?.name?.[0] || 'A'}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {conv.unreadCount > 0 && (
+                          <span className="bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.2 rounded-full shadow-xs">
                             {conv.unreadCount}
                           </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Badges & Collaborators footer */}
-                  <div className="mt-2 flex items-center justify-between text-[10px] pt-1">
-                    <div className="flex flex-wrap items-center gap-1">
-                      {conv.labels?.map((l: any) => (
-                        <span key={l.labelId} style={{ backgroundColor: `${l.label.color}20`, color: l.label.color, borderColor: l.label.color }} className="px-1.5 py-0.2 rounded border text-[9px] font-medium">
-                          {l.label.name}
-                        </span>
-                      ))}
-                      {conv.assignedAgentId === null && (
-                        <span className="text-amber-600 bg-amber-50 dark:bg-amber-500/10 dark:text-amber-400 px-1 rounded text-[9px]">Unassigned</span>
-                      )}
-                    </div>
-
-                    {/* Collaborator Avatar Chips */}
-                    {hasCollaborators && conv.collaborators && conv.collaborators.length > 0 && (
-                      <div className="flex -space-x-1 overflow-hidden">
-                        {conv.collaborators.map((col: any) => (
-                          <div key={col.userId} title={col.user?.name} className="inline-block h-4 w-4 rounded-full ring-1 ring-background bg-secondary/20 text-secondary text-[8px] font-bold text-center leading-4">
-                            {col.user?.name?.[0] || 'A'}
-                          </div>
-                        ))}
+                        )}
                       </div>
-                    )}
+                    </div>
                   </div>
                 </div>
               );
@@ -916,8 +927,30 @@ export default function InboxPage() {
             {messages.map((m, idx) => {
               const isInbound = m.direction === 'inbound';
               const isAi = m.senderType === 'ai';
-              const contentText = typeof m.content === 'object' ? (m.content.body || m.content.text || JSON.stringify(m.content)) : String(m.content);
-              const mediaUrl = typeof m.content === 'object' ? m.content.mediaUrl : null;
+              let parsedContent: any = m.content;
+              if (typeof m.content === 'string' && m.content.trim().startsWith('{')) {
+                try {
+                  parsedContent = JSON.parse(m.content);
+                } catch (e) {}
+              }
+
+              const mediaUrl = m.mediaUrl || (typeof parsedContent === 'object' && parsedContent !== null ? (parsedContent.mediaUrl || parsedContent.localUrl) : null);
+
+              let contentText = '';
+              if (typeof parsedContent === 'object' && parsedContent !== null) {
+                contentText = parsedContent.body || parsedContent.text || parsedContent.caption || '';
+              } else if (typeof m.content === 'string') {
+                contentText = m.content;
+              }
+
+              if (contentText.trim().startsWith('{') && contentText.includes('"mediaUrl"')) {
+                try {
+                  const json = JSON.parse(contentText);
+                  contentText = json.body || json.text || json.caption || '';
+                } catch (e) {
+                  contentText = '';
+                }
+              }
 
               const resolveMediaUrl = (url: string | null) => {
                 if (!url) return '';
@@ -925,6 +958,11 @@ export default function InboxPage() {
                 const cleanUrl = url.startsWith('/') ? url : `/${url}`;
                 return `${API}${cleanUrl}`;
               };
+
+              // Hide raw URL string if it matches the mediaUrl
+              if (mediaUrl && (contentText === mediaUrl || contentText === m.mediaUrl || contentText === resolveMediaUrl(mediaUrl))) {
+                contentText = '';
+              }
 
               return (
                 <div key={m.id || idx} className={`flex flex-col ${isInbound ? 'items-start' : 'items-end'}`}>
@@ -957,7 +995,9 @@ export default function InboxPage() {
                         )}
                       </div>
                     )}
-                    <p className="whitespace-pre-wrap leading-relaxed">{contentText}</p>
+                    {contentText ? (
+                      <p className="whitespace-pre-wrap leading-relaxed">{contentText}</p>
+                    ) : null}
                     <div className={`flex items-center justify-between gap-3 mt-1.5 pt-1.5 border-t ${isInbound ? 'border-border/50' : isAi ? 'border-purple-500/20' : 'border-white/20'}`}>
                       {isAi ? (
                         <span className="text-[9px] font-bold text-purple-400 flex items-center gap-1">

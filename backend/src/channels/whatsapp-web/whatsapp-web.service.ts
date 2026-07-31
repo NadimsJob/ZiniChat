@@ -8,6 +8,7 @@ import { Boom } from '@hapi/boom';
 
 import * as fs from 'fs';
 import * as path from 'path';
+import sharp from 'sharp';
 
 @Injectable()
 export class WhatsappWebService implements OnModuleInit {
@@ -303,12 +304,23 @@ export class WhatsappWebService implements OnModuleInit {
             const buffer = await downloadMediaMessage(msg, 'buffer', {});
             thumbnail = buffer.toString('base64');
 
-            // Save high-resolution media file to disk
+            // Compress and save high-clarity media file to disk (~10-30KB)
             const uploadPath = path.join(process.cwd(), 'uploads');
             if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true });
-            const fileName = `wa_${Date.now()}_${Math.round(Math.random() * 1E6)}.jpg`;
+            const fileName = `wa_${Date.now()}_${Math.round(Math.random() * 1E6)}.webp`;
             const filePath = path.join(uploadPath, fileName);
-            fs.writeFileSync(filePath, buffer);
+
+            let compressedBuffer = buffer;
+            try {
+              compressedBuffer = await sharp(buffer)
+                .resize({ width: 800, height: 800, fit: 'inside', withoutEnlargement: true })
+                .webp({ quality: 60, effort: 4 })
+                .toBuffer();
+            } catch (cErr) {
+              this.logger.warn(`Image compression skipped, saving raw buffer: ${cErr.message}`);
+            }
+
+            fs.writeFileSync(filePath, compressedBuffer);
             mediaUrl = `/uploads/${fileName}`;
           } catch (err) {
             this.logger.error(`Failed to download image media for ${tenantId}: ${err.message}`);

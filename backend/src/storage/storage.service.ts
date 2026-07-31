@@ -42,11 +42,12 @@ export class StorageService {
 
           const info = await sharp(file.buffer)
             .resize({
-              width: 1920,
+              width: 800,
+              height: 800,
               withoutEnlargement: true,
               fit: 'inside'
             })
-            .webp({ quality: 80 })
+            .webp({ quality: 60 })
             .toFile(filePath);
 
           savedBytes = info.size;

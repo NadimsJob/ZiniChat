@@ -3,6 +3,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import * as path from 'path';
 import * as fs from 'fs';
+import sharp from 'sharp';
 import { InboxService } from './inbox.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { FeatureGuard, RequireFeature } from '../auth/guards/feature.guard';
@@ -153,6 +154,20 @@ export class InboxController {
     @UploadedFile() file: Express.Multer.File
   ) {
     const tenantId = req.user.tenantId;
+
+    if (file && file.mimetype.startsWith('image/')) {
+      try {
+        const compressedBuffer = await sharp(file.path)
+          .resize({ width: 1200, height: 1200, fit: 'inside', withoutEnlargement: true })
+          .jpeg({ quality: 75, progressive: true })
+          .toBuffer();
+        fs.writeFileSync(file.path, compressedBuffer);
+        file.size = compressedBuffer.length;
+      } catch (err) {
+        console.error('Failed to compress outbound image:', err);
+      }
+    }
+
     await this.quotaService.checkMessageQuota(tenantId);
     await this.quotaService.checkStorageQuota(tenantId, file.size);
 

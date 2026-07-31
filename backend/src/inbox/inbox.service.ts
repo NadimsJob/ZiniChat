@@ -1012,7 +1012,7 @@ export class InboxService {
         tenantId,
         conversationId,
         contactId: conv.contactId,
-        type: 'LABEL_REMOVED',
+        type: 'TAG_REMOVED',
         actorUserId: actionUser?.id,
         metadataJson: { labelId }
       });
@@ -1028,7 +1028,7 @@ export class InboxService {
         tenantId,
         conversationId,
         contactId: conv.contactId,
-        type: 'LABEL_ADDED',
+        type: 'TAG_ADDED',
         actorUserId: actionUser?.id,
         metadataJson: { labelId }
       });
