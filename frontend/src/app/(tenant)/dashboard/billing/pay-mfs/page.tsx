@@ -384,16 +384,16 @@ function PayMfsContent() {
  : (cardAccounts.length > 0 ? cardAccounts : [{ provider: 'BANK', accountType: 'BANK', number: '10000001', name: 'Paystation / Bank Card' }]);
 
  return (
- <div className="min-h-screen bg-slate-100 text-foreground py-8 px-4 flex flex-col items-center justify-center font-sans">
+ <div className="min-h-screen bg-background text-foreground py-8 px-4 flex flex-col items-center justify-center font-sans">
 
  {/* Main Container Card matching Epay / Paystation Portal design */}
  <div className="w-full max-w-xl space-y-5">
 
  {/* Top Header Card */}
- <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xl space-y-5">
+ <div className="bg-card border border-border rounded-3xl p-6 shadow-xl space-y-5">
  
  {/* Top Navbar Header */}
- <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+ <div className="flex items-center justify-between border-b border-border/50 pb-4">
  <div className="flex items-center gap-3">
  <div className="w-10 h-10 rounded-2xl bg-emerald-600 flex items-center justify-center text-white shadow-lg shadow-emerald-600/30">
  <ShieldCheck className="w-6 h-6" />
@@ -413,12 +413,12 @@ function PayMfsContent() {
  </div>
 
  {/* Category Navigation Tabs (Mobile Banking | Bangla QR [Default] | Card) */}
- <div className="grid grid-cols-3 gap-2 p-1.5 bg-slate-100 rounded-2xl border border-slate-200 ">
+ <div className="grid grid-cols-3 gap-2 p-1.5 bg-background rounded-2xl border border-border ">
  <button
  onClick={() => setActiveTab('MOBILE')}
  className={`py-3 px-2 rounded-xl text-[12px] font-bold transition-all flex flex-col items-center justify-center gap-1.5 ${
  activeTab === 'MOBILE'
- ? 'bg-white text-emerald-600 shadow-md border-2 border-emerald-600 '
+ ? 'bg-card text-emerald-600 shadow-md border-2 border-emerald-600 '
  : 'text-muted-foreground hover:text-foreground'
  }`}
  >
@@ -431,7 +431,7 @@ function PayMfsContent() {
  onClick={() => setActiveTab('BANGLA_QR')}
  className={`py-3 px-2 rounded-xl text-[12px] font-bold transition-all flex flex-col items-center justify-center gap-1.5 relative ${
  activeTab === 'BANGLA_QR'
- ? 'bg-white text-emerald-600 shadow-md border-2 border-emerald-600 '
+ ? 'bg-card text-emerald-600 shadow-md border-2 border-emerald-600 '
  : 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/30 hover:bg-emerald-500/20'
  }`}
  >
@@ -446,7 +446,7 @@ function PayMfsContent() {
  onClick={() => setActiveTab('CARD')}
  className={`py-3 px-2 rounded-xl text-[12px] font-bold transition-all flex flex-col items-center justify-center gap-1.5 ${
  activeTab === 'CARD'
- ? 'bg-white text-emerald-600 shadow-md border-2 border-emerald-600 '
+ ? 'bg-card text-emerald-600 shadow-md border-2 border-emerald-600 '
  : 'text-muted-foreground hover:text-foreground'
  }`}
  >
@@ -469,10 +469,10 @@ function PayMfsContent() {
  <button
  key={idx}
  onClick={() => handleSelectAccount(acc)}
- className="p-4 rounded-2xl bg-slate-50 border border-slate-200 hover:border-emerald-500 :border-emerald-500 hover:shadow-lg transition-all text-left flex items-center justify-between group"
+ className="p-4 rounded-2xl bg-muted/30 border border-border hoverfocus:border-emerald-500 focus:border-emerald-500 hover:shadow-lg transition-all text-left flex items-center justify-between group"
  >
  <div className="flex items-center gap-3">
- <div className="w-10 h-10 rounded-xl bg-white border border-border flex items-center justify-center shrink-0">
+ <div className="w-10 h-10 rounded-xl bg-card border border-border flex items-center justify-center shrink-0">
  {acc.provider === 'BKASH' ? (
  <span className="font-black text-[#e2136e] text-xs">bKash</span>
  ) : acc.provider === 'NAGAD' ? (
@@ -500,7 +500,7 @@ function PayMfsContent() {
  </div>
 
  {/* Coupon Input Drawer */}
- <div className="pt-3 border-t border-slate-100 space-y-2">
+ <div className="pt-3 border-t border-border/50 space-y-2">
  <label className="text-[11px] font-semibold text-muted-foreground block">
  {language === 'en' ? 'Have a Coupon Code?' : 'কুপন কোড আছে?'}
  </label>
@@ -511,7 +511,7 @@ function PayMfsContent() {
  value={couponInput}
  onChange={(e) => setCouponInput(e.target.value)}
  disabled={applyingCoupon || !!appliedCoupon}
- className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-[12px] font-mono focus:outline-none focus:border-emerald-500 uppercase"
+ className="flex-1 bg-muted/30 border border-border rounded-xl px-3 py-2 text-[12px] font-mono focus:outline-none focusfocus:border-emerald-500 uppercase"
  />
  {appliedCoupon ? (
  <button
@@ -544,12 +544,12 @@ function PayMfsContent() {
  </div>
 
  {/* Footer Contact Support Button */}
- <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:justify-between items-start sm:items-center text-[11px] gap-3">
+ <div className="pt-3 border-t border-border/50 flex flex-col sm:flex-row sm:justify-between items-start sm:items-center text-[11px] gap-3">
  <div className="text-muted-foreground">
  {language === 'en' ? 'Having payment issues?' : 'পেমেন্ট নিয়ে কোনো সমস্যা হচ্ছে?'}
- <div className="mt-1 flex items-center gap-2 font-mono text-[11px] text-slate-700 ">
+ <div className="mt-1 flex items-center gap-2 font-mono text-[11px] text-foreground ">
  <a href="tel:01533894967" className="hover:text-emerald-600 transition-colors flex items-center gap-1">📞 01533894967</a>
- <span className="text-slate-300 ">|</span>
+ <span className="text-border ">|</span>
  <a href="mailto:support@zinichat.com" className="hover:text-emerald-600 transition-colors flex items-center gap-1">✉️ support@zinichat.com</a>
  </div>
  </div>
@@ -575,10 +575,10 @@ function PayMfsContent() {
  {/* Payment Drawer Modal matching professional checkout view (epay.corp.com.bd design) */}
  {showPaymentModal && selectedAccount && (
  <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-50 p-4">
- <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-md p-6 shadow-2xl space-y-4 animate-in zoom-in-95 relative max-h-[95vh] overflow-y-auto">
+ <div className="bg-card border border-border rounded-3xl w-full max-w-md p-6 shadow-2xl space-y-4 animate-in zoom-in-95 relative max-h-[95vh] overflow-y-auto">
  
  {/* Modal Header */}
- <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+ <div className="flex items-center justify-between border-b border-border/50 pb-3">
  <div className="flex items-center gap-2">
  <CreditCard className="w-5 h-5 text-emerald-600 " />
  <span className="font-extrabold text-[16px] capitalize">
@@ -587,13 +587,13 @@ function PayMfsContent() {
  </div>
  <button
  onClick={() => setShowPaymentModal(false)}
- className="p-1 rounded-full hover:bg-slate-100 :bg-zinc-800 text-muted-foreground transition-colors"
+ className="p-1 rounded-full hover:bg-background hover:bg-muted text-muted-foreground transition-colors"
  >
  <X className="w-5 h-5" />
  </button>
  </div>
  {/* Account Details Card */}
- <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-[12px]">
+ <div className="bg-muted/30 border border-border rounded-xl p-3 text-[12px]">
  <div className="grid grid-cols-2 gap-y-3 gap-x-4">
  <div className="flex flex-col">
  <span className="text-muted-foreground font-medium text-[10px] uppercase tracking-wider mb-0.5">Gateway</span>
@@ -624,7 +624,7 @@ function PayMfsContent() {
  </div>
 
  {/* Step-by-Step Payment Instructions Card (Light green card with left border) */}
- <div className="bg-emerald-500/5 border-l-4 border-emerald-500 rounded-r-xl p-3 text-[12px] space-y-1.5 font-medium">
+ <div className="bg-emerald-500/5 border-l-4 border-emerald-500 rounded-r-xl p-3 text-[12px] space-y-1.5 font-medium text-slate-800 dark:text-slate-200">
  {selectedAccount.provider === 'BANGLA_QR' ? (
  <>
  <div className="flex gap-2">
@@ -751,7 +751,7 @@ function PayMfsContent() {
  </div>
 
  {/* Auto-Verifying Status Banner */}
- <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3 text-center space-y-1">
+ <div className="bg-muted/30 border border-border rounded-2xl p-3 text-center space-y-1">
  <div className="flex items-center justify-center gap-2 text-emerald-600 font-bold text-[12px] animate-pulse">
  <Loader2 className="w-4 h-4 animate-spin" />
  <span>Auto-Verifying...</span>
@@ -772,7 +772,7 @@ function PayMfsContent() {
  placeholder="Enter TRXID or Last 4 Digits"
  value={trxId}
  onChange={(e) => setTrxId(e.target.value)}
- className="w-full bg-white border-2 border-slate-200 focus:border-emerald-500 :border-emerald-500 rounded-2xl px-4 py-3 text-[14px] font-mono font-bold text-center uppercase tracking-widest outline-none transition-all"
+ className="w-full bg-card border-2 border-border focusfocus:border-emerald-500 focus:border-emerald-500 rounded-2xl px-4 py-3 text-[14px] font-mono font-bold text-center uppercase tracking-widest outline-none transition-all"
  />
  <button
  onClick={handleManualVerify}
@@ -790,7 +790,7 @@ function PayMfsContent() {
  <button
  type="button"
  onClick={() => setShowPaymentModal(false)}
- className="w-full py-2.5 bg-slate-200 hover:bg-slate-300 :bg-zinc-700 text-slate-700 rounded-xl font-bold transition-colors text-[13px]"
+ className="w-full py-2.5 bg-muted hover:bg-slate-300 hover:bg-muted-foreground/20 text-foreground rounded-xl font-bold transition-colors text-[13px]"
  >
  Close
  </button>
@@ -807,7 +807,7 @@ function PayMfsContent() {
 export default function PayMfsPage() {
  return (
  <Suspense fallback={
- <div className="min-h-screen flex items-center justify-center bg-slate-100 text-foreground flex-col gap-2">
+ <div className="min-h-screen flex items-center justify-center bg-background text-foreground flex-col gap-2">
  <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
  <span className="text-[12px] text-muted-foreground">Loading payment portal...</span>
  </div>
