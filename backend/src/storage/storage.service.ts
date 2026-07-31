@@ -4,13 +4,31 @@ import * as fs from 'fs';
 import sharp from 'sharp';
 import * as crypto from 'crypto';
 import { QuotaService } from '../tenants/quota.service';
+import { PrismaService } from '../prisma/prisma.service';
+
+export interface StorageCategoryStats {
+  bytes: number;
+  count: number;
+}
+
+export interface StorageFileItem {
+  id: string;
+  url: string;
+  name: string;
+  sizeBytes: number;
+  createdAt: string;
+  category: 'chatMedia' | 'aiDocuments' | 'products' | 'tickets';
+}
 
 @Injectable()
 export class StorageService {
   private readonly logger = new Logger(StorageService.name);
   private readonly uploadDir = path.join(process.cwd(), 'uploads');
 
-  constructor(private readonly quotaService: QuotaService) {
+  constructor(
+    private readonly quotaService: QuotaService,
+    private readonly prisma: PrismaService,
+  ) {
     if (!fs.existsSync(this.uploadDir)) {
       fs.mkdirSync(this.uploadDir, { recursive: true });
     }
@@ -69,6 +87,68 @@ export class StorageService {
     }
   }
 
+  /**
+   * Scans disk files and correlates with DB models to calculate storage stats per category.
+   */
+  async getStorageStats(tenantId: string) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      include: {
+        subscriptions: { where: { status: 'active' }, include: { plan: true }, take: 1 }
+      }
+    });
+
+    const activePlan = tenant?.subscriptions?.[0]?.plan;
+    const limitMb = tenant?.customStorageLimitMb ?? activePlan?.storageLimitMb ?? 500;
+    const limitBytes = limitMb * 1024 * 1024;
+
+    const files = await this.getAllTenantFiles(tenantId);
+
+    const stats = {
+      chatMedia: { bytes: 0, count: 0 },
+      aiDocuments: { bytes: 0, count: 0 },
+      products: { bytes: 0, count: 0 },
+      tickets: { bytes: 0, count: 0 }
+    };
+
+    let totalUsedBytes = 0;
+
+    for (const file of files) {
+      stats[file.category].bytes += file.sizeBytes;
+      stats[file.category].count += 1;
+      totalUsedBytes += file.sizeBytes;
+    }
+
+    return {
+      categories: stats,
+      totalUsedBytes,
+      storageLimitMb: limitMb,
+      storageLimitBytes: limitBytes
+    };
+  }
+
+  /**
+   * Returns list of file items filtered by category and upload age.
+   */
+  async getStorageFiles(tenantId: string, category?: string, olderThanDays?: number): Promise<StorageFileItem[]> {
+    let files = await this.getAllTenantFiles(tenantId);
+
+    if (category && ['chatMedia', 'aiDocuments', 'products', 'tickets'].includes(category)) {
+      files = files.filter(f => f.category === category);
+    }
+
+    if (olderThanDays && !isNaN(Number(olderThanDays)) && Number(olderThanDays) > 0) {
+      const cutoffTime = Date.now() - (Number(olderThanDays) * 24 * 60 * 60 * 1000);
+      files = files.filter(f => new Date(f.createdAt).getTime() <= cutoffTime);
+    }
+
+    // Sort newest first
+    return files.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  /**
+   * Permanently deletes physical file from VPS disk and clears DB references.
+   */
   async deleteMedia(publicUrl: string, tenantId: string): Promise<boolean> {
     try {
       if (!publicUrl.includes(`/uploads/tenants/${tenantId}/`)) return false;
@@ -76,15 +156,48 @@ export class StorageService {
       if (!fileName) return false;
 
       const filePath = path.join(this.uploadDir, 'tenants', tenantId, fileName);
+      let freedBytes = 0;
+
+      // 1. Physically delete file from disk using fs.promises.unlink
       if (fs.existsSync(filePath)) {
-        const stats = fs.statSync(filePath);
-        fs.unlinkSync(filePath);
-        await this.quotaService.decrementStorage(tenantId, stats.size);
-        return true;
+        try {
+          const stats = fs.statSync(filePath);
+          freedBytes = stats.size;
+          await fs.promises.unlink(filePath);
+          this.logger.log(`Physically unlinked file from disk: ${filePath}`);
+        } catch (unlinkErr) {
+          this.logger.warn(`File unlink warning for ${filePath}: ${unlinkErr.message}`);
+        }
+      } else {
+        this.logger.log(`File already missing from disk: ${filePath}`);
       }
-      return false;
+
+      // 2. Clean up DB references so dead links aren't left in models
+      await Promise.all([
+        // Clear product image
+        this.prisma.product.updateMany({
+          where: { tenantId, imageUrl: publicUrl },
+          data: { imageUrl: null }
+        }),
+        // Clear ticket message attachment
+        this.prisma.ticketMessage.updateMany({
+          where: { ticket: { tenantId }, attachmentUrl: publicUrl },
+          data: { attachmentUrl: null }
+        }),
+        // Remove Knowledge Document if matching
+        this.prisma.knowledgeDocument.deleteMany({
+          where: { tenantId, OR: [{ filename: fileName }, { filename: publicUrl }] }
+        })
+      ]).catch(err => this.logger.warn(`DB reference cleanup non-fatal warning: ${err.message}`));
+
+      // 3. Decrement storage quota
+      if (freedBytes > 0) {
+        await this.quotaService.decrementStorage(tenantId, freedBytes);
+      }
+
+      return true;
     } catch (error) {
-      this.logger.error(`Failed to delete media: ${error.message}`);
+      this.logger.error(`Failed to delete media ${publicUrl}: ${error.message}`);
       return false;
     }
   }
@@ -95,7 +208,10 @@ export class StorageService {
       if (fs.existsSync(tenantDir)) {
         const files = fs.readdirSync(tenantDir);
         for (const file of files) {
-          fs.unlinkSync(path.join(tenantDir, file));
+          const filePath = path.join(tenantDir, file);
+          try {
+            await fs.promises.unlink(filePath);
+          } catch (e) {}
         }
       }
       await this.quotaService.resetStorage(tenantId);
@@ -105,4 +221,77 @@ export class StorageService {
       return false;
     }
   }
+
+  /**
+   * Helper function to scan disk files and classify into categories based on DB queries.
+   */
+  private async getAllTenantFiles(tenantId: string): Promise<StorageFileItem[]> {
+    const tenantDir = path.join(this.uploadDir, 'tenants', tenantId);
+    if (!fs.existsSync(tenantDir)) return [];
+
+    const fileNames = fs.readdirSync(tenantDir);
+    if (fileNames.length === 0) return [];
+
+    // Query DB for known category mappings
+    const [docs, products, ticketMsgs] = await Promise.all([
+      this.prisma.knowledgeDocument.findMany({
+        where: { tenantId },
+        select: { id: true, filename: true, uploadedAt: true }
+      }),
+      this.prisma.product.findMany({
+        where: { tenantId, imageUrl: { not: null } },
+        select: { id: true, imageUrl: true, createdAt: true }
+      }),
+      this.prisma.ticketMessage.findMany({
+        where: { ticket: { tenantId }, attachmentUrl: { not: null } },
+        select: { id: true, attachmentUrl: true, createdAt: true }
+      })
+    ]);
+
+    const docNameMap = new Map(docs.map(d => [d.filename.toLowerCase(), d.uploadedAt]));
+    const productUrlMap = new Map(products.map(p => [(p.imageUrl || '').toLowerCase(), p.createdAt]));
+    const ticketUrlMap = new Map(ticketMsgs.map(t => [(t.attachmentUrl || '').toLowerCase(), t.createdAt]));
+
+    const items: StorageFileItem[] = [];
+
+    for (const fileName of fileNames) {
+      const filePath = path.join(tenantDir, fileName);
+      if (!fs.existsSync(filePath)) continue;
+
+      try {
+        const stats = fs.statSync(filePath);
+        const publicUrl = `/uploads/tenants/${tenantId}/${fileName}`;
+        const lowerUrl = publicUrl.toLowerCase();
+        const lowerName = fileName.toLowerCase();
+
+        let category: 'chatMedia' | 'aiDocuments' | 'products' | 'tickets' = 'chatMedia';
+        let createdAt = stats.birthtime ? stats.birthtime.toISOString() : stats.mtime.toISOString();
+
+        if (docNameMap.has(lowerName) || docNameMap.has(lowerUrl)) {
+          category = 'aiDocuments';
+          createdAt = docNameMap.get(lowerName)?.toISOString() || createdAt;
+        } else if (productUrlMap.has(lowerUrl)) {
+          category = 'products';
+          createdAt = productUrlMap.get(lowerUrl)?.toISOString() || createdAt;
+        } else if (ticketUrlMap.has(lowerUrl)) {
+          category = 'tickets';
+          createdAt = ticketUrlMap.get(lowerUrl)?.toISOString() || createdAt;
+        }
+
+        items.push({
+          id: publicUrl,
+          url: publicUrl,
+          name: fileName,
+          sizeBytes: stats.size,
+          createdAt,
+          category
+        });
+      } catch (err) {
+        this.logger.warn(`Error statting file ${fileName}: ${err.message}`);
+      }
+    }
+
+    return items;
+  }
 }
+

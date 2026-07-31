@@ -1,4 +1,4 @@
-import { Controller, Post, UseInterceptors, UploadedFile, UseGuards, Req, BadRequestException, Body } from '@nestjs/common';
+import { Controller, Get, Post, Query, UseInterceptors, UploadedFile, UseGuards, Req, BadRequestException, Body } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { StorageService } from './storage.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -9,6 +9,31 @@ import { RequirePermissions } from '../auth/decorators/permissions.decorator';
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 export class StorageController {
   constructor(private readonly storageService: StorageService) {}
+
+  @Get('stats')
+  @RequirePermissions('manage:contacts')
+  async getStorageStats(@Req() req: any) {
+    const tenantId = req.user?.tenantId;
+    if (!tenantId) {
+      throw new BadRequestException('Tenant ID is missing from user context');
+    }
+    return this.storageService.getStorageStats(tenantId);
+  }
+
+  @Get('files')
+  @RequirePermissions('manage:contacts')
+  async getStorageFiles(
+    @Query('category') category: string,
+    @Query('olderThanDays') olderThanDays: string,
+    @Req() req: any
+  ) {
+    const tenantId = req.user?.tenantId;
+    if (!tenantId) {
+      throw new BadRequestException('Tenant ID is missing from user context');
+    }
+    const daysNum = olderThanDays ? Number(olderThanDays) : undefined;
+    return this.storageService.getStorageFiles(tenantId, category, daysNum);
+  }
 
   @Post('upload')
   @RequirePermissions('manage:contacts') // A general permission to allow users to upload, or customize this
