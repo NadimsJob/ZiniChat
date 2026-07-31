@@ -323,8 +323,8 @@ export default function OrdersPage() {
 
  {/* Create Order Modal */}
  {isCreatingOrder && (
- <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-1.5">
- <div className="bg-surface border border-primary/10 shadow-xl shadow-primary/5 hover:border-primary/20 hover:shadow-primary/10 transition-all rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh]">
+ <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
+ <div className="bg-surface border border-primary/10 shadow-xl shadow-primary/5 hover:border-primary/20 hover:shadow-primary/10 transition-all rounded-2xl w-[95vw] sm:w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh]">
  <div className="px-1.5 py-2.5 border-b border-border flex justify-between items-center bg-background rounded-t-2xl">
  <h2 className="text-xl font-bold text-foreground flex items-center">
  <ShoppingBag className="w-5 h-5 mr-2 text-primary" /> Create New Order

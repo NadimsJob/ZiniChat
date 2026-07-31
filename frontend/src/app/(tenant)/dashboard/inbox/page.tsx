@@ -756,9 +756,9 @@ export default function InboxPage() {
         </div>
       </div>
 
-      <div className="flex flex-1 overflow-hidden gap-3 p-3 bg-background">
+      <div className="flex flex-1 overflow-hidden gap-3 p-0 md:p-3 bg-background">
         {/* LEFT COLUMN: Conversation List */}
-        <div className="w-full md:w-80 lg:w-96 border border-border/80 shadow-sm dark:shadow-[0_0_15px_rgba(0,0,0,0.2)] rounded-2xl flex flex-col bg-card shrink-0 overflow-hidden">
+        <div className={`w-full md:w-80 lg:w-96 md:border border-border/80 md:shadow-sm dark:shadow-[0_0_15px_rgba(0,0,0,0.2)] md:rounded-2xl flex-col bg-card shrink-0 overflow-hidden ${selectedConvId ? 'hidden md:flex' : 'flex'}`}>
           
           {/* Header Search & Parameter Filter */}
           <div className="p-2.5 border-b border-border/40 shrink-0 bg-background/50 flex items-center gap-2">
@@ -978,11 +978,17 @@ export default function InboxPage() {
 
       {/* MIDDLE COLUMN: Active Chat Panel */}
       {selectedConvId && activeConv ? (
-        <div className="flex-1 flex flex-col min-w-0 bg-card border border-border/80 shadow-sm dark:shadow-[0_0_15px_rgba(0,0,0,0.2)] rounded-2xl overflow-hidden">
+        <div className={`flex-1 flex-col min-w-0 bg-card md:border border-border/80 md:shadow-sm dark:shadow-[0_0_15px_rgba(0,0,0,0.2)] md:rounded-2xl overflow-hidden ${!selectedConvId ? 'hidden md:flex' : 'flex'}`}>
           
           {/* Header */}
-          <div className="h-14 px-4 border-b border-border bg-surface/80 backdrop-blur-xl flex items-center justify-between shrink-0 shadow-2xs">
-            <div className="flex items-center gap-3 min-w-0">
+          <div className="h-14 px-2 md:px-4 border-b border-border bg-surface/80 backdrop-blur-xl flex items-center justify-between shrink-0 shadow-2xs">
+            <div className="flex items-center gap-2 md:gap-3 min-w-0">
+              <button 
+                onClick={() => setSelectedConvId(null)}
+                className="md:hidden p-1.5 -ml-1 text-muted-foreground hover:bg-muted rounded-full"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
               <div className="w-9 h-9 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-xs border border-primary/20 shrink-0">
                 {activeConv.contact?.name ? activeConv.contact.name[0].toUpperCase() : 'C'}
               </div>
@@ -1174,7 +1180,7 @@ export default function InboxPage() {
                   )}
 
                   <div className={`flex items-center gap-2 max-w-full ${isInbound ? 'flex-row' : 'flex-row-reverse'}`}>
-                    <div className={`max-w-[75vw] md:max-w-[45vw] lg:max-w-[600px] rounded-2xl px-4 py-2.5 text-xs shadow-sm ${
+                    <div className={`max-w-[85vw] md:max-w-[45vw] lg:max-w-[600px] rounded-2xl px-4 py-3 text-[14px] md:text-[13px] leading-relaxed shadow-sm ${
                       isInbound 
                         ? 'bg-muted/50 dark:bg-muted/30 text-foreground border border-border/60 rounded-tl-xs' 
                         : isAi 
@@ -1369,15 +1375,15 @@ export default function InboxPage() {
                     placeholder={language === 'en' ? 'Type a message...' : 'মেসেজ লিখুন...'}
                     value={inputText}
                     onChange={e => setInputText(e.target.value)}
-                    className="flex-1 bg-background border border-border rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-primary text-foreground"
+                    className="flex-1 bg-background border border-border rounded-2xl px-4 py-2.5 text-[14px] md:text-xs focus:outline-none focus:border-primary text-foreground"
                   />
 
                   <button
                     type="submit"
                     disabled={!inputText.trim() && !selectedFile}
-                    className="p-2 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50 cursor-pointer shadow-xs"
+                    className="p-2.5 md:p-2 bg-primary text-primary-foreground rounded-xl md:rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 cursor-pointer shadow-xs"
                   >
-                    <Send className="w-4 h-4" />
+                    <Send className="w-5 h-5 md:w-4 md:h-4" />
                   </button>
                 </form>
               </>
@@ -1385,7 +1391,7 @@ export default function InboxPage() {
           </div>
         </div>
       ) : (
-        <div className="flex-1 flex items-center justify-center p-8 text-center text-muted-foreground bg-card border border-border/80 shadow-sm dark:shadow-[0_0_15px_rgba(0,0,0,0.2)] rounded-2xl overflow-hidden">
+        <div className="hidden md:flex flex-1 items-center justify-center p-8 text-center text-muted-foreground bg-card border border-border/80 shadow-sm dark:shadow-[0_0_15px_rgba(0,0,0,0.2)] rounded-2xl overflow-hidden">
           <div>
             <MessageSquare className="w-12 h-12 mx-auto text-muted-foreground/30 mb-2" />
             <h3 className="text-sm font-bold text-foreground">
@@ -1400,13 +1406,39 @@ export default function InboxPage() {
 
       {/* RIGHT COLUMN: CRM Sidebar Component */}
       {selectedConvId && activeConv && showRightSidebar && (
-        <ConversationSidebar
-          conversation={activeConv}
-          availableLabels={availableLabels}
-          onToggleLabel={handleToggleLabel}
-          onCreateLabel={handleCreateLabel}
-          onUpdateContact={handleUpdateContactInList}
-        />
+        <>
+          {/* Desktop Right Sidebar */}
+          <div className="hidden lg:block w-80 shrink-0">
+            <ConversationSidebar
+              conversation={activeConv}
+              availableLabels={availableLabels}
+              onToggleLabel={handleToggleLabel}
+              onCreateLabel={handleCreateLabel}
+              onUpdateContact={handleUpdateContactInList}
+            />
+          </div>
+          {/* Mobile Overlay Sidebar */}
+          <div className="lg:hidden fixed inset-0 z-50 flex justify-end">
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onClick={() => setShowRightSidebar(false)} />
+            <div className="w-[85vw] max-w-sm h-full bg-background z-10 animate-in slide-in-from-right-8 shadow-2xl relative flex flex-col">
+              <div className="flex items-center justify-between p-3 border-b border-border bg-surface/80">
+                <h3 className="font-bold text-sm">{language === 'en' ? 'CRM Details' : 'CRM ডিটেইলস'}</h3>
+                <button onClick={() => setShowRightSidebar(false)} className="p-1.5 text-muted-foreground hover:bg-muted rounded-full">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-hidden">
+                <ConversationSidebar
+                  conversation={activeConv}
+                  availableLabels={availableLabels}
+                  onToggleLabel={handleToggleLabel}
+                  onCreateLabel={handleCreateLabel}
+                  onUpdateContact={handleUpdateContactInList}
+                />
+              </div>
+            </div>
+          </div>
+        </>
       )}
 
       {/* Image Zoom Modal */}

@@ -47,7 +47,7 @@ export default function LabelForm({ initialData, onSave, onCancel }: LabelFormPr
               type="text"
               value={name}
               onChange={e => setName(e.target.value)}
-              className="w-full px-2.5 py-1.5 border border-border rounded-lg bg-background text-foreground focus:ring-1 focus:ring-primary outline-none transition-all text-[12px]"
+              className="w-full px-3 py-2.5 md:py-1.5 border border-border rounded-lg bg-background text-foreground focus:ring-1 focus:ring-primary outline-none transition-all text-[16px] md:text-[12px]"
               placeholder={language === 'en' ? "e.g. VIP, Urgent, Support" : "যেমন: VIP, Urgent"}
             />
           </div>
@@ -85,7 +85,7 @@ export default function LabelForm({ initialData, onSave, onCancel }: LabelFormPr
             value={aiPrompt}
             onChange={e => setAiPrompt(e.target.value)}
             rows={2}
-            className="w-full px-2.5 py-2 border border-border rounded-xl bg-background text-foreground focus:ring-2 focus:ring-primary/20 outline-none transition-all resize-none text-[12px]"
+            className="w-full px-3 py-3 md:py-2 border border-border rounded-xl bg-background text-foreground focus:ring-2 focus:ring-primary/20 outline-none transition-all resize-none text-[16px] md:text-[12px]"
             placeholder={language === 'en' ? "e.g. Apply this tag if the customer asks about pricing." : "যেমন: যদি কাস্টমার দাম জানতে চায়, তবে এই ট্যাগটি দিবে।"}
           />
           <p className="text-[11px] text-muted-foreground">
@@ -97,7 +97,7 @@ export default function LabelForm({ initialData, onSave, onCancel }: LabelFormPr
           <button
             type="button"
             onClick={onCancel}
-            className="px-3.5 py-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-xl transition-colors font-medium text-[12px]"
+            className="px-4 py-2.5 md:py-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-xl transition-colors font-medium text-[14px] md:text-[12px]"
           >
             {language === 'en' ? 'Cancel' : 'বাতিল'}
           </button>
@@ -105,7 +105,7 @@ export default function LabelForm({ initialData, onSave, onCancel }: LabelFormPr
             type="button"
             onClick={handleSave}
             disabled={!name.trim() || isSaving}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50 font-medium text-[12px] shadow-sm"
+            className="px-4 py-2.5 md:py-1.5 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-1.5 font-medium shadow-sm shadow-primary/20 text-[14px] md:text-[12px]"
           >
             {isSaving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
             {language === 'en' ? 'Save Tag' : 'ট্যাগ সেভ করুন'}

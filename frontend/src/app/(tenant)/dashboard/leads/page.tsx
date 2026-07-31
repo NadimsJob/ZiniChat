@@ -477,7 +477,7 @@ export default function LeadsPage() {
  </div>
  </div>
  ) : (
- <div className="bg-surface border border-primary/10 shadow-xl shadow-primary/5 hover:border-primary/20 hover:shadow-primary/10 transition-all rounded-xl overflow-hidden">
+ <div className="bg-surface border border-primary/10 shadow-xl shadow-primary/5 hover:border-primary/20 hover:shadow-primary/10 transition-all rounded-xl overflow-x-auto custom-scrollbar">
  <table className="min-w-full divide-y divide-border text-[11px]">
  <thead className="bg-surface/50">
  <tr>
@@ -520,7 +520,7 @@ export default function LeadsPage() {
  </div>
 
  {/* Slide-over — fixed to viewport right edge */}
- <div className={`fixed top-16 bottom-0 right-0 w-96 bg-surface border-l border-border shadow-2xl transform transition-transform duration-200 z-40 flex flex-col ${selectedLead ? 'translate-x-0' : 'translate-x-full'}`}>
+ <div className={`fixed top-0 md:top-16 bottom-0 right-0 w-full sm:w-96 bg-surface border-l border-border shadow-2xl transform transition-transform duration-200 z-50 flex flex-col ${selectedLead ? 'translate-x-0' : 'translate-x-full'}`}>
  {selectedLead && (
  <>
  <div className="px-1.5 py-1 border-b border-border flex justify-between items-center bg-background/50 backdrop-blur-md">
@@ -627,8 +627,8 @@ export default function LeadsPage() {
 
  {/* New Lead Modal */}
  {isCreatingLead && (
- <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-1.5">
- <div className="bg-surface border border-primary/10 shadow-xl shadow-primary/5 hover:border-primary/20 hover:shadow-primary/10 transition-all rounded-2xl w-full max-w-md shadow-2xl p-5">
+ <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
+ <div className="bg-surface border border-primary/10 shadow-xl shadow-primary/5 hover:border-primary/20 hover:shadow-primary/10 transition-all rounded-2xl w-[95vw] sm:w-full max-w-md shadow-2xl p-5 max-h-[90vh] overflow-y-auto custom-scrollbar">
  <div className="flex justify-between items-center mb-4">
  <h2 className="text-[13px] font-bold text-foreground">Create New Lead</h2>
  <button onClick={() => setIsCreatingLead(false)} className="text-foreground/50 hover:text-foreground"><X className="w-5 h-5" /></button>

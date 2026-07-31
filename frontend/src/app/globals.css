@@ -143,4 +143,15 @@ body {
   .shadow-glow {
     box-shadow: 0 0 20px -5px var(--primary);
   }
+
+  /* Native Mobile App Utilities */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .custom-scrollbar {
+    -webkit-overflow-scrolling: touch;
+  }
 }

@@ -313,8 +313,8 @@ export default function TeamPage() {
 
       {/* Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-card border border-border rounded-2xl shadow-2xl w-[95vw] sm:w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-4 border-b border-border">
               <h2 className="text-[15px] font-bold text-foreground">
                 {editingAgent
@@ -342,7 +342,7 @@ export default function TeamPage() {
                   <input
                     type="text" required value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-3 py-2 bg-background border border-border rounded-xl text-[13px] focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-foreground"
+                    className="w-full px-3 py-3 md:py-2 bg-background border border-border rounded-xl text-[16px] md:text-[13px] focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-foreground"
                     placeholder="John Doe"
                   />
                 </div>
@@ -356,7 +356,7 @@ export default function TeamPage() {
                     type="email" required={!editingAgent} disabled={!!editingAgent}
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-3 py-2 bg-background border border-border rounded-xl text-[13px] focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none disabled:opacity-50 text-foreground"
+                    className="w-full px-3 py-3 md:py-2 bg-background border border-border rounded-xl text-[16px] md:text-[13px] focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none disabled:opacity-50 text-foreground"
                     placeholder="john@example.com"
                   />
                   {!editingAgent && (
@@ -374,7 +374,7 @@ export default function TeamPage() {
                   <input
                     type="text" value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="w-full px-3 py-2 bg-background border border-border rounded-xl text-[13px] focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-foreground"
+                    className="w-full px-3 py-3 md:py-2 bg-background border border-border rounded-xl text-[16px] md:text-[13px] focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-foreground"
                     placeholder={language === 'en' ? 'Leave blank to auto-generate' : 'ফাঁকা রাখলে অটো তৈরি হবে'}
                   />
                 </div>

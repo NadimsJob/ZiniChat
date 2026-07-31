@@ -492,7 +492,7 @@ function WidgetConfigModal({ widget, onClose, onRefresh, language, API }: any) {
                     type="text"
                     value={name}
                     onChange={e => setName(e.target.value)}
-                    className="w-full bg-background border border-border rounded-lg px-3 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary"
+                    className="w-full bg-background border border-border rounded-lg px-3 py-2 md:py-1.5 text-[16px] md:text-xs text-foreground focus:outline-none focus:border-primary"
                   />
                 </div>
                 <div>
@@ -503,7 +503,7 @@ function WidgetConfigModal({ widget, onClose, onRefresh, language, API }: any) {
                     type="text"
                     value={heading}
                     onChange={e => setHeading(e.target.value)}
-                    className="w-full bg-background border border-border rounded-lg px-3 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary"
+                    className="w-full bg-background border border-border rounded-lg px-3 py-2 md:py-1.5 text-[16px] md:text-xs text-foreground focus:outline-none focus:border-primary"
                   />
                 </div>
               </div>
@@ -517,7 +517,7 @@ function WidgetConfigModal({ widget, onClose, onRefresh, language, API }: any) {
                   type="text"
                   value={tagline}
                   onChange={e => setTagline(e.target.value)}
-                  className="w-full bg-background border border-border rounded-lg px-3 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary"
+                  className="w-full bg-background border border-border rounded-lg px-3 py-2 md:py-1.5 text-[16px] md:text-xs text-foreground focus:outline-none focus:border-primary"
                 />
               </div>
 

@@ -436,18 +436,18 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  <main className="flex-1 flex flex-col min-w-0">
  
  {/* Topbar */}
- <header className="h-14 px-3 flex items-center justify-between shrink-0 bg-surface/70 backdrop-blur-xl border-b border-border shadow-sm relative z-40">
- <div className="flex items-center gap-2">
+ <header className="h-16 md:h-14 px-4 md:px-3 flex items-center justify-between shrink-0 bg-surface/70 backdrop-blur-xl border-b border-border shadow-sm relative z-40">
+ <div className="flex items-center gap-3 md:gap-2">
  <button 
- className="md:hidden p-1.5 -ml-1.5 text-slate-500 hover:bg-primary/10 hover:text-primary rounded-lg transition-colors"
+ className="md:hidden p-2.5 -ml-2.5 text-slate-500 hover:bg-primary/10 hover:text-primary rounded-lg transition-colors"
  onClick={() => setIsMobileMenuOpen(true)}
  >
- <Menu className="w-3.5 h-3.5" />
+ <Menu className="w-6 h-6 md:w-3.5 md:h-3.5" />
  </button>
  <div className="hidden md:flex w-7 h-7 rounded bg-primary/10 items-center justify-center text-primary">
  <LayoutGrid className="w-3.5 h-3.5" />
  </div>
- <h2 className="text-[13px] font-bold text-foreground">
+ <h2 className="text-[16px] md:text-[13px] font-bold text-foreground tracking-tight">
   {language === 'en' ? 'Overview' : 'ওভারভিউ'}
   </h2>
 
@@ -474,12 +474,12 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
      <button
        onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
        title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-       className="p-1.5 rounded-xl bg-surface-hover/60 border border-surface-hover hover:border-primary/40 text-foreground transition-all cursor-pointer flex items-center justify-center"
+       className="p-2 md:p-1.5 rounded-xl bg-surface-hover/60 border border-surface-hover hover:border-primary/40 text-foreground transition-all cursor-pointer flex items-center justify-center"
      >
        {theme === 'dark' ? (
-         <Sun className="w-3.5 h-3.5 text-amber-400" />
+         <Sun className="w-5 h-5 md:w-3.5 md:h-3.5 text-amber-400" />
        ) : (
-         <Moon className="w-3.5 h-3.5 text-slate-600 dark:text-zinc-300" />
+         <Moon className="w-5 h-5 md:w-3.5 md:h-3.5 text-slate-600 dark:text-zinc-300" />
        )}
      </button>
    )}
@@ -490,7 +490,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
      <div className="relative z-50">
        <button
          onClick={() => setShowPresenceMenu(!showPresenceMenu)}
-         className="flex items-center gap-1.5 px-2.5 py-1 bg-surface-hover/60 border border-surface-hover hover:border-primary/40 rounded-full text-[11px] font-medium text-foreground shadow-2xs transition-all cursor-pointer"
+         className="flex items-center gap-1.5 px-3 py-1.5 md:px-2.5 md:py-1 bg-surface-hover/60 border border-surface-hover hover:border-primary/40 rounded-full text-[13px] md:text-[11px] font-medium text-foreground shadow-2xs transition-all cursor-pointer"
        >
          <span className={`w-2 h-2 rounded-full ${
            presenceStatus === 'available' ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.6)]' :
@@ -538,11 +538,11 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  <img
  src={`${API}${userProfile.profilePicUrl}`}
  alt="Avatar"
- className="w-8 h-8 rounded-full object-cover border border-surface-hover"
+ className="w-10 h-10 md:w-8 md:h-8 rounded-full object-cover border border-surface-hover"
  onError={() => setAvatarError(true)}
  />
  ) : (
- <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold uppercase border border-primary/20">
+ <div className="w-10 h-10 md:w-7 md:h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[14px] md:text-[10px] font-bold uppercase border border-primary/20">
  {userProfile?.name?.charAt(0) || 'U'}
  </div>
  )}
@@ -579,21 +579,21 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  </div>
 
  {/* Mobile Bottom Navigation Bar */}
- <div className="md:hidden fixed bottom-0 left-0 right-0 h-14 bg-white/95 backdrop-blur-md border-t border-slate-200 z-40 flex items-center justify-around px-1 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+ <div className="md:hidden fixed bottom-0 left-0 right-0 h-[64px] bg-white/95 dark:bg-surface/95 backdrop-blur-xl border-t border-slate-200 dark:border-surface-hover z-50 flex items-center justify-around px-1 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] pb-safe">
    <Link 
      href="/dashboard" 
-     className={`flex flex-col items-center justify-center w-full h-full text-[10px] font-medium transition-colors ${pathname === '/dashboard' ? 'text-primary font-bold' : 'text-slate-500'}`}
+     className={`flex flex-col items-center justify-center w-full h-full text-[11px] font-medium transition-colors ${pathname === '/dashboard' ? 'text-primary font-bold' : 'text-slate-500 dark:text-zinc-400'}`}
    >
-     <LayoutGrid className="w-5 h-5 mb-0.5" />
+     <LayoutGrid className={`w-6 h-6 mb-1 ${pathname === '/dashboard' ? 'fill-primary/10 stroke-[2.5px]' : 'stroke-2'}`} />
      <span>{language === 'en' ? 'Home' : 'হোম'}</span>
    </Link>
 
    <Link 
      href="/dashboard/inbox" 
-     className={`flex flex-col items-center justify-center w-full h-full text-[10px] font-medium transition-colors relative ${pathname.includes('/inbox') ? 'text-primary font-bold' : 'text-slate-500'}`}
+     className={`flex flex-col items-center justify-center w-full h-full text-[11px] font-medium transition-colors relative ${pathname.includes('/inbox') ? 'text-primary font-bold' : 'text-slate-500 dark:text-zinc-400'}`}
    >
      <div className="relative">
-       <Inbox className="w-5 h-5 mb-0.5" />
+       <Inbox className={`w-6 h-6 mb-1 ${pathname.includes('/inbox') ? 'fill-primary/10 stroke-[2.5px]' : 'stroke-2'}`} />
        {inboxUnreadCount > 0 && (
          <span className="absolute -top-1 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
            {inboxUnreadCount > 99 ? '99+' : inboxUnreadCount}
@@ -605,25 +605,25 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
 
    <Link 
      href="/dashboard/leads" 
-     className={`flex flex-col items-center justify-center w-full h-full text-[10px] font-medium transition-colors ${pathname.includes('/leads') ? 'text-primary font-bold' : 'text-slate-500'}`}
+     className={`flex flex-col items-center justify-center w-full h-full text-[11px] font-medium transition-colors ${pathname.includes('/leads') ? 'text-primary font-bold' : 'text-slate-500 dark:text-zinc-400'}`}
    >
-     <UserCircle className="w-5 h-5 mb-0.5" />
+     <UserCircle className={`w-6 h-6 mb-1 ${pathname.includes('/leads') ? 'fill-primary/10 stroke-[2.5px]' : 'stroke-2'}`} />
      <span>{language === 'en' ? 'Leads' : 'লিডস'}</span>
    </Link>
 
    <Link 
      href="/dashboard/orders" 
-     className={`flex flex-col items-center justify-center w-full h-full text-[10px] font-medium transition-colors ${pathname.includes('/orders') ? 'text-primary font-bold' : 'text-slate-500'}`}
+     className={`flex flex-col items-center justify-center w-full h-full text-[11px] font-medium transition-colors ${pathname.includes('/orders') ? 'text-primary font-bold' : 'text-slate-500 dark:text-zinc-400'}`}
    >
-     <ShoppingBag className="w-5 h-5 mb-0.5" />
+     <ShoppingBag className={`w-6 h-6 mb-1 ${pathname.includes('/orders') ? 'fill-primary/10 stroke-[2.5px]' : 'stroke-2'}`} />
      <span>{language === 'en' ? 'Orders' : 'অর্ডার'}</span>
    </Link>
 
    <button 
      onClick={() => setIsMobileMenuOpen(true)}
-     className="flex flex-col items-center justify-center w-full h-full text-[10px] font-medium text-slate-500 hover:text-primary transition-colors"
+     className="flex flex-col items-center justify-center w-full h-full text-[11px] font-medium text-slate-500 dark:text-zinc-400 hover:text-primary transition-colors"
    >
-     <Menu className="w-5 h-5 mb-0.5" />
+     <Menu className="w-6 h-6 mb-1 stroke-2" />
      <span>{language === 'en' ? 'Menu' : 'মেনু'}</span>
    </button>
  </div>
