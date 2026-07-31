@@ -229,7 +229,9 @@ export class WhatsappWebService implements OnModuleInit {
       if (m.type !== 'notify') return;
       
       for (const msg of m.messages) {
-        if (!msg.message || msg.key.fromMe) continue;
+        if (!msg.message) continue;
+
+        const isFromMe = !!msg.key.fromMe;
 
         let remoteJid = msg.key.remoteJid;
         // If the primary JID is a LID (Linked Device format), use the alternate standard phone JID if available
@@ -237,7 +239,17 @@ export class WhatsappWebService implements OnModuleInit {
           remoteJid = msg.key.remoteJidAlt;
         }
 
-        if (!remoteJid) continue;
+        if (!remoteJid || remoteJid.includes('@status') || remoteJid === 'status@broadcast') continue;
+
+        // If sent from owner's phone (fromMe), check if already saved in DB to prevent duplicate records
+        if (isFromMe) {
+          if (msg.key.id) {
+            const existingMsg = await this.prisma.message.findFirst({
+              where: { externalMessageId: msg.key.id }
+            });
+            if (existingMsg) continue;
+          }
+        }
 
         const isGroup = remoteJid.includes('@g.us');
 
@@ -341,6 +353,7 @@ export class WhatsappWebService implements OnModuleInit {
             externalContactId,
             contactName,
             messageType,
+            direction: isFromMe ? 'outbound' : 'inbound',
             content: { 
               body: contentStr, 
               ...(thumbnail ? { thumbnail } : {}),

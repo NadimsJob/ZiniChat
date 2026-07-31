@@ -643,7 +643,13 @@ export class InboxService {
     content: any;
     externalMessageId: string;
     timestamp: Date;
+    direction?: string;
   }) {
+    const isOutboundFromPhone = data.direction === 'outbound';
+    const direction = isOutboundFromPhone ? 'outbound' : 'inbound';
+    const senderType = isOutboundFromPhone ? 'agent' : 'customer';
+    const status = isOutboundFromPhone ? 'sent' : 'delivered';
+
     const cleanId = (data.externalContactId || '').split('@')[0].trim();
     const strippedId = cleanId.replace(/^\+/, '');
     const withPlusId = `+${strippedId}`;
@@ -709,7 +715,7 @@ export class InboxService {
           channel: data.channel,
           channelConnectionId: data.channelConnectionId,
           lastMessageAt: data.timestamp,
-          unreadCount: 1
+          unreadCount: isOutboundFromPhone ? 0 : 1
         }
       });
     } else {
@@ -718,7 +724,7 @@ export class InboxService {
         data: { 
           lastMessageAt: data.timestamp, 
           status: conversation.status === 'resolved' ? 'open' : conversation.status,
-          unreadCount: { increment: 1 },
+          ...(!isOutboundFromPhone && { unreadCount: { increment: 1 } }),
           ...(data.channelConnectionId && { channelConnectionId: data.channelConnectionId })
         }
       });
@@ -745,18 +751,20 @@ export class InboxService {
       data: {
         conversationId: conversation.id,
         externalMessageId: data.externalMessageId,
-        direction: 'inbound',
+        direction,
         type: data.messageType,
         content: contentToSave,
-        status: 'delivered',
-        senderType: 'customer',
+        status,
+        senderType,
         createdAt: data.timestamp
       } as any
     });
 
-    this.orchestratorService.processMessage(message.id).catch(err => {
-      this.logger.error(`Orchestrator failed for message ${message.id}: ${err.message}`);
-    });
+    if (!isOutboundFromPhone) {
+      this.orchestratorService.processMessage(message.id).catch(err => {
+        this.logger.error(`Orchestrator failed for message ${message.id}: ${err.message}`);
+      });
+    }
 
     return {
       message,
