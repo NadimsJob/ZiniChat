@@ -8,7 +8,7 @@ import { useFeature } from '@/hooks/useFeature';
 import ConversationSidebar from '@/components/inbox/ConversationSidebar';
 import { 
   Search, Send, User as UserIcon, Clock, MessageSquare, Phone, Info, Tag, Plus, 
-  Check, MessageCircle, MoreVertical, X, UserCircle, UserPlus, Mail, Building, 
+  Check, CheckCheck, MessageCircle, MoreVertical, X, UserCircle, UserPlus, Mail, Building, 
   MapPin, AlertCircle, Paperclip, File as FileIcon, Trash2, Bot, ToggleLeft, 
   ToggleRight, Wand2, RefreshCw, ChevronLeft, PanelRight, Eye, Star, Archive, 
   CheckCircle2, Flag, UserCheck, Sparkles 
@@ -150,6 +150,10 @@ export default function InboxPage() {
       });
 
       fetchCounts();
+    });
+
+    socket.on('message:status', ({ messageId, status }) => {
+      setMessages(prev => prev.map(m => m.id === messageId ? { ...m, status } : m));
     });
 
     socket.on('conversation:read', (data) => {
@@ -448,6 +452,58 @@ export default function InboxPage() {
       return created;
     }
     return null;
+  };
+
+  const renderMessageStatus = (m: any) => {
+    if (m.direction !== 'outbound') return null;
+
+    const status = m.status || 'sent';
+
+    if (status === 'read' || status === 'seen') {
+      return (
+        <span title="Read / Seen" className="inline-flex items-center ml-1">
+          <CheckCheck className="w-3.5 h-3.5 text-sky-300 shrink-0 drop-shadow-xs" />
+        </span>
+      );
+    }
+
+    if (status === 'delivered') {
+      return (
+        <span title="Delivered" className="inline-flex items-center ml-1">
+          <CheckCheck className="w-3.5 h-3.5 text-white/90 shrink-0" />
+        </span>
+      );
+    }
+
+    if (status === 'sent') {
+      return (
+        <span title="Sent" className="inline-flex items-center ml-1">
+          <Check className="w-3.5 h-3.5 text-white/90 shrink-0" />
+        </span>
+      );
+    }
+
+    if (status === 'pending') {
+      return (
+        <span title="Sending..." className="inline-flex items-center ml-1">
+          <Clock className="w-3 h-3 text-white/70 shrink-0 animate-pulse" />
+        </span>
+      );
+    }
+
+    if (status === 'failed' || status === 'rate_limited') {
+      return (
+        <span title={status === 'rate_limited' ? 'Rate limited (max 10 msgs/min)' : 'Failed to send'} className="inline-flex items-center ml-1">
+          <AlertCircle className="w-3.5 h-3.5 text-rose-300 shrink-0" />
+        </span>
+      );
+    }
+
+    return (
+      <span title="Sent" className="inline-flex items-center ml-1">
+        <Check className="w-3.5 h-3.5 text-white/90 shrink-0" />
+      </span>
+    );
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -871,8 +927,9 @@ export default function InboxPage() {
                       </div>
                     )}
                     <p className="whitespace-pre-wrap leading-relaxed">{contentText}</p>
-                    <span className={`block text-[9px] mt-1 text-right ${isInbound ? 'text-muted-foreground' : 'text-white/70'}`}>
-                      {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    <span className={`flex items-center justify-end gap-0.5 text-[9px] mt-1 text-right ${isInbound ? 'text-muted-foreground' : 'text-white/70'}`}>
+                      <span>{new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      {renderMessageStatus(m)}
                     </span>
                   </div>
                 </div>

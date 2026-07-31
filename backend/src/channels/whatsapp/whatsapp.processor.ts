@@ -3,6 +3,7 @@ import { Job } from 'bullmq';
 import { Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { WhatsappWebService } from '../whatsapp-web/whatsapp-web.service';
+import { InboxGateway } from '../../inbox/inbox.gateway';
 
 @Processor('whatsapp-outbound')
 export class WhatsappProcessor extends WorkerHost {
@@ -12,7 +13,8 @@ export class WhatsappProcessor extends WorkerHost {
 
   constructor(
     private prisma: PrismaService,
-    private whatsappWebService: WhatsappWebService
+    private whatsappWebService: WhatsappWebService,
+    private inboxGateway: InboxGateway,
   ) {
     super();
   }
@@ -126,7 +128,7 @@ export class WhatsappProcessor extends WorkerHost {
         }
       }
 
-      // 4. Update Message Status in DB
+      // 4. Update Message Status in DB & Broadcast real-time status update
       await this.prisma.message.update({
         where: { id: messageId },
         data: {
@@ -135,24 +137,35 @@ export class WhatsappProcessor extends WorkerHost {
         }
       });
 
+      this.inboxGateway.broadcastToTenant(tenantId, 'message:status', {
+        messageId,
+        conversationId,
+        status: 'sent'
+      });
+
       this.logger.log(`Successfully processed outbound message job ${job.id}`);
       return { success: true, externalMessageId };
     } catch (error: any) {
       this.logger.error(`Failed to process job ${job.id}: ${error.message}`);
       
       const isRateLimit = error.message === 'RATE_LIMIT_EXCEEDED';
+      const finalStatus = isRateLimit ? 'rate_limited' : 'failed';
       
-      // Update Message Status to failed
+      // Update Message Status to failed & broadcast status
       await this.prisma.message.update({
         where: { id: messageId },
         data: {
-          status: isRateLimit ? 'rate_limited' : 'failed',
+          status: finalStatus,
         }
       }).catch(e => this.logger.error(`Failed to update message status: ${e.message}`));
       
+      this.inboxGateway.broadcastToTenant(tenantId, 'message:status', {
+        messageId,
+        conversationId,
+        status: finalStatus
+      });
+
       if (isRateLimit) {
-        // Do not throw for rate limit so it doesn't infinitely retry immediately and get banned, 
-        // or throw a specific error to let bullmq handle it with backoff.
         throw error;
       }
       throw error; 
