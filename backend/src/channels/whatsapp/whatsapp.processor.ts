@@ -51,7 +51,29 @@ export class WhatsappProcessor extends WorkerHost {
         throw new Error('Missing credentials for CLOUD_API connection');
       }
 
-      // 2. Prepare payload for Meta Graph API
+      // 2. Parse and format content (handle JSON quoted messages from frontend)
+      let finalContentText = content;
+      if (type === 'text' && typeof content === 'string') {
+        try {
+          const parsed = JSON.parse(content);
+          if (parsed && typeof parsed === 'object') {
+            const body = parsed.text || parsed.body || '';
+            if (parsed.quotedMessage) {
+              const q = parsed.quotedMessage;
+              const qText = q.text || (q.type === 'image' ? '[Photo]' : (q.type === 'video' ? '[Video]' : (q.type === 'audio' ? '[Audio]' : (q.type === 'document' ? '[Document]' : 'Attachment'))));
+              const qSender = q.senderName || 'Customer';
+              // Format as WhatsApp blockquote: > *Name*: Message\n\nReply
+              finalContentText = `> *${qSender}*: ${qText}\n\n${body}`;
+            } else {
+              finalContentText = body;
+            }
+          }
+        } catch (e) {
+          // Not JSON, just normal text
+        }
+      }
+
+      // 3. Prepare payload for Meta Graph API
       // Constructing standard WhatsApp Cloud API payload
       const payload: any = {
         messaging_product: 'whatsapp',
@@ -61,7 +83,7 @@ export class WhatsappProcessor extends WorkerHost {
       };
 
       if (type === 'text') {
-        payload.text = { body: content };
+        payload.text = { body: finalContentText };
       } else {
         // Handle other types like image, template, etc. later
         payload[type] = content;
@@ -91,8 +113,8 @@ export class WhatsappProcessor extends WorkerHost {
         // Send via Baileys
         let textContent = '';
         let mediaPath = '';
-        if (typeof content === 'string') {
-          textContent = content;
+        if (typeof finalContentText === 'string') {
+          textContent = finalContentText;
         } else if (content) {
           textContent = content.body || '';
           if (content.mediaUrl) {

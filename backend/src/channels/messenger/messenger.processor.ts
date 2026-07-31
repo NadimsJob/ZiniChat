@@ -30,14 +30,36 @@ export class MessengerProcessor extends WorkerHost {
         throw new Error('No active Messenger connection found for this tenant');
       }
 
-      // 2. Prepare payload for Meta Graph API (Messenger Send API)
+      // 3. Prepare payload for Meta Graph API (Messenger Send API)
       const payload: any = {
         recipient: { id: to },
         message: {}
       };
 
+      // Parse and format content (handle JSON quoted messages from frontend)
+      let finalContentText = content;
+      if (type === 'text' && typeof content === 'string') {
+        try {
+          const parsed = JSON.parse(content);
+          if (parsed && typeof parsed === 'object') {
+            const body = parsed.text || parsed.body || '';
+            if (parsed.quotedMessage) {
+              const q = parsed.quotedMessage;
+              const qText = q.text || (q.type === 'image' ? '[Photo]' : (q.type === 'video' ? '[Video]' : (q.type === 'audio' ? '[Audio]' : (q.type === 'document' ? '[Document]' : 'Attachment'))));
+              const qSender = q.senderName || 'Customer';
+              // Format as blockquote: > *Name*: Message\n\nReply
+              finalContentText = `> *${qSender}*: ${qText}\n\n${body}`;
+            } else {
+              finalContentText = body;
+            }
+          }
+        } catch (e) {
+          // Not JSON, just normal text
+        }
+      }
+
       if (type === 'text') {
-        payload.message.text = content;
+        payload.message.text = finalContentText;
       } else {
         // e.g., type === 'image', content === { url: '...' }
         payload.message.attachment = {
