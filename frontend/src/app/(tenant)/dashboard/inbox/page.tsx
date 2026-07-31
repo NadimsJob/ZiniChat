@@ -66,6 +66,8 @@ export default function InboxPage() {
   const [showRightSidebar, setShowRightSidebar] = useState(true);
   const [isCreatingLabel, setIsCreatingLabel] = useState(false);
   const [followUpPickerConvId, setFollowUpPickerConvId] = useState<string | null>(null);
+  // Mobile WhatsApp-style panel navigation: 'list' | 'chat' | 'crm'
+  const [mobilePanelView, setMobilePanelView] = useState<'list' | 'chat' | 'crm'>('list');
 
   // Quote, Forward, Block & Search States
   const [replyingToMessage, setReplyingToMessage] = useState<any | null>(null);
@@ -77,6 +79,26 @@ export default function InboxPage() {
   const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const assignMenuRef = useRef<HTMLDivElement>(null);
+  const collaboratorMenuRef = useRef<HTMLDivElement>(null);
+  const aiPickerMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close all header dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (showAssignMenu && assignMenuRef.current && !assignMenuRef.current.contains(e.target as Node)) {
+        setShowAssignMenu(false);
+      }
+      if (showCollaboratorMenu && collaboratorMenuRef.current && !collaboratorMenuRef.current.contains(e.target as Node)) {
+        setShowCollaboratorMenu(false);
+      }
+      if (showAiPickerMenu && aiPickerMenuRef.current && !aiPickerMenuRef.current.contains(e.target as Node)) {
+        setShowAiPickerMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showAssignMenu, showCollaboratorMenu, showAiPickerMenu]);
 
   // Fetch counts for tabs
   const fetchCounts = useCallback(async () => {
@@ -758,7 +780,11 @@ export default function InboxPage() {
 
       <div className="flex flex-1 overflow-hidden gap-3 p-0 md:p-3 bg-background">
         {/* LEFT COLUMN: Conversation List */}
-        <div className={`w-full md:w-80 lg:w-96 md:border border-border/80 md:shadow-sm dark:shadow-[0_0_15px_rgba(0,0,0,0.2)] md:rounded-2xl flex-col bg-card shrink-0 overflow-hidden ${selectedConvId ? 'hidden md:flex' : 'flex'}`}>
+        <div className={`w-full md:w-80 lg:w-96 md:border border-border/80 md:shadow-sm dark:shadow-[0_0_15px_rgba(0,0,0,0.2)] md:rounded-2xl flex-col bg-card shrink-0 overflow-hidden ${
+          // On mobile: show only when mobilePanelView === 'list'
+          // On desktop: always show
+          mobilePanelView === 'list' ? 'flex md:flex' : 'hidden md:flex'
+        }`}>
           
           {/* Header Search & Parameter Filter */}
           <div className="p-2.5 border-b border-border/40 shrink-0 bg-background/50 flex items-center gap-2">
@@ -904,7 +930,10 @@ export default function InboxPage() {
               return (
                 <div
                   key={conv.id}
-                  onClick={() => setSelectedConvId(conv.id)}
+                  onClick={() => {
+                    setSelectedConvId(conv.id);
+                    setMobilePanelView('chat');
+                  }}
                   className={`px-3 py-2.5 cursor-pointer transition-all hover:bg-muted/50 ${
                     isSelected ? 'bg-primary/10 border-l-4 border-primary' : ''
                   }`}
@@ -913,10 +942,10 @@ export default function InboxPage() {
                     {/* Left Info: Avatar + Name + Snippet */}
                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
                       <div className="relative shrink-0">
-                        <div className="w-8 h-8 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-xs border border-primary/20">
+                        <div className="w-10 h-10 md:w-8 md:h-8 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-sm md:text-xs border border-primary/20">
                           {conv.contact?.name ? conv.contact.name[0].toUpperCase() : 'C'}
                         </div>
-                        <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-background text-[8px] font-bold text-white flex items-center justify-center uppercase ${
+                        <span className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 md:w-3 md:h-3 rounded-full border-2 border-background text-[8px] font-bold text-white flex items-center justify-center uppercase ${
                           conv.channel === 'whatsapp' ? 'bg-emerald-600' : conv.channel === 'messenger' ? 'bg-blue-600' : 'bg-pink-600'
                         }`}>
                           {conv.channel[0]}
@@ -924,13 +953,13 @@ export default function InboxPage() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5 min-w-0">
-                          <h4 className="text-xs font-bold text-foreground truncate">
+                          <h4 className="text-sm md:text-xs font-bold text-foreground truncate">
                             {conv.contact?.name || conv.contact?.phone || 'Customer'}
                           </h4>
-                          {conv.isStarred && <Star className="w-3 h-3 text-amber-500 fill-amber-500 shrink-0" />}
-                          {conv.requiresFollowUp && <Flag className="w-3 h-3 text-red-500 shrink-0" />}
+                          {conv.isStarred && <Star className="w-3.5 h-3.5 md:w-3 md:h-3 text-amber-500 fill-amber-500 shrink-0" />}
+                          {conv.requiresFollowUp && <Flag className="w-3.5 h-3.5 md:w-3 md:h-3 text-red-500 shrink-0" />}
                         </div>
-                        <p className="text-[11px] text-muted-foreground truncate max-w-[160px]">
+                        <p className="text-xs md:text-[11px] text-muted-foreground truncate max-w-[180px] md:max-w-[160px]">
                           {lastText || (language === 'en' ? 'No messages' : 'কোন মেসেজ নেই')}
                         </p>
                       </div>
@@ -938,17 +967,17 @@ export default function InboxPage() {
 
                     {/* Right Side: Timestamp + Badges / Unassigned / Tags */}
                     <div className="text-right shrink-0 flex flex-col items-end gap-1">
-                      <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                      <span className="text-[11px] md:text-[10px] text-muted-foreground whitespace-nowrap">
                         {conv.lastMessageAt ? new Date(conv.lastMessageAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
                       </span>
                       <div className="flex items-center justify-end gap-1 flex-wrap">
                         {conv.labels?.slice(0, 2).map((l: any) => (
-                          <span key={l.labelId} style={{ backgroundColor: `${l.label.color}20`, color: l.label.color, borderColor: l.label.color }} className="px-1.5 py-0.2 rounded border text-[9px] font-medium">
+                          <span key={l.labelId} style={{ backgroundColor: `${l.label.color}20`, color: l.label.color, borderColor: l.label.color }} className="px-1.5 py-0.5 rounded border text-[10px] md:text-[9px] font-medium">
                             {l.label.name}
                           </span>
                         ))}
                         {conv.assignedAgentId === null && (
-                          <span className="text-amber-600 bg-amber-500/10 dark:bg-amber-500/20 text-[9px] font-medium px-1.5 py-0.2 rounded border border-amber-500/30 whitespace-nowrap">
+                          <span className="text-amber-600 bg-amber-500/10 dark:bg-amber-500/20 text-[10px] md:text-[9px] font-medium px-1.5 py-0.5 rounded border border-amber-500/30 whitespace-nowrap">
                             Unassigned
                           </span>
                         )}
@@ -962,7 +991,7 @@ export default function InboxPage() {
                           </div>
                         )}
                         {conv.unreadCount > 0 && (
-                          <span className="bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.2 rounded-full shadow-xs">
+                          <span className="bg-red-500 text-white text-[10px] md:text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-xs">
                             {conv.unreadCount}
                           </span>
                         )}
@@ -978,33 +1007,51 @@ export default function InboxPage() {
 
       {/* MIDDLE COLUMN: Active Chat Panel */}
       {selectedConvId && activeConv ? (
-        <div className={`flex-1 flex-col min-w-0 bg-card md:border border-border/80 md:shadow-sm dark:shadow-[0_0_15px_rgba(0,0,0,0.2)] md:rounded-2xl overflow-hidden ${!selectedConvId ? 'hidden md:flex' : 'flex'}`}>
+        <div className={`flex-1 flex-col min-w-0 bg-card md:border border-border/80 md:shadow-sm dark:shadow-[0_0_15px_rgba(0,0,0,0.2)] md:rounded-2xl overflow-hidden ${
+          // On mobile: show only when mobilePanelView === 'chat'
+          // On desktop: always show when conversation selected
+          mobilePanelView === 'chat' ? 'flex' : 'hidden md:flex'
+        }`}>
           
           {/* Header */}
           <div className="h-14 px-2 md:px-4 border-b border-border bg-surface/80 backdrop-blur-xl flex items-center justify-between shrink-0 shadow-2xs">
             <div className="flex items-center gap-2 md:gap-3 min-w-0">
               <button 
-                onClick={() => setSelectedConvId(null)}
+                onClick={() => { setMobilePanelView('list'); setSelectedConvId(null); }}
                 className="md:hidden p-1.5 -ml-1 text-muted-foreground hover:bg-muted rounded-full"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
-              <div className="w-9 h-9 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-xs border border-primary/20 shrink-0">
-                {activeConv.contact?.name ? activeConv.contact.name[0].toUpperCase() : 'C'}
-              </div>
-              <div className="min-w-0">
-                <h3 className="text-xs font-bold text-foreground truncate flex items-center gap-2">
-                  {activeConv.contact?.name || activeConv.contact?.phone || 'Customer'}
-                  <span className="text-[10px] text-muted-foreground font-normal capitalize">({activeConv.channel})</span>
-                </h3>
-                <p className="text-[10px] text-muted-foreground flex items-center gap-2">
-                  <span>{activeConv.contact?.phone || activeConv.contact?.externalContactId}</span>
-                  {activeConv.assignedAgent && (
-                    <span className="text-primary font-medium">· Assigned to: {activeConv.assignedAgent.name}</span>
-                  )}
-                </p>
-              </div>
+              {/* Clickable Avatar + Name → opens CRM panel */}
+              <button
+                onClick={() => {
+                  if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+                    setMobilePanelView('crm');
+                  } else {
+                    setShowRightSidebar(!showRightSidebar);
+                  }
+                }}
+                className="flex items-center gap-2 md:gap-2.5 min-w-0 cursor-pointer hover:opacity-80 active:opacity-60 transition-opacity group"
+                title={language === 'en' ? 'View CRM Details' : 'CRM ডিটেইলস দেখুন'}
+              >
+                <div className="w-10 h-10 md:w-9 md:h-9 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-sm md:text-xs border border-primary/20 shrink-0 group-hover:border-primary/60 transition-colors">
+                  {activeConv.contact?.name ? activeConv.contact.name[0].toUpperCase() : 'C'}
+                </div>
+                <div className="min-w-0 text-left">
+                  <h3 className="text-sm md:text-xs font-bold text-foreground truncate flex items-center gap-2">
+                    {activeConv.contact?.name || activeConv.contact?.phone || 'Customer'}
+                    <span className="text-xs md:text-[10px] text-muted-foreground font-normal capitalize">({activeConv.channel})</span>
+                  </h3>
+                  <p className="text-[11px] md:text-[10px] text-muted-foreground flex items-center gap-2">
+                    <span>{activeConv.contact?.phone || activeConv.contact?.externalContactId}</span>
+                    {activeConv.assignedAgent && (
+                      <span className="text-primary font-medium">· Assigned to: {activeConv.assignedAgent.name}</span>
+                    )}
+                  </p>
+                </div>
+              </button>
             </div>
+
 
             {/* Header Control Buttons */}
             <div className="flex items-center gap-1 text-muted-foreground">
@@ -1109,8 +1156,15 @@ export default function InboxPage() {
 
               {/* Toggle Right Sidebar */}
               <button
-                onClick={() => setShowRightSidebar(!showRightSidebar)}
-                className={`p-1.5 rounded-lg hover:bg-muted transition-colors ${showRightSidebar ? 'text-primary' : ''}`}
+                onClick={() => {
+                  // On mobile: switch to CRM panel view
+                  if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+                    setMobilePanelView('crm');
+                  } else {
+                    setShowRightSidebar(!showRightSidebar);
+                  }
+                }}
+                className={`p-1.5 rounded-lg hover:bg-muted transition-colors ${showRightSidebar ? 'text-primary lg:text-primary' : ''} ${mobilePanelView === 'crm' ? 'text-primary lg:text-inherit' : ''}`}
                 title={language === 'en' ? 'Toggle Sidebar — Show or hide customer CRM details & notes' : 'সাইডবার হাইড/শো — কাস্টমার CRM ডিটেইলস প্যানেল'}
               >
                 <PanelRight className="w-4 h-4" />
@@ -1216,11 +1270,11 @@ export default function InboxPage() {
                     ) : null}
                     <div className={`flex items-center justify-between gap-3 mt-1.5 pt-1.5 border-t ${isInbound ? 'border-border/50' : isAi ? 'border-purple-500/20' : 'border-white/20'}`}>
                       {isAi ? (
-                        <span className="text-[9px] font-bold text-purple-400 flex items-center gap-1">
+                        <span className="text-[10px] md:text-[9px] font-bold text-purple-400 flex items-center gap-1">
                           <Sparkles className="w-3 h-3" /> Replied by {tenantBusinessName} AI ✨
                         </span>
                       ) : <div />}
-                      <span className={`flex items-center gap-0.5 text-[9px] text-right ${isInbound || isAi ? 'text-muted-foreground' : 'text-white/70'}`}>
+                      <span className={`flex items-center gap-0.5 text-[11px] md:text-[9px] text-right ${isInbound || isAi ? 'text-muted-foreground' : 'text-white/70'}`}>
                         <span>{new Date(m.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                         {renderMessageStatus(m)}
                       </span>
@@ -1405,28 +1459,45 @@ export default function InboxPage() {
       )}
 
       {/* RIGHT COLUMN: CRM Sidebar Component */}
-      {selectedConvId && activeConv && showRightSidebar && (
+      {selectedConvId && activeConv && (
         <>
-          {/* Desktop Right Sidebar */}
-          <div className="hidden lg:block w-80 shrink-0">
-            <ConversationSidebar
-              conversation={activeConv}
-              availableLabels={availableLabels}
-              onToggleLabel={handleToggleLabel}
-              onCreateLabel={handleCreateLabel}
-              onUpdateContact={handleUpdateContactInList}
-            />
-          </div>
-          {/* Mobile Overlay Sidebar */}
-          <div className="lg:hidden fixed inset-0 z-50 flex justify-end">
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onClick={() => setShowRightSidebar(false)} />
-            <div className="w-[85vw] max-w-sm h-full bg-background z-10 animate-in slide-in-from-right-8 shadow-2xl relative flex flex-col">
-              <div className="flex items-center justify-between p-3 border-b border-border bg-surface/80">
-                <h3 className="font-bold text-sm">{language === 'en' ? 'CRM Details' : 'CRM ডিটেইলস'}</h3>
-                <button onClick={() => setShowRightSidebar(false)} className="p-1.5 text-muted-foreground hover:bg-muted rounded-full">
-                  <X className="w-5 h-5" />
+          {/* Desktop Right Sidebar — controlled by showRightSidebar toggle */}
+          {showRightSidebar && (
+            <div className="hidden lg:block w-80 shrink-0">
+              <ConversationSidebar
+                conversation={activeConv}
+                availableLabels={availableLabels}
+                onToggleLabel={handleToggleLabel}
+                onCreateLabel={handleCreateLabel}
+                onUpdateContact={handleUpdateContactInList}
+              />
+            </div>
+          )}
+
+          {/* Mobile Full-Screen CRM Panel — WhatsApp style, triggered by PanelRight icon */}
+          {mobilePanelView === 'crm' && (
+            <div className="lg:hidden fixed inset-0 z-50 flex flex-col bg-background animate-in slide-in-from-right duration-200">
+              {/* CRM Header with back button */}
+              <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-surface/80 backdrop-blur-xl shrink-0 shadow-sm">
+                <button
+                  onClick={() => setMobilePanelView('chat')}
+                  className="p-1.5 -ml-1.5 text-muted-foreground hover:bg-muted rounded-full transition-colors"
+                >
+                  <ChevronLeft className="w-5 h-5" />
                 </button>
+                <div className="w-8 h-8 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-xs border border-primary/20 shrink-0">
+                  {activeConv.contact?.name ? activeConv.contact.name[0].toUpperCase() : 'C'}
+                </div>
+                <div className="min-w-0">
+                  <h3 className="font-bold text-sm text-foreground truncate">
+                    {language === 'en' ? 'CRM Details' : 'CRM ডিটেইলস'}
+                  </h3>
+                  <p className="text-[10px] text-muted-foreground truncate">
+                    {activeConv.contact?.name || activeConv.contact?.phone || 'Customer'}
+                  </p>
+                </div>
               </div>
+              {/* CRM Content */}
               <div className="flex-1 overflow-hidden">
                 <ConversationSidebar
                   conversation={activeConv}
@@ -1437,7 +1508,7 @@ export default function InboxPage() {
                 />
               </div>
             </div>
-          </div>
+          )}
         </>
       )}
 

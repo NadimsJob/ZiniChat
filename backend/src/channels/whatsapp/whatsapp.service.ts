@@ -137,15 +137,32 @@ export class WhatsappService implements IChannelAdapter {
       try {
         fileName = `${mediaId}_${Date.now()}.webp`;
         filePath = path.join(uploadsDir, fileName);
-        const compressedBuffer = await sharp(buffer)
-          .resize({ width: 800, height: 800, fit: 'inside', withoutEnlargement: true })
-          .webp({ quality: 60, effort: 4 })
+
+        // Stage 1: Resize to max 720px
+        let compressedBuffer = await sharp(buffer)
+          .resize({ width: 720, height: 720, fit: 'inside', withoutEnlargement: true })
+          .webp({ quality: 42, effort: 6, smartSubsample: true })
           .toBuffer();
+
+        // Stage 2: Adaptive reduction if still over 25KB
+        if (compressedBuffer.length > 25 * 1024) {
+          let quality = 35;
+          while (compressedBuffer.length > 20 * 1024 && quality >= 20) {
+            compressedBuffer = await sharp(buffer)
+              .resize({ width: 640, height: 640, fit: 'inside', withoutEnlargement: true })
+              .webp({ quality, effort: 6, smartSubsample: true })
+              .toBuffer();
+            quality -= 5;
+          }
+        }
+
+        this.logger.log(`Image compressed: ${buffer.length} → ${compressedBuffer.length} bytes (${Math.round(compressedBuffer.length / 1024)}KB)`);
         fs.writeFileSync(filePath, compressedBuffer);
       } catch (cErr) {
         this.logger.warn(`Image compression skipped, saving raw buffer: ${cErr.message}`);
         fs.writeFileSync(filePath, buffer);
       }
+
     } else {
       fs.writeFileSync(filePath, buffer);
     }

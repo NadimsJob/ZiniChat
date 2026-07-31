@@ -312,10 +312,28 @@ export class WhatsappWebService implements OnModuleInit {
 
             let compressedBuffer = buffer;
             try {
-              compressedBuffer = await sharp(buffer)
-                .resize({ width: 800, height: 800, fit: 'inside', withoutEnlargement: true })
-                .webp({ quality: 60, effort: 4 })
+              // Stage 1: Resize to max 720px (WhatsApp camera capture is typically portrait)
+              let sharpInstance = sharp(buffer)
+                .resize({ width: 720, height: 720, fit: 'inside', withoutEnlargement: true });
+
+              // Stage 2: Compress to WebP targeting 10-25KB
+              compressedBuffer = await sharpInstance
+                .webp({ quality: 42, effort: 6, smartSubsample: true })
                 .toBuffer();
+
+              // Stage 3: Adaptive quality reduction if still over 25KB
+              if (compressedBuffer.length > 25 * 1024) {
+                let quality = 35;
+                while (compressedBuffer.length > 20 * 1024 && quality >= 20) {
+                  compressedBuffer = await sharp(buffer)
+                    .resize({ width: 640, height: 640, fit: 'inside', withoutEnlargement: true })
+                    .webp({ quality, effort: 6, smartSubsample: true })
+                    .toBuffer();
+                  quality -= 5;
+                }
+              }
+
+              this.logger.log(`Image compressed: ${buffer.length} → ${compressedBuffer.length} bytes (${Math.round(compressedBuffer.length / 1024)}KB)`);
             } catch (cErr) {
               this.logger.warn(`Image compression skipped, saving raw buffer: ${cErr.message}`);
             }

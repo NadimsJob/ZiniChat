@@ -432,7 +432,7 @@ export default function SupportWidget() {
       {/* Floating Button */}
       <button
         onClick={() => setIsOpen(true)}
-        className={`fixed ${isInbox ? 'bottom-16 md:bottom-3 right-3 p-2.5' : 'bottom-16 md:bottom-6 right-4 md:right-6 px-3 py-2 md:px-4 md:py-2.5'} rounded-full bg-primary text-white shadow-xl hover:bg-primary/90 transition-transform duration-300 z-50 flex items-center gap-2 ${isOpen ? 'scale-0' : 'scale-100 hover:scale-105'}`}
+        className={`fixed ${isInbox ? 'hidden md:flex bottom-3 right-3 p-2.5' : 'flex bottom-16 md:bottom-6 right-4 md:right-6 px-3 py-2 md:px-4 md:py-2.5'} rounded-full bg-primary text-white shadow-xl hover:bg-primary/90 transition-transform duration-300 z-50 items-center gap-2 ${isOpen ? 'scale-0' : 'scale-100 hover:scale-105'}`}
         title="ZiniChat Support AI"
       >
         <MessageCircle className="w-5 h-5" />
