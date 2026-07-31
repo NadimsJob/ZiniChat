@@ -253,6 +253,34 @@ export class TenantStatsService {
       })
     );
 
+    const websiteWidgets = await this.prisma.websiteWidget.findMany({
+      where: { tenantId, isActive: true },
+      select: { id: true, name: true, createdAt: true, primaryColor: true }
+    });
+
+    const widgetChannels = await Promise.all(
+      websiteWidgets.map(async (w) => {
+        const count = await this.prisma.message.count({
+          where: {
+            conversation: { tenantId, channel: 'website' },
+            createdAt: { gte: from, lte: to }
+          }
+        });
+        return {
+          id: w.id,
+          channelType: 'website',
+          displayName: w.name || 'Website Live Chat',
+          status: 'connected',
+          provider: 'ZiniChat Widget',
+          phoneNumber: 'Widget',
+          createdAt: w.createdAt,
+          messagesToday: count
+        };
+      })
+    );
+
+    const allChannels = [...channelMsgToday, ...widgetChannels];
+
     // ── Team overview ─────────────────────────────────────────────────────────
     const [adminCount, agentCount] = await Promise.all([
       this.prisma.user.count({ where: { tenantId, role: 'admin' } }),
@@ -441,7 +469,7 @@ export class TenantStatsService {
         storageMb: { used: 0, limit: storageLimitMb, pct: 0 },
       },
       // Channels
-      channels: channelMsgToday,
+      channels: allChannels,
       // Team
       team: {
         total: teamCount,
@@ -590,22 +618,35 @@ export class TenantStatsService {
         orderBy: { lastMessageAt: 'desc' },
         include: {
           contact: { select: { name: true, phone: true, channel: true } },
-          messages: { take: 1, orderBy: { createdAt: 'desc' }, select: { content: true, createdAt: true, direction: true } },
+          messages: { take: 1, orderBy: { createdAt: 'desc' }, select: { content: true, createdAt: true, direction: true, status: true } },
         }
       }),
       this.prisma.conversation.count({ where: { tenantId } }),
     ]);
 
     return {
-      data: items.map(c => ({
-        id: c.id,
-        contactName: c.contact?.name || 'Unknown',
-        channel: c.channel,
-        status: c.status,
-        isAiEnabled: c.isAiEnabled,
-        lastMessage: String((c.messages[0]?.content as any)?.body || '').substring(0, 80),
-        lastMessageAt: c.messages[0]?.createdAt || c.lastMessageAt,
-      })),
+      data: items.map(c => {
+        const lastMsgObj = c.messages[0];
+        let msgText = '';
+        if (lastMsgObj?.content) {
+          if (typeof lastMsgObj.content === 'string') {
+            msgText = lastMsgObj.content;
+          } else if (typeof lastMsgObj.content === 'object') {
+            msgText = (lastMsgObj.content as any).body || (lastMsgObj.content as any).text || (lastMsgObj.content as any).caption || JSON.stringify(lastMsgObj.content);
+          }
+        }
+        return {
+          id: c.id,
+          contactName: c.contact?.name || 'Unknown',
+          channel: c.channel,
+          status: c.status,
+          isAiEnabled: c.isAiEnabled,
+          lastMessage: String(msgText || 'Message').substring(0, 80),
+          lastMessageAt: lastMsgObj?.createdAt || c.lastMessageAt,
+          direction: lastMsgObj?.direction || 'inbound',
+          messageStatus: lastMsgObj?.status || 'sent',
+        };
+      }),
       total,
       page,
       pages: Math.ceil(total / limit),

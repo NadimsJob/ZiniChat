@@ -443,69 +443,81 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  <div className="hidden md:flex w-7 h-7 rounded bg-primary/10 items-center justify-center text-primary">
  <LayoutGrid className="w-3.5 h-3.5" />
  </div>
- <h2 className="text-[13px] font-bold text-slate-900">
- {language === 'en' ? 'Overview' : 'ওভারভিউ'}
- </h2>
+ <h2 className="text-[13px] font-bold text-foreground">
+  {language === 'en' ? 'Overview' : 'ওভারভিউ'}
+  </h2>
 
- </div>
- 
- <div className="flex items-center gap-2 md:gap-1.5">
- {mounted && (
-  <button
-  onClick={() => setLanguage(language === 'en' ? 'bn' : 'en')}
-  title={language === 'en' ? 'Switch to Bengali' : 'Switch to English'}
-  className="relative flex items-center justify-between w-[46px] h-6 bg-slate-100 border border-slate-200 rounded-full p-0.5 overflow-hidden transition-colors hover:border-primary/50 mx-1 cursor-pointer"
-  >
-  <div
-  className={`absolute top-[1px] bottom-[1px] w-[20px] bg-primary rounded-full transition-transform duration-300 shadow-sm ${
-  language === 'bn' ? 'translate-x-[20px]' : 'translate-x-0'
-  }`}
-  />
-  <span className={`relative z-10 w-1/2 text-[9px] font-bold text-center transition-colors ${language === 'en' ? 'text-white' : 'text-slate-500'}`}>EN</span>
-  <span className={`relative z-10 w-1/2 text-[9px] font-bold text-center transition-colors ${language === 'bn' ? 'text-white' : 'text-slate-500'}`}>BN</span>
-  </button>
-  )}
- 
+  </div>
+  
+  <div className="flex items-center gap-2 md:gap-1.5">
+  {mounted && (
+   <button
+   onClick={() => setLanguage(language === 'en' ? 'bn' : 'en')}
+   title={language === 'en' ? 'Switch to Bengali' : 'Switch to English'}
+   className="relative flex items-center justify-between w-[46px] h-6 bg-surface-hover/60 border border-surface-hover rounded-full p-0.5 overflow-hidden transition-colors hover:border-primary/50 mx-1 cursor-pointer"
+   >
+   <div
+   className={`absolute top-[1px] bottom-[1px] w-[20px] bg-primary rounded-full transition-transform duration-300 shadow-sm ${
+   language === 'bn' ? 'translate-x-[20px]' : 'translate-x-0'
+   }`}
+   />
+   <span className={`relative z-10 w-1/2 text-[9px] font-bold text-center transition-colors ${language === 'en' ? 'text-white' : 'text-zinc-400'}`}>EN</span>
+   <span className={`relative z-10 w-1/2 text-[9px] font-bold text-center transition-colors ${language === 'bn' ? 'text-white' : 'text-zinc-400'}`}>BN</span>
+   </button>
+   )}
+  
+   {mounted && (
+     <button
+       onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+       title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+       className="p-1.5 rounded-xl bg-surface-hover/60 border border-surface-hover hover:border-primary/40 text-foreground transition-all cursor-pointer flex items-center justify-center"
+     >
+       {theme === 'dark' ? (
+         <Sun className="w-3.5 h-3.5 text-amber-400" />
+       ) : (
+         <Moon className="w-3.5 h-3.5 text-slate-600 dark:text-zinc-300" />
+       )}
+     </button>
+   )}
+  
+   {mounted && <NotificationBell />}
 
- 
-  {mounted && <NotificationBell />}
+   {mounted && hasAgentPresence && (
+     <div className="relative z-50">
+       <button
+         onClick={() => setShowPresenceMenu(!showPresenceMenu)}
+         className="flex items-center gap-1.5 px-2.5 py-1 bg-surface-hover/60 border border-surface-hover hover:border-primary/40 rounded-full text-[11px] font-medium text-foreground shadow-2xs transition-all cursor-pointer"
+       >
+         <span className={`w-2 h-2 rounded-full ${
+           presenceStatus === 'available' ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.6)]' :
+           presenceStatus === 'busy' ? 'bg-amber-500' :
+           presenceStatus === 'away' ? 'bg-yellow-500' : 'bg-slate-400'
+         }`} />
+         <span className="capitalize">{presenceStatus}</span>
+         <ChevronDown className="w-3 h-3 text-zinc-400" />
+       </button>
 
-  {mounted && hasAgentPresence && (
-    <div className="relative z-50">
-      <button
-        onClick={() => setShowPresenceMenu(!showPresenceMenu)}
-        className="flex items-center gap-1.5 px-2.5 py-1 bg-white/80 border border-slate-200 hover:border-slate-300 rounded-full text-[11px] font-medium text-slate-700 shadow-2xs transition-all cursor-pointer"
-      >
-        <span className={`w-2 h-2 rounded-full ${
-          presenceStatus === 'available' ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.6)]' :
-          presenceStatus === 'busy' ? 'bg-amber-500' :
-          presenceStatus === 'away' ? 'bg-yellow-500' : 'bg-slate-400'
-        }`} />
-        <span className="capitalize">{presenceStatus}</span>
-        <ChevronDown className="w-3 h-3 text-slate-400" />
-      </button>
-
-      {showPresenceMenu && (
-        <div className="absolute right-0 mt-1 w-32 bg-white border border-slate-200 rounded-xl shadow-lg py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
-          {[
-            { id: 'available', label: 'Available', color: 'bg-emerald-500' },
-            { id: 'busy', label: 'Busy', color: 'bg-amber-500' },
-            { id: 'away', label: 'Away', color: 'bg-yellow-500' },
-            { id: 'offline', label: 'Offline', color: 'bg-slate-400' },
-          ].map(item => (
-            <button
-              key={item.id}
-              onClick={() => handlePresenceChange(item.id)}
-              className={`w-full flex items-center gap-2 px-3 py-1.5 text-[11px] text-left hover:bg-slate-50 transition-colors cursor-pointer ${presenceStatus === item.id ? 'font-bold text-slate-900 bg-slate-50' : 'text-slate-600'}`}
-            >
-              <span className={`w-2 h-2 rounded-full ${item.color}`} />
-              {item.label}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  )}
+       {showPresenceMenu && (
+         <div className="absolute right-0 mt-1 w-32 bg-surface/95 backdrop-blur-xl border border-surface-hover rounded-xl shadow-xl py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
+           {[
+             { id: 'available', label: 'Available', color: 'bg-emerald-500' },
+             { id: 'busy', label: 'Busy', color: 'bg-amber-500' },
+             { id: 'away', label: 'Away', color: 'bg-yellow-500' },
+             { id: 'offline', label: 'Offline', color: 'bg-slate-400' },
+           ].map(item => (
+             <button
+               key={item.id}
+               onClick={() => handlePresenceChange(item.id)}
+               className={`w-full flex items-center gap-2 px-3 py-1.5 text-[11px] text-left hover:bg-surface-hover transition-colors cursor-pointer ${presenceStatus === item.id ? 'font-bold text-foreground bg-surface-hover' : 'text-zinc-400'}`}
+             >
+               <span className={`w-2 h-2 rounded-full ${item.color}`} />
+               {item.label}
+             </button>
+           ))}
+         </div>
+       )}
+     </div>
+   )}
 
  {isProfileMenuOpen && (
  <div 
@@ -515,14 +527,14 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  )}
  <div className="relative ml-1 md:ml-2 z-50">
  <button 
- className="flex items-center outline-none"
+ className="flex items-center outline-none cursor-pointer"
  onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
  >
  {userProfile?.profilePicUrl && !avatarError ? (
  <img
  src={`${API}${userProfile.profilePicUrl}`}
  alt="Avatar"
- className="w-8 h-8 rounded-full object-cover border border-slate-200"
+ className="w-8 h-8 rounded-full object-cover border border-surface-hover"
  onError={() => setAvatarError(true)}
  />
  ) : (
@@ -533,21 +545,21 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  </button>
  
  {/* Dropdown menu */}
- <div className={`absolute right-0 top-full mt-2 w-48 bg-white border border-slate-200 rounded-xl shadow-lg transition-all overflow-hidden ${isProfileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`}>
- <div className="px-3 py-2 border-b border-slate-200 ">
- <p className="text-[12px] font-semibold text-slate-900 truncate">{userProfile?.name || (language === 'en' ? 'My Account' : 'আমার অ্যাকাউন্ট')}</p>
- <p className="text-[10px] text-slate-500 truncate">{userProfile?.email || ''}</p>
+ <div className={`absolute right-0 top-full mt-2 w-48 bg-surface/95 backdrop-blur-xl border border-surface-hover rounded-xl shadow-2xl transition-all overflow-hidden ${isProfileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`}>
+ <div className="px-3 py-2 border-b border-surface-hover">
+ <p className="text-[12px] font-semibold text-foreground truncate">{userProfile?.name || (language === 'en' ? 'My Account' : 'আমার অ্যাকাউন্ট')}</p>
+ <p className="text-[10px] text-zinc-400 truncate">{userProfile?.email || ''}</p>
  </div>
  <div className="p-1.5">
  <Link 
  href="/dashboard/profile" 
  onClick={() => setIsProfileMenuOpen(false)}
- className="flex items-center gap-2 px-2 py-1.5 text-[12px] text-slate-600 hover:bg-slate-50 :bg-zinc-800/50 rounded-md transition-colors"
+ className="flex items-center gap-2 px-2 py-1.5 text-[12px] text-zinc-300 hover:bg-surface-hover rounded-md transition-colors"
  >
  <UserCircle className="w-3.5 h-3.5" />
  {language === 'en' ? 'Profile' : 'প্রোফাইল'}
  </Link>
- <button onClick={handleLogout} className="w-full flex items-center gap-2 px-2 py-1.5 text-[12px] text-red-600 hover:bg-red-50 :bg-red-500/10 rounded-md transition-colors mt-0.5">
+ <button onClick={handleLogout} className="w-full flex items-center gap-2 px-2 py-1.5 text-[12px] text-red-400 hover:bg-red-500/10 rounded-md transition-colors mt-0.5 cursor-pointer">
  <LogOut className="w-3.5 h-3.5" />
  {language === 'en' ? 'Logout' : 'লগআউট'}
  </button>

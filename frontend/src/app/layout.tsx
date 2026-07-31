@@ -68,7 +68,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${outfit.variable} ${hind.variable} h-full antialiased`} suppressHydrationWarning>
       <body className="min-h-full flex flex-col bg-background text-foreground font-sans selection:bg-primary selection:text-primary-foreground transition-colors duration-300" suppressHydrationWarning>
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
           <LanguageProvider>
             <CurrencyProvider>
               <MetaPixelProvider>

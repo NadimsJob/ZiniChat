@@ -15,7 +15,8 @@ import {
   MessageSquare, Bot, Users, ShoppingCart, Crown, Package, Activity,
   TrendingUp, RefreshCw, Zap, ShieldCheck,
   DollarSign, Search, Sparkles, Filter,
-  PhoneCall, ArrowUpRight, ArrowDownRight, Target
+  PhoneCall, ArrowUpRight, ArrowDownRight, Target,
+  Globe, Check, CheckCheck, Clock, AlertCircle, Calendar, Headphones
 } from 'lucide-react';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -486,21 +487,34 @@ export default function ExecutiveDashboardPage() {
             {(data?.channels || []).length === 0 ? (
               <div className="text-center py-8 text-zinc-400 text-xs">{language === 'en' ? 'No active channels connected' : 'কোনো চ্যানেল কানেক্ট করা নেই'}</div>
             ) : (
-              (data?.channels || []).map((ch: any) => (
-                <div key={ch.id} className="flex items-center justify-between p-2.5 bg-surface-hover/40 border border-surface-hover rounded-xl">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-                    <div className="truncate">
-                      <div className="text-[12px] font-bold truncate text-foreground">{ch.displayName || ch.phoneNumber || ch.channelType}</div>
-                      <div className="text-[10px] text-zinc-400 capitalize">{ch.channelType} • {ch.provider || 'API'}</div>
+              (data?.channels || []).map((ch: any) => {
+                const isWebsite = ch.channelType === 'website' || ch.channelType === 'web_widget';
+                return (
+                  <div key={ch.id} className="flex items-center justify-between p-2.5 bg-surface-hover/40 border border-surface-hover rounded-xl">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="shrink-0 flex items-center justify-center w-7 h-7 rounded-lg bg-surface-hover">
+                        {isWebsite ? (
+                          <Globe className="w-4 h-4 text-cyan-400" />
+                        ) : ch.channelType?.includes('whatsapp') ? (
+                          <PhoneCall className="w-4 h-4 text-emerald-400" />
+                        ) : ch.channelType?.includes('messenger') ? (
+                          <MessageSquare className="w-4 h-4 text-blue-400" />
+                        ) : (
+                          <Sparkles className="w-4 h-4 text-purple-400" />
+                        )}
+                      </div>
+                      <div className="truncate">
+                        <div className="text-[12px] font-bold truncate text-foreground">{ch.displayName || ch.phoneNumber || ch.channelType}</div>
+                        <div className="text-[10px] text-zinc-400 capitalize">{isWebsite ? 'Website Live Chat' : ch.channelType} • {ch.provider || 'Active'}</div>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className="text-[12px] font-bold text-foreground">{formatNumber(ch.messagesToday || 0)}</div>
+                      <div className="text-[9px] text-zinc-400">{language === 'en' ? 'msges' : 'মেসেজ'}</div>
                     </div>
                   </div>
-                  <div className="text-right shrink-0">
-                    <div className="text-[12px] font-bold text-foreground">{formatNumber(ch.messagesToday || 0)}</div>
-                    <div className="text-[9px] text-zinc-400">{language === 'en' ? 'msges' : 'মেসেজ'}</div>
-                  </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
 
@@ -744,21 +758,51 @@ export default function ExecutiveDashboardPage() {
                   {filteredConvs.length === 0 ? (
                     <tr><td colSpan={5} className="py-6 text-center text-zinc-400">{language === 'en' ? 'No recent conversations' : 'কোনো মেসেজ নেই'}</td></tr>
                   ) : (
-                    filteredConvs.map(c => (
-                      <tr key={c.id} className="hover:bg-surface-hover/30 transition-colors">
-                        <td className="py-2.5 px-3 font-bold text-foreground truncate max-w-[120px]">{c.contactName}</td>
-                        <td className="py-2.5 px-3 capitalize text-zinc-400">{c.channel}</td>
-                        <td className="py-2.5 px-3">
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${c.isAiEnabled ? 'bg-purple-500/15 text-purple-400' : 'bg-blue-500/15 text-blue-400'}`}>
-                            {c.isAiEnabled ? 'AI Auto' : 'Human'}
-                          </span>
-                        </td>
-                        <td className="py-2.5 px-3 text-zinc-400 truncate max-w-[200px]">{c.lastMessage}</td>
-                        <td className="py-2.5 px-3 text-right">
-                          <Link href={`/dashboard/inbox?id=${c.id}`} className="text-primary hover:underline font-bold text-[11px]">{language === 'en' ? 'Reply' : 'উত্তর দিন'}</Link>
-                        </td>
-                      </tr>
-                    ))
+                    filteredConvs.map(c => {
+                      const isWebsite = c.channel === 'website' || c.channel === 'web_widget';
+                      const isWa = c.channel?.includes('whatsapp');
+                      const isMs = c.channel?.includes('messenger');
+                      return (
+                        <tr key={c.id} className="hover:bg-surface-hover/30 transition-colors">
+                          <td className="py-2.5 px-3 font-bold text-foreground truncate max-w-[130px]">{c.contactName}</td>
+                          <td className="py-2.5 px-3">
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                              isWebsite ? 'bg-cyan-500/15 text-cyan-400 border border-cyan-500/20' :
+                              isWa ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20' :
+                              isMs ? 'bg-blue-500/15 text-blue-400 border border-blue-500/20' :
+                              'bg-purple-500/15 text-purple-400 border border-purple-500/20'
+                            }`}>
+                              {isWebsite ? <Globe className="w-3 h-3" /> : isWa ? <PhoneCall className="w-3 h-3" /> : isMs ? <MessageSquare className="w-3 h-3" /> : <Sparkles className="w-3 h-3" />}
+                              {isWebsite ? 'Widget' : c.channel}
+                            </span>
+                          </td>
+                          <td className="py-2.5 px-3">
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${c.isAiEnabled ? 'bg-purple-500/15 text-purple-400' : 'bg-blue-500/15 text-blue-400'}`}>
+                              {c.isAiEnabled ? 'AI Auto' : 'Human'}
+                            </span>
+                          </td>
+                          <td className="py-2.5 px-3 text-zinc-400 truncate max-w-[220px]">
+                            {c.direction === 'outbound' && (
+                              c.messageStatus === 'read' || c.messageStatus === 'seen' ? (
+                                <CheckCheck className="w-3.5 h-3.5 text-sky-400 inline shrink-0 mr-1" />
+                              ) : c.messageStatus === 'delivered' ? (
+                                <CheckCheck className="w-3.5 h-3.5 text-zinc-400 inline shrink-0 mr-1" />
+                              ) : c.messageStatus === 'pending' ? (
+                                <Clock className="w-3.5 h-3.5 text-amber-400 inline shrink-0 mr-1" />
+                              ) : c.messageStatus === 'failed' ? (
+                                <AlertCircle className="w-3.5 h-3.5 text-red-400 inline shrink-0 mr-1" />
+                              ) : (
+                                <Check className="w-3.5 h-3.5 text-zinc-400 inline shrink-0 mr-1" />
+                              )
+                            )}
+                            {c.lastMessage}
+                          </td>
+                          <td className="py-2.5 px-3 text-right">
+                            <Link href={`/dashboard/inbox?id=${c.id}`} className="text-primary hover:underline font-bold text-[11px]">{language === 'en' ? 'Reply' : 'উত্তর দিন'}</Link>
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
