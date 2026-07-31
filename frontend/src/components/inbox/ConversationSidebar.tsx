@@ -274,10 +274,11 @@ export default function ConversationSidebar({
         setSummaryTime(data.summaryGeneratedAt);
         toast.success(language === 'en' ? 'Summary ready' : 'সামারি তৈরি হয়েছে');
       } else {
-        toast.error('Failed to generate summary');
+        const errData = await res.json().catch(() => ({}));
+        toast.error(errData.message || (language === 'en' ? 'Failed to generate summary' : 'সামারি তৈরি করতে ব্যর্থ হয়েছে'));
       }
     } catch (err) {
-      toast.error('Error generating summary');
+      toast.error(language === 'en' ? 'Error generating summary' : 'সামারি তৈরিতে ত্রুটি ঘটেছে');
     } finally {
       setGeneratingSummary(false);
     }
@@ -716,14 +717,19 @@ export default function ConversationSidebar({
                   )}
                 </div>
               ) : (
-                <button 
-                  onClick={() => handleGenerateSummary(false)}
-                  disabled={generatingSummary}
-                  className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 bg-purple-600 text-white text-[11px] font-medium rounded-lg hover:bg-purple-700 transition-colors shadow-xs"
-                >
-                  <Sparkles className={`w-3.5 h-3.5 ${generatingSummary ? 'animate-spin' : ''}`} />
-                  {generatingSummary ? (language === 'en' ? 'Summarizing...' : 'সামারি তৈরি হচ্ছে...') : (language === 'en' ? 'Generate AI Summary' : 'AI সামারি তৈরি করুন')}
-                </button>
+                <div className="space-y-1.5">
+                  <button 
+                    onClick={() => handleGenerateSummary(false)}
+                    disabled={generatingSummary}
+                    className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 bg-purple-600 text-white text-[11px] font-medium rounded-lg hover:bg-purple-700 transition-colors shadow-xs"
+                  >
+                    <Sparkles className={`w-3.5 h-3.5 ${generatingSummary ? 'animate-spin' : ''}`} />
+                    {generatingSummary ? (language === 'en' ? 'Summarizing...' : 'সামারি তৈরি হচ্ছে...') : (language === 'en' ? 'Generate AI Summary' : 'AI সামারি তৈরি করুন')}
+                  </button>
+                  <p className="text-[9.5px] text-center text-muted-foreground font-sans flex items-center justify-center gap-1">
+                    <span>⚡ {language === 'en' ? 'Uses 1 AI Response credit per generation' : 'প্রতিবার সামারি তৈরিতে ১টি AI রেসপন্স কোটা কেটে নেওয়া হবে'}</span>
+                  </p>
+                </div>
               )}
             </div>
           )

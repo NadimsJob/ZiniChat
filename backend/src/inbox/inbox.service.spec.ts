@@ -96,7 +96,7 @@ describe('InboxService', () => {
         { provide: AiService, useValue: { transcribeAudio: jest.fn(), extractTextFromPdf: jest.fn(), generateCompletion: jest.fn().mockResolvedValue('AI Summary') } },
         { provide: OrchestratorService, useValue: { processMessage: jest.fn().mockResolvedValue(true) } },
         { provide: NotificationsService, useValue: { createNotification: jest.fn().mockResolvedValue(true) } },
-        { provide: QuotaService, useValue: { checkFeature: jest.fn().mockResolvedValue(true) } },
+        { provide: QuotaService, useValue: { checkFeature: jest.fn().mockResolvedValue(true), checkAiQuota: jest.fn().mockResolvedValue(undefined) } },
       ],
     }).compile();
 
@@ -184,13 +184,14 @@ describe('InboxService', () => {
       expect(result).toBeDefined();
     });
 
-    it('should generate an AI summary for a conversation', async () => {
+    it('should generate an AI summary for a conversation and deduct 1 AI Response credit', async () => {
       const mockConv = { id: 'conv1', tenantId: 'tenant1', contact: { name: 'Customer' }, summary: null };
       prismaService.conversation.findFirst.mockResolvedValue(mockConv);
       prismaService.message.findMany.mockResolvedValue([
         { direction: 'inbound', content: { body: 'Hello' } },
         { direction: 'outbound', content: 'Hi there!' }
       ]);
+      prismaService.aiAssistant.findFirst.mockResolvedValue({ id: 'ai1', tenantId: 'tenant1', isActive: true });
       prismaService.conversation.update.mockResolvedValue({
         ...mockConv,
         summary: 'AI Summary',
@@ -200,6 +201,9 @@ describe('InboxService', () => {
       const result = await service.generateSummary('tenant1', 'conv1', true);
       expect(result.summary).toBe('AI Summary');
       expect(result.cached).toBe(false);
+      expect(prismaService.aiUsageLog.create).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ tenantId: 'tenant1', assistantId: 'ai1' })
+      }));
     });
 
     it('should return inbox counts for all tabs', async () => {

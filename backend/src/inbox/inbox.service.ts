@@ -589,6 +589,9 @@ export class InboxService {
       }
     }
 
+    // 1. Enforce AI Quota Limit Check
+    await this.quotaService.checkAiQuota(tenantId);
+
     const messages = await this.prisma.message.findMany({
       where: { conversationId },
       orderBy: { createdAt: 'desc' },
@@ -610,20 +613,36 @@ export class InboxService {
 
     const summaryText = await this.aiService.generateCompletion(prompt);
 
-    // Track AI Usage
-    const assistant = await this.prisma.aiAssistant.findFirst({
+    // 2. Track & Deduct 1 AI Response Credit
+    let assistant = await this.prisma.aiAssistant.findFirst({
       where: { tenantId, isActive: true }
     });
-    if (assistant) {
-      await this.prisma.aiUsageLog.create({
+    if (!assistant) {
+      assistant = await this.prisma.aiAssistant.findFirst({
+        where: { tenantId }
+      });
+    }
+
+    if (!assistant) {
+      assistant = await this.prisma.aiAssistant.create({
         data: {
           tenantId,
-          assistantId: assistant.id,
-          tokensUsed: 250,
-          costUsd: 0.0005
+          modelProvider: 'openai',
+          modelName: 'gpt-4o-mini',
+          apiKeyMode: 'platform',
+          routingMode: 'system_only'
         }
-      }).catch(() => {});
+      });
     }
+
+    await this.prisma.aiUsageLog.create({
+      data: {
+        tenantId,
+        assistantId: assistant.id,
+        tokensUsed: 250,
+        costUsd: 0.0005
+      }
+    });
 
     const updated: any = await this.prisma.conversation.update({
       where: { id: conversationId },

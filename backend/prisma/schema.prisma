@@ -389,6 +389,7 @@ model KnowledgeChunk {
   content    String
   embedding  Unsupported("vector(1536)")?
   chunkIndex Int
+  createdAt  DateTime                     @default(now())
 
   document KnowledgeDocument @relation(fields: [documentId], references: [id])
 

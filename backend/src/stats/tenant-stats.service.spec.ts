@@ -18,6 +18,7 @@ const mockPrisma = {
   order: { count: jest.fn().mockResolvedValue(4), aggregate: jest.fn().mockResolvedValue({ _sum: { totalAmount: '500' } }), findMany: jest.fn().mockResolvedValue([]) },
   broadcastRecipient: { count: jest.fn().mockResolvedValue(2), aggregate: jest.fn().mockResolvedValue({ _count: { id: 2 } }) },
   label: { findMany: jest.fn().mockResolvedValue([]) },
+  websiteWidget: { findMany: jest.fn().mockResolvedValue([]) },
 };
 
 const mockQuotaService = {

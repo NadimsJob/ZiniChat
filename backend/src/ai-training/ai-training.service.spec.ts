@@ -123,4 +123,21 @@ describe('AiTrainingService', () => {
       );
     });
   });
+
+  describe('generateSamplePrompt Guardrails', () => {
+    it('should inject mandatory anti-hallucination guardrails into sample prompt', async () => {
+      mockPrisma.tenant.findUnique.mockResolvedValue({
+        id: 'tenant-1',
+        businessName: 'ZiniShop',
+        labels: [],
+      });
+
+      const res = await service.generateSamplePrompt('tenant-1');
+      expect(res.prompt).toContain('MANDATORY ANTI-HALLUCINATION GUARDRAILS');
+      expect(res.prompt).toContain('ALWAYS use Q&A/Documents first as the source of truth');
+      expect(res.prompt).toContain('NEVER invent products, features, or prices');
+      expect(res.prompt).toContain('Never promise discounts or refunds without strict authorization');
+      expect(res.prompt).toContain('If uncertain, explicitly state that you do not know and suggest human handoff');
+    });
+  });
 });

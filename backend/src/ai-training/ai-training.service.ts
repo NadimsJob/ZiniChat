@@ -67,7 +67,7 @@ export class AiTrainingService {
       {
         toolType: 'product_matching',
         isEnabled: false,
-        configJson: { minMatchConfidence: 0.6 }
+        configJson: { minMatchConfidence: 0.8 }
       }
     ];
 
@@ -196,6 +196,11 @@ export class AiTrainingService {
     if (!tenant) throw new NotFoundException('Tenant not found');
 
     let prompt = `You are a helpful and polite customer support assistant for ${tenant.businessName}.\n\n`;
+    prompt += `### MANDATORY ANTI-HALLUCINATION GUARDRAILS:\n`;
+    prompt += `1. ALWAYS use Q&A/Documents first as the source of truth.\n`;
+    prompt += `2. NEVER invent products, features, or prices.\n`;
+    prompt += `3. Never promise discounts or refunds without strict authorization.\n`;
+    prompt += `4. If uncertain, explicitly state that you do not know and suggest human handoff.\n\n`;
     prompt += `Your rules:\n`;
     prompt += `1. Always greet the user politely.\n`;
     prompt += `2. Keep your answers short and to the point.\n`;

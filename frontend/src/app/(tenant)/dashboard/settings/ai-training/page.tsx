@@ -376,8 +376,8 @@ export default function AiTrainingPage() {
         title={language === 'en' ? 'How to Train Your AI Agent' : 'কীভাবে আপনার এআই এজেন্টকে ট্রেইন করবেন'}
         description={
           language === 'en'
-            ? '1. Keep "Enable AI Agent" ON to answer customer queries. 2. Fill out Business Info Q&A so AI knows your delivery policy, timing & store location. 3. Enable Event-Wise AI Behavior toggles below to control order placement, image reading & support handover.'
-            : '১. কাস্টমার মেসেজের অটো রিপ্লাইয়ের জন্য "এআই এজেন্ট চালু" রাখুন। ২. ব্যবসার সময়সূচী, ডেলিভারি চার্জ ও ঠিকানা জানাতে Q&A সেকশন পূরণ করুন। ৩. অটো অর্ডার প্লেসমেন্ট ও সাপোর্ট হ্যান্ডওভার কন্ট্রোল করতে নিচের ইভেন্ট টগলসমূহ অন করুন।'
+            ? '1. Keep "Enable AI Agent" ON to answer customer queries. 2. Fill out Business Info Q&A so AI knows your delivery policy, timing & store location. 3. Enable Event-Wise AI Behavior toggles below to control order placement, image reading & support handover. 4. Note: Generating a Conversation AI Summary in the Live Inbox consumes 1 AI Response credit per summary.'
+            : '১. কাস্টমার মেসেজের অটো রিপ্লাইয়ের জন্য "এআই এজেন্ট চালু" রাখুন। ২. ব্যবসার সময়সূচী, ডেলিভারি চার্জ ও ঠিকানা জানাতে Q&A সেকশন পূরণ করুন। ৩. অটো অর্ডার প্লেসমেন্ট ও সাপোর্ট হ্যান্ডওভার কন্ট্রোল করতে নিচের ইভেন্ট টগলসমূহ অন করুন। ৪. ড্রয়ার নোট: ইনবক্সে লাইভ কনভার্সেশন সামারি (AI Summary) তৈরি করলে প্রতিবার ১টি AI রেসপন্স কোটা ব্যবহার হবে।'
         }
       />
 

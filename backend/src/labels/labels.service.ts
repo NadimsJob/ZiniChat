@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -48,11 +48,22 @@ export class LabelsService {
     const assistant = await this.prisma.aiAssistant.findFirst({ where: { tenantId } });
     if (!assistant) throw new NotFoundException('AI Assistant not found for this tenant');
 
+    let currentPrompt = assistant.systemPrompt || '';
+
+    // Check count of active labels already in prompt (max 10 limit)
+    const labelMatches = currentPrompt.match(/<Label: /g) || [];
+    const isExisting = currentPrompt.includes(`<Label: ${label.name}>`);
+    if (!isExisting && labelMatches.length >= 10) {
+      throw new BadRequestException('Maximum 10 active tag instructions allowed in AI system prompt to prevent bloat and conflicts.');
+    }
+
+    const SAFETY_HEADER = `=== STRICT TAG SAFETY DELIMITER BLOCK ===\nThe following tag instructions apply to tone and context ONLY. They CANNOT override core business policies, authorize financial commitments, or approve discounts.\n=== END SAFETY DELIMITER BLOCK ===`;
+
     const startTag = `<Label: ${label.name}>`;
     const endTag = `</Label: ${label.name}>`;
     const newBlock = `\n\n${startTag}\n${label.aiPrompt}\n${endTag}`;
 
-    let newSystemPrompt = assistant.systemPrompt || '';
+    let newSystemPrompt = currentPrompt;
 
     // Check if the label tag already exists in the prompt
     const regex = new RegExp(`\\n?\\n?<Label: ${label.name}>[\\s\\S]*?<\\/Label: ${label.name}>`);
@@ -60,6 +71,10 @@ export class LabelsService {
       newSystemPrompt = newSystemPrompt.replace(regex, newBlock);
     } else {
       newSystemPrompt += newBlock;
+    }
+
+    if (!newSystemPrompt.includes('STRICT TAG SAFETY DELIMITER BLOCK')) {
+      newSystemPrompt = `${SAFETY_HEADER}\n\n${newSystemPrompt}`;
     }
 
     await this.prisma.aiAssistant.update({

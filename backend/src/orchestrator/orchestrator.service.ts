@@ -228,7 +228,7 @@ export class OrchestratorService {
       let finalReplyText = classification.replyText;
 
       if (isOrderPlacementActive) {
-        const orderResult = await this.handleOrderPlacement(tenantId, message.conversation, classification, message.conversationId);
+        const orderResult = await this.handleOrderPlacement(tenantId, message.conversation, classification, message.conversationId, userText);
         if (orderResult?.overrideReplyText) {
           finalReplyText = orderResult.overrideReplyText;
         }
@@ -318,7 +318,8 @@ export class OrchestratorService {
     tenantId: string,
     conversation: any,
     classification: StructuredAiClassification,
-    conversationId: string
+    conversationId: string,
+    userText?: string
   ): Promise<{ overrideReplyText?: string } | void> {
     this.assertBelongsToTenant(conversation, tenantId, 'Conversation');
 
@@ -330,6 +331,19 @@ export class OrchestratorService {
       const isExpired = proposal.expiresAt && new Date(proposal.expiresAt).getTime() < Date.now();
       if (!isExpired && proposal.items && Array.isArray(proposal.items) && proposal.items.length > 0) {
         
+        // Strict Hard Confirmation Ritual Validation
+        const rawUserText = (userText || '').trim().toLowerCase();
+        const hardConfirmations = ['confirm', 'yes place order', 'confirm order', 'হ্যাঁ অর্ডার কনফার্ম', 'অর্ডার কনফার্ম', 'অর্ডার নিশ্চিত করুন'];
+        const isHardConfirmed = hardConfirmations.some(kw => rawUserText.includes(kw));
+
+        // Soft consent (e.g. 'sure', 'okay', 'ঠিক আছে', 'achha', 'hmm') requires explicit confirmation
+        if (!isHardConfirmed) {
+          this.logger.log(`Soft consent detected for conversation ${conversationId} ("${userText}"). Requiring explicit confirmation.`);
+          return {
+            overrideReplyText: `আপনার অর্ডারটি চূড়ান্ত করতে অনুগ্রহ করে 'CONFIRM' অথবা 'YES PLACE ORDER' লিখে মেসেজ করুন।\n\nTo complete your order, please reply with 'CONFIRM' or 'YES PLACE ORDER'.`
+          };
+        }
+
         // Re-validate price and stock from live DB
         const validatedItems: { productId: string; quantity: number; priceAtTime: number }[] = [];
         let grandTotal = 0;
@@ -442,7 +456,7 @@ export class OrchestratorService {
 
         const itemsListStr = proposalItems.map(i => `${i.quantity}x ${i.name} (${i.price} BDT)`).join(', ');
         return {
-          overrideReplyText: `আমি আপনার অর্ডার প্রপোজাল তৈরি করেছি:\n📦 ${itemsListStr}\n💰 মোট: BDT ${totalAmount}\n\nআপনি কি অর্ডারটি নিশ্চিত করতে চান? ('হ্যাঁ' লিখুন)\n\nShall I place this order for ${itemsListStr}? Total: BDT ${totalAmount}. Reply 'Yes' to confirm.`
+          overrideReplyText: `আমি আপনার অর্ডার প্রপোজাল তৈরি করেছি:\n📦 ${itemsListStr}\n💰 মোট: BDT ${totalAmount}\n\nঅর্ডারটি নিশ্চিত করতে 'CONFIRM' অথবা 'YES PLACE ORDER' লিখে রিপ্লাই দিন।\n\nShall I place this order for ${itemsListStr}? Total: BDT ${totalAmount}. Reply 'CONFIRM' or 'YES PLACE ORDER' to confirm.`
         };
       }
     }
@@ -483,7 +497,7 @@ export class OrchestratorService {
     tenantId: string,
     conversationId: string,
     classification: StructuredAiClassification,
-    minConfidence: number = 0.6
+    minConfidence: number = 0.8
   ) {
     const searchQuery = classification.imageProductDescription;
     if (!searchQuery && classification.intent !== 'product_lookup') return;
@@ -526,23 +540,33 @@ export class OrchestratorService {
       }
     }
 
-    if (bestMatch && bestMatch.imageUrl && bestScore >= minConfidence) {
-      await this.inboxService.saveOutboundMessage(
-        tenantId,
-        conversationId,
-        JSON.stringify({
-          mediaUrl: bestMatch.imageUrl,
-          body: `📸 ${bestMatch.name} — BDT ${bestMatch.price}`
-        }),
-        'image'
-      );
+    if (bestMatch && bestMatch.imageUrl) {
+      if (bestScore >= minConfidence) {
+        // High confidence match (>= 80%)
+        await this.inboxService.saveOutboundMessage(
+          tenantId,
+          conversationId,
+          JSON.stringify({
+            mediaUrl: bestMatch.imageUrl,
+            body: `📸 ${bestMatch.name} — BDT ${bestMatch.price}`
+          }),
+          'image'
+        );
 
-      await this.activityLogService.record({
-        tenantId,
-        conversationId,
-        type: 'PRODUCT_MATCH_SENT',
-        metadataJson: { productId: bestMatch.id, name: bestMatch.name, confidenceScore: bestScore }
-      });
+        await this.activityLogService.record({
+          tenantId,
+          conversationId,
+          type: 'PRODUCT_MATCH_SENT',
+          metadataJson: { productId: bestMatch.id, name: bestMatch.name, confidenceScore: bestScore }
+        });
+      } else if (bestScore >= 0.6 && bestScore < minConfidence) {
+        // Moderate confidence (60% - 79%): Clarifying question fallback
+        await this.inboxService.saveOutboundMessage(
+          tenantId,
+          conversationId,
+          `আপনি কি '${bestMatch.name}' প্রোডাক্টটি খুঁজছেন? (মূল্য: BDT ${bestMatch.price})\n\nAre you looking for '${bestMatch.name}' (Price: BDT ${bestMatch.price})? Please confirm so I can share details.`
+        );
+      }
     }
   }
 
@@ -569,7 +593,33 @@ export class OrchestratorService {
       take: 10
     });
 
+    // Fetch tenant Q&A knowledge base
+    const qnaItems = await this.prisma.qnAKnowledgeBase.findMany({
+      where: { tenantId: conversation.tenantId, isActive: true },
+      take: 20
+    });
+
+    // 60-Day Freshness Document Validation: Filter out knowledge older than 60 days
+    const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
+    const freshDocs = await this.prisma.knowledgeDocument.findMany({
+      where: {
+        tenantId: conversation.tenantId,
+        status: 'completed',
+        uploadedAt: { gte: sixtyDaysAgo }
+      },
+      include: {
+        chunks: { take: 10 }
+      },
+      take: 5
+    });
+
     let prompt = `You are a helpful AI assistant for ${conversation.tenant.businessName}.\n`;
+
+    prompt += `\n=== MANDATORY ANTI-HALLUCINATION GUARDRAILS ===\n`;
+    prompt += `1. ALWAYS use Q&A/Documents first as the source of truth.\n`;
+    prompt += `2. NEVER invent products, features, or prices.\n`;
+    prompt += `3. Never promise discounts or refunds without strict authorization.\n`;
+    prompt += `4. If uncertain, explicitly state that you do not know and suggest human handoff.\n`;
     
     let systemPrompt = assistant.systemPrompt || '';
     if (assistant.agentName) {
@@ -597,6 +647,25 @@ export class OrchestratorService {
     if (conversation.pendingOrderProposal) {
       prompt += `\n--- ACTIVE PENDING ORDER PROPOSAL ---\n`;
       prompt += `${JSON.stringify(conversation.pendingOrderProposal)}\n`;
+    }
+
+    if (qnaItems.length > 0) {
+      prompt += `\n--- OFFICIAL BUSINESS Q&A (SOURCE OF TRUTH) ---\n`;
+      qnaItems.forEach(q => {
+        if (q.answer && q.answer.trim()) {
+          prompt += `Q: ${q.question}\nA: ${q.answer}\n`;
+        }
+      });
+    }
+
+    if (freshDocs.length > 0) {
+      prompt += `\n--- VERIFIED KNOWLEDGE DOCUMENTS (FRESH <60 DAYS) ---\n`;
+      freshDocs.forEach(doc => {
+        prompt += `Document: ${doc.filename} (Uploaded: ${doc.uploadedAt.toISOString().split('T')[0]})\n`;
+        doc.chunks.forEach(c => {
+          prompt += `Content: ${c.content}\n`;
+        });
+      });
     }
 
     if (products.length > 0) {

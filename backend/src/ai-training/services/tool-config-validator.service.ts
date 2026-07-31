@@ -50,7 +50,7 @@ export class ToolConfigValidatorService {
       order_placement: { requireExplicitConfirmation: true },
       image_reading: {},
       support_detection: { reasonCategories: ['general', 'complaint', 'refund_return', 'delivery_issue'] },
-      product_matching: { minMatchConfidence: 0.6 }
+      product_matching: { minMatchConfidence: 0.8 }
     };
 
     return defaults[toolType] || {};

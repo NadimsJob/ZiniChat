@@ -57,6 +57,15 @@ describe('OrchestratorService', () => {
       },
       order: {
         update: jest.fn().mockResolvedValue({ id: 'ord1' }),
+      },
+      qnAKnowledgeBase: {
+        findMany: jest.fn().mockResolvedValue([]),
+      },
+      knowledgeDocument: {
+        findMany: jest.fn().mockResolvedValue([]),
+      },
+      websiteWidget: {
+        findFirst: jest.fn().mockResolvedValue(null),
       }
     };
 
@@ -213,5 +222,80 @@ describe('OrchestratorService', () => {
     expect(() => {
       (service as any).assertBelongsToTenant({ tenantId: 'tenantA' }, 'tenantB', 'TestModel');
     }).toThrow('Security Violation');
+  });
+
+  describe('Anti-Hallucination & Safety Features', () => {
+    it('should require explicit hard confirmation for order placement when soft consent is given', async () => {
+      const mockConv = {
+        id: 'c1', tenantId: 't1', contactId: 'cnt1',
+        pendingOrderProposal: {
+          items: [{ productId: 'p1', quantity: 1, priceAtTime: 500 }],
+          expiresAt: new Date(Date.now() + 100000).toISOString()
+        }
+      };
+
+      const result = await (service as any).handleOrderPlacement(
+        't1', mockConv, { replyText: 'Sure', intent: 'order_confirmation' }, 'c1', 'okay'
+      );
+
+      expect(result).toEqual({
+        overrideReplyText: expect.stringContaining("CONFIRM")
+      });
+      expect(ordersService.createOrder).not.toHaveBeenCalled();
+    });
+
+    it('should create order when explicit hard confirmation keyword is provided', async () => {
+      const mockConv = {
+        id: 'c1', tenantId: 't1', contactId: 'cnt1',
+        pendingOrderProposal: {
+          items: [{ productId: 'p1', quantity: 1, priceAtTime: 500 }],
+          expiresAt: new Date(Date.now() + 100000).toISOString()
+        }
+      };
+
+      prismaService.product.findFirst.mockResolvedValue({ id: 'p1', tenantId: 't1', price: 500, isActive: true });
+
+      const result = await (service as any).handleOrderPlacement(
+        't1', mockConv, { replyText: 'CONFIRM', intent: 'order_confirmation' }, 'c1', 'CONFIRM ORDER'
+      );
+
+      expect(ordersService.createOrder).toHaveBeenCalled();
+      expect(result.overrideReplyText).toContain('অর্ডারটি নিশ্চিত করা হয়েছে');
+    });
+
+    it('should send clarifying question for moderate confidence product matches (0.60 - 0.79)', async () => {
+      prismaService.product.findMany.mockResolvedValue([
+        { id: 'p1', name: 'Wireless Headphones Black', price: 2500, imageUrl: '/img.jpg', isActive: true }
+      ]);
+
+      await (service as any).handleProductMatching('t1', 'c1', {
+        replyText: 'Looking for Headphones',
+        intent: 'product_lookup',
+        imageProductDescription: 'Wireless Headphones Earbuds'
+      }, 0.8);
+
+      expect(inboxService.saveOutboundMessage).toHaveBeenCalledWith(
+        't1', 'c1', expect.stringContaining("প্রোডাক্টটি খুঁজছেন")
+      );
+    });
+
+    it('should filter out knowledge documents older than 60 days in buildContextPrompt', async () => {
+      const oldDate = new Date(Date.now() - 70 * 24 * 60 * 60 * 1000); // 70 days ago
+      prismaService.qnAKnowledgeBase = { findMany: jest.fn().mockResolvedValue([]) };
+      prismaService.knowledgeDocument = { findMany: jest.fn().mockResolvedValue([]) };
+
+      const prompt = await (service as any).buildContextPrompt('c1', { systemPrompt: 'System' });
+
+      expect(prismaService.knowledgeDocument.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            uploadedAt: expect.objectContaining({
+              gte: expect.any(Date)
+            })
+          })
+        })
+      );
+      expect(prompt).toContain('MANDATORY ANTI-HALLUCINATION GUARDRAILS');
+    });
   });
 });
