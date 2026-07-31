@@ -452,6 +452,37 @@ export class InboxService {
     return updated;
   }
 
+  async toggleBlockConversation(tenantId: string, conversationId: string, actionUser: any) {
+    const conv = await this.prisma.conversation.findFirst({
+      where: { id: conversationId, tenantId },
+      include: { contact: true }
+    });
+    if (!conv) throw new NotFoundException('Conversation not found');
+
+    const newBlockedState = !(conv as any).isBlocked;
+
+    const [updated] = await Promise.all([
+      this.prisma.conversation.update({
+        where: { id: conversationId },
+        data: { isBlocked: newBlockedState } as any
+      }),
+      this.prisma.contact.update({
+        where: { id: conv.contactId },
+        data: { isBlocked: newBlockedState } as any
+      })
+    ]);
+
+    await this.activityLogService.record({
+      tenantId,
+      conversationId,
+      contactId: conv.contactId,
+      type: newBlockedState ? 'BLOCKED' : 'UNBLOCKED',
+      actorUserId: actionUser.id
+    });
+
+    return updated;
+  }
+
   async toggleFollowUp(tenantId: string, conversationId: string, actionUser: any) {
     const conv = await this.prisma.conversation.findFirst({
       where: { id: conversationId, tenantId }

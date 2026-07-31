@@ -30,6 +30,7 @@ export class ContactsService {
       externalContactId: c.externalContactId,
       lastSeenAt: c.lastSeenAt,
       tags: c.tags,
+      isBlocked: (c as any).isBlocked || false,
       latestConversationId: c.conversations[0]?.id || null,
       latestConversationStatus: c.conversations[0]?.status || 'closed'
     }));
@@ -147,6 +148,7 @@ export class ContactsService {
         company: data.company !== undefined ? data.company : contact.company,
         address: data.address !== undefined ? data.address : contact.address,
         stageId: data.stageId !== undefined ? data.stageId : contact.stageId,
+        isBlocked: data.isBlocked !== undefined ? data.isBlocked : (contact as any).isBlocked,
         followUpAt: data.followUpAt !== undefined ? (data.followUpAt ? new Date(data.followUpAt) : null) : contact.followUpAt,
         assignedUserId: data.assignedUserId !== undefined ? data.assignedUserId : contact.assignedUserId,
       },

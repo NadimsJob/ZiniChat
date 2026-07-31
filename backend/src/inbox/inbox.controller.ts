@@ -247,6 +247,17 @@ export class InboxController {
     return updated;
   }
 
+  @Patch('conversations/:id/block')
+  async toggleBlock(@Request() req: any, @Param('id') conversationId: string) {
+    const tenantId = req.user.tenantId;
+    const updated: any = await this.inboxService.toggleBlockConversation(tenantId, conversationId, req.user);
+    this.inboxGateway.broadcastToTenant(tenantId, 'conversation:blocked', {
+      conversationId,
+      isBlocked: updated.isBlocked
+    });
+    return updated;
+  }
+
   @Patch('conversations/:id/resolve')
   async resolveConversation(@Request() req: any, @Param('id') conversationId: string) {
     const tenantId = req.user.tenantId;

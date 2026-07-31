@@ -217,6 +217,7 @@ model Contact {
   stageId           String?   @db.Uuid
   followUpAt        DateTime?
   followUpNotified  Boolean   @default(false)
+  isBlocked         Boolean   @default(false)
 
   phone          String?
   email          String?
@@ -249,6 +250,7 @@ model Conversation {
 
   isStarred          Boolean   @default(false)
   isArchived         Boolean   @default(false)
+  isBlocked          Boolean   @default(false)
   hasOrderRequest    Boolean   @default(false)
   requiresFollowUp   Boolean   @default(false)
   resolvedAt         DateTime?

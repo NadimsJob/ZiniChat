@@ -417,10 +417,17 @@ export default function LeadsPage() {
  className="bg-background/80 backdrop-blur-sm p-2 rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
  style={{ border: `1px solid ${stage.color}30`, borderLeft: `3px solid ${stage.color}` }}
  >
- <div className="flex justify-between items-start">
- <h4 className="font-semibold text-[11px] text-foreground truncate">{lead.name || lead.externalContactId}</h4>
- <MessageCircle className={`w-3 h-3 flex-shrink-0 ${lead.channel === 'whatsapp' ? 'text-green-500' : lead.channel === 'manual' ? 'text-gray-400' : 'text-blue-500'}`} />
- </div>
+  <div className="flex justify-between items-start gap-1">
+    <div className="flex items-center gap-1.5 min-w-0">
+      <h4 className="font-semibold text-[11px] text-foreground truncate">{lead.name || lead.externalContactId}</h4>
+      {lead.isBlocked && (
+        <span className="text-[9px] font-bold bg-rose-500/20 text-rose-600 dark:text-rose-400 px-1 py-0.2 rounded border border-rose-500/30 shrink-0">
+          BLOCKED
+        </span>
+      )}
+    </div>
+    <MessageCircle className={`w-3 h-3 flex-shrink-0 ${lead.channel === 'whatsapp' ? 'text-green-500' : lead.channel === 'manual' ? 'text-gray-400' : 'text-blue-500'}`} />
+  </div>
  {lead.company && <div className="text-[10px] text-foreground/50 truncate mt-0.5">{lead.company}</div>}
  
  <div className="flex items-center justify-between mt-2">
@@ -483,10 +490,17 @@ export default function LeadsPage() {
  <tbody className="bg-background divide-y divide-border">
  {filteredLeads.map((lead) => (
  <tr key={lead.id} className="hover:bg-surface/50 cursor-pointer" onClick={() => setSelectedLead(lead)}>
- <td className="px-1.5 py-2 whitespace-nowrap">
- <div className="font-medium text-foreground">{lead.name || lead.externalContactId}</div>
- {lead.phone && <div className="text-[10px] text-foreground/50">{lead.phone}</div>}
- </td>
+  <td className="px-1.5 py-2 whitespace-nowrap">
+    <div className="flex items-center gap-1.5">
+      <span className="font-medium text-foreground">{lead.name || lead.externalContactId}</span>
+      {lead.isBlocked && (
+        <span className="text-[9px] font-bold bg-rose-500/20 text-rose-600 dark:text-rose-400 px-1 py-0.2 rounded border border-rose-500/30">
+          BLOCKED
+        </span>
+      )}
+    </div>
+    {lead.phone && <div className="text-[10px] text-foreground/50">{lead.phone}</div>}
+  </td>
  <td className="px-1.5 py-2 whitespace-nowrap text-foreground/70">{lead.company || '-'}</td>
  <td className="px-1.5 py-2 whitespace-nowrap">
  {lead.stage ? (

@@ -11,7 +11,7 @@ import {
   Check, CheckCheck, MessageCircle, MoreVertical, X, UserCircle, UserPlus, Mail, Building, 
   MapPin, AlertCircle, Paperclip, File as FileIcon, Trash2, Bot, ToggleLeft, 
   ToggleRight, Wand2, RefreshCw, ChevronLeft, PanelRight, Eye, Star, Archive, 
-  CheckCircle2, Flag, UserCheck, Sparkles, Calendar 
+  CheckCircle2, Flag, UserCheck, Sparkles, Calendar, Download, Reply, Share2, Ban, Filter
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
@@ -66,6 +66,13 @@ export default function InboxPage() {
   const [showRightSidebar, setShowRightSidebar] = useState(true);
   const [isCreatingLabel, setIsCreatingLabel] = useState(false);
   const [followUpPickerConvId, setFollowUpPickerConvId] = useState<string | null>(null);
+
+  // Quote, Forward, Block & Search States
+  const [replyingToMessage, setReplyingToMessage] = useState<any | null>(null);
+  const [forwardingMessage, setForwardingMessage] = useState<any | null>(null);
+  const [forwardSearchQuery, setForwardSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterParam, setFilterParam] = useState('all'); // all, starred, unassigned, blocked, order_requests
 
   const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -319,6 +326,63 @@ export default function InboxPage() {
     }
   };
 
+  const handleToggleBlock = async () => {
+    if (!selectedConvId || !activeConv) return;
+    const isBlocked = activeConv.isBlocked || activeConv.contact?.isBlocked;
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/inbox/conversations/${selectedConvId}/block`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setConversations(prev => prev.map(c => c.id === selectedConvId ? { 
+          ...c, 
+          isBlocked: updated.isBlocked, 
+          contact: c.contact ? { ...c.contact, isBlocked: updated.isBlocked } : c.contact 
+        } : c));
+        toast.success(updated.isBlocked ? 'Conversation blocked' : 'Conversation unblocked');
+      }
+    } catch (err) {
+      toast.error('Failed to update block status');
+    }
+  };
+
+  const handleForwardSubmit = async (targetConvId: string) => {
+    if (!forwardingMessage || !targetConvId) return;
+    try {
+      const token = Cookies.get('access_token');
+      
+      let forwardContent = forwardingMessage.content;
+      if (typeof forwardContent === 'object' && forwardContent !== null) {
+        forwardContent = forwardContent.body || forwardContent.text || forwardContent.caption || JSON.stringify(forwardContent);
+      }
+
+      const res = await fetch(`${API}/inbox/messages`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          conversationId: targetConvId,
+          content: forwardContent
+        })
+      });
+
+      if (res.ok) {
+        toast.success(language === 'en' ? 'Message forwarded' : 'মেসেজ ফরোয়ার্ড করা হয়েছে');
+        setForwardingMessage(null);
+        setForwardSearchQuery('');
+      } else {
+        toast.error('Failed to forward message');
+      }
+    } catch (err) {
+      toast.error('Error forwarding message');
+    }
+  };
+
   const handleAssignAgent = async (agentId: string | null) => {
     if (!selectedConvId) return;
     try {
@@ -515,10 +579,38 @@ export default function InboxPage() {
     if ((!inputText.trim() && !selectedFile) || !selectedConvId) return;
 
     const token = Cookies.get('access_token');
-    const content = inputText;
+    let content = inputText;
+    const currentReply = replyingToMessage;
+
     setInputText('');
+    setReplyingToMessage(null);
+
     const fileToSend = selectedFile;
     setSelectedFile(null);
+
+    // If replying to a message, embed quoted message structure in JSON payload
+    if (currentReply && !fileToSend) {
+      let quotedText = currentReply.content;
+      if (typeof quotedText === 'object' && quotedText !== null) {
+        quotedText = quotedText.body || quotedText.text || quotedText.caption || (currentReply.type === 'image' ? '📷 Photo' : 'Document');
+      } else if (typeof quotedText === 'string' && quotedText.trim().startsWith('{')) {
+        try {
+          const parsed = JSON.parse(quotedText);
+          quotedText = parsed.text || parsed.body || parsed.caption || (currentReply.type === 'image' ? '📷 Photo' : 'Attachment');
+        } catch (e) {}
+      }
+      const senderName = currentReply.senderUser?.name || (currentReply.direction === 'inbound' ? (activeConv?.contact?.name || 'Customer') : 'Agent');
+      
+      content = JSON.stringify({
+        text: inputText,
+        quotedMessage: {
+          id: currentReply.id,
+          senderName,
+          text: String(quotedText || '').slice(0, 100),
+          type: currentReply.type
+        }
+      });
+    }
 
     try {
       let res;
@@ -668,15 +760,37 @@ export default function InboxPage() {
         {/* LEFT COLUMN: Conversation List */}
         <div className="w-full md:w-80 lg:w-96 border border-border/80 shadow-sm dark:shadow-[0_0_15px_rgba(0,0,0,0.2)] rounded-2xl flex flex-col bg-card shrink-0 overflow-hidden">
           
-          {/* Header Search (Optional spacing if needed) */}
-          <div className="p-3 border-b border-border/40 shrink-0 bg-background/50">
-            <div className="relative">
+          {/* Header Search & Parameter Filter */}
+          <div className="p-2.5 border-b border-border/40 shrink-0 bg-background/50 flex items-center gap-2">
+            <div className="relative flex-1">
               <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-muted-foreground" />
               <input 
                 type="text" 
-                placeholder={language === 'en' ? 'Search...' : 'সার্চ করুন...'}
-                className="w-full pl-8 pr-3 py-1.5 bg-background border border-border rounded-md text-xs focus:outline-none focus:border-primary"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder={language === 'en' ? 'Search...' : 'সার্চ...'}
+                className="w-full pl-8 pr-6 py-1.5 bg-background border border-border rounded-md text-xs focus:outline-none focus:border-primary text-foreground"
               />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')} className="absolute right-2 top-2 text-muted-foreground hover:text-foreground">
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+            
+            <div className="relative shrink-0">
+              <select
+                value={filterParam}
+                onChange={e => setFilterParam(e.target.value)}
+                className="bg-background border border-border rounded-md px-2 py-1.5 text-[11px] font-medium text-foreground focus:outline-none focus:border-primary cursor-pointer max-w-[120px]"
+                title={language === 'en' ? 'Filter by parameter' : 'প্যারামিটার ফিল্টার'}
+              >
+                <option value="all">{language === 'en' ? 'All Chats' : 'সব চ্যাট'}</option>
+                <option value="starred">{language === 'en' ? '⭐ Starred' : '⭐ স্টার্ড'}</option>
+                <option value="unassigned">{language === 'en' ? '👤 Unassigned' : '👤 আনঅ্যাসাইনড'}</option>
+                <option value="blocked">{language === 'en' ? '🚫 Blocked' : '🚫 ব্লকড'}</option>
+                <option value="order_requests">{language === 'en' ? '🛍️ Orders' : '🛍️ অর্ডার'}</option>
+              </select>
             </div>
           </div>
 
@@ -686,14 +800,44 @@ export default function InboxPage() {
             <div className="p-4 text-center text-xs text-muted-foreground animate-pulse">
               {language === 'en' ? 'Loading inbox...' : 'ইনবক্স লোড হচ্ছে...'}
             </div>
-          ) : conversations.length === 0 ? (
-            <div className="p-8 text-center text-xs text-muted-foreground space-y-1">
-              <MessageCircle className="w-8 h-8 mx-auto text-muted-foreground/40 mb-2" />
-              <p className="font-semibold">{language === 'en' ? 'No conversations found' : 'কোন কনভারসেশন নেই'}</p>
-              <p className="text-[11px] text-muted-foreground">{language === 'en' ? 'Messages will appear here when customers message you.' : 'কাস্টমার মেসেজ দিলে তা এখানে আসবে।'}</p>
-            </div>
-          ) : (
-            conversations.map(conv => {
+          ) : (() => {
+            const filteredConversations = conversations.filter(conv => {
+              if (filterParam === 'starred' && !conv.isStarred) return false;
+              if (filterParam === 'unassigned' && conv.assignedAgentId) return false;
+              if (filterParam === 'blocked' && (!conv.isBlocked && !conv.contact?.isBlocked)) return false;
+              if (filterParam === 'order_requests' && !conv.hasOrderRequest) return false;
+
+              if (!searchQuery.trim()) return true;
+              const q = searchQuery.toLowerCase().trim();
+              
+              const contactName = (conv.contact?.name || '').toLowerCase();
+              const contactPhone = (conv.contact?.phone || conv.contact?.externalContactId || '').toLowerCase();
+              const contactEmail = (conv.contact?.email || '').toLowerCase();
+              const tags = (conv.labels || []).map((l: any) => l.label?.name || '').join(' ').toLowerCase();
+
+              const lastMsg = conv.messages?.[0];
+              let msgText = '';
+              if (lastMsg) {
+                if (typeof lastMsg.content === 'string') msgText = lastMsg.content.toLowerCase();
+                else if (typeof lastMsg.content === 'object' && lastMsg.content !== null) {
+                  msgText = (lastMsg.content.body || lastMsg.content.text || lastMsg.content.caption || '').toLowerCase();
+                }
+              }
+
+              return contactName.includes(q) || contactPhone.includes(q) || contactEmail.includes(q) || tags.includes(q) || msgText.includes(q);
+            });
+
+            if (filteredConversations.length === 0) {
+              return (
+                <div className="p-8 text-center text-xs text-muted-foreground space-y-1">
+                  <MessageCircle className="w-8 h-8 mx-auto text-muted-foreground/40 mb-2" />
+                  <p className="font-semibold">{language === 'en' ? 'No conversations found' : 'কোন কনভারসেশন নেই'}</p>
+                  <p className="text-[11px] text-muted-foreground">{language === 'en' ? 'Messages will appear here when customers message you.' : 'কাস্টমার মেসেজ দিলে তা এখানে আসবে।'}</p>
+                </div>
+              );
+            }
+
+            return filteredConversations.map(conv => {
               const isSelected = conv.id === selectedConvId;
               const lastMsg = conv.messages?.[0];
               let lastText = '';
@@ -783,8 +927,8 @@ export default function InboxPage() {
                   </div>
                 </div>
               );
-            })
-          )}
+            });
+          })()}
         </div>
       </div>
 
@@ -854,6 +998,17 @@ export default function InboxPage() {
                   : (language === 'en' ? 'Archive Conversation — Move inactive chat out of active inbox' : 'আর্কাইভ করুন — নিষ্ক্রিয় চ্যাট ইনবক্স থেকে সরাতে')}
               >
                 <Archive className="w-4 h-4" />
+              </button>
+
+              {/* Block */}
+              <button
+                onClick={handleToggleBlock}
+                className={`p-1.5 rounded-lg hover:bg-muted transition-colors ${activeConv.isBlocked || activeConv.contact?.isBlocked ? 'text-rose-600 bg-rose-500/10' : ''}`}
+                title={activeConv.isBlocked || activeConv.contact?.isBlocked
+                  ? (language === 'en' ? 'Unblock Contact' : 'আনব্লক করুন')
+                  : (language === 'en' ? 'Block Contact — Block contact and stop AI auto-replies' : 'ব্লক করুন — কাস্টমারকে ব্লক করতে ও এআই অটো-রিপ্লাই বন্ধ করতে')}
+              >
+                <Ban className="w-4 h-4" />
               </button>
 
               {/* Assign Agent */}
@@ -964,13 +1119,33 @@ export default function InboxPage() {
                 contentText = '';
               }
 
+              const quoted = typeof parsedContent === 'object' && parsedContent !== null ? parsedContent.quotedMessage : null;
+
               return (
-                <div key={m.id || idx} className={`flex flex-col ${isInbound ? 'items-start' : 'items-end'}`}>
+                <div key={m.id || idx} className={`flex flex-col relative group ${isInbound ? 'items-start' : 'items-end'}`}>
                   {!isInbound && !isAi && m.senderUser && (
                     <span className="text-[9px] text-muted-foreground mb-0.5">
                       {m.senderUser.name}
                     </span>
                   )}
+
+                  {/* Hover Quick Action Buttons (Reply / Quote & Forward) */}
+                  <div className={`absolute top-1 z-10 hidden group-hover:flex items-center gap-1 bg-card border border-border shadow-md rounded-full px-2 py-0.5 ${isInbound ? 'left-[76%] ml-2' : 'right-[76%] mr-2'}`}>
+                    <button 
+                      onClick={() => setReplyingToMessage(m)}
+                      className="p-1 text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+                      title={language === 'en' ? 'Reply / Quote Message' : 'রিপ্লাই / কোড মেসেজ'}
+                    >
+                      <Reply className="w-3.5 h-3.5" />
+                    </button>
+                    <button 
+                      onClick={() => setForwardingMessage(m)}
+                      className="p-1 text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+                      title={language === 'en' ? 'Forward Message' : 'ফরোয়ার্ড করুন'}
+                    >
+                      <Share2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
 
                   <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-xs shadow-sm ${
                     isInbound 
@@ -979,6 +1154,14 @@ export default function InboxPage() {
                         ? 'bg-purple-500/5 dark:bg-purple-500/10 text-foreground border border-purple-500/30 rounded-tr-xs shadow-[0_0_15px_rgba(168,85,247,0.08)]' 
                         : 'bg-primary text-primary-foreground rounded-tr-xs shadow-md shadow-primary/20'
                   }`}>
+                    {/* Quoted Message Card */}
+                    {quoted && (
+                      <div className={`mb-2 p-2 rounded-lg text-[11px] border-l-4 ${isInbound ? 'bg-background/80 border-primary text-foreground' : 'bg-black/20 border-white text-white'}`}>
+                        <div className="font-bold text-[10px] opacity-90">{quoted.senderName}</div>
+                        <div className="truncate opacity-80">{quoted.text || (quoted.type === 'image' ? '📷 Photo' : 'Attachment')}</div>
+                      </div>
+                    )}
+
                     {mediaUrl && (
                       <div className="mb-2">
                         {m.type === 'image' ? (
@@ -1018,6 +1201,36 @@ export default function InboxPage() {
 
           {/* Compose Bar */}
           <div className="p-3 border-t border-border bg-surface/80 backdrop-blur-xl shrink-0 space-y-2">
+            
+            {/* Replying Preview Banner */}
+            {replyingToMessage && (
+              <div className="flex items-center justify-between bg-primary/10 border-l-4 border-primary px-3 py-1.5 rounded-lg text-xs">
+                <div className="min-w-0 flex-1">
+                  <div className="font-bold text-primary text-[10px] flex items-center gap-1">
+                    <Reply className="w-3 h-3" /> Replying to {replyingToMessage.senderUser?.name || (replyingToMessage.direction === 'inbound' ? (activeConv?.contact?.name || 'Customer') : 'Agent')}
+                  </div>
+                  <div className="text-muted-foreground text-[11px] truncate">
+                    {typeof replyingToMessage.content === 'string' ? replyingToMessage.content : (replyingToMessage.content?.body || replyingToMessage.content?.text || 'Attachment')}
+                  </div>
+                </div>
+                <button onClick={() => setReplyingToMessage(null)} className="p-1 text-muted-foreground hover:text-foreground">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
+            {/* Blocked Contact Warning Banner */}
+            {(activeConv.isBlocked || activeConv.contact?.isBlocked) && (
+              <div className="bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 p-2 rounded-lg text-xs font-semibold flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Ban className="w-4 h-4" />
+                  <span>{language === 'en' ? 'This contact is blocked. AI auto-replies are disabled.' : 'এই কনভারসেশনটি ব্লক করা রয়েছে। এআই অটো-রিপ্লাই বন্ধ আছে।'}</span>
+                </div>
+                <button onClick={handleToggleBlock} className="text-[11px] underline font-bold cursor-pointer">
+                  {language === 'en' ? 'Unblock' : 'আনব্লক'}
+                </button>
+              </div>
+            )}
             
             {/* Compose Controls Row */}
             <div className="flex items-center justify-between text-xs">
@@ -1149,11 +1362,81 @@ export default function InboxPage() {
       {/* Image Zoom Modal */}
       {zoomedImage && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-xs z-50 flex items-center justify-center p-4" onClick={() => setZoomedImage(null)}>
-          <div className="relative max-w-4xl max-h-[90vh]">
+          <div className="relative max-w-4xl max-h-[90vh]" onClick={e => e.stopPropagation()}>
             <img src={zoomedImage} alt="Zoomed" className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl" />
-            <button onClick={() => setZoomedImage(null)} className="absolute top-2 right-2 p-2 bg-black/50 text-white rounded-full hover:bg-black">
+            
+            {/* Download Button */}
+            <a 
+              href={zoomedImage} 
+              download 
+              target="_blank" 
+              rel="noreferrer" 
+              className="absolute top-2 right-12 p-2 bg-black/60 text-white rounded-full hover:bg-black transition-colors flex items-center justify-center"
+              title={language === 'en' ? 'Download Image' : 'ডাউনলোড করুন'}
+            >
+              <Download className="w-5 h-5" />
+            </a>
+
+            {/* Close Button */}
+            <button onClick={() => setZoomedImage(null)} className="absolute top-2 right-2 p-2 bg-black/60 text-white rounded-full hover:bg-black">
               <X className="w-5 h-5" />
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Forward Message Modal */}
+      {forwardingMessage && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4" onClick={() => setForwardingMessage(null)}>
+          <div className="bg-card border border-border rounded-2xl p-4 max-w-md w-full shadow-2xl space-y-3" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-border pb-2">
+              <h3 className="font-bold text-sm text-foreground flex items-center gap-2">
+                <Share2 className="w-4 h-4 text-primary" />
+                {language === 'en' ? 'Forward Message' : 'মেসেজ ফরোয়ার্ড করুন'}
+              </h3>
+              <button onClick={() => setForwardingMessage(null)} className="p-1 text-muted-foreground hover:text-foreground">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-muted-foreground" />
+              <input 
+                type="text"
+                value={forwardSearchQuery}
+                onChange={e => setForwardSearchQuery(e.target.value)}
+                placeholder={language === 'en' ? 'Search contacts to forward...' : 'কন্টাক্ট সার্চ করুন...'}
+                className="w-full pl-8 pr-3 py-1.5 bg-background border border-border rounded-lg text-xs focus:outline-none focus:border-primary text-foreground"
+              />
+            </div>
+
+            <div className="max-h-64 overflow-y-auto custom-scrollbar divide-y divide-border/50">
+              {conversations
+                .filter(c => {
+                  if (!forwardSearchQuery.trim()) return true;
+                  const q = forwardSearchQuery.toLowerCase();
+                  return (c.contact?.name || '').toLowerCase().includes(q) || (c.contact?.phone || '').toLowerCase().includes(q);
+                })
+                .map(c => (
+                  <div key={c.id} className="flex items-center justify-between p-2 hover:bg-muted/50 rounded-lg">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-7 h-7 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-xs shrink-0">
+                        {c.contact?.name ? c.contact.name[0].toUpperCase() : 'C'}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-bold text-foreground truncate">{c.contact?.name || 'Customer'}</div>
+                        <div className="text-[10px] text-muted-foreground truncate">{c.contact?.phone || c.contact?.externalContactId}</div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleForwardSubmit(c.id)}
+                      className="px-3 py-1 bg-primary text-primary-foreground rounded-lg text-xs font-semibold hover:bg-primary/90 transition-colors shadow-xs"
+                    >
+                      {language === 'en' ? 'Send' : 'পাঠান'}
+                    </button>
+                  </div>
+                ))}
+            </div>
           </div>
         </div>
       )}

@@ -78,8 +78,8 @@ export class OrchestratorService {
         }
       }
 
-      if (message.conversation.isAiEnabled === false) {
-        this.logger.debug(`AI Auto-Reply is disabled for conversation ${message.conversation.id}. Skipping.`);
+      if (message.conversation.isAiEnabled === false || (message.conversation as any).isBlocked || (message.conversation.contact as any)?.isBlocked) {
+        this.logger.debug(`AI Auto-Reply is disabled or blocked for conversation ${message.conversation.id}. Skipping.`);
         return;
       }
 

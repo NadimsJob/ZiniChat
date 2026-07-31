@@ -118,6 +118,31 @@ export default function ConversationSidebar({
     }
   };
 
+  const handleDirectStageSave = async (newStageId: string) => {
+    if (!contact?.id) return;
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/contacts/${contact.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          stageId: newStageId || null,
+        }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        onUpdateContact(contact.id, updated);
+        setTimeout(() => fetchActivities(), 250);
+        toast.success(language === 'en' ? 'Lead stage updated' : 'লিড স্টেজ আপডেট হয়েছে');
+      }
+    } catch (err) {
+      toast.error('Failed to update lead stage');
+    }
+  };
+
   useEffect(() => {
     if (contact) {
       setContactForm({
@@ -486,15 +511,22 @@ export default function ConversationSidebar({
                     <span className="text-foreground">{contact.address}</span>
                   </div>
                 )}
-                <div className="flex items-center gap-2 text-muted-foreground border-t border-border/50 pt-1.5 mt-1.5">
-                  <Folder className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                  <span className="font-medium text-[10px] uppercase tracking-wider">{language === 'en' ? 'Stage:' : 'স্টেজ:'}</span>
-                  <span 
-                    style={{ color: contact?.stage?.color || '#6b7280' }}
-                    className="font-bold px-2 py-0.5 rounded text-[10px] bg-slate-100"
+                <div className="flex items-center justify-between gap-2 text-muted-foreground border-t border-border/50 pt-1.5 mt-1.5">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <Folder className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                    <span className="font-medium text-[10px] uppercase tracking-wider shrink-0">{language === 'en' ? 'Stage:' : 'স্টেজ:'}</span>
+                  </div>
+                  <select
+                    value={contact?.stageId || ''}
+                    onChange={e => handleDirectStageSave(e.target.value)}
+                    className="text-[10px] font-bold bg-background border border-border/80 dark:border-border/60 rounded px-1.5 py-0.5 text-foreground focus:outline-none focus:border-primary cursor-pointer shrink-0 max-w-[150px] truncate"
+                    title={language === 'en' ? 'Select Lead Stage' : 'লিড স্টেজ নির্বাচন করুন'}
                   >
-                    {contact?.stage?.name || (language === 'en' ? 'Unassigned' : 'কোন স্টেজ নেই')}
-                  </span>
+                    <option value="">{language === 'en' ? 'Unassigned' : 'কোন স্টেজ নেই'}</option>
+                    {stages.map(s => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
                 </div>
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <User className="w-3.5 h-3.5 text-teal-600 shrink-0" />
