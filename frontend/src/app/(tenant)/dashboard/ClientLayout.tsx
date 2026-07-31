@@ -333,10 +333,12 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
           ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
         `}
       >
-        
-        {/* Logo Area */}
-        <div className="h-12 flex items-center justify-between border-b border-border/50 shrink-0 overflow-hidden relative">
-          <Link href="/dashboard" className="flex items-center justify-start h-full py-0.5 hover:opacity-90 transition-opacity w-full overflow-hidden">
+        {/* Placeholder for Absolute Logo */}
+        <div className="h-12 shrink-0 border-b border-transparent"></div>
+
+        {/* Logo Area (Absolute to break out of collapsed sidebar) */}
+        <div className={`h-12 flex items-center justify-between border-b border-border/50 shrink-0 absolute top-0 left-0 bg-surface z-50 transition-all duration-300 overflow-hidden ${isSidebarCollapsed ? 'w-[165px] border-r border-border' : 'w-full'}`}>
+          <Link href="/dashboard" className="flex items-center justify-start h-full py-0.5 hover:opacity-90 transition-opacity w-full">
             <img 
               src="/logo.png" 
               alt="ZiniChat Logo" 
@@ -344,7 +346,6 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
             />
           </Link>
           
-          {/* Action Buttons (Absolute so they don't get pushed out by the logo width) */}
           <div className="flex items-center justify-end absolute right-2.5 top-0 bottom-0 z-20">
             {isInboxPage && !isSidebarCollapsed && (
               <button 
@@ -436,7 +437,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  <main className="flex-1 flex flex-col min-w-0">
  
  {/* Topbar */}
- <header className="h-12 px-3 flex items-center justify-between shrink-0 bg-surface/70 backdrop-blur-xl border-b border-border shadow-sm relative z-40">
+ <header className={`h-12 px-3 flex items-center justify-between shrink-0 bg-surface/70 backdrop-blur-xl border-b border-border shadow-sm relative z-40 transition-all duration-300 ${isSidebarCollapsed ? 'pl-[120px]' : ''}`}>
  <div className="flex items-center gap-2">
  <button 
  className="md:hidden p-1.5 -ml-1.5 text-slate-500 hover:bg-primary/10 hover:text-primary rounded-lg transition-colors"
