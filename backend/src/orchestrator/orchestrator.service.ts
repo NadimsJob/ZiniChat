@@ -226,7 +226,15 @@ export class OrchestratorService {
 
       // Handler 2: Support Detection & Handover
       if (isSupportDetectionActive && classification.supportSignal) {
-        await this.handleSupportDetection(tenantId, message.conversation, classification.supportReason || 'general');
+        const lowerUserText = userText.trim().toLowerCase();
+        const genericGreetings = ['hi', 'hello', 'hey', 'salam', 'assalamu alaikum', 'hola', 'test', '.gitignore', 'hlw', 'hlo'];
+        const isGenericGreeting = genericGreetings.includes(lowerUserText) || lowerUserText.length <= 3;
+
+        if (!isGenericGreeting) {
+          await this.handleSupportDetection(tenantId, message.conversation, classification.supportReason || 'general');
+        } else {
+          this.logger.log(`Skipping support detection for generic greeting/short message: "${userText}"`);
+        }
       }
 
       // Handler 3: Product Photo Matching
@@ -601,6 +609,19 @@ export class OrchestratorService {
         prompt += `${sender}: ${text}\n`;
       }
     });
+
+    prompt += `\n--- MANDATORY CLASSIFICATION & EVENT RULES ---\n`;
+    if (options?.isSupportDetectionActive) {
+      prompt += `1. SUPPORT DETECTION IS ENABLED:\n`;
+      prompt += `   - Set "supportSignal": true ONLY IF the customer explicitly asks for human support, human agent, files a serious complaint, or requests a refund, return, or order cancellation.\n`;
+      prompt += `   - CRITICAL: MUST set "supportSignal": false for simple greetings ("hi", "hello", "hey", "salam"), general questions, price inquiries, product browsing, or standard messages.\n`;
+    } else {
+      prompt += `1. SUPPORT DETECTION IS DISABLED: You MUST ALWAYS set "supportSignal": false.\n`;
+    }
+
+    if (!options?.isOrderPlacementActive) {
+      prompt += `2. ORDER PLACEMENT IS DISABLED: Set "intent": "general" or "product_lookup" and do NOT generate order proposals.\n`;
+    }
 
     prompt += `\n--- MANDATORY STRUCTURED JSON RESPONSE OUTPUT FORMAT ---\n`;
     prompt += `You MUST output a single valid JSON object with NO preamble. The JSON schema must strictly follow:\n`;
