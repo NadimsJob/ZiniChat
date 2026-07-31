@@ -335,29 +335,31 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
       >
         
         {/* Logo Area */}
-        <div className="h-12 px-2.5 flex items-center justify-between gap-1 border-b border-slate-200 shrink-0">
-          <Link href="/dashboard" className="flex-1 flex items-center justify-start h-full py-0.5 hover:opacity-90 transition-opacity overflow-hidden">
-            {isSidebarCollapsed ? (
-              <img src="/icon.png" alt="ZiniChat" className="w-7 h-7 object-contain mx-auto" />
-            ) : (
-              <img src="/logo.png" alt="ZiniChat Logo" className="h-full w-full object-contain object-left scale-[1.3] origin-left ml-2" />
-            )}
+        <div className="h-12 flex items-center justify-between border-b border-border/50 shrink-0 relative">
+          <Link href="/dashboard" className="flex items-center justify-start h-full py-0.5 hover:opacity-90 transition-opacity absolute left-0 top-0 w-[165px] px-2.5 z-10">
+            <img 
+              src="/logo.png" 
+              alt="ZiniChat Logo" 
+              className="h-full w-full object-contain object-left scale-[1.3] origin-left ml-2" 
+            />
           </Link>
-          {isInboxPage && !isSidebarCollapsed && (
+          <div className="flex items-center justify-end w-full px-2.5 z-20">
+            {isInboxPage && !isSidebarCollapsed && (
+              <button 
+                onClick={() => setSidebarPinned(!sidebarPinned)}
+                title={sidebarPinned ? (language === 'en' ? 'Unpin Sidebar' : 'সাইডবার আনপিন করুন') : (language === 'en' ? 'Pin Sidebar' : 'সাইডবার পিন করুন')}
+                className="hidden md:flex p-1 text-slate-400 hover:text-slate-700 rounded-md hover:bg-slate-100 transition-colors"
+              >
+                <Pin className={`w-3.5 h-3.5 ${sidebarPinned ? 'text-primary rotate-45' : ''}`} />
+              </button>
+            )}
             <button 
-              onClick={() => setSidebarPinned(!sidebarPinned)}
-              title={sidebarPinned ? (language === 'en' ? 'Unpin Sidebar' : 'সাইডবার আনপিন করুন') : (language === 'en' ? 'Pin Sidebar' : 'সাইডবার পিন করুন')}
-              className="hidden md:flex p-1 text-slate-400 hover:text-slate-700 rounded-md hover:bg-slate-100 transition-colors"
+              className="md:hidden text-slate-400 hover:text-slate-600 ml-auto"
+              onClick={() => setIsMobileMenuOpen(false)}
             >
-              <Pin className={`w-3.5 h-3.5 ${sidebarPinned ? 'text-primary rotate-45' : ''}`} />
+              <ChevronDown className="w-5 h-5 rotate-90" />
             </button>
-          )}
-          <button 
-            className="md:hidden text-slate-400 hover:text-slate-600"
-            onClick={() => setIsMobileMenuOpen(false)}
-          >
-            <ChevronDown className="w-5 h-5 rotate-90" />
-          </button>
+          </div>
         </div>
 
         {/* Navigation Links */}
