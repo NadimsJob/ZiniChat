@@ -8,6 +8,8 @@ import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 import Cookies from 'js-cookie';
 import { useFeature } from '@/hooks/useFeature';
+import { driver } from 'driver.js';
+import 'driver.js/dist/driver.css';
 import { 
  MessageSquare,
  MessageCircle,
@@ -117,9 +119,59 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  if (userRes.ok) {
  const userData = await userRes.json();
  setUserProfile(userData);
- if (userData.tenant && userData.tenant.isOnboarded === false && !window.location.pathname.includes('/onboarding')) {
- router.push('/dashboard/onboarding');
- }
+  if (userData.tenant && userData.tenant.isOnboarded === false && !window.location.pathname.includes('/onboarding')) {
+  router.push('/dashboard/onboarding');
+  }
+
+  // Global Spotlight Tour for New Tenants
+  if (typeof window !== 'undefined') {
+    const tourSeen = localStorage.getItem('zinichat_global_tour_seen') === 'true';
+    if (!tourSeen) {
+      setTimeout(() => {
+        try {
+          const driverObj = driver({
+            showProgress: true,
+            animate: true,
+            onDestroyed: () => {
+              localStorage.setItem('zinichat_global_tour_seen', 'true');
+            },
+            steps: [
+              { 
+                element: '#sidebar-inbox', 
+                popover: { 
+                  title: language === 'en' ? '📬 Live Inbox' : '📬 লাইভ ইনবক্স', 
+                  description: language === 'en' ? 'Manage customer conversations from WhatsApp, Facebook, and Instagram in real-time.' : 'হোয়াটসঅ্যাপ, ফেসবুক ও ইনস্টাগ্রামের সমস্ত কাস্টমার চ্যাট এক ইনবক্সে হ্যান্ডেল করুন।',
+                  side: "right", 
+                  align: 'start' 
+                } 
+              },
+              { 
+                element: '#sidebar-ai-training', 
+                popover: { 
+                  title: language === 'en' ? '🤖 AI Assistant Training' : '🤖 এআই ট্রেইনিং', 
+                  description: language === 'en' ? 'Train your AI assistant with your business Q&As, products, and persona.' : 'আপনার ব্যবসার তথ্য ও প্রম্পট দিয়ে এআই-কে স্মার্ট করার ট্রেনিং দিন।',
+                  side: "right", 
+                  align: 'start' 
+                } 
+              },
+              { 
+                element: '#sidebar-inboxes', 
+                popover: { 
+                  title: language === 'en' ? '🔌 Channel Integration' : '🔌 চ্যানেল ইন্টিগ্রেশন', 
+                  description: language === 'en' ? 'Connect Meta Official WhatsApp API, Facebook Pages, or Instagram DMs.' : 'অফিসিয়াল হোয়াটসঅ্যাপ এপিআই বা সামাজিক মাধ্যম কানেক্ট করুন।',
+                  side: "right", 
+                  align: 'start' 
+                } 
+              }
+            ]
+          });
+          driverObj.drive();
+        } catch (e) {
+          console.error('Driver.js tour error', e);
+        }
+      }, 1200);
+    }
+  }
  }
  if (quotasRes.ok) {
  const quotas = await quotasRes.json();
@@ -269,7 +321,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  title: language === 'en' ? 'MY HOME' : 'আমার হোম',
  items: [
  { name: language === 'en' ? 'Home' : 'হোম', icon: LayoutGrid, href: '/dashboard' },
- { name: language === 'en' ? 'Live Inbox' : 'লাইভ ইনবক্স', icon: Inbox, href: '/dashboard/inbox' },
+ { name: language === 'en' ? 'Live Inbox' : 'লাইভ ইনবক্স', icon: Inbox, href: '/dashboard/inbox', id: 'sidebar-inbox' },
  { name: language === 'en' ? 'Leads' : 'লিডস', icon: UserCircle, href: '/dashboard/leads' },
  { name: language === 'en' ? 'Product List' : 'প্রোডাক্ট লিস্ট', icon: ShoppingCart, href: '/dashboard/products' },
  { name: language === 'en' ? 'Manage Order' : 'ম্যানেজ অর্ডার', icon: ShoppingBag, href: '/dashboard/orders' },
@@ -279,8 +331,8 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  {
  title: language === 'en' ? 'AUTOMATIONS' : 'অটোমেশন',
  items: [
- { name: language === 'en' ? 'Channel Integration' : 'চ্যানেল ইন্টিগ্রেশন', icon: Webhook, href: '/dashboard/settings/inboxes' },
- { name: language === 'en' ? 'AI Training' : 'এআই ট্রেইনিং', icon: Zap, href: '/dashboard/settings/ai-training' },
+ { name: language === 'en' ? 'Channel Integration' : 'চ্যানেল ইন্টিগ্রেশন', icon: Webhook, href: '/dashboard/settings/inboxes', id: 'sidebar-inboxes' },
+ { name: language === 'en' ? 'AI Training' : 'এআই ট্রেইনিং', icon: Zap, href: '/dashboard/settings/ai-training', id: 'sidebar-ai-training' },
  ]
  },
  {
@@ -381,6 +433,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
                   return (
                     <div key={item.name} className="flex flex-col relative">
                       <Link 
+                        id={item.id}
                         href={item.href}
                         title={isSidebarCollapsed ? item.name : undefined}
                         onClick={(e) => {

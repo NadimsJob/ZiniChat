@@ -7,33 +7,37 @@ import Link from 'next/link';
 import { 
   CheckCircle2, 
   Circle, 
-  Building, 
   MessageCircle, 
   Bot, 
-  Package, 
-  Users, 
-  ShieldCheck,
-  Loader2,
-  Wand2,
-  ChevronRight
+  Inbox,
+  X,
+  Sparkles,
+  ChevronRight,
+  PartyPopper
 } from 'lucide-react';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function SetupJourneyWidget({ 
-  allowedFeatures, 
-  initialStatus,
-  compact = false 
+  initialStatus 
 }: { 
-  allowedFeatures: string[], 
-  initialStatus?: any,
-  compact?: boolean
+  initialStatus?: any 
 }) {
   const { language } = useLanguage();
   const [loading, setLoading] = useState(!initialStatus);
   const [status, setStatus] = useState<any>(initialStatus || null);
-  
+  const [dismissed, setDismissed] = useState(false);
+  const [checkedInbox, setCheckedInbox] = useState(false);
+
   useEffect(() => {
+    // Check local storage for dismissal & inbox visit
+    if (typeof window !== 'undefined') {
+      const isDismissed = localStorage.getItem('zinichat_setup_banner_dismissed') === 'true';
+      const isInboxVisited = localStorage.getItem('zinichat_inbox_visited') === 'true';
+      setDismissed(isDismissed);
+      setCheckedInbox(isInboxVisited);
+    }
+
     if (!initialStatus) {
       fetchSetupStatus();
     }
@@ -42,6 +46,10 @@ export default function SetupJourneyWidget({
   const fetchSetupStatus = async () => {
     try {
       const token = Cookies.get('access_token');
+      if (!token) {
+        setLoading(false);
+        return;
+      }
       const res = await fetch(`${API}/auth/setup-status`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -49,237 +57,197 @@ export default function SetupJourneyWidget({
         setStatus(await res.json());
       }
     } catch (err) {
-      console.error(err);
+      console.error('Setup status fetch error:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="bg-surface rounded-2xl border border-border p-4 shadow-sm flex justify-center items-center h-24 mb-4">
-        <Loader2 className="w-6 h-6 animate-spin text-primary" />
-      </div>
-    );
-  }
+  const handleDismiss = () => {
+    setDismissed(true);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('zinichat_setup_banner_dismissed', 'true');
+    }
+  };
 
-  if (!status) return null;
+  const handleInboxStepClick = () => {
+    setCheckedInbox(true);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('zinichat_inbox_visited', 'true');
+    }
+  };
 
-  const hasAnyChannel = allowedFeatures.some(f => ['whatsapp', 'messenger', 'instagram_dm', 'whatsapp_qr'].includes(f));
-  const hasAiBot = allowedFeatures.includes('ai_bot');
-  const hasEcommerce = allowedFeatures.includes('ecommerce');
-  const hasLeadCrm = allowedFeatures.includes('lead_crm');
+  if (loading || dismissed) return null;
 
-  // Build dynamic checklist based on allowed features
-  const checklist = [
-    {
-      id: 'business',
-      title: language === 'en' ? 'Complete Business Profile' : 'বিজনেস প্রোফাইল সম্পূর্ণ করুন',
-      desc: language === 'en' ? 'Add your brand name, address, and business nature.' : 'আপনার ব্র্যান্ডের নাম, ঠিকানা এবং ব্যবসার ধরন যোগ করুন।',
-      icon: Building,
-      isDone: status.hasBusinessProfile,
-      href: '/dashboard/profile',
-      show: true
-    },
+  const step1Done = Boolean(status?.hasConnectedChannel);
+  const step2Done = Boolean(status?.hasConfiguredAi || status?.hasNamedAgent);
+  const step3Done = Boolean(checkedInbox || status?.hasConnectedChannel);
+
+  const steps = [
     {
       id: 'channel',
-      title: language === 'en' ? 'Connect a Channel' : 'একটি চ্যানেল কানেক্ট করুন',
-      desc: language === 'en' ? 'Link your WhatsApp, Facebook, or Instagram to receive messages.' : 'মেসেজ পেতে আপনার হোয়াটসঅ্যাপ, ফেসবুক বা ইনস্টাগ্রাম পেইজ লিংক করুন।',
+      title: language === 'en' ? 'Connect Channel' : 'চ্যানেল কানেক্ট করুন',
+      subtitle: language === 'en' ? 'WhatsApp / Meta API' : 'হোয়াটসঅ্যাপ / মেটা এপিআই',
       icon: MessageCircle,
-      isDone: status.hasConnectedChannel,
-      href: '/dashboard/settings/whatsapp',
-      show: hasAnyChannel
-    },
-    {
-      id: 'ai_config',
-      title: language === 'en' ? 'Configure AI Agent' : 'এআই এজেন্ট কনফিগার করুন',
-      desc: language === 'en' ? 'Give your AI a human-like name and routing rules.' : 'আপনার এআই এর নাম এবং রাউটিং রুলস সেটআপ করুন।',
-      icon: Wand2,
-      isDone: status.hasNamedAgent,
-      href: '/dashboard/settings/ai-training',
-      show: hasAiBot
+      isDone: step1Done,
+      href: '/dashboard/settings/inboxes/new',
+      onClick: undefined
     },
     {
       id: 'ai',
-      title: language === 'en' ? 'Train AI Assistant' : 'এআই অ্যাসিস্ট্যান্ট ট্রেইন করুন',
-      desc: language === 'en' ? 'Add Q&A and knowledge base documents.' : 'নলেজ বেইস ডকুমেন্ট এবং প্রশ্নোত্তর দিন।',
+      title: language === 'en' ? 'Train AI' : 'এআই ট্রেইন করুন',
+      subtitle: language === 'en' ? 'Persona & Q&A' : 'পারসোনা ও নলেজ বেইস',
       icon: Bot,
-      isDone: status.hasConfiguredAi,
+      isDone: step2Done,
       href: '/dashboard/settings/ai-training',
-      show: hasAiBot
+      onClick: undefined
     },
     {
-      id: 'commerce',
-      title: language === 'en' ? 'Add a Product' : 'একটি প্রোডাক্ট যোগ করুন',
-      desc: language === 'en' ? 'Create your first product to sell through chat.' : 'চ্যাটের মাধ্যমে বিক্রি করতে আপনার প্রথম প্রোডাক্ট যোগ করুন।',
-      icon: Package,
-      isDone: status.hasCreatedProduct,
-      href: '/dashboard/products',
-      show: hasEcommerce
-    },
-    {
-      id: 'leads',
-      title: language === 'en' ? 'Create a Lead' : 'একটি লিড তৈরি করুন',
-      desc: language === 'en' ? 'Add a contact to your CRM pipeline.' : 'আপনার সিআরএম পাইপলাইনে একটি কন্টাক্ট যোগ করুন।',
-      icon: Users,
-      isDone: status.hasCreatedLead,
-      href: '/dashboard/leads',
-      show: hasLeadCrm
+      id: 'inbox',
+      title: language === 'en' ? 'Check Inbox' : 'ইনবক্স চেক করুন',
+      subtitle: language === 'en' ? 'Live chat workspace' : 'লাইভ চ্যাট ওয়ার্কস্পেস',
+      icon: Inbox,
+      isDone: step3Done,
+      href: '/dashboard/inbox',
+      onClick: handleInboxStepClick
     }
-  ].filter(item => item.show);
+  ];
 
-  const completedCount = checklist.filter(item => item.isDone).length;
-  const totalCount = checklist.length;
-  const progressPercent = totalCount === 0 ? 100 : Math.round((completedCount / totalCount) * 100);
+  const completedCount = steps.filter(s => s.isDone).length;
+  const totalCount = 3;
+  const progressPercent = Math.round((completedCount / totalCount) * 100);
+  const isAllCompleted = completedCount === totalCount;
 
-  if (progressPercent === 100) {
-    return null; // Hide widget completely when 100% done
-  }
-
-  // Pending checklist for compact view
-  const pendingItems = checklist.filter(item => !item.isDone);
-
-  if (compact) {
+  if (isAllCompleted) {
     return (
-      <div className="bg-white dark:bg-[#0f0f11] rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm overflow-hidden sticky top-6">
-        <div className="p-4 border-b border-border bg-surface/50">
-          <h2 className="text-md font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-primary" />
-            {language === 'en' ? 'Remaining Setup' : 'বাকি সেটআপ'}
-          </h2>
-          <div className="mt-3 flex items-center gap-3">
-            <div className="flex-1 h-1.5 bg-slate-200 dark:bg-zinc-800 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-primary rounded-full transition-all duration-1000 ease-out"
-                style={{ width: `${progressPercent}%` }}
-              />
-            </div>
-            <div className="text-[11px] font-bold text-slate-500">{progressPercent}%</div>
+      <div className="w-full bg-gradient-to-r from-emerald-900/90 via-teal-900/90 to-emerald-950/90 border border-emerald-500/40 rounded-2xl p-4 shadow-lg backdrop-blur-xl mb-6 relative animate-in fade-in duration-500 flex items-center justify-between gap-3 text-white">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30">
+            <PartyPopper className="w-5 h-5 animate-bounce" />
           </div>
-        </div>
-
-        <div className="divide-y divide-slate-100 dark:divide-zinc-800/50">
-          {pendingItems.map((item) => (
-            <Link 
-              key={item.id} 
-              href={item.href}
-              className="flex items-start gap-3 p-3 hover:bg-surface-hover transition-colors group"
-            >
-              <div className="mt-0.5 shrink-0">
-                <Circle className="w-4 h-4 text-slate-300 dark:text-zinc-600 group-hover:text-primary transition-colors" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-[13px] text-slate-900 dark:text-white truncate">
-                  {item.title}
-                </h3>
-              </div>
-              <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-primary shrink-0" />
-            </Link>
-          ))}
-        </div>
-        
-        {allowedFeatures.includes('platform_support_ai') && (
-          <div className="p-3 bg-primary/5 flex items-center justify-between border-t border-primary/10">
-            <p className="text-[11px] text-slate-600 font-medium flex items-center gap-1.5">
-              <Bot className="w-3.5 h-3.5 text-primary" />
-              {language === 'en' ? 'Need help?' : 'সাহায্য প্রয়োজন?'}
+          <div>
+            <h3 className="font-bold text-sm text-emerald-200 flex items-center gap-2">
+              {language === 'en' ? '🎉 Congratulations! Workspace Setup Complete!' : '🎉 অভিনন্দন! আপনার ওয়ার্কস্পেস সেটআপ ১০০% সম্পূর্ণ!'}
+            </h3>
+            <p className="text-[12px] text-emerald-300/80">
+              {language === 'en' ? 'Your AI assistant is fully trained and ready to engage with customers.' : 'আপনার এআই অ্যাসিস্ট্যান্ট ট্রেইনড এবং কাস্টমারদের হ্যান্ডেল করার জন্য প্রস্তুত।'}
             </p>
-            <button 
-              onClick={(e) => {
-                e.preventDefault();
-                window.dispatchEvent(new CustomEvent('open-support-widget'));
-              }}
-              className="text-[10px] font-bold px-2 py-1 bg-primary text-white rounded transition-colors"
-            >
-              {language === 'en' ? 'Ask AI' : 'এআই কে জিজ্ঞাসা করুন'}
-            </button>
           </div>
-        )}
+        </div>
+        <button 
+          onClick={handleDismiss}
+          className="p-1.5 hover:bg-emerald-800/50 rounded-lg text-emerald-300 hover:text-white transition-colors cursor-pointer"
+          title={language === 'en' ? 'Dismiss' : 'বন্ধ করুন'}
+        >
+          <X className="w-4 h-4" />
+        </button>
       </div>
     );
   }
 
-  // Full View
   return (
-    <div className="bg-white dark:bg-[#0f0f11] rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm overflow-hidden mb-6">
-      <div className="p-4 md:p-5 border-b border-border bg-surface/50">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-primary" />
-              {language === 'en' ? 'Setup Your Workspace' : 'আপনার ওয়ার্কস্পেস সেটআপ করুন'}
-            </h2>
-            <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">
-              {language === 'en' ? 'Complete these steps to get the most out of ZiniChat.' : 'জিনিচ্যাট থেকে সর্বোচ্চ সুবিধা পেতে এই ধাপগুলো সম্পূর্ণ করুন।'}
-            </p>
+    <div className="w-full bg-gradient-to-r from-slate-900 via-slate-900/95 to-slate-900 border border-emerald-500/30 rounded-2xl p-4 md:p-5 shadow-xl backdrop-blur-xl mb-6 relative transition-all duration-300 animate-in fade-in slide-in-from-top-4 overflow-hidden group">
+      {/* Background Subtle Gradient Glow */}
+      <div className="absolute -right-20 -top-20 w-60 h-60 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+
+      {/* Dismiss Button */}
+      <button 
+        onClick={handleDismiss}
+        className="absolute top-3.5 right-3.5 p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer z-10"
+        title={language === 'en' ? 'Dismiss Checklist' : 'চেকলিস্ট ড্রপ করুন'}
+      >
+        <X className="w-4 h-4" />
+      </button>
+
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 relative z-0">
+        
+        {/* Left Side: Title & Progress Bar */}
+        <div className="space-y-2 max-w-sm">
+          <div className="flex items-center gap-2">
+            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-bold text-[10px] uppercase tracking-wider flex items-center gap-1">
+              <Sparkles className="w-3 h-3" />
+              {language === 'en' ? 'Fast-Track Setup' : 'ফাস্ট-ট্র্যাক সেটআপ'}
+            </span>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <div className="text-sm font-bold text-slate-900 dark:text-white">{progressPercent}%</div>
-              <div className="text-xs text-slate-500">{completedCount} of {totalCount} completed</div>
+
+          <h2 className="text-base font-bold text-white tracking-tight flex items-center gap-2">
+            {language === 'en' ? 'Welcome to ZiniChat!' : 'স্বাগতম জিনিচ্যাটে!'} 👋
+          </h2>
+
+          <p className="text-[12px] text-zinc-300/90 font-sans">
+            {language === 'en' 
+              ? 'Complete these 3 quick steps to automate customer support in 10 minutes.' 
+              : '১০ মিনিটে অটোমেটেড সাপোর্ট চালু করতে এই ৩টি ধাপ সম্পন্ন করুন।'}
+          </p>
+
+          {/* Compact Progress Bar */}
+          <div className="space-y-1 pt-1">
+            <div className="flex justify-between items-center text-[11px]">
+              <span className="font-semibold text-zinc-400">
+                {language === 'en' ? 'Onboarding Progress' : 'অনবোর্ডিং অগ্রগতি'}
+              </span>
+              <span className="font-bold text-emerald-400">
+                {completedCount} {language === 'en' ? 'of' : 'এর মধ্যে'} {totalCount} ({progressPercent}%)
+              </span>
             </div>
-            <div className="w-32 h-2.5 bg-slate-200 dark:bg-zinc-800 rounded-full overflow-hidden">
+            <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden border border-slate-700/50">
               <div 
-                className="h-full bg-primary rounded-full transition-all duration-1000 ease-out"
+                className="h-full bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-400 rounded-full transition-all duration-700 ease-out shadow-[0_0_12px_rgba(16,185,129,0.5)]"
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
           </div>
         </div>
-        
-        {allowedFeatures.includes('platform_support_ai') && (
-          <div className="mt-4 pt-4 border-t border-border flex items-center justify-between">
-            <p className="text-[12px] text-slate-500 font-medium flex items-center gap-2">
-              <Bot className="w-4 h-4 text-primary" />
-              {language === 'en' ? 'Need help setting up?' : 'সেটআপ করতে এআই এর সাহায্য নিতে চান?'}
-            </p>
-            <button 
-              onClick={(e) => {
-                e.preventDefault();
-                window.dispatchEvent(new CustomEvent('open-support-widget'));
-              }}
-              className="text-[11px] font-bold px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg transition-colors"
-            >
-              {language === 'en' ? 'Ask AI' : 'এআই কে জিজ্ঞাসা করুন'}
-            </button>
-          </div>
-        )}
-      </div>
 
-      <div className="divide-y divide-slate-100 dark:divide-zinc-800/50">
-        {checklist.map((item) => (
-          <Link 
-            key={item.id} 
-            href={item.href}
-            className={`flex flex-col sm:flex-row sm:items-center justify-between p-3 md:p-4 hover:bg-surface-hover transition-colors group ${item.isDone ? 'opacity-60 hover:opacity-100' : ''}`}
-          >
-            <div className="flex items-start gap-4">
-              <div className="mt-0.5 shrink-0">
-                {item.isDone ? (
-                  <CheckCircle2 className="w-6 h-6 text-primary" />
-                ) : (
-                  <Circle className="w-6 h-6 text-slate-300 dark:text-zinc-600 group-hover:text-primary transition-colors" />
-                )}
-              </div>
-              <div>
-                <h3 className={`font-semibold text-[15px] ${item.isDone ? 'text-slate-500 dark:text-zinc-400 line-through' : 'text-slate-900 dark:text-white'}`}>
-                  {item.title}
-                </h3>
-                <p className="text-sm text-slate-500 dark:text-zinc-400 mt-0.5">
-                  {item.desc}
-                </p>
-              </div>
-            </div>
-            {!item.isDone && (
-              <div className="mt-4 sm:mt-0 ml-10 sm:ml-0">
-                <span className="flex items-center gap-1.5 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded-lg transition-colors">
-                  {language === 'en' ? 'Start' : 'শুরু করুন'}
-                  <ChevronRight className="w-4 h-4" />
-                </span>
-              </div>
-            )}
-          </Link>
-        ))}
+        {/* Right Side: 3 Actionable Step Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 flex-1 lg:max-w-2xl">
+          {steps.map((step, index) => {
+            const Icon = step.icon;
+
+            return (
+              <Link 
+                key={step.id}
+                href={step.href}
+                onClick={step.onClick}
+                className={`relative flex items-center justify-between p-3 rounded-xl border transition-all duration-200 group/step ${
+                  step.isDone
+                    ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-300 hover:border-emerald-400'
+                    : 'bg-slate-800/80 border-slate-700 text-zinc-200 hover:border-emerald-500/50 hover:bg-slate-800'
+                }`}
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                    step.isDone 
+                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' 
+                      : 'bg-slate-700 text-zinc-300 group-hover/step:bg-emerald-500/10 group-hover/step:text-emerald-400'
+                  }`}>
+                    <Icon className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] text-zinc-400 font-mono">0{index + 1}.</span>
+                      <h4 className={`text-[12px] font-bold truncate ${step.isDone ? 'text-emerald-200 line-through' : 'text-white'}`}>
+                        {step.title}
+                      </h4>
+                    </div>
+                    <p className="text-[10px] text-zinc-400 truncate font-sans">
+                      {step.subtitle}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="shrink-0 ml-1">
+                  {step.isDone ? (
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                  ) : (
+                    <ChevronRight className="w-4 h-4 text-zinc-400 group-hover/step:text-emerald-400 group-hover/step:translate-x-0.5 transition-all" />
+                  )}
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+
       </div>
     </div>
   );

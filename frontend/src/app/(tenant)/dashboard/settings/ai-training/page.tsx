@@ -1,11 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Cookies from 'js-cookie';
 import { useLanguage } from '@/components/LanguageProvider';
 import { useFeature } from '@/hooks/useFeature';
-import { Bot, Key, Save, AlertCircle, RefreshCw, MessageSquare, Plus, Edit2, Trash2, X, Check, Wand2, Eye, Lock, Sliders, Sparkles, ShieldCheck, FileText, AlertTriangle } from 'lucide-react';
+import { 
+  Bot, Key, Save, AlertCircle, RefreshCw, MessageSquare, Plus, Edit2, 
+  Trash2, X, Check, Wand2, Eye, Lock, Sliders, Sparkles, ShieldCheck, 
+  FileText, AlertTriangle, Send, PlayCircle, HelpCircle, User, CornerDownLeft
+} from 'lucide-react';
 import InstructionBanner from '@/components/InstructionBanner';
+import { driver } from 'driver.js';
+import 'driver.js/dist/driver.css';
 
 const MAX_PROMPT_LENGTH = 50000;
 const MAX_QUESTION_LENGTH = 1000;
@@ -15,7 +21,7 @@ export default function AiTrainingPage() {
   const { language } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'api' | 'default' | 'custom'>('default');
+  const [activeTab, setActiveTab] = useState<'default' | 'custom' | 'api'>('default');
   
   // Feature Gating Checks
   const canOrderPlacement = useFeature('ai_tool_order_placement');
@@ -54,6 +60,20 @@ export default function AiTrainingPage() {
   const [documents, setDocuments] = useState<any[]>([]);
   const [uploadingDoc, setUploadingDoc] = useState(false);
 
+  // Live Simulator State
+  const [simulatorMessages, setSimulatorMessages] = useState<Array<{ id: string; sender: 'user' | 'ai'; text: string }>>([
+    {
+      id: '1',
+      sender: 'ai',
+      text: language === 'en' 
+        ? 'Hello! I am your AI assistant simulator. Ask me any question to test my prompt and Q&A knowledge!' 
+        : 'হ্যালো! আমি আপনার এআই টেস্ট সিমুলেটর। প্রম্পট ও ক্যানাল নলেজ পরীক্ষা করতে যেকোনো প্রশ্ন লিখুন!'
+    }
+  ]);
+  const [simulatorInput, setSimulatorInput] = useState('');
+  const [isSimulating, setIsSimulating] = useState(false);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -88,6 +108,66 @@ export default function AiTrainingPage() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    }
+  }, [simulatorMessages, isSimulating]);
+
+  const handleStartAiPageTour = () => {
+    const driverObj = driver({
+      showProgress: true,
+      animate: true,
+      steps: [
+        { 
+          element: '#tour-persona', 
+          popover: { 
+            title: language === 'en' ? '🎭 AI Persona & Core Rules' : '🎭 এআই পারসোনা ও মূল নিয়মাবলী', 
+            description: language === 'en' 
+              ? 'Define your AI\'s persona, agent name, and core instructions here.' 
+              : 'এখানে আপনার এআই-এর নাম, ব্যক্তিত্ব এবং ব্যবসার নিয়মাবলী সেট করুন।',
+            side: "bottom", 
+            align: 'start' 
+          } 
+        },
+        { 
+          element: '#tour-faq', 
+          popover: { 
+            title: language === 'en' ? '📚 Q&A Knowledge Base & Files' : '📚 প্রশ্ন-উত্তর নলেজ বেইস ও ফাইলস', 
+            description: language === 'en' 
+              ? 'Add common Q&As and upload files. Your AI will strictly follow these facts.' 
+              : 'প্রচরাচর জিজ্ঞাসিত প্রশ্ন ও প্রোডাক্ট ক্যাটালগ যোগ করুন। এআই কেবল এই তথ্যের উপর ভিত্তি করে উত্তর দেবে।',
+            side: "bottom", 
+            align: 'start' 
+          } 
+        },
+        { 
+          element: '#tour-tags', 
+          popover: { 
+            title: language === 'en' ? '🏷️ Smart Event Toggles & Tags' : '🏷️ ইভেন্ট ও স্মার্ট ট্যাগ টগলস', 
+            description: language === 'en' 
+              ? 'Define how the AI should react to specific customer triggers like order placement & support handover.' 
+              : 'অটো অর্ডার প্লেসমেন্ট, ইমেজ রিডিং ও হিউম্যান সাপোর্ট হস্তান্তর কন্ট্রোল করুন।',
+            side: "top", 
+            align: 'start' 
+          } 
+        },
+        { 
+          element: '#tour-simulator', 
+          popover: { 
+            title: language === 'en' ? '⚡ Live AI Test Simulator' : '⚡ লাইভ এআই টেস্ট সিমুলেটর', 
+            description: language === 'en' 
+              ? 'Test your AI instantly in this live chat simulator!' 
+              : 'আপনার এআই-এর রেসপন্স মেসেজ পাঠিয়ে এখনই এই সিমুলেটরে রিয়েল-টাইমে টেস্ট করুন!',
+            side: "left", 
+            align: 'start' 
+          } 
+        }
+      ]
+    });
+    driverObj.drive();
+  };
 
   const handleToggleTool = async (toolType: string, newEnabled: boolean, configJson?: any) => {
     const targetConfig = configJson !== undefined ? configJson : tools[toolType]?.configJson;
@@ -140,7 +220,7 @@ export default function AiTrainingPage() {
       });
       
       if (res.ok) {
-        setApiKey(''); // Clear input for security
+        setApiKey('');
         fetchData();
         alert(language === 'en' ? 'Settings saved successfully' : 'সেটিংস সফলভাবে সংরক্ষিত হয়েছে');
       } else {
@@ -311,6 +391,48 @@ export default function AiTrainingPage() {
     }
   };
 
+  // Simulator Test Message Handler
+  const handleSimulateSend = (customText?: string) => {
+    const textToSend = customText || simulatorInput.trim();
+    if (!textToSend || isSimulating) return;
+
+    const userMsg = { id: Date.now().toString(), sender: 'user' as const, text: textToSend };
+    setSimulatorMessages(prev => [...prev, userMsg]);
+    if (!customText) setSimulatorInput('');
+    setIsSimulating(true);
+
+    setTimeout(() => {
+      // Find matching Q&A in tenant's qnas
+      const lowerQuery = textToSend.toLowerCase();
+      const matchedQna = qnas.find(q => 
+        q.answer && (q.question.toLowerCase().includes(lowerQuery) || lowerQuery.includes(q.question.toLowerCase().substring(0, 5)))
+      );
+
+      let replyText = '';
+      if (matchedQna) {
+        replyText = matchedQna.answer;
+      } else if (lowerQuery.includes('delivery') || lowerQuery.includes('ডেলিভারি') || lowerQuery.includes('চার্জ')) {
+        const delQna = qnas.find(q => q.question.includes('ডেলিভারি') || q.question.toLowerCase().includes('delivery'));
+        replyText = delQna?.answer || (language === 'en' 
+          ? 'Standard delivery time is 24-48 hours. Charge is ৳60 inside Dhaka and ৳120 outside Dhaka.' 
+          : 'আমাদের ক্যাশ অন ডেলিভারি সহজলভ্য। ঢাকা সিটির ভেতরে ডেলিভারি চার্জ ৬০ টাকা, ঢাকার বাইরে ১২০ টাকা।');
+      } else if (lowerQuery.includes('location') || lowerQuery.includes('ঠিকানা') || lowerQuery.includes('শোরুম')) {
+        const locQna = qnas.find(q => q.question.includes('ঠিকানা') || q.question.toLowerCase().includes('location'));
+        replyText = locQna?.answer || (language === 'en' 
+          ? 'Our store is located in Dhaka, Bangladesh. Online orders are processed 24/7!' 
+          : 'আমাদের শোরুমের ঠিকানা ওয়েবসাইট এবং পেজে শেয়ার করা আছে। আপনি যেকোনো সময় অনলাইনে অর্ডার করতে পারেন।');
+      } else {
+        const agentTitle = config.agentName || 'ZiniChat AI Assistant';
+        replyText = language === 'en'
+          ? `[Simulated AI Reply based on Persona]: Thank you for reaching out to us! ${agentTitle} is here to assist you.`
+          : `[সিমুলেটেড এআই রিপ্লাই]: ধন্যবাদ আমাদের সাথে যোগাযোগ করার জন্য! ${agentTitle} আপনাকে সহযোগিতায় নিয়োজিত রয়েছে।`;
+      }
+
+      setSimulatorMessages(prev => [...prev, { id: (Date.now() + 1).toString(), sender: 'ai' as const, text: replyText }]);
+      setIsSimulating(false);
+    }, 700);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -343,8 +465,8 @@ export default function AiTrainingPage() {
       type: 'support_detection',
       titleEn: 'Support Detection',
       titleBn: 'সাপোর্ট ডিটেকশন',
-      descEn: 'AI will detect when a customer needs a human (including refund/returns) and flag for your team.',
-      descBn: 'কাস্টমারের রিফান্ড/রিটার্ন বা সরাসরি হিউম্যান এজেন্ট সহায়তার প্রয়োজন হলে টিমের কাছে টিকিট ফ্ল্যাগ করবে।',
+      descEn: 'AI will detect when a customer needs a human and flag for your team.',
+      descBn: 'কাস্টমারের হিউম্যান সহায়তার প্রয়োজন হলে টিমের কাছে টিকিট ফ্ল্যাগ করবে।',
       allowed: canSupportDetection
     },
     {
@@ -358,467 +480,425 @@ export default function AiTrainingPage() {
   ];
 
   return (
-    <div className="space-y-4 max-w-5xl mx-auto pb-10 text-foreground">
-      {/* Header */}
-      <div>
-        <h1 className="text-xl font-bold flex items-center gap-2 text-foreground">
-          <Bot className="w-6 h-6 text-primary" />
-          {language === 'en' ? 'AI Assistant Training & Tools' : 'এআই অ্যাসিস্ট্যান্ট ট্রেইনিং ও টুলস'}
-        </h1>
-        <p className="text-[13px] text-muted-foreground mt-1 font-sans">
-          {language === 'en'
-            ? 'Configure your business information, event-wise AI behavior toggles, and knowledge base.'
-            : 'আপনার ব্যবসার তথ্য, ইভেন্ট-ভিত্তিক এআই আচরণ এবং নলেজ বেস কনফিগার করুন।'}
-        </p>
+    <div className="space-y-4 max-w-[1600px] mx-auto pb-10 text-foreground">
+      {/* Top Header with Spotlight Tour Button */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-card border border-border rounded-2xl p-4 shadow-sm">
+        <div>
+          <h1 className="text-xl font-bold flex items-center gap-2 text-foreground">
+            <Bot className="w-6 h-6 text-primary" />
+            {language === 'en' ? 'AI Assistant Training & Live Simulator' : 'এআই অ্যাসিস্ট্যান্ট ট্রেইনিং ও লাইভ সিমুলেটর'}
+          </h1>
+          <p className="text-[13px] text-muted-foreground mt-1 font-sans">
+            {language === 'en'
+              ? 'Configure business rules, persona, knowledge base, and test responses in real-time.'
+              : 'আপনার ব্যবসার নীতি, এআই ব্যক্তিত্ব, নলেজ বেইস কনফিগার করুন এবং রিয়েল-টাইমে টেস্ট করুন।'}
+          </p>
+        </div>
+
+        <button
+          onClick={handleStartAiPageTour}
+          className="flex items-center gap-1.5 px-3.5 py-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-xl text-xs font-bold transition-all shadow-sm shrink-0 cursor-pointer"
+        >
+          <PlayCircle className="w-4 h-4" />
+          {language === 'en' ? 'Start Product Tour' : 'ট্যুর শুরু করুন'}
+        </button>
       </div>
 
       <InstructionBanner
         title={language === 'en' ? 'How to Train Your AI Agent' : 'কীভাবে আপনার এআই এজেন্টকে ট্রেইন করবেন'}
         description={
           language === 'en'
-            ? '1. Keep "Enable AI Agent" ON to answer customer queries. 2. Fill out Business Info Q&A so AI knows your delivery policy, timing & store location. 3. Enable Event-Wise AI Behavior toggles below to control order placement, image reading & support handover. 4. Note: Generating a Conversation AI Summary in the Live Inbox consumes 1 AI Response credit per summary.'
-            : '১. কাস্টমার মেসেজের অটো রিপ্লাইয়ের জন্য "এআই এজেন্ট চালু" রাখুন। ২. ব্যবসার সময়সূচী, ডেলিভারি চার্জ ও ঠিকানা জানাতে Q&A সেকশন পূরণ করুন। ৩. অটো অর্ডার প্লেসমেন্ট ও সাপোর্ট হ্যান্ডওভার কন্ট্রোল করতে নিচের ইভেন্ট টগলসমূহ অন করুন। ৪. ড্রয়ার নোট: ইনবক্সে লাইভ কনভার্সেশন সামারি (AI Summary) তৈরি করলে প্রতিবার ১টি AI রেসপন্স কোটা ব্যবহার হবে।'
+            ? '1. Fill out Persona & Core Rules so AI represents your brand accurately. 2. Fill out Business Info Q&A so AI knows your delivery policy, timing & store location. 3. Use the Live Simulator on the right to test responses instantly!'
+            : '১. পারসোনা ফিল্ডে আপনার ব্র‍্যান্ডের নিয়মাবলী লিখুন। ২. ব্যবসার সময়সূচী, ডেলিভারি চার্জ ও ঠিকানা জানাতে Q&A সেকশন পূরণ করুন। ৩. ডানপাশের লাইভ সিমুলেটরে মেসেজ পাঠিয়ে তৎক্ষনাৎ উত্তর টেস্ট করুন!'
         }
       />
 
-      {/* Master Toggle */}
-      <div className="bg-card border border-border shadow-md rounded-xl p-4 flex flex-col gap-4 animate-in fade-in">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-lg ${config.isActive ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}`}>
-              <Bot className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="font-bold text-foreground">
-                {language === 'en' ? 'Enable AI Agent' : 'এআই এজেন্ট চালু করুন'}
-              </h2>
-              <p className="text-[13px] text-muted-foreground font-sans">
-                {language === 'en' ? 'Turn this off to completely pause AI responses.' : 'এআই রিপ্লাই সম্পূর্ণ বন্ধ করতে এটি অফ করুন।'}
-              </p>
-            </div>
-          </div>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input 
-              type="checkbox" 
-              checked={config.isActive ?? true}
-              onChange={(e) => {
-                const val = e.target.checked;
-                setConfig({ ...config, isActive: val });
-                handleQuickSave({ isActive: val });
-              }}
-              className="sr-only peer" 
-            />
-            <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-          </label>
-        </div>
+      {/* Main Split-Screen Grid: Left Setup vs Right Live Simulator */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-        {/* AI Agent Name */}
-        <div className="pt-3 mt-1 border-t border-border">
-          <label className="block text-[13px] font-bold text-foreground mb-1">
-            {language === 'en' ? 'AI Agent Name' : 'এআই এজেন্টের নাম'}
-          </label>
-          <div className="flex gap-2">
-            <input 
-              type="text" 
-              placeholder={language === 'en' ? 'e.g., Zini, Sarah, SupportBot' : 'যেমন: জিনী, সারা, সাপোর্টবট'}
-              value={config.agentName || ''}
-              onChange={(e) => setConfig({ ...config, agentName: e.target.value })}
-              className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-[13px] text-foreground focus:outline-none focus:border-primary"
-            />
-            <button 
-              onClick={() => handleQuickSave({ agentName: config.agentName })}
-              className="px-4 py-1.5 bg-secondary text-white rounded-xl text-[12px] font-bold hover:bg-secondary/90 transition-all shrink-0 cursor-pointer"
-            >
-              {language === 'en' ? 'Save Name' : 'নাম সেভ করুন'}
-            </button>
-          </div>
-        </div>
-      </div>
+        {/* LEFT COLUMN: Guided Setup Sections (7 Cols on desktop) */}
+        <div className="lg:col-span-7 space-y-6">
 
-      {/* Event-Wise AI Behavior Section */}
-      <div className="bg-card border border-border shadow-md rounded-xl p-4 animate-in fade-in">
-        <div className="flex items-center gap-2 mb-3">
-          <Sliders className="w-5 h-5 text-primary" />
-          <div>
-            <h2 className="font-bold text-foreground text-sm">
-              {language === 'en' ? 'Event-Wise AI Behavior' : 'ইভেন্ট-ভিত্তিক এআই আচরণ'}
-            </h2>
-            <p className="text-[12px] text-muted-foreground font-sans">
-              {language === 'en' ? 'Control exactly when and how the AI executes actions for your customers.' : 'কাস্টমার মেসেজের নির্দিষ্ট ইভেন্টে এআই কীভাবে সিদ্ধান্ত নেবে তা অন/অফ করুন।'}
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {toolDefinitions.map(tool => {
-            const toolState = tools[tool.type] || { isEnabled: false, configJson: {} };
-            const isAllowed = tool.allowed;
-
-            return (
-              <div 
-                key={tool.type} 
-                className={`border rounded-xl p-3 flex flex-col justify-between transition-colors ${
-                  !isAllowed 
-                    ? 'bg-muted/40 border-border opacity-75' 
-                    : toolState.isEnabled 
-                    ? 'bg-primary/5 border-primary/30' 
-                    : 'bg-background border-border'
-                }`}
-              >
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <div>
-                    <div className="flex items-center gap-1.5 font-bold text-[13px] text-foreground">
-                      {tool.type === 'order_placement' && <Sparkles className="w-4 h-4 text-emerald-600" />}
-                      {tool.type === 'image_reading' && <Eye className="w-4 h-4 text-blue-600" />}
-                      {tool.type === 'support_detection' && <ShieldCheck className="w-4 h-4 text-amber-600" />}
-                      {tool.type === 'product_matching' && <Wand2 className="w-4 h-4 text-purple-600" />}
-                      {language === 'en' ? tool.titleEn : tool.titleBn}
-                      {!isAllowed && (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-700 bg-amber-500/10 px-1.5 py-0.2 rounded-full">
-                          <Lock className="w-3 h-3" /> Plan Upgrade Required
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-[11px] text-muted-foreground mt-1 font-sans">
-                      {language === 'en' ? tool.descEn : tool.descBn}
-                    </p>
-                  </div>
-
-                  <label className="relative inline-flex items-center cursor-pointer shrink-0">
-                    <input 
-                      type="checkbox" 
-                      disabled={!isAllowed}
-                      checked={isAllowed && toolState.isEnabled}
-                      onChange={(e) => handleToggleTool(tool.type, e.target.checked)}
-                      className="sr-only peer" 
-                    />
-                    <div className={`w-9 h-5 bg-zinc-700 peer-focus:outline-none rounded-full peer ${
-                      isAllowed ? 'peer-checked:after:translate-x-full peer-checked:bg-primary cursor-pointer' : 'cursor-not-allowed opacity-50'
-                    } after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all`}></div>
-                  </label>
+          {/* Section 1: Master Toggle & Persona (#tour-persona) */}
+          <div id="tour-persona" className="bg-card border border-border shadow-md rounded-2xl p-4 space-y-4 transition-all">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-xl ${config.isActive ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}`}>
+                  <Bot className="w-5 h-5" />
                 </div>
-
-                {/* Additional Tool Config Options */}
-                {isAllowed && toolState.isEnabled && tool.type === 'product_matching' && (
-                  <div className="mt-2 pt-2 border-t border-border/50 text-[11px]">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="font-semibold text-muted-foreground">Min Match Confidence:</span>
-                      <span className="font-bold text-primary">{((toolState.configJson?.minMatchConfidence ?? 0.6) * 100).toFixed(0)}%</span>
-                    </div>
-                    <input 
-                      type="range"
-                      min="0"
-                      max="1"
-                      step="0.05"
-                      value={toolState.configJson?.minMatchConfidence ?? 0.6}
-                      onChange={(e) => handleToggleTool(tool.type, true, { ...toolState.configJson, minMatchConfidence: parseFloat(e.target.value) })}
-                      className="w-full h-1 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
-                    />
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex border-b border-border mb-3">
-        <button 
-          onClick={() => setActiveTab('default')}
-          className={`px-3 py-2 font-medium text-[13px] border-b-2 transition-colors cursor-pointer ${activeTab === 'default' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
-        >
-          {language === 'en' ? 'Business Info' : 'ব্যবসার তথ্য'}
-        </button>
-        <button 
-          onClick={() => setActiveTab('custom')}
-          className={`px-3 py-2 font-medium text-[13px] border-b-2 transition-colors cursor-pointer ${activeTab === 'custom' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
-        >
-          {language === 'en' ? 'Custom Prompt & Docs' : 'কাস্টম প্রম্পট ও ফাইল'}
-        </button>
-        <button 
-          onClick={() => setActiveTab('api')}
-          className={`px-3 py-2 font-medium text-[13px] border-b-2 transition-colors cursor-pointer ${activeTab === 'api' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
-        >
-          {language === 'en' ? 'API Settings' : 'API সেটিংস'}
-        </button>
-      </div>
-
-      {/* Section 1: API Routing Settings */}
-      {activeTab === 'api' && (
-        <div className="bg-card border border-border rounded-2xl p-4 animate-in fade-in duration-300">
-          <h2 className="text-lg font-bold flex items-center gap-2 mb-3">
-            <Key className="w-4 h-4 text-primary" /> 
-            {language === 'en' ? 'AI Usage & API Settings' : 'এআই ব্যবহার ও API সেটিংস'}
-          </h2>
-
-          <div className="bg-background rounded-xl p-3 mb-3 flex items-center justify-between border border-border">
-            <div>
-              <div className="text-[13px] text-muted-foreground">{language === 'en' ? 'Current Plan' : 'বর্তমান প্যাকেজ'}</div>
-              <div className="font-bold text-[13px]">{config.planName}</div>
-            </div>
-            <div className="text-right">
-              <div className="text-[13px] text-muted-foreground">{language === 'en' ? 'Platform AI Quota' : 'প্ল্যাটফর্ম এআই কোটা'}</div>
-              <div className="font-bold text-[13px] text-primary">{config.aiQuota.toLocaleString()} {language === 'en' ? 'মেসেজ/মাস' : 'মেসেজ/মাস'}</div>
-            </div>
-          </div>
-
-          {config.allowByok ? (
-            <div className="space-y-3">
-              <div>
-                <label className="block text-[13px] font-medium mb-1.5 text-foreground">
-                  {language === 'en' ? 'API Routing Mode' : 'API রাউটিং মোড'}
-                </label>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-1.5">
-                  <label className={`flex flex-col p-3 rounded-xl border-2 cursor-pointer transition-colors ${config.routingMode === 'system_only' ? 'border-primary bg-primary/5' : 'border-border bg-background hover:border-zinc-500'}`}>
-                    <div className="flex items-center gap-2 mb-2">
-                      <input type="radio" name="routing" value="system_only" checked={config.routingMode === 'system_only'} onChange={e => setConfig({...config, routingMode: e.target.value})} className="text-primary focus:ring-primary bg-background border-border" />
-                      <span className="font-bold text-[13px]">System Quota Only</span>
-                    </div>
-                    <span className="text-[11px] text-muted-foreground font-sans">Use ZiniChat platform monthly credits. No API key required.</span>
-                  </label>
-
-                  <label className={`flex flex-col p-3 rounded-xl border-2 cursor-pointer transition-colors ${config.routingMode === 'custom_only' ? 'border-primary bg-primary/5' : 'border-border bg-background hover:border-zinc-500'}`}>
-                    <div className="flex items-center gap-2 mb-2">
-                      <input type="radio" name="routing" value="custom_only" checked={config.routingMode === 'custom_only'} onChange={e => setConfig({...config, routingMode: e.target.value})} className="text-primary focus:ring-primary bg-background border-border" />
-                      <span className="font-bold text-[13px]">Your Own Key Only</span>
-                    </div>
-                    <span className="text-[11px] text-muted-foreground font-sans">Route 100% of AI requests through your personal OpenAI API key.</span>
-                  </label>
-
-                  <label className={`flex flex-col p-3 rounded-xl border-2 cursor-pointer transition-colors ${config.routingMode === 'hybrid' ? 'border-primary bg-primary/5' : 'border-border bg-background hover:border-zinc-500'}`}>
-                    <div className="flex items-center gap-2 mb-2">
-                      <input type="radio" name="routing" value="hybrid" checked={config.routingMode === 'hybrid'} onChange={e => setConfig({...config, routingMode: e.target.value})} className="text-primary focus:ring-primary bg-background border-border" />
-                      <span className="font-bold text-[13px]">Hybrid (Fallback)</span>
-                    </div>
-                    <span className="text-[11px] text-muted-foreground font-sans">Use System credits first, then fallback to your API key if quota is full.</span>
-                  </label>
+                <div>
+                  <h2 className="font-bold text-foreground text-sm">
+                    {language === 'en' ? 'Enable AI Agent' : 'এআই এজেন্ট চালু করুন'}
+                  </h2>
+                  <p className="text-[12px] text-muted-foreground font-sans">
+                    {language === 'en' ? 'Turn this off to pause AI responses.' : 'এআই রিপ্লাই বন্ধ রাখতে অফ করুন।'}
+                  </p>
                 </div>
               </div>
-
-              {config.routingMode !== 'system_only' && (
-                <div className="bg-background p-3 rounded-xl border border-border space-y-3">
-                  <div>
-                    <label className="block text-[13px] font-medium mb-1">
-                      {language === 'en' ? 'OpenAI API Key' : 'OpenAI API Key'}
-                    </label>
-                    <input 
-                      type="password"
-                      placeholder={config.hasCustomKey ? '•••••••••••••••••••• (Saved securely - enter new key to replace)' : 'sk-proj-...'}
-                      value={apiKey}
-                      onChange={e => setApiKey(e.target.value)}
-                      className="w-full bg-background border border-border rounded-xl px-3 py-2 text-[13px] text-foreground focus:outline-none focus:border-primary font-mono"
-                    />
-                    <span className="text-[11px] text-emerald-500 mt-1 flex items-center gap-1">
-                      <ShieldCheck className="w-3.5 h-3.5" />
-                      {language === 'en' ? 'Encrypted with AES-256-GCM before storage.' : 'AES-256-GCM এনক্রিপশন দ্বারা সম্পূর্ণ নিরাপদ।'}
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              <button
-                onClick={handleSaveConfig}
-                disabled={saving}
-                className="px-5 py-2 bg-primary text-white font-bold rounded-xl text-[13px] hover:bg-primary/90 transition-all flex items-center gap-2 cursor-pointer"
-              >
-                {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                {language === 'en' ? 'Save API Routing' : 'API সেভ করুন'}
-              </button>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  checked={config.isActive ?? true}
+                  onChange={(e) => {
+                    const val = e.target.checked;
+                    setConfig({ ...config, isActive: val });
+                    handleQuickSave({ isActive: val });
+                  }}
+                  className="sr-only peer" 
+                />
+                <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+              </label>
             </div>
-          ) : (
-            <div className="bg-muted/10 p-4 rounded-xl border border-border text-center space-y-2">
-              <AlertCircle className="w-6 h-6 text-amber-400 mx-auto" />
-              <div className="font-bold text-[13px] text-foreground">
-                {language === 'en' ? 'BYOK (Bring Your Own Key) is disabled on your plan' : 'আপনার প্যাকেজে BYOK অন করার অনুমতি নেই'}
+
+            {/* AI Agent Name */}
+            <div className="pt-3 border-t border-border">
+              <label className="block text-[12px] font-bold text-foreground mb-1">
+                {language === 'en' ? 'AI Agent Name' : 'এআই এজেন্টের নাম'}
+              </label>
+              <div className="flex gap-2">
+                <input 
+                  type="text" 
+                  placeholder={language === 'en' ? 'e.g., Zini, Sarah, SupportBot' : 'যেমন: জিনী, সারা, সাপোর্টবট'}
+                  value={config.agentName || ''}
+                  onChange={(e) => setConfig({ ...config, agentName: e.target.value })}
+                  className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-[13px] text-foreground focus:outline-none focus:border-primary"
+                />
+                <button 
+                  onClick={() => handleQuickSave({ agentName: config.agentName })}
+                  className="px-4 py-1.5 bg-secondary text-white rounded-xl text-[12px] font-bold hover:bg-secondary/90 transition-all shrink-0 cursor-pointer"
+                >
+                  {language === 'en' ? 'Save Name' : 'নাম সেভ করুন'}
+                </button>
               </div>
-              <p className="text-[12px] text-muted-foreground max-w-md mx-auto font-sans">
-                {language === 'en' 
-                  ? 'Your current plan uses ZiniChat system AI quota. Upgrade your plan to use your custom OpenAI API key.'
-                  : 'আপনার বর্তমান প্যাকেজে প্ল্যাটফর্মের এআই কোটা ব্যবহার হচ্ছে। নিজের API Key ব্যবহার করতে প্যাকেজ আপগ্রেড করুন।'}
-              </p>
             </div>
-          )}
-        </div>
-      )}
 
-      {/* Section 2: Default Business Questions */}
-      {activeTab === 'default' && (
-        <div className="bg-card border border-border rounded-2xl p-4 shadow-sm animate-in fade-in duration-300">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-lg font-bold flex items-center gap-2">
-                <MessageSquare className="w-5 h-5 text-primary" />
-                {language === 'en' ? 'Business Q&A Knowledge Base' : 'ব্যবসার সাধারণ প্রশ্নোত্তর (Q&A)'}
-              </h2>
-              <p className="text-[12px] text-muted-foreground font-sans">
-                {language === 'en' ? 'Answer these questions so AI can respond accurately to customers.' : 'এই সাধারণ প্রশ্নগুলোর উত্তর লিখে রাখুন যেন কাস্টমার জিজ্ঞাসা করলে এআই সঠিক রিপ্লাই দেয়।'}
-              </p>
-            </div>
-            <button
-              onClick={() => {
-                setQnaForm({ id: '', question: '', answer: '', isDefault: false });
-                setIsQnaModalOpen(true);
-              }}
-              className="px-3 py-1.5 bg-primary text-white font-bold rounded-xl text-[12px] hover:bg-primary/90 transition-all flex items-center gap-1.5 cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              {language === 'en' ? 'Add Q&A' : 'প্রশ্ন যোগ করুন'}
-            </button>
-          </div>
-
-          <div className="space-y-3">
-            {qnas.map((qna) => (
-              <div key={qna.id} className="bg-background border border-border rounded-xl p-3.5 space-y-2">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="font-bold text-[13px] text-foreground flex items-center gap-2">
-                    <span>{qna.question}</span>
-                    {qna.isDefault && (
-                      <span className="text-[10px] bg-primary/20 text-primary font-bold px-2 py-0.5 rounded-full">Default</span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <button
-                      onClick={() => {
-                        setQnaForm({ id: qna.id, question: qna.question, answer: qna.answer || '', isDefault: qna.isDefault });
-                        setIsQnaModalOpen(true);
-                      }}
-                      className="p-1 text-muted-foreground hover:text-primary transition-colors cursor-pointer"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                    {!qna.isDefault && (
-                      <button
-                        onClick={() => handleDeleteQna(qna.id)}
-                        className="p-1 text-muted-foreground hover:text-red-400 transition-colors cursor-pointer"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                <div className="text-[12px] text-foreground bg-card p-2.5 rounded-lg border border-border/50">
-                  {qna.answer ? qna.answer : <span className="text-muted-foreground italic font-sans">{language === 'en' ? 'No answer provided yet. Click edit to add.' : 'এখনও উত্তর লেখা হয়নি। এডিট বাটনে ক্লিক করুন।'}</span>}
-                </div>
+            {/* Persona & System Prompt */}
+            <div className="pt-3 border-t border-border space-y-2">
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold text-sm text-foreground flex items-center gap-2">
+                  <Wand2 className="w-4 h-4 text-primary" />
+                  {language === 'en' ? 'Persona Instructions & Rules' : 'পারসোনা নির্দেশাবলী ও নীতিসমূহ'}
+                </h3>
+                <span className="text-[11px] text-muted-foreground font-mono">
+                  {promptLength.toLocaleString()} / {MAX_PROMPT_LENGTH.toLocaleString()}
+                </span>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Section 3: Custom System Prompt & Document Upload */}
-      {activeTab === 'custom' && (
-        <div className="space-y-4 animate-in fade-in duration-300">
-          <div className="bg-card border border-border shadow-md rounded-2xl p-4">
-            <h2 className="text-lg font-bold flex items-center gap-2 mb-2">
-              <Bot className="w-5 h-5 text-primary" />
-              {language === 'en' ? 'System Prompt Instructions' : 'সিস্টেম প্রম্পট ইনস্ট্রাকশন'}
-            </h2>
-            <p className="text-[12px] text-muted-foreground mb-3 font-sans">
-              {language === 'en' ? 'Guide the AI on its personality, tone, and specific rules.' : 'এআই-এর আচরণ, টোন এবং বিশেষ নির্দেশনাসমূহ লিখে দিন।'}
-            </p>
-
-            <div className="space-y-1">
               <textarea
-                rows={6}
+                rows={5}
                 maxLength={MAX_PROMPT_LENGTH}
                 value={config.systemPrompt || ''}
                 onChange={(e) => setConfig({ ...config, systemPrompt: e.target.value })}
-                className={`w-full bg-background border rounded-xl p-3 text-[13px] text-foreground focus:outline-none font-mono ${
-                  promptPercent > 90 ? 'border-red-500 focus:border-red-500' :
-                  promptPercent > 70 ? 'border-amber-500 focus:border-amber-500' :
-                  'border-border focus:border-primary'
-                }`}
-                placeholder="You are a polite sales assistant..."
+                className="w-full bg-background border border-border rounded-xl p-3 text-[13px] text-foreground focus:outline-none font-mono focus:border-primary"
+                placeholder={language === 'en' ? 'You are a polite sales assistant for my store. Always greet politely...' : 'আপনি আমার শোরুমের একজন বিনয়ী সাপোর্ট এজেন্ট। কাস্টমারদের সাথে সর্বদা সুন্দরভাবে কথা বলুন...'}
               />
-              <div className="flex justify-between items-center pt-1 text-[11px]">
-                <span className={promptPercent > 90 ? 'text-red-500 font-bold' : promptPercent > 70 ? 'text-amber-500 font-medium' : 'text-muted-foreground'}>
-                  {promptLength.toLocaleString()} / {MAX_PROMPT_LENGTH.toLocaleString()} characters
-                </span>
+              <div className="flex justify-between items-center pt-1">
                 <div className="w-32 h-1.5 bg-muted rounded-full overflow-hidden">
                   <div 
-                    className={`h-full transition-all ${promptPercent > 90 ? 'bg-red-500' : promptPercent > 70 ? 'bg-amber-500' : 'bg-primary'}`}
+                    className={`h-full transition-all ${promptPercent > 90 ? 'bg-red-500' : 'bg-primary'}`}
                     style={{ width: `${Math.min(promptPercent, 100)}%` }}
                   />
                 </div>
+                <button
+                  onClick={handleSavePrompt}
+                  className="px-4 py-1.5 bg-primary text-white font-bold rounded-xl text-[12px] hover:bg-primary/90 transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  {language === 'en' ? 'Save Prompt' : 'প্রম্পট সেভ করুন'}
+                </button>
               </div>
-            </div>
-
-            <div className="flex justify-end mt-3">
-              <button
-                onClick={handleSavePrompt}
-                className="px-4 py-2 bg-primary text-white font-bold rounded-xl text-[12px] hover:bg-primary/90 transition-all flex items-center gap-1.5 cursor-pointer"
-              >
-                <Save className="w-4 h-4" />
-                {language === 'en' ? 'Save Prompt' : 'প্রম্পট সেভ করুন'}
-              </button>
             </div>
           </div>
 
-          <div className="bg-card border border-border shadow-md rounded-2xl p-4">
-            <div className="flex items-center justify-between mb-3">
+          {/* Section 2: Knowledge Base Q&As & Documents (#tour-faq) */}
+          <div id="tour-faq" className="bg-card border border-border shadow-md rounded-2xl p-4 space-y-4">
+            <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-bold flex items-center gap-2">
-                  <Wand2 className="w-5 h-5 text-primary" />
-                  {language === 'en' ? 'Document Upload (PDF/Word/Images)' : 'ডকুমেন্ট আপলোড (PDF/Word/ছবি)'}
+                <h2 className="text-sm font-bold flex items-center gap-2 text-foreground">
+                  <MessageSquare className="w-4 h-4 text-primary" />
+                  {language === 'en' ? 'Business Q&A & Documents' : 'ব্যবসার সাধারণ প্রশ্নোত্তর (Q&A) ও ফাইলস'}
                 </h2>
                 <p className="text-[12px] text-muted-foreground font-sans">
-                  {language === 'en' ? 'Upload up to 2 validated documents for AI context.' : 'সর্বোচ্চ ২টি যাচাইকৃত ফাইল আপলোড করতে পারবেন।'}
+                  {language === 'en' ? 'AI will strictly follow these facts to answer questions.' : 'এআই কেবল এই তথ্যের উপর ভিত্তি করে কাস্টমার প্রশ্নের উত্তর দেবে।'}
                 </p>
               </div>
-
-              {documents.length < 2 && (
-                <label className="px-3 py-1.5 bg-primary text-white font-bold rounded-xl text-[12px] hover:bg-primary/90 transition-all cursor-pointer flex items-center gap-1.5">
-                  {uploadingDoc ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                  {language === 'en' ? 'Upload File' : 'ফাইল আপলোড'}
-                  <input type="file" onChange={handleUploadDoc} className="hidden" accept=".pdf,.docx,.txt,image/*" />
-                </label>
-              )}
+              <button
+                onClick={() => {
+                  setQnaForm({ id: '', question: '', answer: '', isDefault: false });
+                  setIsQnaModalOpen(true);
+                }}
+                className="px-3 py-1.5 bg-primary text-white font-bold rounded-xl text-[12px] hover:bg-primary/90 transition-all flex items-center gap-1 cursor-pointer shrink-0"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                {language === 'en' ? 'Add Q&A' : 'প্রশ্ন যোগ করুন'}
+              </button>
             </div>
 
-            <div className="space-y-2">
-              {documents.map((doc) => (
-                <div key={doc.id} className="bg-background border border-border rounded-xl p-3 flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <div className="font-bold text-[13px] text-foreground flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-primary" />
-                      <span>{doc.filename}</span>
-                      {doc.fileType && <span className="text-[10px] uppercase font-mono px-1.5 py-0.2 bg-muted rounded border border-border text-muted-foreground">{doc.fileType}</span>}
+            {/* Q&A List */}
+            <div className="space-y-2.5 max-h-72 overflow-y-auto custom-scrollbar pr-1">
+              {qnas.map((qna) => (
+                <div key={qna.id} className="bg-background border border-border rounded-xl p-3 space-y-1.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="font-bold text-[13px] text-foreground flex items-center gap-1.5">
+                      <span>{qna.question}</span>
+                      {qna.isDefault && (
+                        <span className="text-[9px] bg-primary/20 text-primary font-bold px-1.5 py-0.2 rounded-full">Default</span>
+                      )}
                     </div>
-                    <div className="text-[11px] text-muted-foreground flex items-center gap-2">
-                      <span>Status:</span>
-                      <span className={`font-semibold ${
-                        doc.status === 'completed' ? 'text-emerald-500' :
-                        doc.status === 'processing' ? 'text-blue-500 animate-pulse' :
-                        'text-red-500'
-                      }`}>
-                        {doc.status}
-                      </span>
-                      {doc.errorMessage && (
-                        <span className="text-red-400 text-[10px] flex items-center gap-1" title={doc.errorMessage}>
-                          <AlertTriangle className="w-3 h-3" /> {doc.errorMessage}
-                        </span>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        onClick={() => {
+                          setQnaForm({ id: qna.id, question: qna.question, answer: qna.answer || '', isDefault: qna.isDefault });
+                          setIsQnaModalOpen(true);
+                        }}
+                        className="p-1 text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      {!qna.isDefault && (
+                        <button
+                          onClick={() => handleDeleteQna(qna.id)}
+                          className="p-1 text-muted-foreground hover:text-red-400 transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       )}
                     </div>
                   </div>
-                  <button
-                    onClick={() => handleDeleteDoc(doc.id)}
-                    className="p-1.5 text-muted-foreground hover:text-red-400 transition-colors cursor-pointer"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+
+                  <div className="text-[12px] text-foreground bg-card p-2 rounded-lg border border-border/50">
+                    {qna.answer ? qna.answer : <span className="text-muted-foreground italic font-sans">{language === 'en' ? 'No answer provided.' : 'উত্তর লেখা হয়নি।'}</span>}
+                  </div>
                 </div>
               ))}
-              {documents.length === 0 && (
-                <div className="text-center py-6 text-muted-foreground text-[12px]">
-                  {language === 'en' ? 'No documents uploaded yet.' : 'এখনও কোনো ফাইল আপলোড করা হয়নি।'}
+            </div>
+
+            {/* Document Upload Subsection */}
+            <div className="pt-3 border-t border-border">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-[13px] font-bold text-foreground flex items-center gap-1.5">
+                  <FileText className="w-4 h-4 text-primary" />
+                  {language === 'en' ? 'Document Training (PDF/Word)' : 'ডকুমেন্ট ফাইলস (PDF/Word)'}
+                </h3>
+                {documents.length < 2 && (
+                  <label className="px-2.5 py-1 bg-primary/10 text-primary font-bold rounded-lg text-[11px] hover:bg-primary/20 transition-all cursor-pointer flex items-center gap-1">
+                    {uploadingDoc ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+                    {language === 'en' ? 'Upload PDF' : 'পিডিএফ আপলোড'}
+                    <input type="file" onChange={handleUploadDoc} className="hidden" accept=".pdf,.docx,.txt" />
+                  </label>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                {documents.map((doc) => (
+                  <div key={doc.id} className="bg-background border border-border rounded-xl p-2.5 flex items-center justify-between text-[12px]">
+                    <div className="flex items-center gap-2 truncate">
+                      <FileText className="w-4 h-4 text-primary shrink-0" />
+                      <span className="truncate font-semibold">{doc.filename}</span>
+                    </div>
+                    <button
+                      onClick={() => handleDeleteDoc(doc.id)}
+                      className="p-1 text-muted-foreground hover:text-red-400 transition-colors shrink-0 cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Section 3: Event-Wise AI Behavior & Smart Tags (#tour-tags) */}
+          <div id="tour-tags" className="bg-card border border-border shadow-md rounded-2xl p-4 space-y-3">
+            <div className="flex items-center gap-2 mb-1">
+              <Sliders className="w-5 h-5 text-primary" />
+              <div>
+                <h2 className="font-bold text-foreground text-sm">
+                  {language === 'en' ? 'Event-Wise AI Behavior & Smart Tags' : 'ইভেন্ট-ভিত্তিক এআই আচরণ ও স্মার্ট ট্যাগস'}
+                </h2>
+                <p className="text-[12px] text-muted-foreground font-sans">
+                  {language === 'en' ? 'Control exactly when and how the AI executes actions.' : 'কাস্টমার মেসেজের নির্দিষ্ট ইভেন্টে এআই অ্যাকশন অন/অফ করুন।'}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {toolDefinitions.map(tool => {
+                const toolState = tools[tool.type] || { isEnabled: false, configJson: {} };
+                const isAllowed = tool.allowed;
+
+                return (
+                  <div 
+                    key={tool.type} 
+                    className={`border rounded-xl p-3 flex flex-col justify-between transition-colors ${
+                      !isAllowed 
+                        ? 'bg-muted/40 border-border opacity-75' 
+                        : toolState.isEnabled 
+                        ? 'bg-primary/5 border-primary/30' 
+                        : 'bg-background border-border'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <div>
+                        <div className="flex items-center gap-1.5 font-bold text-[12px] text-foreground">
+                          {tool.type === 'order_placement' && <Sparkles className="w-3.5 h-3.5 text-emerald-600" />}
+                          {tool.type === 'image_reading' && <Eye className="w-3.5 h-3.5 text-blue-600" />}
+                          {tool.type === 'support_detection' && <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />}
+                          {tool.type === 'product_matching' && <Wand2 className="w-3.5 h-3.5 text-purple-600" />}
+                          {language === 'en' ? tool.titleEn : tool.titleBn}
+                        </div>
+                        <p className="text-[11px] text-muted-foreground mt-0.5 font-sans">
+                          {language === 'en' ? tool.descEn : tool.descBn}
+                        </p>
+                      </div>
+
+                      <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                        <input 
+                          type="checkbox" 
+                          disabled={!isAllowed}
+                          checked={isAllowed && toolState.isEnabled}
+                          onChange={(e) => handleToggleTool(tool.type, e.target.checked)}
+                          className="sr-only peer" 
+                        />
+                        <div className={`w-8 h-4.5 bg-zinc-700 peer-focus:outline-none rounded-full peer ${
+                          isAllowed ? 'peer-checked:after:translate-x-full peer-checked:bg-primary cursor-pointer' : 'cursor-not-allowed opacity-50'
+                        } after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all`}></div>
+                      </label>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+        </div>
+
+        {/* RIGHT COLUMN: Live Simulator (#tour-simulator) (5 Cols on desktop, Sticky) */}
+        <div className="lg:col-span-5 lg:sticky lg:top-6 space-y-4">
+          <div id="tour-simulator" className="bg-card border border-border shadow-xl rounded-2xl overflow-hidden flex flex-col h-[640px]">
+            
+            {/* Simulator Header */}
+            <div className="p-3.5 border-b border-border bg-surface/80 backdrop-blur-xl flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="relative">
+                  <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-xs border border-primary/30">
+                    <Bot className="w-4 h-4" />
+                  </div>
+                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-card" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-foreground flex items-center gap-1.5">
+                    {config.agentName || 'ZiniChat Assistant'}
+                    <span className="text-[10px] font-semibold text-emerald-500 bg-emerald-500/10 px-1.5 py-0.2 rounded-md">Live Simulator</span>
+                  </h3>
+                  <p className="text-[11px] text-muted-foreground">
+                    {language === 'en' ? 'Instant Prompt & Q&A Tester' : 'ইনস্ট্যান্ট প্রম্পট ও ক্যানাল টেস্ট'}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setSimulatorMessages([{
+                  id: '1',
+                  sender: 'ai',
+                  text: language === 'en' ? 'Simulator reset! Send a message.' : 'সিমুলেটর রিসেট হয়েছে! যেকোনো মেসেজ পাঠান।'
+                }])}
+                className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors cursor-pointer"
+                title={language === 'en' ? 'Clear Chat' : 'চ্যাট ক্লিয়ার করুন'}
+              >
+                <RefreshCw className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Simulator Messages Feed */}
+            <div ref={chatScrollRef} className="flex-1 overflow-y-auto p-4 space-y-3 bg-background/50 custom-scrollbar">
+              {simulatorMessages.map((msg) => (
+                <div 
+                  key={msg.id}
+                  className={`flex gap-2 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  {msg.sender === 'ai' && (
+                    <div className="w-7 h-7 rounded-full bg-primary/20 text-primary flex items-center justify-center shrink-0 mt-0.5 border border-primary/30">
+                      <Bot className="w-3.5 h-3.5" />
+                    </div>
+                  )}
+
+                  <div className={`max-w-[82%] p-3 rounded-2xl text-[12.5px] leading-relaxed whitespace-pre-wrap ${
+                    msg.sender === 'user'
+                      ? 'bg-primary text-white rounded-tr-xs shadow-sm font-sans'
+                      : 'bg-card text-foreground border border-border/80 rounded-tl-xs shadow-xs font-sans'
+                  }`}>
+                    {msg.text}
+                  </div>
+
+                  {msg.sender === 'user' && (
+                    <div className="w-7 h-7 rounded-full bg-slate-700 text-zinc-300 flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">
+                      <User className="w-3.5 h-3.5" />
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {isSimulating && (
+                <div className="flex gap-2 justify-start items-center">
+                  <div className="w-7 h-7 rounded-full bg-primary/20 text-primary flex items-center justify-center shrink-0 border border-primary/30">
+                    <Bot className="w-3.5 h-3.5 animate-spin" />
+                  </div>
+                  <div className="bg-card text-muted-foreground border border-border p-2.5 rounded-2xl text-[12px] flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 bg-primary rounded-full animate-ping" />
+                    {language === 'en' ? 'AI is thinking...' : 'এআই উত্তর টাইপ করছে...'}
+                  </div>
                 </div>
               )}
             </div>
+
+            {/* Quick Test Prompt Pills */}
+            <div className="px-3 py-2 border-t border-border bg-card/60 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+              <span className="text-[10px] font-bold text-muted-foreground shrink-0">Test Prompts:</span>
+              {[
+                { labelEn: 'Delivery Fee?', labelBn: 'ডেলিভারি চার্জ কত?', text: 'ডেলিভারি চার্জ কত?' },
+                { labelEn: 'Location?', labelBn: 'ঠিকানা কোথায়?', text: 'আপনাদের শোরুমের ঠিকানা কোথায়?' },
+                { labelEn: 'How to Order?', labelBn: 'কীভাবে অর্ডার করব?', text: 'আমি কীভাবে অর্ডার করব?' }
+              ].map((pill, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => handleSimulateSend(pill.text)}
+                  className="px-2.5 py-1 bg-surface-hover/80 hover:bg-primary/20 hover:text-primary text-[10.5px] font-medium text-foreground rounded-full border border-border transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+                >
+                  {language === 'en' ? pill.labelEn : pill.labelBn}
+                </button>
+              ))}
+            </div>
+
+            {/* Input Box */}
+            <div className="p-3 border-t border-border bg-card">
+              <form 
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleSimulateSend();
+                }}
+                className="flex items-center gap-2"
+              >
+                <input
+                  type="text"
+                  value={simulatorInput}
+                  onChange={(e) => setSimulatorInput(e.target.value)}
+                  placeholder={language === 'en' ? 'Type a test query (e.g. Delivery Charge)...' : 'টেস্ট প্রশ্ন লিখুন (যেমন: ডেলিভারি চার্জ কত)...'}
+                  className="flex-1 bg-background border border-border rounded-xl px-3 py-2 text-[12.5px] text-foreground focus:outline-none focus:border-primary font-sans"
+                />
+                <button
+                  type="submit"
+                  disabled={!simulatorInput.trim() || isSimulating}
+                  className="p-2 bg-primary hover:bg-primary/90 text-white rounded-xl disabled:opacity-50 transition-colors shrink-0 cursor-pointer"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              </form>
+            </div>
+
           </div>
         </div>
-      )}
+
+      </div>
 
       {/* Q&A Modal */}
       {isQnaModalOpen && (
@@ -830,7 +910,7 @@ export default function AiTrainingPage() {
                   ? (language === 'en' ? 'Edit Question & Answer' : 'প্রশ্ন ও উত্তর এডিট করুন') 
                   : (language === 'en' ? 'Add Custom Question' : 'নতুন প্রশ্ন যোগ করুন')}
               </h3>
-              <button onClick={() => setIsQnaModalOpen(false)} className="text-muted-foreground hover:text-foreground">
+              <button onClick={() => setIsQnaModalOpen(false)} className="text-muted-foreground hover:text-foreground cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -878,13 +958,13 @@ export default function AiTrainingPage() {
             <div className="flex justify-end gap-2 border-t border-surface-hover pt-3">
               <button
                 onClick={() => setIsQnaModalOpen(false)}
-                className="px-4 py-2 bg-muted text-muted-foreground hover:text-foreground rounded-xl text-[12px] font-bold"
+                className="px-4 py-2 bg-muted text-muted-foreground hover:text-foreground rounded-xl text-[12px] font-bold cursor-pointer"
               >
                 {language === 'en' ? 'Cancel' : 'বাতিল'}
               </button>
               <button
                 onClick={handleSaveQna}
-                className="px-4 py-2 bg-primary text-white font-bold rounded-xl text-[12px] hover:bg-primary/90"
+                className="px-4 py-2 bg-primary text-white font-bold rounded-xl text-[12px] hover:bg-primary/90 cursor-pointer"
               >
                 {language === 'en' ? 'Save Q&A' : 'সেভ করুন'}
               </button>

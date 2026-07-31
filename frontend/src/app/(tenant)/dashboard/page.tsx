@@ -193,6 +193,9 @@ export default function ExecutiveDashboardPage() {
   return (
     <div className="max-w-[1600px] mx-auto space-y-6 p-2 sm:p-4 pb-16 animate-in fade-in duration-500 text-foreground">
 
+      {/* INLINE GAMIFIED SETUP CHECKLIST BANNER */}
+      <SetupJourneyWidget initialStatus={setupStatus} />
+
       {/* TOP HEADER: EXECUTIVE CONTROL BAR */}
       <div className="bg-surface/90 backdrop-blur-xl border border-surface-hover rounded-2xl p-4 sm:p-5 shadow-lg shadow-black/5 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
         
