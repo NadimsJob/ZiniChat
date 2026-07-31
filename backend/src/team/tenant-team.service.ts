@@ -9,12 +9,15 @@ import * as crypto from 'crypto';
 export const ALL_MENU_PERMISSIONS = [
   'inbox',
   'leads',
+  'products',
   'broadcasts',
   'orders',
   'team',
+  'labels',
   'settings',
   'ai_training',
   'subscription',
+  'support',
 ] as const;
 
 export type MenuPermission = typeof ALL_MENU_PERMISSIONS[number];

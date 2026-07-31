@@ -714,6 +714,51 @@ export default function InboxPage() {
     }
   };
 
+  const handleForceDownload = async (url: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Fallback if we cannot fetch
+    const fallbackToNewTab = () => window.open(url, '_blank');
+    
+    try {
+      const toastId = toast.loading(language === 'en' ? 'Downloading...' : 'ডাউনলোড হচ্ছে...', { id: 'download-toast' });
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        toast.dismiss(toastId);
+        fallbackToNewTab();
+        return;
+      }
+      
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      
+      let filename = 'downloaded_image.jpg';
+      try {
+        const parts = url.split('/');
+        const lastPart = parts[parts.length - 1];
+        if (lastPart) {
+          filename = lastPart.split('?')[0] || 'image.jpg';
+        }
+      } catch (e) {}
+      
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+      
+      toast.success(language === 'en' ? 'Downloaded successfully!' : 'ডাউনলোড সম্পন্ন হয়েছে!', { id: toastId });
+    } catch (err) {
+      toast.dismiss('download-toast');
+      console.error('Download failed, falling back to new tab', err);
+      fallbackToNewTab();
+    }
+  };
+
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] overflow-hidden bg-background text-foreground">
       
@@ -917,10 +962,10 @@ export default function InboxPage() {
                   try { parsed = JSON.parse(lastMsg.content); } catch (e) {}
                 }
                 if (typeof parsed === 'object' && parsed !== null) {
-                  lastText = parsed.body || parsed.text || parsed.caption || (lastMsg.type === 'image' ? '📷 Photo' : lastMsg.type === 'video' ? '🎥 Video' : lastMsg.type === 'document' ? '📄 Document' : '');
+                  lastText = parsed.body || parsed.text || parsed.caption || (lastMsg.type === 'image' ? '📷 Photo' : lastMsg.type === 'video' ? '🎥 Video' : lastMsg.type === 'audio' ? '🎤 Voice' : lastMsg.type === 'document' ? '📄 Document' : '');
                 } else if (typeof lastMsg.content === 'string') {
                   if (lastMsg.content.trim().startsWith('{') && lastMsg.content.includes('"mediaUrl"')) {
-                    lastText = lastMsg.type === 'image' ? '📷 Photo' : lastMsg.type === 'video' ? '🎥 Video' : '📄 Document';
+                    lastText = lastMsg.type === 'image' ? '📷 Photo' : lastMsg.type === 'video' ? '🎥 Video' : lastMsg.type === 'audio' ? '🎤 Voice' : '📄 Document';
                   } else {
                     lastText = lastMsg.content;
                   }
@@ -1258,6 +1303,12 @@ export default function InboxPage() {
                             onClick={() => setZoomedImage(resolveMediaUrl(mediaUrl))}
                             className="max-h-48 rounded-lg cursor-pointer hover:opacity-90 object-cover" 
                           />
+                        ) : m.type === 'audio' ? (
+                          <audio controls src={resolveMediaUrl(mediaUrl)} className="max-w-[220px] md:max-w-[280px] h-10 mt-1 outline-none">
+                            Your browser does not support the audio element.
+                          </audio>
+                        ) : m.type === 'video' ? (
+                          <video controls src={resolveMediaUrl(mediaUrl)} className="max-h-48 max-w-full rounded-lg object-cover outline-none" />
                         ) : (
                           <a href={resolveMediaUrl(mediaUrl)} target="_blank" rel="noreferrer" className="flex items-center gap-2 underline text-[11px]">
                             <FileIcon className="w-4 h-4" /> Download File
@@ -1519,16 +1570,13 @@ export default function InboxPage() {
             <img src={zoomedImage} alt="Zoomed" className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl" />
             
             {/* Download Button */}
-            <a 
-              href={zoomedImage} 
-              download 
-              target="_blank" 
-              rel="noreferrer" 
-              className="absolute top-2 right-12 p-2 bg-black/60 text-white rounded-full hover:bg-black transition-colors flex items-center justify-center"
+            <button 
+              onClick={(e) => handleForceDownload(zoomedImage, e)}
+              className="absolute top-2 right-12 p-2 bg-black/60 text-white rounded-full hover:bg-black transition-colors flex items-center justify-center cursor-pointer"
               title={language === 'en' ? 'Download Image' : 'ডাউনলোড করুন'}
             >
               <Download className="w-5 h-5" />
-            </a>
+            </button>
 
             {/* Close Button */}
             <button onClick={() => setZoomedImage(null)} className="absolute top-2 right-2 p-2 bg-black/60 text-white rounded-full hover:bg-black">

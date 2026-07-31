@@ -33,8 +33,8 @@ async function main() {
               bn: 'WhatsApp, Meta Messenger, এবং Instagram DM থেকে সব গ্রাহকের কথোপকথন একটি শক্তিশালী ইনবক্সে পরিচালনা করুন।' 
             },
             bullets: {
-              en: ['WhatsApp Business API & QR', 'Meta Messenger integration', 'Instagram Direct Messages', 'Real-time message sync', 'Media attachments (images, video)'],
-              bn: ['WhatsApp Business API ও QR', 'Meta Messenger ইন্টিগ্রেশন', 'Instagram ডাইরেক্ট মেসেজ', 'রিয়েল-টাইম মেসেজ সিঙ্ক', 'মিডিয়া অ্যাটাচমেন্ট (ছবি, ভিডিও)']
+              en: ['WhatsApp Official Cloud API', 'Meta Messenger integration', 'Instagram Direct Messages', 'Real-time message sync', 'Media attachments (images, video)'],
+              bn: ['WhatsApp Official Cloud API', 'Meta Messenger ইন্টিগ্রেশন', 'Instagram ডাইরেক্ট মেসেজ', 'রিয়েল-টাইম মেসেজ সিঙ্ক', 'মিডিয়া অ্যাটাচমেন্ট (ছবি, ভিডিও)']
             }
           },
           { 
@@ -126,10 +126,10 @@ async function main() {
             },
             {
               categoryId: 'whatsapp',
-              question: { en: 'Does it support WhatsApp QR or Official API?', bn: 'এটি কি WhatsApp QR নাকি অফিসিয়াল API সাপোর্ট করে?' },
+              question: { en: 'Does it support WhatsApp Official API?', bn: 'এটি কি অফিসিয়াল WhatsApp API সাপোর্ট করে?' },
               answer: { 
-                en: 'We support both! You can connect unofficial WhatsApp Web via QR code, or apply for the official WhatsApp Business API depending on your package.',
-                bn: 'আমরা দুটিই সাপোর্ট করি! আপনি প্যাকেজের উপর ভিত্তি করে QR কোড স্ক্যান করে আন-অফিসিয়াল WhatsApp Web কানেক্ট করতে পারবেন, অথবা অফিসিয়াল API-এর জন্য আবেদন করতে পারবেন।' 
+                en: 'Yes! We officially support the WhatsApp Cloud API for reliable, high-volume messaging and official Green Tick verification.',
+                bn: 'হ্যাঁ! আমরা অফিসিয়াল WhatsApp Cloud API সাপোর্ট করি যা বিশ্বস্ত, হাই-ভলিউম মেসেজিং এবং অফিসিয়াল গ্রিন টিক ভেরিফিকেশনের জন্য সবচেয়ে ভালো।' 
               }
             },
             {
@@ -185,10 +185,10 @@ async function main() {
             },
             {
               categoryId: 'whatsapp',
-              question: { en: 'Is there a risk of my WhatsApp number getting banned?', bn: 'আমার হোয়াটসঅ্যাপ নাম্বার ব্যান হওয়ার কি কোনো ঝুঁকি আছে?' },
+              question: { en: 'How secure is the Official WhatsApp API?', bn: 'অফিসিয়াল WhatsApp API কতটা নিরাপদ?' },
               answer: {
-                en: 'For Unofficial WhatsApp Web, we enforce strict anti-ban rate limits. However, for bulk marketing, we highly recommend using the Official WhatsApp Business API.',
-                bn: 'আন-অফিসিয়াল হোয়াটসঅ্যাপ ওয়েবের জন্য আমাদের সিস্টেমে অ্যান্টি-ব্যান রেট লিমিট দেওয়া আছে। তবে, একসাথে অনেক মেসেজ বা মার্কেটিং করার জন্য আমরা অফিসিয়াল হোয়াটসঅ্যাপ বিজনেস API ব্যবহারের পরামর্শ দিই।'
+                en: 'The Official WhatsApp Cloud API is extremely secure and completely eliminates the risk of arbitrary number bans. It is officially supported by Meta and built for scale and bulk marketing.',
+                bn: 'অফিসিয়াল WhatsApp Cloud API অত্যন্ত নিরাপদ এবং নাম্বার ব্যান হওয়ার ঝুঁকি সম্পূর্ণ দূর করে। এটি মেটার অফিসিয়াল সাপোর্টপ্রাপ্ত এবং বড় স্কেলে মেসেজ ও মার্কেটিংয়ের জন্য ডিজাইন করা হয়েছে।'
               }
             },
             {

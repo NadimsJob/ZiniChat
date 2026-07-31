@@ -12,7 +12,7 @@ export default function SupportChatsPage() {
   const { language } = useLanguage();
   const [conversations, setConversations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null);
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [aiConfigs, setAiConfigs] = useState<any[]>([]);
@@ -66,18 +66,18 @@ export default function SupportChatsPage() {
     }
   };
 
-  const handleSelectConversation = async (tenantId: string) => {
-    setSelectedTenantId(tenantId);
+  const handleSelectConversation = async (conversationId: string) => {
+    setSelectedConversationId(conversationId);
     setLoadingMessages(true);
     try {
       const token = Cookies.get('access_token');
-      const res = await fetch(`${API}/support-chat/admin/conversations`, {
+      const res = await fetch(`${API}/support-chat/admin/conversation-details`, {
         method: 'POST',
         headers: { 
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ tenantId })
+        body: JSON.stringify({ conversationId })
       });
       if (res.ok) {
         const data = await res.json();
@@ -126,7 +126,7 @@ export default function SupportChatsPage() {
         </div>
       </div>
 
-      {!selectedTenantId ? (
+      {!selectedConversationId ? (
         <div className="bg-surface border border-surface-hover rounded-xl overflow-hidden">
           <table className="w-full text-left text-[12px]">
             <thead className="bg-surface-hover/50 text-zinc-400">
@@ -148,7 +148,7 @@ export default function SupportChatsPage() {
                   <td className="px-4 py-3 text-zinc-400">{new Date(conv.updatedAt).toLocaleString()}</td>
                   <td className="px-4 py-3 text-right">
                     <button 
-                      onClick={() => handleSelectConversation(conv.tenantId)}
+                      onClick={() => handleSelectConversation(conv.id)}
                       className="px-3 py-1.5 bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 rounded-lg transition-colors font-semibold"
                     >
                       View Chat
@@ -170,7 +170,7 @@ export default function SupportChatsPage() {
         <div className="bg-surface border border-surface-hover rounded-xl flex flex-col h-[600px]">
           <div className="p-3 border-b border-surface-hover flex items-center gap-3">
             <button 
-              onClick={() => setSelectedTenantId(null)}
+              onClick={() => setSelectedConversationId(null)}
               className="p-1.5 hover:bg-surface-hover rounded-lg transition-colors"
             >
               <ArrowLeft className="w-4 h-4 text-zinc-400" />

@@ -17,7 +17,8 @@ export default function SignupPage() {
     name: '',
     email: '',
     phoneNo: '+880',
-    password: ''
+    password: '',
+    confirmPassword: ''
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -107,6 +108,12 @@ export default function SignupPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
     setLoading(true);
 
     // Track Lead & SignUp events on submit
@@ -208,6 +215,18 @@ export default function SignupPage() {
             type="password"
             value={formData.password}
             onChange={(e) => setFormData({...formData, password: e.target.value})}
+            required
+            minLength={6}
+            className="w-full bg-background border border-surface-hover rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+            placeholder="••••••••"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1.5 text-zinc-400">Confirm Password</label>
+          <input
+            type="password"
+            value={formData.confirmPassword}
+            onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
             required
             minLength={6}
             className="w-full bg-background border border-surface-hover rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"

@@ -371,6 +371,21 @@ export class WhatsappWebService implements OnModuleInit {
           } catch (err) {
             this.logger.error(`Failed to download document media for ${tenantId}: ${err.message}`);
           }
+        } else if (msg.message.audioMessage) {
+          messageType = 'audio';
+          contentStr = msg.message.audioMessage.ptt ? '🎤 [Voice Message]' : '🎵 [Audio]';
+          try {
+            const buffer = await downloadMediaMessage(msg, 'buffer', {});
+            const uploadPath = path.join(process.cwd(), 'uploads', 'tenants', tenantId);
+            if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true });
+            const fileName = `wa_${Date.now()}_${Math.round(Math.random() * 1E6)}.ogg`;
+            const filePath = path.join(uploadPath, fileName);
+            fs.writeFileSync(filePath, buffer);
+            mediaUrl = `/uploads/tenants/${tenantId}/${fileName}`;
+            this.logger.log(`Saved audio media: ${buffer.length} bytes`);
+          } catch (err) {
+            this.logger.error(`Failed to download audio media for ${tenantId}: ${err.message}`);
+          }
         } else {
           contentStr = '[Unsupported Message Type]';
         }

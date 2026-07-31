@@ -481,39 +481,13 @@ export default function HomePage() {
             </h2>
             <p className="mt-3 text-base text-muted-foreground sm:text-lg">
               {language === 'en' 
-                ? 'Flexible connection options for your business: Official Meta Cloud API or zero-cost WhatsApp Web QR/Pairing code.' 
-                : 'অফিসিয়াল মেটা ক্লাউড এপিআই কিংবা সম্পূর্ণ ফ্রি হোয়াটসঅ্যাপ ওয়েব কুইক কানেক্ট — আপনার ইচ্ছামতো বেছে নিন।'}
+                ? 'Connect your business instantly with the Official Meta Cloud API for high-volume, reliable messaging.' 
+                : 'হাই-ভলিউম ও বিশ্বস্ত মেসেজিংয়ের জন্য সরাসরি মেটা ক্লাউড এপিআইয়ের মাধ্যমে আপনার ব্যবসাকে কানেক্ট করুন।'}
             </p>
           </div>
 
-          {/* 4 Channel Feature Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            
-            {/* WhatsApp Web */}
-            <div className="group rounded-3xl border border-border bg-card p-6 shadow-sm hover:border-[#25D366]/50 hover:shadow-xl hover:shadow-[#25D366]/10 transition-all duration-300 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 rounded-2xl bg-[#25D366]/10 text-[#25D366] flex items-center justify-center font-black text-xl">
-                    WA
-                  </div>
-                  <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 text-[10px] font-extrabold border border-emerald-500/20">
-                    Instant Connect
-                  </span>
-                </div>
-                <h3 className="text-lg font-bold text-foreground mb-2">WhatsApp Web</h3>
-                <p className="text-xs text-muted-foreground leading-relaxed mb-4">
-                  {language === 'en' 
-                    ? 'No Meta verification needed. Connect your personal/business WhatsApp using 8-digit Pairing Code or instant QR Scan.' 
-                    : 'মেটা ভেরিফিকেশন ছাড়া আপনার সাধারণ বা বিজনেস হোয়াটসঅ্যাপ ৮-ডিজিট পেয়ারিং কোড বা QR দিয়ে সহজেই কানেক্ট করুন।'}
-                </p>
-              </div>
-
-              <ul className="space-y-2 border-t border-border/60 pt-4 text-xs font-semibold text-foreground/80">
-                <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-[#25D366]" /> 8-Digit Phone Pairing Code</li>
-                <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-[#25D366]" /> Live QR Code Scanning</li>
-                <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-[#25D366]" /> Auto Multi-Device Sync</li>
-              </ul>
-            </div>
+          {/* 3 Channel Feature Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
             {/* WhatsApp Cloud API */}
             <div className="group rounded-3xl border border-border bg-card p-6 shadow-sm hover:border-[#075E54]/50 hover:shadow-xl hover:shadow-[#075E54]/10 transition-all duration-300 flex flex-col justify-between">

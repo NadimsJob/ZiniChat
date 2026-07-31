@@ -273,12 +273,15 @@ describe('TenantTeamService', () => {
     it('should contain all expected menu keys', () => {
       expect(ALL_MENU_PERMISSIONS).toContain('inbox');
       expect(ALL_MENU_PERMISSIONS).toContain('leads');
+      expect(ALL_MENU_PERMISSIONS).toContain('products');
       expect(ALL_MENU_PERMISSIONS).toContain('broadcasts');
       expect(ALL_MENU_PERMISSIONS).toContain('orders');
       expect(ALL_MENU_PERMISSIONS).toContain('team');
+      expect(ALL_MENU_PERMISSIONS).toContain('labels');
       expect(ALL_MENU_PERMISSIONS).toContain('settings');
       expect(ALL_MENU_PERMISSIONS).toContain('ai_training');
       expect(ALL_MENU_PERMISSIONS).toContain('subscription');
+      expect(ALL_MENU_PERMISSIONS).toContain('support');
     });
   });
 });

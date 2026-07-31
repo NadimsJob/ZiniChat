@@ -5,8 +5,8 @@ import { useLanguage } from '@/components/LanguageProvider';
 import Cookies from 'js-cookie';
 import {
   Users, Plus, Shield, ShieldCheck, Mail, X, Edit2, Trash2, Crown, Save,
-  CheckCircle2, Lock, Wifi, LayoutDashboard, Megaphone, ShoppingCart, Settings,
-  Brain, CreditCard, UserCog, Inbox
+  CheckCircle2, Lock, Wifi, LayoutDashboard, Megaphone, ShoppingCart, ShoppingBag, Settings,
+  Brain, CreditCard, UserCog, Inbox, Tag, MessageSquare
 } from 'lucide-react';
 import InstructionBanner from '@/components/InstructionBanner';
 
@@ -15,12 +15,15 @@ const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 const MENU_PERMISSIONS = [
   { key: 'inbox',        label: 'Live Inbox',       labelBn: 'লাইভ ইনবক্স',    icon: Inbox },
   { key: 'leads',        label: 'Leads / CRM',      labelBn: 'লিডস / সিআরএম',  icon: UserCog },
+  { key: 'products',     label: 'Products',         labelBn: 'প্রোডাক্ট',         icon: ShoppingCart },
+  { key: 'orders',       label: 'Orders',           labelBn: 'অর্ডার',           icon: ShoppingBag },
   { key: 'broadcasts',   label: 'Broadcasts',       labelBn: 'ব্রডকাস্ট',       icon: Megaphone },
-  { key: 'orders',       label: 'Orders',           labelBn: 'অর্ডার',           icon: ShoppingCart },
   { key: 'team',         label: 'Team',             labelBn: 'টিম',              icon: Users },
+  { key: 'labels',       label: 'Tags',             labelBn: 'ট্যাগ',            icon: Tag },
   { key: 'settings',     label: 'All Settings',     labelBn: 'সেটিংস',          icon: Settings },
   { key: 'ai_training',  label: 'AI Training',      labelBn: 'এআই ট্রেনিং',    icon: Brain },
   { key: 'subscription', label: 'Subscription',     labelBn: 'সাবস্ক্রিপশন',    icon: CreditCard },
+  { key: 'support',      label: 'Support Tickets',  labelBn: 'সাপোর্ট টিকিট', icon: MessageSquare },
 ];
 
 export default function TeamPage() {

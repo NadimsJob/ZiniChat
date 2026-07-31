@@ -205,6 +205,47 @@ export default function StorageSettingsPage() {
     }
   };
 
+  const handleSingleDelete = async (url: string) => {
+    const confirmMsg = language === 'en'
+      ? 'Are you sure you want to delete this file?'
+      : 'আপনি কি নিশ্চিত যে আপনি এই ফাইলটি ডিলিট করতে চান?';
+
+    if (!confirm(confirmMsg)) return;
+
+    setActionLoading(true);
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/storage/cleanup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ urls: [url] })
+      });
+
+      if (res.ok) {
+        toast.success(language === 'en' ? 'File deleted successfully' : 'ফাইল ডিলিট করা হয়েছে');
+        
+        if (selectedUrls.has(url)) {
+          const next = new Set(selectedUrls);
+          next.delete(url);
+          setSelectedUrls(next);
+        }
+        
+        fetchStats();
+        if (activeCategory) fetchCategoryFiles(activeCategory);
+      } else {
+        const err = await res.json();
+        toast.error(err.message || 'Failed to delete file');
+      }
+    } catch (err) {
+      toast.error('Error deleting file');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const formatBytes = (bytes: number) => {
     if (!bytes || bytes === 0) return '0 B';
     const k = 1024;
@@ -542,15 +583,28 @@ export default function StorageSettingsPage() {
                         </div>
                       </div>
 
-                      <a 
-                        href={file.url} 
-                        target="_blank" 
-                        rel="noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="text-[11px] text-primary hover:underline font-medium shrink-0 ml-2"
-                      >
-                        {language === 'en' ? 'View File' : 'ফাইল দেখুন'}
-                      </a>
+                      <div className="flex items-center shrink-0 ml-2 gap-3">
+                        <a 
+                          href={file.url} 
+                          target="_blank" 
+                          rel="noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-[11px] text-primary hover:underline font-medium"
+                        >
+                          {language === 'en' ? 'View' : 'দেখুন'}
+                        </a>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSingleDelete(file.url);
+                          }}
+                          disabled={actionLoading}
+                          className="text-red-500 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                          title={language === 'en' ? 'Delete File' : 'ফাইল ডিলিট করুন'}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   );
                 })
