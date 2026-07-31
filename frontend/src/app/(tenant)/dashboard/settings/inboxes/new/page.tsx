@@ -546,13 +546,21 @@ export default function NewInboxStepper() {
                         </div>
                       </div>
 
-                      {/* Upgrade CTA for locked */}
+                      {/* Upgrade CTA / View Inboxes for locked */}
                       {isLocked && (
-                        <div
-                          onClick={(e) => { e.stopPropagation(); router.push('/dashboard/settings/subscription'); }}
-                          className="mt-3 flex items-center gap-1.5 text-[11px] text-primary font-bold hover:underline cursor-pointer">
-                          <Crown className="w-3 h-3" />
-                          {language === 'en' ? 'Upgrade Plan →' : 'প্ল্যান আপগ্রেড করুন →'}
+                        <div className="mt-3 flex items-center justify-between gap-2 text-[11px]">
+                          <div
+                            onClick={(e) => { e.stopPropagation(); router.push('/dashboard/settings/inboxes'); }}
+                            className="text-indigo-400 font-bold hover:underline cursor-pointer flex items-center gap-1">
+                            <Globe className="w-3 h-3" />
+                            {language === 'en' ? 'View Inboxes →' : 'ইনবক্স তালিকা দেখুন →'}
+                          </div>
+                          <div
+                            onClick={(e) => { e.stopPropagation(); router.push('/dashboard/settings/subscription'); }}
+                            className="text-primary font-bold hover:underline cursor-pointer flex items-center gap-1">
+                            <Crown className="w-3 h-3" />
+                            {language === 'en' ? 'Upgrade →' : 'আপগ্রেড →'}
+                          </div>
                         </div>
                       )}
                     </button>

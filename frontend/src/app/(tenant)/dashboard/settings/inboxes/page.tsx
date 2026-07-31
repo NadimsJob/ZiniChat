@@ -5,8 +5,11 @@ import Cookies from 'js-cookie';
 import Link from 'next/link';
 import { useLanguage } from '@/components/LanguageProvider';
 import InstructionBanner from '@/components/InstructionBanner';
-import toast, { Toaster } from 'react-hot-toast';
-import { Plus, Webhook, Trash2, RefreshCw, MessageCircle, PhoneCall, Camera, RotateCcw } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { 
+  Plus, Webhook, Trash2, RefreshCw, MessageCircle, PhoneCall, Camera, RotateCcw, 
+  Globe, Code, Zap, Copy, X
+} from 'lucide-react';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -14,6 +17,7 @@ export default function InboxesPage() {
   const { language } = useLanguage();
   const [connections, setConnections] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [codeModalWidget, setCodeModalWidget] = useState<any | null>(null);
 
   const fetchConnections = async () => {
     setLoading(true);
@@ -115,11 +119,29 @@ export default function InboxesPage() {
     }
   };
 
+  const handleTestPing = async (id: string) => {
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/inbox/channels/website-widget/${id}/test-ping`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        toast.success(language === 'en' ? 'Connection Established 🟢! Test message sent to Inbox.' : 'কানেকশন এস্টাবলিশড 🟢! টেস্ট মেসেজ ইনবক্সে পাঠানো হয়েছে।');
+      } else {
+        toast.error(language === 'en' ? 'Failed to send test ping' : 'টেস্ট পিং পাঠাতে ব্যর্থ হয়েছে');
+      }
+    } catch (err) {
+      toast.error('Test ping error');
+    }
+  };
+
   const getChannelIcon = (type: string) => {
     switch(type?.toLowerCase()) {
       case 'whatsapp': return <PhoneCall className="w-5 h-5 text-emerald-500" />;
       case 'messenger': return <MessageCircle className="w-5 h-5 text-blue-500" />;
       case 'instagram': return <Camera className="w-5 h-5 text-pink-500" />;
+      case 'website': return <Globe className="w-5 h-5 text-indigo-500" />;
       default: return <Webhook className="w-5 h-5 text-primary" />;
     }
   };
@@ -129,6 +151,7 @@ export default function InboxesPage() {
       case 'whatsapp': return 'WhatsApp';
       case 'messenger': return 'Messenger';
       case 'instagram': return 'Instagram';
+      case 'website': return 'Website Widget';
       default: return type || 'Channel';
     }
   };
@@ -145,8 +168,8 @@ export default function InboxesPage() {
             </h1>
             <p className="text-xs text-slate-500 max-w-2xl">
               {language === 'en' 
-                ? 'Manage active channels (WhatsApp, Messenger, Instagram) and check connection health.' 
-                : 'আপনার হোয়াটসঅ্যাপ বা মেসেঞ্জার চ্যানেলের কানেকশন স্ট্যাটাস এবং AI রিপ্লাই সেটিংস ম্যানেজ করুন।'}
+                ? 'Manage active channels (WhatsApp, Messenger, Instagram, Website Widgets) and check connection health.' 
+                : 'আপনার হোয়াটসঅ্যাপ, মেসেঞ্জার বা ওয়েবসাইট উইজেট চ্যানেলের কানেকশন স্ট্যাটাস এবং AI রিপ্লাই সেটিংস ম্যানেজ করুন।'}
             </p>
           </div>
           
@@ -162,7 +185,7 @@ export default function InboxesPage() {
         {/* Instruction Banner */}
         <InstructionBanner 
           title={language === 'en' ? 'Inbox Connection Status Instructions' : 'ইনবক্স কানেকশন স্ট্যাটাস নির্দেশিকা'}
-          description={language === 'en' ? 'Check if your connected channels are active. A green badge indicates the channel is connected and ready to receive messages. Toggle AI Auto-Reply per inbox to automate customer replies.' : 'এখানে আপনার হোয়াটসঅ্যাপ বা মেসেঞ্জার চ্যানেলের আসল কানেকশন স্ট্যাটাস দেখা যাবে। সবুজ "Active 🟢" দেখানোর অর্থ হলো চ্যানেলটি মেসেজ আদান-প্রদানের জন্য সম্পূর্ণ প্রস্তুত।'}
+          description={language === 'en' ? 'Check if your connected channels are active. A green badge indicates the channel is connected and ready to receive messages. Toggle AI Auto-Reply per inbox to automate customer replies.' : 'এখানে আপনার হোয়াটসঅ্যাপ, মেসেঞ্জার বা ওয়েবসাইট চ্যাটের আসল কানেকশন স্ট্যাটাস দেখা যাবে। সবুজ "Active 🟢" দেখানোর অর্থ হলো চ্যানেলটি মেসেজ আদান-প্রদানের জন্য সম্পূর্ণ প্রস্তুত।'}
           icon={Webhook}
           variant="emerald"
         />
@@ -232,6 +255,27 @@ export default function InboxesPage() {
                         </Link>
                       )}
 
+                      {conn.channelType?.toLowerCase() === 'website' && (
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setCodeModalWidget(conn)}
+                            className="px-2.5 py-1 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 rounded-lg text-[11px] font-bold flex items-center gap-1 transition-all shrink-0 cursor-pointer"
+                            title="View Embed Code"
+                          >
+                            <Code className="w-3.5 h-3.5" />
+                            <span>{language === 'en' ? 'Embed Code' : 'কোড দেখুন'}</span>
+                          </button>
+                          <button
+                            onClick={() => handleTestPing(conn.id)}
+                            className="px-2.5 py-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 rounded-lg text-[11px] font-bold flex items-center gap-1 transition-all shrink-0 cursor-pointer"
+                            title="Test Connection Ping"
+                          >
+                            <Zap className="w-3.5 h-3.5" />
+                            <span>{language === 'en' ? 'Test Ping' : 'টেস্ট মোটিক'}</span>
+                          </button>
+                        </div>
+                      )}
+
                       <div className="flex items-center gap-2 mr-2">
                         <span className="text-[11px] text-slate-600 font-semibold">AI Auto-Reply</span>
                         <button
@@ -287,6 +331,60 @@ export default function InboxesPage() {
         </div>
 
       </div>
+
+      {/* Embed Code Modal */}
+      {codeModalWidget && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4" onClick={() => setCodeModalWidget(null)}>
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl border border-slate-200" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <Globe className="w-5 h-5 text-indigo-500" />
+                <h3 className="font-bold text-slate-900 text-sm">
+                  {codeModalWidget.displayName} {codeModalWidget.type ? `(${codeModalWidget.type})` : ''}
+                </h3>
+              </div>
+              <button onClick={() => setCodeModalWidget(null)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                {language === 'en'
+                  ? 'Copy and paste this script before the closing </body> tag of your website HTML:'
+                  : 'আপনার ওয়েবসাইট HTML এর </body> ট্যাগের ঠিক পূর্বে নিচের স্ক্রিপ্ট কোডটি পেস্ট করুন:'}
+              </p>
+              
+              <div className="relative bg-slate-950 text-slate-100 p-4 rounded-xl font-mono text-[11px] overflow-x-auto leading-relaxed border border-slate-800">
+                <code>
+                  {`<script src="https://zinichat.com/widget.js" data-widget-token="${codeModalWidget.widgetToken}" async></script>`}
+                </code>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-2">
+              <button
+                onClick={() => handleTestPing(codeModalWidget.id)}
+                className="px-3 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all cursor-pointer"
+              >
+                <Zap className="w-3.5 h-3.5" />
+                <span>{language === 'en' ? 'Test Connection Ping' : 'কানেকশন টেস্ট'}</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(`<script src="https://zinichat.com/widget.js" data-widget-token="${codeModalWidget.widgetToken}" async></script>`);
+                  toast.success(language === 'en' ? 'Embed code copied to clipboard!' : 'স্ক্রিপ্ট কোড কপি হয়েছে!');
+                }}
+                className="px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary/90 transition-all flex items-center gap-1.5 shadow-sm cursor-pointer"
+              >
+                <Copy className="w-3.5 h-3.5" />
+                <span>{language === 'en' ? 'Copy Script Code' : 'কোড কপি করুন'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

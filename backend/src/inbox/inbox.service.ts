@@ -44,7 +44,21 @@ export class InboxService {
       }
     });
 
-    return connections.map(conn => {
+    const websiteWidgets = await this.prisma.websiteWidget.findMany({
+      where: { tenantId, isActive: true },
+      select: {
+        id: true,
+        name: true,
+        type: true,
+        widgetToken: true,
+        domain: true,
+        primaryColor: true,
+        heading: true,
+        createdAt: true,
+      }
+    });
+
+    const mappedConnections = connections.map(conn => {
       const isConnected = conn.status === 'active' || conn.qrStatus === 'CONNECTED';
       return {
         ...conn,
@@ -52,6 +66,28 @@ export class InboxService {
         isConnected
       };
     });
+
+    const mappedWidgets = websiteWidgets.map(w => ({
+      id: w.id,
+      channelType: 'website',
+      displayName: w.name || 'Website Widget',
+      phoneNumber: w.type === 'WHATSAPP' ? 'WhatsApp Widget' : 'Live Chat Widget',
+      provider: w.type,
+      status: 'active',
+      qrStatus: 'CONNECTED',
+      isAiAutoReplyEnabled: true,
+      ignoreGroupMessages: false,
+      connectionMethod: 'embed_script',
+      createdAt: w.createdAt,
+      isConnected: true,
+      widgetToken: w.widgetToken,
+      domain: w.domain,
+      primaryColor: w.primaryColor,
+      heading: w.heading,
+      type: w.type,
+    }));
+
+    return [...mappedConnections, ...mappedWidgets];
   }
 
   async toggleChannelAiReply(tenantId: string, id: string, isAiAutoReplyEnabled: boolean) {
@@ -69,8 +105,50 @@ export class InboxService {
   }
 
   async deleteChannel(tenantId: string, id: string) {
-    return this.prisma.channelConnection.delete({
-      where: { id }
+    const conn = await this.prisma.channelConnection.findFirst({
+      where: { id, tenantId }
+    });
+
+    if (conn) {
+      return this.prisma.channelConnection.delete({
+        where: { id }
+      });
+    }
+
+    const widget = await this.prisma.websiteWidget.findFirst({
+      where: { id, tenantId }
+    });
+
+    if (widget) {
+      return this.prisma.websiteWidget.update({
+        where: { id },
+        data: { isActive: false }
+      });
+    }
+
+    throw new Error('Channel or Widget not found');
+  }
+
+  async testPingWebsiteWidget(tenantId: string, widgetId: string) {
+    const widget = await this.prisma.websiteWidget.findFirst({
+      where: { id: widgetId, tenantId, isActive: true }
+    });
+
+    if (!widget) {
+      throw new Error('Website Widget not found or inactive');
+    }
+
+    const pingTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    return this.handleIncomingMessage({
+      tenantId,
+      channel: 'website',
+      externalContactId: `test_widget_${widget.id.slice(0, 8)}`,
+      contactName: `Website Widget Tester ⚡`,
+      messageType: 'text',
+      content: { body: `⚡ Connection Established! Test message sent from website widget "${widget.name}" at ${pingTime}.` },
+      externalMessageId: `ping_${Date.now()}`,
+      timestamp: new Date()
     });
   }
 

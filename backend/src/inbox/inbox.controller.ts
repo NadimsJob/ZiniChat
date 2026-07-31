@@ -60,6 +60,21 @@ export class InboxController {
     return this.inboxService.deleteChannel(tenantId, channelConnectionId);
   }
 
+  @Post('channels/website-widget/:id/test-ping')
+  async testPingWebsiteWidget(@Request() req: any, @Param('id') widgetId: string) {
+    const tenantId = req.user.tenantId;
+    const result = await this.inboxService.testPingWebsiteWidget(tenantId, widgetId);
+    if (result && result.message) {
+      this.inboxGateway.broadcastToTenant(tenantId, 'new_message', {
+        message: result.message,
+        conversation: result.conversation,
+        contact: result.contact,
+        conversationId: result.conversation.id
+      });
+    }
+    return { success: true, message: 'Test ping message sent to Inbox' };
+  }
+
   @Get('conversations')
   async getConversations(
     @Request() req: any,
