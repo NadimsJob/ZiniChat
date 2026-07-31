@@ -22,7 +22,7 @@
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
 
-  --font-sans: var(--font-outfit), var(--font-hind), sans-serif;
+  --font-sans: var(--font-inter), var(--font-hind), sans-serif;
 
   /* Custom Animations for Marketing Redesign */
   --animate-float: float 4s ease-in-out infinite;
@@ -82,17 +82,17 @@
 }
 
 .dark {
-  --background: #09090b;
-  --foreground: #f8fafc;
+  --background: #09090b; /* Deep almost black background */
+  --foreground: #f8fafc; /* Light slate text */
   
-  --surface: rgba(24, 24, 27, 0.85);
-  --surface-hover: rgba(39, 39, 42, 1);
+  --surface: #121216;
+  --surface-hover: #1a1a1f;
   
-  --border: rgba(255, 255, 255, 0.1);
-  --input: rgba(255, 255, 255, 0.1);
-  --card: #18181b;
+  --border: #222228;
+  --input: #222228;
+  --card: #121216;
   --card-foreground: #f8fafc;
-  --muted: #27272a;
+  --muted: #1a1a1f;
   --muted-foreground: #a1a1aa;
 }
 

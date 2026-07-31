@@ -882,7 +882,7 @@ export default function InboxPage() {
           </div>
 
           {/* Messages Feed */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar bg-slate-50/50">
+          <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar bg-background">
             {messages.map((m, idx) => {
               const isInbound = m.direction === 'inbound';
               const isAi = m.senderType === 'ai';
@@ -891,12 +891,6 @@ export default function InboxPage() {
 
               return (
                 <div key={m.id || idx} className={`flex flex-col ${isInbound ? 'items-start' : 'items-end'}`}>
-                  {/* Sender Badge */}
-                  {isAi && (
-                    <span className="text-[10px] font-bold text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full mb-1 flex items-center gap-1">
-                      <Sparkles className="w-3 h-3" /> Replied by {tenantBusinessName} AI ✨
-                    </span>
-                  )}
                   {!isInbound && !isAi && m.senderUser && (
                     <span className="text-[9px] text-muted-foreground mb-0.5">
                       {m.senderUser.name}
@@ -907,7 +901,7 @@ export default function InboxPage() {
                     isInbound 
                       ? 'bg-card text-foreground border border-border rounded-tl-xs' 
                       : isAi 
-                        ? 'bg-purple-600 text-white rounded-tr-xs' 
+                        ? 'bg-card text-foreground border border-purple-500/30 rounded-tr-xs shadow-[0_0_15px_rgba(168,85,247,0.08)]' 
                         : 'bg-primary text-primary-foreground rounded-tr-xs'
                   }`}>
                     {mediaUrl && (
@@ -927,10 +921,17 @@ export default function InboxPage() {
                       </div>
                     )}
                     <p className="whitespace-pre-wrap leading-relaxed">{contentText}</p>
-                    <span className={`flex items-center justify-end gap-0.5 text-[9px] mt-1 text-right ${isInbound ? 'text-muted-foreground' : 'text-white/70'}`}>
-                      <span>{new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                      {renderMessageStatus(m)}
-                    </span>
+                    <div className={`flex items-center justify-between gap-3 mt-1.5 pt-1.5 border-t ${isInbound ? 'border-border/50' : isAi ? 'border-purple-500/20' : 'border-white/20'}`}>
+                      {isAi ? (
+                        <span className="text-[9px] font-bold text-purple-400 flex items-center gap-1">
+                          <Sparkles className="w-3 h-3" /> Replied by {tenantBusinessName} AI ✨
+                        </span>
+                      ) : <div />}
+                      <span className={`flex items-center gap-0.5 text-[9px] text-right ${isInbound || isAi ? 'text-muted-foreground' : 'text-white/70'}`}>
+                        <span>{new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        {renderMessageStatus(m)}
+                      </span>
+                    </div>
                   </div>
                 </div>
               );
@@ -1044,7 +1045,7 @@ export default function InboxPage() {
           </div>
         </div>
       ) : (
-        <div className="flex-1 flex items-center justify-center p-8 text-center text-muted-foreground bg-slate-50/50">
+        <div className="flex-1 flex items-center justify-center p-8 text-center text-muted-foreground bg-background">
           <div>
             <MessageSquare className="w-12 h-12 mx-auto text-muted-foreground/30 mb-2" />
             <h3 className="text-sm font-bold text-foreground">
