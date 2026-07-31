@@ -320,7 +320,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  {
  title: language === 'en' ? 'MY HOME' : 'আমার হোম',
  items: [
- { name: language === 'en' ? 'Home' : 'হোম', icon: LayoutGrid, href: '/dashboard' },
+ { name: language === 'en' ? 'Dashboard' : 'ড্যাশবোর্ড', icon: LayoutGrid, href: '/dashboard' },
  { name: language === 'en' ? 'Live Inbox' : 'লাইভ ইনবক্স', icon: Inbox, href: '/dashboard/inbox', id: 'sidebar-inbox' },
  { name: language === 'en' ? 'Leads' : 'লিডস', icon: UserCircle, href: '/dashboard/leads' },
  { name: language === 'en' ? 'Product List' : 'প্রোডাক্ট লিস্ট', icon: ShoppingCart, href: '/dashboard/products' },

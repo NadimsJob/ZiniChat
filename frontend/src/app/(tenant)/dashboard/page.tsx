@@ -364,22 +364,6 @@ export default function ExecutiveDashboardPage() {
           </div>
         </div>
 
-        {/* KPI 4: AI Cost */}
-        <div className="bg-emerald-500/5 backdrop-blur-xl border border-emerald-500/20 rounded-2xl p-4 flex flex-col justify-between hover:border-emerald-500/40 hover:bg-emerald-500/10 transition-all shadow-md shadow-black/5 hover:shadow-lg">
-          <div>
-            <div className="flex items-center justify-between text-zinc-400 mb-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">{language === 'en' ? 'AI Spend' : 'এআই খরচ'}</span>
-              <DollarSign className="w-4 h-4 text-emerald-400" />
-            </div>
-            <div className="text-2xl sm:text-3xl font-black text-emerald-400">${(kpis.ai?.costMonth || 0).toFixed(3)}</div>
-            <div className="text-[11px] text-zinc-400 mt-1">
-              Proj: <strong className="text-foreground">${(kpis.ai?.projectedCost || 0).toFixed(2)}/mo</strong>
-            </div>
-          </div>
-          <div className="mt-3 pt-2 border-t border-emerald-500/20 flex justify-between text-[11px] text-zinc-400">
-            <span>{language === 'en' ? 'Today:' : 'আজ:'} <strong className="text-foreground">${(kpis.ai?.costToday || 0).toFixed(3)}</strong></span>
-          </div>
-        </div>
 
         {/* KPI 5: Open Conversations */}
         <div className="bg-amber-500/5 backdrop-blur-xl border border-amber-500/20 rounded-2xl p-4 flex flex-col justify-between hover:border-amber-500/40 hover:bg-amber-500/10 transition-all shadow-md shadow-black/5 hover:shadow-lg">
