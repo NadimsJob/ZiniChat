@@ -84,9 +84,38 @@ export default function ConversationSidebar({
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => { if (res.ok) return res.json(); })
-      .then(data => { if (Array.isArray(data)) setTeamMembers(data); })
+      .then(data => { 
+        if (data) setTeamMembers(Array.isArray(data) ? data : (data.users || [])); 
+      })
       .catch(console.error);
   }, []);
+
+  const [isPickingFollowUp, setIsPickingFollowUp] = useState(false);
+
+  const handleDirectFollowUpSave = async (dateVal: string) => {
+    if (!contact?.id) return;
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/contacts/${contact.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          followUpAt: dateVal ? new Date(dateVal).toISOString() : null,
+        }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        onUpdateContact(contact.id, updated);
+        setIsPickingFollowUp(false);
+        toast.success(language === 'en' ? 'Follow-up date saved' : 'ফলো-আপ তারিখ সেভ হয়েছে');
+      }
+    } catch (err) {
+      toast.error('Failed to update follow-up date');
+    }
+  };
 
   useEffect(() => {
     if (contact) {
@@ -468,12 +497,40 @@ export default function ConversationSidebar({
                     {contact?.assignedUser?.name || (language === 'en' ? 'Unassigned' : 'অ্যাসাইন করা হয়নি')}
                   </span>
                 </div>
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Calendar className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                  <span className="font-medium text-[10px] uppercase tracking-wider">{language === 'en' ? 'Follow-up:' : 'ফলো-আপ:'}</span>
-                  <span className="text-purple-700 font-bold bg-purple-50 px-2 py-0.5 rounded text-[10px]">
-                    {contact?.followUpAt ? new Date(contact.followUpAt).toLocaleDateString(language === 'en' ? 'en-US' : 'bn-BD', { year: 'numeric', month: 'short', day: 'numeric' }) : (language === 'en' ? 'Not set' : 'সেট করা হয়নি')}
-                  </span>
+                <div className="flex items-center justify-between text-muted-foreground pt-1 border-t border-border/40">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Calendar className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                    <span className="font-medium text-[10px] uppercase tracking-wider shrink-0">{language === 'en' ? 'Follow-up:' : 'ফলো-আপ:'}</span>
+                  </div>
+                  {isPickingFollowUp ? (
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="date"
+                        autoFocus
+                        defaultValue={contact?.followUpAt ? new Date(contact.followUpAt).toISOString().split('T')[0] : ''}
+                        className="text-[10px] bg-background border border-primary/60 rounded px-1.5 py-0.5 text-foreground focus:outline-none"
+                        onChange={e => handleDirectFollowUpSave(e.target.value)}
+                        onBlur={() => setIsPickingFollowUp(false)}
+                      />
+                      <button onClick={() => setIsPickingFollowUp(false)} className="p-0.5 text-muted-foreground hover:text-foreground">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setIsPickingFollowUp(true)}
+                      className="group flex items-center gap-1 text-purple-700 dark:text-purple-300 font-bold bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 px-2 py-0.5 rounded text-[10px] hover:bg-purple-100 dark:hover:bg-purple-900/60 transition-all cursor-pointer shadow-xs"
+                      title={language === 'en' ? 'Click to set or change follow-up date' : 'ফলো-আপ তারিখ সেভ বা পরিবর্তন করতে ক্লিক করুন'}
+                    >
+                      <span>
+                        {contact?.followUpAt 
+                          ? new Date(contact.followUpAt).toLocaleDateString(language === 'en' ? 'en-US' : 'bn-BD', { year: 'numeric', month: 'short', day: 'numeric' }) 
+                          : (language === 'en' ? 'Not set (Click to set)' : 'সেট করা হয়নি (ক্লিক করুন)')}
+                      </span>
+                      <Edit className="w-2.5 h-2.5 opacity-60 group-hover:opacity-100" />
+                    </button>
+                  )}
                 </div>
               </div>
             )}
@@ -741,21 +798,29 @@ export default function ConversationSidebar({
           ) : (
             <div className="pt-1">
               <div className="grid grid-cols-3 gap-1.5 max-h-40 overflow-y-auto custom-scrollbar">
-                {files.map(f => (
-                  <a
-                    key={f.id}
-                    href={f.mediaUrl ? `${API}${f.mediaUrl}` : '#'}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="aspect-square bg-muted rounded-lg overflow-hidden border border-border flex flex-col items-center justify-center p-1 group hover:border-primary transition-colors"
-                  >
-                    {f.type === 'image' && f.mediaUrl ? (
-                      <img src={`${API}${f.mediaUrl}`} alt="shared" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                    ) : (
-                      <FileIcon className="w-5 h-5 text-muted-foreground group-hover:text-primary" />
-                    )}
-                  </a>
-                ))}
+                {files.map(f => {
+                  const resolveFileUrl = (url: string | null) => {
+                    if (!url) return '#';
+                    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+                    const clean = url.startsWith('/') ? url : `/${url}`;
+                    return `${API}${clean}`;
+                  };
+                  return (
+                    <a
+                      key={f.id}
+                      href={resolveFileUrl(f.mediaUrl)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="aspect-square bg-muted rounded-lg overflow-hidden border border-border flex flex-col items-center justify-center p-1 group hover:border-primary transition-colors"
+                    >
+                      {f.type === 'image' && f.mediaUrl ? (
+                        <img src={resolveFileUrl(f.mediaUrl)} alt="shared" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                      ) : (
+                        <FileIcon className="w-5 h-5 text-muted-foreground group-hover:text-primary" />
+                      )}
+                    </a>
+                  );
+                })}
               </div>
               {files.length === 0 && !loadingFiles && (
                 <div className="text-[10px] text-muted-foreground italic text-center py-1">

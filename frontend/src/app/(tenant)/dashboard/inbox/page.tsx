@@ -194,7 +194,10 @@ export default function InboxPage() {
       fetch(`${API}/ai-config`, { headers: { Authorization: `Bearer ${token}` } }),
     ]).then(async ([labelsRes, agentsRes, channelsRes, aiRes]) => {
       if (labelsRes.ok) setAvailableLabels(await labelsRes.json());
-      if (agentsRes.ok) setAgents(await agentsRes.json());
+      if (agentsRes.ok) {
+        const teamData = await agentsRes.json();
+        setAgents(Array.isArray(teamData) ? teamData : (teamData.users || []));
+      }
       if (channelsRes.ok) setActiveChannels(await channelsRes.json());
       if (aiRes.ok) setAiAssistants(await aiRes.json());
     }).catch(console.error);
@@ -730,8 +733,8 @@ export default function InboxPage() {
                     </div>
 
                     <div className="text-right shrink-0 space-y-1">
-                      <span className="text-[10px] text-muted-foreground">
-                        {conv.lastMessageAt ? new Date(conv.lastMessageAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                      <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                        {conv.lastMessageAt ? new Date(conv.lastMessageAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
                       </span>
                       {conv.unreadCount > 0 && (
                         <div>
@@ -765,39 +768,6 @@ export default function InboxPage() {
                           </div>
                         ))}
                       </div>
-                    )}
-                  </div>
-
-                  {/* Quick Follow-Up Date Picker */}
-                  <div className="mt-1.5 flex items-center gap-1">
-                    {followUpPickerConvId === conv.id ? (
-                      <div className="flex items-center gap-1 w-full" onClick={e => e.stopPropagation()}>
-                        <input
-                          type="date"
-                          autoFocus
-                          defaultValue={conv.contact?.followUpAt ? new Date(conv.contact.followUpAt).toISOString().split('T')[0] : ''}
-                          className="flex-1 text-[10px] bg-background border border-primary/40 rounded-md px-2 py-0.5 text-foreground focus:outline-none focus:border-primary"
-                          onChange={e => handleQuickFollowUpUpdate(conv, e.target.value)}
-                          onBlur={() => setFollowUpPickerConvId(null)}
-                        />
-                        <button onClick={() => setFollowUpPickerConvId(null)} className="text-muted-foreground hover:text-foreground">
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={e => { e.stopPropagation(); setFollowUpPickerConvId(conv.id); }}
-                        className={`flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-md transition-colors ${
-                          conv.contact?.followUpAt
-                            ? 'text-purple-500 bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/20'
-                            : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                        }`}
-                      >
-                        <Calendar className="w-3 h-3" />
-                        {conv.contact?.followUpAt
-                          ? new Date(conv.contact.followUpAt).toLocaleDateString([], { month: 'short', day: 'numeric' })
-                          : (language === 'en' ? 'Follow-up' : 'ফলো-আপ')}
-                      </button>
                     )}
                   </div>
                 </div>
@@ -837,7 +807,9 @@ export default function InboxPage() {
               <button
                 onClick={handleToggleStar}
                 className={`p-1.5 rounded-lg hover:bg-muted transition-colors ${activeConv.isStarred ? 'text-amber-500' : ''}`}
-                title={activeConv.isStarred ? 'Unstar' : 'Star'}
+                title={activeConv.isStarred 
+                  ? (language === 'en' ? 'Unstar Conversation' : 'অনস্টার করুন')
+                  : (language === 'en' ? 'Star Conversation — Mark important chat for quick reference' : 'স্টার করুন — গুরুত্বপূর্ণ চ্যাট দ্রুত পাওয়ার জন্য চিহ্নিত করতে')}
               >
                 <Star className={`w-4 h-4 ${activeConv.isStarred ? 'fill-amber-500' : ''}`} />
               </button>
@@ -846,7 +818,7 @@ export default function InboxPage() {
               <button
                 onClick={handleToggleFollowUp}
                 className={`p-1.5 rounded-lg hover:bg-muted transition-colors ${activeConv.requiresFollowUp ? 'text-red-500' : ''}`}
-                title="Flag for follow-up"
+                title={language === 'en' ? 'Flag for Follow-up — Flag when customer needs a future follow-up call or reply' : 'ফলো-আপ ফ্ল্যাগ — গ্রাহককে পরবর্তীতে কল বা মেসেজ দেয়ার প্রয়োজন হলে চিহ্নিত করতে'}
               >
                 <Flag className={`w-4 h-4 ${activeConv.requiresFollowUp ? 'fill-red-500' : ''}`} />
               </button>
@@ -855,7 +827,9 @@ export default function InboxPage() {
               <button
                 onClick={handleToggleResolve}
                 className={`p-1.5 rounded-lg hover:bg-muted transition-colors ${activeConv.status === 'resolved' ? 'text-emerald-600' : ''}`}
-                title={activeConv.status === 'resolved' ? 'Reopen' : 'Resolve'}
+                title={activeConv.status === 'resolved'
+                  ? (language === 'en' ? 'Reopen Conversation' : 'পুনরায় ওপেন করুন')
+                  : (language === 'en' ? 'Resolve Conversation — Mark inquiry as solved when customer issue is completed' : 'রেসোলভ করুন — কাস্টমারের বিষয়ের সমাধান হলে চিহ্নিত করতে')}
               >
                 <CheckCircle2 className="w-4 h-4" />
               </button>
@@ -864,7 +838,9 @@ export default function InboxPage() {
               <button
                 onClick={handleToggleArchive}
                 className={`p-1.5 rounded-lg hover:bg-muted transition-colors ${activeConv.isArchived ? 'text-blue-600' : ''}`}
-                title={activeConv.isArchived ? 'Unarchive' : 'Archive'}
+                title={activeConv.isArchived
+                  ? (language === 'en' ? 'Unarchive Conversation' : 'আনআর্কাইভ করুন')
+                  : (language === 'en' ? 'Archive Conversation — Move inactive chat out of active inbox' : 'আর্কাইভ করুন — নিষ্ক্রিয় চ্যাট ইনবক্স থেকে সরাতে')}
               >
                 <Archive className="w-4 h-4" />
               </button>
@@ -874,7 +850,7 @@ export default function InboxPage() {
                 <button
                   onClick={() => setShowAssignMenu(!showAssignMenu)}
                   className="p-1.5 rounded-lg hover:bg-muted transition-colors"
-                  title="Assign Agent"
+                  title={language === 'en' ? 'Assign Agent — Transfer this conversation to a team member' : 'এজেন্ট অ্যাসাইন — চ্যাটটির দায়িত্ব টিমের অন্য এজেন্টকে দিতে'}
                 >
                   <UserPlus className="w-4 h-4" />
                 </button>
@@ -898,7 +874,7 @@ export default function InboxPage() {
                   <button
                     onClick={() => setShowCollaboratorMenu(!showCollaboratorMenu)}
                     className="p-1.5 rounded-lg hover:bg-muted transition-colors"
-                    title="Add Collaborator"
+                    title={language === 'en' ? 'Add Collaborator — Add team members to monitor or assist in this chat' : 'কোলাবোরেটর যুক্ত — সহযোগিতার জন্য সহকর্মীকে চ্যাটে যুক্ত করতে'}
                   >
                     <UserCheck className="w-4 h-4" />
                   </button>
@@ -919,7 +895,7 @@ export default function InboxPage() {
               <button
                 onClick={() => setShowRightSidebar(!showRightSidebar)}
                 className={`p-1.5 rounded-lg hover:bg-muted transition-colors ${showRightSidebar ? 'text-primary' : ''}`}
-                title="Toggle Sidebar"
+                title={language === 'en' ? 'Toggle Sidebar — Show or hide customer CRM details & notes' : 'সাইডবার হাইড/শো — কাস্টমার CRM ডিটেইলস প্যানেল'}
               >
                 <PanelRight className="w-4 h-4" />
               </button>
@@ -928,7 +904,7 @@ export default function InboxPage() {
               <button
                 onClick={handleDeleteConversation}
                 className="p-1.5 rounded-lg hover:bg-red-50 text-red-500 transition-colors"
-                title="Delete Conversation"
+                title={language === 'en' ? 'Delete Conversation — Permanently delete chat and messages' : 'কনভারসেশন মুছুন — স্থায়ীভাবে সকল মেসেজ মুছে ফেলতে'}
               >
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -942,6 +918,13 @@ export default function InboxPage() {
               const isAi = m.senderType === 'ai';
               const contentText = typeof m.content === 'object' ? (m.content.body || m.content.text || JSON.stringify(m.content)) : String(m.content);
               const mediaUrl = typeof m.content === 'object' ? m.content.mediaUrl : null;
+
+              const resolveMediaUrl = (url: string | null) => {
+                if (!url) return '';
+                if (url.startsWith('http://') || url.startsWith('https://')) return url;
+                const cleanUrl = url.startsWith('/') ? url : `/${url}`;
+                return `${API}${cleanUrl}`;
+              };
 
               return (
                 <div key={m.id || idx} className={`flex flex-col ${isInbound ? 'items-start' : 'items-end'}`}>
@@ -962,13 +945,13 @@ export default function InboxPage() {
                       <div className="mb-2">
                         {m.type === 'image' ? (
                           <img 
-                            src={`${API}${mediaUrl}`} 
+                            src={resolveMediaUrl(mediaUrl)} 
                             alt="attachment" 
-                            onClick={() => setZoomedImage(`${API}${mediaUrl}`)}
+                            onClick={() => setZoomedImage(resolveMediaUrl(mediaUrl))}
                             className="max-h-48 rounded-lg cursor-pointer hover:opacity-90 object-cover" 
                           />
                         ) : (
-                          <a href={`${API}${mediaUrl}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 underline text-[11px]">
+                          <a href={resolveMediaUrl(mediaUrl)} target="_blank" rel="noreferrer" className="flex items-center gap-2 underline text-[11px]">
                             <FileIcon className="w-4 h-4" /> Download File
                           </a>
                         )}
@@ -982,7 +965,7 @@ export default function InboxPage() {
                         </span>
                       ) : <div />}
                       <span className={`flex items-center gap-0.5 text-[9px] text-right ${isInbound || isAi ? 'text-muted-foreground' : 'text-white/70'}`}>
-                        <span>{new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        <span>{new Date(m.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                         {renderMessageStatus(m)}
                       </span>
                     </div>
@@ -1002,10 +985,10 @@ export default function InboxPage() {
                 {/* AI Toggle or Channel Setting Disabled Notice */}
                 {activeConv.channelConnection?.isAiAutoReplyEnabled === false ? (
                   <div 
-                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/25 cursor-help"
+                    className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9.5px] font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/25 cursor-help"
                     title={language === 'en' ? 'AI Auto-Reply is turned OFF in Channel Integration settings for this channel' : 'চ্যানেল ইন্টিগ্রেশন সেটিংসে এই চ্যানেলের এআই অটো-রিপ্লাই বন্ধ করা আছে'}
                   >
-                    <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                    <AlertCircle className="w-3 h-3 text-amber-500 shrink-0" />
                     <span>
                       {language === 'en' 
                         ? 'AI Auto-Reply OFF (Disabled in Channel Settings)' 

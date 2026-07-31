@@ -646,8 +646,13 @@ export class InboxService {
   }
 
   async assignAgent(tenantId: string, conversationId: string, agentId: string | null, actionUser: any) {
+    const conv = await this.prisma.conversation.findFirst({
+      where: { id: conversationId, tenantId }
+    });
+    if (!conv) throw new NotFoundException('Conversation not found');
+
     const conversation = await this.prisma.conversation.update({
-      where: { id: conversationId, tenantId },
+      where: { id: conversationId },
       data: { assignedAgentId: agentId },
       include: { contact: true, assignedAgent: { select: { id: true, name: true } } }
     });

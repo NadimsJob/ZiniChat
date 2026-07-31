@@ -6,11 +6,11 @@ import { Roles } from '../auth/decorators/roles.decorator';
 
 @Controller('tenant/team')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('owner', 'admin') // Only tenant owners and admins can manage agents
 export class TenantTeamController {
   constructor(private readonly tenantTeamService: TenantTeamService) {}
 
   @Post()
+  @Roles('owner', 'admin') // Only tenant owners and admins can create agents
   create(@Request() req: any, @Body() createData: any) {
     const tenantId = req.user.tenantId;
     return this.tenantTeamService.createAgent(tenantId, createData);
@@ -29,12 +29,14 @@ export class TenantTeamController {
   }
 
   @Patch(':id')
+  @Roles('owner', 'admin') // Only tenant owners and admins can update agents
   update(@Request() req: any, @Param('id') id: string, @Body() updateData: any) {
     const tenantId = req.user.tenantId;
     return this.tenantTeamService.updateAgent(tenantId, id, updateData);
   }
 
   @Delete(':id')
+  @Roles('owner', 'admin') // Only tenant owners and admins can remove agents
   remove(@Request() req: any, @Param('id') id: string) {
     const tenantId = req.user.tenantId;
     return this.tenantTeamService.remove(tenantId, id);

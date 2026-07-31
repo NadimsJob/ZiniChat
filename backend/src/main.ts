@@ -13,8 +13,12 @@ import helmet from 'helmet';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  // Security Headers
-  app.use(helmet());
+  // Security Headers (Allow cross-origin static resource loading for uploads)
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+    }),
+  );
 
   const envOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [];
   const defaultOrigins = ['http://localhost:3000', 'https://test.zinichat.com', 'https://zinichat.com', 'https://www.zinichat.com'];
