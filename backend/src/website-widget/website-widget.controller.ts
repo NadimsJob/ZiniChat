@@ -2,6 +2,7 @@ import {
   Controller,
   Post,
   Get,
+  Patch,
   Delete,
   Body,
   Param,
@@ -28,6 +29,13 @@ export class WebsiteWidgetController {
   @Get('my')
   list(@Req() req: any) {
     return this.widgetService.getWidgets(req.user.tenantId);
+  }
+
+  // Authenticated: Update widget settings
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id')
+  update(@Req() req: any, @Param('id') id: string, @Body() dto: Partial<CreateWidgetDto>) {
+    return this.widgetService.updateWidget(req.user.tenantId, id, dto);
   }
 
   // Authenticated: Delete (soft-delete) a widget

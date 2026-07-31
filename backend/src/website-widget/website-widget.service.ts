@@ -161,6 +161,29 @@ export class WebsiteWidgetService {
     });
   }
 
+  // ─── Update Widget Settings ──────────────────────────────────────────────────
+  async updateWidget(tenantId: string, widgetId: string, dto: Partial<CreateWidgetDto>) {
+    const widget = await this.prisma.websiteWidget.findFirst({
+      where: { id: widgetId, tenantId, isActive: true },
+    });
+
+    if (!widget) {
+      throw new NotFoundException('Widget not found or inactive.');
+    }
+
+    return this.prisma.websiteWidget.update({
+      where: { id: widgetId },
+      data: {
+        name: dto.name ?? widget.name,
+        domain: dto.domain !== undefined ? dto.domain : widget.domain,
+        primaryColor: dto.primaryColor ?? widget.primaryColor,
+        heading: dto.heading ?? widget.heading,
+        tagline: dto.tagline ?? widget.tagline,
+        greetingEnabled: dto.greetingEnabled !== undefined ? dto.greetingEnabled : widget.greetingEnabled,
+      },
+    });
+  }
+
   // ─── Get quota info (for billing endpoint) ──────────────────────────────────
   async getQuotaInfo(tenantId: string) {
     return this.getWidgetQuota(tenantId);
