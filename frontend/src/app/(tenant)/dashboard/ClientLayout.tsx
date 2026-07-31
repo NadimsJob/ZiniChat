@@ -334,12 +334,12 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
         `}
       >
         {/* Logo Area */}
-        <div className="h-12 px-2.5 flex items-center justify-between gap-1 border-b border-border/50 shrink-0">
-          <Link href="/dashboard" className="flex-1 flex items-center justify-start h-full py-0.5 hover:opacity-90 transition-opacity overflow-hidden">
+        <div className="h-12 px-1 flex items-center justify-between gap-1 border-b border-border/50 shrink-0">
+          <Link href="/dashboard" className="flex-1 flex items-center justify-start h-full hover:opacity-90 transition-opacity overflow-visible">
             {isSidebarCollapsed ? (
-              <img src="/icon.png" alt="ZiniChat" className="w-8 h-8 object-contain mx-auto" />
+              <img src="/icon.png" alt="ZiniChat" className="w-[48px] h-[48px] object-contain mx-auto scale-[1.15]" />
             ) : (
-              <img src="/logo.png" alt="ZiniChat Logo" className="h-full w-full object-contain object-left scale-[1.3] origin-left ml-2" />
+              <img src="/logo.png" alt="ZiniChat Logo" className="h-[48px] w-full object-contain object-left origin-left ml-2 scale-[1.15]" />
             )}
           </Link>
           {isInboxPage && !isSidebarCollapsed && (
