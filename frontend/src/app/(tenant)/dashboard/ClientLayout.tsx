@@ -334,13 +334,18 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
         `}
       >
         {/* Logo Area */}
-        <div className="h-12 px-1 flex items-center justify-between gap-1 border-b border-border/50 shrink-0">
-          <Link href="/dashboard" className="flex-1 flex items-center justify-start h-full hover:opacity-90 transition-opacity overflow-visible">
-            {isSidebarCollapsed ? (
-              <img src="/icon.png" alt="ZiniChat" className="w-[48px] h-[48px] object-contain mx-auto scale-[1.15]" />
-            ) : (
-              <img src="/logo.png" alt="ZiniChat Logo" className="h-[48px] w-full object-contain object-left origin-left ml-2 scale-[1.15]" />
-            )}
+        <div className="h-14 px-1 flex items-center justify-between gap-1 border-b border-border/50 shrink-0 relative">
+          <Link href="/dashboard" className="flex-1 flex items-center h-full hover:opacity-90 w-full relative">
+            <img 
+              src="/icon.png" 
+              alt="ZiniChat" 
+              className={`absolute left-1 top-1/2 -translate-y-1/2 w-[46px] h-[46px] object-contain transition-all duration-200 ${isSidebarCollapsed ? 'opacity-100 scale-100' : 'opacity-0 scale-75 pointer-events-none'}`} 
+            />
+            <img 
+              src="/logo.png" 
+              alt="ZiniChat Logo" 
+              className={`absolute left-1 top-1/2 -translate-y-1/2 h-[46px] w-[150px] object-contain object-left transition-all duration-200 ${isSidebarCollapsed ? 'opacity-0 scale-75 pointer-events-none' : 'opacity-100 scale-100'}`} 
+            />
           </Link>
           {isInboxPage && !isSidebarCollapsed && (
             <button 
@@ -431,7 +436,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  <main className="flex-1 flex flex-col min-w-0">
  
  {/* Topbar */}
- <header className="h-12 px-3 flex items-center justify-between shrink-0 bg-surface/70 backdrop-blur-xl border-b border-border shadow-sm relative z-40">
+ <header className="h-14 px-3 flex items-center justify-between shrink-0 bg-surface/70 backdrop-blur-xl border-b border-border shadow-sm relative z-40">
  <div className="flex items-center gap-2">
  <button 
  className="md:hidden p-1.5 -ml-1.5 text-slate-500 hover:bg-primary/10 hover:text-primary rounded-lg transition-colors"
