@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { SmtpService } from '../smtp/smtp.service';
+import { AiCacheService } from '../ai/ai-cache.service';
 import { ForbiddenException } from '@nestjs/common';
 
 // Mock OpenAI SDK to simulate prompt injection & security boundary testing
@@ -179,11 +180,17 @@ describe('SupportChatService Security & Isolation Audit', () => {
       triggerTicketCreatedEmail: jest.fn().mockResolvedValue(true)
     };
 
+    const aiCacheService = {
+      getOrCreateSupportCache: jest.fn().mockResolvedValue({ isCached: false, cacheKey: null }),
+      invalidateSupportCache: jest.fn()
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SupportChatService,
         { provide: PrismaService, useValue: prismaService },
         { provide: AiService, useValue: {} },
+        { provide: AiCacheService, useValue: aiCacheService },
         { provide: NotificationsService, useValue: notificationsService },
         { provide: SmtpService, useValue: smtpService }
       ]

@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { LabelsService } from './labels.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { AiCacheService } from '../ai/ai-cache.service';
 import { NotFoundException } from '@nestjs/common';
 
 describe('LabelsService', () => {
@@ -28,6 +29,10 @@ describe('LabelsService', () => {
         {
           provide: PrismaService,
           useValue: mockPrismaService,
+        },
+        {
+          provide: AiCacheService,
+          useValue: { invalidateCache: jest.fn(), getOrCreateCache: jest.fn(), computeChecksum: jest.fn() },
         },
       ],
     }).compile();

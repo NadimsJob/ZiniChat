@@ -4,6 +4,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import * as fs from 'fs';
 
+import { AiCacheService } from './ai-cache.service';
+
 jest.mock('fs', () => ({
   ...jest.requireActual('fs'),
   readFileSync: jest.fn().mockReturnValue(Buffer.from('fake-image-data')),
@@ -39,6 +41,7 @@ describe('AiService', () => {
       providers: [
         AiService,
         { provide: PrismaService, useValue: mockPrisma },
+        { provide: AiCacheService, useValue: { invalidateSupportCache: jest.fn(), invalidateCache: jest.fn() } },
       ],
     }).compile();
 

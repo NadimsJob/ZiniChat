@@ -9,6 +9,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { QuotaService } from '../tenants/quota.service';
 import { ActivityLogService } from '../inbox/activity-log.service';
 import { InboxGateway } from '../inbox/inbox.gateway';
+import { AiCacheService } from '../ai/ai-cache.service';
 
 describe('OrchestratorService', () => {
   let service: OrchestratorService;
@@ -106,11 +107,18 @@ describe('OrchestratorService', () => {
       broadcastToTenant: jest.fn(),
     };
 
+    const aiCacheService = {
+      computeChecksum: jest.fn().mockReturnValue('checksum123'),
+      getOrCreateCache: jest.fn().mockResolvedValue({ isCached: false, cacheKey: null }),
+      invalidateCache: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         OrchestratorService,
         { provide: PrismaService, useValue: prismaService },
         { provide: AiService, useValue: aiService },
+        { provide: AiCacheService, useValue: aiCacheService },
         { provide: InboxService, useValue: inboxService },
         { provide: BillingService, useValue: billingService },
         { provide: OrdersService, useValue: ordersService },

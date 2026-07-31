@@ -337,6 +337,10 @@ model AiAssistant {
   byokApiKeyEncrypted String?
   byokApiKeyEncryptedAt DateTime?
   agentName           String? // New field to give AI an identity
+  provider            String   @default("gemini")
+  cacheKey            String?
+  cacheExpiresAt      DateTime?
+  cacheChecksum       String?
   aiOrderEnabled      Boolean  @default(true)
   isActive            Boolean  @default(true)
   createdAt           DateTime @default(now())
@@ -874,18 +878,21 @@ model Notification {
 }
 
 model AiConfig {
-  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name             String
-  provider         String // openai, anthropic, gemini, custom
-  modelName        String
-  apiKey           String
-  apiEndpoint      String? // Optional custom proxy endpoint
-  systemPrompt     String?  @db.Text // Custom System Prompt (especially for Support AI)
-  isActive         Boolean  @default(false)
-  isSupportDefault Boolean  @default(false)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  tenants          Tenant[]
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                  String
+  provider              String // openai, anthropic, gemini, custom
+  modelName             String
+  apiKey                String
+  apiEndpoint           String? // Optional custom proxy endpoint
+  systemPrompt          String?   @db.Text // Custom System Prompt (especially for Support AI)
+  supportCacheKey       String?
+  supportCacheExpiresAt DateTime?
+  supportCacheChecksum  String?
+  isActive              Boolean   @default(false)
+  isSupportDefault      Boolean   @default(false)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  tenants               Tenant[]
 
   @@map("ai_configs")
 }

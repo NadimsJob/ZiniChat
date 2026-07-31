@@ -9,6 +9,7 @@ import { QuotaService } from '../tenants/quota.service';
 import { CryptoService } from '../crypto/crypto.service';
 import { FileValidationService } from '../file-validation/file-validation.service';
 import { ToolConfigValidatorService } from './services/tool-config-validator.service';
+import { AiCacheService } from '../ai/ai-cache.service';
 
 @Injectable()
 export class AiTrainingService {
@@ -17,7 +18,8 @@ export class AiTrainingService {
     private quotaService: QuotaService,
     private cryptoService: CryptoService,
     private fileValidationService: FileValidationService,
-    private toolConfigValidator: ToolConfigValidatorService
+    private toolConfigValidator: ToolConfigValidatorService,
+    private aiCacheService: AiCacheService
   ) {}
 
   private async ensureAiAssistantExists(tenantId: string) {
@@ -181,10 +183,12 @@ export class AiTrainingService {
 
   async updateSystemPrompt(tenantId: string, systemPrompt: string) {
     const assistant = await this.ensureAiAssistantExists(tenantId);
-    return this.prisma.aiAssistant.update({
+    const updated = await this.prisma.aiAssistant.update({
       where: { id: assistant.id },
       data: { systemPrompt }
     });
+    await this.aiCacheService.invalidateCache(tenantId);
+    return updated;
   }
 
   async generateSamplePrompt(tenantId: string) {
@@ -336,7 +340,7 @@ export class AiTrainingService {
         isDefault: false
       }
     });
-
+    await this.aiCacheService.invalidateCache(tenantId);
     return qna;
   }
 
@@ -361,7 +365,7 @@ export class AiTrainingService {
       where: { id },
       data
     });
-
+    await this.aiCacheService.invalidateCache(tenantId);
     return updated;
   }
 
@@ -381,7 +385,7 @@ export class AiTrainingService {
     await this.prisma.qnAKnowledgeBase.delete({
       where: { id }
     });
-
+    await this.aiCacheService.invalidateCache(tenantId);
     return { success: true };
   }
 
@@ -537,6 +541,7 @@ export class AiTrainingService {
 
     await this.prisma.knowledgeChunk.deleteMany({ where: { documentId: id } });
     await this.prisma.knowledgeDocument.delete({ where: { id } });
+    await this.aiCacheService.invalidateCache(tenantId);
 
     return { success: true };
   }

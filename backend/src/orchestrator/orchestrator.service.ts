@@ -8,6 +8,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { QuotaService } from '../tenants/quota.service';
 import { ActivityLogService } from '../inbox/activity-log.service';
 import { InboxGateway } from '../inbox/inbox.gateway';
+import { AiCacheService } from '../ai/ai-cache.service';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -27,6 +28,7 @@ export class OrchestratorService {
   constructor(
     private prisma: PrismaService,
     private aiService: AiService,
+    private aiCacheService: AiCacheService,
     private billingService: BillingService,
     private ordersService: OrdersService,
     private notificationsService: NotificationsService,
@@ -212,8 +214,50 @@ export class OrchestratorService {
 
       const fullPrompt = `${prompt}\n\nCustomer: ${userText}`;
 
+      // Build static context checksum & get/create prompt cache
+      let activeCacheKey: string | undefined = undefined;
+      try {
+        const qnaItems = await this.prisma.qnAKnowledgeBase.findMany({
+          where: { tenantId, isActive: true },
+          take: 20
+        });
+        const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
+        const freshDocs = await this.prisma.knowledgeDocument.findMany({
+          where: { tenantId, status: 'completed', uploadedAt: { gte: sixtyDaysAgo } },
+          include: { chunks: { take: 10 } },
+          take: 5
+        });
+        const labels = await this.prisma.label.findMany({ where: { tenantId } });
+
+        const checksum = this.aiCacheService.computeChecksum(assistant.systemPrompt || '', freshDocs, qnaItems, labels);
+        const knowledgeContext = [
+          ...qnaItems.map(q => `Q: ${q.question}\nA: ${q.answer}`),
+          ...freshDocs.flatMap(d => d.chunks.map(c => c.content))
+        ].join('\n');
+
+        const activeProvider = targetConfig?.provider || assistant.provider || 'gemini';
+        const activeModelName = targetConfig?.modelName || assistant.modelName || 'gemini-1.5-flash';
+        const activeApiKey = targetConfig?.apiKey;
+
+        const cacheResult = await this.aiCacheService.getOrCreateCache({
+          tenantId,
+          provider: activeProvider,
+          modelName: activeModelName,
+          apiKey: activeApiKey,
+          systemPrompt: assistant.systemPrompt || '',
+          knowledgeContext,
+          checksum
+        });
+
+        if (cacheResult.isCached && cacheResult.cacheKey) {
+          activeCacheKey = cacheResult.cacheKey;
+        }
+      } catch (cacheErr: any) {
+        this.logger.debug(`Prompt caching skipped or failed: ${cacheErr.message}`);
+      }
+
       // Call LLM
-      const rawLlmOutput = await this.aiService.generateCompletion(fullPrompt, customAiConfigId, actualImagePaths);
+      const rawLlmOutput = await this.aiService.generateCompletion(fullPrompt, customAiConfigId, actualImagePaths, activeCacheKey);
 
       if (!rawLlmOutput || rawLlmOutput.trim() === '') {
         return;

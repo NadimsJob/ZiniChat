@@ -6,6 +6,8 @@ import { CryptoService } from '../crypto/crypto.service';
 import { FileValidationService } from '../file-validation/file-validation.service';
 import { ToolConfigValidatorService } from './services/tool-config-validator.service';
 
+import { AiCacheService } from '../ai/ai-cache.service';
+
 describe('AiTrainingService', () => {
   let service: AiTrainingService;
   let prisma: any;
@@ -56,6 +58,7 @@ describe('AiTrainingService', () => {
         ToolConfigValidatorService,
         { provide: PrismaService, useValue: mockPrisma },
         { provide: QuotaService, useValue: { checkFeature: jest.fn().mockResolvedValue(true) } },
+        { provide: AiCacheService, useValue: { invalidateCache: jest.fn(), getOrCreateCache: jest.fn(), computeChecksum: jest.fn() } },
       ],
     }).compile();
 

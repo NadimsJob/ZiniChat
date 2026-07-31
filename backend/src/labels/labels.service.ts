@@ -1,9 +1,13 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { AiCacheService } from '../ai/ai-cache.service';
 
 @Injectable()
 export class LabelsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private aiCacheService: AiCacheService
+  ) {}
 
   async getLabels(tenantId: string) {
     return this.prisma.label.findMany({
@@ -13,7 +17,7 @@ export class LabelsService {
   }
 
   async createLabel(tenantId: string, data: { name: string; color: string; aiPrompt?: string }) {
-    return this.prisma.label.create({
+    const label = await this.prisma.label.create({
       data: {
         tenantId,
         name: data.name,
@@ -21,16 +25,20 @@ export class LabelsService {
         aiPrompt: data.aiPrompt
       }
     });
+    await this.aiCacheService.invalidateCache(tenantId);
+    return label;
   }
 
   async updateLabel(tenantId: string, id: string, data: { name?: string; color?: string; aiPrompt?: string }) {
     const existing = await this.prisma.label.findFirst({ where: { id, tenantId } });
     if (!existing) throw new NotFoundException('Label not found');
 
-    return this.prisma.label.update({
+    const updated = await this.prisma.label.update({
       where: { id },
       data
     });
+    await this.aiCacheService.invalidateCache(tenantId);
+    return updated;
   }
 
   async deleteLabel(tenantId: string, id: string) {
@@ -38,8 +46,10 @@ export class LabelsService {
     if (!existing) throw new NotFoundException('Label not found');
 
     await this.prisma.label.delete({ where: { id } });
+    await this.aiCacheService.invalidateCache(tenantId);
     return { success: true };
   }
+
   async syncToAi(tenantId: string, id: string) {
     const label = await this.prisma.label.findFirst({ where: { id, tenantId } });
     if (!label) throw new NotFoundException('Label not found');
@@ -81,6 +91,8 @@ export class LabelsService {
       where: { id: assistant.id },
       data: { systemPrompt: newSystemPrompt.trim() }
     });
+
+    await this.aiCacheService.invalidateCache(tenantId);
 
     return { success: true, message: 'Synced to AI Training successfully' };
   }

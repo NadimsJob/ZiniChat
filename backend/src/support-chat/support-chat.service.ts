@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
+import { AiCacheService } from '../ai/ai-cache.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { SmtpService } from '../smtp/smtp.service';
 import OpenAI from 'openai';
@@ -144,6 +145,7 @@ export class SupportChatService {
   constructor(
     private prisma: PrismaService,
     private aiService: AiService,
+    private aiCacheService: AiCacheService,
     private notificationsService: NotificationsService,
     private smtpService: SmtpService
   ) {}
@@ -374,6 +376,23 @@ ${allPlansFormatted}
 
     // Base System Prompt
     const baseSystemPrompt = aiConfig.systemPrompt || DEFAULT_SUPPORT_AI_SYSTEM_PROMPT;
+
+    // Retrieve or generate Support AI Prompt Cache
+    let activeSupportCacheKey: string | undefined = undefined;
+    try {
+      const supportCache = await this.aiCacheService.getOrCreateSupportCache({
+        aiConfigId: aiConfig.id,
+        provider: aiConfig.provider || 'gemini',
+        modelName: aiConfig.modelName,
+        apiKey: aiConfig.apiKey,
+        baseSystemPrompt: baseSystemPrompt
+      });
+      if (supportCache.isCached && supportCache.cacheKey) {
+        activeSupportCacheKey = supportCache.cacheKey;
+      }
+    } catch (cacheErr: any) {
+      this.logger.debug(`Support AI prompt caching skipped or failed: ${cacheErr.message}`);
+    }
 
     // Inject prior context summary if available
     const priorSummaryBlock = convo?.contextSummary

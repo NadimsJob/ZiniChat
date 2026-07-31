@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { SmtpService } from '../smtp/smtp.service';
+import { AiCacheService } from '../ai/ai-cache.service';
 
 // Mock OpenAI SDK
 jest.mock('openai', () => {
@@ -213,11 +214,17 @@ describe('SupportChatService', () => {
       triggerTicketCreatedEmail: jest.fn().mockResolvedValue(true)
     };
 
+    const aiCacheService = {
+      getOrCreateSupportCache: jest.fn().mockResolvedValue({ isCached: false, cacheKey: null }),
+      invalidateSupportCache: jest.fn()
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SupportChatService,
         { provide: PrismaService, useValue: prismaService },
         { provide: AiService, useValue: {} },
+        { provide: AiCacheService, useValue: aiCacheService },
         { provide: NotificationsService, useValue: notificationsService },
         { provide: SmtpService, useValue: smtpService }
       ]

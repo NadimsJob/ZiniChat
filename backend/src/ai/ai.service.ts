@@ -1,5 +1,6 @@
 import { Injectable, Logger, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { AiCacheService } from './ai-cache.service';
 import OpenAI from 'openai';
 import * as fs from 'fs';
 const pdf = require('pdf-parse');
@@ -7,7 +8,10 @@ const pdf = require('pdf-parse');
 export class AiService {
   private readonly logger = new Logger(AiService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private aiCacheService: AiCacheService
+  ) {}
 
   isVisionSupported(provider?: string, modelName?: string): boolean {
     if (!modelName) return false;
@@ -34,8 +38,9 @@ export class AiService {
   }
 
   async saveConfig(data: any) {
+    let result: any;
     if (data.id) {
-      return this.prisma.aiConfig.update({
+      result = await this.prisma.aiConfig.update({
         where: { id: data.id },
         data: {
           name: data.name,
@@ -43,24 +48,29 @@ export class AiService {
           modelName: data.modelName,
           apiKey: data.apiKey,
           apiEndpoint: data.apiEndpoint || null,
+          systemPrompt: data.systemPrompt !== undefined ? data.systemPrompt : undefined,
           isActive: !!data.isActive
         }
       });
+      await this.aiCacheService.invalidateSupportCache(data.id);
     } else {
-      return this.prisma.aiConfig.create({
+      result = await this.prisma.aiConfig.create({
         data: {
           name: data.name,
           provider: data.provider || 'openai',
           modelName: data.modelName,
           apiKey: data.apiKey,
           apiEndpoint: data.apiEndpoint || null,
+          systemPrompt: data.systemPrompt || null,
           isActive: !!data.isActive
         }
       });
     }
+    return result;
   }
 
   async deleteConfig(id: string) {
+    await this.aiCacheService.invalidateSupportCache(id);
     return this.prisma.aiConfig.delete({
       where: { id }
     });
@@ -101,6 +111,8 @@ export class AiService {
         data: { isSupportDefault: true }
       });
     });
+
+    await this.aiCacheService.invalidateSupportCache(id);
     
     return { success: true };
   }
@@ -179,7 +191,7 @@ export class AiService {
     }
   }
 
-  async generateCompletion(prompt: string, configId?: string, imagePaths?: string[]): Promise<string> {
+  async generateCompletion(prompt: string, configId?: string, imagePaths?: string[], cacheKey?: string): Promise<string> {
     let config: any;
 
     if (configId) {
@@ -215,10 +227,15 @@ export class AiService {
             }
           }
         }
+        const bodyPayload: any = { contents: [{ parts }] };
+        if (cacheKey && cacheKey.startsWith('cachedContents/')) {
+          bodyPayload.cachedContent = cacheKey;
+        }
+
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: [{ parts }] })
+          body: JSON.stringify(bodyPayload)
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error?.message || 'Gemini generation error');
@@ -231,7 +248,13 @@ export class AiService {
 
     if (actualProvider === 'anthropic') {
       try {
-        const content: any[] = [{ type: 'text', text: prompt }];
+        const content: any[] = [
+          {
+            type: 'text',
+            text: prompt,
+            ...(cacheKey ? { cache_control: { type: 'ephemeral' } } : {})
+          }
+        ];
         if (imagePaths && imagePaths.length > 0) {
           for (const imgPath of imagePaths) {
             try {
@@ -250,13 +273,17 @@ export class AiService {
             }
           }
         }
+        const headers: Record<string, string> = {
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'Content-Type': 'application/json'
+        };
+        if (cacheKey) {
+          headers['anthropic-beta'] = 'prompt-caching-2024-07-31';
+        }
         const res = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
-          headers: {
-            'x-api-key': apiKey,
-            'anthropic-version': '2023-06-01',
-            'Content-Type': 'application/json'
-          },
+          headers,
           body: JSON.stringify({
             model: modelName,
             max_tokens: 4096,
