@@ -335,26 +335,28 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
       >
         
         {/* Logo Area */}
-        <div className="h-12 flex items-center justify-between border-b border-border/50 shrink-0 relative">
-          <Link href="/dashboard" className="flex items-center justify-start h-full py-0.5 hover:opacity-90 transition-opacity absolute left-0 top-0 w-[165px] px-2.5 z-10">
+        <div className="h-12 flex items-center justify-between border-b border-border/50 shrink-0 overflow-hidden relative">
+          <Link href="/dashboard" className="flex items-center justify-start h-full py-0.5 hover:opacity-90 transition-opacity w-full overflow-hidden">
             <img 
               src="/logo.png" 
               alt="ZiniChat Logo" 
-              className="h-full w-full object-contain object-left scale-[1.3] origin-left ml-2" 
+              className="h-full w-[165px] max-w-none object-contain object-left scale-[1.3] origin-left ml-2" 
             />
           </Link>
-          <div className="flex items-center justify-end w-full px-2.5 z-20">
+          
+          {/* Action Buttons (Absolute so they don't get pushed out by the logo width) */}
+          <div className="flex items-center justify-end absolute right-2.5 top-0 bottom-0 z-20">
             {isInboxPage && !isSidebarCollapsed && (
               <button 
                 onClick={() => setSidebarPinned(!sidebarPinned)}
                 title={sidebarPinned ? (language === 'en' ? 'Unpin Sidebar' : 'সাইডবার আনপিন করুন') : (language === 'en' ? 'Pin Sidebar' : 'সাইডবার পিন করুন')}
-                className="hidden md:flex p-1 text-slate-400 hover:text-slate-700 rounded-md hover:bg-slate-100 transition-colors"
+                className="hidden md:flex p-1 text-slate-400 hover:text-slate-700 rounded-md hover:bg-slate-100 transition-colors bg-surface/80 backdrop-blur-sm"
               >
                 <Pin className={`w-3.5 h-3.5 ${sidebarPinned ? 'text-primary rotate-45' : ''}`} />
               </button>
             )}
             <button 
-              className="md:hidden text-slate-400 hover:text-slate-600 ml-auto"
+              className="md:hidden text-slate-400 hover:text-slate-600 bg-surface/80 backdrop-blur-sm"
               onClick={() => setIsMobileMenuOpen(false)}
             >
               <ChevronDown className="w-5 h-5 rotate-90" />
