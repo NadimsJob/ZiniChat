@@ -188,6 +188,17 @@ export default function PackagesPage() {
     setIsEditing(true);
   };
 
+  const updateLimitFeature = (keyword: string, text: string) => {
+    const currentJson = Array.isArray(planForm.featuresJson) ? planForm.featuresJson : [];
+    const index = currentJson.findIndex(f => f.en.toLowerCase().includes(keyword.toLowerCase()));
+    if (index >= 0) {
+      const newJson = [...currentJson];
+      newJson[index] = { ...newJson[index], en: text, bn: text };
+      return newJson;
+    }
+    return [...currentJson, { en: text, bn: text }];
+  };
+
   return (
     <div className="max-w-6xl mx-auto space-y-2 animate-in fade-in duration-500 pb-3">
       <div>
@@ -327,49 +338,83 @@ export default function PackagesPage() {
               <div className="grid grid-cols-5 gap-2 mt-2.5">
                 <div>
                   <label className="block text-[12px] font-medium mb-1 text-zinc-400">Team Members</label>
-                  <input type="number" value={planForm.seatLimit} onChange={e => setPlanForm({...planForm, seatLimit: Number(e.target.value)})} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none text-xs" />
+                  <input type="number" value={planForm.seatLimit} onChange={e => {
+                    const val = Number(e.target.value);
+                    setPlanForm({...planForm, seatLimit: val, featuresJson: updateLimitFeature('Team Member', `${val} Team Member${val !== 1 ? 's' : ''}`)})
+                  }} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none text-xs" />
                 </div>
                 <div>
                   <label className="block text-[12px] font-medium mb-1 text-zinc-400">WhatsApp Limit</label>
-                  <input type="number" value={planForm.whatsappLimit} onChange={e => setPlanForm({...planForm, whatsappLimit: Number(e.target.value)})} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none text-xs" />
+                  <input type="number" value={planForm.whatsappLimit} onChange={e => {
+                    const val = Number(e.target.value);
+                    setPlanForm({...planForm, whatsappLimit: val, featuresJson: updateLimitFeature('WhatsApp', `${val} WhatsApp Account${val !== 1 ? 's' : ''}`)})
+                  }} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none text-xs" />
                 </div>
                 <div>
                   <label className="block text-[12px] font-medium mb-1 text-zinc-400">Messenger Limit</label>
-                  <input type="number" value={planForm.messengerLimit} onChange={e => setPlanForm({...planForm, messengerLimit: Number(e.target.value)})} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none text-xs" />
+                  <input type="number" value={planForm.messengerLimit} onChange={e => {
+                    const val = Number(e.target.value);
+                    setPlanForm({...planForm, messengerLimit: val, featuresJson: updateLimitFeature('Messenger', `${val} Messenger Page${val !== 1 ? 's' : ''}`)})
+                  }} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none text-xs" />
                 </div>
                 <div>
                   <label className="block text-[12px] font-medium mb-1 text-zinc-400">Instagram Limit</label>
-                  <input type="number" value={planForm.instagramLimit} onChange={e => setPlanForm({...planForm, instagramLimit: Number(e.target.value)})} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none text-xs" />
+                  <input type="number" value={planForm.instagramLimit} onChange={e => {
+                    const val = Number(e.target.value);
+                    setPlanForm({...planForm, instagramLimit: val, featuresJson: updateLimitFeature('Instagram', `${val} Instagram Account${val !== 1 ? 's' : ''}`)})
+                  }} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none text-xs" />
                 </div>
                 <div>
                   <label className="block text-[12px] font-medium mb-1 text-zinc-400">Website Widget</label>
-                  <input type="number" value={planForm.websiteWidgetLimit} onChange={e => setPlanForm({...planForm, websiteWidgetLimit: Number(e.target.value)})} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none text-xs" />
+                  <input type="number" value={planForm.websiteWidgetLimit} onChange={e => {
+                    const val = Number(e.target.value);
+                    setPlanForm({...planForm, websiteWidgetLimit: val, featuresJson: updateLimitFeature('Website Widget', `${val} Website Widget${val !== 1 ? 's' : ''}`)})
+                  }} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none text-xs" />
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-2.5 mt-2.5">
                 <div>
                   <label className="block text-[12px] font-medium mb-1 text-zinc-400">Trial (Days)</label>
-                  <input type="number" value={planForm.trialDays} onChange={e => setPlanForm({...planForm, trialDays: Number(e.target.value)})} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none" />
+                  <input type="number" value={planForm.trialDays} onChange={e => {
+                    const val = Number(e.target.value);
+                    setPlanForm({...planForm, trialDays: val, featuresJson: updateLimitFeature('Trial', `${val} Days Free Trial`)})
+                  }} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none" />
                 </div>
                 <div>
                   <label className="block text-[12px] font-medium mb-1 text-zinc-400">Msgs/mo</label>
-                  <input type="number" value={planForm.messageQuota} onChange={e => setPlanForm({...planForm, messageQuota: Number(e.target.value)})} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none" />
+                  <input type="number" value={planForm.messageQuota} onChange={e => {
+                    const val = Number(e.target.value);
+                    setPlanForm({...planForm, messageQuota: val, featuresJson: updateLimitFeature('Msg', `${val} Msgs/mo`)})
+                  }} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none" />
                 </div>
                 <div>
                   <label className="block text-[12px] font-medium mb-1 text-zinc-400">AI /mo</label>
-                  <input type="number" value={planForm.aiQuota} onChange={e => setPlanForm({...planForm, aiQuota: Number(e.target.value)})} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none" />
+                  <input type="number" value={planForm.aiQuota} onChange={e => {
+                    const val = Number(e.target.value);
+                    setPlanForm({...planForm, aiQuota: val, featuresJson: updateLimitFeature('AI /mo', `${val} AI /mo`)})
+                  }} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none" />
                 </div>
                 <div>
                   <label className="block text-[12px] font-medium mb-1 text-zinc-400">Products Limit</label>
-                  <input type="number" value={planForm.productCatalogLimit} onChange={e => setPlanForm({...planForm, productCatalogLimit: Number(e.target.value)})} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none" />
+                  <input type="number" value={planForm.productCatalogLimit} onChange={e => {
+                    const val = Number(e.target.value);
+                    setPlanForm({...planForm, productCatalogLimit: val, featuresJson: updateLimitFeature('Products Limit', `${val} Products Limit`)})
+                  }} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none" />
                 </div>
                 <div>
                   <label className="block text-[12px] font-medium mb-1 text-zinc-400">Contacts Limit (Empty=∞)</label>
-                  <input type="number" placeholder="Unlimited" value={planForm.contactsLimit === null ? '' : planForm.contactsLimit} onChange={e => setPlanForm({...planForm, contactsLimit: e.target.value === '' ? null : Number(e.target.value)})} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none" />
+                  <input type="number" placeholder="Unlimited" value={planForm.contactsLimit === null ? '' : planForm.contactsLimit} onChange={e => {
+                    const val = e.target.value === '' ? null : Number(e.target.value);
+                    const text = val === null ? 'Unlimited Contacts' : `${val} Contacts Limit`;
+                    setPlanForm({...planForm, contactsLimit: val, featuresJson: updateLimitFeature('Contact', text)})
+                  }} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none" />
                 </div>
                 <div>
                   <label className="block text-[12px] font-medium mb-1 text-zinc-400">Storage (MB)</label>
-                  <input type="number" value={planForm.storageLimitMb} onChange={e => setPlanForm({...planForm, storageLimitMb: Number(e.target.value)})} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none" />
+                  <input type="number" value={planForm.storageLimitMb} onChange={e => {
+                    const val = Number(e.target.value);
+                    setPlanForm({...planForm, storageLimitMb: val, featuresJson: updateLimitFeature('Storage', `${val} MB Storage`)})
+                  }} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none" />
                 </div>
               </div>
 
@@ -380,7 +425,23 @@ export default function PackagesPage() {
                     <input 
                       type="checkbox" 
                       checked={planForm.allowByok}
-                      onChange={(e) => setPlanForm({ ...planForm, allowByok: e.target.checked })}
+                      onChange={(e) => {
+                        const currentJson = Array.isArray(planForm.featuresJson) ? planForm.featuresJson : [];
+                        if (e.target.checked) {
+                          const alreadyExists = currentJson.some(f => f.en === 'Bring Your Own Key (BYOK)');
+                          setPlanForm({ 
+                            ...planForm, 
+                            allowByok: true,
+                            featuresJson: alreadyExists ? currentJson : [...currentJson, { en: 'Bring Your Own Key (BYOK)', bn: 'Bring Your Own Key (BYOK)' }]
+                          });
+                        } else {
+                          setPlanForm({ 
+                            ...planForm, 
+                            allowByok: false,
+                            featuresJson: currentJson.filter(f => f.en !== 'Bring Your Own Key (BYOK)')
+                          });
+                        }
+                      }}
                       className="w-4 h-4 rounded border-zinc-700 text-primary focus:ring-primary focus:ring-offset-background bg-background" 
                     />
                     <span className="text-[12px] font-medium">Bring Your Own Key (BYOK)</span>
@@ -417,10 +478,20 @@ export default function PackagesPage() {
                         type="checkbox" 
                         checked={planForm.features.includes(feature.id)}
                         onChange={(e) => {
+                          const currentJson = Array.isArray(planForm.featuresJson) ? planForm.featuresJson : [];
                           if (e.target.checked) {
-                            setPlanForm({ ...planForm, features: [...planForm.features, feature.id] });
+                            const alreadyExists = currentJson.some(f => f.en === feature.label);
+                            setPlanForm({ 
+                              ...planForm, 
+                              features: [...planForm.features, feature.id],
+                              featuresJson: alreadyExists ? currentJson : [...currentJson, { en: feature.label, bn: feature.label }]
+                            });
                           } else {
-                            setPlanForm({ ...planForm, features: planForm.features.filter(f => f !== feature.id) });
+                            setPlanForm({ 
+                              ...planForm, 
+                              features: planForm.features.filter(f => f !== feature.id),
+                              featuresJson: currentJson.filter(f => f.en !== feature.label)
+                            });
                           }
                         }}
                         className="w-4 h-4 rounded border-zinc-700 text-primary focus:ring-primary focus:ring-offset-background bg-background" 
