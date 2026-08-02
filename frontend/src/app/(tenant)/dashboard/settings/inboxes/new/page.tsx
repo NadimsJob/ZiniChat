@@ -693,32 +693,32 @@ export default function NewInboxStepper() {
                       <div className="mt-2 bg-background border border-surface-hover rounded-xl p-4 text-[11.5px] text-zinc-300 space-y-3 leading-relaxed">
                         <div>
                           <p className="font-bold text-foreground mb-1">
-                            {language === 'en' ? 'Step 1: Get App IDs' : 'ধাপ ১: অ্যাপ আইডি সংগ্রহ'}
+                            {language === 'en' ? 'Step 1: Create or Select Meta App & Get API IDs' : 'ধাপ ১: মেটা অ্যাপ তৈরি/সিলেক্ট এবং এপিআই আইডি সংগ্রহ'}
                           </p>
                           <p>
                             {language === 'en'
-                              ? 'Go to developers.facebook.com -> My Apps -> Select ZiniChat App -> WhatsApp -> API Setup.'
-                              : 'developers.facebook.com-এ যান -> My Apps -> ZiniChat অ্যাপ সিলেক্ট করুন -> WhatsApp -> API Setup।'}
+                              ? 'Go to developers.facebook.com -> My Apps. Select your custom Meta Developer App (type Business) or create a new one.'
+                              : 'developers.facebook.com-এ যান -> My Apps। আপনার তৈরি করা কাস্টম মেটা অ্যাপ (টাইপ: Business) সিলেক্ট করুন অথবা নতুন একটি অ্যাপ তৈরি করুন।'}
                           </p>
                           <p className="mt-1">
                             {language === 'en'
-                              ? 'Copy the Phone Number ID and Business Account ID (WABA).'
-                              : 'সেখান থেকে Phone Number ID এবং Business Account ID (WABA) কপি করুন।'}
+                              ? 'Navigate to WhatsApp -> API Setup on the left menu, and copy the Phone Number ID and WhatsApp Business Account ID (WABA).'
+                              : 'বাম পাশের মেনু থেকে WhatsApp -> API Setup-এ যান এবং Phone Number ID ও WhatsApp Business Account ID (WABA) কপি করুন।'}
                           </p>
                         </div>
                         <div>
                           <p className="font-bold text-foreground mb-1">
-                            {language === 'en' ? 'Step 2: Generate Permanent Token' : 'ধাপ ২: পার্মানেন্ট টোকেন তৈরি'}
+                            {language === 'en' ? 'Step 2: Generate Permanent Access Token' : 'ধাপ ২: পার্মানেন্ট এক্সেস টোকেন তৈরি'}
                           </p>
                           <p>
                             {language === 'en'
-                              ? 'Go to Facebook Business Settings -> Users -> System Users.'
-                              : 'ফেসবুক বিজনেস সেটিংস (Business Settings) -> Users -> System Users-এ যান।'}
+                              ? 'Go to your Meta Business Suite -> Settings -> Users -> System Users.'
+                              : 'আপনার ফেসবুক বিজনেস ম্যানেজার সেটিংস (Business Settings) -> Users -> System Users-এ যান।'}
                           </p>
                           <p className="mt-1">
                             {language === 'en'
-                              ? 'Create a System User (Admin role), click "Generate New Token", select your ZiniChat App, check "whatsapp_business_messaging" and "whatsapp_business_management", and generate the token.'
-                              : 'একজন System User (Admin) তৈরি করুন, "Generate New Token" বাটনে ক্লিক করুন, আপনার অ্যাপটি সিলেক্ট করুন এবং "whatsapp_business_messaging" ও "whatsapp_business_management" পারমিশনে টিক দিয়ে টোকেনটি তৈরি করে কপি করুন।'}
+                              ? 'Create/Select a System User (Admin role), click "Generate New Token", select your custom App, check the "whatsapp_business_messaging" and "whatsapp_business_management" permissions, and copy the generated token.'
+                              : 'একজন System User (Admin) তৈরি/সিলেক্ট করুন, "Generate New Token" বাটনে ক্লিক করুন, আপনার কাস্টম অ্যাপটি সিলেক্ট করুন এবং "whatsapp_business_messaging" ও "whatsapp_business_management" পারমিশনে টিক দিয়ে টোকেনটি তৈরি করে কপি করুন।'}
                           </p>
                         </div>
                       </div>
@@ -962,8 +962,8 @@ export default function NewInboxStepper() {
                         </p>
                         <p>
                           {language === 'en'
-                            ? 'Go to developers.facebook.com -> select your App -> Messenger -> Settings -> Access Tokens, select your Facebook Page, and generate the token.'
-                            : 'developers.facebook.com-এ যান -> আপনার অ্যাপ সিলেক্ট করুন -> Messenger -> Settings -> Access Tokens সেকশন থেকে আপনার পেজটি সিলেক্ট করে টোকেন জেনারেট করুন।'}
+                            ? 'Go to developers.facebook.com -> My Apps -> Select your custom App -> Messenger -> Settings -> Access Tokens. Add your Facebook Page, and generate the token.'
+                            : 'developers.facebook.com-এ যান -> My Apps -> আপনার কাস্টম অ্যাপটি সিলেক্ট করুন -> Messenger -> Settings -> Access Tokens সেকশন থেকে আপনার পেজটি যুক্ত করে টোকেন জেনারেট করুন।'}
                         </p>
                       </div>
                     </div>
@@ -1045,8 +1045,8 @@ export default function NewInboxStepper() {
                         </p>
                         <p>
                           {language === 'en'
-                            ? 'Your Instagram account must be linked to a Facebook Page. Go to developers.facebook.com -> your App -> Instagram -> API Setup to find your Instagram Account ID.'
-                            : 'আপনার ইনস্টাগ্রাম অ্যাকাউন্টটি অবশ্যই একটি ফেসবুক পেজের সাথে লিংক করা থাকতে হবে। developers.facebook.com-এ গিয়ে অ্যাপের ভেতরে Instagram -> API Setup থেকে আপনার Instagram Account ID টি কপি করুন।'}
+                            ? 'Your Instagram account must be linked to a Facebook Page. Go to developers.facebook.com -> My Apps -> Select your custom App -> Instagram -> API Setup to find your Instagram Account ID.'
+                            : 'আপনার ইনস্টাগ্রাম অ্যাকাউন্টটি অবশ্যই একটি ফেসবুক পেজের সাথে লিংক করা থাকতে হবে। developers.facebook.com-এ গিয়ে My Apps থেকে আপনার কাস্টম অ্যাপ সিলেক্ট করে তার ভেতরে Instagram -> API Setup থেকে আপনার Instagram Account ID টি কপি করুন।'}
                         </p>
                       </div>
                       <div>
