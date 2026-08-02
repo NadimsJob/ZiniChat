@@ -47,11 +47,27 @@ export class LandingPageService {
           ],
           pricingJson: {
             compareFeatures: [
-              { id: 'channels', type: 'header', en: 'Channels', bn: 'চ্যানেলসমূহ' },
-              { id: 'whatsapp', type: 'boolean', featureKey: 'whatsapp', en: 'WhatsApp Business API', bn: 'হোয়াটসঅ্যাপ API' },
-              { id: 'messenger', type: 'boolean', featureKey: 'messenger', en: 'Meta Messenger', bn: 'মেটা মেসেঞ্জার' },
               { id: 'limits', type: 'header', en: 'Limits', bn: 'লিমিটস' },
-              { id: 'seats', type: 'value', featureKey: 'seatLimit', en: 'Team Members', bn: 'টিম মেম্বার' }
+              { id: 'seats', type: 'value', featureKey: 'seatLimit', en: 'Team Members', bn: 'টিম মেম্বার' },
+              { id: 'msg_quota', type: 'value', featureKey: 'messageQuota', en: 'Monthly Messages', bn: 'মাসিক মেসেজ' },
+              { id: 'ai_quota', type: 'value', featureKey: 'aiQuota', en: 'AI Responses', bn: 'এআই রেসপন্স' },
+              
+              { id: 'channels', type: 'header', en: 'Channels', bn: 'চ্যানেলসমূহ' },
+              { id: 'whatsapp_qr', type: 'boolean', featureKey: 'whatsapp_qr', en: 'WhatsApp Web (QR)', bn: 'হোয়াটসঅ্যাপ ওয়েব (QR)' },
+              { id: 'website_widget', type: 'boolean', featureKey: 'website_widget', en: 'Website Widget', bn: 'ওয়েবসাইট উইজেট' },
+              { id: 'whatsapp', type: 'boolean', featureKey: 'whatsapp', en: 'Official WhatsApp API', bn: 'অফিসিয়াল হোয়াটসঅ্যাপ API' },
+              { id: 'messenger', type: 'boolean', featureKey: 'messenger', en: 'Meta Messenger', bn: 'মেটা মেসেঞ্জার' },
+              { id: 'instagram_dm', type: 'boolean', featureKey: 'instagram_dm', en: 'Instagram DM', bn: 'ইনস্টাগ্রাম ডিএম' },
+
+              { id: 'features_hdr', type: 'header', en: 'Features', bn: 'ফিচারসমূহ' },
+              { id: 'ai_assistant', type: 'boolean', featureKey: 'ai_assistant', en: 'AI Assistant', bn: 'এআই অ্যাসিস্ট্যান্ট' },
+              { id: 'lead_manage', type: 'boolean', featureKey: 'lead_manage', en: 'Leads CRM', bn: 'লিডস সিআরএম' },
+              { id: 'contact_labels', type: 'boolean', featureKey: 'contact_labels', en: 'Custom Contact Labels', bn: 'কাস্টম কন্টাক্ট লেবেল' },
+              { id: 'team_management', type: 'boolean', featureKey: 'team_management', en: 'Team Members & Roles', bn: 'টিম মেম্বার ও রোলস' },
+              { id: 'commerce', type: 'boolean', featureKey: 'commerce', en: 'Products & Orders', bn: 'প্রোডাক্টস ও অর্ডার' },
+              { id: 'broadcast', type: 'boolean', featureKey: 'broadcast', en: 'Broadcast Campaign', bn: 'ব্রডকাস্ট ক্যাম্পেইন' },
+              { id: 'allowByok', type: 'boolean', featureKey: 'allowByok', en: 'Bring Your Own Key (BYOK)', bn: 'নিজের এপিআই কী (BYOK)' },
+              { id: 'platform_support_ai', type: 'boolean', featureKey: 'platform_support_ai', en: 'Priority AI Support', bn: 'প্রায়োরিটি সাপোর্ট' }
             ]
           },
           faqsJson: {

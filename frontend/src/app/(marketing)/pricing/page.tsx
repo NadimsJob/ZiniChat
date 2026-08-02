@@ -67,15 +67,39 @@ export default function PricingPage() {
             bn: item.bn,
             get: (plan: any) => {
               if (item.type === 'boolean') {
-                 // Check if it's in the features array or if the DB field itself is true
                  if (item.featureKey) {
-                    if (plan[item.featureKey] === true) return 'yes';
-                    
+                    const key = item.featureKey;
+
+                    // Direct DB boolean property check
+                    if (plan[key] === true) return 'yes';
+                    if ((key === 'allowByok' || key === 'byok') && plan.allowByok === true) return 'yes';
+
                     let feats = plan.features;
                     if (typeof feats === 'string') {
                       try { feats = JSON.parse(feats); } catch (e) { feats = []; }
                     }
-                    if (Array.isArray(feats) && feats.includes(item.featureKey)) return 'yes';
+
+                    if (Array.isArray(feats)) {
+                      if (feats.includes(key)) return 'yes';
+
+                      // Alias mapping to seamlessly match Superadmin package feature IDs
+                      const aliasMap: Record<string, string[]> = {
+                        'whatsapp_qr': ['whatsapp_qr'],
+                        'whatsapp': ['whatsapp', 'whatsapp_api', 'official_whatsapp'],
+                        'whatsapp_api': ['whatsapp', 'whatsapp_api', 'official_whatsapp'],
+                        'instagram_dm': ['instagram_dm', 'instagram'],
+                        'instagram': ['instagram_dm', 'instagram'],
+                        'team_management': ['team_management', 'team_roles'],
+                        'team_roles': ['team_management', 'team_roles'],
+                        'allowByok': ['allowByok', 'byok'],
+                        'byok': ['allowByok', 'byok'],
+                        'website_widget': ['website_widget', 'widget', 'whatsapp_widget'],
+                        'platform_support_ai': ['platform_support_ai', 'priority_support']
+                      };
+
+                      const aliases = aliasMap[key] || [];
+                      if (aliases.some(alias => feats.includes(alias))) return 'yes';
+                    }
                  }
                  return 'no';
               } else if (item.type === 'value') {
