@@ -103,26 +103,29 @@ export class AuthService {
       if (planId) {
         selectedPlan = await prisma.plan.findUnique({ where: { id: planId } });
       }
-      if (!selectedPlan || !selectedPlan.isActive) {
-        selectedPlan = await prisma.plan.findFirst({
-          where: { isDefault: true, isActive: true }
-        });
+      
+      const defaultPlan = await prisma.plan.findFirst({
+        where: { isDefault: true, isActive: true }
+      });
+
+      let initialPlan = selectedPlan;
+      if (!initialPlan || !initialPlan.isActive || (Number(initialPlan.priceMonthlyBdt) > 0 && (initialPlan.trialDays || 0) <= 0)) {
+        initialPlan = defaultPlan || initialPlan;
       }
 
-      const isPaid = selectedPlan && Number(selectedPlan.priceMonthlyBdt) > 0;
-      const trialDays = selectedPlan?.trialDays || 0;
+      if (!initialPlan) {
+        initialPlan = await prisma.plan.findFirst({ where: { isActive: true } });
+      }
+
+      const isPaid = initialPlan && Number(initialPlan.priceMonthlyBdt) > 0;
+      const trialDays = initialPlan?.trialDays || 0;
       
       let status = 'active';
       let trialEndsAt = null;
 
-      if (isPaid) {
-        if (trialDays > 0) {
-          status = 'trialing';
-          trialEndsAt = new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000);
-        } else {
-          status = 'past_due';
-          trialEndsAt = new Date(Date.now() - 1000); // expired
-        }
+      if (isPaid && trialDays > 0) {
+        status = 'trialing';
+        trialEndsAt = new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000);
       } else {
         status = 'active';
         trialEndsAt = new Date();
@@ -137,17 +140,17 @@ export class AuthService {
           businessName,
           phoneNo,
           trialEndsAt,
-          planId: selectedPlan?.id || null,
+          planId: initialPlan?.id || null,
           customAiConfigId: defaultAiConfig?.id || null
         }
       });
 
-      if (selectedPlan) {
+      if (initialPlan) {
         const currentPeriodEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 1 month
         await prisma.subscription.create({
           data: {
             tenantId: tenant.id,
-            planId: selectedPlan.id,
+            planId: initialPlan.id,
             status,
             billingCycle: 'monthly',
             currentPeriodStart: new Date(),
@@ -601,26 +604,29 @@ export class AuthService {
         if (planId) {
           selectedPlan = await this.prisma.plan.findUnique({ where: { id: planId } });
         }
-        if (!selectedPlan || !selectedPlan.isActive) {
-          selectedPlan = await this.prisma.plan.findFirst({
-            where: { isDefault: true, isActive: true }
-          });
+
+        const defaultPlan = await this.prisma.plan.findFirst({
+          where: { isDefault: true, isActive: true }
+        });
+
+        let initialPlan = selectedPlan;
+        if (!initialPlan || !initialPlan.isActive || (Number(initialPlan.priceMonthlyBdt) > 0 && (initialPlan.trialDays || 0) <= 0)) {
+          initialPlan = defaultPlan || initialPlan;
         }
 
-        const isPaid = selectedPlan && Number(selectedPlan.priceMonthlyBdt) > 0;
-        const trialDays = selectedPlan?.trialDays || 0;
+        if (!initialPlan) {
+          initialPlan = await this.prisma.plan.findFirst({ where: { isActive: true } });
+        }
+
+        const isPaid = initialPlan && Number(initialPlan.priceMonthlyBdt) > 0;
+        const trialDays = initialPlan?.trialDays || 0;
         
         let status = 'active';
         let trialEndsAt = null;
 
-        if (isPaid) {
-          if (trialDays > 0) {
-            status = 'trialing';
-            trialEndsAt = new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000);
-          } else {
-            status = 'past_due';
-            trialEndsAt = new Date(Date.now() - 1000); // expired
-          }
+        if (isPaid && trialDays > 0) {
+          status = 'trialing';
+          trialEndsAt = new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000);
         } else {
           status = 'active';
           trialEndsAt = new Date();
@@ -634,17 +640,17 @@ export class AuthService {
           data: {
             businessName: `${name}'s Workspace`,
             trialEndsAt,
-            planId: selectedPlan?.id || null,
+            planId: initialPlan?.id || null,
             customAiConfigId: defaultAiConfig?.id || null
           }
         });
 
-        if (selectedPlan) {
+        if (initialPlan) {
           const currentPeriodEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 1 month
           await this.prisma.subscription.create({
             data: {
               tenantId: tenant.id,
-              planId: selectedPlan.id,
+              planId: initialPlan.id,
               status,
               billingCycle: 'monthly',
               currentPeriodStart: new Date(),

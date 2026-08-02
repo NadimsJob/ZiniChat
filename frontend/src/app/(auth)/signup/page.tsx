@@ -69,7 +69,11 @@ export default function SignupPage() {
       Cookies.set('access_token', data.access_token, { expires: 7 });
       Cookies.set('user_role', data.user.role, { expires: 7 });
 
-      router.push('/dashboard');
+      if (planId) {
+        router.push(`/dashboard/billing/pay-mfs?planId=${planId}`);
+      } else {
+        router.push('/dashboard');
+      }
     } catch (err: any) {
       setError(err.message || 'Google Auth failed');
     } finally {
@@ -146,7 +150,11 @@ export default function SignupPage() {
       Cookies.set('access_token', data.access_token, { expires: 7 });
       Cookies.set('user_role', data.user.role, { expires: 7 });
 
-      router.push('/dashboard');
+      if (planId) {
+        router.push(`/dashboard/billing/pay-mfs?planId=${planId}`);
+      } else {
+        router.push('/dashboard');
+      }
     } catch (err: any) {
       setError(err.message || 'Signup failed');
     } finally {

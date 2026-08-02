@@ -188,15 +188,15 @@ export default function PackagesPage() {
     setIsEditing(true);
   };
 
-  const updateLimitFeature = (keyword: string, text: string) => {
+  const updateLimitFeature = (keyword: string, textEn: string, textBn: string) => {
     const currentJson = Array.isArray(planForm.featuresJson) ? planForm.featuresJson : [];
     const index = currentJson.findIndex(f => f.en.toLowerCase().includes(keyword.toLowerCase()));
     if (index >= 0) {
       const newJson = [...currentJson];
-      newJson[index] = { ...newJson[index], en: text, bn: text };
+      newJson[index] = { ...newJson[index], en: textEn, bn: textBn };
       return newJson;
     }
-    return [...currentJson, { en: text, bn: text }];
+    return [...currentJson, { en: textEn, bn: textBn }];
   };
 
   return (
@@ -340,35 +340,35 @@ export default function PackagesPage() {
                   <label className="block text-[12px] font-medium mb-1 text-zinc-400">Team Members</label>
                   <input type="number" value={planForm.seatLimit} onChange={e => {
                     const val = Number(e.target.value);
-                    setPlanForm({...planForm, seatLimit: val, featuresJson: updateLimitFeature('Team Member', `${val} Team Member${val !== 1 ? 's' : ''}`)})
+                    setPlanForm({...planForm, seatLimit: val, featuresJson: updateLimitFeature('Team Member', `${val} Team Member${val !== 1 ? 's' : ''}`, `${val} টিম মেম্বার`)})
                   }} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none text-xs" />
                 </div>
                 <div>
                   <label className="block text-[12px] font-medium mb-1 text-zinc-400">WhatsApp Limit</label>
                   <input type="number" value={planForm.whatsappLimit} onChange={e => {
                     const val = Number(e.target.value);
-                    setPlanForm({...planForm, whatsappLimit: val, featuresJson: updateLimitFeature('WhatsApp', `${val} WhatsApp Account${val !== 1 ? 's' : ''}`)})
+                    setPlanForm({...planForm, whatsappLimit: val, featuresJson: updateLimitFeature('WhatsApp', `${val} WhatsApp Account${val !== 1 ? 's' : ''}`, `${val} হোয়াটসঅ্যাপ অ্যাকাউন্ট`)})
                   }} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none text-xs" />
                 </div>
                 <div>
                   <label className="block text-[12px] font-medium mb-1 text-zinc-400">Messenger Limit</label>
                   <input type="number" value={planForm.messengerLimit} onChange={e => {
                     const val = Number(e.target.value);
-                    setPlanForm({...planForm, messengerLimit: val, featuresJson: updateLimitFeature('Messenger', `${val} Messenger Page${val !== 1 ? 's' : ''}`)})
+                    setPlanForm({...planForm, messengerLimit: val, featuresJson: updateLimitFeature('Messenger', `${val} Messenger Page${val !== 1 ? 's' : ''}`, `${val} মেসেঞ্জার পেজ`)})
                   }} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none text-xs" />
                 </div>
                 <div>
                   <label className="block text-[12px] font-medium mb-1 text-zinc-400">Instagram Limit</label>
                   <input type="number" value={planForm.instagramLimit} onChange={e => {
                     const val = Number(e.target.value);
-                    setPlanForm({...planForm, instagramLimit: val, featuresJson: updateLimitFeature('Instagram', `${val} Instagram Account${val !== 1 ? 's' : ''}`)})
+                    setPlanForm({...planForm, instagramLimit: val, featuresJson: updateLimitFeature('Instagram', `${val} Instagram Account${val !== 1 ? 's' : ''}`, `${val} ইন্সটাগ্রাম অ্যাকাউন্ট`)})
                   }} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none text-xs" />
                 </div>
                 <div>
                   <label className="block text-[12px] font-medium mb-1 text-zinc-400">Website Widget</label>
                   <input type="number" value={planForm.websiteWidgetLimit} onChange={e => {
                     const val = Number(e.target.value);
-                    setPlanForm({...planForm, websiteWidgetLimit: val, featuresJson: updateLimitFeature('Website Widget', `${val} Website Widget${val !== 1 ? 's' : ''}`)})
+                    setPlanForm({...planForm, websiteWidgetLimit: val, featuresJson: updateLimitFeature('Website Widget', `${val} Website Widget${val !== 1 ? 's' : ''}`, `${val} ওয়েবসাইট উইজেট`)})
                   }} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none text-xs" />
                 </div>
               </div>
@@ -377,28 +377,28 @@ export default function PackagesPage() {
                   <label className="block text-[12px] font-medium mb-1 text-zinc-400">Trial (Days)</label>
                   <input type="number" value={planForm.trialDays} onChange={e => {
                     const val = Number(e.target.value);
-                    setPlanForm({...planForm, trialDays: val, featuresJson: updateLimitFeature('Trial', `${val} Days Free Trial`)})
+                    setPlanForm({...planForm, trialDays: val, featuresJson: updateLimitFeature('Trial', `${val} Days Free Trial`, `${val} দিন ফ্রি ট্রায়াল`)})
                   }} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none" />
                 </div>
                 <div>
                   <label className="block text-[12px] font-medium mb-1 text-zinc-400">Msgs/mo</label>
                   <input type="number" value={planForm.messageQuota} onChange={e => {
                     const val = Number(e.target.value);
-                    setPlanForm({...planForm, messageQuota: val, featuresJson: updateLimitFeature('Msg', `${val} Msgs/mo`)})
+                    setPlanForm({...planForm, messageQuota: val, featuresJson: updateLimitFeature('Msg', `${val} Msgs/mo`, `${val} মেসেজ/মাস`)})
                   }} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none" />
                 </div>
                 <div>
                   <label className="block text-[12px] font-medium mb-1 text-zinc-400">AI /mo</label>
                   <input type="number" value={planForm.aiQuota} onChange={e => {
                     const val = Number(e.target.value);
-                    setPlanForm({...planForm, aiQuota: val, featuresJson: updateLimitFeature('AI /mo', `${val} AI /mo`)})
+                    setPlanForm({...planForm, aiQuota: val, featuresJson: updateLimitFeature('AI /mo', `${val} AI /mo`, `${val} এআই/মাস`)})
                   }} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none" />
                 </div>
                 <div>
                   <label className="block text-[12px] font-medium mb-1 text-zinc-400">Products Limit</label>
                   <input type="number" value={planForm.productCatalogLimit} onChange={e => {
                     const val = Number(e.target.value);
-                    setPlanForm({...planForm, productCatalogLimit: val, featuresJson: updateLimitFeature('Products Limit', `${val} Products Limit`)})
+                    setPlanForm({...planForm, productCatalogLimit: val, featuresJson: updateLimitFeature('Products Limit', `${val} Products Limit`, `${val} প্রোডাক্ট লিমিট`)})
                   }} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none" />
                 </div>
                 <div>
@@ -406,14 +406,15 @@ export default function PackagesPage() {
                   <input type="number" placeholder="Unlimited" value={planForm.contactsLimit === null ? '' : planForm.contactsLimit} onChange={e => {
                     const val = e.target.value === '' ? null : Number(e.target.value);
                     const text = val === null ? 'Unlimited Contacts' : `${val} Contacts Limit`;
-                    setPlanForm({...planForm, contactsLimit: val, featuresJson: updateLimitFeature('Contact', text)})
+                    const textBn = val === null ? 'আনলিমিটেড কন্টাক্ট' : `${val} কন্টাক্ট লিমিট`;
+                    setPlanForm({...planForm, contactsLimit: val, featuresJson: updateLimitFeature('Contact', text, textBn)})
                   }} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none" />
                 </div>
                 <div>
                   <label className="block text-[12px] font-medium mb-1 text-zinc-400">Storage (MB)</label>
                   <input type="number" value={planForm.storageLimitMb} onChange={e => {
                     const val = Number(e.target.value);
-                    setPlanForm({...planForm, storageLimitMb: val, featuresJson: updateLimitFeature('Storage', `${val} MB Storage`)})
+                    setPlanForm({...planForm, storageLimitMb: val, featuresJson: updateLimitFeature('Storage', `${val} MB Storage`, `${val} এমবি স্টোরেজ`)})
                   }} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none" />
                 </div>
               </div>
@@ -432,7 +433,7 @@ export default function PackagesPage() {
                           setPlanForm({ 
                             ...planForm, 
                             allowByok: true,
-                            featuresJson: alreadyExists ? currentJson : [...currentJson, { en: 'Bring Your Own Key (BYOK)', bn: 'Bring Your Own Key (BYOK)' }]
+                            featuresJson: alreadyExists ? currentJson : [...currentJson, { en: 'Bring Your Own Key (BYOK)', bn: 'আপনার নিজের এপিআই কি ব্যবহার করুন (BYOK)' }]
                           });
                         } else {
                           setPlanForm({ 
@@ -447,31 +448,31 @@ export default function PackagesPage() {
                     <span className="text-[12px] font-medium">Bring Your Own Key (BYOK)</span>
                   </label>
                   {[
-                    { id: 'ai_assistant', label: 'AI Assistant' },
-                    { id: 'platform_support_ai', label: 'Platform Support AI (Widget)' },
-                    { id: 'messenger', label: 'Messenger Integration' },
-                    { id: 'whatsapp', label: 'WhatsApp API (Official)' },
-                    { id: 'whatsapp_qr', label: 'WhatsApp Web (Unofficial QR)' },
-                    { id: 'whatsapp_widget', label: 'WhatsApp Website Widget' },
-                    { id: 'website_widget', label: 'Website Live Chat Widget' },
-                    { id: 'instagram_dm', label: 'Instagram DM Integration' },
-                    { id: 'lead_manage', label: 'Leads CRM' },
-                    { id: 'commerce', label: 'Products & Orders' },
-                    { id: 'broadcast', label: 'Broadcast Campaigns' },
-                    { id: 'team_management', label: 'Team Members & Roles' },
-                    { id: 'contact_labels', label: 'Custom Contact Labels' },
-                    { id: 'inbox_smart_tabs', label: 'Smart Inbox Tabs' },
-                    { id: 'inbox_notes', label: 'Inbox Contact Notes' },
-                    { id: 'inbox_ai_summary', label: 'AI Conversation Summary' },
-                    { id: 'inbox_activity_timeline', label: 'Activity Timeline' },
-                    { id: 'inbox_shared_files', label: 'Shared Files Gallery' },
-                    { id: 'inbox_multi_agent_collaborators', label: 'Multi-Agent Collaborators' },
-                    { id: 'inbox_multi_ai_assistant_picker', label: 'Multiple AI Assistant Picker' },
-                    { id: 'agent_presence', label: 'Agent Presence Status' },
-                    { id: 'ai_tool_order_placement', label: 'AI Tool: Auto Order Placement' },
-                    { id: 'ai_tool_image_reading', label: 'AI Tool: Image Reading' },
-                    { id: 'ai_tool_support_detection', label: 'AI Tool: Support Detection' },
-                    { id: 'ai_tool_product_matching', label: 'AI Tool: Product Photo Matching' }
+                    { id: 'ai_assistant', label: 'AI Assistant', labelBn: 'এআই অ্যাসিস্ট্যান্ট' },
+                    { id: 'platform_support_ai', label: 'Platform Support AI (Widget)', labelBn: 'প্লাটফর্ম সাপোর্ট এআই (উইজেট)' },
+                    { id: 'messenger', label: 'Messenger Integration', labelBn: 'মেসেঞ্জার ইন্টিগ্রেশন' },
+                    { id: 'whatsapp', label: 'WhatsApp API (Official)', labelBn: 'হোয়াটসঅ্যাপ এপিআই (অফিসিয়াল)' },
+                    { id: 'whatsapp_qr', label: 'WhatsApp Web (Unofficial QR)', labelBn: 'হোয়াটসঅ্যাপ ওয়েব (আনঅফিসিয়াল QR)' },
+                    { id: 'whatsapp_widget', label: 'WhatsApp Website Widget', labelBn: 'হোয়াটসঅ্যাপ ওয়েবসাইট উইজেট' },
+                    { id: 'website_widget', label: 'Website Live Chat Widget', labelBn: 'ওয়েবসাইট লাইভ চ্যাট উইজেট' },
+                    { id: 'instagram_dm', label: 'Instagram DM Integration', labelBn: 'ইন্সটাগ্রাম ডিএম ইন্টিগ্রেশন' },
+                    { id: 'lead_manage', label: 'Leads CRM', labelBn: 'লিডস সিআরএম' },
+                    { id: 'commerce', label: 'Products & Orders', labelBn: 'প্রোডাক্ট ও অর্ডার' },
+                    { id: 'broadcast', label: 'Broadcast Campaigns', labelBn: 'ব্রডকাস্ট ক্যাম্পেইন' },
+                    { id: 'team_management', label: 'Team Members & Roles', labelBn: 'টিম মেম্বার ও রোলস' },
+                    { id: 'contact_labels', label: 'Custom Contact Labels', labelBn: 'কাস্টম কন্টাক্ট লেবেল' },
+                    { id: 'inbox_smart_tabs', label: 'Smart Inbox Tabs', labelBn: 'স্মার্ট ইনবক্স ট্যাব' },
+                    { id: 'inbox_notes', label: 'Inbox Contact Notes', labelBn: 'ইনবক্স কন্টাক্ট নোটস' },
+                    { id: 'inbox_ai_summary', label: 'AI Conversation Summary', labelBn: 'এআই কনভারসেশন সামারি' },
+                    { id: 'inbox_activity_timeline', label: 'Activity Timeline', labelBn: 'অ্যাক্টিভিটি টাইমলাইন' },
+                    { id: 'inbox_shared_files', label: 'Shared Files Gallery', labelBn: 'শেয়ারড ফাইল গ্যালারি' },
+                    { id: 'inbox_multi_agent_collaborators', label: 'Multi-Agent Collaborators', labelBn: 'মাল্টি-এজেন্ট কোলাবরেটর' },
+                    { id: 'inbox_multi_ai_assistant_picker', label: 'Multiple AI Assistant Picker', labelBn: 'মাল্টিপল এআই অ্যাসিস্ট্যান্ট পিকার' },
+                    { id: 'agent_presence', label: 'Agent Presence Status', labelBn: 'এজেন্ট প্রেজেন্স স্ট্যাটাস' },
+                    { id: 'ai_tool_order_placement', label: 'AI Tool: Auto Order Placement', labelBn: 'এআই টুল: অটো অর্ডার প্লেসমেন্ট' },
+                    { id: 'ai_tool_image_reading', label: 'AI Tool: Image Reading', labelBn: 'এআই টুল: ইমেজ রিডিং' },
+                    { id: 'ai_tool_support_detection', label: 'AI Tool: Support Detection', labelBn: 'এআই টুল: সাপোর্ট ডিটেকশন' },
+                    { id: 'ai_tool_product_matching', label: 'AI Tool: Product Photo Matching', labelBn: 'এআই টুল: প্রোডাক্ট ফটো ম্যাচিং' }
                   ].map(feature => (
                     <label key={feature.id} className="flex items-center gap-2 cursor-pointer bg-background border border-surface-hover p-3 rounded-xl hover:border-primary/50 transition-colors">
                       <input 
@@ -484,7 +485,7 @@ export default function PackagesPage() {
                             setPlanForm({ 
                               ...planForm, 
                               features: [...planForm.features, feature.id],
-                              featuresJson: alreadyExists ? currentJson : [...currentJson, { en: feature.label, bn: feature.label }]
+                              featuresJson: alreadyExists ? currentJson : [...currentJson, { en: feature.label, bn: feature.labelBn }]
                             });
                           } else {
                             setPlanForm({ 
