@@ -21,104 +21,71 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function run() {
-  console.log("Updating LandingPageConfig legal policies...");
+  console.log("Updating LandingPageConfig Terms & Conditions...");
   
-  const privacyPolicyEn = \`# Privacy Policy
+  const termsConditionsEn = \`# Terms and Conditions
 
 **Last Updated:** August 2, 2026
 
-Welcome to ZiniChat. This Privacy Policy explains how we collect, use, and protect your personal data.
+Welcome to ZiniChat. By accessing or using our omnichannel AI platform and services, you agree to be bound by these Terms and Conditions.
 
-## 1. Data Collection
-We collect data you provide directly to us (e.g., account registration, Meta/WhatsApp integration tokens).
-When you connect Meta services, we request access to your messages and pages strictly to provide our service.
+## 1. Acceptance of Terms
+By creating an account, you agree to comply with and be bound by these Terms. If you do not agree, you may not use ZiniChat.
 
-## 2. Data Usage
-Your data is used exclusively to facilitate omnichannel messaging, AI assistance, and related CRM features within ZiniChat. We do not sell your personal data.
+## 2. Use of Services
+You agree to use ZiniChat only for lawful purposes. You are responsible for all content you transmit through our platform, including messages sent via connected Meta and WhatsApp accounts. Spamming or abusive messaging is strictly prohibited and may result in immediate account termination.
 
-## 3. Data Protection
-We implement robust security measures to protect your data. Passwords and access tokens are encrypted.
+## 3. Account Responsibilities
+You are responsible for maintaining the confidentiality of your account credentials and tokens. You must immediately notify us of any unauthorized use of your account.
 
-## 4. Contact Us
-For privacy concerns, contact us at info@zinichat.com.\`;
+## 4. Subscription and Billing
+Certain features require a paid subscription. Payments are billed in advance on a recurring basis. Refunds are handled in accordance with our refund policy. Usage limits apply based on your selected plan.
 
-  const dataDeletionEn = \`# Data Deletion Instructions
+## 5. Third-Party Services
+ZiniChat integrates with third-party platforms like Meta (Facebook, Instagram, WhatsApp). Your use of these integrations is also subject to their respective terms and policies. ZiniChat is not responsible for any changes or restrictions imposed by these third-party platforms.
 
-According to the Facebook Platform Rules, we must provide an explicit URL where users can request data deletion.
+## 6. Limitation of Liability
+ZiniChat is provided "as is". We shall not be liable for any indirect, incidental, special, or consequential damages resulting from the use or inability to use our services.
 
-## How to Delete Your Data from ZiniChat
+## 7. Contact Us
+For any questions regarding these Terms, please contact us at **info@zinichat.com**.\`;
 
-If you have connected your Meta/Facebook account to ZiniChat and wish to remove our app's access and delete your data, please follow these steps:
-
-1. Go to your **Facebook Account Settings** > **Settings & Privacy** > **Settings**.
-2. Scroll down and click on **Apps and Websites**.
-3. Find **ZiniChat** in the list of active apps and websites.
-4. Click **Remove**.
-5. Facebook will ask to confirm your action. Click **Remove** again.
-
-Once removed, ZiniChat will lose access to your Meta accounts. 
-
-### Deleting Your ZiniChat Account
-To completely delete your ZiniChat account and all associated data from our servers:
-1. Log in to your ZiniChat Superadmin or Workspace dashboard.
-2. Navigate to **Settings** > **Account**.
-3. Click on **Delete Account**.
-4. Confirm your choice. All your data will be permanently deleted within 30 days.
-
-If you cannot access your account, please email us at **info@zinichat.com** with the subject "Data Deletion Request".\`;
-
-  const privacyPolicyBn = \`# প্রাইভেসি পলিসি
+  const termsConditionsBn = \`# শর্তাবলী (Terms and Conditions)
 
 **সর্বশেষ আপডেট:** ২ আগস্ট, ২০২৬
 
-ZiniChat-এ আপনাকে স্বাগতম। এই প্রাইভেসি পলিসি বর্ণনা করে আমরা কীভাবে আপনার ব্যক্তিগত ডেটা সংগ্রহ, ব্যবহার এবং সুরক্ষিত করি।
+ZiniChat-এ আপনাকে স্বাগতম। আমাদের অমনিচ্যানেল এআই প্ল্যাটফর্ম এবং পরিষেবাগুলো ব্যবহার করার মাধ্যমে, আপনি এই শর্তাবলীতে সম্মত হচ্ছেন।
 
-## ১. ডেটা সংগ্রহ
-আমরা আপনার দেওয়া ডেটা সংগ্রহ করি (যেমন, অ্যাকাউন্ট রেজিস্ট্রেশন, মেটা/হোয়াটসঅ্যাপ টোকেন)। মেটা পরিষেবাগুলি সংযুক্ত করার সময়, আমরা কেবল আমাদের পরিষেবা প্রদানের জন্য আপনার বার্তা এবং পেজগুলোর অ্যাক্সেসের অনুরোধ করি।
+## ১. শর্তাবলীর সম্মতি
+অ্যাকাউন্ট তৈরি করার মাধ্যমে, আপনি এই শর্তাবলী মেনে চলতে সম্মত হচ্ছেন। আপনি যদি সম্মত না হন, তবে ZiniChat ব্যবহার থেকে বিরত থাকুন।
 
-## ২. ডেটা ব্যবহার
-আপনার ডেটা শুধুমাত্র ZiniChat-এর মধ্যে অমনিচ্যানেল মেসেজিং, এআই অ্যাসিস্ট্যান্স এবং সিআরএম ফিচারগুলির সুবিধার জন্য ব্যবহৃত হয়। আমরা আপনার ব্যক্তিগত ডেটা বিক্রি করি কাশী না।
+## ২. পরিষেবার ব্যবহার
+আপনি শুধুমাত্র বৈধ উদ্দেশ্যে ZiniChat ব্যবহার করতে সম্মত হচ্ছেন। মেটা এবং হোয়াটসঅ্যাপের মাধ্যমে পাঠানো বার্তা সহ আমাদের প্ল্যাটফর্মের মাধ্যমে প্রেরিত সমস্ত কন্টেন্টের জন্য আপনি দায়ী। স্প্যামিং বা অপব্যবহার কঠোরভাবে নিষিদ্ধ এবং এর ফলে অ্যাকাউন্ট বাতিল হতে পারে।
 
-## ৩. ডেটা সুরক্ষা
-আমরা আপনার ডেটা সুরক্ষিত রাখতে শক্তিশালী নিরাপত্তা ব্যবস্থা গ্রহণ করি। পাসওয়ার্ড এবং টোকেনগুলো এনক্রিপ্ট করা থাকে।
+## ৩. অ্যাকাউন্টের দায়িত্ব
+আপনার অ্যাকাউন্টের পাসওয়ার্ড এবং টোকেন গোপন রাখার দায়িত্ব আপনার। কোনো অননুমোদিত ব্যবহারের কথা অবিলম্বে আমাদের জানাতে হবে।
 
-## ৪. যোগাযোগ
-যেকোনো তথ্যের জন্য যোগাযোগ করুন: info@zinichat.com\`;
+## ৪. সাবস্ক্রিপশন এবং বিলিং
+কিছু নির্দিষ্ট ফিচারের জন্য পেইড সাবস্ক্রিপশন প্রয়োজন। নির্বাচিত প্ল্যানের উপর ভিত্তি করে ব্যবহারের লিমিট প্রযোজ্য হবে।
 
-  const dataDeletionBn = \`# ডেটা মুছে ফেলার নির্দেশাবলী
+## ৫. থার্ড-পার্টি সার্ভিস
+ZiniChat মেটা (ফেসবুক, ইনস্টাগ্রাম, হোয়াটসঅ্যাপ)-এর মতো থার্ড-পার্টি প্ল্যাটফর্মগুলোর সাথে ইন্টিগ্রেট করে। আপনার এই ইন্টিগ্রেশনগুলো ব্যবহার করা তাদের নিজস্ব শর্তাবলী এবং নীতিমালার অধীন। এসব প্ল্যাটফর্মের কোনো পরিবর্তন বা বিধিনিষেধের জন্য ZiniChat দায়ী নয়।
 
-ফেসবুক প্ল্যাটফর্মের নিয়ম অনুযায়ী, আমাদের একটি নির্দিষ্ট ইউআরএল প্রদান করতে হবে যেখানে ব্যবহারকারীরা তাদের ডেটা মুছে ফেলার অনুরোধ করতে পারেন।
+## ৬. দায়বদ্ধতার সীমাবদ্ধতা
+ZiniChat "যেমন আছে" সেভাবেই প্রদান করা হয়। আমাদের পরিষেবা ব্যবহারের ফলে কোনো পরোক্ষ বা আনুষঙ্গিক ক্ষতির জন্য আমরা দায়ী থাকব না।
 
-## ZiniChat থেকে আপনার ডেটা কীভাবে মুছে ফেলবেন
-
-আপনি যদি আপনার মেটা/ফেসবুক অ্যাকাউন্ট ZiniChat-এর সাথে সংযুক্ত করে থাকেন এবং আমাদের অ্যাপের অ্যাক্সেস সরাতে ও আপনার ডেটা মুছে ফেলতে চান, তবে এই ধাপগুলো অনুসরণ করুন:
-
-১. আপনার **ফেসবুক অ্যাকাউন্ট সেটিংস** > **সেটিংস ও প্রাইভেসি** > **সেটিংস**-এ যান।
-২. নিচে স্ক্রল করুন এবং **অ্যাপস ও ওয়েবসাইটস (Apps and Websites)**-এ ক্লিক করুন।
-৩. সক্রিয় অ্যাপের তালিকায় **ZiniChat** খুঁজুন।
-৪. **Remove** বাটনে ক্লিক করুন।
-৫. ফেসবুক আপনাকে নিশ্চিত করতে বলবে, আবার **Remove**-এ ক্লিক করুন।
-
-রিমুভ করার পর, ZiniChat আপনার মেটা অ্যাকাউন্টের অ্যাক্সেস হারিয়ে ফেলবে।
-
-### আপনার ZiniChat অ্যাকাউন্ট ডিলিট করা
-আমাদের সার্ভার থেকে আপনার ZiniChat অ্যাকাউন্ট এবং সমস্ত ডেটা স্থায়ীভাবে মুছে ফেলতে:
-১. আপনার ZiniChat ড্যাশবোর্ডে লগ ইন করুন।
-২. **Settings** > **Account**-এ যান।
-৩. **Delete Account**-এ ক্লিক করুন এবং নিশ্চিত করুন।
-
-যদি আপনি লগ ইন করতে না পারেন, তবে "Data Deletion Request" লিখে **info@zinichat.com**-এ ইমেইল করুন।\`;
+## ৭. যোগাযোগ
+এই শর্তাবলী সংক্রান্ত যেকোনো প্রশ্নের জন্য অনুগ্রহ করে **info@zinichat.com**-এ আমাদের সাথে যোগাযোগ করুন।\`;
 
   const configs = await prisma.landingPageConfig.findMany();
   if (configs.length > 0) {
     await prisma.landingPageConfig.update({
       where: { id: configs[0].id },
       data: {
-        privacyPolicyJson: { en: privacyPolicyEn, bn: privacyPolicyBn },
-        dataDeletionJson: { en: dataDeletionEn, bn: dataDeletionBn }
+        termsConditionsJson: { en: termsConditionsEn, bn: termsConditionsBn }
       }
     });
-    console.log("Successfully updated legal policies in live DB!");
+    console.log("Successfully updated Terms & Conditions in live DB!");
   } else {
     console.log("No LandingPageConfig found!");
   }
@@ -127,16 +94,16 @@ ZiniChat-এ আপনাকে স্বাগতম। এই প্রাই�
 run().catch(console.error).finally(() => process.exit(0));
 `;
 
-    const tmpPath = path.join(os.tmpdir(), 'update-legal.js');
+    const tmpPath = path.join(os.tmpdir(), 'update-terms.js');
     fs.writeFileSync(tmpPath, scriptToRun);
 
-    console.log('🔄 Uploading and executing legal update script on live server...\n');
+    console.log('🔄 Uploading and executing terms update script on live server...\n');
     
-    await ssh.putFile(tmpPath, '/tmp/update-legal.js');
-    await ssh.execCommand('docker cp /tmp/update-legal.js zinichat_backend_live:/usr/src/app/update-legal.js', { cwd: process.env.LIVE_PROJECT_PATH });
+    await ssh.putFile(tmpPath, '/tmp/update-terms.js');
+    await ssh.execCommand('docker cp /tmp/update-terms.js zinichat_backend_live:/usr/src/app/update-terms.js', { cwd: process.env.LIVE_PROJECT_PATH });
     
     const result = await ssh.execCommand(
-      'docker exec zinichat_backend_live node update-legal.js',
+      'docker exec zinichat_backend_live node update-terms.js',
       { cwd: process.env.LIVE_PROJECT_PATH }
     );
 
