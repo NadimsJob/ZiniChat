@@ -7,6 +7,7 @@ import { FileValidationService } from '../file-validation/file-validation.servic
 import { ToolConfigValidatorService } from './services/tool-config-validator.service';
 
 import { AiCacheService } from '../ai/ai-cache.service';
+import { AiService } from '../ai/ai.service';
 
 describe('AiTrainingService', () => {
   let service: AiTrainingService;
@@ -57,8 +58,9 @@ describe('AiTrainingService', () => {
         FileValidationService,
         ToolConfigValidatorService,
         { provide: PrismaService, useValue: mockPrisma },
-        { provide: QuotaService, useValue: { checkFeature: jest.fn().mockResolvedValue(true) } },
+        { provide: QuotaService, useValue: { checkFeature: jest.fn().mockResolvedValue(true), checkAiQuota: jest.fn().mockResolvedValue(true) } },
         { provide: AiCacheService, useValue: { invalidateCache: jest.fn(), getOrCreateCache: jest.fn(), computeChecksum: jest.fn() } },
+        { provide: AiService, useValue: { generateCompletion: jest.fn().mockResolvedValue('Mock AI response') } },
       ],
     }).compile();
 

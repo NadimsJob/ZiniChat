@@ -92,4 +92,9 @@ export class AiTrainingController {
   async deleteDocument(@Request() req: any, @Param('id') id: string) {
     return this.aiTrainingService.deleteDocument(req.user.tenantId, id);
   }
+
+  @Post('test-simulate')
+  async testSimulate(@Request() req: any, @Body('message') message: string) {
+    return this.aiTrainingService.testSimulate(req.user.tenantId, message);
+  }
 }

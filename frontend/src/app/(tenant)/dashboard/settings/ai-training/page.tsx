@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Cookies from 'js-cookie';
+import toast from 'react-hot-toast';
 import { useLanguage } from '@/components/LanguageProvider';
 import { useFeature } from '@/hooks/useFeature';
 import { 
@@ -391,8 +392,26 @@ export default function AiTrainingPage() {
     }
   };
 
-  // Simulator Test Message Handler
-  const handleSimulateSend = (customText?: string) => {
+  // Load Default System Prompt Handler
+  const handleLoadDefaultPrompt = async () => {
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai-training/generate-sample-prompt`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setConfig(prev => ({ ...prev, systemPrompt: data.prompt }));
+        toast.success(language === 'en' ? 'Default Persona Prompt loaded! Click Save to apply.' : 'ডিফল্ট পারসোনা প্রম্পট লোড করা হয়েছে! সেভ বাটনে ক্লিক করুন।');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error(language === 'en' ? 'Failed to load default prompt' : 'ডিফল্ট প্রম্পট লোড করতে ব্যর্থ হয়েছে');
+    }
+  };
+
+  // Simulator Test Message Handler (Real AI API Connection)
+  const handleSimulateSend = async (customText?: string) => {
     const textToSend = customText || simulatorInput.trim();
     if (!textToSend || isSimulating) return;
 
@@ -401,36 +420,34 @@ export default function AiTrainingPage() {
     if (!customText) setSimulatorInput('');
     setIsSimulating(true);
 
-    setTimeout(() => {
-      // Find matching Q&A in tenant's qnas
-      const lowerQuery = textToSend.toLowerCase();
-      const matchedQna = qnas.find(q => 
-        q.answer && (q.question.toLowerCase().includes(lowerQuery) || lowerQuery.includes(q.question.toLowerCase().substring(0, 5)))
-      );
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai-training/test-simulate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ message: textToSend })
+      });
 
-      let replyText = '';
-      if (matchedQna) {
-        replyText = matchedQna.answer;
-      } else if (lowerQuery.includes('delivery') || lowerQuery.includes('ডেলিভারি') || lowerQuery.includes('চার্জ')) {
-        const delQna = qnas.find(q => q.question.includes('ডেলিভারি') || q.question.toLowerCase().includes('delivery'));
-        replyText = delQna?.answer || (language === 'en' 
-          ? 'Standard delivery time is 24-48 hours. Charge is ৳60 inside Dhaka and ৳120 outside Dhaka.' 
-          : 'আমাদের ক্যাশ অন ডেলিভারি সহজলভ্য। ঢাকা সিটির ভেতরে ডেলিভারি চার্জ ৬০ টাকা, ঢাকার বাইরে ১২০ টাকা।');
-      } else if (lowerQuery.includes('location') || lowerQuery.includes('ঠিকানা') || lowerQuery.includes('শোরুম')) {
-        const locQna = qnas.find(q => q.question.includes('ঠিকানা') || q.question.toLowerCase().includes('location'));
-        replyText = locQna?.answer || (language === 'en' 
-          ? 'Our store is located in Dhaka, Bangladesh. Online orders are processed 24/7!' 
-          : 'আমাদের শোরুমের ঠিকানা ওয়েবসাইট এবং পেজে শেয়ার করা আছে। আপনি যেকোনো সময় অনলাইনে অর্ডার করতে পারেন।');
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        const errMsg = errData.message || (language === 'en' ? 'AI Quota exceeded or server error' : 'এআই রেসপন্স কোটা শেষ অথবা সার্ভার এরর');
+        setSimulatorMessages(prev => [...prev, { id: (Date.now() + 1).toString(), sender: 'ai' as const, text: `⚠️ [Error]: ${errMsg}` }]);
       } else {
-        const agentTitle = config.agentName || 'ZiniChat AI Assistant';
-        replyText = language === 'en'
-          ? `[Simulated AI Reply based on Persona]: Thank you for reaching out to us! ${agentTitle} is here to assist you.`
-          : `[সিমুলেটেড এআই রিপ্লাই]: ধন্যবাদ আমাদের সাথে যোগাযোগ করার জন্য! ${agentTitle} আপনাকে সহযোগিতায় নিয়োজিত রয়েছে।`;
+        const data = await res.json();
+        setSimulatorMessages(prev => [...prev, { id: (Date.now() + 1).toString(), sender: 'ai' as const, text: data.reply }]);
       }
-
-      setSimulatorMessages(prev => [...prev, { id: (Date.now() + 1).toString(), sender: 'ai' as const, text: replyText }]);
+    } catch (err: any) {
+      setSimulatorMessages(prev => [...prev, {
+        id: (Date.now() + 1).toString(),
+        sender: 'ai' as const,
+        text: `⚠️ ${language === 'en' ? 'Failed to connect to AI server.' : 'এআই সার্ভারে যুক্ত হওয়া যায়নি।'}`
+      }]);
+    } finally {
       setIsSimulating(false);
-    }, 700);
+    }
   };
 
   if (loading) {
@@ -579,9 +596,20 @@ export default function AiTrainingPage() {
                   <Wand2 className="w-4 h-4 text-primary" />
                   {language === 'en' ? 'Persona Instructions & Rules' : 'পারসোনা নির্দেশাবলী ও নীতিসমূহ'}
                 </h3>
-                <span className="text-[11px] text-muted-foreground font-mono">
-                  {promptLength.toLocaleString()} / {MAX_PROMPT_LENGTH.toLocaleString()}
-                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleLoadDefaultPrompt}
+                    className="text-[11px] bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 px-2 py-0.5 rounded-lg font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                    title={language === 'en' ? 'Load default behavior & anti-hallucination rules' : 'ডিফল্ট আচরণ ও নিয়মাবলী লোড করুন'}
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    <span>{language === 'en' ? 'Load Default' : 'ডিফল্ট প্রম্পট'}</span>
+                  </button>
+                  <span className="text-[11px] text-muted-foreground font-mono">
+                    {promptLength.toLocaleString()} / {MAX_PROMPT_LENGTH.toLocaleString()}
+                  </span>
+                </div>
               </div>
               <textarea
                 rows={5}
@@ -774,7 +802,7 @@ export default function AiTrainingPage() {
 
         {/* RIGHT COLUMN: Live Simulator (#tour-simulator) (5 Cols on desktop, Sticky) */}
         <div className="lg:col-span-5 lg:sticky lg:top-6 space-y-4">
-          <div id="tour-simulator" className="bg-card border border-border shadow-xl rounded-2xl overflow-hidden flex flex-col h-[640px]">
+          <div id="tour-simulator" className="bg-card border border-border shadow-xl rounded-2xl overflow-hidden flex flex-col h-[460px] max-h-[75vh]">
             
             {/* Simulator Header */}
             <div className="p-3.5 border-b border-border bg-surface/80 backdrop-blur-xl flex items-center justify-between">
@@ -790,8 +818,9 @@ export default function AiTrainingPage() {
                     {config.agentName || 'ZiniChat Assistant'}
                     <span className="text-[10px] font-semibold text-emerald-500 bg-emerald-500/10 px-1.5 py-0.2 rounded-md">Live Simulator</span>
                   </h3>
-                  <p className="text-[11px] text-muted-foreground">
-                    {language === 'en' ? 'Instant Prompt & Q&A Tester' : 'ইনস্ট্যান্ট প্রম্পট ও ক্যানাল টেস্ট'}
+                  <p className="text-[11px] text-amber-400 font-medium flex items-center gap-1">
+                    <span>⚡</span>
+                    <span>{language === 'en' ? '1 AI Response credit per test' : '১টি এআই রেসপন্স ক্রেডিট কাটা হবে'}</span>
                   </p>
                 </div>
               </div>

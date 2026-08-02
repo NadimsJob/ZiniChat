@@ -10,6 +10,7 @@ import { CryptoService } from '../crypto/crypto.service';
 import { FileValidationService } from '../file-validation/file-validation.service';
 import { ToolConfigValidatorService } from './services/tool-config-validator.service';
 import { AiCacheService } from '../ai/ai-cache.service';
+import { AiService } from '../ai/ai.service';
 
 @Injectable()
 export class AiTrainingService {
@@ -19,7 +20,8 @@ export class AiTrainingService {
     private cryptoService: CryptoService,
     private fileValidationService: FileValidationService,
     private toolConfigValidator: ToolConfigValidatorService,
-    private aiCacheService: AiCacheService
+    private aiCacheService: AiCacheService,
+    private aiService: AiService
   ) {}
 
   private async ensureAiAssistantExists(tenantId: string) {
@@ -544,5 +546,63 @@ export class AiTrainingService {
     await this.aiCacheService.invalidateCache(tenantId);
 
     return { success: true };
+  }
+
+  async testSimulate(tenantId: string, message: string) {
+    if (!message || message.trim().length === 0) {
+      throw new BadRequestException('Message is required');
+    }
+
+    // 1. Check AI Quota (deducts 1 credit or throws if depleted)
+    await this.quotaService.checkAiQuota(tenantId);
+
+    // 2. Build prompt context from persona, QnAs, and processed documents
+    const assistant = await this.ensureAiAssistantExists(tenantId);
+    const qnas = await this.prisma.knowledgeQna.findMany({ where: { tenantId } });
+    const docs = await this.prisma.knowledgeDocument.findMany({
+      where: { tenantId, status: 'processed' },
+      take: 5
+    });
+
+    let prompt = `You are a helpful customer support AI assistant named "${assistant.agentName || 'Support AI'}" for this business.\n\n`;
+    prompt += `### System Persona & Rules:\n${assistant.systemPrompt || 'Always reply politely to customer inquiries.'}\n\n`;
+
+    if (qnas.length > 0) {
+      prompt += `### Q&A Knowledge Base:\n`;
+      qnas.forEach(q => {
+        prompt += `- Q: ${q.question}\n  A: ${q.answer}\n`;
+      });
+      prompt += `\n`;
+    }
+
+    if (docs.length > 0) {
+      prompt += `### Uploaded Knowledge Documents:\n`;
+      docs.forEach(d => {
+        if (d.extractedText) {
+          prompt += `[Doc: ${d.fileName}]\n${d.extractedText.substring(0, 1500)}\n\n`;
+        }
+      });
+    }
+
+    prompt += `### Customer Test Query:\n${message}\n\nPlease reply directly to the customer as the trained AI assistant.`;
+
+    let reply = '';
+    try {
+      reply = await this.aiService.generateCompletion(prompt);
+    } catch (err: any) {
+      reply = `Sorry, unable to process AI request (${err.message || 'AI service error'}). Please verify your AI configuration.`;
+    }
+
+    // 3. Log 1 AI Usage Credit
+    await this.prisma.aiUsageLog.create({
+      data: {
+        tenantId,
+        modelUsed: 'simulator_test',
+        tokensUsed: 150,
+        costEstimate: 0
+      }
+    });
+
+    return { reply };
   }
 }
