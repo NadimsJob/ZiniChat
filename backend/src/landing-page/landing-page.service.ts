@@ -92,6 +92,10 @@ export class LandingPageService {
             en: 'Your Terms & Conditions go here. Edit this from the Superadmin dashboard.',
             bn: 'আপনার শর্তাবলী এখানে থাকবে। সুপারঅ্যাডমিন ড্যাশবোর্ড থেকে এটি এডিট করুন।'
           },
+          dataDeletionJson: {
+            en: 'Instructions for user data deletion go here. Edit this from the Superadmin dashboard.',
+            bn: 'ব্যবহারকারীর ডেটা মুছে ফেলার নির্দেশাবলী এখানে থাকবে। সুপারঅ্যাডমিন ড্যাশবোর্ড থেকে এটি এডিট করুন।'
+          },
           contactInfo: {
             address: { 
               en: '#386, Uttar Badda, Dhaka-1212, Bangladesh', 

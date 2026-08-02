@@ -726,6 +726,7 @@ model LandingPageConfig {
   aboutText           String?
   privacyPolicyJson   Json? // Privacy Policy contents {en, bn}
   termsConditionsJson Json? // Terms and Conditions contents {en, bn}
+  dataDeletionJson    Json? // Data Deletion instructions {en, bn}
   socialLinksJson     Json? // Social media links and toggles
   updatedAt           DateTime @updatedAt
 

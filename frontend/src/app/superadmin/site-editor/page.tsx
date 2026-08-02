@@ -33,6 +33,7 @@ export default function SiteEditorPage() {
           faqsJson,
           privacyPolicyJson: data.privacyPolicyJson || { en: '', bn: '' },
           termsConditionsJson: data.termsConditionsJson || { en: '', bn: '' },
+          dataDeletionJson: data.dataDeletionJson || { en: '', bn: '' },
           contactInfo: data.contactInfo || { address: { en: '', bn: '' }, email: '', phone: '' },
           socialLinksJson: data.socialLinksJson || {
             facebook: { url: '', enabled: false },
@@ -60,6 +61,7 @@ export default function SiteEditorPage() {
         faqsJson: config.faqsJson,
         privacyPolicyJson: config.privacyPolicyJson,
         termsConditionsJson: config.termsConditionsJson,
+        dataDeletionJson: config.dataDeletionJson,
         contactInfo: config.contactInfo,
         socialLinksJson: config.socialLinksJson,
       };
@@ -459,6 +461,21 @@ export default function SiteEditorPage() {
             <div>
               <label className="block text-xs font-medium mb-1 text-primary">Content (BN)</label>
               <textarea rows={6} value={config.termsConditionsJson?.bn || ''} onChange={e => setConfig({...config, termsConditionsJson: {...config.termsConditionsJson, bn: e.target.value}})} className="w-full bg-background border border-surface-hover rounded-lg px-3 py-2 text-sm focus:border-primary text-primary" />
+            </div>
+          </div>
+        </div>
+
+        {/* Data Deletion Instructions */}
+        <div className="space-y-3 pt-4 border-t border-surface-hover">
+          <h3 className="text-sm font-bold text-muted-foreground">Data Deletion Instructions Page (/data-deletion)</h3>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium mb-1">Content (EN) - Supports basic HTML/Markdown</label>
+              <textarea rows={6} value={config.dataDeletionJson?.en || ''} onChange={e => setConfig({...config, dataDeletionJson: {...config.dataDeletionJson, en: e.target.value}})} className="w-full bg-background border border-surface-hover rounded-lg px-3 py-2 text-sm focus:border-primary" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1 text-primary">Content (BN)</label>
+              <textarea rows={6} value={config.dataDeletionJson?.bn || ''} onChange={e => setConfig({...config, dataDeletionJson: {...config.dataDeletionJson, bn: e.target.value}})} className="w-full bg-background border border-surface-hover rounded-lg px-3 py-2 text-sm focus:border-primary text-primary" />
             </div>
           </div>
         </div>
