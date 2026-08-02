@@ -1,4 +1,5 @@
 import { Controller, Post, Body, UnauthorizedException, Get, UseGuards, Request, Patch, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -8,13 +9,15 @@ import { RolesGuard } from './guards/roles.guard';
 import { PermissionsGuard } from './guards/permissions.guard';
 import { Roles } from './decorators/roles.decorator';
 import { RequirePermissions } from './decorators/permissions.decorator';
+import { LoginDto, SignupDto, ForgotPasswordDto, ResetPasswordDto, VerifyEmailDto, GoogleCallbackDto } from './dto/auth.dto';
 
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
 
+  @Throttle({ default: { ttl: 60000, limit: 10 } })
   @Post('login')
-  async login(@Body() body: any) {
+  async login(@Body() body: LoginDto) {
     const user = await this.authService.validateUser(body.email, body.password);
     if (!user) {
       throw new UnauthorizedException('Invalid email or password');
@@ -22,26 +25,28 @@ export class AuthController {
     return this.authService.login(user);
   }
 
+  @Throttle({ default: { ttl: 60000, limit: 10 } })
   @Post('signup')
-  async signup(@Body() body: any) {
+  async signup(@Body() body: SignupDto) {
     return this.authService.signupTenant(body);
   }
 
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @Post('forgot-password')
-  async forgotPassword(@Body('email') email: string) {
-    if (!email) throw new UnauthorizedException('Email is required');
-    return this.authService.forgotPassword(email);
+  async forgotPassword(@Body() body: ForgotPasswordDto) {
+    return this.authService.forgotPassword(body.email);
   }
 
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @Post('reset-password')
-  async resetPassword(@Body() body: any) {
-    if (!body.token || !body.newPassword) throw new UnauthorizedException('Token and new password are required');
+  async resetPassword(@Body() body: ResetPasswordDto) {
     return this.authService.resetPassword(body.token, body.newPassword);
   }
 
+  @Throttle({ default: { ttl: 60000, limit: 10 } })
   @Post('verify-email')
-  async verifyEmail(@Body('token') token: string) {
-    return this.authService.verifyEmail(token);
+  async verifyEmail(@Body() body: VerifyEmailDto) {
+    return this.authService.verifyEmail(body.token);
   }
 
   @Post('seed-superadmin')
@@ -162,8 +167,9 @@ export class AuthController {
     return this.authService.updateGoogleSettings(body);
   }
 
+  @Throttle({ default: { ttl: 60000, limit: 10 } })
   @Post('google/callback')
-  async googleCallback(@Body() body: any) {
+  async googleCallback(@Body() body: GoogleCallbackDto) {
     return this.authService.googleCallback(body.credential, body.planId);
   }
 

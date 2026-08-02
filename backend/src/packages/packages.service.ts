@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -30,9 +30,26 @@ export class PackagesService {
   }
 
   async deletePlan(id: string) {
-    // In a real scenario, you might want to prevent deletion if there are active subscriptions.
-    // For now, we will allow it or rely on foreign key constraints.
-    return this.prisma.plan.delete({ where: { id } });
+    const plan = await this.prisma.plan.findUnique({
+      where: { id },
+      include: { _count: { select: { tenants: true, subscriptions: true } } }
+    });
+    if (!plan) throw new NotFoundException('Package not found');
+    if (plan.isDefault) {
+      throw new BadRequestException('Cannot delete default package. Please set another package as default first.');
+    }
+
+    const linkedCount = (plan._count?.tenants || 0) + (plan._count?.subscriptions || 0);
+    if (linkedCount > 0) {
+      await this.prisma.plan.update({
+        where: { id },
+        data: { isActive: false }
+      });
+      return { success: true, message: 'Package is linked to existing tenants or subscriptions. It has been deactivated instead.' };
+    }
+
+    await this.prisma.plan.delete({ where: { id } });
+    return { success: true, message: 'Package deleted successfully' };
   }
 
   async setDefaultPlan(id: string) {
@@ -78,6 +95,22 @@ export class PackagesService {
   }
 
   async deleteAddon(id: string) {
-    return this.prisma.addon.delete({ where: { id } });
+    const addon = await this.prisma.addon.findUnique({
+      where: { id },
+      include: { _count: { select: { payments: true } } }
+    });
+    if (!addon) throw new NotFoundException('Addon not found');
+
+    const linkedCount = addon._count?.payments || 0;
+    if (linkedCount > 0) {
+      await this.prisma.addon.update({
+        where: { id },
+        data: { isActive: false }
+      });
+      return { success: true, message: 'Addon is linked to billing records. It has been deactivated instead.' };
+    }
+
+    await this.prisma.addon.delete({ where: { id } });
+    return { success: true, message: 'Addon deleted successfully' };
   }
 }

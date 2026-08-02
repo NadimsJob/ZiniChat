@@ -5,12 +5,17 @@ import { ValidationPipe } from '@nestjs/common';
 import { join } from 'path';
 import * as fs from 'fs';
 import helmet from 'helmet';
+import { sanitizeInput } from './common/utils/sanitizer.util';
 
 (BigInt.prototype as any).toJSON = function () {
   return Number(this);
 };
 
 async function bootstrap() {
+  if (!process.env.DATABASE_URL) {
+    console.error('FATAL: DATABASE_URL environment variable is missing.');
+  }
+
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   // Security Headers (Allow cross-origin static resource loading for uploads)
@@ -19,6 +24,14 @@ async function bootstrap() {
       crossOriginResourcePolicy: { policy: 'cross-origin' },
     }),
   );
+
+  // Global XSS Sanitization Middleware
+  app.use((req: any, res: any, next: any) => {
+    if (req.body && typeof req.body === 'object') {
+      req.body = sanitizeInput(req.body);
+    }
+    next();
+  });
 
   const envOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [];
   const defaultOrigins = ['http://localhost:3000', 'https://test.zinichat.com', 'https://zinichat.com', 'https://www.zinichat.com'];

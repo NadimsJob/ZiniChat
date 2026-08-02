@@ -114,16 +114,23 @@ export default function PackagesPage() {
   };
 
   const handleDelete = async (type: 'plans' | 'addons', id: string) => {
-    if (!confirm('Are you sure you want to delete this?')) return;
+    if (!confirm(language === 'en' ? 'Are you sure you want to delete this?' : 'আপনি কি নিশ্চিত যে এটি মুছে ফেলতে চান?')) return;
     const token = Cookies.get('access_token');
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/packages/admin/${type}/${id}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/packages/admin/${type}/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(data.message || (language === 'en' ? 'Deleted successfully' : 'সফলভাবে মুছে ফেলা হয়েছে'));
+      } else {
+        toast.error(data.message || (language === 'en' ? 'Failed to delete' : 'মুছে ফেলা ব্যর্থ হয়েছে'));
+      }
       fetchData();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      toast.error(err.message || 'Error deleting item');
     }
   };
 
