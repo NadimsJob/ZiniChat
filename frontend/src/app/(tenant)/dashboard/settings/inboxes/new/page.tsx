@@ -80,6 +80,10 @@ export default function NewInboxStepper() {
     greetingEnabled: false,
   });
 
+  const [showWaInstructions, setShowWaInstructions] = useState(false);
+  const [showFbInstructions, setShowFbInstructions] = useState(false);
+  const [showIgInstructions, setShowIgInstructions] = useState(false);
+
   useEffect(() => {
     const fetchQuotas = async () => {
       try {
@@ -672,7 +676,56 @@ export default function NewInboxStepper() {
                     </span>
                     <div className="flex-grow border-t border-surface-hover" />
                   </div>
-                  <form onSubmit={handleConnectWhatsApp} className="space-y-4">
+
+                  <div className="mb-4">
+                    <button
+                      type="button"
+                      onClick={() => setShowWaInstructions(!showWaInstructions)}
+                      className="text-[12px] text-primary hover:underline flex items-center gap-1 font-bold"
+                    >
+                      <span>
+                        {language === 'en'
+                          ? (showWaInstructions ? 'Hide Setup Guide' : 'Show Manual Setup Guide')
+                          : (showWaInstructions ? 'সেটআপ গাইড লুকান' : 'ম্যানুয়াল সেটআপ নির্দেশিকা দেখুন')}
+                      </span>
+                    </button>
+                    {showWaInstructions && (
+                      <div className="mt-2 bg-background border border-surface-hover rounded-xl p-4 text-[11.5px] text-zinc-300 space-y-3 leading-relaxed">
+                        <div>
+                          <p className="font-bold text-foreground mb-1">
+                            {language === 'en' ? 'Step 1: Get App IDs' : 'ধাপ ১: অ্যাপ আইডি সংগ্রহ'}
+                          </p>
+                          <p>
+                            {language === 'en'
+                              ? 'Go to developers.facebook.com -> My Apps -> Select ZiniChat App -> WhatsApp -> API Setup.'
+                              : 'developers.facebook.com-এ যান -> My Apps -> ZiniChat অ্যাপ সিলেক্ট করুন -> WhatsApp -> API Setup।'}
+                          </p>
+                          <p className="mt-1">
+                            {language === 'en'
+                              ? 'Copy the Phone Number ID and Business Account ID (WABA).'
+                              : 'সেখান থেকে Phone Number ID এবং Business Account ID (WABA) কপি করুন।'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="font-bold text-foreground mb-1">
+                            {language === 'en' ? 'Step 2: Generate Permanent Token' : 'ধাপ ২: পার্মানেন্ট টোকেন তৈরি'}
+                          </p>
+                          <p>
+                            {language === 'en'
+                              ? 'Go to Facebook Business Settings -> Users -> System Users.'
+                              : 'ফেসবুক বিজনেস সেটিংস (Business Settings) -> Users -> System Users-এ যান।'}
+                          </p>
+                          <p className="mt-1">
+                            {language === 'en'
+                              ? 'Create a System User (Admin role), click "Generate New Token", select your ZiniChat App, check "whatsapp_business_messaging" and "whatsapp_business_management", and generate the token.'
+                              : 'একজন System User (Admin) তৈরি করুন, "Generate New Token" বাটনে ক্লিক করুন, আপনার অ্যাপটি সিলেক্ট করুন এবং "whatsapp_business_messaging" ও "whatsapp_business_management" পারমিশনে টিক দিয়ে টোকেনটি তৈরি করে কপি করুন।'}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <form onSubmit={handleConnectWhatsApp} className="space-y-4" autoComplete="off">
                     {[
                       { label: language === 'en' ? 'Inbox Name' : 'ইনবক্সের নাম', value: waData.displayName, key: 'displayName', placeholder: 'e.g. Sales Support', type: 'text' },
                       { label: language === 'en' ? 'Phone Number' : 'ফোন নম্বর', value: waData.phoneNumber, key: 'phoneNumber', placeholder: '+8801700000000', type: 'text' },
@@ -688,7 +741,8 @@ export default function NewInboxStepper() {
                           value={field.value}
                           onChange={e => setWaData({ ...waData, [field.key]: e.target.value })}
                           placeholder={field.placeholder}
-                          className="w-full bg-background border border-surface-hover rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-primary transition-colors"
+                          autoComplete={field.type === 'password' ? 'new-password' : 'off-dont-autofill'}
+                          className="w-full bg-background border border-surface-hover rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-primary transition-colors text-foreground"
                         />
                       </div>
                     ))}
@@ -877,7 +931,46 @@ export default function NewInboxStepper() {
                   </span>
                   <div className="flex-grow border-t border-surface-hover" />
                 </div>
-                <form onSubmit={handleConnectMessenger} className="space-y-4">
+
+                <div className="mb-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowFbInstructions(!showFbInstructions)}
+                    className="text-[12px] text-primary hover:underline flex items-center gap-1 font-bold"
+                  >
+                    <span>
+                      {language === 'en'
+                        ? (showFbInstructions ? 'Hide Setup Guide' : 'Show Manual Setup Guide')
+                        : (showFbInstructions ? 'সেটআপ গাইড লুকান' : 'ম্যানুয়াল সেটআপ নির্দেশিকা দেখুন')}
+                    </span>
+                  </button>
+                  {showFbInstructions && (
+                    <div className="mt-2 bg-background border border-surface-hover rounded-xl p-4 text-[11.5px] text-zinc-300 space-y-3 leading-relaxed">
+                      <div>
+                        <p className="font-bold text-foreground mb-1">
+                          {language === 'en' ? 'Step 1: Get Facebook Page ID' : 'ধাপ ১: ফেসবুক পেজ আইডি সংগ্রহ'}
+                        </p>
+                        <p>
+                          {language === 'en'
+                            ? 'Go to your Facebook Page -> About -> Page Transparency, and copy the Page ID.'
+                            : 'আপনার ফেসবুক পেজ -> About -> Page Transparency ট্যাবে যান এবং পেজ আইডিটি কপি করুন।'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="font-bold text-foreground mb-1">
+                          {language === 'en' ? 'Step 2: Get Page Access Token' : 'ধাপ ২: পেজ এক্সেস টোকেন সংগ্রহ'}
+                        </p>
+                        <p>
+                          {language === 'en'
+                            ? 'Go to developers.facebook.com -> select your App -> Messenger -> Settings -> Access Tokens, select your Facebook Page, and generate the token.'
+                            : 'developers.facebook.com-এ যান -> আপনার অ্যাপ সিলেক্ট করুন -> Messenger -> Settings -> Access Tokens সেকশন থেকে আপনার পেজটি সিলেক্ট করে টোকেন জেনারেট করুন।'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <form onSubmit={handleConnectMessenger} className="space-y-4" autoComplete="off">
                   {[
                     { label: language === 'en' ? 'Page Name / Inbox Name' : 'পেজের নাম / ইনবক্সের নাম', value: fbData.pageName, key: 'pageName', placeholder: 'My Business Page', type: 'text' },
                     { label: 'Facebook Page ID', value: fbData.pageId, key: 'pageId', placeholder: 'e.g. 104561239845', type: 'text' },
@@ -885,7 +978,7 @@ export default function NewInboxStepper() {
                   ].map(field => (
                     <div key={field.key}>
                       <label className="block text-[12px] font-bold text-zinc-400 mb-1">{field.label}</label>
-                      <input required type={field.type} value={field.value} onChange={e => setFbData({ ...fbData, [field.key]: e.target.value })} placeholder={field.placeholder} className="w-full bg-background border border-surface-hover rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-primary transition-colors text-foreground" />
+                      <input required type={field.type} value={field.value} onChange={e => setFbData({ ...fbData, [field.key]: e.target.value })} placeholder={field.placeholder} autoComplete={field.type === 'password' ? 'new-password' : 'off-dont-autofill'} className="w-full bg-background border border-surface-hover rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-primary transition-colors text-foreground" />
                     </div>
                   ))}
                   <button disabled={loading} type="submit" className="w-full bg-blue-600 text-white py-2.5 rounded-xl font-bold hover:bg-blue-700 flex items-center justify-center disabled:opacity-50 transition-all">
@@ -931,7 +1024,46 @@ export default function NewInboxStepper() {
                   </span>
                   <div className="flex-grow border-t border-surface-hover" />
                 </div>
-                <form onSubmit={handleConnectInstagram} className="space-y-4">
+
+                <div className="mb-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowIgInstructions(!showIgInstructions)}
+                    className="text-[12px] text-primary hover:underline flex items-center gap-1 font-bold"
+                  >
+                    <span>
+                      {language === 'en'
+                        ? (showIgInstructions ? 'Hide Setup Guide' : 'Show Manual Setup Guide')
+                        : (showIgInstructions ? 'সেটআপ গাইড লুকান' : 'ম্যানুয়াল সেটআপ নির্দেশিকা দেখুন')}
+                    </span>
+                  </button>
+                  {showIgInstructions && (
+                    <div className="mt-2 bg-background border border-surface-hover rounded-xl p-4 text-[11.5px] text-zinc-300 space-y-3 leading-relaxed">
+                      <div>
+                        <p className="font-bold text-foreground mb-1">
+                          {language === 'en' ? 'Step 1: Get Instagram Business ID' : 'ধাপ ১: ইনস্টাগ্রাম বিজনেস আইডি সংগ্রহ'}
+                        </p>
+                        <p>
+                          {language === 'en'
+                            ? 'Your Instagram account must be linked to a Facebook Page. Go to developers.facebook.com -> your App -> Instagram -> API Setup to find your Instagram Account ID.'
+                            : 'আপনার ইনস্টাগ্রাম অ্যাকাউন্টটি অবশ্যই একটি ফেসবুক পেজের সাথে লিংক করা থাকতে হবে। developers.facebook.com-এ গিয়ে অ্যাপের ভেতরে Instagram -> API Setup থেকে আপনার Instagram Account ID টি কপি করুন।'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="font-bold text-foreground mb-1">
+                          {language === 'en' ? 'Step 2: Get Token' : 'ধাপ ২: এক্সেস টোকেন সংগ্রহ'}
+                        </p>
+                        <p>
+                          {language === 'en'
+                            ? 'Generate a Page Access Token for the Facebook Page linked to your Instagram Account (ensure the token has instagram permissions enabled).'
+                            : 'ইনস্টাগ্রাম অ্যাকাউন্টের সাথে লিংক করা ফেসবুক পেজের জন্য একটি Page Access Token জেনারেট করুন (টোকেনটিতে যেন instagram এর পারমিশনগুলো সচল থাকে)।'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <form onSubmit={handleConnectInstagram} className="space-y-4" autoComplete="off">
                   {[
                     { label: language === 'en' ? 'Account / Inbox Name' : 'অ্যাকাউন্টের নাম', value: igData.pageName, key: 'pageName', placeholder: 'My IG Page', type: 'text' },
                     { label: 'Instagram Account ID', value: igData.instagramId, key: 'instagramId', placeholder: 'e.g. 1784140000000', type: 'text' },
@@ -939,7 +1071,7 @@ export default function NewInboxStepper() {
                   ].map(field => (
                     <div key={field.key}>
                       <label className="block text-[12px] font-bold text-zinc-400 mb-1">{field.label}</label>
-                      <input required type={field.type} value={field.value} onChange={e => setIgData({ ...igData, [field.key]: e.target.value })} placeholder={field.placeholder} className="w-full bg-background border border-surface-hover rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-primary transition-colors text-foreground" />
+                      <input required type={field.type} value={field.value} onChange={e => setIgData({ ...igData, [field.key]: e.target.value })} placeholder={field.placeholder} autoComplete={field.type === 'password' ? 'new-password' : 'off-dont-autofill'} className="w-full bg-background border border-surface-hover rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-primary transition-colors text-foreground" />
                     </div>
                   ))}
                   <button disabled={loading} type="submit" className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-2.5 rounded-xl font-bold flex items-center justify-center disabled:opacity-50 transition-all hover:opacity-90">
