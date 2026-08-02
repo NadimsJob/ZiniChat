@@ -401,7 +401,7 @@ export default function AiTrainingPage() {
       });
       if (res.ok) {
         const data = await res.json();
-        setConfig(prev => ({ ...prev, systemPrompt: data.prompt }));
+        setConfig((prev: any) => ({ ...prev, systemPrompt: data.prompt }));
         toast.success(language === 'en' ? 'Default Persona Prompt loaded! Click Save to apply.' : 'ডিফল্ট পারসোনা প্রম্পট লোড করা হয়েছে! সেভ বাটনে ক্লিক করুন।');
       }
     } catch (err) {
