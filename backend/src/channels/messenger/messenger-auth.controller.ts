@@ -22,8 +22,8 @@ export class MessengerAuthController {
   }
 
   @Post('connect/facebook')
-  connectFacebook(@Request() req: any, @Body() body: { code: string }) {
-    return this.messengerAuthService.connectViaFacebook(req.user.tenantId, body.code);
+  connectFacebook(@Request() req: any, @Body() body: { code: string; pageId?: string }) {
+    return this.messengerAuthService.connectViaFacebook(req.user.tenantId, body.code, body.pageId);
   }
 
   @Delete('connections/:id')

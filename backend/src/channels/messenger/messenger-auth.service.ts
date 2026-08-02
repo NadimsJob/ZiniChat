@@ -108,7 +108,7 @@ export class MessengerAuthService {
     }
   }
 
-  async connectViaFacebook(tenantId: string, accessToken: string) {
+  async connectViaFacebook(tenantId: string, accessToken: string, targetPageId?: string) {
     await this.checkQuota(tenantId);
 
     const fbConfig = await this.prisma.facebookAuthConfig.findFirst();
@@ -147,8 +147,33 @@ export class MessengerAuthService {
         throw new BadRequestException('No Facebook Pages found for this account.');
       }
 
-      // Connect the first Page found
-      const page = pagesData.data[0];
+      // If multiple pages exist and no targetPageId is provided, return the pages list for selection
+      if (pagesData.data.length > 1 && !targetPageId) {
+        // Find pages that are not already connected to this tenant
+        const connectedConnections = await this.prisma.channelConnection.findMany({
+          where: { tenantId, channelType: 'messenger' },
+          select: { externalAccountId: true }
+        });
+        const connectedPageIds = connectedConnections.map(c => c.externalAccountId);
+        const availablePages = pagesData.data.filter((p: any) => !connectedPageIds.includes(p.id));
+
+        if (availablePages.length > 0) {
+          return {
+            requiresSelection: true,
+            pages: availablePages.map((p: any) => ({ id: p.id, name: p.name }))
+          };
+        }
+      }
+
+      // Connect the selected page or the first available one
+      const page = targetPageId 
+        ? pagesData.data.find((p: any) => p.id === targetPageId)
+        : pagesData.data[0];
+
+      if (!page) {
+        throw new BadRequestException('Selected Facebook Page was not found or is not authorized.');
+      }
+
       const pageId = page.id;
       const pageToken = page.access_token;
       const pageName = page.name || 'Facebook Page';
