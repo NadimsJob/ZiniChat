@@ -558,9 +558,9 @@ export class AiTrainingService {
 
     // 2. Build prompt context from persona, QnAs, and processed documents
     const assistant = await this.ensureAiAssistantExists(tenantId);
-    const qnas = await this.prisma.knowledgeQna.findMany({ where: { tenantId } });
+    const qnas = await this.prisma.qnAKnowledgeBase.findMany({ where: { tenantId } });
     const docs = await this.prisma.knowledgeDocument.findMany({
-      where: { tenantId, status: 'processed' },
+      where: { tenantId, status: 'completed' },
       take: 5
     });
 
@@ -569,7 +569,7 @@ export class AiTrainingService {
 
     if (qnas.length > 0) {
       prompt += `### Q&A Knowledge Base:\n`;
-      qnas.forEach(q => {
+      qnas.forEach((q: any) => {
         prompt += `- Q: ${q.question}\n  A: ${q.answer}\n`;
       });
       prompt += `\n`;
@@ -577,10 +577,8 @@ export class AiTrainingService {
 
     if (docs.length > 0) {
       prompt += `### Uploaded Knowledge Documents:\n`;
-      docs.forEach(d => {
-        if (d.extractedText) {
-          prompt += `[Doc: ${d.fileName}]\n${d.extractedText.substring(0, 1500)}\n\n`;
-        }
+      docs.forEach((d: any) => {
+        prompt += `[Doc: ${d.filename}]\n\n`;
       });
     }
 
@@ -597,9 +595,9 @@ export class AiTrainingService {
     await this.prisma.aiUsageLog.create({
       data: {
         tenantId,
-        modelUsed: 'simulator_test',
+        assistantId: assistant.id,
         tokensUsed: 150,
-        costEstimate: 0
+        costUsd: 0.0003
       }
     });
 
