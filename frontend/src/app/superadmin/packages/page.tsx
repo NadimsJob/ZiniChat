@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
+import { toast } from 'react-hot-toast';
 import { useLanguage } from '@/components/LanguageProvider';
 import { useCurrency } from '@/components/CurrencyProvider';
 import { Plus, Trash2, Edit, Save, X, Check, Package, Puzzle, CheckCircle } from 'lucide-react';
