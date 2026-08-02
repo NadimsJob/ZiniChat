@@ -46,6 +46,7 @@ services:
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://76.13.187.85:8100}
         NEXT_PUBLIC_FACEBOOK_APP_ID: ${NEXT_PUBLIC_FACEBOOK_APP_ID:-1657669951997356}
+        NEXT_PUBLIC_WHATSAPP_CONFIG_ID: ${NEXT_PUBLIC_WHATSAPP_CONFIG_ID:-}
     container_name: zinichat_frontend_${ENV_NAME:-test}
     restart: always
     env_file:

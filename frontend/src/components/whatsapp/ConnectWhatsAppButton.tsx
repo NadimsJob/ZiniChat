@@ -58,7 +58,7 @@ export default function ConnectWhatsAppButton({ onConnected }: ConnectWhatsAppBu
         }
       },
       {
-        config_id: 'YOUR_CONFIG_ID', // Replace with the Configuration ID from Meta Dashboard
+        config_id: process.env.NEXT_PUBLIC_WHATSAPP_CONFIG_ID || 'YOUR_CONFIG_ID', // Dynamic config ID from environment
         response_type: 'code',
         override_default_response_type: true,
         extras: {
