@@ -42,6 +42,21 @@ export class MessengerAuthService {
     }
   }
 
+  private async subscribePageToWebhooks(pageId: string, pageToken: string) {
+    try {
+      const url = `https://graph.facebook.com/v21.0/${pageId}/subscribed_apps?subscribed_fields=messages,messaging_postbacks,message_deliveries,message_reads&access_token=${pageToken}`;
+      const res = await fetch(url, { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        this.logger.log(`Successfully subscribed Facebook Page ${pageId} to Meta Webhooks`);
+      } else {
+        this.logger.warn(`Failed to subscribe Facebook Page ${pageId} to Webhooks: ${JSON.stringify(data)}`);
+      }
+    } catch (err: any) {
+      this.logger.error(`Error subscribing Facebook Page ${pageId} to Webhooks: ${err.message}`);
+    }
+  }
+
   async connectManual(tenantId: string, data: any) {
     await this.checkQuota(tenantId);
 
@@ -81,6 +96,9 @@ export class MessengerAuthService {
           status: 'active'
         }
       });
+
+      // Auto-subscribe Meta App to Page Webhooks so Meta forwards incoming Page messages to ZiniChat
+      await this.subscribePageToWebhooks(pageId, accessToken);
 
       const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
       this.notificationsService.createSystemNotificationForSuperadmins(
@@ -197,6 +215,9 @@ export class MessengerAuthService {
           status: 'active'
         }
       });
+
+      // Auto-subscribe Meta App to Page Webhooks so Meta forwards incoming Page messages to ZiniChat
+      await this.subscribePageToWebhooks(pageId, pageToken);
 
       const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
       this.notificationsService.createSystemNotificationForSuperadmins(
