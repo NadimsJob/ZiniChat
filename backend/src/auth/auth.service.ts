@@ -481,7 +481,10 @@ export class AuthService {
       data: { resetPasswordToken: resetToken, resetPasswordExpires }
     });
 
-    const frontendUrl = process.env.FRONTEND_URL || 'https://zinichat.com';
+    let frontendUrl = process.env.FRONTEND_URL || 'https://zinichat.com';
+    if (frontendUrl.includes('76.13.187.85') || frontendUrl.includes('localhost') || frontendUrl.includes(':810')) {
+      frontendUrl = 'https://zinichat.com';
+    }
     const resetLink = `${frontendUrl}/reset-password?token=${resetToken}`;
 
     await this.smtpService.triggerPasswordResetEmail(user.email, user.name || 'User', resetLink);
