@@ -458,7 +458,17 @@ export class AuthService {
   }
 
   async forgotPassword(email: string) {
-    const user = await this.usersService.findByEmail(email);
+    const cleanEmail = email ? email.trim().toLowerCase() : '';
+    if (!cleanEmail) {
+      return { success: true, message: 'If an account exists, a reset link has been sent.' };
+    }
+
+    const user = await this.prisma.user.findFirst({
+      where: {
+        email: { equals: cleanEmail, mode: 'insensitive' }
+      }
+    });
+
     if (!user) {
       return { success: true, message: 'If an account exists, a reset link has been sent.' };
     }
@@ -471,13 +481,10 @@ export class AuthService {
       data: { resetPasswordToken: resetToken, resetPasswordExpires }
     });
 
-    const frontendUrl = process.env.NEXT_PUBLIC_API_URL 
-      ? process.env.NEXT_PUBLIC_API_URL.replace(':3001', ':3000')
-      : 'https://zinichat.com';
-      
+    const frontendUrl = process.env.FRONTEND_URL || 'https://zinichat.com';
     const resetLink = `${frontendUrl}/reset-password?token=${resetToken}`;
 
-    await this.smtpService.triggerPasswordResetEmail(user.email, user.name, resetLink);
+    await this.smtpService.triggerPasswordResetEmail(user.email, user.name || 'User', resetLink);
 
     // Also send an in-app system notification to the user
     await this.notificationsService.createNotification(

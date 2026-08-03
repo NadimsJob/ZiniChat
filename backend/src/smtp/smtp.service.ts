@@ -524,11 +524,17 @@ export class SmtpService {
 
   async triggerPasswordResetEmail(toEmail: string, userName: string, resetLink: string) {
     const config = await this.getConfig();
-    if (!config.passwordResetEnabled) return;
-    const vars = { userName, email: toEmail, resetLink };
+    const vars = { userName: userName || 'User', email: toEmail, resetLink };
     const subject = this.replacePlaceholders(config.passwordResetSubject || TEMPLATES.passwordResetSubject, vars);
     const bodyText = this.replacePlaceholders(config.passwordResetBody || TEMPLATES.passwordResetBody, vars);
-    await this.sendMail({ to: toEmail, subject, plainText: bodyText });
+
+    try {
+      this.logger.log(`Attempting direct password reset email dispatch to ${toEmail}`);
+      await this.internalExecuteSendMail({ to: toEmail, subject, plainText: bodyText });
+    } catch (err: any) {
+      this.logger.error(`Direct password reset email failed (${err.message}), queueing via BullMQ worker fallback`);
+      await this.sendMail({ to: toEmail, subject, plainText: bodyText });
+    }
   }
 
   async triggerNewInquiryEmail(name: string, email: string, message: string) {
