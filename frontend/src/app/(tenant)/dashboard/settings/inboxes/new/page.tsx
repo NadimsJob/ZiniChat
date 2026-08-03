@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import {
   PhoneCall, MessageCircle, Camera, ChevronRight, CheckCircle2, ArrowLeft,
   Loader2, Sparkles, AlertCircle, Lock, TrendingUp, Crown, QrCode as QrIcon, Smartphone, RefreshCw,
-  Globe, Copy, Check, Zap, ExternalLink, ShieldCheck
+  Globe, Copy, Check, Zap, ExternalLink, ShieldCheck, HelpCircle
 } from 'lucide-react';
 import { toast, Toaster } from 'react-hot-toast';
 import QRCode from 'react-qr-code';
@@ -479,7 +479,7 @@ export default function NewInboxStepper() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 p-5 md:p-10 max-w-4xl overflow-y-auto">
+      <div className="flex-1 p-5 md:p-8 max-w-5xl overflow-y-auto">
 
         {/* Step 1: Channel Selection with quota */}
         {step === 1 && (
@@ -642,7 +642,7 @@ export default function NewInboxStepper() {
 
         {/* Step 3: WhatsApp Configuration */}
         {step === 3 && selectedChannel === 'whatsapp' && (
-          <div className="animate-in fade-in slide-in-from-right-8 duration-400 max-w-xl">
+          <div className="animate-in fade-in slide-in-from-right-8 duration-400 max-w-5xl">
             <button onClick={() => setStep(2)} className="flex items-center text-[12px] text-zinc-400 hover:text-foreground mb-6 transition-colors">
               <ArrowLeft className="w-3.5 h-3.5 mr-1" /> {language === 'en' ? 'Back' : 'পেছনে'}
             </button>
@@ -651,25 +651,321 @@ export default function NewInboxStepper() {
             </h1>
 
             {provider === 'cloud' ? (
-              <div className="space-y-4">
-                {/* Instruction Banner for Cloud API */}
-                <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-2xl space-y-2">
-                  <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                
+                {/* Left Column: Actions & Form */}
+                <div className="lg:col-span-7 space-y-4">
+                  {/* Instruction Banner for Cloud API */}
+                  <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-2xl space-y-2">
+                    <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs">
+                      <ShieldCheck className="w-4 h-4" />
+                      <span>{language === 'en' ? 'Official Meta API (100% Safe & Zero Ban Risk)' : 'অফিশিয়াল Meta API (১০০% নিরাপদ ও অ্যাকাউন্ট সুরক্ষার নিশ্চয়তা)'}</span>
+                    </div>
+                    <ul className="text-[11px] text-zinc-300 space-y-1 pl-5 list-disc leading-relaxed">
+                      <li>{language === 'en' ? 'Supports unlimited high-volume messaging and Broadcast Campaigns.' : 'আনলিমিটেড হাই-ভলিউম মেসেজিং ও ব্রডকাস্ট ক্যাম্পেইন সাপোর্ট করে।'}</li>
+                      <li>{language === 'en' ? 'Get credentials from developers.facebook.com → WhatsApp → API Setup.' : 'মেটা ডেভেলপার ড্যাশবোর্ড থেকে Phone Number ID & Permanent Token সংগ্রহ করুন।'}</li>
+                      <li>{language === 'en' ? 'Or use "Connect WhatsApp" button below to log in directly via Meta.' : 'অথবা নিচে "Connect WhatsApp" বাটনে ক্লিক করে সরাসরি মেটা লগইন সম্পন্ন করুন।'}</li>
+                    </ul>
+                  </div>
+
+                  <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-6">
+                    <div className="mb-6">
+                      <ConnectWhatsAppButton onConnected={handleConnectedSuccess} />
+                    </div>
+                    <div className="relative flex items-center py-4">
+                      <div className="flex-grow border-t border-surface-hover" />
+                      <span className="flex-shrink-0 mx-4 text-zinc-500 text-[11px] font-medium uppercase tracking-wider">
+                        {language === 'en' ? 'Or Manual Setup' : 'অথবা ম্যানুয়াল সেটআপ'}
+                      </span>
+                      <div className="flex-grow border-t border-surface-hover" />
+                    </div>
+
+                    <form onSubmit={handleConnectWhatsApp} className="space-y-4" autoComplete="off">
+                      {[
+                        { label: language === 'en' ? 'Inbox Name' : 'ইনবক্সের নাম', value: waData.displayName, key: 'displayName', placeholder: 'e.g. Sales Support', type: 'text' },
+                        { label: language === 'en' ? 'Phone Number' : 'ফোন নম্বর', value: waData.phoneNumber, key: 'phoneNumber', placeholder: '+8801700000000', type: 'text' },
+                        { label: 'Phone Number ID', value: waData.phoneNumberId, key: 'phoneNumberId', placeholder: 'From Meta Dashboard', type: 'text' },
+                        { label: 'Business Account ID (WABA)', value: waData.wabaId, key: 'wabaId', placeholder: 'Optional', type: 'text' },
+                        { label: 'Permanent Access Token', value: waData.accessToken, key: 'accessToken', placeholder: 'EAA...', type: 'password' },
+                      ].map(field => (
+                        <div key={field.key}>
+                          <label className="block text-[12px] font-bold text-zinc-400 mb-1">{field.label}</label>
+                          <input
+                            required={field.key !== 'wabaId'}
+                            type={field.type}
+                            value={field.value}
+                            onChange={e => setWaData({ ...waData, [field.key]: e.target.value })}
+                            placeholder={field.placeholder}
+                            autoComplete={field.type === 'password' ? 'new-password' : 'off-dont-autofill'}
+                            className="w-full bg-background border border-surface-hover rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-primary transition-colors text-foreground"
+                          />
+                        </div>
+                      ))}
+                      <button disabled={loading} type="submit" className="w-full bg-primary text-primary-foreground py-2.5 rounded-xl font-bold hover:bg-primary/90 flex items-center justify-center mt-4 disabled:opacity-50 transition-all">
+                        {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (language === 'en' ? 'Create Inbox' : 'ইনবক্স তৈরি করুন')}
+                      </button>
+                    </form>
+                  </div>
+                </div>
+
+                {/* Right Column: Permanent Right-Side Onboarding Guide */}
+                <div className="lg:col-span-5 space-y-4">
+                  <div className="bg-surface/90 backdrop-blur-xl border border-surface-hover rounded-2xl p-5 space-y-4 text-[12px] text-zinc-300 leading-relaxed sticky top-6">
+                    <div className="flex items-center gap-2 text-foreground font-bold border-b border-surface-hover pb-3">
+                      <HelpCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span>{language === 'en' ? 'WhatsApp Setup Instructions' : 'হোয়াটসঅ্যাপ সেটআপ নির্দেশিকা'}</span>
+                    </div>
+
+                    {/* Section 1: Automatic Embedded Signup */}
+                    <div className="space-y-2">
+                      <div className="text-[11.5px] font-bold text-emerald-400 flex items-center gap-1.5">
+                        <Zap className="w-3.5 h-3.5" />
+                        <span>{language === 'en' ? '1. Automatic Signup (Recommended)' : '১. অটোমেটিক মেটা সাইনআপ (প্রস্তাবিত)'}</span>
+                      </div>
+                      <ol className="text-[11px] text-zinc-400 space-y-1.5 pl-4 list-decimal">
+                        <li>{language === 'en' ? 'Click "Connect with Meta" button on the left.' : 'বাম পাশের "Connect with Meta" বাটনে ক্লিক করুন।'}</li>
+                        <li>{language === 'en' ? 'Log in with Facebook account managing your Business Manager.' : 'বিজনেস ম্যানেজার যুক্ত ফেসবুক একাউন্টে লগইন করুন।'}</li>
+                        <li>{language === 'en' ? 'Select or create Meta Business Account & WhatsApp Profile.' : 'মেটা বিজনেস একাউন্ট ও হোয়াটসঅ্যাপ প্রোফাইল সিলেক্ট করুন।'}</li>
+                        <li>{language === 'en' ? 'Enter phone number and verify using SMS/Call OTP code.' : 'ফোন নম্বর দিন এবং এসএমএস/কল ওটিপি দিয়ে ভেরিফাই করুন।'}</li>
+                      </ol>
+                    </div>
+
+                    {/* Critical Unregister Warning */}
+                    <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl space-y-1">
+                      <p className="font-bold text-emerald-400 text-[11.5px] flex items-center gap-1">
+                        🛑 {language === 'en' ? 'Important Requirement' : 'জরুরি শর্ত (কি না করলে হবে না)'}
+                      </p>
+                      <p className="text-[11px] text-zinc-300">
+                        {language === 'en'
+                          ? 'The phone number MUST NOT be active on mobile WhatsApp. If active, open WhatsApp App on phone → Settings → Account → Delete My Account first.'
+                          : 'নম্বরটি ফোনে হোয়াটসঅ্যাপ অ্যাপে সক্রিয় থাকলে মেটা API কানেক্ট হবে না। প্রথমে ফোনের WhatsApp App → Settings → Account → Delete My Account করতে হবে।'}
+                      </p>
+                    </div>
+
+                    {/* Section 2: Manual Setup */}
+                    <div className="space-y-2 pt-2 border-t border-surface-hover">
+                      <div className="text-[11.5px] font-bold text-foreground flex items-center gap-1.5">
+                        <Globe className="w-3.5 h-3.5 text-blue-400" />
+                        <span>{language === 'en' ? '2. Manual Setup via Developer Portal' : '২. মেটা ডেভেলপার পোর্টাল থেকে ম্যানুয়াল সেটআপ'}</span>
+                      </div>
+                      <div className="space-y-2 text-[11px] text-zinc-400">
+                        <div className="bg-background/40 p-2.5 rounded-lg border border-surface-hover/50">
+                          <p className="font-bold text-zinc-200">Step 1: Get Phone Number ID & WABA ID</p>
+                          <p className="mt-0.5">{language === 'en' ? 'Go to developers.facebook.com → My Apps → Select Business App → WhatsApp → API Setup to copy IDs.' : 'developers.facebook.com → My Apps → Business App → WhatsApp → API Setup থেকে Phone Number ID এবং WABA ID কপি করুন।'}</p>
+                        </div>
+                        <div className="bg-background/40 p-2.5 rounded-lg border border-surface-hover/50">
+                          <p className="font-bold text-zinc-200">Step 2: Generate Permanent Token</p>
+                          <p className="mt-0.5">{language === 'en' ? 'Go to business.facebook.com/settings → System Users → Create Admin System User → Generate Token with whatsapp_business_messaging permission.' : 'business.facebook.com/settings → System Users → Admin System User তৈরি করে whatsapp_business_messaging পারমিশন দিয়ে Permanent Token জেনারেট করুন।'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            ) : (
+              /* FULL INTERACTIVE WHATSAPP WEB (BAILEYS) AUTHENTICATION FLOW */
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                
+                {/* Left Column: Actions & Controls */}
+                <div className="lg:col-span-7 space-y-4">
+                  {/* Rate Limit & Precautions Banner for WhatsApp Web */}
+                  <div className="bg-amber-500/10 border border-amber-500/25 p-4 rounded-2xl space-y-2">
+                    <div className="flex items-center gap-2 text-amber-400 font-bold text-xs">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      <span>{language === 'en' ? 'WhatsApp Web (Unofficial QR) Notice & Rate Limits' : 'হোয়াটসঅ্যাপ ওয়েব (আনঅফিশিয়াল QR) রেট লিমিট ও সতর্কতা'}</span>
+                    </div>
+                    <div className="text-[11px] text-amber-200/90 leading-relaxed space-y-1">
+                      <p className="font-semibold text-amber-300">
+                        ⚡ {language === 'en' ? 'System Rate Limit: Max 10 messages per minute per tenant.' : 'সিস্টেম রেট লিমিট: সর্বোচ্চ ১০ মেসেজ প্রতি মিনিটে (প্রতি ১০ সেকেন্ডে ১টি)।'}
+                      </p>
+                      <ul className="pl-4 list-disc space-y-1 text-zinc-300">
+                        <li>{language === 'en' ? 'This is an unofficial web-socket connection (Baileys). Designed strictly for 1-on-1 customer replies.' : 'এটি আনঅফিশিয়াল ওয়েব-সকেট কানেকশন। এটি শুধুমাত্র কাস্টমারদের ১-অন-১ প্রশ্নের উত্তর দেওয়ার জন্য।'}</li>
+                        <li>{language === 'en' ? 'Bulk broadcast campaigns are DISABLED on WhatsApp Web to prevent WhatsApp bot detection and account bans.' : 'হোয়াটসঅ্যাপ নাম্বার ব্যান হওয়া থেকে সুরক্ষার জন্য WhatsApp Web-এ বাল্ক ব্রডকাস্ট বন্ধ রাখা হয়েছে।'}</li>
+                        <li>{language === 'en' ? 'Avoid sending un-solicited spam messages or cold bulk texts to unknown numbers.' : 'অপরিচিত নম্বরে এক সাথে স্প্যাম বা প্রমোশনাল বার্তা পাঠানো থেকে বিরত থাকুন।'}</li>
+                        <li>{language === 'en' ? 'Keep your main phone connected to the internet to maintain active sync.' : 'লাইভ সিঙ্ক বজায় রাখতে মূল ফোনটি ইন্টারনেটে যুক্ত রাখুন।'}</li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-6 space-y-6">
+                    
+                    {/* Method selector tabs */}
+                    <div className="flex bg-background border border-surface-hover p-1 rounded-xl">
+                      <button
+                        type="button"
+                        onClick={() => setWebAuthMethod('qr')}
+                        className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                          webAuthMethod === 'qr' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-zinc-400 hover:text-foreground'
+                        }`}
+                      >
+                        <QrIcon className="w-3.5 h-3.5" />
+                        <span>{language === 'en' ? 'Scan QR Code' : 'QR কোড স্ক্যান'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setWebAuthMethod('pairing')}
+                        className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                          webAuthMethod === 'pairing' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-zinc-400 hover:text-foreground'
+                        }`}
+                      >
+                        <Smartphone className="w-3.5 h-3.5" />
+                        <span>{language === 'en' ? 'Pairing Code' : 'পেয়ারিং কোড'}</span>
+                      </button>
+                    </div>
+
+                    {/* QR Code Tab View */}
+                    {webAuthMethod === 'qr' && (
+                      <div className="text-center space-y-5">
+                        {!qrCodeData ? (
+                          <div className="py-6 space-y-4">
+                            <div className="w-16 h-16 bg-emerald-500/10 rounded-2xl flex items-center justify-center mx-auto border border-emerald-500/20">
+                              <QrIcon className="w-8 h-8 text-emerald-500" />
+                            </div>
+                            <h3 className="text-sm font-bold text-foreground">
+                              {language === 'en' ? 'Generate WhatsApp Web QR' : 'WhatsApp Web QR তৈরি করুন'}
+                            </h3>
+                            <p className="text-xs text-zinc-400 max-w-sm mx-auto">
+                              {language === 'en' 
+                                ? 'Click Initialize Connection to generate a live QR code, then scan it using WhatsApp on your phone.' 
+                                : 'কানেকশন শুরু করতে নিচের বাটনে ক্লিক করুন। আপনার ফোনের হোয়াটসঅ্যাপ অ্যাপ দিয়ে QR কোডটি স্ক্যান করুন।'}
+                            </p>
+                            <button
+                              onClick={handleStartQr}
+                              disabled={qrLoading}
+                              className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-xs shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 mx-auto disabled:opacity-50 transition-all cursor-pointer"
+                            >
+                              {qrLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                              <span>{qrLoading ? (language === 'en' ? 'Initializing...' : 'তৈরি করা হচ্ছে...') : (language === 'en' ? 'Initialize Connection' : 'কানেকশন শুরু করুন')}</span>
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="py-4 space-y-4 animate-in fade-in duration-300">
+                            <div className="bg-white p-4 rounded-2xl inline-block shadow-md border border-border">
+                              <QRCode value={qrCodeData} size={200} />
+                            </div>
+                            <div className="text-xs text-muted-foreground space-y-1">
+                              <p className="font-bold text-foreground">{language === 'en' ? 'Scan with WhatsApp' : 'WhatsApp দিয়ে স্ক্যান করুন'}</p>
+                              <p>{language === 'en' ? 'Open WhatsApp → Settings → Linked Devices → Link a Device' : 'WhatsApp খুলুন → Settings → Linked Devices → Link a Device'}</p>
+                            </div>
+                            <button
+                              onClick={handleStartQr}
+                              className="px-3 py-1.5 bg-surface-hover text-foreground hover:text-primary rounded-lg text-[11px] font-bold inline-flex items-center gap-1 transition-colors border border-border"
+                            >
+                              <RefreshCw className="w-3.5 h-3.5" />
+                              <span>{language === 'en' ? 'Refresh QR Code' : 'QR রিফ্রেশ করুন'}</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Pairing Code Tab View */}
+                    {webAuthMethod === 'pairing' && (
+                      <div className="space-y-4">
+                        <form onSubmit={handleStartPairing} className="space-y-3">
+                          <div>
+                            <label className="block text-[12px] font-bold text-zinc-400 mb-1">
+                              {language === 'en' ? 'WhatsApp Phone Number' : 'হোয়াটসঅ্যাপ ফোন নম্বর'}
+                            </label>
+                            <input
+                              type="text"
+                              required
+                              value={pairingPhone}
+                              onChange={e => setPairingPhone(e.target.value)}
+                              placeholder="+8801700000000"
+                              className="w-full bg-background border border-surface-hover rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-primary text-foreground"
+                            />
+                          </div>
+                          <button
+                            type="submit"
+                            disabled={pairingLoading}
+                            className="w-full bg-primary text-primary-foreground py-2.5 rounded-xl font-bold hover:bg-primary/90 flex items-center justify-center gap-2 disabled:opacity-50 text-xs transition-all cursor-pointer"
+                          >
+                            {pairingLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Smartphone className="w-4 h-4" />}
+                            <span>{language === 'en' ? 'Get Pairing Code' : 'পেয়ারিং কোড পান'}</span>
+                          </button>
+                        </form>
+
+                        {pairingCode && (
+                          <div className="bg-surface/80 border border-primary/30 p-5 rounded-2xl text-center space-y-2 animate-in zoom-in-95 duration-300">
+                            <div className="text-xs text-zinc-400 font-bold uppercase tracking-wider">
+                              {language === 'en' ? 'Your WhatsApp Pairing Code' : 'আপনার পেয়ারিং কোড'}
+                            </div>
+                            <div className="text-3xl font-mono font-black text-emerald-400 tracking-widest py-1 bg-background rounded-xl border border-surface-hover">
+                              {pairingCode}
+                            </div>
+                            <p className="text-[11px] text-zinc-400">
+                              {language === 'en' 
+                                ? 'Open WhatsApp → Linked Devices → Link with phone number instead → Enter Code' 
+                                : 'WhatsApp খুলুন → Linked Devices → Link with phone number instead → কোডটি দিন'}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                  </div>
+                </div>
+
+                {/* Right Column: Permanent Right-Side Web Guide */}
+                <div className="lg:col-span-5 space-y-4">
+                  <div className="bg-surface/90 backdrop-blur-xl border border-surface-hover rounded-2xl p-5 space-y-4 text-[12px] text-zinc-300 leading-relaxed sticky top-6">
+                    <div className="flex items-center gap-2 text-foreground font-bold border-b border-surface-hover pb-3">
+                      <HelpCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                      <span>{language === 'en' ? 'WhatsApp Web Instructions' : 'হোয়াটসঅ্যাপ ওয়েব নির্দেশিকা'}</span>
+                    </div>
+
+                    <div className="space-y-2 text-[11px] text-zinc-400">
+                      <div className="bg-background/40 p-2.5 rounded-lg border border-surface-hover/50">
+                        <p className="font-bold text-zinc-200">Option 1: QR Code Scan</p>
+                        <p className="mt-0.5">{language === 'en' ? 'Open WhatsApp on your phone → Settings → Linked Devices → Link a Device → Scan QR code.' : 'আপনার ফোনে হোয়াটসঅ্যাপ খুলুন → Settings → Linked Devices → Link a Device → স্ক্রিনের QR কোডটি স্ক্যান করুন।'}</p>
+                      </div>
+                      <div className="bg-background/40 p-2.5 rounded-lg border border-surface-hover/50">
+                        <p className="font-bold text-zinc-200">Option 2: Pairing Code</p>
+                        <p className="mt-0.5">{language === 'en' ? 'Enter phone number, copy 8-digit code, open WhatsApp → Linked Devices → Link with phone number instead.' : 'ফোন নম্বর দিন, ৮ ডিজিটের কোড কপি করুন, ফোনে WhatsApp → Linked Devices → Link with phone number instead সিলেক্ট করুন।'}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Step 3: Messenger */}
+        {(step === 2 || step === 3) && selectedChannel === 'messenger' && (
+          <div className="animate-in fade-in slide-in-from-right-8 duration-400 max-w-5xl">
+            <button onClick={() => setStep(1)} className="flex items-center text-[12px] text-zinc-400 hover:text-foreground mb-6 transition-colors">
+              <ArrowLeft className="w-3.5 h-3.5 mr-1" /> {language === 'en' ? 'Back' : 'পেছনে'}
+            </button>
+            <h1 className="text-2xl font-black text-foreground mb-6">
+              {language === 'en' ? 'Configure Messenger' : 'Messenger কনফিগার করুন'}
+            </h1>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+              
+              {/* Left Column: Actions & Form */}
+              <div className="lg:col-span-7 space-y-4">
+                {/* Instruction banner for Messenger */}
+                <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-2xl space-y-2">
+                  <div className="flex items-center gap-2 text-blue-400 font-bold text-xs">
                     <ShieldCheck className="w-4 h-4" />
-                    <span>{language === 'en' ? 'Official Meta API (100% Safe & Zero Ban Risk)' : 'অফিশিয়াল Meta API (১০০% নিরাপদ ও অ্যাকাউন্ট সুরক্ষার নিশ্চয়তা)'}</span>
+                    <span>{language === 'en' ? 'Meta Official Messenger Integration Setup' : 'মেটা অফিশিয়াল মেসেঞ্জার ইন্টিগ্রেশন নির্দেশনা'}</span>
                   </div>
                   <ul className="text-[11px] text-zinc-300 space-y-1 pl-5 list-disc leading-relaxed">
-                    <li>{language === 'en' ? 'Supports unlimited high-volume messaging and Broadcast Campaigns.' : 'আনলিমিটেড হাই-ভলিউম মেসেজিং ও ব্রডকাস্ট ক্যাম্পেইন সাপোর্ট করে।'}</li>
-                    <li>{language === 'en' ? 'Get credentials from developers.facebook.com → WhatsApp → API Setup.' : 'মেটা ডেভেলপার ড্যাশবোর্ড থেকে Phone Number ID & Permanent Token সংগ্রহ করুন।'}</li>
-                    <li>{language === 'en' ? 'Or use "Connect WhatsApp" button below to log in directly via Meta.' : 'অথবা নিচে "Connect WhatsApp" বাটনে ক্লিক করে সরাসরি মেটা লগইন সম্পন্ন করুন।'}</li>
+                    <li>{language === 'en' ? 'Click "Connect Facebook Page" to authorize using your Facebook account with Page Management permissions.' : '"Connect Facebook Page" বাটনে ক্লিক করে ফেসবুক পেজের পারমিশন দিন।'}</li>
+                    <li>{language === 'en' ? 'Supports Meta Page messaging, automated AI responses, and Meta Broadcast Campaigns.' : 'মেটা মেসেজিং, অটোমেটেড এআই রেসপন্স এবং ব্রডকাস্ট ক্যাম্পেইন সাপোর্ট করে।'}</li>
+                    <li>{language === 'en' ? 'For manual setup, paste your Facebook Page ID and Page Access Token from Facebook Business Manager.' : 'ম্যানুয়াল সেটআপের ক্ষেত্রে ফেসবুক পেজ আইডি এবং পেজ এক্সেস টোকেন দিন।'}</li>
                   </ul>
                 </div>
 
-                <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-6">
-                  <div className="mb-6">
-                    <ConnectWhatsAppButton onConnected={handleConnectedSuccess} />
+                <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-6 space-y-5">
+                  <div>
+                    <ConnectFacebookPageButton onConnected={handleConnectedSuccess} />
                   </div>
-                  <div className="relative flex items-center py-4">
+                  <div className="relative flex items-center py-2">
                     <div className="flex-grow border-t border-surface-hover" />
                     <span className="flex-shrink-0 mx-4 text-zinc-500 text-[11px] font-medium uppercase tracking-wider">
                       {language === 'en' ? 'Or Manual Setup' : 'অথবা ম্যানুয়াল সেটআপ'}
@@ -677,408 +973,191 @@ export default function NewInboxStepper() {
                     <div className="flex-grow border-t border-surface-hover" />
                   </div>
 
-                  <div className="mb-4">
-                    <button
-                      type="button"
-                      onClick={() => setShowWaInstructions(!showWaInstructions)}
-                      className="text-[12px] text-primary hover:underline flex items-center gap-1 font-bold"
-                    >
-                      <span>
-                        {language === 'en'
-                          ? (showWaInstructions ? 'Hide Setup Guide' : 'Show Manual Setup Guide')
-                          : (showWaInstructions ? 'সেটআপ গাইড লুকান' : 'ম্যানুয়াল সেটআপ নির্দেশিকা দেখুন')}
-                      </span>
-                    </button>
-                    {showWaInstructions && (
-                      <div className="mt-2 bg-background border border-surface-hover rounded-xl p-4 text-[11.5px] text-zinc-300 space-y-3 leading-relaxed">
-                        <div>
-                          <p className="font-bold text-foreground mb-1">
-                            {language === 'en' ? 'Step 1: Create or Select Meta App & Get API IDs' : 'ধাপ ১: মেটা অ্যাপ তৈরি/সিলেক্ট এবং এপিআই আইডি সংগ্রহ'}
-                          </p>
-                          <p>
-                            {language === 'en'
-                              ? 'Go to developers.facebook.com -> My Apps. Select your custom Meta Developer App (type Business) or create a new one.'
-                              : 'developers.facebook.com-এ যান -> My Apps। আপনার তৈরি করা কাস্টম মেটা অ্যাপ (টাইপ: Business) সিলেক্ট করুন অথবা নতুন একটি অ্যাপ তৈরি করুন।'}
-                          </p>
-                          <p className="mt-1">
-                            {language === 'en'
-                              ? 'Navigate to WhatsApp -> API Setup on the left menu, and copy the Phone Number ID and WhatsApp Business Account ID (WABA).'
-                              : 'বাম পাশের মেনু থেকে WhatsApp -> API Setup-এ যান এবং Phone Number ID ও WhatsApp Business Account ID (WABA) কপি করুন।'}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="font-bold text-foreground mb-1">
-                            {language === 'en' ? 'Step 2: Generate Permanent Access Token' : 'ধাপ ২: পার্মানেন্ট এক্সেস টোকেন তৈরি'}
-                          </p>
-                          <p>
-                            {language === 'en'
-                              ? 'Go to your Meta Business Suite -> Settings -> Users -> System Users.'
-                              : 'আপনার ফেসবুক বিজনেস ম্যানেজার সেটিংস (Business Settings) -> Users -> System Users-এ যান।'}
-                          </p>
-                          <p className="mt-1">
-                            {language === 'en'
-                              ? 'Create/Select a System User (Admin role), click "Generate New Token", select your custom App, check the "whatsapp_business_messaging" and "whatsapp_business_management" permissions, and copy the generated token.'
-                              : 'একজন System User (Admin) তৈরি/সিলেক্ট করুন, "Generate New Token" বাটনে ক্লিক করুন, আপনার কাস্টম অ্যাপটি সিলেক্ট করুন এবং "whatsapp_business_messaging" ও "whatsapp_business_management" পারমিশনে টিক দিয়ে টোকেনটি তৈরি করে কপি করুন।'}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <form onSubmit={handleConnectWhatsApp} className="space-y-4" autoComplete="off">
+                  <form onSubmit={handleConnectMessenger} className="space-y-4" autoComplete="off">
                     {[
-                      { label: language === 'en' ? 'Inbox Name' : 'ইনবক্সের নাম', value: waData.displayName, key: 'displayName', placeholder: 'e.g. Sales Support', type: 'text' },
-                      { label: language === 'en' ? 'Phone Number' : 'ফোন নম্বর', value: waData.phoneNumber, key: 'phoneNumber', placeholder: '+8801700000000', type: 'text' },
-                      { label: 'Phone Number ID', value: waData.phoneNumberId, key: 'phoneNumberId', placeholder: 'From Meta Dashboard', type: 'text' },
-                      { label: 'Business Account ID (WABA)', value: waData.wabaId, key: 'wabaId', placeholder: 'Optional', type: 'text' },
-                      { label: 'Permanent Access Token', value: waData.accessToken, key: 'accessToken', placeholder: 'EAA...', type: 'password' },
+                      { label: language === 'en' ? 'Page Name / Inbox Name' : 'পেজের নাম / ইনবক্সের নাম', value: fbData.pageName, key: 'pageName', placeholder: 'My Business Page', type: 'text' },
+                      { label: 'Facebook Page ID', value: fbData.pageId, key: 'pageId', placeholder: 'e.g. 104561239845', type: 'text' },
+                      { label: 'Page Access Token', value: fbData.accessToken, key: 'accessToken', placeholder: 'EAA...', type: 'password' },
                     ].map(field => (
                       <div key={field.key}>
                         <label className="block text-[12px] font-bold text-zinc-400 mb-1">{field.label}</label>
-                        <input
-                          required={field.key !== 'wabaId'}
-                          type={field.type}
-                          value={field.value}
-                          onChange={e => setWaData({ ...waData, [field.key]: e.target.value })}
-                          placeholder={field.placeholder}
-                          autoComplete={field.type === 'password' ? 'new-password' : 'off-dont-autofill'}
-                          className="w-full bg-background border border-surface-hover rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-primary transition-colors text-foreground"
-                        />
+                        <input required type={field.type} value={field.value} onChange={e => setFbData({ ...fbData, [field.key]: e.target.value })} placeholder={field.placeholder} autoComplete={field.type === 'password' ? 'new-password' : 'off-dont-autofill'} className="w-full bg-background border border-surface-hover rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-primary transition-colors text-foreground" />
                       </div>
                     ))}
-                    <button disabled={loading} type="submit" className="w-full bg-primary text-primary-foreground py-2.5 rounded-xl font-bold hover:bg-primary/90 flex items-center justify-center mt-4 disabled:opacity-50 transition-all">
-                      {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (language === 'en' ? 'Create Inbox' : 'ইনবক্স তৈরি করুন')}
+                    <button disabled={loading} type="submit" className="w-full bg-blue-600 text-white py-2.5 rounded-xl font-bold hover:bg-blue-700 flex items-center justify-center disabled:opacity-50 transition-all">
+                      {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (language === 'en' ? 'Connect Manually' : 'ম্যানুয়ালি কানেক্ট করুন')}
                     </button>
                   </form>
                 </div>
               </div>
-            ) : (
-              /* FULL INTERACTIVE WHATSAPP WEB (BAILEYS) AUTHENTICATION FLOW */
-              <div className="space-y-4">
-                {/* Rate Limit & Precautions Banner for WhatsApp Web */}
-                <div className="bg-amber-500/10 border border-amber-500/25 p-4 rounded-2xl space-y-2">
-                  <div className="flex items-center gap-2 text-amber-400 font-bold text-xs">
-                    <AlertCircle className="w-4 h-4 shrink-0" />
-                    <span>{language === 'en' ? 'WhatsApp Web (Unofficial QR) Notice & Rate Limits' : 'হোয়াটসঅ্যাপ ওয়েব (আনঅফিশিয়াল QR) রেট লিমিট ও সতর্কতা'}</span>
+
+              {/* Right Column: Permanent Messenger Setup Guide */}
+              <div className="lg:col-span-5 space-y-4">
+                <div className="bg-surface/90 backdrop-blur-xl border border-surface-hover rounded-2xl p-5 space-y-4 text-[12px] text-zinc-300 leading-relaxed sticky top-6">
+                  <div className="flex items-center gap-2 text-foreground font-bold border-b border-surface-hover pb-3">
+                    <HelpCircle className="w-4 h-4 text-blue-400 shrink-0" />
+                    <span>{language === 'en' ? 'Messenger Setup Instructions' : 'মেসেঞ্জার সেটআপ নির্দেশিকা'}</span>
                   </div>
-                  <div className="text-[11px] text-amber-200/90 leading-relaxed space-y-1">
-                    <p className="font-semibold text-amber-300">
-                      ⚡ {language === 'en' ? 'System Rate Limit: Max 10 messages per minute per tenant.' : 'সিস্টেম রেট লিমিট: সর্বোচ্চ ১০ মেসেজ প্রতি মিনিটে (প্রতি ১০ সেকেন্ডে ১টি)।'}
+
+                  {/* Section 1: Automatic Facebook OAuth */}
+                  <div className="space-y-2">
+                    <div className="text-[11.5px] font-bold text-blue-400 flex items-center gap-1.5">
+                      <Zap className="w-3.5 h-3.5" />
+                      <span>{language === 'en' ? '1. Automatic Facebook Login' : '১. অটোমেটিক ফেসবুক লগইন'}</span>
+                    </div>
+                    <ol className="text-[11px] text-zinc-400 space-y-1.5 pl-4 list-decimal">
+                      <li>{language === 'en' ? 'Click "Connect Facebook Page" button on the left.' : 'বাম পাশের "Connect Facebook Page" বাটনে ক্লিক করুন।'}</li>
+                      <li>{language === 'en' ? 'Log in with Facebook account that has Admin access to your Page.' : 'পেজের এডমিন এক্সেস আছে এমন ফেসবুক একাউন্টে লগইন করুন।'}</li>
+                      <li>{language === 'en' ? 'Select your Facebook Page(s) and confirm permissions.' : 'আপনার ফেসবুক পেজ সিলেক্ট করুন এবং পারমিশন নিশ্চিত করুন।'}</li>
+                    </ol>
+                  </div>
+
+                  {/* Requirement Banner */}
+                  <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl space-y-1">
+                    <p className="font-bold text-blue-400 text-[11.5px] flex items-center gap-1">
+                      🛑 {language === 'en' ? 'Requirement' : 'আবশ্যিক শর্ত'}
                     </p>
-                    <ul className="pl-4 list-disc space-y-1 text-zinc-300">
-                      <li>{language === 'en' ? 'This is an unofficial web-socket connection (Baileys). Designed strictly for 1-on-1 customer replies.' : 'এটি আনঅফিশিয়াল ওয়েব-সকেট কানেকশন। এটি শুধুমাত্র কাস্টমারদের ১-অন-১ প্রশ্নের উত্তর দেওয়ার জন্য।'}</li>
-                      <li>{language === 'en' ? 'Bulk broadcast campaigns are DISABLED on WhatsApp Web to prevent WhatsApp bot detection and account bans.' : 'হোয়াটসঅ্যাপ নাম্বার ব্যান হওয়া থেকে সুরক্ষার জন্য WhatsApp Web-এ বাল্ক ব্রডকাস্ট বন্ধ রাখা হয়েছে।'}</li>
-                      <li>{language === 'en' ? 'Avoid sending un-solicited spam messages or cold bulk texts to unknown numbers.' : 'অপরিচিত নম্বরে এক সাথে স্প্যাম বা প্রমোশনাল বার্তা পাঠানো থেকে বিরত থাকুন।'}</li>
-                      <li>{language === 'en' ? 'Keep your main phone connected to the internet to maintain active sync.' : 'লাইভ সিঙ্ক বজায় রাখতে মূল ফোনটি ইন্টারনেটে যুক্ত রাখুন।'}</li>
-                    </ul>
-                  </div>
-                </div>
-
-                <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-6 space-y-6">
-                
-                {/* Method selector tabs */}
-                <div className="flex bg-background border border-surface-hover p-1 rounded-xl">
-                  <button
-                    type="button"
-                    onClick={() => setWebAuthMethod('qr')}
-                    className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-                      webAuthMethod === 'qr' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-zinc-400 hover:text-foreground'
-                    }`}
-                  >
-                    <QrIcon className="w-3.5 h-3.5" />
-                    <span>{language === 'en' ? 'Scan QR Code' : 'QR কোড স্ক্যান'}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setWebAuthMethod('pairing')}
-                    className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-                      webAuthMethod === 'pairing' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-zinc-400 hover:text-foreground'
-                    }`}
-                  >
-                    <Smartphone className="w-3.5 h-3.5" />
-                    <span>{language === 'en' ? 'Pairing Code' : 'পেয়ারিং কোড'}</span>
-                  </button>
-                </div>
-
-                {/* QR Code Tab View */}
-                {webAuthMethod === 'qr' && (
-                  <div className="text-center space-y-5">
-                    {!qrCodeData ? (
-                      <div className="py-6 space-y-4">
-                        <div className="w-16 h-16 bg-emerald-500/10 rounded-2xl flex items-center justify-center mx-auto border border-emerald-500/20">
-                          <QrIcon className="w-8 h-8 text-emerald-500" />
-                        </div>
-                        <h3 className="text-sm font-bold text-foreground">
-                          {language === 'en' ? 'Generate WhatsApp Web QR' : 'WhatsApp Web QR তৈরি করুন'}
-                        </h3>
-                        <p className="text-xs text-zinc-400 max-w-sm mx-auto">
-                          {language === 'en' 
-                            ? 'Click Initialize Connection to generate a live QR code, then scan it using WhatsApp on your phone.' 
-                            : 'কানেকশন শুরু করতে নিচের বাটনে ক্লিক করুন। আপনার ফোনের হোয়াটসঅ্যাপ অ্যাপ দিয়ে QR কোডটি স্ক্যান করুন।'}
-                        </p>
-                        <button
-                          onClick={handleStartQr}
-                          disabled={qrLoading}
-                          className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-xs shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 mx-auto disabled:opacity-50 transition-all cursor-pointer"
-                        >
-                          {qrLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-                          <span>{qrLoading ? (language === 'en' ? 'Initializing...' : 'তৈরি করা হচ্ছে...') : (language === 'en' ? 'Initialize Connection' : 'কানেকশন শুরু করুন')}</span>
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="py-4 space-y-4 animate-in fade-in duration-300">
-                        <div className="bg-white p-4 rounded-2xl inline-block shadow-md border border-border">
-                          <QRCode value={qrCodeData} size={200} />
-                        </div>
-                        <div className="text-xs text-muted-foreground space-y-1">
-                          <p className="font-bold text-foreground">{language === 'en' ? 'Scan with WhatsApp' : 'WhatsApp দিয়ে স্ক্যান করুন'}</p>
-                          <p>{language === 'en' ? 'Open WhatsApp → Settings → Linked Devices → Link a Device' : 'WhatsApp খুলুন → Settings → Linked Devices → Link a Device'}</p>
-                        </div>
-                        <button
-                          onClick={handleStartQr}
-                          className="px-3 py-1.5 bg-surface-hover text-foreground hover:text-primary rounded-lg text-[11px] font-bold inline-flex items-center gap-1 transition-colors border border-border"
-                        >
-                          <RefreshCw className="w-3 h-3" />
-                          <span>{language === 'en' ? 'Refresh QR Code' : 'QR রিফ্রেশ করুন'}</span>
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Pairing Code Tab View */}
-                {webAuthMethod === 'pairing' && (
-                  <div className="space-y-4">
-                    <form onSubmit={handleStartPairing} className="space-y-3">
-                      <div>
-                        <label className="block text-[12px] font-bold text-zinc-400 mb-1">
-                          {language === 'en' ? 'WhatsApp Phone Number' : 'হোয়াটসঅ্যাপ ফোন নম্বর'}
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          value={pairingPhone}
-                          onChange={e => setPairingPhone(e.target.value)}
-                          placeholder="+8801700000000"
-                          className="w-full bg-background border border-surface-hover rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-primary text-foreground"
-                        />
-                      </div>
-                      <button
-                        type="submit"
-                        disabled={pairingLoading}
-                        className="w-full bg-primary text-primary-foreground py-2.5 rounded-xl font-bold hover:bg-primary/90 flex items-center justify-center gap-2 disabled:opacity-50 text-xs transition-all cursor-pointer"
-                      >
-                        {pairingLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Smartphone className="w-4 h-4" />}
-                        <span>{language === 'en' ? 'Get Pairing Code' : 'পেয়ারিং কোড পান'}</span>
-                      </button>
-                    </form>
-
-                    {pairingCode && (
-                      <div className="bg-surface/80 border border-primary/30 p-5 rounded-2xl text-center space-y-2 animate-in zoom-in-95 duration-300">
-                        <div className="text-xs text-zinc-400 font-bold uppercase tracking-wider">
-                          {language === 'en' ? 'Your WhatsApp Pairing Code' : 'আপনার পেয়ারিং কোড'}
-                        </div>
-                        <div className="text-3xl font-mono font-black text-emerald-400 tracking-widest py-1 bg-background rounded-xl border border-surface-hover">
-                          {pairingCode}
-                        </div>
-                        <p className="text-[11px] text-zinc-400">
-                          {language === 'en' 
-                            ? 'Open WhatsApp → Linked Devices → Link with phone number instead → Enter Code' 
-                            : 'WhatsApp খুলুন → Linked Devices → Link with phone number instead → কোডটি দিন'}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-              </div>
-            </div>
-            )}
-          </div>
-        )}
-
-        {/* Step 3: Messenger */}
-        {(step === 2 || step === 3) && selectedChannel === 'messenger' && (
-          <div className="animate-in fade-in slide-in-from-right-8 duration-400 max-w-xl">
-            <button onClick={() => setStep(1)} className="flex items-center text-[12px] text-zinc-400 hover:text-foreground mb-6 transition-colors">
-              <ArrowLeft className="w-3.5 h-3.5 mr-1" /> {language === 'en' ? 'Back' : 'পেছনে'}
-            </button>
-            <h1 className="text-2xl font-black text-foreground mb-6">
-              {language === 'en' ? 'Configure Messenger' : 'Messenger কনফিগার করুন'}
-            </h1>
-            <div className="space-y-4">
-              {/* Instruction banner for Messenger */}
-              <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-2xl space-y-2">
-                <div className="flex items-center gap-2 text-blue-400 font-bold text-xs">
-                  <ShieldCheck className="w-4 h-4" />
-                  <span>{language === 'en' ? 'Meta Official Messenger Integration Setup' : 'মেটা অফিশিয়াল মেসেঞ্জার ইন্টিগ্রেশন নির্দেশনা'}</span>
-                </div>
-                <ul className="text-[11px] text-zinc-300 space-y-1 pl-5 list-disc leading-relaxed">
-                  <li>{language === 'en' ? 'Click "Connect Facebook Page" to authorize using your Facebook account with Page Management permissions.' : '"Connect Facebook Page" বাটনে ক্লিক করে ফেসবুক পেজের পারমিশন দিন।'}</li>
-                  <li>{language === 'en' ? 'Supports Meta Page messaging, automated AI responses, and Meta Broadcast Campaigns.' : 'মেটা মেসেজিং, অটোমেটেড এআই রেসপন্স এবং ব্রডকাস্ট ক্যাম্পেইন সাপোর্ট করে।'}</li>
-                  <li>{language === 'en' ? 'For manual setup, paste your Facebook Page ID and Page Access Token from Facebook Business Manager.' : 'ম্যানুয়াল সেটআপের ক্ষেত্রে ফেসবুক পেজ আইডি এবং পেজ এক্সেস টোকেন দিন।'}</li>
-                </ul>
-              </div>
-
-              <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-6 space-y-5">
-                <div>
-                  <ConnectFacebookPageButton onConnected={handleConnectedSuccess} />
-                </div>
-                <div className="relative flex items-center py-2">
-                  <div className="flex-grow border-t border-surface-hover" />
-                  <span className="flex-shrink-0 mx-4 text-zinc-500 text-[11px] font-medium uppercase tracking-wider">
-                    {language === 'en' ? 'Or Manual Setup' : 'অথবা ম্যানুয়াল সেটআপ'}
-                  </span>
-                  <div className="flex-grow border-t border-surface-hover" />
-                </div>
-
-                <div className="mb-4">
-                  <button
-                    type="button"
-                    onClick={() => setShowFbInstructions(!showFbInstructions)}
-                    className="text-[12px] text-primary hover:underline flex items-center gap-1 font-bold"
-                  >
-                    <span>
+                    <p className="text-[11px] text-zinc-300">
                       {language === 'en'
-                        ? (showFbInstructions ? 'Hide Setup Guide' : 'Show Manual Setup Guide')
-                        : (showFbInstructions ? 'সেটআপ গাইড লুকান' : 'ম্যানুয়াল সেটআপ নির্দেশিকা দেখুন')}
-                    </span>
-                  </button>
-                  {showFbInstructions && (
-                    <div className="mt-2 bg-background border border-surface-hover rounded-xl p-4 text-[11.5px] text-zinc-300 space-y-3 leading-relaxed">
-                      <div>
-                        <p className="font-bold text-foreground mb-1">
-                          {language === 'en' ? 'Step 1: Get Facebook Page ID' : 'ধাপ ১: ফেসবুক পেজ আইডি সংগ্রহ'}
-                        </p>
-                        <p>
-                          {language === 'en'
-                            ? 'Go to your Facebook Page -> About -> Page Transparency, and copy the Page ID.'
-                            : 'আপনার ফেসবুক পেজ -> About -> Page Transparency ট্যাবে যান এবং পেজ আইডিটি কপি করুন।'}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="font-bold text-foreground mb-1">
-                          {language === 'en' ? 'Step 2: Get Page Access Token' : 'ধাপ ২: পেজ এক্সেস টোকেন সংগ্রহ'}
-                        </p>
-                        <p>
-                          {language === 'en'
-                            ? 'Go to developers.facebook.com -> My Apps -> Select your custom App -> Messenger -> Settings -> Access Tokens. Add your Facebook Page, and generate the token.'
-                            : 'developers.facebook.com-এ যান -> My Apps -> আপনার কাস্টম অ্যাপটি সিলেক্ট করুন -> Messenger -> Settings -> Access Tokens সেকশন থেকে আপনার পেজটি যুক্ত করে টোকেন জেনারেট করুন।'}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                        ? 'Personal Facebook profiles cannot receive API webhooks. You MUST connect an active Facebook Page.'
+                        : 'পার্সোনাল ফেসবুক আইডি দিয়ে মেসেজিং এপিআই কাজ করে না। অবশ্যই একটি সক্রিয় ফেসবুক পেজ কানেক্ট করতে হবে।'}
+                    </p>
+                  </div>
 
-                <form onSubmit={handleConnectMessenger} className="space-y-4" autoComplete="off">
-                  {[
-                    { label: language === 'en' ? 'Page Name / Inbox Name' : 'পেজের নাম / ইনবক্সের নাম', value: fbData.pageName, key: 'pageName', placeholder: 'My Business Page', type: 'text' },
-                    { label: 'Facebook Page ID', value: fbData.pageId, key: 'pageId', placeholder: 'e.g. 104561239845', type: 'text' },
-                    { label: 'Page Access Token', value: fbData.accessToken, key: 'accessToken', placeholder: 'EAA...', type: 'password' },
-                  ].map(field => (
-                    <div key={field.key}>
-                      <label className="block text-[12px] font-bold text-zinc-400 mb-1">{field.label}</label>
-                      <input required type={field.type} value={field.value} onChange={e => setFbData({ ...fbData, [field.key]: e.target.value })} placeholder={field.placeholder} autoComplete={field.type === 'password' ? 'new-password' : 'off-dont-autofill'} className="w-full bg-background border border-surface-hover rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-primary transition-colors text-foreground" />
+                  {/* Section 2: Manual Setup */}
+                  <div className="space-y-2 pt-2 border-t border-surface-hover">
+                    <div className="text-[11.5px] font-bold text-foreground flex items-center gap-1.5">
+                      <Globe className="w-3.5 h-3.5 text-blue-400" />
+                      <span>{language === 'en' ? '2. Manual Token Setup' : '২. ম্যানুয়াল টোকেন সেটআপ'}</span>
                     </div>
-                  ))}
-                  <button disabled={loading} type="submit" className="w-full bg-blue-600 text-white py-2.5 rounded-xl font-bold hover:bg-blue-700 flex items-center justify-center disabled:opacity-50 transition-all">
-                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (language === 'en' ? 'Connect Manually' : 'ম্যানুয়ালি কানেক্ট করুন')}
-                  </button>
-                </form>
+                    <div className="space-y-2 text-[11px] text-zinc-400">
+                      <div className="bg-background/40 p-2.5 rounded-lg border border-surface-hover/50">
+                        <p className="font-bold text-zinc-200">Step 1: Get Facebook Page ID</p>
+                        <p className="mt-0.5">{language === 'en' ? 'Go to your Facebook Page → About → Page Transparency to copy Page ID.' : 'আপনার ফেসবুক পেজ → About → Page Transparency থেকে পেজ আইডি কপি করুন।'}</p>
+                      </div>
+                      <div className="bg-background/40 p-2.5 rounded-lg border border-surface-hover/50">
+                        <p className="font-bold text-zinc-200">Step 2: Get Page Access Token</p>
+                        <p className="mt-0.5">{language === 'en' ? 'Go to developers.facebook.com → My Apps → Messenger → Access Tokens → Add Page & Generate Token.' : 'developers.facebook.com → My Apps → Messenger → Access Tokens সেকশন থেকে পেজ যুক্ত করে টোকেন তৈরি করুন।'}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
+
             </div>
           </div>
         )}
 
         {/* Step 3: Instagram */}
         {(step === 2 || step === 3) && selectedChannel === 'instagram' && (
-          <div className="animate-in fade-in slide-in-from-right-8 duration-400 max-w-xl">
+          <div className="animate-in fade-in slide-in-from-right-8 duration-400 max-w-5xl">
             <button onClick={() => setStep(1)} className="flex items-center text-[12px] text-zinc-400 hover:text-foreground mb-6 transition-colors">
               <ArrowLeft className="w-3.5 h-3.5 mr-1" /> {language === 'en' ? 'Back' : 'পেছনে'}
             </button>
             <h1 className="text-2xl font-black text-foreground mb-6">
               {language === 'en' ? 'Configure Instagram' : 'Instagram কনফিগার করুন'}
             </h1>
-            <div className="space-y-4">
-              {/* Instruction banner for Instagram */}
-              <div className="bg-pink-500/10 border border-pink-500/20 p-4 rounded-2xl space-y-2">
-                <div className="flex items-center gap-2 text-pink-400 font-bold text-xs">
-                  <ShieldCheck className="w-4 h-4" />
-                  <span>{language === 'en' ? 'Instagram Professional Account Setup Guidelines' : 'ইন্সটাগ্রাম বিজনেস অ্যাকাউন্ট ইন্সট্রাকশন'}</span>
-                </div>
-                <ul className="text-[11px] text-zinc-300 space-y-1 pl-5 list-disc leading-relaxed">
-                  <li>{language === 'en' ? 'Your Instagram Account MUST be converted to a Business or Creator Account.' : 'আপনার ইন্সটাগ্রাম অ্যাকাউন্টটি অবশ্যই Business বা Creator অ্যাকাউন্ট হতে হবে।'}</li>
-                  <li>{language === 'en' ? 'The Instagram Account MUST be linked to an active Facebook Page.' : 'ইন্সটাগ্রাম অ্যাকাউন্টটি অবশ্যই আপনার ফেসবুক পেজের সাথে কানেক্টেড থাকতে হবে।'}</li>
-                  <li>{language === 'en' ? 'Click "Connect Instagram" button below to log in via Facebook and authorize Instagram DM access.' : 'নিচে "Connect Instagram" বাটনে ক্লিক করে মেটা ড্যাশবোর্ডের মাধ্যমে অনুমোদন সম্পন্ন করুন।'}</li>
-                </ul>
-              </div>
 
-              <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-6 space-y-5">
-                <div>
-                  <ConnectFacebookInstagramButton onConnected={handleConnectedSuccess} />
-                </div>
-                <div className="relative flex items-center py-2">
-                  <div className="flex-grow border-t border-surface-hover" />
-                  <span className="flex-shrink-0 mx-4 text-zinc-500 text-[11px] font-medium uppercase tracking-wider">
-                    {language === 'en' ? 'Or Manual Setup' : 'অথবা ম্যানুয়াল সেটআপ'}
-                  </span>
-                  <div className="flex-grow border-t border-surface-hover" />
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+
+              {/* Left Column: Actions & Form */}
+              <div className="lg:col-span-7 space-y-4">
+                {/* Instruction banner for Instagram */}
+                <div className="bg-pink-500/10 border border-pink-500/20 p-4 rounded-2xl space-y-2">
+                  <div className="flex items-center gap-2 text-pink-400 font-bold text-xs">
+                    <ShieldCheck className="w-4 h-4" />
+                    <span>{language === 'en' ? 'Instagram Professional Account Setup Guidelines' : 'ইন্সটাগ্রাম বিজনেস অ্যাকাউন্ট ইন্সট্রাকশন'}</span>
+                  </div>
+                  <ul className="text-[11px] text-zinc-300 space-y-1 pl-5 list-disc leading-relaxed">
+                    <li>{language === 'en' ? 'Your Instagram Account MUST be converted to a Business or Creator Account.' : 'আপনার ইন্সটাগ্রাম অ্যাকাউন্টটি অবশ্যই Business বা Creator অ্যাকাউন্ট হতে হবে।'}</li>
+                    <li>{language === 'en' ? 'The Instagram Account MUST be linked to an active Facebook Page.' : 'ইন্সটাগ্রাম অ্যাকাউন্টটি অবশ্যই আপনার ফেসবুক পেজের সাথে কানেক্টেড থাকতে হবে।'}</li>
+                    <li>{language === 'en' ? 'Click "Connect Instagram" button below to log in via Facebook and authorize Instagram DM access.' : 'নিচে "Connect Instagram" বাটনে ক্লিক করে মেটা ড্যাশবোর্ডের মাধ্যমে অনুমোদন সম্পন্ন করুন।'}</li>
+                  </ul>
                 </div>
 
-                <div className="mb-4">
-                  <button
-                    type="button"
-                    onClick={() => setShowIgInstructions(!showIgInstructions)}
-                    className="text-[12px] text-primary hover:underline flex items-center gap-1 font-bold"
-                  >
-                    <span>
-                      {language === 'en'
-                        ? (showIgInstructions ? 'Hide Setup Guide' : 'Show Manual Setup Guide')
-                        : (showIgInstructions ? 'সেটআপ গাইড লুকান' : 'ম্যানুয়াল সেটআপ নির্দেশিকা দেখুন')}
+                <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-6 space-y-5">
+                  <div>
+                    <ConnectFacebookInstagramButton onConnected={handleConnectedSuccess} />
+                  </div>
+                  <div className="relative flex items-center py-2">
+                    <div className="flex-grow border-t border-surface-hover" />
+                    <span className="flex-shrink-0 mx-4 text-zinc-500 text-[11px] font-medium uppercase tracking-wider">
+                      {language === 'en' ? 'Or Manual Setup' : 'অথবা ম্যানুয়াল সেটআপ'}
                     </span>
-                  </button>
-                  {showIgInstructions && (
-                    <div className="mt-2 bg-background border border-surface-hover rounded-xl p-4 text-[11.5px] text-zinc-300 space-y-3 leading-relaxed">
-                      <div>
-                        <p className="font-bold text-foreground mb-1">
-                          {language === 'en' ? 'Step 1: Get Instagram Business ID' : 'ধাপ ১: ইনস্টাগ্রাম বিজনেস আইডি সংগ্রহ'}
-                        </p>
-                        <p>
-                          {language === 'en'
-                            ? 'Your Instagram account must be linked to a Facebook Page. Go to developers.facebook.com -> My Apps -> Select your custom App -> Instagram -> API Setup to find your Instagram Account ID.'
-                            : 'আপনার ইনস্টাগ্রাম অ্যাকাউন্টটি অবশ্যই একটি ফেসবুক পেজের সাথে লিংক করা থাকতে হবে। developers.facebook.com-এ গিয়ে My Apps থেকে আপনার কাস্টম অ্যাপ সিলেক্ট করে তার ভেতরে Instagram -> API Setup থেকে আপনার Instagram Account ID টি কপি করুন।'}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="font-bold text-foreground mb-1">
-                          {language === 'en' ? 'Step 2: Get Token' : 'ধাপ ২: এক্সেস টোকেন সংগ্রহ'}
-                        </p>
-                        <p>
-                          {language === 'en'
-                            ? 'Generate a Page Access Token for the Facebook Page linked to your Instagram Account (ensure the token has instagram permissions enabled).'
-                            : 'ইনস্টাগ্রাম অ্যাকাউন্টের সাথে লিংক করা ফেসবুক পেজের জন্য একটি Page Access Token জেনারেট করুন (টোকেনটিতে যেন instagram এর পারমিশনগুলো সচল থাকে)।'}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                    <div className="flex-grow border-t border-surface-hover" />
+                  </div>
 
-                <form onSubmit={handleConnectInstagram} className="space-y-4" autoComplete="off">
-                  {[
-                    { label: language === 'en' ? 'Account / Inbox Name' : 'অ্যাকাউন্টের নাম', value: igData.pageName, key: 'pageName', placeholder: 'My IG Page', type: 'text' },
-                    { label: 'Instagram Account ID', value: igData.instagramId, key: 'instagramId', placeholder: 'e.g. 1784140000000', type: 'text' },
-                    { label: 'Access Token', value: igData.accessToken, key: 'accessToken', placeholder: 'EAA...', type: 'password' },
-                  ].map(field => (
-                    <div key={field.key}>
-                      <label className="block text-[12px] font-bold text-zinc-400 mb-1">{field.label}</label>
-                      <input required type={field.type} value={field.value} onChange={e => setIgData({ ...igData, [field.key]: e.target.value })} placeholder={field.placeholder} autoComplete={field.type === 'password' ? 'new-password' : 'off-dont-autofill'} className="w-full bg-background border border-surface-hover rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-primary transition-colors text-foreground" />
-                    </div>
-                  ))}
-                  <button disabled={loading} type="submit" className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-2.5 rounded-xl font-bold flex items-center justify-center disabled:opacity-50 transition-all hover:opacity-90">
-                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (language === 'en' ? 'Connect Manually' : 'ম্যানুয়ালি কানেক্ট করুন')}
-                  </button>
-                </form>
+                  <form onSubmit={handleConnectInstagram} className="space-y-4" autoComplete="off">
+                    {[
+                      { label: language === 'en' ? 'Account / Inbox Name' : 'অ্যাকাউন্টের নাম', value: igData.pageName, key: 'pageName', placeholder: 'My IG Page', type: 'text' },
+                      { label: 'Instagram Account ID', value: igData.instagramId, key: 'instagramId', placeholder: 'e.g. 1784140000000', type: 'text' },
+                      { label: 'Access Token', value: igData.accessToken, key: 'accessToken', placeholder: 'EAA...', type: 'password' },
+                    ].map(field => (
+                      <div key={field.key}>
+                        <label className="block text-[12px] font-bold text-zinc-400 mb-1">{field.label}</label>
+                        <input required type={field.type} value={field.value} onChange={e => setIgData({ ...igData, [field.key]: e.target.value })} placeholder={field.placeholder} autoComplete={field.type === 'password' ? 'new-password' : 'off-dont-autofill'} className="w-full bg-background border border-surface-hover rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-primary transition-colors text-foreground" />
+                      </div>
+                    ))}
+                    <button disabled={loading} type="submit" className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-2.5 rounded-xl font-bold flex items-center justify-center disabled:opacity-50 transition-all hover:opacity-90 shadow-lg shadow-pink-600/20">
+                      {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (language === 'en' ? 'Connect Manually' : 'ম্যানুয়ালি কানেক্ট করুন')}
+                    </button>
+                  </form>
+                </div>
               </div>
+
+              {/* Right Column: Permanent Instagram Setup Guide */}
+              <div className="lg:col-span-5 space-y-4">
+                <div className="bg-surface/90 backdrop-blur-xl border border-surface-hover rounded-2xl p-5 space-y-4 text-[12px] text-zinc-300 leading-relaxed sticky top-6">
+                  <div className="flex items-center gap-2 text-foreground font-bold border-b border-surface-hover pb-3">
+                    <HelpCircle className="w-4 h-4 text-pink-400 shrink-0" />
+                    <span>{language === 'en' ? 'Instagram Setup Instructions' : 'ইনস্টাগ্রাম সেটআপ নির্দেশিকা'}</span>
+                  </div>
+
+                  {/* Section 1: Automatic Signup */}
+                  <div className="space-y-2">
+                    <div className="text-[11.5px] font-bold text-pink-400 flex items-center gap-1.5">
+                      <Zap className="w-3.5 h-3.5" />
+                      <span>{language === 'en' ? '1. Automatic Meta OAuth' : '১. অটোমেটিক মেটা এক্সেস'}</span>
+                    </div>
+                    <ol className="text-[11px] text-zinc-400 space-y-1.5 pl-4 list-decimal">
+                      <li>{language === 'en' ? 'Click "Connect Instagram" button on the left.' : 'বাম পাশের "Connect Instagram" বাটনে ক্লিক করুন।'}</li>
+                      <li>{language === 'en' ? 'Log in with Facebook account linked to your Instagram Business profile.' : 'ইনস্টাগ্রামের সাথে যুক্ত ফেসবুক একাউন্টে লগইন করুন।'}</li>
+                      <li>{language === 'en' ? 'Select Instagram Professional Account and linked Facebook Page.' : 'ইনস্টাগ্রাম বিজনেস একাউন্ট এবং সাথে লিংক থাকা ফেসবুক পেজটি সিলেক্ট করুন।'}</li>
+                    </ol>
+                  </div>
+
+                  {/* Critical Professional Account Banner */}
+                  <div className="p-3 bg-pink-500/10 border border-pink-500/20 rounded-xl space-y-1">
+                    <p className="font-bold text-pink-400 text-[11.5px] flex items-center gap-1">
+                      📸 {language === 'en' ? 'Business/Creator Profile Required' : 'বিজনেস বা ক্রিয়েটর একাউন্ট আবশ্যক'}
+                    </p>
+                    <p className="text-[11px] text-zinc-300">
+                      {language === 'en'
+                        ? 'Personal Instagram accounts cannot receive API webhooks. Switch account in Instagram Mobile App → Settings → Account → Switch to Professional Account.'
+                        : 'পার্সোনাল ইনস্টাগ্রাম একাউন্টে মেটা এপিআই কাজ করে না। ইনস্টাগ্রাম মোবাইল অ্যাপের Settings → Account → Switch to Professional Account দিয়ে বিজনেস বা ক্রিয়েটর একাউন্টে রূপান্তর করুন।'}
+                    </p>
+                  </div>
+
+                  {/* Section 2: Manual Setup */}
+                  <div className="space-y-2 pt-2 border-t border-surface-hover">
+                    <div className="text-[11.5px] font-bold text-foreground flex items-center gap-1.5">
+                      <Globe className="w-3.5 h-3.5 text-pink-400" />
+                      <span>{language === 'en' ? '2. Manual Token Setup' : '২. ম্যানুয়াল টোকেন সেটআপ'}</span>
+                    </div>
+                    <div className="space-y-2 text-[11px] text-zinc-400">
+                      <div className="bg-background/40 p-2.5 rounded-lg border border-surface-hover/50">
+                        <p className="font-bold text-zinc-200">Step 1: Get Instagram Business ID</p>
+                        <p className="mt-0.5">{language === 'en' ? 'Go to developers.facebook.com → My Apps → Business App → Instagram → API Setup to copy Account ID.' : 'developers.facebook.com → My Apps → Business App → Instagram → API Setup থেকে Account ID দিন।'}</p>
+                      </div>
+                      <div className="bg-background/40 p-2.5 rounded-lg border border-surface-hover/50">
+                        <p className="font-bold text-zinc-200">Step 2: Get Page Access Token</p>
+                        <p className="mt-0.5">{language === 'en' ? 'Generate Page Access Token for the Facebook Page linked to your Instagram Account with instagram_manage_messages permission.' : 'ইনস্টাগ্রাম একাউন্টের সাথে লিংক করা ফেসবুক পেজের জন্য instagram_manage_messages পারমিশনসহ Page Access Token তৈরি করুন।'}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
             </div>
           </div>
         )}
