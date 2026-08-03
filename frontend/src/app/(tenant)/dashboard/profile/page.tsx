@@ -18,12 +18,39 @@ import {
  Phone,
  Users,
  MapPin,
- Briefcase
+ Briefcase,
+ Bell
 } from 'lucide-react';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+function urlBase64ToUint8Array(base64String: string) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding)
+    .replace(/\-/g, '+')
+    .replace(/_/g, '/');
+
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+function arrayBufferToBase64(buffer: ArrayBuffer) {
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return window.btoa(binary);
+}
+
 export default function TenantProfilePage() {
+
  const { language } = useLanguage();
  const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -48,6 +75,11 @@ export default function TenantProfilePage() {
  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
  const [changingPassword, setChangingPassword] = useState(false);
 
+ // Push Notifications States
+ const [pushSupported, setPushSupported] = useState(false);
+ const [pushSubscribed, setPushSubscribed] = useState(false);
+ const [pushLoading, setPushLoading] = useState(false);
+
  // Logo upload
  const [uploadingLogo, setUploadingLogo] = useState(false);
  const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -71,9 +103,107 @@ export default function TenantProfilePage() {
 
  const t = (en: string, bn: string) => language === 'en' ? en : bn;
 
- useEffect(() => {
- fetchProfile();
- }, []);
+  useEffect(() => {
+    fetchProfile();
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window) {
+      setPushSupported(true);
+      checkPushSubscription();
+    }
+  }, []);
+
+  const checkPushSubscription = async () => {
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+      setPushSubscribed(!!sub);
+    } catch (err) {
+      console.error('Error checking push subscription:', err);
+    }
+  };
+
+  const handlePushToggle = async () => {
+    if (!pushSupported) return;
+    setPushLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      
+      if (pushSubscribed) {
+        // Unsubscribe
+        const sub = await reg.pushManager.getSubscription();
+        if (sub) {
+          await sub.unsubscribe();
+          const token = Cookies.get('access_token');
+          await fetch(`${API}/notifications/push-unsubscribe`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ endpoint: sub.endpoint })
+          });
+        }
+        setPushSubscribed(false);
+        setSuccess(t('Push notifications disabled successfully.', 'পুশ নোটিফিকেশন সফলভাবে বন্ধ করা হয়েছে।'));
+      } else {
+        // Request Permission
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+          setError(t('Notification permission denied.', 'নোটিফিকেশন পারমিশন দেওয়া হয়নি।'));
+          setPushLoading(false);
+          return;
+        }
+
+        // Fetch public key
+        const token = Cookies.get('access_token');
+        const keyRes = await fetch(`${API}/notifications/vapid-public-key`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!keyRes.ok) throw new Error('Failed to fetch VAPID key');
+        const { publicKey } = await keyRes.json();
+
+        // Subscribe
+        const subscription = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(publicKey)
+        });
+
+        const p256dhBuffer = subscription.getKey('p256dh');
+        const authBuffer = subscription.getKey('auth');
+        if (!p256dhBuffer || !authBuffer) throw new Error('Failed to retrieve encryption keys');
+
+        // Send to backend
+        const subRes = await fetch(`${API}/notifications/push-subscribe`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            endpoint: subscription.endpoint,
+            keys: {
+              p256dh: arrayBufferToBase64(p256dhBuffer),
+              auth: arrayBufferToBase64(authBuffer)
+            },
+            userAgent: navigator.userAgent
+          })
+        });
+
+        if (!subRes.ok) throw new Error('Failed to save subscription on server');
+
+        setPushSubscribed(true);
+        setSuccess(t('Push notifications enabled successfully!', 'পুশ নোটিফিকেশন সফলভাবে চালু করা হয়েছে!'));
+      }
+    } catch (err: any) {
+      console.error(err);
+      setError(t(`Error configuring notifications: ${err.message}`, `নোটিফিকেশন কনফিগার করতে ত্রুটি: ${err.message}`));
+    } finally {
+      setPushLoading(false);
+    }
+  };
+
 
  const fetchProfile = async () => {
  try {
@@ -570,6 +700,51 @@ export default function TenantProfilePage() {
  </div>
  </form>
  </div>
+
+  {/* Push Notification Settings Section */}
+  <div className="bg-card rounded-2xl border border-border shadow-sm p-4">
+    <div className="flex items-center justify-between gap-4">
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+          <Bell className="w-5 h-5" />
+        </div>
+        <div>
+          <h3 className="font-bold text-foreground text-[13px]">
+            {t('Push Notifications', 'পুশ নোটিফিকেশন')}
+          </h3>
+          <p className="text-[11px] text-slate-500">
+            {t('Receive real-time alerts on your lock screen with sound.', 'সাউন্ডসহ আপনার লক স্ক্রিনে রিয়েল-টাইম অ্যালার্ট পান।')}
+          </p>
+        </div>
+      </div>
+      
+      <div>
+        {pushSupported ? (
+          <button
+            onClick={handlePushToggle}
+            disabled={pushLoading}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl font-bold text-[12px] transition-all duration-300 ${
+              pushSubscribed
+                ? 'bg-rose-500/20 text-rose-500 hover:bg-rose-500/30'
+                : 'bg-primary/20 text-primary hover:bg-primary/30'
+            } disabled:opacity-50`}
+          >
+            {pushLoading ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : pushSubscribed ? (
+              t('Disable', 'বন্ধ করুন')
+            ) : (
+              t('Enable', 'চালু করুন')
+            )}
+          </button>
+        ) : (
+          <span className="text-[11px] text-rose-500 font-medium">
+            {t('Not supported on this device', 'এই ডিভাইসে সাপোর্ট করে না')}
+          </span>
+        )}
+      </div>
+    </div>
+  </div>
 
  {/* Business Profile Section */}
  <div className="bg-card rounded-2xl border border-border shadow-sm p-4">

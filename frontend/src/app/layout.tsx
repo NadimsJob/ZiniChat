@@ -16,6 +16,8 @@ const hind = Hind_Siliguri({
 export const metadata: Metadata = {
   title: "ZiniChat | Best AI Chat, AI Chatbot & Chat Assistant Platform",
   description: "ZiniChat is the ultimate AI Chatbot and Chat Assistant for your business. Automate customer support with WhatsApp Official API, Meta API, and a 5 min setup. Start your free trial today!",
+  manifest: "/manifest.json",
+
   keywords: [
     "chat", "ai chat", "ai chatbot", "chat assistent", "chat assistant", 
     "business chat", "customer support bot", "WhatsApp chatbot", 
@@ -59,6 +61,8 @@ import { CurrencyProvider } from '@/components/CurrencyProvider';
 import { MetaPixelProvider } from '@/context/MetaPixelContext';
 import { GoogleAnalyticsProvider } from '@/context/GoogleAnalyticsContext';
 import { ToastProvider } from '@/components/ToastProvider';
+import ServiceWorkerRegister from '@/components/ServiceWorkerRegister';
+
 
 export default function RootLayout({
   children,
@@ -74,6 +78,7 @@ export default function RootLayout({
               <MetaPixelProvider>
                 <GoogleAnalyticsProvider>
                   <ToastProvider />
+                  <ServiceWorkerRegister />
                   {children}
                 </GoogleAnalyticsProvider>
               </MetaPixelProvider>
@@ -84,3 +89,4 @@ export default function RootLayout({
     </html>
   );
 }
+

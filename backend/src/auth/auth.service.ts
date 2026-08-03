@@ -323,9 +323,21 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user || !user.tenantId) throw new UnauthorizedException('Tenant not found');
 
+    if (!user.passwordHash) {
+      if (!data.password) {
+        throw new BadRequestException('Password is required');
+      }
+      const passwordHash = await bcrypt.hash(data.password, 10);
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { passwordHash }
+      });
+    }
+
     const updateTenantData: any = {
       isOnboarded: true
     };
+
     if (data.businessName !== undefined) updateTenantData.businessName = data.businessName;
     if (data.brandName !== undefined) updateTenantData.brandName = data.brandName;
     if (data.address !== undefined) updateTenantData.address = data.address;

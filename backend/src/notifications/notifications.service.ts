@@ -1,12 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsGateway } from './notifications.gateway';
+import { PushNotificationService } from './push-notification.service';
 
 @Injectable()
 export class NotificationsService {
   constructor(
     private prisma: PrismaService,
-    private gateway: NotificationsGateway
+    private gateway: NotificationsGateway,
+    private pushNotificationService: PushNotificationService
   ) {}
 
   async getUserNotifications(userId: string, role?: string) {
@@ -51,8 +53,15 @@ export class NotificationsService {
     // Push real-time event via socket
     this.gateway.sendToUser(userId, 'notification_received', notification);
 
+    // Send native mobile/web push notification
+    this.pushNotificationService.sendPushToUser(userId, title, message).catch(err => {
+      // Catch silently to avoid failing the main action if push dispatch fails
+      console.error('Failed to send push notification:', err);
+    });
+
     return notification;
   }
+
 
   async createSystemNotificationForSuperadmins(title: string, message: string, type = 'system') {
     // Find all users with superadmin role

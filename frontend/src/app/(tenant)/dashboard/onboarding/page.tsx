@@ -4,51 +4,55 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 import { useLanguage } from '@/components/LanguageProvider';
-import { Loader2, Building, User, MapPin, Phone, Users, Briefcase } from 'lucide-react';
+import { Loader2, Building, User, MapPin, Phone, Users, Briefcase, Lock } from 'lucide-react';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function OnboardingPage() {
- const router = useRouter();
- const { language } = useLanguage();
- 
- const [loading, setLoading] = useState(true);
- const [submitting, setSubmitting] = useState(false);
- const [error, setError] = useState('');
- 
- const [businessNatures, setBusinessNatures] = useState<any[]>([]);
- 
- const [formData, setFormData] = useState({
- brandName: '',
- address: '',
- phoneNo: '',
- ownerName: '',
- employeeCount: '1-10',
- businessNature: ''
- });
+  const router = useRouter();
+  const { language } = useLanguage();
+  
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  
+  const [businessNatures, setBusinessNatures] = useState<any[]>([]);
+  const [needsPassword, setNeedsPassword] = useState(false);
+  
+  const [formData, setFormData] = useState({
+    brandName: '',
+    address: '',
+    phoneNo: '',
+    ownerName: '',
+    employeeCount: '1-10',
+    businessNature: '',
+    password: ''
+  });
 
- useEffect(() => {
- const init = async () => {
- try {
- const token = Cookies.get('access_token');
- if (!token) {
- router.push('/login');
- return;
- }
+  useEffect(() => {
+    const init = async () => {
+      try {
+        const token = Cookies.get('access_token');
+        if (!token) {
+          router.push('/login');
+          return;
+        }
 
- // Fetch user to pre-fill owner name and check if already onboarded
- const userRes = await fetch(`${API}/auth/me`, {
- headers: { 'Authorization': `Bearer ${token}` }
- });
- 
- if (userRes.ok) {
- const userData = await userRes.json();
- if (userData.tenant?.isOnboarded) {
- router.push('/dashboard');
- return;
- }
- setFormData(prev => ({ ...prev, ownerName: userData.name || '' }));
- }
+        // Fetch user to pre-fill owner name and check if already onboarded
+        const userRes = await fetch(`${API}/auth/me`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (userRes.ok) {
+          const userData = await userRes.json();
+          if (userData.tenant?.isOnboarded) {
+            router.push('/dashboard');
+            return;
+          }
+          setNeedsPassword(!userData.hasPassword);
+          setFormData(prev => ({ ...prev, ownerName: userData.name || '' }));
+        }
+
 
  // Fetch business natures
  const bnRes = await fetch(`${API}/business-natures`);
@@ -260,6 +264,34 @@ export default function OnboardingPage() {
  />
  </div>
  </div>
+
+ {/* Password Field (only if Google user without password) */}
+ {needsPassword && (
+   <div className="md:col-span-2">
+     <label className="block text-sm font-semibold mb-1.5 text-slate-700">
+       {language === 'en' ? 'Set Account Password' : 'অ্যাকাউন্টের পাসওয়ার্ড সেট করুন'}
+     </label>
+     <div className="relative">
+       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+         <Lock className="w-4 h-4 text-slate-400" />
+       </div>
+       <input
+         type="password"
+         required={needsPassword}
+         minLength={6}
+         value={formData.password}
+         onChange={e => setFormData({ ...formData, password: e.target.value })}
+         className="w-full bg-muted/30 border border-border rounded-xl pl-9 pr-3 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 transition-all text-foreground"
+         placeholder="••••••••"
+       />
+     </div>
+     <p className="text-[11px] text-slate-500 mt-1">
+       {language === 'en' 
+         ? 'Set a password so you can also log in directly via email.' 
+         : 'একটি পাসওয়ার্ড সেট করুন যাতে আপনি সরাসরি ইমেলের মাধ্যমেও লগইন করতে পারেন।'}
+     </p>
+   </div>
+ )}
  </div>
 
  <div className="pt-4">

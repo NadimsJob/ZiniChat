@@ -43,3 +43,11 @@ All AI agents MUST adhere to these workspace-specific behavioral and technical g
 * **Guards & Roles**: Ensure JWT payloads return arrays (e.g., `permissions`) for Guards. Isolate routes in `middleware.ts` (Superadmin vs Tenant).
 * **Multi-Recipient Notifications**: Always fetch and notify ALL owners/admins (`role: { in: ['owner', 'admin'] }`) via `NotificationsService` and `SmtpService` for key events. Never leak to `users[0]`.
 * **TypeScript & Jest**: Include `.spec.ts` in root `tsconfig.json` so IDE loads types. `tsconfig.build.json` excludes tests. Provide `@nestjs/bullmq` mock tokens. Return full nested Prisma mock objects for services. Avoid hardcoded HTML strings in email assertions. Every NestJS service MUST have a `.spec.ts` file.
+
+## 7. Strict UI/UX & Design Alteration Rules
+* **No Unauthorized Design Changes**: Do NOT change any design-related code, styles (Tailwind classes, layouts, components, theme settings) or UI structure unless explicitly instructed by the user.
+* **Fit into Existing Design**: Implement all new features/requirements within the existing UI design and layout framework. Avoid proposing or building new designs/themes without prior concern and consent.
+* **Double Confirmation on Design & Removals**:
+  - Always request a second-time explicit confirmation with detailed explanation before making any design or layout changes.
+  - Ask for strict confirmation before deleting, replacing, or deprecating any existing features, buttons, components, or UI segments.
+

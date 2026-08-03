@@ -10,6 +10,7 @@ import { Bot, ShieldCheck, ArrowRight, CheckCircle2, MessageSquare, Zap, Globe, 
 import { InteractiveFeatureTabs, processFeatures } from '@/components/InteractiveFeatureTabs';
 import { PricingSection } from '@/components/PricingSection';
 import SetupWidgetMockup from '@/components/SetupWidgetMockup';
+import PwaInstallBanner from '@/components/PwaInstallBanner';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -613,6 +614,8 @@ export default function HomePage() {
           </Link>
         </div>
       </section>
+
+      <PwaInstallBanner />
       
     </div>
   );
