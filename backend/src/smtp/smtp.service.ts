@@ -394,7 +394,7 @@ export class SmtpService {
     const config = await this.getConfig();
     if (!config.host || !config.fromEmail) {
       this.logger.warn('SMTP is not fully configured. Skipping mail dispatch.');
-      return;
+      throw new InternalServerErrorException('SMTP server is not configured in Superadmin settings.');
     }
     const transporter = await this.createTransporter(config);
     
@@ -406,7 +406,7 @@ export class SmtpService {
       subject,
       html: finalHtml
     });
-    this.logger.log(`Email sent: ${info.messageId} | Server Response: ${info.response}`);
+    this.logger.log(`Email sent successfully: ${info.messageId} | Server Response: ${info.response}`);
     return info;
   }
 
@@ -425,7 +425,7 @@ export class SmtpService {
   }
 
   async sendTestMail(to: string) {
-    return this.sendMail({
+    return this.internalExecuteSendMail({
       to,
       subject: 'ZiniChat SMTP Connection Test ✅',
       plainText: `হ্যালো,\n\nএটি একটি টেস্ট ইমেইল। আপনার SMTP কানেকশন সফলভাবে কাজ করছে!\n\nধন্যবাদ,\nZiniChat`
@@ -528,12 +528,13 @@ export class SmtpService {
     const subject = this.replacePlaceholders(config.passwordResetSubject || TEMPLATES.passwordResetSubject, vars);
     const bodyText = this.replacePlaceholders(config.passwordResetBody || TEMPLATES.passwordResetBody, vars);
 
+    this.logger.log(`Dispatching password reset email to ${toEmail} via SMTP host ${config.host}:${config.port}...`);
     try {
-      this.logger.log(`Attempting direct password reset email dispatch to ${toEmail}`);
-      await this.internalExecuteSendMail({ to: toEmail, subject, plainText: bodyText });
+      const info = await this.internalExecuteSendMail({ to: toEmail, subject, plainText: bodyText });
+      return info;
     } catch (err: any) {
-      this.logger.error(`Direct password reset email failed (${err.message}), queueing via BullMQ worker fallback`);
-      await this.sendMail({ to: toEmail, subject, plainText: bodyText });
+      this.logger.error(`Failed to send password reset email to ${toEmail}: ${err.message}`, err.stack);
+      throw new InternalServerErrorException(`Email delivery failed: ${err.message}`);
     }
   }
 
