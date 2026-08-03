@@ -23,12 +23,13 @@ export default function ForgotPasswordPage() {
         body: JSON.stringify({ email })
       });
 
+      const data = await res.json();
+
       if (!res.ok) {
-        throw new Error('Failed to request password reset');
+        throw new Error(data.message || 'Failed to request password reset');
       }
 
-      const data = await res.json();
-      setMessage(data.message || 'Reset link sent successfully');
+      setMessage(data.message || 'Reset link sent successfully! Please check your email inbox.');
     } catch (err: any) {
       setError(err.message || 'Something went wrong');
     } finally {
@@ -49,8 +50,15 @@ export default function ForgotPasswordPage() {
       </div>
       
       {error && (
-        <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-2.5 rounded-lg mb-4 text-sm text-center">
-          {error}
+        <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-3 rounded-lg mb-4 text-sm text-center">
+          <div>{error}</div>
+          {error.toLowerCase().includes('sign up') && (
+            <div className="mt-2 pt-2 border-t border-red-500/20">
+              <Link href="/signup" className="inline-block bg-primary text-white font-bold px-4 py-1.5 rounded-md hover:bg-primary/90 transition-all text-xs">
+                Sign Up Now
+              </Link>
+            </div>
+          )}
         </div>
       )}
 

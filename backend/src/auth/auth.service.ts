@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, ConflictException, BadRequestException, Optional, Inject } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, BadRequestException, NotFoundException, Optional, Inject } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { UsersService } from '../users/users.service';
@@ -460,7 +460,7 @@ export class AuthService {
   async forgotPassword(email: string) {
     const cleanEmail = email ? email.trim().toLowerCase() : '';
     if (!cleanEmail) {
-      return { success: true, message: 'If an account exists, a reset link has been sent.' };
+      throw new BadRequestException('Email address is required');
     }
 
     const user = await this.prisma.user.findFirst({
@@ -470,7 +470,7 @@ export class AuthService {
     });
 
     if (!user) {
-      return { success: true, message: 'If an account exists, a reset link has been sent.' };
+      throw new NotFoundException('No account found with this email address. Please sign up.');
     }
 
     const resetToken = crypto.randomBytes(32).toString('hex');
@@ -494,7 +494,7 @@ export class AuthService {
       'info'
     ).catch((err: any) => console.error('Notification failed:', err));
 
-    return { success: true, message: 'If an account exists, a reset link has been sent.' };
+    return { success: true, message: 'Password reset link sent successfully! Please check your email inbox.' };
   }
 
   async resetPassword(token: string, newPassword: string) {
