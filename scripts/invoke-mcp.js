@@ -3,7 +3,7 @@ const { StdioClientTransport } = require("@modelcontextprotocol/sdk/client/stdio
 
 const path = require("path");
 
-async function deploy(target) {
+async function deploy(target, branch) {
   const transport = new StdioClientTransport({
     command: "node",
     args: [path.join(__dirname, "mcp-deploy-server.js")]
@@ -16,13 +16,13 @@ async function deploy(target) {
 
   await client.connect(transport);
 
-  console.log(`\n=================== CALLING MCP: DEPLOY TO ${target.toUpperCase()} SERVER ===================`);
+  console.log(`\n=================== CALLING MCP: DEPLOY TO ${target.toUpperCase()} SERVER (${branch} branch) ===================`);
   try {
     const result = await client.callTool({
       name: "deploy_to_server",
       arguments: {
         target: target,
-        branch: "main"
+        branch: branch
       }
     }, undefined, { timeout: 600000 }); // 10 minutes timeout
 
@@ -36,8 +36,8 @@ async function deploy(target) {
 }
 
 async function run() {
-  await deploy("test");
-  await deploy("live");
+  await deploy("test", "staging");
+  await deploy("live", "main");
 }
 
 run();
