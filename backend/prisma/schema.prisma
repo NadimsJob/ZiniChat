@@ -62,6 +62,7 @@ model Tenant {
   orders               Order[]
   subscriptions        Subscription[]
   payments             Payment[]
+  coupons              Coupon[]
   knowledgeDocs        KnowledgeDocument[]
   qnaItems             QnAKnowledgeBase[]
   usageLogs            AiUsageLog[]
@@ -695,6 +696,7 @@ model Subscription {
 model Coupon {
   id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   code           String    @unique
+  tenantId       String?   @db.Uuid
   discountType   String // 'percentage' or 'fixed'
   discountAmount Decimal   @db.Decimal(10, 2)
   maxUses        Int?
@@ -703,6 +705,7 @@ model Coupon {
   isActive       Boolean   @default(true)
   createdAt      DateTime  @default(now())
 
+  tenant        Tenant?        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   subscriptions Subscription[]
 
   @@map("coupons")

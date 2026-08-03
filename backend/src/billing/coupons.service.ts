@@ -7,12 +7,29 @@ export class CouponsService {
 
   async findAll() {
     return this.prisma.coupon.findMany({
+      include: {
+        tenant: {
+          select: {
+            id: true,
+            businessName: true,
+            brandName: true,
+            ownerName: true,
+          }
+        }
+      },
       orderBy: { createdAt: 'desc' }
     });
   }
 
-  async create(data: { code: string; discountType: string; discountAmount: number; maxUses?: number }) {
-    const existing = await this.prisma.coupon.findUnique({ where: { code: data.code } });
+  async create(data: {
+    code: string;
+    discountType: string;
+    discountAmount: number;
+    maxUses?: number;
+    validUntil?: string | Date;
+    tenantId?: string;
+  }) {
+    const existing = await this.prisma.coupon.findUnique({ where: { code: data.code.toUpperCase() } });
     if (existing) {
       throw new BadRequestException('Coupon code already exists');
     }
@@ -21,7 +38,19 @@ export class CouponsService {
         code: data.code.toUpperCase(),
         discountType: data.discountType,
         discountAmount: data.discountAmount,
-        maxUses: data.maxUses,
+        maxUses: data.maxUses ? Number(data.maxUses) : null,
+        validUntil: data.validUntil ? new Date(data.validUntil) : null,
+        tenantId: data.tenantId ? data.tenantId : null,
+      },
+      include: {
+        tenant: {
+          select: {
+            id: true,
+            businessName: true,
+            brandName: true,
+            ownerName: true,
+          }
+        }
       }
     });
   }
@@ -35,12 +64,13 @@ export class CouponsService {
     });
   }
 
-  async validate(code: string) {
+  async validate(code: string, tenantId?: string) {
     const coupon = await this.prisma.coupon.findUnique({ where: { code: code.toUpperCase() } });
     if (!coupon) throw new BadRequestException('Invalid coupon code');
     if (!coupon.isActive) throw new BadRequestException('Coupon is inactive');
-    if (coupon.validUntil && coupon.validUntil < new Date()) throw new BadRequestException('Coupon expired');
+    if (coupon.validUntil && new Date(coupon.validUntil) < new Date()) throw new BadRequestException('Coupon expired');
     if (coupon.maxUses && coupon.usedCount >= coupon.maxUses) throw new BadRequestException('Coupon usage limit reached');
+    if (coupon.tenantId && coupon.tenantId !== tenantId) throw new BadRequestException('This coupon is not valid for your account');
     
     return coupon;
   }

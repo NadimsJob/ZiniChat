@@ -64,7 +64,7 @@ export class PaymentsService {
 
     if (couponCode) {
       const coupon = await this.prisma.coupon.findUnique({ where: { code: couponCode.toUpperCase() } });
-      if (coupon && coupon.isActive && (!coupon.validUntil || coupon.validUntil > new Date()) && (!coupon.maxUses || coupon.usedCount < coupon.maxUses)) {
+      if (coupon && coupon.isActive && (!coupon.validUntil || coupon.validUntil > new Date()) && (!coupon.maxUses || coupon.usedCount < coupon.maxUses) && (!coupon.tenantId || coupon.tenantId === tenantId)) {
         couponId = coupon.id;
         if (coupon.discountType === 'percentage') {
           amount = amount - (amount * (Number(coupon.discountAmount) / 100));
@@ -170,7 +170,7 @@ export class PaymentsService {
 
     if (couponCode) {
       const coupon = await this.prisma.coupon.findUnique({ where: { code: couponCode.toUpperCase() } });
-      if (coupon && coupon.isActive && (!coupon.validUntil || coupon.validUntil > new Date()) && (!coupon.maxUses || coupon.usedCount < coupon.maxUses)) {
+      if (coupon && coupon.isActive && (!coupon.validUntil || coupon.validUntil > new Date()) && (!coupon.maxUses || coupon.usedCount < coupon.maxUses) && (!coupon.tenantId || coupon.tenantId === tenantId)) {
         couponId = coupon.id;
         if (coupon.discountType === 'percentage') {
           amount = amount - (amount * (Number(coupon.discountAmount) / 100));

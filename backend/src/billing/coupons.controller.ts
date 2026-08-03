@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Param, Body, UseGuards, Query } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Body, UseGuards, Query, Req } from '@nestjs/common';
 import { CouponsService } from './coupons.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -34,8 +34,8 @@ export class CouponsController {
 
   @Get('validate')
   // Available to any authenticated tenant user checking out
-  validate(@Query('code') code: string) {
+  validate(@Query('code') code: string, @Req() req: any) {
     if (!code) return null;
-    return this.couponsService.validate(code);
+    return this.couponsService.validate(code, req.user?.tenantId);
   }
 }
