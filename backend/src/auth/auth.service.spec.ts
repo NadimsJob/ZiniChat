@@ -5,7 +5,7 @@ import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import { SmtpService } from '../smtp/smtp.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { BadRequestException, ConflictException } from '@nestjs/common';
+import { BadRequestException, ConflictException, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 
 jest.mock('bcrypt');
@@ -16,7 +16,7 @@ describe('AuthService', () => {
 
   const mockPrismaService = {
     $transaction: jest.fn(),
-    tenant: { create: jest.fn() },
+    tenant: { create: jest.fn(), findUnique: jest.fn() },
     user: { create: jest.fn(), findUnique: jest.fn(), findFirst: jest.fn(), update: jest.fn() },
     plan: { findFirst: jest.fn() },
     subscription: { create: jest.fn() },
@@ -284,6 +284,39 @@ describe('AuthService', () => {
 
     it('should throw BadRequestException if no token is provided', async () => {
       await expect(service.verifyEmail('')).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('suspended tenant checks', () => {
+    it('should throw UnauthorizedException in validateUser if tenant is suspended', async () => {
+      const mockUser = {
+        id: 'user-1',
+        email: 'test@biz.com',
+        passwordHash: 'hashed_password',
+        role: 'admin',
+        tenantId: 'tenant-1'
+      };
+      mockUsersService.findByEmail.mockResolvedValue(mockUser);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      mockPrismaService.tenant.findUnique.mockResolvedValue({ id: 'tenant-1', status: 'suspended' });
+
+      await expect(service.validateUser('test@biz.com', 'pass')).rejects.toThrow(
+        new UnauthorizedException('Account suspended')
+      );
+    });
+
+    it('should throw UnauthorizedException in login if tenant is suspended', async () => {
+      const mockUser = {
+        id: 'user-1',
+        email: 'test@biz.com',
+        role: 'admin',
+        tenantId: 'tenant-1'
+      };
+      mockPrismaService.tenant.findUnique.mockResolvedValue({ id: 'tenant-1', status: 'suspended' });
+
+      await expect(service.login(mockUser)).rejects.toThrow(
+        new UnauthorizedException('Account suspended')
+      );
     });
   });
 });

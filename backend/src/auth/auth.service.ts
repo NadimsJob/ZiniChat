@@ -24,6 +24,14 @@ export class AuthService {
   async validateUser(email: string, pass: string): Promise<any> {
     const user = await this.usersService.findByEmail(email);
     if (user && user.passwordHash && await bcrypt.compare(pass, user.passwordHash)) {
+      if (user.tenantId && user.role !== 'superadmin') {
+        const tenant = await this.prisma.tenant.findUnique({
+          where: { id: user.tenantId }
+        });
+        if (tenant && tenant.status === 'suspended') {
+          throw new UnauthorizedException('Account suspended');
+        }
+      }
       const { passwordHash, ...result } = user;
       return result;
     }
@@ -31,6 +39,15 @@ export class AuthService {
   }
 
   async login(user: any) {
+    if (user.tenantId && user.role !== 'superadmin') {
+      const tenant = await this.prisma.tenant.findUnique({
+        where: { id: user.tenantId }
+      });
+      if (tenant && tenant.status === 'suspended') {
+        throw new UnauthorizedException('Account suspended');
+      }
+    }
+
     const payload = { 
       email: user.email, 
       sub: user.id, 

@@ -6,9 +6,11 @@ import Cookies from 'js-cookie';
 import Link from 'next/link';
 import Script from 'next/script';
 import { Eye, EyeOff } from 'lucide-react';
+import { useLanguage } from '@/components/LanguageProvider';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { language } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -111,7 +113,16 @@ export default function LoginPage() {
       });
 
       if (!res.ok) {
-        throw new Error('Invalid email or password');
+        const errorData = await res.json().catch(() => ({}));
+        let errMsg = errorData.message || 'Invalid email or password';
+        if (errMsg === 'Account suspended') {
+          errMsg = language === 'en'
+            ? 'Your account has been suspended. Please contact support.'
+            : 'আপনার অ্যাকাউন্টটি স্থগিত (suspended) করা হয়েছে। দয়া করে সাপোর্টের সাথে যোগাযোগ করুন।';
+        } else if (errMsg === 'Invalid email or password') {
+          errMsg = language === 'en' ? 'Invalid email or password' : 'ভুল ইমেল বা পাসওয়ার্ড';
+        }
+        throw new Error(errMsg);
       }
 
       const data = await res.json();
