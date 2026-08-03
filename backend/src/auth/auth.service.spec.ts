@@ -224,6 +224,18 @@ describe('AuthService', () => {
       );
       expect(result).toEqual(expect.objectContaining({ appId: '987654' }));
     });
+
+    it('should retrieve public Facebook auth config', async () => {
+      const mockConfig = { id: 'config-1', appId: '123456', appSecret: 'secret', whatsappConfigId: 'cfg-999', isEnabled: true };
+      mockPrismaService.facebookAuthConfig.findFirst.mockResolvedValue(mockConfig);
+
+      const result = await service.getPublicFacebookConfig();
+      expect(result).toEqual({
+        appId: '123456',
+        whatsappConfigId: 'cfg-999',
+        isEnabled: true
+      });
+    });
   });
 
   describe('forgotPassword', () => {

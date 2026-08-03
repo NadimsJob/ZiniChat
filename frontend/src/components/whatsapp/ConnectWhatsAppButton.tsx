@@ -17,30 +17,63 @@ export default function ConnectWhatsAppButton({ onConnected }: ConnectWhatsAppBu
   const [isSdkLoaded, setIsSdkLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [facebookConfig, setFacebookConfig] = useState<{ appId: string; whatsappConfigId: string }>({ appId: '', whatsappConfigId: '' });
 
   useEffect(() => {
-    // Load the Facebook SDK asynchronously
-    if (document.getElementById('facebook-jssdk')) return;
-    
-    window.fbAsyncInit = function () {
-      window.FB.init({
-        appId: process.env.NEXT_PUBLIC_FACEBOOK_APP_ID,
-        autoLogAppEvents: true,
-        xfbml: true,
-        version: 'v19.0',
-      });
-      setIsSdkLoaded(true);
+    const initConfigAndSdk = async () => {
+      let appId = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID || '';
+      let configId = process.env.NEXT_PUBLIC_WHATSAPP_CONFIG_ID || '';
+
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        const res = await fetch(`${apiUrl}/auth/facebook/public-config`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.appId) appId = data.appId;
+          if (data.whatsappConfigId) configId = data.whatsappConfigId;
+        }
+      } catch (err) {
+        console.error('Failed to fetch dynamic Facebook config:', err);
+      }
+
+      setFacebookConfig({ appId, whatsappConfigId: configId });
+
+      // Load the Facebook SDK asynchronously with the resolved appId
+      if (document.getElementById('facebook-jssdk')) {
+        setIsSdkLoaded(true);
+        return;
+      }
+      
+      window.fbAsyncInit = function () {
+        if (window.FB) {
+          window.FB.init({
+            appId: appId || '1657669951997356',
+            autoLogAppEvents: true,
+            xfbml: true,
+            version: 'v19.0',
+          });
+          setIsSdkLoaded(true);
+        }
+      };
+
+      const js = document.createElement('script');
+      js.id = 'facebook-jssdk';
+      js.src = 'https://connect.facebook.net/en_US/sdk.js';
+      document.body.appendChild(js);
     };
 
-    const js = document.createElement('script');
-    js.id = 'facebook-jssdk';
-    js.src = 'https://connect.facebook.net/en_US/sdk.js';
-    document.body.appendChild(js);
+    initConfigAndSdk();
   }, []);
 
   const handleConnect = () => {
     if (!window.FB) {
       setMessage('Facebook SDK not loaded yet.');
+      return;
+    }
+
+    const configId = facebookConfig.whatsappConfigId || process.env.NEXT_PUBLIC_WHATSAPP_CONFIG_ID;
+    if (!configId) {
+      setMessage('WhatsApp Embedded Signup Configuration ID is missing. Superadmin must configure it in Facebook Auth settings.');
       return;
     }
 
@@ -58,7 +91,7 @@ export default function ConnectWhatsAppButton({ onConnected }: ConnectWhatsAppBu
         }
       },
       {
-        config_id: process.env.NEXT_PUBLIC_WHATSAPP_CONFIG_ID || 'YOUR_CONFIG_ID', // Dynamic config ID from environment
+        config_id: configId,
         response_type: 'code',
         override_default_response_type: true,
         extras: {

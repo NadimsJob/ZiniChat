@@ -727,7 +727,17 @@ export class AuthService {
   // Get superadmin settings for Facebook Auth
   async getFacebookSettings() {
     const config = await this.prisma.facebookAuthConfig.findFirst();
-    return config || { appId: '', appSecret: '', isEnabled: false };
+    return config || { appId: '', appSecret: '', whatsappConfigId: '', isEnabled: false };
+  }
+
+  // Get public Facebook configuration (for tenants)
+  async getPublicFacebookConfig() {
+    const config = await this.prisma.facebookAuthConfig.findFirst();
+    return {
+      appId: config?.appId || process.env.NEXT_PUBLIC_FACEBOOK_APP_ID || '',
+      whatsappConfigId: config?.whatsappConfigId || process.env.NEXT_PUBLIC_WHATSAPP_CONFIG_ID || '',
+      isEnabled: config?.isEnabled ?? true,
+    };
   }
 
   // Save/update settings for Facebook Auth
@@ -739,6 +749,7 @@ export class AuthService {
         data: {
           appId: data.appId,
           appSecret: data.appSecret,
+          whatsappConfigId: data.whatsappConfigId,
           isEnabled: !!data.isEnabled
         }
       });
@@ -747,6 +758,7 @@ export class AuthService {
         data: {
           appId: data.appId,
           appSecret: data.appSecret,
+          whatsappConfigId: data.whatsappConfigId,
           isEnabled: !!data.isEnabled
         }
       });

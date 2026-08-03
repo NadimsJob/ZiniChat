@@ -173,6 +173,12 @@ export class AuthController {
     return this.authService.googleCallback(body.credential, body.planId);
   }
 
+  // Endpoint for tenants/public to get active Facebook App ID and WhatsApp Config ID
+  @Get('facebook/public-config')
+  async getPublicFacebookConfig() {
+    return this.authService.getPublicFacebookConfig();
+  }
+
   // Superadmin endpoint to get Facebook settings
   @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
   @Roles('superadmin')

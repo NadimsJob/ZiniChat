@@ -14,6 +14,7 @@ export default function FacebookAuthSettingsPage() {
   const [form, setForm] = useState({
     appId: '',
     appSecret: '',
+    whatsappConfigId: '',
     isEnabled: false
   });
 
@@ -29,6 +30,7 @@ export default function FacebookAuthSettingsPage() {
           setForm({
             appId: data.appId || '',
             appSecret: data.appSecret || '',
+            whatsappConfigId: data.whatsappConfigId || '',
             isEnabled: data.isEnabled || false
           });
         }
@@ -137,6 +139,20 @@ export default function FacebookAuthSettingsPage() {
               className="w-full bg-background border border-surface-hover rounded-xl px-2.5 py-3 focus:border-primary focus:outline-none font-mono text-[12px]" 
               placeholder="••••••••••••••••••••••••••••••••" 
             />
+          </div>
+
+          <div>
+            <label className="block text-[12px] font-medium mb-1.5 text-zinc-400">{language === 'en' ? 'WhatsApp Embedded Signup Config ID' : 'হোয়াটসঅ্যাপ এমবেডেড সাইনআপ কনফিগ আইডি'}</label>
+            <input 
+              type="text" 
+              value={form.whatsappConfigId} 
+              onChange={e => setForm({ ...form, whatsappConfigId: e.target.value })} 
+              className="w-full bg-background border border-surface-hover rounded-xl px-2.5 py-3 focus:border-primary focus:outline-none font-mono text-[12px]" 
+              placeholder="e.g. 987654321098765" 
+            />
+            <p className="text-[11px] text-zinc-500 mt-1">
+              {language === 'en' ? 'Generated from Meta Dashboard -> Facebook Login for Business -> Configurations' : 'মেটা ড্যাশবোর্ডের Facebook Login for Business -> Configurations থেকে প্রাপ্ত আইডি।'}
+            </p>
           </div>
         </div>
 

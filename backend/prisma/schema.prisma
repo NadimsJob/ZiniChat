@@ -928,11 +928,12 @@ model GoogleAuthConfig {
 }
 
 model FacebookAuthConfig {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  appId     String
-  appSecret String?
-  isEnabled Boolean  @default(false)
-  updatedAt DateTime @updatedAt
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  appId            String
+  appSecret        String?
+  whatsappConfigId String?
+  isEnabled        Boolean  @default(false)
+  updatedAt        DateTime @updatedAt
 
   @@map("facebook_auth_config")
 }
