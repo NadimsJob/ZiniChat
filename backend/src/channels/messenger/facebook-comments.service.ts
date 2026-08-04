@@ -1,7 +1,8 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException, ForbiddenException, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { QuotaService } from '../../tenants/quota.service';
 import { AiService } from '../../ai/ai.service';
+import { InboxService } from '../../inbox/inbox.service';
 
 export interface UpdateCommentSettingsDto {
   isCommentAutoReplyEnabled?: boolean;
@@ -22,6 +23,8 @@ export class FacebookCommentsService {
     private prisma: PrismaService,
     private quotaService: QuotaService,
     private aiService: AiService,
+    @Inject(forwardRef(() => InboxService))
+    private inboxService: InboxService,
   ) {}
 
   /**
@@ -71,7 +74,14 @@ export class FacebookCommentsService {
 
     const tenantId = connection.tenantId;
 
-    // 4. Check if comment auto-reply is enabled on channel
+    // 4. Package Plan Feature Enforcement
+    const hasPackageFeature = await this.quotaService.checkFeature(tenantId, 'facebook_comment_automation');
+    if (!hasPackageFeature) {
+      this.logger.warn(`Tenant ${tenantId} does not have 'facebook_comment_automation' enabled in their package plan. Skipping.`);
+      return;
+    }
+
+    // 5. Check if comment auto-reply is enabled on channel
     if (!connection.isCommentAutoReplyEnabled) {
       this.logger.debug(`Comment auto-reply is disabled for tenant ${tenantId}, page ${pageId}`);
       return;
@@ -251,6 +261,22 @@ export class FacebookCommentsService {
         if (res.ok && data.message_id) {
           privateSuccess = true;
           this.logger.log(`Posted private reply to comment ${commentId}: ${data.message_id}`);
+          
+          // Sync Private Message into standard Messenger Inbox conversation thread
+          try {
+            await this.inboxService.handleIncomingMessage({
+              tenantId,
+              channel: 'messenger',
+              externalContactId: fromId,
+              contactName: fromName,
+              messageType: 'text',
+              content: { text: aiResponseText },
+              externalMessageId: data.message_id || `msg_private_${commentId}`,
+              timestamp: new Date(),
+            });
+          } catch (syncErr: any) {
+            this.logger.warn(`Error syncing private reply to Messenger thread: ${syncErr.message}`);
+          }
         } else {
           if (!errorMessage) errorMessage = data.error?.message || JSON.stringify(data);
           this.logger.error(`Failed posting private reply to comment ${commentId}: ${data.error?.message}`);
@@ -327,23 +353,32 @@ export class FacebookCommentsService {
 
       const qnaContext = qnaItems.map((q) => `Q: ${q.question}\nA: ${q.answer}`).join('\n\n');
 
-      const systemPrompt = `You are a professional, helpful customer service AI representative for a business page responding to Facebook comments.
-Strict Rules:
-1. Detect the user's language (Bengali, English, or Banglish) and respond in the EXACT same language and script.
+      const systemPrompt = `# ROLE & INSTRUCTION
+You are a professional, helpful customer service AI representative for a business responding to Facebook Page comments.
+
+# CRITICAL RULES:
+1. Detect user's language (Bengali, English, or Banglish) and respond in the EXACT same language and script.
 2. Keep replies short, polite, and customer-friendly (1-2 sentences maximum).
 3. Do NOT make unauthorized price promises or false commitments.
-4. If relevant, encourage the customer to message the page directly for order placement.
-${customInstruction ? `Custom Store Instruction: ${customInstruction}` : ''}
-${qnaContext ? `Knowledge Base:\n${qnaContext}` : ''}`;
+4. If relevant, encourage customer to check inbox or message the page for details.
+${customInstruction ? `\n# CUSTOM COMMENT INSTRUCTION (MUST FOLLOW PERFECTLY):\n${customInstruction}\n` : ''}
+${qnaContext ? `# STORE KNOWLEDGE BASE:\n${qnaContext}\n` : ''}`;
 
-      const userPrompt = `User ${userName} commented on our Facebook post: "${commentText}"
-Provide a polite, concise public comment response (max 2 lines).`;
+      const fullPrompt = `${systemPrompt}\n\n# FACEBOOK COMMENT TO REPLY TO:\nUser "${userName}" commented: "${commentText}"\n\nProvide a polite, concise comment response (1-2 sentences) strictly following all instructions.`;
+
+      let response = await this.aiService.generateCompletion(fullPrompt);
+
+      if (response) {
+        // Clean quotes if LLM returned string wrapped in quotes
+        response = response.trim().replace(/^"|"$/g, '');
+        return response;
+      }
 
       // Default fallback response generator
       return `ধন্যবাদ ${userName}! বিস্তারিত জানতে আমাদের ইনবক্সে মেসেজ দিন অথবা আমাদের পেজে চোখ রাখুন।`;
     } catch (err: any) {
       this.logger.error(`Error generating comment AI response: ${err.message}`);
-      return null;
+      return `ধন্যবাদ ${userName}! বিস্তারিত জানতে আমাদের ইনবক্সে মেসেজ দিন।`;
     }
   }
 
@@ -456,6 +491,11 @@ Provide a polite, concise public comment response (max 2 lines).`;
    * Settings API: Update comment automation settings for channel
    */
   async updateCommentSettings(tenantId: string, channelId: string, dto: UpdateCommentSettingsDto) {
+    const hasPackageFeature = await this.quotaService.checkFeature(tenantId, 'facebook_comment_automation');
+    if (!hasPackageFeature) {
+      throw new ForbiddenException('Facebook Comment Automation feature is not included in your active plan package.');
+    }
+
     const channel = await this.prisma.channelConnection.findFirst({
       where: { id: channelId, tenantId },
     });
@@ -501,6 +541,90 @@ Provide a polite, concise public comment response (max 2 lines).`;
         take: limit,
       }),
       this.prisma.facebookCommentLog.count({ where }),
+    ]);
+
+    return {
+      items,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  /**
+   * Human Agent Re-comment API: Post custom manual comment reply to Meta Graph API
+   */
+  async replyToCommentHuman(tenantId: string, commentId: string, replyText: string) {
+    const hasPackageFeature = await this.quotaService.checkFeature(tenantId, 'facebook_comment_automation');
+    if (!hasPackageFeature) {
+      throw new ForbiddenException('Facebook Comment Automation feature is not included in your active plan package.');
+    }
+
+    if (!replyText || !replyText.trim()) {
+      throw new BadRequestException('Reply text cannot be empty');
+    }
+
+    const commentLog = await this.prisma.facebookCommentLog.findUnique({
+      where: { commentId },
+    });
+    if (!commentLog || commentLog.tenantId !== tenantId) {
+      throw new NotFoundException('Comment log not found for this tenant');
+    }
+
+    const connection = await this.prisma.channelConnection.findFirst({
+      where: { externalAccountId: commentLog.pageId, channelType: 'messenger', tenantId },
+    });
+    if (!connection) {
+      throw new NotFoundException('Channel connection for page not found');
+    }
+
+    const pageToken = connection.accessTokenEncrypted;
+
+    const res = await fetch(`https://graph.facebook.com/v21.0/${commentId}/comments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: replyText,
+        access_token: pageToken,
+      }),
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data.id) {
+      throw new BadRequestException(`Meta Graph API error: ${data.error?.message || 'Failed to post comment reply'}`);
+    }
+
+    const updated = await this.prisma.facebookCommentLog.update({
+      where: { commentId },
+      data: {
+        replyText: replyText,
+        replyStatus: 'replied',
+        skipReason: 'human_reply',
+      },
+    });
+
+    return {
+      success: true,
+      commentId,
+      replyId: data.id,
+      replyText: updated.replyText,
+    };
+  }
+
+  /**
+   * Fetch all comment logs for tenant across all connected pages (for Inbox FB Comments tab)
+   */
+  async getAllTenantCommentLogs(tenantId: string, page = 1, limit = 50) {
+    const skip = (page - 1) * limit;
+    const [items, total] = await Promise.all([
+      this.prisma.facebookCommentLog.findMany({
+        where: { tenantId },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.facebookCommentLog.count({ where: { tenantId } }),
     ]);
 
     return {

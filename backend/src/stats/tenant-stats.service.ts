@@ -232,6 +232,22 @@ export class TenantStatsService {
     const contactsCount = await this.prisma.contact.count({ where: { tenantId } });
     const productsCount = await this.prisma.product.count({ where: { tenantId } });
 
+    // ── Facebook Comment Metrics ─────────────────────────────────────────────
+    const [fbCommentsFiltered, fbCommentsPrevFiltered, fbCommentsToday, fbCommentsReplied] = await Promise.all([
+      this.prisma.facebookCommentLog.count({
+        where: { tenantId, createdAt: { gte: from, lte: to } }
+      }),
+      this.prisma.facebookCommentLog.count({
+        where: { tenantId, createdAt: { gte: prevFrom, lte: prevTo } }
+      }),
+      this.prisma.facebookCommentLog.count({
+        where: { tenantId, createdAt: { gte: todayStart } }
+      }),
+      this.prisma.facebookCommentLog.count({
+        where: { tenantId, replyStatus: 'replied', createdAt: { gte: from, lte: to } }
+      })
+    ]);
+
     // ── Connected channels ────────────────────────────────────────────────────
     const channelConnections = await this.prisma.channelConnection.findMany({
       where: { tenantId },
@@ -541,6 +557,13 @@ export class TenantStatsService {
         responseSpeed: responseScore,
         subscriptionHealth: Math.min(100, Math.max(0, subHealth)),
       },
+      // Facebook Comments
+      facebookComments: {
+        total: fbCommentsFiltered,
+        today: fbCommentsToday,
+        replied: fbCommentsReplied,
+        growth: this.computeGrowth(fbCommentsFiltered, fbCommentsPrevFiltered),
+      },
       activity: formattedActivity,
       features,
       plan: quotas.basePlan || null,
@@ -804,5 +827,23 @@ export class TenantStatsService {
       points,
       stats: { msgToday, aiRate, openConvs, overdue, followUpDue },
     };
+  }
+
+  /**
+   * Recent Facebook Comments for Tenant Dashboard Widget
+   */
+  async getRecentFacebookComments(tenantId: string, page = 1, limit = 6) {
+    const skip = (page - 1) * limit;
+    const [data, total] = await Promise.all([
+      this.prisma.facebookCommentLog.findMany({
+        where: { tenantId },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.facebookCommentLog.count({ where: { tenantId } }),
+    ]);
+
+    return { data, total, page, limit };
   }
 }

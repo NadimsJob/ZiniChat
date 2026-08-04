@@ -7,6 +7,7 @@ import { useLanguage } from '@/components/LanguageProvider';
 import { useCurrency } from '@/components/CurrencyProvider';
 import SetupJourneyWidget from '@/components/SetupJourneyWidget';
 import toast from 'react-hot-toast';
+import { useFeature } from '@/hooks/useFeature';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   BarChart, Bar, PieChart, Pie, Cell
@@ -41,10 +42,13 @@ export default function ExecutiveDashboardPage() {
   const [endDate, setEndDate] = useState<string>('');
   const [customOpen, setCustomOpen] = useState(false);
 
+  const hasCommentAutomation = useFeature('facebook_comment_automation');
+
   // Table search
   const [recentConvs, setRecentConvs] = useState<any[]>([]);
   const [recentLeads, setRecentLeads] = useState<any[]>([]);
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
+  const [recentComments, setRecentComments] = useState<any[]>([]);
   const [convSearch, setConvSearch] = useState('');
   const [leadSearch, setLeadSearch] = useState('');
   const [orderSearch, setOrderSearch] = useState('');
@@ -87,13 +91,14 @@ export default function ExecutiveDashboardPage() {
         queryStr += `&startDate=${sDate}&endDate=${eDate}`;
       }
 
-      const [overviewRes, chartRes, setupRes, convsRes, leadsRes, ordersRes] = await Promise.all([
+      const [overviewRes, chartRes, setupRes, convsRes, leadsRes, ordersRes, commentsRes] = await Promise.all([
         fetch(`${API}/stats/tenant/dashboard?${queryStr}`, { headers }),
         fetch(`${API}/stats/tenant/charts?${queryStr}`, { headers }),
         fetch(`${API}/auth/setup-status`, { headers }),
         fetch(`${API}/stats/tenant/conversations/recent?page=1&limit=6`, { headers }),
         fetch(`${API}/stats/tenant/leads/recent?page=1&limit=6`, { headers }),
         fetch(`${API}/stats/tenant/orders/recent?page=1&limit=6`, { headers }),
+        fetch(`${API}/stats/tenant/comments/recent?page=1&limit=6`, { headers }),
       ]);
 
       if (overviewRes.ok) setData(await overviewRes.json());
@@ -102,6 +107,7 @@ export default function ExecutiveDashboardPage() {
       if (convsRes.ok) { const res = await convsRes.json(); setRecentConvs(res.data || []); }
       if (leadsRes.ok) { const res = await leadsRes.json(); setRecentLeads(res.data || []); }
       if (ordersRes.ok) { const res = await ordersRes.json(); setRecentOrders(res.data || []); }
+      if (commentsRes.ok) { const res = await commentsRes.json(); setRecentComments(res.data || []); }
 
     } catch (err) {
       console.error('Failed to load executive dashboard', err);
@@ -363,6 +369,30 @@ export default function ExecutiveDashboardPage() {
             <span className="text-blue-400 font-bold">{language === 'en' ? 'Agent' : 'এজেন্ট'}</span>
           </div>
         </div>
+
+        {/* KPI 4: FB Comments (If feature enabled) */}
+        {hasCommentAutomation && (
+          <div className="bg-orange-500/5 backdrop-blur-xl border border-orange-500/20 rounded-2xl p-4 flex flex-col justify-between hover:border-orange-500/40 hover:bg-orange-500/10 transition-all shadow-md shadow-black/5 hover:shadow-lg">
+            <div>
+              <div className="flex items-center justify-between text-zinc-400 mb-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-orange-400">{language === 'en' ? 'FB Comments' : 'FB কমেন্ট'}</span>
+                <MessageSquare className="w-4 h-4 text-orange-400" />
+              </div>
+              <div className="text-2xl sm:text-3xl font-black text-orange-400">{formatNumber(data?.facebookComments?.total || 0)}</div>
+              <div className="flex items-center gap-1.5 mt-1">
+                <span className={`text-[11px] font-bold flex items-center ${(data?.facebookComments?.growth || 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {(data?.facebookComments?.growth || 0) >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                  {formatNumber(Math.abs(data?.facebookComments?.growth || 0))}%
+                </span>
+                <span className="text-[10px] text-zinc-400">{language === 'en' ? 'vs prev' : 'পূর্ববর্তী'}</span>
+              </div>
+            </div>
+            <div className="mt-3 pt-2 border-t border-orange-500/20 flex justify-between text-[11px] text-zinc-400">
+              <span>{language === 'en' ? 'Today:' : 'আজ:'} <strong className="text-foreground">{formatNumber(data?.facebookComments?.today || 0)}</strong></span>
+              <span>{language === 'en' ? 'Replied:' : 'উত্তর:'} <strong className="text-emerald-400">{formatNumber(data?.facebookComments?.replied || 0)}</strong></span>
+            </div>
+          </div>
+        )}
 
 
         {/* KPI 5: Open Conversations */}
@@ -840,6 +870,56 @@ export default function ExecutiveDashboardPage() {
               </table>
             </div>
           </div>
+
+          {/* Recent FB Comments Table */}
+          {hasCommentAutomation && (
+            <div className="bg-surface/90 backdrop-blur-xl border border-surface-hover/80 rounded-2xl p-5 shadow-lg shadow-black/5 hover:shadow-xl transition-all">
+              <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+                <h3 className="text-[15px] font-bold text-foreground flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-orange-400" />
+                  {language === 'en' ? 'Recent Facebook Comments' : 'সাম্প্রতিক ফেসবুক কমেন্ট'}
+                </h3>
+                <Link href="/dashboard/inbox" className="text-xs font-bold text-orange-400 hover:underline">
+                  {language === 'en' ? 'View in Inbox →' : 'ইনবক্সে দেখুন →'}
+                </Link>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-surface-hover text-zinc-400 uppercase text-[10px] tracking-wider">
+                      <th className="py-2 px-3">{language === 'en' ? 'Commenter' : 'কমেন্টকারী'}</th>
+                      <th className="py-2 px-3">{language === 'en' ? 'Comment Text' : 'কমেন্ট'}</th>
+                      <th className="py-2 px-3">{language === 'en' ? 'Reply Status' : 'রিপ্লাই স্ট্যাটাস'}</th>
+                      <th className="py-2 px-3 text-right">{language === 'en' ? 'Time' : 'সময়'}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-surface-hover/50">
+                    {recentComments.length === 0 ? (
+                      <tr><td colSpan={4} className="py-6 text-center text-zinc-400">{language === 'en' ? 'No recent Facebook comments' : 'কোনো ফেসবুক কমেন্ট নেই'}</td></tr>
+                    ) : (
+                      recentComments.map((c: any) => (
+                        <tr key={c.id} className="hover:bg-surface-hover/30 transition-colors">
+                          <td className="py-3 px-3 font-bold text-foreground">{c.userName || 'Facebook User'}</td>
+                          <td className="py-3 px-3 text-zinc-300 max-w-xs truncate">"{c.commentText}"</td>
+                          <td className="py-3 px-3">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                              c.replyStatus === 'replied' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/15 text-amber-400 border border-amber-500/20'
+                            }`}>
+                              {c.replyStatus}
+                            </span>
+                          </td>
+                          <td className="py-3 px-3 text-right text-zinc-400 text-[11px]">
+                            {new Date(c.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
         </div>
 

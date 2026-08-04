@@ -91,6 +91,42 @@ export default function InboxesPage() {
     }
   };
 
+  const handleToggleChannelStatus = async (id: string, currentIsActive: boolean) => {
+    const nextIsActive = !currentIsActive;
+    // Optimistic UI update
+    setConnections(prev => prev.map(c => c.id === id ? { 
+      ...c, 
+      isActive: nextIsActive, 
+      status: nextIsActive ? 'active' : 'inactive' 
+    } : c));
+
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/inbox/channels/${id}/status`, {
+        method: 'PATCH',
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ isActive: nextIsActive })
+      });
+
+      if (res.ok) {
+        toast.success(
+          language === 'en' 
+            ? `Channel ${nextIsActive ? 'Activated' : 'Deactivated (Hidden from Live Inbox)'}` 
+            : `চ্যানেল ${nextIsActive ? 'সক্রিয়' : 'নিষ্ক্রিয় (ইনবক্সে আর দেখা যাবে না)'} হয়েছে`
+        );
+      } else {
+        toast.error(language === 'en' ? 'Failed to update channel status' : 'চ্যানেল স্ট্যাটাস আপডেট করতে ব্যর্থ হয়েছে');
+        fetchConnections();
+      }
+    } catch (err) {
+      toast.error(language === 'en' ? 'Error updating channel status' : 'চ্যানেল স্ট্যাটাস আপডেট করতে সমস্যা হয়েছে');
+      fetchConnections();
+    }
+  };
+
   const handleToggleIgnoreGroups = async (id: string, currentStatus: boolean) => {
     const nextStatus = !currentStatus;
     // Optimistic UI update
@@ -220,7 +256,8 @@ export default function InboxesPage() {
               </div>
             ) : (
               connections.map(conn => {
-                const isActive = conn.isConnected === true || conn.status === 'active' || conn.qrStatus === 'CONNECTED';
+                const isChannelInactive = conn.status === 'inactive' || conn.isActive === false;
+                const isActive = !isChannelInactive && (conn.isConnected === true || conn.status === 'active' || conn.qrStatus === 'CONNECTED');
                 
                 return (
                   <div key={conn.id} className="p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-muted/30 transition-colors group">
@@ -232,12 +269,21 @@ export default function InboxesPage() {
                         <h3 className="font-bold text-foreground flex items-center gap-2 text-xs truncate">
                           <span className="truncate">{conn.displayName || conn.phoneNumber || getChannelName(conn.channelType)}</span>
                           <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold inline-flex items-center gap-1 shrink-0 ${
-                            isActive
+                            isChannelInactive
+                              ? 'bg-zinc-500/15 text-zinc-400 border border-zinc-500/20'
+                              : isActive
                               ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' 
                               : 'bg-red-500/10 text-red-500 border border-red-500/20'
                           }`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
-                            {isActive ? (language === 'en' ? 'Active 🟢' : 'সক্রিয় 🟢') : (language === 'en' ? 'Disconnected 🔴' : 'ডিসকানেক্টেড 🔴')}
+                            <span className={`w-1.5 h-1.5 rounded-full ${
+                              isChannelInactive ? 'bg-zinc-400' : isActive ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'
+                            }`} />
+                            {isChannelInactive 
+                              ? (language === 'en' ? 'Inactive ⚪' : 'নিষ্ক্রিয় ⚪')
+                              : isActive 
+                              ? (language === 'en' ? 'Active 🟢' : 'সক্রিয় 🟢') 
+                              : (language === 'en' ? 'Disconnected 🔴' : 'ডিসকানেক্টেড 🔴')
+                            }
                           </span>
                         </h3>
                         <p className="text-[11px] text-muted-foreground mt-0.5 truncate font-sans">
@@ -288,6 +334,26 @@ export default function InboxesPage() {
                           <span>{language === 'en' ? 'Comment Auto-Reply' : 'কমেন্ট অটো-রিপ্লাই'}</span>
                         </button>
                       )}
+
+                      <div className="flex items-center gap-2 mr-2">
+                        <span className="text-[11px] text-muted-foreground font-semibold font-sans">
+                          {language === 'en' ? 'Channel Status' : 'চ্যানেল স্ট্যাটাস'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleToggleChannelStatus(conn.id, !isChannelInactive)}
+                          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none cursor-pointer ${
+                            !isChannelInactive ? 'bg-emerald-600' : 'bg-muted'
+                          }`}
+                          title={language === 'en' ? 'Toggle Channel Active/Inactive (Inactive channels are hidden from Inbox)' : 'চ্যানেল সক্রিয়/নিষ্ক্রিয় করুন'}
+                        >
+                          <span
+                            className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform shadow-sm ${
+                              !isChannelInactive ? 'translate-x-4.5' : 'translate-x-1'
+                            }`}
+                          />
+                        </button>
+                      </div>
 
                       <div className="flex items-center gap-2 mr-2">
                         <span className="text-[11px] text-muted-foreground font-semibold font-sans">AI Auto-Reply</span>

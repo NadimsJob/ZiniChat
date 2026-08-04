@@ -65,17 +65,17 @@ export class OrchestratorService {
       const tenantId = message.conversation.tenantId;
       this.assertBelongsToTenant(message.conversation, tenantId, 'Conversation');
 
-      if (message.conversation.channelConnection && message.conversation.channelConnection.isAiAutoReplyEnabled === false) {
-        this.logger.debug(`AI Auto-Reply is disabled for connection ${message.conversation.channelConnection.id}. Skipping.`);
+      if (message.conversation.channelConnection && (message.conversation.channelConnection.status === 'inactive' || message.conversation.channelConnection.isAiAutoReplyEnabled === false)) {
+        this.logger.debug(`AI Auto-Reply is disabled or channel is inactive for connection ${message.conversation.channelConnection.id}. Skipping.`);
         return;
       }
 
       if (message.conversation.channel === 'website') {
         const widget = await this.prisma.websiteWidget.findFirst({
-          where: { tenantId, type: 'LIVE_CHAT', isActive: true }
+          where: { tenantId, type: 'LIVE_CHAT' }
         });
-        if (widget && widget.isAiAutoReplyEnabled === false) {
-          this.logger.debug(`AI Auto-Reply is disabled for website widget ${widget.id}. Skipping.`);
+        if (!widget || widget.isActive === false || widget.isAiAutoReplyEnabled === false) {
+          this.logger.debug(`AI Auto-Reply is disabled or website widget is inactive. Skipping.`);
           return;
         }
       }

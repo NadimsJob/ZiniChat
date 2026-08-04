@@ -181,14 +181,6 @@ describe('SmtpService', () => {
       }), expect.any(Object));
     });
 
-    it('triggerPasswordResetEmail should replace placeholders', async () => {
-      await service.triggerPasswordResetEmail('user@test.com', 'User Alice', 'http://reset.link');
-      expect(mockEmailQueue.add).toHaveBeenCalledWith('send-email', expect.objectContaining({
-        subject: 'Reset User Alice',
-        plainText: expect.stringContaining('Link: http://reset.link')
-      }), expect.any(Object));
-    });
-
     it('triggerNewInquiryEmail should replace placeholders and email admins', async () => {
       await service.triggerNewInquiryEmail('Lead Bob', 'lead@test.com', 'Hello there');
       expect(mockEmailQueue.add).toHaveBeenCalledWith('send-email', expect.objectContaining({

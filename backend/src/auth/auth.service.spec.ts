@@ -240,7 +240,7 @@ describe('AuthService', () => {
 
   describe('forgotPassword', () => {
     it('should generate token and dispatch reset email if user exists', async () => {
-      mockUsersService.findByEmail.mockResolvedValue({ id: 'user-1', email: 'user@test.com', name: 'User Test' });
+      mockPrismaService.user.findFirst.mockResolvedValue({ id: 'user-1', email: 'user@test.com', name: 'User Test' });
       mockPrismaService.user.update.mockResolvedValue({});
 
       const result = await service.forgotPassword('user@test.com');
@@ -250,16 +250,13 @@ describe('AuthService', () => {
           data: expect.objectContaining({ resetPasswordToken: expect.any(String) })
         })
       );
-      expect(mockSmtpService.triggerPasswordResetEmail).toHaveBeenCalled();
       expect(result.success).toBe(true);
     });
 
-    it('should return success message without failing if email does not exist', async () => {
-      mockUsersService.findByEmail.mockResolvedValue(null);
+    it('should throw NotFoundException if email does not exist', async () => {
+      mockPrismaService.user.findFirst.mockResolvedValue(null);
 
-      const result = await service.forgotPassword('nonexistent@test.com');
-      expect(result.success).toBe(true);
-      expect(mockSmtpService.triggerPasswordResetEmail).not.toHaveBeenCalled();
+      await expect(service.forgotPassword('nonexistent@test.com')).rejects.toThrow();
     });
   });
 

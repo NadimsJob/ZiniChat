@@ -26,6 +26,7 @@ export default function InboxPage() {
   const hasSmartTabs = useFeature('inbox_smart_tabs');
   const hasCollaborators = useFeature('inbox_multi_agent_collaborators');
   const hasAiPicker = useFeature('inbox_multi_ai_assistant_picker');
+  const hasCommentAutomation = useFeature('facebook_comment_automation');
 
   // State
   const [conversations, setConversations] = useState<any[]>([]);
@@ -75,6 +76,13 @@ export default function InboxPage() {
   const [forwardSearchQuery, setForwardSearchQuery] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterParam, setFilterParam] = useState('all'); // all, starred, unassigned, blocked, order_requests
+
+  // FB Comments State
+  const [commentLogs, setCommentLogs] = useState<any[]>([]);
+  const [selectedCommentId, setSelectedCommentId] = useState<string | null>(null);
+  const [humanReplyText, setHumanReplyText] = useState('');
+  const [sendingHumanReply, setSendingHumanReply] = useState(false);
+  const [commentLogsLoading, setCommentLogsLoading] = useState(false);
 
   const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -142,6 +150,63 @@ export default function InboxPage() {
     const token = Cookies.get('access_token');
     const res = await fetch(`${API}/labels`, { headers: { Authorization: `Bearer ${token}` } });
     if (res.ok) setAvailableLabels(await res.json());
+  };
+
+  const fetchCommentLogs = useCallback(async () => {
+    setCommentLogsLoading(true);
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/channels/messenger/comments/all?page=1&limit=50`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCommentLogs(data.items || []);
+        if (data.items?.length > 0 && !selectedCommentId) {
+          setSelectedCommentId(data.items[0].commentId);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch comment logs:', err);
+    } finally {
+      setCommentLogsLoading(false);
+    }
+  }, [selectedCommentId]);
+
+  useEffect(() => {
+    if (channelFilter === 'facebook_comments') {
+      fetchCommentLogs();
+    }
+  }, [channelFilter, fetchCommentLogs]);
+
+  const handleSendHumanCommentReply = async (commentId: string) => {
+    if (!humanReplyText.trim()) return;
+    setSendingHumanReply(true);
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/channels/messenger/comments/${commentId}/human-reply`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ replyText: humanReplyText }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        toast.success(language === 'en' ? 'Reply posted to Facebook!' : 'ফেসবুকে কমেন্ট রিপ্লাই পোস্ট হয়েছে!');
+        setHumanReplyText('');
+        setCommentLogs(prev => prev.map(c => c.commentId === commentId ? { ...c, replyText: data.replyText, replyStatus: 'replied', skipReason: 'human_reply' } : c));
+      } else {
+        const errData = await res.json();
+        toast.error(`Failed to post reply: ${errData.message || 'Error'}`);
+      }
+    } catch (err) {
+      toast.error('Network error posting comment reply');
+    } finally {
+      setSendingHumanReply(false);
+    }
   };
 
   // Connect socket and load auxiliary metadata
@@ -820,6 +885,17 @@ export default function InboxPage() {
               {ch.channelType}
             </button>
           ))}
+          {hasCommentAutomation && (
+            <button
+              onClick={() => setChannelFilter('facebook_comments')}
+              className={`px-3 py-1 rounded-md text-[11px] transition-colors cursor-pointer border border-transparent flex items-center gap-1.5 ${
+                channelFilter === 'facebook_comments' ? 'bg-orange-500 text-white font-bold shadow-sm' : 'text-muted-foreground hover:bg-muted/50 border-border/40'
+              }`}
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span>{language === 'en' ? 'FB Comments' : 'FB কমেন্ট'}</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -889,7 +965,63 @@ export default function InboxPage() {
 
         {/* Conversation Items List */}
         <div className="flex-1 overflow-y-auto custom-scrollbar divide-y divide-border/40">
-          {loading ? (
+          {channelFilter === 'facebook_comments' ? (
+            commentLogsLoading ? (
+              <div className="p-4 text-center text-xs text-muted-foreground animate-pulse">
+                {language === 'en' ? 'Loading Facebook comments...' : 'ফেসবুক কমেন্ট লোড হচ্ছে...'}
+              </div>
+            ) : commentLogs.length === 0 ? (
+              <div className="p-8 text-center text-xs text-muted-foreground space-y-1">
+                <MessageSquare className="w-8 h-8 mx-auto text-muted-foreground/40 mb-2" />
+                <p className="font-semibold">{language === 'en' ? 'No Facebook comments found' : 'কোন কমেন্ট পাওয়া যায়নি'}</p>
+                <p className="text-[11px] text-muted-foreground">{language === 'en' ? 'Comments on your Facebook posts will appear here.' : 'আপনার পেজের পোস্টে আসা কমেন্ট এখানে দেখাবে।'}</p>
+              </div>
+            ) : (
+              commentLogs.map(c => {
+                const isSelected = c.commentId === selectedCommentId;
+                return (
+                  <div
+                    key={c.id}
+                    onClick={() => {
+                      setSelectedCommentId(c.commentId);
+                      setMobilePanelView('chat');
+                    }}
+                    className={`px-3 py-2.5 cursor-pointer transition-all hover:bg-muted/50 ${
+                      isSelected ? 'bg-orange-500/10 border-l-4 border-orange-500' : ''
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                        <div className="w-8 h-8 rounded-full bg-blue-500/10 text-blue-500 font-bold flex items-center justify-center text-xs border border-blue-500/20 shrink-0">
+                          <MessageSquare className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h4 className="text-xs font-bold text-foreground truncate">
+                            {c.userName || 'Facebook User'}
+                          </h4>
+                          <p className="text-[11px] text-muted-foreground truncate">
+                            "{c.commentText}"
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className="text-[10px] text-muted-foreground">
+                          {new Date(c.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                        <div className="mt-0.5">
+                          <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${
+                            c.replyStatus === 'replied' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                          }`}>
+                            {c.replyStatus}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )
+          ) : loading ? (
             <div className="p-4 text-center text-xs text-muted-foreground animate-pulse">
               {language === 'en' ? 'Loading inbox...' : 'ইনবক্স লোড হচ্ছে...'}
             </div>
@@ -1050,8 +1182,92 @@ export default function InboxPage() {
         </div>
       </div>
 
-      {/* MIDDLE COLUMN: Active Chat Panel */}
-      {selectedConvId && activeConv ? (
+      {/* MIDDLE COLUMN: Active Chat / Facebook Comment Panel */}
+      {channelFilter === 'facebook_comments' ? (
+        (() => {
+          const selectedComment = commentLogs.find(c => c.commentId === selectedCommentId);
+          return selectedComment ? (
+            <div className={`flex-1 flex-col min-w-0 bg-card md:border border-border/80 md:shadow-sm dark:shadow-[0_0_15px_rgba(0,0,0,0.2)] md:rounded-2xl overflow-hidden ${
+              mobilePanelView === 'chat' ? 'flex' : 'hidden md:flex'
+            }`}>
+              {/* Header */}
+              <div className="h-14 px-3 md:px-4 border-b border-border bg-surface/80 backdrop-blur-xl flex items-center justify-between shrink-0 shadow-2xs">
+                <div className="flex items-center gap-3">
+                  <button onClick={() => setMobilePanelView('list')} className="md:hidden p-1.5 text-muted-foreground hover:text-foreground">
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <div className="w-9 h-9 rounded-full bg-blue-500/10 text-blue-500 font-bold flex items-center justify-center border border-blue-500/20">
+                    <MessageSquare className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-bold text-foreground flex items-center gap-2">
+                      <span>{selectedComment.userName || 'Facebook User'}</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-400 font-bold border border-orange-500/20">
+                        Post Comment
+                      </span>
+                    </h3>
+                    <p className="text-[10px] text-muted-foreground">Post ID: {selectedComment.postId}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Main Comment & Reply View */}
+              <div className="flex-1 p-4 overflow-y-auto space-y-4 font-sans bg-muted/10">
+                <div className="p-4 bg-card rounded-2xl border border-border/70 shadow-2xs max-w-xl">
+                  <span className="text-[10px] font-bold text-primary uppercase tracking-wider block mb-1">
+                    Customer Comment:
+                  </span>
+                  <p className="text-xs text-foreground font-medium leading-relaxed">"{selectedComment.commentText}"</p>
+                  <span className="text-[10px] text-muted-foreground mt-2 block text-right">
+                    {new Date(selectedComment.createdAt).toLocaleString()}
+                  </span>
+                </div>
+
+                {selectedComment.replyText ? (
+                  <div className="p-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/20 max-w-xl ml-auto text-right">
+                    <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block mb-1">
+                      {selectedComment.skipReason === 'human_reply' ? 'Human Agent Reply:' : 'AI Auto-Reply:'}
+                    </span>
+                    <p className="text-xs text-foreground font-medium leading-relaxed">"{selectedComment.replyText}"</p>
+                  </div>
+                ) : (
+                  <div className="p-3.5 bg-amber-500/10 rounded-xl border border-amber-500/20 text-xs text-amber-400 font-medium">
+                    Status: {selectedComment.replyStatus} ({selectedComment.skipReason || 'No reply generated'})
+                  </div>
+                )}
+              </div>
+
+              {/* Human Re-comment Form */}
+              <div className="p-3 border-t border-border bg-surface/80 backdrop-blur-md">
+                <form onSubmit={(e) => { e.preventDefault(); handleSendHumanCommentReply(selectedComment.commentId); }} className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={humanReplyText}
+                    onChange={(e) => setHumanReplyText(e.target.value)}
+                    placeholder={language === 'en' ? 'Type human comment reply to post on Facebook...' : 'কমেন্টের পাবলিক উত্তর লিখুন (ফেসবুকে পোস্ট হবে)...'}
+                    className="flex-1 p-2.5 bg-background border border-border rounded-xl text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  />
+                  <button
+                    type="submit"
+                    disabled={sendingHumanReply || !humanReplyText.trim()}
+                    className="px-4 py-2.5 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition-all shadow-sm cursor-pointer flex items-center gap-1.5 shrink-0"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    <span>{sendingHumanReply ? 'Posting...' : language === 'en' ? 'Re-comment' : 'রিপ্লাই দিন'}</span>
+                  </button>
+                </form>
+              </div>
+            </div>
+          ) : (
+            <div className={`flex-1 flex-col items-center justify-center text-xs text-muted-foreground bg-card md:border border-border/80 md:rounded-2xl ${
+              mobilePanelView === 'chat' ? 'flex' : 'hidden md:flex'
+            }`}>
+              <MessageSquare className="w-10 h-10 mb-2 opacity-30 text-muted-foreground" />
+              <p className="font-medium">{language === 'en' ? 'Select a comment to view & reply' : 'উত্তর দিতে একটি কমেন্ট সিলেক্ট করুন'}</p>
+            </div>
+          );
+        })()
+      ) : selectedConvId && activeConv ? (
         <div className={`flex-1 flex-col min-w-0 bg-card md:border border-border/80 md:shadow-sm dark:shadow-[0_0_15px_rgba(0,0,0,0.2)] md:rounded-2xl overflow-hidden ${
           // On mobile: show only when mobilePanelView === 'chat'
           // On desktop: always show when conversation selected

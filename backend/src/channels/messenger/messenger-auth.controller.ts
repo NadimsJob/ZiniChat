@@ -65,4 +65,30 @@ export class MessengerAuthController {
       limit ? parseInt(limit, 10) : 20,
     );
   }
+
+  @Get('comments/all')
+  getAllCommentLogs(
+    @Request() req: any,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.facebookCommentsService.getAllTenantCommentLogs(
+      req.user.tenantId,
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 50,
+    );
+  }
+
+  @Post('comments/:commentId/human-reply')
+  replyToCommentHuman(
+    @Request() req: any,
+    @Param('commentId') commentId: string,
+    @Body('replyText') replyText: string,
+  ) {
+    return this.facebookCommentsService.replyToCommentHuman(
+      req.user.tenantId,
+      commentId,
+      replyText,
+    );
+  }
 }

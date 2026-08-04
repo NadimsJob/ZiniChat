@@ -477,6 +477,7 @@ export default function PackagesPage() {
                     { id: 'inbox_multi_agent_collaborators', label: 'Multi-Agent Collaborators', labelBn: 'মাল্টি-এজেন্ট কোলাবরেটর' },
                     { id: 'inbox_multi_ai_assistant_picker', label: 'Multiple AI Assistant Picker', labelBn: 'মাল্টিপল এআই অ্যাসিস্ট্যান্ট পিকার' },
                     { id: 'agent_presence', label: 'Agent Presence Status', labelBn: 'এজেন্ট প্রেজেন্স স্ট্যাটাস' },
+                    { id: 'facebook_comment_automation', label: 'Facebook Comment Automation', labelBn: 'ফেসবুক কমেন্ট অটোমেশন' },
                     { id: 'ai_tool_order_placement', label: 'AI Tool: Auto Order Placement', labelBn: 'এআই টুল: অটো অর্ডার প্লেসমেন্ট' },
                     { id: 'ai_tool_image_reading', label: 'AI Tool: Image Reading', labelBn: 'এআই টুল: ইমেজ রিডিং' },
                     { id: 'ai_tool_support_detection', label: 'AI Tool: Support Detection', labelBn: 'এআই টুল: সাপোর্ট ডিটেকশন' },

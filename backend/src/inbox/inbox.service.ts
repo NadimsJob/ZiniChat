@@ -45,7 +45,7 @@ export class InboxService {
     });
 
     const websiteWidgets = await this.prisma.websiteWidget.findMany({
-      where: { tenantId, isActive: true },
+      where: { tenantId },
       select: {
         id: true,
         name: true,
@@ -56,16 +56,19 @@ export class InboxService {
         heading: true,
         whatsappInboxId: true,
         isAiAutoReplyEnabled: true,
+        isActive: true,
         createdAt: true,
       }
     });
 
     const mappedConnections = connections.map(conn => {
-      const isConnected = conn.status === 'active' || conn.qrStatus === 'CONNECTED';
+      const isInactive = conn.status === 'inactive';
+      const isConnected = !isInactive && (conn.status === 'active' || conn.qrStatus === 'CONNECTED');
       return {
         ...conn,
-        status: isConnected ? 'active' : 'disconnected',
-        isConnected
+        status: isInactive ? 'inactive' : (isConnected ? 'active' : 'disconnected'),
+        isConnected,
+        isActive: !isInactive,
       };
     });
 
@@ -77,19 +80,21 @@ export class InboxService {
           aiEnabled = linkedConn.isAiAutoReplyEnabled;
         }
       }
+      const isWidgetActive = w.isActive ?? true;
       return {
         id: w.id,
         channelType: 'website',
         displayName: w.name || 'Website Widget',
         phoneNumber: w.type === 'WHATSAPP' ? 'WhatsApp Widget' : 'Live Chat Widget',
         provider: w.type,
-        status: 'active',
+        status: isWidgetActive ? 'active' : 'inactive',
         qrStatus: 'CONNECTED',
         isAiAutoReplyEnabled: aiEnabled,
         ignoreGroupMessages: false,
         connectionMethod: 'embed_script',
         createdAt: w.createdAt,
-        isConnected: true,
+        isConnected: isWidgetActive,
+        isActive: isWidgetActive,
         widgetToken: w.widgetToken,
         domain: w.domain,
         primaryColor: w.primaryColor,
@@ -123,18 +128,37 @@ export class InboxService {
         where: { id },
         data: { isAiAutoReplyEnabled }
       });
-
-      if (widget.whatsappInboxId) {
-        await this.prisma.channelConnection.updateMany({
-          where: { id: widget.whatsappInboxId, tenantId },
-          data: { isAiAutoReplyEnabled }
-        });
-      }
-
       return { id: widget.id, isAiAutoReplyEnabled };
     }
 
-    throw new Error('Channel or Widget not found');
+    throw new NotFoundException('Channel or Widget not found');
+  }
+
+  async toggleChannelActiveStatus(tenantId: string, id: string, isActive: boolean) {
+    const conn = await this.prisma.channelConnection.findFirst({
+      where: { id, tenantId }
+    });
+
+    if (conn) {
+      const nextStatus = isActive ? 'active' : 'inactive';
+      return this.prisma.channelConnection.update({
+        where: { id },
+        data: { status: nextStatus }
+      });
+    }
+
+    const widget = await this.prisma.websiteWidget.findFirst({
+      where: { id, tenantId }
+    });
+
+    if (widget) {
+      return this.prisma.websiteWidget.update({
+        where: { id },
+        data: { isActive }
+      });
+    }
+
+    throw new NotFoundException('Channel or Widget not found');
   }
 
   async toggleIgnoreGroupMessages(tenantId: string, id: string, ignoreGroupMessages: boolean) {
@@ -215,6 +239,17 @@ export class InboxService {
     }
 
     let whereClause: any = { tenantId };
+
+    // Exclude conversations belonging to inactive channel connections
+    const inactiveConnections = await this.prisma.channelConnection.findMany({
+      where: { tenantId, status: 'inactive' },
+      select: { id: true }
+    });
+    const inactiveConnectionIds = inactiveConnections.map(c => c.id);
+
+    if (inactiveConnectionIds.length > 0) {
+      whereClause.channelConnectionId = { notIn: inactiveConnectionIds };
+    }
 
     if (user.role === 'agent' && user.agentAccessMode === 'ASSIGNED_CHANNELS') {
       const assignments = await this.prisma.agentChannelAssignment.findMany({

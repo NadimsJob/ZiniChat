@@ -312,4 +312,17 @@ describe('SupportChatService', () => {
     expect(list.length).toBe(1);
     expect(prismaService.supportConversation.findMany).toHaveBeenCalled();
   });
+
+  it('should contain Facebook Comment Automation knowledge in system prompt', () => {
+    expect(DEFAULT_SUPPORT_AI_SYSTEM_PROMPT).toContain('FACEBOOK COMMENT AUTOMATION');
+    expect(DEFAULT_SUPPORT_AI_SYSTEM_PROMPT).toContain('Public Comment Only');
+    expect(DEFAULT_SUPPORT_AI_SYSTEM_PROMPT).toContain('Private Message Only');
+    expect(DEFAULT_SUPPORT_AI_SYSTEM_PROMPT).toContain('Public & Private Both');
+  });
+
+  it('should contain official ZiniChat phone number and contact details in system prompt', () => {
+    expect(DEFAULT_SUPPORT_AI_SYSTEM_PROMPT).toContain('01533894967');
+    expect(DEFAULT_SUPPORT_AI_SYSTEM_PROMPT).toContain('support@zinichat.com');
+    expect(DEFAULT_SUPPORT_AI_SYSTEM_PROMPT).toContain('Uttar Badda');
+  });
 });

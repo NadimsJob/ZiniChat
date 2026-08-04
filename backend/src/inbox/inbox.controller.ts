@@ -39,6 +39,16 @@ export class InboxController {
     return this.inboxService.toggleChannelAiReply(tenantId, channelConnectionId, body.isAiAutoReplyEnabled);
   }
 
+  @Patch('channels/:id/status')
+  async toggleChannelActiveStatus(
+    @Request() req: any,
+    @Param('id') channelConnectionId: string,
+    @Body() body: { isActive: boolean }
+  ) {
+    const tenantId = req.user.tenantId;
+    return this.inboxService.toggleChannelActiveStatus(tenantId, channelConnectionId, body.isActive);
+  }
+
   @Patch('channels/:id/ignore-groups')
   async toggleIgnoreGroupMessages(
     @Request() req: any,

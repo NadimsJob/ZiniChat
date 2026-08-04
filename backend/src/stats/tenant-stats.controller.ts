@@ -83,4 +83,18 @@ export class TenantStatsController {
     const tenantId = req.user.tenantId;
     return this.tenantStatsService.getAiSummary(tenantId);
   }
+
+  @Get('comments/recent')
+  getRecentComments(
+    @Request() req: any,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const tenantId = req.user.tenantId;
+    return this.tenantStatsService.getRecentFacebookComments(
+      tenantId,
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 6,
+    );
+  }
 }

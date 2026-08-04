@@ -3,6 +3,7 @@ import { FacebookCommentsService } from './facebook-comments.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { QuotaService } from '../../tenants/quota.service';
 import { AiService } from '../../ai/ai.service';
+import { InboxService } from '../../inbox/inbox.service';
 
 describe('FacebookCommentsService', () => {
   let service: FacebookCommentsService;
@@ -37,10 +38,16 @@ describe('FacebookCommentsService', () => {
 
   const mockQuotaService = {
     checkAiQuota: jest.fn(),
+    checkFeature: jest.fn().mockResolvedValue(true),
   };
 
   const mockAiService = {
     getConfigs: jest.fn(),
+    generateCompletion: jest.fn().mockResolvedValue('Mock AI comment response'),
+  };
+
+  const mockInboxService = {
+    handleIncomingMessage: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -50,6 +57,7 @@ describe('FacebookCommentsService', () => {
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: QuotaService, useValue: mockQuotaService },
         { provide: AiService, useValue: mockAiService },
+        { provide: InboxService, useValue: mockInboxService },
       ],
     }).compile();
 

@@ -638,6 +638,7 @@ export default function TenantsPage() {
                       { id: 'inbox_multi_agent_collaborators', label: 'Multi-Agent Collaborators' },
                       { id: 'inbox_multi_ai_assistant_picker', label: 'Multiple AI Assistant Picker' },
                       { id: 'agent_presence', label: 'Agent Presence Status' },
+                      { id: 'facebook_comment_automation', label: 'Facebook Comment Automation' },
                       { id: 'ai_tool_order_placement', label: 'AI Tool: Auto Order Placement' },
                       { id: 'ai_tool_image_reading', label: 'AI Tool: Image Reading' },
                       { id: 'ai_tool_support_detection', label: 'AI Tool: Support Detection' },

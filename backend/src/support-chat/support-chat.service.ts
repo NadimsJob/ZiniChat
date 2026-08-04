@@ -84,10 +84,25 @@ ALWAYS format page links using markdown syntax, for example: [এখানে �
    - Simple greetings ("hi", "hello") are automatically answered without opening support tickets.
    - Per-channel AI Auto-Reply toggle on Inbox page & Channel Integration page.
 
-6. IMAGE ANALYSIS COST POLICY:
+6. FACEBOOK COMMENT AUTOMATION (SETUP, MODES & USE):
+   - Overview: Automatically replies to customer comments on connected Facebook Page posts using AI. Each successful reply deducts 1 AI Response credit (zero credit deducted if Meta Graph API fails). Requires 'facebook_comment_automation' feature in active package plan.
+   - Setup & Access: Go to [/dashboard/settings/inboxes](/dashboard/settings/inboxes) and click "Comment Auto-Reply" button on the connected Facebook Page card.
+   - Default Behavior: Works automatically on ALL page posts by default without requiring any Post ID inputs!
+   - Reply Modes:
+     • Public Comment Only: AI posts a public comment reply under the customer's post comment. Normal direct Messenger inbox chat remains 100% active separately.
+     • Private Message Only: Uses Meta's official Private Reply feature to send a 1-on-1 Messenger inbox message to the commenter (within Meta's 7-day window).
+     • Public & Private Both: Posts a public comment reply AND sends a private Messenger inbox message simultaneously.
+   - Advanced Controls:
+     • Trigger Keyword Filter: Filter by specific keywords (e.g. price, dam, inbox) or select "Reply to All Comments".
+     • Excluded Post IDs (Optional): Leave blank by default for all posts. Enter comma-separated Post IDs only if excluding specific posts (e.g. policy updates or sensitive notices).
+     • Custom Prompt Instruction: Customize AI tone and guidelines (e.g. "Keep reply under 2 sentences and ask them to check inbox").
+   - Inbox & Human Re-comment: Go to [/dashboard/inbox](/dashboard/inbox) and click the "FB Comments" channel tab to view post comments, AI responses, and post manual human re-comments directly back to Facebook. Private messages automatically sync into standard Messenger inbox threads.
+   - Dashboard Analytics: Real-time comment metrics and recent comments activity can be viewed at [/dashboard](/dashboard).
+
+7. IMAGE ANALYSIS COST POLICY:
    - When a customer sends an image via WhatsApp/Messenger/Instagram, the AI analyzes it and deducts 5 AI Responses from the tenant's quota per image.
 
-7. BILINGUAL SUPPORT:
+8. BILINGUAL SUPPORT:
    - Platform UI and AI Support seamlessly support English and Bengali (বাংলা).
 
 --------------------------------------------------
@@ -123,6 +138,17 @@ DO NOT calculate via AI text. Call 'redirect_to_dashboard_analytics' or instruct
 If an issue cannot be resolved, ask permission:
 "It appears this issue requires assistance from our technical support team. Would you like me to create a support ticket on your behalf?"
 Upon approval, call 'create_detailed_support_ticket'.
+
+--------------------------------------------------
+# OFFICIAL ZINICHAT CONTACT INFORMATION & HELPLINE
+Whenever a user asks for ZiniChat's phone number, contact number, helpline, customer support phone, WhatsApp support number, office address, or email:
+You MUST state ZiniChat's official contact information clearly:
+- 📞 Official Phone / Helpline / WhatsApp Support: 01533894967 (+8801533894967)
+- 🕒 Support Hours: 9 AM - 6 PM (Saturday to Thursday)
+- ✉️ Support Email: support@zinichat.com
+- 📧 Official Info Email: info@zinichat.com
+- 📍 Office Address: #386, Uttar Badda, Dhaka-1212, Bangladesh
+- 🌐 Official Website: https://zinichat.com
 
 --------------------------------------------------
 # SESSION MEMORY
@@ -278,7 +304,15 @@ export class SupportChatService {
 
 ALL AVAILABLE SYSTEM PLANS (Use for pricing, upgrades & custom requests):
 ${allPlansFormatted}
-- CUSTOM PLAN OPTION: Yes! Custom Plans ARE fully supported. Users can request any custom WhatsApp channels (e.g., 5 channels), custom seats, or custom quotas. Offer to create a ticket for custom setup.`;
+- CUSTOM PLAN OPTION: Yes! Custom Plans ARE fully supported. Users can request any custom WhatsApp channels (e.g., 5 channels), custom seats, or custom quotas. Offer to create a ticket for custom setup.
+
+OFFICIAL ZINICHAT SUPPORT CONTACT DETAILS & HELPLINE:
+- Phone / Helpline / WhatsApp Support: 01533894967 (+8801533894967)
+- Support Hours: 9 AM - 6 PM (Saturday to Thursday)
+- Support Email: support@zinichat.com
+- Official Info Email: info@zinichat.com
+- Office Address: #386, Uttar Badda, Dhaka-1212, Bangladesh
+- Official Website: https://zinichat.com`;
 
   }
 
