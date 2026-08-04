@@ -7,7 +7,7 @@ const getBackendUrl = () => {
 export async function GET() {
   try {
     const backendUrl = getBackendUrl();
-    const res = await fetch(`${backendUrl}/google-analytics/config`, {
+    const res = await fetch(`${backendUrl}/google-analytics/public-config`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
       cache: 'no-store',

@@ -15,6 +15,20 @@ export class GoogleAnalyticsController {
     @InjectQueue('google-analytics') private readonly gaQueue: Queue,
   ) {}
 
+  // Public endpoint — no auth required — called by frontend for anonymous visitor tracking
+  @Get('public-config')
+  async getPublicConfig() {
+    const config = await this.gaService.getConfig();
+    return {
+      measurementId: config.isActive ? config.measurementId : null,
+      isActive: config.isActive,
+      trackPageView: config.trackPageView,
+      trackSignup: config.trackSignup,
+      trackCompleteReg: config.trackCompleteReg,
+      trackLogin: config.trackLogin,
+    };
+  }
+
   @Get('config')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('superadmin')

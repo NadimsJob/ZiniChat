@@ -200,7 +200,7 @@ export class GoogleAnalyticsService {
         {
           name: data.eventName,
           params: {
-            engagement_time_msec: '100',
+            engagement_time_msec: 100,   // Must be a number, not a string
             session_id: Date.now().toString(),
             ...(data.eventParams || {}),
           },
