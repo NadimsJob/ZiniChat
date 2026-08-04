@@ -8,8 +8,9 @@ import InstructionBanner from '@/components/InstructionBanner';
 import toast from 'react-hot-toast';
 import { 
   Plus, Webhook, Trash2, RefreshCw, MessageCircle, PhoneCall, Camera, RotateCcw, 
-  Globe, Code, Zap, Copy, X, Sparkles, Save, Eye, Send
+  Globe, Code, Zap, Copy, X, Sparkles, Save, Eye, Send, MessageSquare
 } from 'lucide-react';
+import CommentConfigModal from './CommentConfigModal';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -18,6 +19,7 @@ export default function InboxesPage() {
   const [connections, setConnections] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [codeModalWidget, setCodeModalWidget] = useState<any | null>(null);
+  const [commentModalChannel, setCommentModalChannel] = useState<any | null>(null);
 
   const fetchConnections = async () => {
     setLoading(true);
@@ -276,6 +278,17 @@ export default function InboxesPage() {
                         </div>
                       )}
 
+                      {conn.channelType?.toLowerCase() === 'messenger' && (
+                        <button
+                          onClick={() => setCommentModalChannel(conn)}
+                          className="px-2.5 py-1 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/20 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition-all shrink-0 cursor-pointer shadow-2xs font-sans mr-2"
+                          title="Configure Facebook Comment Auto-Reply"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5 text-blue-400" />
+                          <span>{language === 'en' ? 'Comment Auto-Reply' : 'কমেন্ট অটো-রিপ্লাই'}</span>
+                        </button>
+                      )}
+
                       <div className="flex items-center gap-2 mr-2">
                         <span className="text-[11px] text-muted-foreground font-semibold font-sans">AI Auto-Reply</span>
                         <button
@@ -337,6 +350,17 @@ export default function InboxesPage() {
         <WidgetConfigModal
           widget={codeModalWidget}
           onClose={() => setCodeModalWidget(null)}
+          onRefresh={fetchConnections}
+          language={language}
+          API={API}
+        />
+      )}
+
+      {/* Facebook Comment Automation Modal */}
+      {commentModalChannel && (
+        <CommentConfigModal
+          channel={commentModalChannel}
+          onClose={() => setCommentModalChannel(null)}
           onRefresh={fetchConnections}
           language={language}
           API={API}

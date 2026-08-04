@@ -44,7 +44,7 @@ export class MessengerAuthService {
 
   private async subscribePageToWebhooks(pageId: string, pageToken: string) {
     try {
-      const url = `https://graph.facebook.com/v21.0/${pageId}/subscribed_apps?subscribed_fields=messages,messaging_postbacks,message_deliveries,message_reads&access_token=${pageToken}`;
+      const url = `https://graph.facebook.com/v21.0/${pageId}/subscribed_apps?subscribed_fields=messages,messaging_postbacks,message_deliveries,message_reads,feed&access_token=${pageToken}`;
       const res = await fetch(url, { method: 'POST' });
       const data = await res.json();
       if (data.success) {

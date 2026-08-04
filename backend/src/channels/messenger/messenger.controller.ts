@@ -2,6 +2,7 @@ import { Controller, Get, Post, Query, Body, Res, Headers, HttpStatus } from '@n
 import type { Response } from 'express';
 import * as crypto from 'crypto';
 import { MessengerService } from './messenger.service';
+import { FacebookCommentsService } from './facebook-comments.service';
 import { InboxService } from '../../inbox/inbox.service';
 import { InboxGateway } from '../../inbox/inbox.gateway';
 
@@ -9,6 +10,7 @@ import { InboxGateway } from '../../inbox/inbox.gateway';
 export class MessengerController {
   constructor(
     private readonly messengerService: MessengerService,
+    private readonly facebookCommentsService: FacebookCommentsService,
     private readonly inboxService: InboxService,
     private readonly inboxGateway: InboxGateway
   ) {}
@@ -48,6 +50,23 @@ export class MessengerController {
     res.sendStatus(HttpStatus.OK);
 
     try {
+      // 1. Handle Facebook Comment Feed Events
+      if (body?.object === 'page' && Array.isArray(body.entry)) {
+        for (const entry of body.entry) {
+          const pageId = entry.id;
+          if (Array.isArray(entry.changes)) {
+            for (const change of entry.changes) {
+              if (change.field === 'feed') {
+                this.facebookCommentsService.processFeedChange(pageId, change).catch(err => {
+                  console.error('Error processing feed comment change:', err);
+                });
+              }
+            }
+          }
+        }
+      }
+
+      // 2. Handle Inbox Direct Messages
       const unifiedMessages = await this.messengerService.parseWebhookPayload(body);
       
       for (const msg of unifiedMessages) {

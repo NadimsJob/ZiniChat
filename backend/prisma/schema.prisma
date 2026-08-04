@@ -74,6 +74,7 @@ model Tenant {
   supportConversations SupportConversation[]
   websiteWidgets       WebsiteWidget[]
   plan                 Plan?                 @relation(fields: [planId], references: [id])
+  facebookCommentLogs  FacebookCommentLog[]
 
   @@map("tenants")
 }
@@ -167,13 +168,47 @@ model ChannelConnection {
   qrStatus             String? // CONNECTING, CONNECTED, DISCONNECTED
   isAiAutoReplyEnabled Boolean          @default(true) // Tenant can toggle AI auto-reply for this specific connection
   ignoreGroupMessages  Boolean          @default(true) // Ignore WhatsApp group messages completely (no inbox, no AI)
+  isCommentAutoReplyEnabled Boolean     @default(false)
+  commentReplyMode     String           @default("public") // public, private, both
+  commentKeywords      String[]         @default([])
+  commentInstruction   String?          @db.Text
+  excludedPostIds      String[]         @default([])
+  hasCommentPermissions Boolean         @default(false)
   createdAt            DateTime         @default(now())
 
-  tenant           Tenant                   @relation(fields: [tenantId], references: [id])
-  agentAssignments AgentChannelAssignment[]
-  conversations    Conversation[]
+  tenant              Tenant                   @relation(fields: [tenantId], references: [id])
+  agentAssignments    AgentChannelAssignment[]
+  conversations       Conversation[]
+  facebookCommentLogs FacebookCommentLog[]
 
   @@map("channel_connections")
+}
+
+model FacebookCommentLog {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId            String   @db.Uuid
+  channelConnectionId String?  @db.Uuid
+  pageId              String
+  postId              String
+  commentId           String   @unique
+  parentId            String?
+  userExternalId      String
+  userName            String?
+  commentText         String   @db.Text
+  replyText           String?  @db.Text
+  privateReplyText    String?  @db.Text
+  replyStatus         String   @default("replied") // replied, skipped, failed
+  skipReason          String?
+  aiCreditsUsed       Int      @default(0)
+  createdAt           DateTime @default(now())
+
+  tenant            Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  channelConnection ChannelConnection? @relation(fields: [channelConnectionId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([pageId])
+  @@index([postId])
+  @@map("facebook_comment_logs")
 }
 
 model AgentChannelAssignment {

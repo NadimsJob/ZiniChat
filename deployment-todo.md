@@ -21,3 +21,21 @@
 
 - [ ] **Step 5: টেস্টিং (Verification)**
   - [ ] এআই-কে কমান্ড দিয়ে টেস্ট সার্ভারে ডেপ্লয় করে দেখা সবকিছু ঠিকঠাক কাজ করছে কিনা।
+
+---
+
+## 🔵 Meta Developer Portal Action Items (Facebook Comment Automation)
+
+- [ ] **1. Webhook Field Subscriptions**
+  - Meta Developer Portal -> App Setup -> **Messenger / Webhooks**
+  - Webhook Subscriptions এ **`feed`** ফিল্ডে টিক চিহ্ন দিন এবং সাবস্ক্রাইব করুন।
+
+- [ ] **2. Meta App Review Submission (Permissions)**
+  - Meta Developer Portal -> **App Review -> Permissions and Features**
+  - নিচের ২টি পারমিশন রিকোয়েস্ট করুন এবং Advanced Access-এর জন্য সাবমিট করুন:
+    1. **`pages_read_engagement`**: ফেসবুক পোস্টের কমেন্ট ও ফিড ইভেন্ট পড়ার অনুমতি।
+    2. **`pages_manage_engagement`**: ফেসবুক পোস্টের কমেন্টে পাবলিক রিপ্লাই দেওয়া ও লাইক/হাইড করার অনুমতি।
+  - **Screencast & Use Case Video**: স্ক্রিনকাস্ট ভিডিও রেকর্ড করে জাস্টিফিকেশন সহ সাবমিট করুন (কীভাবে ZiniChat কাস্টমার সাপোর্টের জন্য কমেন্টে উত্তর দেয়)।
+
+- [ ] **3. Existing Connected Pages Re-Authentication**
+  - পূর্বে কানেক্ট করা পেজগুলোর টোকেনে `pages_manage_engagement` পারমিশন যোগ করার জন্য ড্যাশবোর্ড থেকে পেজগুলো **Reconnect** করান।
