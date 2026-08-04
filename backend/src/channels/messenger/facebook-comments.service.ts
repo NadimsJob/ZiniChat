@@ -64,11 +64,11 @@ export class FacebookCommentsService {
 
     // 3. Find active ChannelConnection for this page
     const connection = await this.prisma.channelConnection.findFirst({
-      where: { externalAccountId: pageId, channelType: 'messenger', status: 'active' },
+      where: { externalAccountId: pageId, channelType: 'messenger' },
     });
 
-    if (!connection) {
-      this.logger.warn(`No active Messenger ChannelConnection found for pageId: ${pageId}`);
+    if (!connection || connection.status === 'inactive') {
+      this.logger.warn(`No active Messenger ChannelConnection found or channel status is inactive for pageId: ${pageId}`);
       return;
     }
 
