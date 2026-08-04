@@ -260,9 +260,13 @@ export class MetaPixelService {
         event_time: Math.floor(Date.now() / 1000),
         action_source: 'website',
         event_source_url: eventData.eventSourceUrl || 'https://zinichat.com',
+        referrer_url: eventData.referrerUrl || undefined,
         user_data: userData,
         custom_data: eventData.customData || {},
       };
+
+      // Remove undefined fields to keep payload clean
+      if (!eventPayload.referrer_url) delete eventPayload.referrer_url;
 
       if (eventData.metaEventId) {
         eventPayload.event_id = eventData.metaEventId;

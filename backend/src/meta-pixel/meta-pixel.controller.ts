@@ -115,6 +115,7 @@ export class MetaPixelController {
     fbPageId?: string;
     clientIp?: string;
     clientUserAgent?: string;
+    referrerUrl?: string;
     customData?: any;
   }) {
     try {
@@ -130,6 +131,7 @@ export class MetaPixelController {
         fbPageId: body.fbPageId,
         clientIp: body.clientIp,
         clientUserAgent: body.clientUserAgent,
+        referrerUrl: body.referrerUrl,
         customData: body.customData || {},
       }, {
         attempts: 3,

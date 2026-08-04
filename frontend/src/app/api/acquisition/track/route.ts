@@ -32,6 +32,7 @@ export async function POST(request: Request) {
 
     const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || undefined;
     const clientUserAgent = request.headers.get('user-agent') || undefined;
+    const referrerUrl = request.headers.get('referer') || undefined;
 
     const res = await fetch(`${backendUrl}/meta-pixel/acquisition/track`, {
       method: 'POST',
@@ -40,6 +41,7 @@ export async function POST(request: Request) {
         ...body,
         clientIp,
         clientUserAgent,
+        referrerUrl,
       }),
     });
 

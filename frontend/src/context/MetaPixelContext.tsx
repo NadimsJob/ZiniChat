@@ -24,50 +24,37 @@ const MetaPixelContext = createContext<MetaPixelContextType>({
   trackEvent: async () => {},
 });
 
-/**
- * Formats a raw fbclid into Meta's required fbc format:
- * fb.1.{unix_timestamp_ms}.{fbclid}
- * See: https://developers.facebook.com/docs/marketing-api/conversions-api/parameters/fbp-and-fbc
- */
-function formatFbc(fbclid: string): string {
-  return `fb.1.${Date.now()}.${fbclid}`;
-}
-
 export const MetaPixelProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [pixelConfig, setPixelConfig] = useState<MetaPixelConfigState | null>(null);
   const [fbp, setFbp] = useState<string | null>(null);
   const [fbc, setFbc] = useState<string | null>(null);
 
   useEffect(() => {
-    // 1. Extract _fbp cookie (set automatically by Meta Pixel browser SDK)
+    // 1. Extract _fbp cookie (set automatically by Meta Pixel browser SDK on fbq init)
     const existingFbp = Cookies.get('_fbp') || null;
     setFbp(existingFbp);
 
-    // 2. Extract and properly format fbc from fbclid URL param or _fbc cookie
+    // 2. Handle fbclid from URL — Meta best practice:
+    //    DO NOT manually set _fbc cookie. Let Meta Pixel SDK set it via fbq('init').
+    //    We only store the raw fbclid in sessionStorage as a backup reference.
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
       const urlFbclid = urlParams.get('fbclid');
 
       if (urlFbclid) {
-        // Fresh fbclid from ad click URL — format and store as _fbc cookie (Meta spec: 90 days)
-        const formattedFbc = formatFbc(urlFbclid);
-        setFbc(formattedFbc);
-        Cookies.set('_fbc', formattedFbc, { expires: 90 });
-        Cookies.set('_fbclid_raw', urlFbclid, { expires: 90 }); // keep raw for reference
-      } else {
-        // Check if Meta Pixel SDK already set _fbc cookie
-        const existingFbc = Cookies.get('_fbc') || null;
-        if (existingFbc) {
-          setFbc(existingFbc);
-        } else {
-          // Fallback: reconstruct fbc from stored raw fbclid if available
-          const storedRawFbclid = Cookies.get('_fbclid_raw');
-          if (storedRawFbclid) {
-            const reconstructedFbc = `fb.1.${Date.now()}.${storedRawFbclid}`;
-            setFbc(reconstructedFbc);
-          }
+        // Save raw fbclid to sessionStorage so we can reference it later if SDK cookie is missing
+        // Note: Meta SDK will create _fbc cookie automatically when fbq('init') is called
+        try {
+          sessionStorage.setItem('_fbclid_session', urlFbclid);
+        } catch {
+          // sessionStorage not available (e.g. private browsing edge cases)
         }
       }
+
+      // Read _fbc from cookie — this will be set by Meta Pixel SDK after fbq('init')
+      // It's also pre-populated by the SDK if fbclid was in the URL
+      const existingFbc = Cookies.get('_fbc') || null;
+      setFbc(existingFbc);
     }
 
     // 3. Fetch Pixel public config from API
@@ -93,15 +80,31 @@ export const MetaPixelProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, []);
 
   // After Meta Pixel SDK loads, it sets _fbc/_fbp cookies automatically.
-  // Re-sync state after a short delay to always use the freshest values.
+  // Re-sync state after a short delay so CAPI calls have the freshest values.
   useEffect(() => {
     const syncMetaCookies = () => {
       const latestFbp = Cookies.get('_fbp');
       const latestFbc = Cookies.get('_fbc');
-      if (latestFbp && !fbp) setFbp(latestFbp);
-      if (latestFbc && !fbc) setFbc(latestFbc);
+
+      if (latestFbp && latestFbp !== fbp) setFbp(latestFbp);
+      if (latestFbc && latestFbc !== fbc) {
+        setFbc(latestFbc);
+      } else if (!latestFbc && !fbc) {
+        // Fallback: if SDK didn't set _fbc but we have a raw fbclid in session, build fbc manually
+        // Format: fb.1.{timestamp}.{fbclid} — only used as last resort
+        try {
+          const rawFbclid = sessionStorage.getItem('_fbclid_session');
+          if (rawFbclid) {
+            setFbc(`fb.1.${Date.now()}.${rawFbclid}`);
+          }
+        } catch {
+          // sessionStorage not available
+        }
+      }
     };
-    const timer = setTimeout(syncMetaCookies, 2000); // give pixel SDK time to set cookies
+
+    // Give Meta Pixel SDK 2 seconds to run fbq('init') and set cookies
+    const timer = setTimeout(syncMetaCookies, 2000);
     return () => clearTimeout(timer);
   }, [fbp, fbc]);
 
@@ -125,6 +128,7 @@ export const MetaPixelProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       s.parentNode.insertBefore(t, s);
     })(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
 
+    // fbq('init') will automatically read fbclid from the URL and create _fbc cookie
     (window as any).fbq('init', pixelId);
     (window as any).fbq('track', 'PageView');
   };
@@ -137,9 +141,9 @@ export const MetaPixelProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       }
 
       // 2. Dual dispatch via internal CAPI proxy route
-      // Always read latest from cookies to ensure freshest fbc/fbp values
-      const activeFbc = fbc || Cookies.get('_fbc') || undefined;
-      const activeFbp = fbp || Cookies.get('_fbp') || undefined;
+      // Always read latest from cookies — Meta SDK may have updated them
+      const activeFbc = Cookies.get('_fbc') || fbc || undefined;
+      const activeFbp = Cookies.get('_fbp') || fbp || undefined;
 
       await fetch('/api/acquisition/track', {
         method: 'POST',
@@ -148,8 +152,8 @@ export const MetaPixelProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           eventName,
           tenantEmail: data?.email || data?.tenantEmail || undefined,
           tenantId: data?.tenantId || undefined,
-          fbClickId: activeFbc,   // Properly formatted fbc: fb.1.{timestamp}.{fbclid}
-          fbPageId: activeFbp,    // Meta's _fbp browser cookie value
+          fbClickId: activeFbc,  // _fbc cookie value (set by Meta Pixel SDK, not us)
+          fbPageId: activeFbp,   // _fbp cookie value (set by Meta Pixel SDK)
           customData: data,
         }),
       });
