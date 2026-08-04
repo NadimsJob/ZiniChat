@@ -433,7 +433,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
                   return (
                     <div key={item.name} className="flex flex-col relative">
                       <Link 
-                        id={item.id}
+                        id={(item as any).id}
                         href={item.href}
                         title={isSidebarCollapsed ? item.name : undefined}
                         onClick={(e) => {
