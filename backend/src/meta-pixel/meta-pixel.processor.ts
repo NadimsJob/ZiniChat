@@ -22,9 +22,9 @@ export class MetaPixelProcessor extends WorkerHost {
 
     const config = await this.metaPixelService.getPixelConfig();
 
-    if (!config.isActive) {
-      this.logger.log('Meta Pixel is inactive. Skipping acquisition event tracking.');
-      return { skipped: true, reason: 'pixel_inactive' };
+    if (!config.isActive || !config.isCapiEnabled) {
+      this.logger.log('Meta Pixel or CAPI is inactive. Skipping acquisition event tracking.');
+      return { skipped: true, reason: 'pixel_or_capi_inactive' };
     }
 
     // Check event specific tracking toggles

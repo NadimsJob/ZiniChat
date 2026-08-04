@@ -221,8 +221,8 @@ export class MetaPixelService {
 
   async sendEventToMeta(eventName: string, eventData: any): Promise<boolean> {
     const config = await this.getPixelConfig();
-    if (!config.isActive) {
-      this.logger.log('Meta Pixel tracking disabled in config');
+    if (!config.isActive || !config.isCapiEnabled) {
+      this.logger.log('Meta Pixel or CAPI tracking disabled in config');
       return false;
     }
 
@@ -253,6 +253,7 @@ export class MetaPixelService {
         event_name: eventName,
         event_time: Math.floor(Date.now() / 1000),
         action_source: 'website',
+        event_source_url: eventData.eventSourceUrl || 'https://zinichat.com',
         user_data: userData,
         custom_data: eventData.customData || {},
       };
