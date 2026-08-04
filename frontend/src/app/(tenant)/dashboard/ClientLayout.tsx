@@ -316,42 +316,42 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  return requiredFeature.some(f => allowedFeatures.includes(f));
  };
 
- const menuGroups = [
- {
- title: language === 'en' ? 'MY HOME' : 'আমার হোম',
- items: [
- { name: language === 'en' ? 'Dashboard' : 'ড্যাশবোর্ড', icon: LayoutGrid, href: '/dashboard' },
- { name: language === 'en' ? 'Live Inbox' : 'লাইভ ইনবক্স', icon: Inbox, href: '/dashboard/inbox', id: 'sidebar-inbox' },
- { name: language === 'en' ? 'Leads' : 'লিডস', icon: UserCircle, href: '/dashboard/leads' },
- { name: language === 'en' ? 'Product List' : 'প্রোডাক্ট লিস্ট', icon: ShoppingCart, href: '/dashboard/products' },
- { name: language === 'en' ? 'Manage Order' : 'ম্যানেজ অর্ডার', icon: ShoppingBag, href: '/dashboard/orders' },
- { name: language === 'en' ? 'Broadcasts' : 'ব্রডকাস্ট', icon: Megaphone, href: '/dashboard/broadcasts' },
- ]
- },
- {
- title: language === 'en' ? 'AUTOMATIONS' : 'অটোমেশন',
- items: [
- { name: language === 'en' ? 'Channel Integration' : 'চ্যানেল ইন্টিগ্রেশন', icon: Webhook, href: '/dashboard/settings/inboxes', id: 'sidebar-inboxes' },
- { name: language === 'en' ? 'AI Training' : 'এআই ট্রেইনিং', icon: Zap, href: '/dashboard/settings/ai-training', id: 'sidebar-ai-training' },
- ]
- },
- {
- title: language === 'en' ? 'SETTINGS' : 'সেটিংস',
- items: [
- { name: language === 'en' ? 'Team' : 'টিম', icon: UserCircle, href: '/dashboard/team' },
-    { name: language === 'en' ? 'Tags' : 'ট্যাগ', icon: Tag, href: '/dashboard/settings/labels' },
- { name: language === 'en' ? 'Storage' : 'স্টোরেজ', icon: Settings2, href: '/dashboard/settings/storage' },
- { name: language === 'en' ? 'Subscription' : 'সাবস্ক্রিপশন', icon: Crown, href: '/dashboard/settings/subscription' },
- { name: language === 'en' ? 'Billing History' : 'বিলিং হিস্ট্রি', icon: Receipt, href: '/dashboard/settings/billing-history' },
- ]
- },
- {
- title: language === 'en' ? 'SUPPORT' : 'সাপোর্ট',
- items: [
- { name: language === 'en' ? 'Support Ticket' : 'সাপোর্ট টিকিট', icon: MessageSquare, href: '/dashboard/support' },
- ]
- }
- ];
+  const menuGroups = [
+    {
+      title: language === 'en' ? 'MY HOME' : 'আমার হোম',
+      items: [
+        { name: language === 'en' ? 'Dashboard' : 'ড্যাশবোর্ড', icon: LayoutGrid, href: '/dashboard' },
+      ]
+    },
+    {
+      title: language === 'en' ? 'AUTOMATION' : 'অটোমেশন',
+      items: [
+        { name: language === 'en' ? 'Live Inbox' : 'লাইভ ইনবক্স', icon: Inbox, href: '/dashboard/inbox', id: 'sidebar-inbox' },
+        { name: language === 'en' ? 'Channel Integration' : 'চ্যানেল ইন্টিগ্রেশন', icon: Webhook, href: '/dashboard/settings/inboxes', id: 'sidebar-inboxes' },
+        { name: language === 'en' ? 'AI Training' : 'এআই ট্রেইনিং', icon: Zap, href: '/dashboard/settings/ai-training', id: 'sidebar-ai-training' },
+      ]
+    },
+    {
+      title: language === 'en' ? 'OTHERS' : 'অন্যান্য',
+      items: [
+        { name: language === 'en' ? 'Leads' : 'লিডস', icon: UserCircle, href: '/dashboard/leads' },
+        { name: language === 'en' ? 'Product List' : 'প্রোডাক্ট লিস্ট', icon: ShoppingCart, href: '/dashboard/products' },
+        { name: language === 'en' ? 'Manage Order' : 'ম্যানেজ অর্ডার', icon: ShoppingBag, href: '/dashboard/orders' },
+        { name: language === 'en' ? 'Broadcasts' : 'ব্রডকাস্ট', icon: Megaphone, href: '/dashboard/broadcasts' },
+        { name: language === 'en' ? 'Team' : 'টিম', icon: UserCircle, href: '/dashboard/team' },
+        { name: language === 'en' ? 'Tags' : 'ট্যাগ', icon: Tag, href: '/dashboard/settings/labels' },
+        { name: language === 'en' ? 'Support Ticket' : 'সাপোর্ট টিকিট', icon: MessageSquare, href: '/dashboard/support' },
+      ]
+    },
+    {
+      title: language === 'en' ? 'SETTINGS' : 'সেটিংস',
+      items: [
+        { name: language === 'en' ? 'Storage' : 'স্টোরেজ', icon: Settings2, href: '/dashboard/settings/storage' },
+        { name: language === 'en' ? 'Subscription' : 'সাবস্ক্রিপশন', icon: Crown, href: '/dashboard/settings/subscription' },
+        { name: language === 'en' ? 'Billing History' : 'বিলিং হিস্ট্রি', icon: Receipt, href: '/dashboard/settings/billing-history' },
+      ]
+    }
+  ];
 
  if (pathname === '/dashboard/onboarding') {
  return (
