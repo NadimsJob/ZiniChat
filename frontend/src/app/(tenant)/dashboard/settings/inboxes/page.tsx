@@ -257,6 +257,7 @@ export default function InboxesPage() {
             ) : (
               connections.map(conn => {
                 const isChannelInactive = conn.status === 'inactive' || conn.isActive === false;
+                const isDisconnected = !isChannelInactive && (conn.status === 'disconnected' || conn.qrStatus === 'DISCONNECTED');
                 const isActive = !isChannelInactive && (conn.isConnected === true || conn.status === 'active' || conn.qrStatus === 'CONNECTED');
                 
                 return (
@@ -293,7 +294,7 @@ export default function InboxesPage() {
                     </div>
                     
                     <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-border">
-                      {!isActive && (
+                      {isDisconnected && (
                         <Link
                           href="/dashboard/settings/inboxes/new"
                           className="px-2.5 py-1 bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border border-amber-500/20 rounded-lg text-[11px] font-bold flex items-center gap-1 transition-all shrink-0 cursor-pointer font-sans"
