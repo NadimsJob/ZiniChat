@@ -13,38 +13,60 @@ interface MetaPixelConfigState {
 interface MetaPixelContextType {
   pixelConfig: MetaPixelConfigState | null;
   fbp: string | null;
-  fbclid: string | null;
+  fbc: string | null;
   trackEvent: (eventName: string, data?: any) => Promise<void>;
 }
 
 const MetaPixelContext = createContext<MetaPixelContextType>({
   pixelConfig: null,
   fbp: null,
-  fbclid: null,
+  fbc: null,
   trackEvent: async () => {},
 });
+
+/**
+ * Formats a raw fbclid into Meta's required fbc format:
+ * fb.1.{unix_timestamp_ms}.{fbclid}
+ * See: https://developers.facebook.com/docs/marketing-api/conversions-api/parameters/fbp-and-fbc
+ */
+function formatFbc(fbclid: string): string {
+  return `fb.1.${Date.now()}.${fbclid}`;
+}
 
 export const MetaPixelProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [pixelConfig, setPixelConfig] = useState<MetaPixelConfigState | null>(null);
   const [fbp, setFbp] = useState<string | null>(null);
-  const [fbclid, setFbclid] = useState<string | null>(null);
+  const [fbc, setFbc] = useState<string | null>(null);
 
   useEffect(() => {
-    // 1. Extract fbp cookie
+    // 1. Extract _fbp cookie (set automatically by Meta Pixel browser SDK)
     const existingFbp = Cookies.get('_fbp') || null;
     setFbp(existingFbp);
 
-    // 2. Extract fbclid from URL
+    // 2. Extract and properly format fbc from fbclid URL param or _fbc cookie
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
       const urlFbclid = urlParams.get('fbclid');
+
       if (urlFbclid) {
-        setFbclid(urlFbclid);
-        // Persist fbclid in session cookie for conversion matching
-        Cookies.set('_fbclid', urlFbclid, { expires: 7 });
+        // Fresh fbclid from ad click URL — format and store as _fbc cookie (Meta spec: 90 days)
+        const formattedFbc = formatFbc(urlFbclid);
+        setFbc(formattedFbc);
+        Cookies.set('_fbc', formattedFbc, { expires: 90 });
+        Cookies.set('_fbclid_raw', urlFbclid, { expires: 90 }); // keep raw for reference
       } else {
-        const storedFbclid = Cookies.get('_fbclid');
-        if (storedFbclid) setFbclid(storedFbclid);
+        // Check if Meta Pixel SDK already set _fbc cookie
+        const existingFbc = Cookies.get('_fbc') || null;
+        if (existingFbc) {
+          setFbc(existingFbc);
+        } else {
+          // Fallback: reconstruct fbc from stored raw fbclid if available
+          const storedRawFbclid = Cookies.get('_fbclid_raw');
+          if (storedRawFbclid) {
+            const reconstructedFbc = `fb.1.${Date.now()}.${storedRawFbclid}`;
+            setFbc(reconstructedFbc);
+          }
+        }
       }
     }
 
@@ -69,6 +91,19 @@ export const MetaPixelProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     fetchConfig();
   }, []);
+
+  // After Meta Pixel SDK loads, it sets _fbc/_fbp cookies automatically.
+  // Re-sync state after a short delay to always use the freshest values.
+  useEffect(() => {
+    const syncMetaCookies = () => {
+      const latestFbp = Cookies.get('_fbp');
+      const latestFbc = Cookies.get('_fbc');
+      if (latestFbp && !fbp) setFbp(latestFbp);
+      if (latestFbc && !fbc) setFbc(latestFbc);
+    };
+    const timer = setTimeout(syncMetaCookies, 2000); // give pixel SDK time to set cookies
+    return () => clearTimeout(timer);
+  }, [fbp, fbc]);
 
   const initMetaPixelScript = (pixelId: string) => {
     if ((window as any).fbq) return;
@@ -102,7 +137,8 @@ export const MetaPixelProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       }
 
       // 2. Dual dispatch via internal CAPI proxy route
-      const activeFbclid = fbclid || Cookies.get('_fbclid') || undefined;
+      // Always read latest from cookies to ensure freshest fbc/fbp values
+      const activeFbc = fbc || Cookies.get('_fbc') || undefined;
       const activeFbp = fbp || Cookies.get('_fbp') || undefined;
 
       await fetch('/api/acquisition/track', {
@@ -112,8 +148,8 @@ export const MetaPixelProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           eventName,
           tenantEmail: data?.email || data?.tenantEmail || undefined,
           tenantId: data?.tenantId || undefined,
-          fbClickId: activeFbclid,
-          fbPageId: activeFbp,
+          fbClickId: activeFbc,   // Properly formatted fbc: fb.1.{timestamp}.{fbclid}
+          fbPageId: activeFbp,    // Meta's _fbp browser cookie value
           customData: data,
         }),
       });
@@ -123,7 +159,7 @@ export const MetaPixelProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   return (
-    <MetaPixelContext.Provider value={{ pixelConfig, fbp, fbclid, trackEvent }}>
+    <MetaPixelContext.Provider value={{ pixelConfig, fbp, fbc, trackEvent }}>
       {children}
     </MetaPixelContext.Provider>
   );
