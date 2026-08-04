@@ -28,13 +28,13 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground transition-colors duration-300">
       {/* Navbar */}
-      <header className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto flex h-20 items-center justify-between px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-6">
-            <Link href="/" className="flex items-center hover:opacity-90 transition-opacity">
-              <img src="/logo.png" alt="ZiniChat Logo" className="h-16 sm:h-16 md:h-16 w-auto object-contain" />
+      <header className="sticky top-0 z-50 w-full border-b border-border bg-background/90 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto flex h-16 sm:h-20 items-center justify-between px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-4 lg:gap-8 shrink-0">
+            <Link href="/" className="flex items-center hover:opacity-90 transition-opacity shrink-0">
+              <img src="/logo.png" alt="ZiniChat Logo" className="h-9 sm:h-11 md:h-12 w-auto object-contain shrink-0" />
             </Link>
-            <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
+            <nav className="hidden lg:flex items-center gap-6 text-sm font-medium text-muted-foreground">
               <Link href="/features" className="hover:text-foreground transition-colors">
                 {language === 'en' ? 'Features' : 'ফিচার্স'}
               </Link>
@@ -53,7 +53,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
             </nav>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             {/* Language Toggle - Exact Pill Switcher as Tenant Panel */}
             <button
               onClick={() => setLanguage(language === 'en' ? 'bn' : 'en')}
@@ -69,15 +69,15 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
               <span className={`relative z-10 w-1/2 text-[10px] font-bold text-center transition-colors ${language === 'bn' ? 'text-white' : 'text-slate-500 dark:text-zinc-400'}`}>BN</span>
             </button>
 
-
-            <Link href="/login" className="hidden sm:flex items-center justify-center h-9 px-5 rounded-full bg-primary text-primary-foreground text-xs font-bold hover:bg-primary/90 transition-all shadow-sm">
+            <Link href="/login" className="hidden sm:inline-flex items-center justify-center h-9 px-4 sm:px-5 rounded-full bg-primary text-primary-foreground text-xs font-bold hover:bg-primary/90 transition-all shadow-sm shrink-0">
               {language === 'en' ? 'Login' : 'লগইন'} <ArrowRight className="ml-1 w-3.5 h-3.5" />
             </Link>
 
             {/* Mobile Menu Toggle */}
             <button 
-              className="md:hidden p-2 text-foreground rounded-md hover:bg-muted" 
+              className="lg:hidden p-2 text-foreground rounded-xl hover:bg-muted/80 transition-colors shrink-0" 
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              aria-label="Toggle navigation menu"
             >
               {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -86,24 +86,29 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
 
         {/* Mobile Menu Dropdown */}
         {isMobileMenuOpen && (
-          <div className="md:hidden absolute top-20 left-0 w-full bg-background border-b border-border shadow-lg p-4 flex flex-col gap-2">
-            <Link href="/features" className="text-sm font-medium hover:text-primary transition-colors py-3 border-b border-border/50" onClick={() => setIsMobileMenuOpen(false)}>
-              {language === 'en' ? 'Features' : 'ফিচার্স'}
+          <div className="lg:hidden absolute top-full left-0 w-full bg-background/95 backdrop-blur-xl border-b border-border shadow-2xl p-5 flex flex-col gap-1 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+            <Link href="/features" className="text-sm font-semibold hover:text-primary transition-colors py-3 border-b border-border/40 flex items-center justify-between" onClick={() => setIsMobileMenuOpen(false)}>
+              <span>{language === 'en' ? 'Features' : 'ফিচার্স'}</span>
+              <ArrowRight className="w-4 h-4 text-muted-foreground" />
             </Link>
-            <Link href="/pricing" className="text-sm font-medium hover:text-primary transition-colors py-3 border-b border-border/50" onClick={() => setIsMobileMenuOpen(false)}>
-              {language === 'en' ? 'Pricing' : 'প্রাইসিং'}
+            <Link href="/pricing" className="text-sm font-semibold hover:text-primary transition-colors py-3 border-b border-border/40 flex items-center justify-between" onClick={() => setIsMobileMenuOpen(false)}>
+              <span>{language === 'en' ? 'Pricing' : 'প্রাইসিং'}</span>
+              <ArrowRight className="w-4 h-4 text-muted-foreground" />
             </Link>
-            <Link href="/about" className="text-sm font-medium hover:text-primary transition-colors py-3 border-b border-border/50" onClick={() => setIsMobileMenuOpen(false)}>
-              {language === 'en' ? 'About Us' : 'আমাদের সম্পর্কে'}
+            <Link href="/about" className="text-sm font-semibold hover:text-primary transition-colors py-3 border-b border-border/40 flex items-center justify-between" onClick={() => setIsMobileMenuOpen(false)}>
+              <span>{language === 'en' ? 'About Us' : 'আমাদের সম্পর্কে'}</span>
+              <ArrowRight className="w-4 h-4 text-muted-foreground" />
             </Link>
-            <Link href="/faq" className="text-sm font-medium hover:text-primary transition-colors py-3 border-b border-border/50" onClick={() => setIsMobileMenuOpen(false)}>
-              {language === 'en' ? 'FAQ' : 'সাধারণ জিজ্ঞাসা'}
+            <Link href="/faq" className="text-sm font-semibold hover:text-primary transition-colors py-3 border-b border-border/40 flex items-center justify-between" onClick={() => setIsMobileMenuOpen(false)}>
+              <span>{language === 'en' ? 'FAQ' : 'সাধারণ জিজ্ঞাসা'}</span>
+              <ArrowRight className="w-4 h-4 text-muted-foreground" />
             </Link>
-            <Link href="/contact" className="text-sm font-medium hover:text-primary transition-colors py-3 border-b border-border/50" onClick={() => setIsMobileMenuOpen(false)}>
-              {language === 'en' ? 'Contact' : 'যোগাযোগ'}
+            <Link href="/contact" className="text-sm font-semibold hover:text-primary transition-colors py-3 border-b border-border/40 flex items-center justify-between" onClick={() => setIsMobileMenuOpen(false)}>
+              <span>{language === 'en' ? 'Contact' : 'যোগাযোগ'}</span>
+              <ArrowRight className="w-4 h-4 text-muted-foreground" />
             </Link>
-            <Link href="/login" className="sm:hidden flex items-center justify-center h-11 rounded-full bg-primary text-primary-foreground text-sm font-bold hover:bg-primary/90 mt-2 shadow-sm" onClick={() => setIsMobileMenuOpen(false)}>
-              {language === 'en' ? 'Login' : 'লগইন'} <ArrowRight className="ml-1 w-4 h-4" />
+            <Link href="/login" className="flex items-center justify-center h-11 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:bg-primary/90 mt-4 shadow-md transition-all" onClick={() => setIsMobileMenuOpen(false)}>
+              {language === 'en' ? 'Login' : 'লগইন'} <ArrowRight className="ml-1.5 w-4 h-4" />
             </Link>
           </div>
         )}

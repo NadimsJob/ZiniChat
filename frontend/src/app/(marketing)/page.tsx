@@ -180,7 +180,7 @@ export default function HomePage() {
               </div>
             </div>
             
-            <h1 className="mb-4 text-3xl font-extrabold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl text-foreground">
+            <h1 className="mb-4 text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-foreground leading-snug sm:leading-none break-words">
               {language === 'en' ? config.heroTitle : (config.heroTitleBn || config.heroTitle)}
             </h1>
             
