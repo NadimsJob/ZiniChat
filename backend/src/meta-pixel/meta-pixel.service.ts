@@ -248,6 +248,12 @@ export class MetaPixelService {
       if (eventData.fbPageId) {
         userData.fbp = eventData.fbPageId;
       }
+      if (eventData.clientIp) {
+        userData.client_ip_address = eventData.clientIp;
+      }
+      if (eventData.clientUserAgent) {
+        userData.client_user_agent = eventData.clientUserAgent;
+      }
 
       const eventPayload: any = {
         event_name: eventName,

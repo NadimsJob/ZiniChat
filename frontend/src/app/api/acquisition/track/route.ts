@@ -30,10 +30,17 @@ export async function POST(request: Request) {
     const body = await request.json();
     const backendUrl = getBackendUrl();
 
+    const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || undefined;
+    const clientUserAgent = request.headers.get('user-agent') || undefined;
+
     const res = await fetch(`${backendUrl}/meta-pixel/acquisition/track`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      body: JSON.stringify({
+        ...body,
+        clientIp,
+        clientUserAgent,
+      }),
     });
 
     const data = await res.json();

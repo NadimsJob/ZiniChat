@@ -113,6 +113,8 @@ export class MetaPixelController {
     tenantId?: string;
     fbClickId?: string;
     fbPageId?: string;
+    clientIp?: string;
+    clientUserAgent?: string;
     customData?: any;
   }) {
     try {
@@ -126,6 +128,8 @@ export class MetaPixelController {
         tenantId: body.tenantId,
         fbClickId: body.fbClickId,
         fbPageId: body.fbPageId,
+        clientIp: body.clientIp,
+        clientUserAgent: body.clientUserAgent,
         customData: body.customData || {},
       }, {
         attempts: 3,

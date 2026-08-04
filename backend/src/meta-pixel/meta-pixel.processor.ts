@@ -17,7 +17,7 @@ export class MetaPixelProcessor extends WorkerHost {
       return;
     }
 
-    const { eventName, tenantEmail, tenantId, eventValue, fbClickId, fbPageId, metaEventId, customData } = job.data;
+    const { eventName, tenantEmail, tenantId, eventValue, fbClickId, fbPageId, clientIp, clientUserAgent, metaEventId, customData } = job.data;
     this.logger.log(`Processing Meta acquisition tracking job: ${eventName} (attempt ${job.attemptsMade + 1})`);
 
     const config = await this.metaPixelService.getPixelConfig();
@@ -49,6 +49,8 @@ export class MetaPixelProcessor extends WorkerHost {
       tenantId,
       fbClickId,
       fbPageId,
+      clientIp,
+      clientUserAgent,
       metaEventId: metaEventId || `evt_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
       customData: {
         ...(customData || {}),
