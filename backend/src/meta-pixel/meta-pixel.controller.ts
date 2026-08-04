@@ -15,6 +15,15 @@ export class MetaPixelController {
     @InjectQueue('meta-pixel') private readonly metaPixelQueue: Queue,
   ) {}
 
+  @Get('public-config')
+  async getPublicConfig() {
+    const config = await this.metaPixelService.getPixelConfig();
+    return {
+      pixelId: config.pixelId,
+      isActive: config.isActive,
+    };
+  }
+
   @Get('config')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('superadmin')

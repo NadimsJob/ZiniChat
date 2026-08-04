@@ -7,7 +7,7 @@ const getBackendUrl = () => {
 export async function GET() {
   try {
     const backendUrl = getBackendUrl();
-    const res = await fetch(`${backendUrl}/meta-pixel/config`, {
+    const res = await fetch(`${backendUrl}/meta-pixel/public-config`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
       cache: 'no-store',
