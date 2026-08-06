@@ -825,7 +825,7 @@ export default function InboxPage() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] overflow-hidden bg-background text-foreground">
+    <div className="flex flex-col h-[calc(100vh-8rem)] md:h-[calc(100vh-4rem)] overflow-hidden bg-background text-foreground">
       
       {/* FULL-WIDTH TOP HEADER */}
       <div className="w-full flex items-center justify-between border-b border-border bg-surface/80 backdrop-blur-md shrink-0 px-2 sm:px-4 py-2 z-10 shadow-sm overflow-x-auto custom-scrollbar">
@@ -1350,7 +1350,7 @@ export default function InboxPage() {
               {/* Archive */}
               <button
                 onClick={handleToggleArchive}
-                className={`p-1.5 rounded-lg hover:bg-muted transition-colors ${activeConv.isArchived ? 'text-blue-600' : ''}`}
+                className={`hidden md:inline-flex p-1.5 rounded-lg hover:bg-muted transition-colors ${activeConv.isArchived ? 'text-blue-600' : ''}`}
                 title={activeConv.isArchived
                   ? (language === 'en' ? 'Unarchive Conversation' : 'আনআর্কাইভ করুন')
                   : (language === 'en' ? 'Archive Conversation — Move inactive chat out of active inbox' : 'আর্কাইভ করুন — নিষ্ক্রিয় চ্যাট ইনবক্স থেকে সরাতে')}
@@ -1361,7 +1361,7 @@ export default function InboxPage() {
               {/* Block */}
               <button
                 onClick={handleToggleBlock}
-                className={`p-1.5 rounded-lg hover:bg-muted transition-colors ${activeConv.isBlocked || activeConv.contact?.isBlocked ? 'text-rose-600 bg-rose-500/10' : ''}`}
+                className={`hidden md:inline-flex p-1.5 rounded-lg hover:bg-muted transition-colors ${activeConv.isBlocked || activeConv.contact?.isBlocked ? 'text-rose-600 bg-rose-500/10' : ''}`}
                 title={activeConv.isBlocked || activeConv.contact?.isBlocked
                   ? (language === 'en' ? 'Unblock Contact' : 'আনব্লক করুন')
                   : (language === 'en' ? 'Block Contact — Block contact and stop AI auto-replies' : 'ব্লক করুন — কাস্টমারকে ব্লক করতে ও এআই অটো-রিপ্লাই বন্ধ করতে')}
@@ -1370,7 +1370,7 @@ export default function InboxPage() {
               </button>
 
               {/* Assign Agent */}
-              <div className="relative">
+              <div className="relative" ref={assignMenuRef}>
                 <button
                   onClick={() => setShowAssignMenu(!showAssignMenu)}
                   className="p-1.5 rounded-lg hover:bg-muted transition-colors"
@@ -1394,7 +1394,7 @@ export default function InboxPage() {
 
               {/* Add Collaborator */}
               {hasCollaborators && (
-                <div className="relative">
+                <div className="relative hidden md:block" ref={collaboratorMenuRef}>
                   <button
                     onClick={() => setShowCollaboratorMenu(!showCollaboratorMenu)}
                     className="p-1.5 rounded-lg hover:bg-muted transition-colors"
@@ -1425,7 +1425,7 @@ export default function InboxPage() {
                     setShowRightSidebar(!showRightSidebar);
                   }
                 }}
-                className={`p-1.5 rounded-lg hover:bg-muted transition-colors ${showRightSidebar ? 'text-primary lg:text-primary' : ''} ${mobilePanelView === 'crm' ? 'text-primary lg:text-inherit' : ''}`}
+                className={`hidden lg:inline-flex p-1.5 rounded-lg hover:bg-muted transition-colors ${showRightSidebar ? 'text-primary lg:text-primary' : ''} ${mobilePanelView === 'crm' ? 'text-primary lg:text-inherit' : ''}`}
                 title={language === 'en' ? 'Toggle Sidebar — Show or hide customer CRM details & notes' : 'সাইডবার হাইড/শো — কাস্টমার CRM ডিটেইলস প্যানেল'}
               >
                 <PanelRight className="w-4 h-4" />
@@ -1434,7 +1434,7 @@ export default function InboxPage() {
               {/* Delete */}
               <button
                 onClick={handleDeleteConversation}
-                className="p-1.5 rounded-lg hover:bg-red-50 text-red-500 transition-colors"
+                className="hidden md:inline-flex p-1.5 rounded-lg hover:bg-red-50 text-red-500 transition-colors"
                 title={language === 'en' ? 'Delete Conversation — Permanently delete chat and messages' : 'কনভারসেশন মুছুন — স্থায়ীভাবে সকল মেসেজ মুছে ফেলতে'}
               >
                 <Trash2 className="w-4 h-4" />
@@ -1640,7 +1640,7 @@ export default function InboxPage() {
 
                     {/* Multiple AI Assistant Picker Dropdown */}
                     {hasAiPicker && aiAssistants.length > 1 && (
-                      <div className="relative">
+                      <div className="relative" ref={aiPickerMenuRef}>
                         <button
                           type="button"
                           onClick={() => setShowAiPickerMenu(!showAiPickerMenu)}

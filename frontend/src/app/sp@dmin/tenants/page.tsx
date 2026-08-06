@@ -362,7 +362,7 @@ export default function TenantsPage() {
                   <td className="px-3 py-2 text-right">
                     <div className="flex justify-end items-center gap-2">
                       <Link
-                        href={`/superadmin/tenants/${tenant.id}`}
+                        href={`/sp@dmin/tenants/${tenant.id}`}
                         className="text-xs px-3 py-1.5 rounded-lg font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors flex items-center gap-1.5"
                       >
                         <Eye className="w-3.5 h-3.5" />

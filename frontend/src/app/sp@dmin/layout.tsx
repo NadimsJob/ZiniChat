@@ -4,7 +4,7 @@ import ServiceWorkerRegistry from '@/components/ServiceWorkerRegistry';
 import PwaInstallPrompt from '@/components/PwaInstallPrompt';
 
 export const metadata: Metadata = {
-  manifest: '/api/manifest/superadmin',
+  manifest: '/api/manifest/sp@dmin',
 };
 
 export default function SuperadminServerLayout({

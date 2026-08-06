@@ -86,7 +86,7 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
   const handleLogout = () => {
     Cookies.remove('access_token');
     Cookies.remove('user_role');
-    router.push('/superadmin/login');
+    router.push('/sp@dmin/login');
   };
 
   const toggleSubmenu = (menuName: string, e: React.MouseEvent) => {
@@ -95,17 +95,17 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
   };
 
   const navItems = [
-    { name: language === 'en' ? 'Platform Overview' : 'প্ল্যাটফর্ম ওভারভিউ', icon: LayoutGrid, href: '/superadmin', show: true },
-    { name: language === 'en' ? 'Tenants' : 'টেন্যান্টস', icon: Users, href: '/superadmin/tenants', show: hasPermission('manage:tenants') },
-    { name: language === 'en' ? 'Packages & Plans' : 'প্যাকেজ ও প্ল্যান', icon: Package, href: '/superadmin/packages', show: hasPermission('manage:billing') },
-    { name: language === 'en' ? 'Coupons' : 'কুপন', icon: Package, href: '/superadmin/coupons', show: hasPermission('manage:billing') },
-    { name: language === 'en' ? 'Billing' : 'বিলিং', icon: CreditCard, href: '/superadmin/billing', show: hasPermission('manage:billing') },
-    { name: language === 'en' ? 'Pending Payments' : 'পেন্ডিং পেমেন্ট', icon: Clock, href: '/superadmin/payments', show: hasPermission('manage:billing') },
-    { name: language === 'en' ? 'Audit Logs' : 'অডিট লগস', icon: ClipboardList, href: '/superadmin/audit-logs', show: hasPermission('manage:audit') },
-    { name: language === 'en' ? 'Inquiries' : 'ইনকোয়ারি', icon: Mail, href: '/superadmin/inquiries', show: hasPermission('manage:site') },
-    { name: language === 'en' ? 'Support Tickets' : 'সাপোর্ট টিকিট', icon: ClipboardList, href: '/superadmin/tickets', show: hasPermission('manage:site') },
-    { name: language === 'en' ? 'Message Templates' : 'মেসেজ টেমপ্লেটস', icon: MessageSquare, href: '/superadmin/templates', show: hasPermission('manage:site') },
-    { name: language === 'en' ? 'AI Support Chats' : 'এআই সাপোর্ট চ্যাটস', icon: Bot, href: '/superadmin/support-chats', show: hasPermission('manage:site') },
+    { name: language === 'en' ? 'Platform Overview' : 'প্ল্যাটফর্ম ওভারভিউ', icon: LayoutGrid, href: '/sp@dmin', show: true },
+    { name: language === 'en' ? 'Tenants' : 'টেন্যান্টস', icon: Users, href: '/sp@dmin/tenants', show: hasPermission('manage:tenants') },
+    { name: language === 'en' ? 'Packages & Plans' : 'প্যাকেজ ও প্ল্যান', icon: Package, href: '/sp@dmin/packages', show: hasPermission('manage:billing') },
+    { name: language === 'en' ? 'Coupons' : 'কুপন', icon: Package, href: '/sp@dmin/coupons', show: hasPermission('manage:billing') },
+    { name: language === 'en' ? 'Billing' : 'বিলিং', icon: CreditCard, href: '/sp@dmin/billing', show: hasPermission('manage:billing') },
+    { name: language === 'en' ? 'Pending Payments' : 'পেন্ডিং পেমেন্ট', icon: Clock, href: '/sp@dmin/payments', show: hasPermission('manage:billing') },
+    { name: language === 'en' ? 'Audit Logs' : 'অডিট লগস', icon: ClipboardList, href: '/sp@dmin/audit-logs', show: hasPermission('manage:audit') },
+    { name: language === 'en' ? 'Inquiries' : 'ইনকোয়ারি', icon: Mail, href: '/sp@dmin/inquiries', show: hasPermission('manage:site') },
+    { name: language === 'en' ? 'Support Tickets' : 'সাপোর্ট টিকিট', icon: ClipboardList, href: '/sp@dmin/tickets', show: hasPermission('manage:site') },
+    { name: language === 'en' ? 'Message Templates' : 'মেসেজ টেমপ্লেটস', icon: MessageSquare, href: '/sp@dmin/templates', show: hasPermission('manage:site') },
+    { name: language === 'en' ? 'AI Support Chats' : 'এআই সাপোর্ট চ্যাটস', icon: Bot, href: '/sp@dmin/support-chats', show: hasPermission('manage:site') },
     { 
       name: language === 'en' ? 'Settings' : 'সেটিংস', 
       icon: Settings2, 
@@ -113,22 +113,22 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
       show: true,
       hasSubmenu: true,
       subItems: [
-        { name: language === 'en' ? 'Site Editor' : 'সাইট এডিটর', icon: Globe, href: '/superadmin/site-editor', show: hasPermission('manage:site') },
-        { name: language === 'en' ? 'Team Members' : 'টিম মেম্বারস', icon: ShieldCheck, href: '/superadmin/team', show: hasPermission('manage:team') },
-        { name: language === 'en' ? 'Currency' : 'কারেন্সি', icon: DollarSign, href: '/superadmin/currency', show: hasPermission('manage:currency') },
-        { name: language === 'en' ? 'SMTP Settings' : 'এসএমটিপি সেটিংস', icon: Mail, href: '/superadmin/settings/smtp', show: hasPermission('manage:site') },
-        { name: language === 'en' ? 'Business Nature' : 'বিজনেস নেচার', icon: ClipboardList, href: '/superadmin/settings/business-nature', show: hasPermission('manage:site') },
-        { name: language === 'en' ? 'AI Integrations' : 'এআই ইন্টিগ্রেশন', icon: Bot, href: '/superadmin/settings/ai', show: hasPermission('manage:site') },
-        { name: language === 'en' ? 'MFS & Bank Gateway' : 'এমএফএস ও ব্যাংক গেটওয়ে', icon: Landmark, href: '/superadmin/settings/mfs', show: hasPermission('manage:site') },
-        { name: language === 'en' ? 'Google Login' : 'গুগল লগইন সেটিংস', icon: Key, href: '/superadmin/settings/google-auth', show: hasPermission('manage:site') },
-        { name: language === 'en' ? 'Facebook Login' : 'ফেসবুক লগইন সেটিংস', icon: Globe, href: '/superadmin/settings/facebook-auth', show: hasPermission('manage:site') },
-        { name: language === 'en' ? 'Meta Pixel & CAPI' : 'মেটা পিক্সেল ও CAPI', icon: Activity, href: '/superadmin/settings/meta-pixel', show: hasPermission('manage:site') },
-        { name: language === 'en' ? 'Google Analytics' : 'গুগল অ্যানালিটিক্স', icon: BarChart3, href: '/superadmin/settings/google-analytics', show: hasPermission('manage:site') },
+        { name: language === 'en' ? 'Site Editor' : 'সাইট এডিটর', icon: Globe, href: '/sp@dmin/site-editor', show: hasPermission('manage:site') },
+        { name: language === 'en' ? 'Team Members' : 'টিম মেম্বারস', icon: ShieldCheck, href: '/sp@dmin/team', show: hasPermission('manage:team') },
+        { name: language === 'en' ? 'Currency' : 'কারেন্সি', icon: DollarSign, href: '/sp@dmin/currency', show: hasPermission('manage:currency') },
+        { name: language === 'en' ? 'SMTP Settings' : 'এসএমটিপি সেটিংস', icon: Mail, href: '/sp@dmin/settings/smtp', show: hasPermission('manage:site') },
+        { name: language === 'en' ? 'Business Nature' : 'বিজনেস নেচার', icon: ClipboardList, href: '/sp@dmin/settings/business-nature', show: hasPermission('manage:site') },
+        { name: language === 'en' ? 'AI Integrations' : 'এআই ইন্টিগ্রেশন', icon: Bot, href: '/sp@dmin/settings/ai', show: hasPermission('manage:site') },
+        { name: language === 'en' ? 'MFS & Bank Gateway' : 'এমএফএস ও ব্যাংক গেটওয়ে', icon: Landmark, href: '/sp@dmin/settings/mfs', show: hasPermission('manage:site') },
+        { name: language === 'en' ? 'Google Login' : 'গুগল লগইন সেটিংস', icon: Key, href: '/sp@dmin/settings/google-auth', show: hasPermission('manage:site') },
+        { name: language === 'en' ? 'Facebook Login' : 'ফেসবুক লগইন সেটিংস', icon: Globe, href: '/sp@dmin/settings/facebook-auth', show: hasPermission('manage:site') },
+        { name: language === 'en' ? 'Meta Pixel & CAPI' : 'মেটা পিক্সেল ও CAPI', icon: Activity, href: '/sp@dmin/settings/meta-pixel', show: hasPermission('manage:site') },
+        { name: language === 'en' ? 'Google Analytics' : 'গুগল অ্যানালিটিক্স', icon: BarChart3, href: '/sp@dmin/settings/google-analytics', show: hasPermission('manage:site') },
       ].filter(sub => sub.show)
     }
   ];
 
-  if (pathname === '/superadmin/login') {
+  if (pathname === '/sp@dmin/login') {
     return <div className="min-h-screen bg-[#f8fafc] dark:bg-[#09090b] text-[#334155] dark:text-zinc-300">{children}</div>;
   }
 
@@ -153,7 +153,7 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
         
         {/* Logo Area */}
         <div className="h-12 px-3 flex items-center justify-between gap-2 border-b border-slate-200 dark:border-zinc-800 shrink-0">
-          <Link href="/superadmin" className="flex-1 flex items-center justify-start h-full py-0.5 hover:opacity-90 transition-opacity overflow-hidden">
+          <Link href="/sp@dmin" className="flex-1 flex items-center justify-start h-full py-0.5 hover:opacity-90 transition-opacity overflow-hidden">
             <img src="/logo.png" alt="ZiniChat Logo" className="h-full w-full object-contain object-left scale-[1.3] origin-left ml-2" />
           </Link>
           <button 
@@ -285,7 +285,7 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
             
             {mounted && <NotificationBell />}
 
-            <Link href="/superadmin/profile" className="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200/50 dark:hover:bg-zinc-800 transition-colors">
+            <Link href="/sp@dmin/profile" className="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200/50 dark:hover:bg-zinc-800 transition-colors">
               <Settings2 className="w-4 h-4" />
             </Link>
           </div>

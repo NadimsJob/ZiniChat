@@ -12,7 +12,7 @@ export async function GET() {
     theme_color: '#1F824A', // Brand primary green
     icons: [
       {
-        src: '/logo.png',
+        src: '/icon.png',
         sizes: '192x192 512x512',
         type: 'image/png'
       }

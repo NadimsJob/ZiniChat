@@ -150,7 +150,7 @@ export default function NotificationBell() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 bg-background/95 backdrop-blur-2xl border border-surface-hover rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="absolute right-[-80px] sm:right-0 mt-2 w-[calc(100vw-32px)] sm:w-80 max-w-[340px] bg-background/95 backdrop-blur-2xl border border-surface-hover rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="px-4 py-3 border-b border-surface-hover flex items-center justify-between">
             <span className="font-bold text-sm text-foreground">{language === 'en' ? 'Notifications' : 'নোটিফিকেশন'}</span>
             {unreadCount > 0 && (
@@ -168,7 +168,8 @@ export default function NotificationBell() {
               notifications.map((notif) => (
                 <div 
                   key={notif.id} 
-                  className={`p-4 border-b border-surface-hover flex gap-3 items-start transition-colors relative group hover:bg-surface-hover/50 ${!notif.isRead ? 'bg-primary/10' : ''}`}
+                  onClick={(e) => !notif.isRead && handleMarkAsRead(notif.id, e)}
+                  className={`p-4 border-b border-surface-hover flex gap-3 items-start transition-colors relative group hover:bg-surface-hover/50 cursor-pointer ${!notif.isRead ? 'bg-primary/10' : ''}`}
                 >
                   <div className="mt-0.5 shrink-0">
                     {getIcon(notif.type)}

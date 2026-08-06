@@ -110,6 +110,62 @@ export function FeatureMockup({ featureId, language, iconColor, color }: { featu
     </div>
   );
 
+  if (featureId === 'facebook_comment_automation') return (
+    <div className="space-y-3 text-[11px] animate-fade-in-up">
+      {/* Mock Facebook Post */}
+      <div className="p-3 bg-surface rounded-xl border border-surface-hover shadow-sm space-y-2">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-[10px]">F</div>
+          <div>
+            <div className="font-bold text-foreground">StyleHub BD</div>
+            <div className="text-[9px] text-zinc-500">{language === 'en' ? 'Sponsored' : 'স্পন্সরড'} • 🌐</div>
+          </div>
+        </div>
+        <p className="text-zinc-300 leading-tight">
+          {language === 'en' ? 'New summer dress in stock! 👗 Comment "PRICE" to get details.' : 'নতুন সামার ড্রেস স্টকে এসেছে! 👗 বিস্তারিত জানতে "PRICE" কমেন্ট করুন।'}
+        </p>
+        <div className="border-t border-surface-hover pt-2 mt-1 flex justify-between text-zinc-500 text-[10px]">
+          <span>👍 {language === 'en' ? '42 Likes' : '৪২টি লাইক'}</span>
+          <span>💬 {language === 'en' ? '18 Comments' : '১৮টি কমেন্ট'}</span>
+        </div>
+      </div>
+
+      {/* Mock Comments Flow */}
+      <div className="space-y-2 pl-3 border-l-2 border-primary/30">
+        {/* Customer Comment */}
+        <div className="p-2 bg-surface rounded-lg border border-surface-hover">
+          <div className="font-bold text-zinc-400">Nusrat Jahan</div>
+          <p className="text-zinc-200">{language === 'en' ? 'PRICE please?' : 'PRICE প্লিজ?'}</p>
+        </div>
+
+        {/* AI Auto Public Reply */}
+        <div className="p-2 bg-primary/10 border border-primary/20 rounded-lg">
+          <div className="font-bold text-primary flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+            ZiniChat AI ({language === 'en' ? 'Public Reply' : 'পাবলিক রিপ্লাই'})
+          </div>
+          <p className="text-zinc-300">
+            {language === 'en' 
+              ? 'Hi Nusrat! We have sent the details to your inbox. Check your Messenger! 😊' 
+              : 'হ্যালো নুসরত! আমরা বিস্তারিত আপনার ইনবক্সে পাঠিয়ে দিয়েছি। আপনার মেসেঞ্জার চেক করুন! 😊'}
+          </p>
+        </div>
+
+        {/* AI Auto Messenger Private Message */}
+        <div className="p-2 bg-[#0084FF]/10 border border-[#0084FF]/20 rounded-lg">
+          <div className="font-bold text-[#0084FF] flex items-center gap-1">
+            <span>💬</span> ZiniChat AI ({language === 'en' ? 'Messenger Private Reply' : 'মেসেঞ্জার প্রাইভেট রিপ্লাই'})
+          </div>
+          <p className="text-zinc-300">
+            {language === 'en'
+              ? 'Hi Nusrat, thank you for your comment! The Summer Dress is $15. Click here to buy: stylehub.com/dress-1'
+              : 'হ্যালো নুসরত, কমেন্ট করার জন্য ধন্যবাদ! সামার ড্রেসের দাম ৳১,২৫০। কিনতে ভিজিট করুন: stylehub.com/dress-1'}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+
   // Generic Mockup for new dynamically added features
   return (
     <div className="space-y-2 text-xs">

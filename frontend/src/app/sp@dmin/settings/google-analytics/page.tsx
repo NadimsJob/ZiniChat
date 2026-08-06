@@ -288,7 +288,7 @@ export default function GoogleAnalyticsSettingsPage() {
 
         <div className="flex items-center gap-2">
           <Link
-            href="/superadmin/settings/meta-pixel"
+            href="/sp@dmin/settings/meta-pixel"
             className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-medium border border-border bg-card hover:bg-accent transition-all text-foreground"
           >
             <Layers className="w-4 h-4 text-blue-500" />

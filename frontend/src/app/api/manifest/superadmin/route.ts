@@ -5,14 +5,14 @@ export async function GET() {
     name: 'ZiniChat Admin',
     short_name: 'ZiniChat Admin',
     description: 'Superadmin Panel for ZiniChat',
-    start_url: '/superadmin',
-    scope: '/superadmin',
+    start_url: '/sp@dmin',
+    scope: '/sp@dmin',
     display: 'standalone',
     background_color: '#f8fafc',
     theme_color: '#121214', // Dark mode accent
     icons: [
       {
-        src: '/logo.png',
+        src: '/icon.png',
         sizes: '192x192 512x512',
         type: 'image/png'
       }

@@ -19,13 +19,13 @@ function isTokenStructurallyValid(token: string): boolean {
 export function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
 
-  // Protect /superadmin routes
-  if (path.startsWith('/superadmin') && path !== '/superadmin/login') {
+  // Protect /sp@dmin routes
+  if (path.startsWith('/sp@dmin') && path !== '/sp@dmin/login') {
     const token = request.cookies.get('access_token')?.value;
     const role = request.cookies.get('user_role')?.value;
 
     if (!token || !isTokenStructurallyValid(token) || role !== 'superadmin') {
-      return NextResponse.redirect(new URL('/superadmin/login', request.url));
+      return NextResponse.redirect(new URL('/sp@dmin/login', request.url));
     }
   }
 
@@ -38,9 +38,9 @@ export function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
 
-    // A pure superadmin session should be in /superadmin, not tenant /dashboard
+    // A pure superadmin session should be in /sp@dmin, not tenant /dashboard
     if (role === 'superadmin') {
-      return NextResponse.redirect(new URL('/superadmin', request.url));
+      return NextResponse.redirect(new URL('/sp@dmin', request.url));
     }
   }
 
@@ -48,5 +48,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/superadmin/:path*', '/dashboard/:path*'],
+  matcher: ['/sp@dmin/:path*', '/dashboard/:path*'],
 };

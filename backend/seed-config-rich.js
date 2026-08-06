@@ -64,6 +64,20 @@ async function main() {
               en: ['Role-based access control', 'Agent assignment for chats', 'Audit logs for superadmins', 'Real-time web notifications', 'Performance tracking'],
               bn: ['রোল-ভিত্তিক অ্যাক্সেস কন্ট্রোল', 'চ্যাটের জন্য এজেন্ট অ্যাসাইনমেন্ট', 'সুপারঅ্যাডমিনের জন্য অডিট লগ', 'রিয়েল-টাইম ওয়েব নোটিফিকেশন', 'পারফরম্যান্স ট্র্যাকিং']
             }
+          },
+          {
+            id: 'facebook_comment_automation',
+            iconName: 'MessageSquare',
+            colorTheme: 'orange',
+            title: { en: 'Facebook Comment Automation', bn: 'ফেসবুক কমেন্ট অটোমেশন' },
+            description: {
+              en: 'Automatically reply to Facebook post comments with public replies and instant private messages in their Messenger inbox.',
+              bn: 'ফেসবুক পোস্টের কমেন্টে পাবলিকলি রিপ্লাই দিন এবং মেসেঞ্জারে সাথে সাথেই অটোমেটিক প্রাইভেট মেসেজ পাঠিয়ে দিন।'
+            },
+            bullets: {
+              en: ['Public & Private AI Reply Modes', 'Keyword-based Filtering', 'Commenter Rate Limiting', 'Lead CRM Auto-Sync', 'Full Reply logs & analytics'],
+              bn: ['পাবলিক ও প্রাইভেট এআই রিপ্লাই', 'কীওয়ার্ড-ভিত্তিক ফিল্টারিং', 'কমেন্টার রেট লিমিটিং', 'লিড সিআরএম অটো-সিঙ্ক', 'কমেন্ট রিপ্লাই লগ ও অ্যানালিটিক্স']
+            }
           }
         ],
         pricingJson: {

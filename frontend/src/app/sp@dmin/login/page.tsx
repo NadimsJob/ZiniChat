@@ -37,7 +37,7 @@ export default function SuperadminLogin() {
       Cookies.set('access_token', data.access_token, { expires: 7 }); // 7 days
       Cookies.set('user_role', data.user.role, { expires: 7 });
 
-      router.push('/superadmin');
+      router.push('/sp@dmin');
     } catch (err: any) {
       setError(err.message || 'Login failed');
     } finally {

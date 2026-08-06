@@ -89,6 +89,49 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
    }
  };
 
+  const getPageTitle = () => {
+    if (pathname === '/dashboard') {
+      return language === 'en' ? 'Overview' : 'ওভারভিউ';
+    }
+    if (pathname.startsWith('/dashboard/inbox')) {
+      return language === 'en' ? 'Live Inbox' : 'লাইভ ইনবক্স';
+    }
+    if (pathname.startsWith('/dashboard/leads')) {
+      return language === 'en' ? 'Leads' : 'লিডস';
+    }
+    if (pathname.startsWith('/dashboard/orders')) {
+      return language === 'en' ? 'Orders' : 'অর্ডার';
+    }
+    if (pathname.startsWith('/dashboard/broadcasts')) {
+      return language === 'en' ? 'Broadcast' : 'ব্রডকাস্ট';
+    }
+    if (pathname.startsWith('/dashboard/ai-training')) {
+      return language === 'en' ? 'AI Training' : 'এআই ট্রেনিং';
+    }
+    if (pathname.startsWith('/dashboard/settings/inboxes')) {
+      return language === 'en' ? 'Connected Inboxes' : 'কানেক্টেড ইনবক্স';
+    }
+    if (pathname.startsWith('/dashboard/settings/team')) {
+      return language === 'en' ? 'Team Management' : 'টিম ম্যানেজমেন্ট';
+    }
+    if (pathname.startsWith('/dashboard/settings/quick-replies')) {
+      return language === 'en' ? 'Quick Replies' : 'কুইক রিপ্লাই';
+    }
+    if (pathname.startsWith('/dashboard/settings/sms-gateway')) {
+      return language === 'en' ? 'SMS Gateway' : 'এসএমএস গেটওয়ে';
+    }
+    if (pathname.startsWith('/dashboard/settings/subscription')) {
+      return language === 'en' ? 'Subscription' : 'সাবস্ক্রিপশন';
+    }
+    if (pathname.startsWith('/dashboard/settings')) {
+      return language === 'en' ? 'Settings' : 'সেটিংস';
+    }
+    if (pathname.startsWith('/dashboard/profile')) {
+      return language === 'en' ? 'Profile' : 'প্রোফাইল';
+    }
+    return language === 'en' ? 'Dashboard' : 'ড্যাশবোর্ড';
+  };
+
  // Auto-collapsible sidebar state for Inbox page
  const isInboxPage = pathname.startsWith('/dashboard/inbox');
  const [sidebarPinned, setSidebarPinned] = useState(false);
@@ -490,19 +533,19 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  
  {/* Topbar */}
  <header className="h-16 md:h-14 px-4 md:px-3 flex items-center justify-between shrink-0 bg-surface/70 backdrop-blur-xl border-b border-border shadow-sm relative z-40">
- <div className="flex items-center gap-3 md:gap-2">
+ <div className="flex items-center gap-3 md:gap-2 min-w-0">
  <button 
- className="md:hidden p-2.5 -ml-2.5 text-slate-500 hover:bg-primary/10 hover:text-primary rounded-lg transition-colors"
+ className="md:hidden p-2.5 -ml-2.5 text-slate-500 hover:bg-primary/10 hover:text-primary rounded-lg transition-colors shrink-0"
  onClick={() => setIsMobileMenuOpen(true)}
  >
  <Menu className="w-6 h-6 md:w-3.5 md:h-3.5" />
  </button>
- <div className="hidden md:flex w-7 h-7 rounded bg-primary/10 items-center justify-center text-primary">
+ <div className="hidden md:flex w-7 h-7 rounded bg-primary/10 items-center justify-center text-primary shrink-0">
  <LayoutGrid className="w-3.5 h-3.5" />
  </div>
- <h2 className="text-[16px] md:text-[13px] font-bold text-foreground tracking-tight">
-  {language === 'en' ? 'Overview' : 'ওভারভিউ'}
-  </h2>
+ <h2 className="text-[15px] md:text-[13px] font-bold text-foreground tracking-tight truncate max-w-[100px] xs:max-w-[160px] sm:max-w-none">
+  {mounted ? getPageTitle() : (language === 'en' ? 'Overview' : 'ওভারভিউ')}
+ </h2>
 
   </div>
   
@@ -627,7 +670,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  </header>
 
  {/* Page Content */}
- <div className={`flex-1 overflow-auto custom-scrollbar pb-14 md:pb-0 ${pathname.includes('/inbox') ? 'p-0' : 'p-3'}`}>
+ <div className={`flex-1 ${pathname.includes('/inbox') ? 'overflow-hidden p-0' : 'overflow-auto p-3'} custom-scrollbar pb-14 md:pb-0`}>
  {children}
  </div>
 

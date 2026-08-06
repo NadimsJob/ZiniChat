@@ -33,7 +33,7 @@ export default function TeamPage() {
         }
       });
       if (res.status === 403) {
-        router.push('/superadmin');
+        router.push('/sp@dmin');
         return;
       }
       const data = await res.json();
