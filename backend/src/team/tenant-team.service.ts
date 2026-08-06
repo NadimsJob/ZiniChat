@@ -47,7 +47,7 @@ export class TenantTeamService {
   }
 
   async createAgent(tenantId: string, data: any) {
-    const { name, email, password, role, agentAccessMode, assignedChannels, menuPermissions } = data;
+    const { name, email, password, role, agentAccessMode, assignedChannels, menuPermissions, specializationTags } = data;
 
     // 1. Check seat limit (with custom override)
     const { limit, used } = await this.getEffectiveSeatLimit(tenantId);
@@ -97,6 +97,7 @@ export class TenantTeamService {
         role: role || 'agent',
         agentAccessMode: agentAccessMode || 'ALL_CHANNELS',
         permissions: resolvedPermissions,
+        specializationTags: Array.isArray(specializationTags) ? specializationTags : [],
       },
     });
 
@@ -139,6 +140,7 @@ export class TenantTeamService {
           role: true,
           agentAccessMode: true,
           permissions: true,
+          specializationTags: true,
           createdAt: true,
           channelAssignments: {
             select: { channelConnectionId: true }
@@ -162,6 +164,7 @@ export class TenantTeamService {
         role: true,
         agentAccessMode: true,
         permissions: true,
+        specializationTags: true,
         createdAt: true,
         channelAssignments: {
           select: { channelConnectionId: true }
@@ -174,13 +177,14 @@ export class TenantTeamService {
 
   async updateAgent(tenantId: string, id: string, data: any) {
     const user = await this.findOne(tenantId, id);
-    const { name, role, agentAccessMode, assignedChannels, password, menuPermissions } = data;
+    const { name, role, agentAccessMode, assignedChannels, password, menuPermissions, specializationTags } = data;
 
     const updateData: any = {};
     if (name) updateData.name = name;
     if (role && user.role !== 'owner') updateData.role = role;
     if (agentAccessMode) updateData.agentAccessMode = agentAccessMode;
     if (password) updateData.passwordHash = await bcrypt.hash(password, 10);
+    if (Array.isArray(specializationTags)) updateData.specializationTags = specializationTags;
 
     // Update permissions if role or menuPermissions changed
     const effectiveRole = role || user.role;

@@ -19,6 +19,12 @@ export class TenantStatsController {
     return this.tenantStatsService.getDashboardOverview(tenantId, range, startDate, endDate);
   }
 
+  @Get('vertical-conversion')
+  getVerticalConversionStats(@Request() req: any) {
+    const tenantId = req.user.tenantId;
+    return this.tenantStatsService.getVerticalConversionStats(tenantId);
+  }
+
   @Get('charts')
   getChartData(
     @Request() req: any,

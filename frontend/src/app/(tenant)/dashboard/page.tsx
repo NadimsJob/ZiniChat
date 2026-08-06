@@ -49,6 +49,7 @@ export default function ExecutiveDashboardPage() {
   const [recentLeads, setRecentLeads] = useState<any[]>([]);
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [recentComments, setRecentComments] = useState<any[]>([]);
+  const [verticalStats, setVerticalStats] = useState<any>(null);
   const [convSearch, setConvSearch] = useState('');
   const [leadSearch, setLeadSearch] = useState('');
   const [orderSearch, setOrderSearch] = useState('');
@@ -91,7 +92,8 @@ export default function ExecutiveDashboardPage() {
         queryStr += `&startDate=${sDate}&endDate=${eDate}`;
       }
 
-      const [overviewRes, chartRes, setupRes, convsRes, leadsRes, ordersRes, commentsRes] = await Promise.all([
+      const [verticalRes, overviewRes, chartRes, setupRes, convsRes, leadsRes, ordersRes, commentsRes] = await Promise.all([
+        fetch(`${API}/stats/tenant/vertical-conversion`, { headers }),
         fetch(`${API}/stats/tenant/dashboard?${queryStr}`, { headers }),
         fetch(`${API}/stats/tenant/charts?${queryStr}`, { headers }),
         fetch(`${API}/auth/setup-status`, { headers }),
@@ -101,6 +103,7 @@ export default function ExecutiveDashboardPage() {
         fetch(`${API}/stats/tenant/comments/recent?page=1&limit=6`, { headers }),
       ]);
 
+      if (verticalRes.ok) setVerticalStats(await verticalRes.json());
       if (overviewRes.ok) setData(await overviewRes.json());
       if (chartRes.ok) setChartData(await chartRes.json());
       if (setupRes.ok) setSetupStatus(await setupRes.json());
@@ -448,6 +451,60 @@ export default function ExecutiveDashboardPage() {
         </div>
       </div>
 
+
+      {/* VERTICAL CONVERSION ANALYTICS WIDGET */}
+      {verticalStats && (
+        <div className="bg-gradient-to-r from-primary/10 via-surface/90 to-secondary/10 backdrop-blur-xl border border-primary/20 rounded-2xl p-5 shadow-lg shadow-black/5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-1 rounded-xl text-xs font-bold bg-primary text-white flex items-center gap-1 shadow-sm">
+                <Sparkles className="w-3.5 h-3.5" />
+                {verticalStats.modeName}
+              </span>
+              <h2 className="text-sm font-bold text-foreground">
+                {language === 'en' ? 'Vertical Conversion Analytics' : 'ভার্টিক্যাল কনভার্সন অ্যানালিটিক্স'}
+              </h2>
+            </div>
+            <div className="flex items-center gap-3 text-xs font-semibold text-muted-foreground">
+              <span>{language === 'en' ? 'Total Leads:' : 'মোট লিড:'} <strong className="text-foreground">{formatNumber(verticalStats.totalContacts || 0)}</strong></span>
+              <span>•</span>
+              <span>{language === 'en' ? 'Qualified Intake:' : 'কোয়ালিফাইড ইনটেক:'} <strong className="text-primary">{formatNumber(verticalStats.qualifiedCount || 0)}</strong></span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+            {/* Conversion Pct Ring / Meter */}
+            <div className="bg-surface/80 border border-surface-hover p-4 rounded-xl flex items-center gap-4">
+              <div className="relative w-14 h-14 rounded-full bg-primary/20 flex items-center justify-center font-black text-primary text-lg border-2 border-primary/40 shrink-0">
+                {verticalStats.conversionPct}%
+              </div>
+              <div>
+                <div className="text-[12px] font-bold text-foreground">{verticalStats.primaryMetricLabel}</div>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  {language === 'en' ? 'Automated AI lead qualification rate across all channels.' : 'চ্যানেলসমূহ জুড়ে এআই লিড কোয়ালিফিকেশন পারফরম্যান্স।'}
+                </p>
+              </div>
+            </div>
+
+            {/* Stages Distribution */}
+            <div className="md:col-span-2 bg-surface/80 border border-surface-hover p-4 rounded-xl space-y-2">
+              <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1 flex items-center justify-between">
+                <span>{language === 'en' ? 'Kanban Funnel Stages' : 'কানবান ফানেল স্টেজসমূহ'}</span>
+                <Link href="/dashboard/leads" className="text-primary font-bold hover:underline normal-case text-xs">{language === 'en' ? 'View CRM Board →' : 'সিআরএম বোর্ড দেখুন →'}</Link>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {(verticalStats.stages || []).slice(0, 5).map((s: any) => (
+                  <div key={s.id} className="px-3 py-1.5 bg-background border border-border rounded-xl flex items-center gap-2 text-[12px]">
+                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: s.color || '#3b82f6' }} />
+                    <span className="font-semibold text-foreground">{s.name}:</span>
+                    <span className="font-bold text-primary">{s.count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ROW 2: SUBSCRIPTION HEALTH | CHANNELS | TEAM */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

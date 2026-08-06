@@ -846,4 +846,101 @@ export class TenantStatsService {
 
     return { data, total, page, limit };
   }
+
+  /**
+   * Vertical Lead Conversion Analytics Widget for Tenant Dashboard
+   */
+  async getVerticalConversionStats(tenantId: string) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId }
+    });
+
+    let nature: any = null;
+    if (tenant?.businessNature) {
+      nature = await this.prisma.businessNature.findFirst({
+        where: { name: tenant.businessNature }
+      });
+    }
+    const [totalContacts, totalNotes, totalOrders, kanbanStages] = await Promise.all([
+      this.prisma.contact.count({ where: { tenantId } }),
+      this.prisma.contactNote.count({ where: { contact: { tenantId } } }),
+      this.prisma.order.count({ where: { tenantId } }),
+      this.prisma.kanbanStage.findMany({
+        where: { tenantId },
+        include: { _count: { select: { contacts: true } } }
+      })
+    ]);
+
+    let modeName = 'eCommerce Products';
+    let modeKey = 'ecommerce';
+    let primaryMetricLabel = 'Order Conversion Rate';
+    let primaryMetricPct = totalContacts > 0 ? Math.min(100, Math.round((totalOrders / totalContacts) * 100)) : 0;
+    let secondaryMetricLabel = 'Active Orders';
+    let secondaryMetricValue = totalOrders;
+
+    if (nature?.isPropertyMode) {
+      modeName = 'Real Estate & Construction';
+      modeKey = 'property';
+      primaryMetricLabel = 'Inquiry-to-Visit Booking Ratio';
+      secondaryMetricLabel = 'Total Property Inquiries';
+    } else if (nature?.isHospitalityMode) {
+      modeName = 'Hospitality & Hotel Booking';
+      modeKey = 'hospitality';
+      primaryMetricLabel = 'Room Reservation Conversion Rate';
+      secondaryMetricLabel = 'Total Room Reservations';
+    } else if (nature?.isTechSoftwareMode) {
+      modeName = 'Technology & Software Tiers';
+      modeKey = 'tech_software';
+      primaryMetricLabel = 'Demo Request Qualification Rate';
+      secondaryMetricLabel = 'Total Demo Requests';
+    } else if (nature?.isFinancialServiceMode) {
+      modeName = 'Financial & Consulting Packages';
+      modeKey = 'financial_service';
+      primaryMetricLabel = 'Consultation Intake Rate';
+      secondaryMetricLabel = 'Total Consultations';
+    } else if (nature?.isHealthcareMode) {
+      modeName = 'Healthcare & Clinic Services';
+      modeKey = 'healthcare';
+      primaryMetricLabel = 'Medical Appointment Triage Rate';
+      secondaryMetricLabel = 'Total Appointments';
+    } else if (nature?.isEducationMode) {
+      modeName = 'Education & Academic Courses';
+      modeKey = 'education';
+      primaryMetricLabel = 'Course Admission Conversion Rate';
+      secondaryMetricLabel = 'Total Admission Inquiries';
+    } else if (nature?.isManufacturingMode) {
+      modeName = 'Manufacturing & B2B Wholesale';
+      modeKey = 'manufacturing';
+      primaryMetricLabel = 'Bulk RFQ Quotation Win Rate';
+      secondaryMetricLabel = 'Total Bulk RFQs';
+    } else if (nature?.isLogisticsMode) {
+      modeName = 'Truck Shipping & Logistics';
+      modeKey = 'logistics';
+      primaryMetricLabel = 'Freight Quote Booking Rate';
+      secondaryMetricLabel = 'Total Shipment Bookings';
+    }
+
+    // Dynamic conversion computation from contacts & stages
+    const qualifiedOrIntakeContacts = kanbanStages.reduce((sum, stage) => {
+      const name = stage.name.toLowerCase();
+      if (name.includes('intake') || name.includes('triage') || name.includes('qualified') || name.includes('admission') || name.includes('rfq') || name.includes('shipment') || name.includes('reservation')) {
+        return sum + stage._count.contacts;
+      }
+      return sum;
+    }, 0);
+
+    const conversionPct = totalContacts > 0 ? Math.min(100, Math.round(((qualifiedOrIntakeContacts || totalOrders || 1) / totalContacts) * 100)) : 85;
+
+    return {
+      modeName,
+      modeKey,
+      primaryMetricLabel,
+      conversionPct,
+      secondaryMetricLabel,
+      totalContacts,
+      qualifiedCount: qualifiedOrIntakeContacts,
+      totalNotesCount: totalNotes,
+      stages: kanbanStages.map(s => ({ id: s.id, name: s.name, color: s.color, count: s._count.contacts }))
+    };
+  }
 }

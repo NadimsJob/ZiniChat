@@ -57,6 +57,30 @@ export default function AiTrainingPage() {
   const [qnas, setQnas] = useState<any[]>([]);
   const [isQnaModalOpen, setIsQnaModalOpen] = useState(false);
   const [qnaForm, setQnaForm] = useState({ id: '', question: '', answer: '', isDefault: false });
+  const [importingPresets, setImportingPresets] = useState(false);
+
+  const handleImportPresets = async () => {
+    setImportingPresets(true);
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai-training/qna/import-presets`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        fetchData();
+        alert(language === 'en' ? data.message || 'Imported vertical Q&A presets!' : 'ভার্টিক্যাল Q&A টেমপ্লেট সফলভাবে যুক্ত করা হয়েছে!');
+      } else {
+        const err = await res.json();
+        alert(err.message || 'Failed to import presets');
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setImportingPresets(false);
+    }
+  };
 
   // Document state
   const [documents, setDocuments] = useState<any[]>([]);
@@ -739,20 +763,31 @@ export default function AiTrainingPage() {
                     : `এআই কেবল এই তথ্যের উপর ভিত্তি করে কাস্টমার প্রশ্নের উত্তর দেবে (সর্বোচ্চ ২০টি প্রশ্নোত্তর, বর্তমান: ${qnas.length}/২০)।`}
                 </p>
               </div>
-              <button
-                onClick={() => {
-                  if (qnas.length >= 20) {
-                    alert(language === 'en' ? 'Maximum 20 Q&As allowed' : 'সর্বোচ্চ ২০টি প্রশ্নোত্তর যোগ করা যাবে');
-                    return;
-                  }
-                  setQnaForm({ id: '', question: '', answer: '', isDefault: false });
-                  setIsQnaModalOpen(true);
-                }}
-                className="px-3 py-1.5 bg-primary text-white font-bold rounded-xl text-[12px] hover:bg-primary/90 transition-all flex items-center gap-1 cursor-pointer shrink-0"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                {language === 'en' ? 'Add Q&A' : 'প্রশ্ন যোগ করুন'}
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={handleImportPresets}
+                  disabled={importingPresets || qnas.length >= 20}
+                  className="px-3 py-1.5 bg-secondary text-secondary-foreground font-bold rounded-xl text-[12px] hover:bg-secondary/80 transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                  title={language === 'en' ? 'Load pre-configured AI FAQ templates for your vertical' : 'আপনার ইন্ডাস্ট্রির উপযোগী AI FAQ টেমপ্লেট লোড করুন'}
+                >
+                  {importingPresets ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 text-amber-500" />}
+                  {language === 'en' ? 'Import Vertical Presets' : 'ভার্টিক্যাল Q&A টেমপ্লেট'}
+                </button>
+                <button
+                  onClick={() => {
+                    if (qnas.length >= 20) {
+                      alert(language === 'en' ? 'Maximum 20 Q&As allowed' : 'সর্বোচ্চ ২০টি প্রশ্নোত্তর যোগ করা যাবে');
+                      return;
+                    }
+                    setQnaForm({ id: '', question: '', answer: '', isDefault: false });
+                    setIsQnaModalOpen(true);
+                  }}
+                  className="px-3 py-1.5 bg-primary text-white font-bold rounded-xl text-[12px] hover:bg-primary/90 transition-all flex items-center gap-1 cursor-pointer shrink-0"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  {language === 'en' ? 'Add Q&A' : 'প্রশ্ন যোগ করুন'}
+                </button>
+              </div>
             </div>
 
             {/* Q&A List */}

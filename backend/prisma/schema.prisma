@@ -91,6 +91,7 @@ model User {
   role                 String    @default("agent") // superadmin, owner, admin, agent
   profilePicUrl        String?
   permissions          String[]  @default([]) // e.g. ["manage:tenants", "manage:billing"]
+  specializationTags   String[]  @default([]) // e.g. ["Property Agent", "Doctor Assistant", "Logistics Dispatcher"]
   agentAccessMode      String    @default("ALL_CHANNELS") // ALL_CHANNELS, ASSIGNED_CHANNELS
   resetPasswordToken   String?
   resetPasswordExpires DateTime?

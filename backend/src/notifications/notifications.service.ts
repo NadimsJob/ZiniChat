@@ -91,6 +91,24 @@ export class NotificationsService {
     return Promise.all(creations);
   }
 
+  async createNotificationForSpecializedTeam(tenantId: string, requiredTags: string[], title: string, message: string, type = 'info') {
+    const targetUsers = await this.prisma.user.findMany({
+      where: {
+        tenantId,
+        OR: [
+          { role: { in: ['owner', 'admin'] } },
+          { specializationTags: { hasSome: requiredTags } }
+        ]
+      }
+    });
+
+    const creations = targetUsers.map(user =>
+      this.createNotification(user.id, title, message, type)
+    );
+
+    return Promise.all(creations);
+  }
+
   async markAsRead(id: string, userId: string) {
     const notif = await this.prisma.notification.findUnique({ where: { id } });
     if (!notif) throw new NotFoundException('Notification not found');

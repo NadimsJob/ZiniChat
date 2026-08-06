@@ -44,7 +44,15 @@ export default function TeamPage() {
     agentAccessMode: 'ALL_CHANNELS',
     assignedChannels: [] as string[],
     menuPermissions: ['inbox'] as string[],
+    specializationTags: [] as string[],
   });
+
+  const PRESET_SPECIALIZATION_TAGS = [
+    'Property Agent', 'Reservation Desk', 'Account Executive',
+    'Tax Consultant', 'Doctor Assistant', 'Clinic Receptionist',
+    'Academic Counselor', 'Admission Desk', 'Wholesale Manager',
+    'Logistics Dispatcher', 'Fleet Manager'
+  ];
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -86,6 +94,7 @@ export default function TeamPage() {
         agentAccessMode: agent.agentAccessMode || 'ALL_CHANNELS',
         assignedChannels: agent.channelAssignments?.map((c: any) => c.channelConnectionId) || [],
         menuPermissions: agent.permissions || ['inbox'],
+        specializationTags: agent.specializationTags || [],
       });
     } else {
       setEditingAgent(null);
@@ -93,6 +102,7 @@ export default function TeamPage() {
         name: '', email: '', password: '',
         role: 'agent', agentAccessMode: 'ALL_CHANNELS',
         assignedChannels: [], menuPermissions: ['inbox'],
+        specializationTags: [],
       });
     }
     setIsModalOpen(true);
@@ -250,6 +260,15 @@ export default function TeamPage() {
                             {agent.role === 'owner' && <Crown className="w-3 h-3 text-amber-500" />}
                           </div>
                           <div className="text-[11px] text-muted-foreground">{agent.email}</div>
+                          {agent.specializationTags?.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {agent.specializationTags.map((tag: string) => (
+                                <span key={tag} className="text-[9px] bg-primary/10 text-primary font-bold px-1.5 py-0.2 rounded-full border border-primary/20">
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -515,6 +534,43 @@ export default function TeamPage() {
                           ))}
                         </div>
                       )}
+                    </div>
+
+                    {/* Specialization Role Tags */}
+                    <div className="pt-2 border-t border-border">
+                      <label className="block text-[12px] font-semibold text-foreground/80 mb-1 flex items-center gap-1.5">
+                        <Tag className="w-3.5 h-3.5 text-primary" />
+                        {language === 'en' ? 'Specialization Role Tags (AI Lead Notifications)' : 'স্পেশালাইজেশন রোল ট্যাগস (এআই লিড নোটিফিকেশন)'}
+                      </label>
+                      <p className="text-[11px] text-muted-foreground mb-2">
+                        {language === 'en' ? 'Assign role tags to route instant AI lead alerts to this member.' : 'নির্দিষ্ট ইন্ডাস্ট্রির লিড এলার্ট সরাসরি পেতে ট্যাগ সিলেক্ট করুন।'}
+                      </p>
+                      <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto custom-scrollbar p-1 bg-muted/20 rounded-xl border border-border">
+                        {PRESET_SPECIALIZATION_TAGS.map(tag => {
+                          const isSelected = formData.specializationTags.includes(tag);
+                          return (
+                            <button
+                              key={tag}
+                              type="button"
+                              onClick={() => {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  specializationTags: isSelected
+                                    ? prev.specializationTags.filter(t => t !== tag)
+                                    : [...prev.specializationTags, tag]
+                                }));
+                              }}
+                              className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border transition-all cursor-pointer ${
+                                isSelected
+                                  ? 'bg-primary text-white border-primary shadow-sm'
+                                  : 'bg-background text-muted-foreground border-border hover:border-primary/50'
+                              }`}
+                            >
+                              {isSelected ? `✓ ${tag}` : `+ ${tag}`}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   </>
                 )}

@@ -66,6 +66,11 @@ export class AiTrainingController {
     return this.aiTrainingService.createCustomQna(req.user.tenantId, dto.question, dto.answer);
   }
 
+  @Post('qna/import-presets')
+  async importPresetQna(@Request() req: any) {
+    return this.aiTrainingService.importVerticalPresetQnas(req.user.tenantId);
+  }
+
   @Patch('qna/:id')
   async updateQna(@Request() req: any, @Param('id') id: string, @Body() dto: UpdateQnaDto) {
     return this.aiTrainingService.updateQna(req.user.tenantId, id, dto.question, dto.answer);

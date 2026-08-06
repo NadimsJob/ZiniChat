@@ -779,9 +779,37 @@ export default function ProductsPage() {
                         </label>
                         <span className="px-2 py-0.5 bg-primary/10 text-primary text-[9px] font-bold rounded-full uppercase tracking-widest">Dynamic</span>
                       </div>
-                      <p className="text-[11px] text-muted-foreground mb-3">
+                      <p className="text-[11px] text-muted-foreground mb-2">
                         Add flexible fields. E.g. <b>Size: XL</b>, <b>Color: Red</b>.
                       </p>
+
+                      {/* Vertical Preset Quick Add Buttons */}
+                      <div className="flex flex-wrap gap-1 mb-3">
+                        {(isPropertyMode ? ['area', 'bedrooms', 'bathrooms', 'floor', 'facing']
+                          : isHospitalityMode ? ['maxGuests', 'bedType', 'amenities', 'view', 'roomSize']
+                          : isTechSoftwareMode ? ['warranty', 'licenseType', 'demoUrl', 'sla', 'maxUsers']
+                          : isFinancialServiceMode ? ['duration', 'deliverables', 'consultant', 'pricingTier']
+                          : isHealthcareMode ? ['doctorName', 'specialty', 'visitingHours', 'clinicRoom']
+                          : isEducationMode ? ['duration', 'batchSchedule', 'instructor', 'certificate']
+                          : isManufacturingMode ? ['moq', 'material', 'specifications', 'leadTime']
+                          : isLogisticsMode ? ['route', 'capacity', 'freightRate', 'transitTime']
+                          : ['Size', 'Color', 'Brand', 'Weight', 'Warranty']
+                        ).map(key => (
+                          <button
+                            key={key}
+                            type="button"
+                            onClick={() => setAttrKey(key)}
+                            className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-all cursor-pointer ${
+                              attrKey === key
+                                ? 'bg-primary text-white border-primary'
+                                : 'bg-background text-muted-foreground border-border hover:border-primary/50'
+                            }`}
+                          >
+                            + {key}
+                          </button>
+                        ))}
+                      </div>
+
                       <div className="flex items-center gap-2 mb-4">
                         <input type="text" placeholder="Key (e.g. Size)" value={attrKey} onChange={e => setAttrKey(e.target.value)} className="w-1/3 bg-background border border-border rounded-lg px-1.5 py-2 text-[13px] focus:border-primary focus:outline-none transition-colors text-foreground" />
                         <input type="text" placeholder="Value (e.g. XL)" value={attrValue} onChange={e => setAttrValue(e.target.value)} className="flex-1 bg-background border border-border rounded-lg px-1.5 py-2 text-[13px] focus:border-primary focus:outline-none transition-colors text-foreground" onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAddAttribute())} />

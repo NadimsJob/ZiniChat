@@ -392,6 +392,102 @@ export class AiTrainingService {
     return { success: true };
   }
 
+  async importVerticalPresetQnas(tenantId: string) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId }
+    });
+
+    let nature: any = null;
+    if (tenant?.businessNature) {
+      nature = await this.prisma.businessNature.findFirst({
+        where: { name: tenant.businessNature }
+      });
+    }
+    let presetItems: { question: string; answer: string }[] = [];
+
+    if (nature?.isPropertyMode) {
+      presetItems = [
+        { question: "How can I book a physical property visit or site viewing?", answer: "You can schedule a property visit by telling us your preferred date, time, and contact phone number. Our property agent will confirm your appointment." },
+        { question: "What legal documents are required for purchasing or renting a property?", answer: "For purchasing or renting, you will need National ID / Passport copy, photographs, and proof of income or bank statement." },
+        { question: "What are the payment terms and installment plans?", answer: "We offer flexible down payment options followed by monthly EMI / installment schedules depending on project completion stage." }
+      ];
+    } else if (nature?.isHospitalityMode) {
+      presetItems = [
+        { question: "What are the standard check-in and check-out times?", answer: "Standard check-in time is 2:00 PM and check-out time is 12:00 PM. Early check-in or late check-out is subject to room availability." },
+        { question: "Is breakfast included in the room booking fee?", answer: "Complimentary breakfast is included with select room & suite packages. Please check room details at time of reservation." },
+        { question: "What is your reservation cancellation policy?", answer: "Free cancellation is allowed up to 48 hours before check-in date. Cancellations within 48 hours may incur a 1-night room charge." }
+      ];
+    } else if (nature?.isTechSoftwareMode) {
+      presetItems = [
+        { question: "How can I request a live demo or schedule a product walkthrough?", answer: "You can request a free live demo by providing your email and phone number. Our product specialist will send a meeting link." },
+        { question: "Do you offer a free trial period?", answer: "Yes, we offer a 14-day full-access free trial with no credit card required." },
+        { question: "What are your customer support SLAs and response times?", answer: "We offer 24/7 dedicated email & live chat support with priority response under 1 hour for business subscribers." }
+      ];
+    } else if (nature?.isFinancialServiceMode) {
+      presetItems = [
+        { question: "How does the initial financial/tax consultation process work?", answer: "Our senior consultant reviews your business requirements during a 30-minute initial discovery call before presenting custom service packages." },
+        { question: "What documents should I prepare before consultation?", answer: "Please prepare recent financial statements, tax identification numbers (TIN), and company registration documents." },
+        { question: "Are all client disclosures kept strictly confidential?", answer: "Yes, all client data and discussions are strictly protected under non-disclosure agreements (NDA) and financial confidentiality compliance." }
+      ];
+    } else if (nature?.isHealthcareMode) {
+      presetItems = [
+        { question: "How can I book a doctor appointment or care service?", answer: "You can request an appointment by specifying your preferred doctor, medical specialty, and target date." },
+        { question: "What should I bring on the day of my appointment?", answer: "Please bring your previous medical history/prescriptions, diagnostic test reports, and National ID." },
+        { question: "How do I handle medical emergencies or urgent consults?", answer: "For life-threatening emergencies, please call emergency services immediately or visit our 24/7 emergency clinic desk." }
+      ];
+    } else if (nature?.isEducationMode) {
+      presetItems = [
+        { question: "What are the admission requirements and eligibility criteria?", answer: "Admission requirements vary by program. Generally, completed academic transcripts and a photo ID are required." },
+        { question: "What is the duration and class schedule for upcoming batches?", answer: "Class duration ranges from 3 to 6 months with flexible weekend and weekday evening batch options." },
+        { question: "Will I receive a verified certificate upon completion?", answer: "Yes, all passing students receive an industry-recognized digital & printed certificate upon final assessment." }
+      ];
+    } else if (nature?.isManufacturingMode) {
+      presetItems = [
+        { question: "What is your Minimum Order Quantity (MOQ) policy?", answer: "Each factory product line has a minimum order quantity specified in our catalog. Custom bulk quotes are available for large orders." },
+        { question: "Can I request sample product units before placing a bulk order?", answer: "Yes, sample units can be dispatched upon request. Sample fees are deductible from your final bulk order payment." },
+        { question: "What is the typical production lead time for wholesale orders?", answer: "Standard production lead time is 14-21 business days following order approval and deposit payment." }
+      ];
+    } else if (nature?.isLogisticsMode) {
+      presetItems = [
+        { question: "How can I request a freight quote for shipping cargo?", answer: "Please provide origin city, destination city, cargo weight in tons/CBM, and preferred vehicle type (Covered Van, Flatbed, Trailer)." },
+        { question: "How do I track my active shipment status?", answer: "Shippers receive real-time SMS & messaging tracking updates upon container dispatch and waypoint check-ins." },
+        { question: "What is your goods transit insurance coverage?", answer: "We offer optional comprehensive transit insurance covering loss or damage during highway transport." }
+      ];
+    } else {
+      presetItems = [
+        { question: "What are your business opening hours?", answer: "We are open Monday to Saturday from 9:00 AM to 8:00 PM." },
+        { question: "What is your delivery policy and charge?", answer: "We deliver across the country. Delivery takes 24-48 hours inside capital city and 3-5 days outside." },
+        { question: "What payment methods do you accept?", answer: "We accept Cash on Delivery (COD), Mobile Banking (bKash/Nagad/Rocket), and Credit/Debit cards." }
+      ];
+    }
+
+    let addedCount = 0;
+    const existingQnas = await this.prisma.qnAKnowledgeBase.findMany({ where: { tenantId } });
+
+    if (existingQnas.length >= 20) {
+      throw new BadRequestException('Maximum 20 Q&As limit reached for this workspace.');
+    }
+
+    for (const item of presetItems) {
+      if (existingQnas.length + addedCount >= 20) break;
+      const alreadyExists = existingQnas.some(q => q.question.toLowerCase() === item.question.toLowerCase());
+      if (!alreadyExists) {
+        await this.prisma.qnAKnowledgeBase.create({
+          data: {
+            tenantId,
+            question: item.question,
+            answer: item.answer,
+            isDefault: false
+          }
+        });
+        addedCount++;
+      }
+    }
+
+    await this.aiCacheService.invalidateCache(tenantId);
+    return { success: true, count: addedCount, message: `Imported ${addedCount} vertical preset Q&As` };
+  }
+
   async getDocuments(tenantId: string) {
     return this.prisma.knowledgeDocument.findMany({
       where: { tenantId },
