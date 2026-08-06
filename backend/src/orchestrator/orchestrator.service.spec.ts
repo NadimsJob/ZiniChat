@@ -511,7 +511,7 @@ describe('OrchestratorService', () => {
 
       expect(prismaService.contact.update).toHaveBeenCalledWith({
         where: { id: 'contact1' },
-        data: { stageId: 'stage_intake', assignedUserId: 'agent1' }
+        data: { stageId: 'stage_intake' }
       });
       expect(prismaService.contactNote.create).toHaveBeenCalledWith({
         data: {
@@ -538,7 +538,7 @@ describe('OrchestratorService', () => {
 
       expect(prismaService.contact.update).toHaveBeenCalledWith({
         where: { id: 'contact1' },
-        data: { stageId: 'stage_intake', assignedUserId: 'agent1' }
+        data: { stageId: 'stage_intake' }
       });
       expect(prismaService.contactNote.create).toHaveBeenCalledWith({
         data: {
