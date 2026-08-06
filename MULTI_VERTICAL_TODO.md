@@ -25,19 +25,19 @@
 ### ✅ Vertical 1: Real Estate & Construction (`isPropertyMode`)
 - [x] **Database Schema**: Added `BusinessNature.isPropertyMode`, `Product.listingType`, `Product.images` (gallery array), `Product.location`. Ran `prisma db push`.
 - [x] **Backend Services**: Updated `BusinessNatureService`, `ProductsService` (gallery upload `POST /products/:id/gallery` & delete `DELETE /products/:id/gallery/:index`).
-- [x] **AI Orchestrator**: Added `property_inquiry` intent, lighter prompt context (~300-400 token savings/msg), disabled order placement in property mode, auto-move to Intake stage & ContactNote creation.
+- [x] **AI Orchestrator**: Added `property_inquiry` intent, lighter prompt context (~300-400 token savings/msg), disabled order placement in property mode, auto-move to Intake stage & ContactNote creation (Keep Contact Unassigned).
 - [x] **Superadmin UI**: Added `isPropertyMode` checkbox and table mode badge in `/sp@dmin/settings/business-nature`.
 - [x] **Tenant UI Adapter**: Adaptive `products/page.tsx` (Area, Bedrooms, Bathrooms, Gallery slider), `orders/page.tsx` ("Inquiries"), `ClientLayout.tsx` (Properties / Inquiries nav items).
-- [x] **Team Role Routing**: Route property inquiries & lead notifications to Property Agents / Sales Admins (`role: { in: ['owner', 'admin'] }`).
+- [x] **Team Role Notifications**: Send real-time property inquiry alerts to Sales Admins & Property Agents.
 - [x] **Verification**: Unit tests 11/11 passed, frontend typecheck 0 errors, deployed to Live & Test servers.
 
 ### ✅ Vertical 2: Hospitality, Travel & Lifestyle (`isHospitalityMode`)
 - [x] **Database Schema**: Added `BusinessNature.isHospitalityMode`. Executed `prisma db push`.
 - [x] **Backend Services**: Updated `BusinessNatureService` & `Controller` with `isHospitalityMode` DTO pass-through.
-- [x] **AI Orchestrator**: Added `room_booking_inquiry` intent & `interestedRoomName`. Branched `buildContextPrompt()` for Hotel Rooms (~300-400 token savings). Built `handleRoomBookingInquiry()` for auto-intake lead stage & ContactNote recording.
+- [x] **AI Orchestrator**: Added `room_booking_inquiry` intent & `interestedRoomName`. Branched `buildContextPrompt()` for Hotel Rooms (~300-400 token savings). Built `handleRoomBookingInquiry()` for auto-intake lead stage & ContactNote recording (Keep Contact Unassigned).
 - [x] **Superadmin UI**: Added `🏨 Hospitality & Hotel Booking Mode` checkbox & table badge in `/sp@dmin/settings/business-nature`.
 - [x] **Tenant UI Adapter**: Adaptive `products/page.tsx` ("Rooms & Suites", guest capacity, amenities checklist), `orders/page.tsx` ("Reservations"), `ClientLayout.tsx` ("Rooms & Suites" sidebar item & `Hotel` icon).
-- [x] **Team Role Routing**: Route reservation inquiries & room booking alerts to Front Desk / Reservation Managers.
+- [x] **Team Role Notifications**: Send real-time room reservation inquiry alerts to Front Desk & Reservation Desk.
 - [x] **Verification**: Unit tests passed, NestJS build 0 errors, frontend typecheck 0 errors, deployed to Live.
 
 ---
@@ -54,9 +54,9 @@
 - [ ] **Phase 3.2 Backend & AI Orchestrator**:
   - [ ] Add `demo_request` / `software_inquiry` intent.
   - [ ] Branch `buildContextPrompt()`: `--- SOFTWARE & TECH PACKAGES ---` (Pricing Tiers, Feature list, Live Demo URL).
-  - [ ] Implement `handleDemoRequest()`: Move contact to Qualified stage, create ContactNote with software module & team size.
-- [ ] **Phase 3.3 Team Role Routing & CRM Assignment**:
-  - [ ] Target software demo alerts & lead assignment to **Account Executives / Product Specialists**.
+  - [ ] Implement `handleDemoRequest()`: Move contact to Qualified stage, create ContactNote with software module & team size (Keep Contact Unassigned).
+- [ ] **Phase 3.3 Team Role Notification Alerts**:
+  - [ ] Route software demo alerts & lead notifications to **Account Executives / Product Specialists**.
 - [ ] **Phase 3.4 Tenant UI Adaptation**:
   - [ ] Adaptive `products/page.tsx`: Title "Software & Plans", Tiers (Starter, Pro, Enterprise), Feature bullet builder, Live Demo link.
   - [ ] Adaptive `orders/page.tsx`: Title "Demo Requests" / "ডেমো রিকুয়েস্ট".
@@ -74,9 +74,9 @@
 - [ ] **Phase 4.2 Backend & AI Orchestrator**:
   - [ ] Add `consultation_request` intent.
   - [ ] Branch `buildContextPrompt()`: `--- SERVICE PACKAGES & CONSULTANCY ---` (Consultation Fee, Required Documents checklist).
-  - [ ] Implement `handleConsultationRequest()`: Record ContactNote with client requirements & document checklist.
-- [ ] **Phase 4.3 Team Role Routing & CRM Assignment**:
-  - [ ] Target consultation alerts to **Financial Advisors / Tax Consultants**.
+  - [ ] Implement `handleConsultationRequest()`: Record ContactNote with client requirements & document checklist (Keep Contact Unassigned).
+- [ ] **Phase 4.3 Team Role Notification Alerts**:
+  - [ ] Route consultation alerts to **Financial Advisors / Tax Consultants**.
 - [ ] **Phase 4.4 Tenant UI Adaptation**:
   - [ ] Adaptive `products/page.tsx`: Title "Service Packages", Fee, Scope of Work, Required Docs builder.
   - [ ] Adaptive `orders/page.tsx`: Title "Consultations" / "কন্সালটেন্সি".
@@ -94,9 +94,9 @@
 - [ ] **Phase 5.2 Backend & AI Orchestrator**:
   - [ ] Add `doctor_appointment` intent.
   - [ ] Branch `buildContextPrompt()`: `--- DOCTORS & MEDICAL SERVICES ---` (Doctor Name, Specialization, Visiting Hours, Fee).
-  - [ ] Implement `handleDoctorAppointment()`: Record appointment note, notify clinic desk.
-- [ ] **Phase 5.3 Team Role Routing & CRM Assignment**:
-  - [ ] Target doctor appointment alerts & patient notes to **Clinic Receptionists / Medical Assistants**.
+  - [ ] Implement `handleDoctorAppointment()`: Record appointment note, notify clinic desk (Keep Contact Unassigned).
+- [ ] **Phase 5.3 Team Role Notification Alerts**:
+  - [ ] Route doctor appointment alerts & patient notes to **Clinic Receptionists / Medical Desk**.
 - [ ] **Phase 5.4 Tenant UI Adaptation**:
   - [ ] Adaptive `products/page.tsx`: Title "Doctors & Services", Specialization, Visiting Schedule, Fee.
   - [ ] Adaptive `orders/page.tsx`: Title "Appointments" / "অ্যাপয়েন্টমেন্ট".
@@ -114,9 +114,9 @@
 - [ ] **Phase 6.2 Backend & AI Orchestrator**:
   - [ ] Add `course_admission_inquiry` intent.
   - [ ] Branch `buildContextPrompt()`: `--- COURSES & ACADEMIC PROGRAMS ---` (Course Fee, Duration, Batch Schedule, Syllabus Overview).
-  - [ ] Implement `handleCourseAdmissionInquiry()`: Move student lead to Admissions stage.
-- [ ] **Phase 6.3 Team Role Routing & CRM Assignment**:
-  - [ ] Target admission inquiries to **Academic Counselors / Admission Desk**.
+  - [ ] Implement `handleCourseAdmissionInquiry()`: Move student lead to Admissions stage (Keep Contact Unassigned).
+- [ ] **Phase 6.3 Team Role Notification Alerts**:
+  - [ ] Route admission inquiry alerts to **Academic Counselors / Admission Desk**.
 - [ ] **Phase 6.4 Tenant UI Adaptation**:
   - [ ] Adaptive `products/page.tsx`: Title "Courses & Batches", Duration, Fee, Class Schedule, Syllabus PDF Link.
   - [ ] Adaptive `orders/page.tsx`: Title "Admissions" / "ভর্তি ইনকোয়ারি".
@@ -134,9 +134,9 @@
 - [ ] **Phase 7.2 Backend & AI Orchestrator**:
   - [ ] Add `bulk_rfq_inquiry` intent.
   - [ ] Branch `buildContextPrompt()`: `--- B2B WHOLESALE PRODUCTS ---` (Unit Price, MOQ, Spec Sheet).
-  - [ ] Implement `handleBulkRfqInquiry()`: Create B2B Lead Note with quantity requested & company details.
-- [ ] **Phase 7.3 Team Role Routing & CRM Assignment**:
-  - [ ] Target B2B bulk RFQ quotes to **Wholesale Sales Managers / Plant Managers**.
+  - [ ] Implement `handleBulkRfqInquiry()`: Create B2B Lead Note with quantity requested & company details (Keep Contact Unassigned).
+- [ ] **Phase 7.3 Team Role Notification Alerts**:
+  - [ ] Route B2B bulk RFQ alerts to **Wholesale Sales Managers / Plant Managers**.
 - [ ] **Phase 7.4 Tenant UI Adaptation**:
   - [ ] Adaptive `products/page.tsx`: Title "Wholesale Products", MOQ, Tiered Bulk Pricing.
   - [ ] Adaptive `orders/page.tsx`: Title "RFQ / Quotations" / "কোটেশন রিকুয়েস্ট".
@@ -154,8 +154,8 @@
 - [ ] **Phase 8.2 Backend & AI Orchestrator**:
   - [ ] Add `parcel_tracking_inquiry` intent.
   - [ ] Branch `buildContextPrompt()`: `--- SHIPPING SERVICES & RATES ---` (Route Rates, Weight Charges, Tracking Guide).
-- [ ] **Phase 8.3 Team Role Routing & CRM Assignment**:
-  - [ ] Target parcel tracking & shipping inquiries to **Logistics Dispatchers / Fleet Operations**.
+- [ ] **Phase 8.3 Team Role Notification Alerts**:
+  - [ ] Route parcel tracking & shipping inquiry alerts to **Logistics Dispatchers / Fleet Operations**.
 - [ ] **Phase 8.4 Tenant UI Adaptation**:
   - [ ] Adaptive `products/page.tsx`: Title "Shipping Routes & Rates".
   - [ ] Adaptive `orders/page.tsx`: Title "Shipment Tracking".
@@ -172,7 +172,7 @@
 - [ ] **1. Vertical Knowledge Base Prompt Presets (QnA Starter Templates)**:
   - Automatically load pre-configured AI FAQ templates (e.g. Hotel Check-in Rules, Clinic Appointment Guidance, Real Estate Visit Booking) when a tenant selects their Business Nature.
 - [ ] **2. Team Role Specialization Tagging (`/dashboard/settings/team`)**:
-  - Allow Tenant Owners to assign employee tags (e.g. `Doctor Assistant`, `Property Agent`, `Account Executive`) to specific team members to refine auto-assignment precision.
+  - Allow Tenant Owners to assign employee tags (e.g. `Doctor Assistant`, `Property Agent`, `Account Executive`) to specific team members to refine alert notifications.
 - [ ] **3. Dynamic Custom Attribute Builder UI**:
   - Provide a visual key-value field builder in `products/page.tsx` for custom vertical specs (e.g., Warranty, Batch No, Expiry Date).
 - [ ] **4. Vertical Conversion Analytics Widget**:
