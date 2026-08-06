@@ -937,15 +937,33 @@ export class OrchestratorService {
         });
       }
 
-      // 2. Move contact to Intake stage (only if not already in a later stage)
+      // 2. Move contact to Intake stage & auto-assign team specialist if unassigned
       const contact = await this.prisma.contact.findUnique({
         where: { id: contactId },
         include: { stage: true }
       });
+
+      let autoAssignedAgent: any = null;
+      if (!contact?.assignedUserId) {
+        // Find team specialist / agent in tenant
+        autoAssignedAgent = await this.prisma.user.findFirst({
+          where: { tenantId, role: { in: ['admin', 'owner', 'member'] } },
+          orderBy: { createdAt: 'asc' }
+        });
+      }
+
+      const updateData: any = {};
       if (!contact?.stageId || !contact.stage) {
+        updateData.stageId = intakeStage.id;
+      }
+      if (autoAssignedAgent) {
+        updateData.assignedUserId = autoAssignedAgent.id;
+      }
+
+      if (Object.keys(updateData).length > 0) {
         await this.prisma.contact.update({
           where: { id: contactId },
-          data: { stageId: intakeStage.id }
+          data: updateData
         });
       }
 
@@ -969,11 +987,12 @@ export class OrchestratorService {
         metadataJson: { propertyName: interestedPropertyName || 'Unknown', source: 'ai' }
       });
 
-      // 5. Notify tenant admins
+      // 5. Notify tenant admins & assigned team specialist
+      const agentMsg = autoAssignedAgent ? ` Assigned to agent: ${autoAssignedAgent.name || autoAssignedAgent.email}.` : '';
       await this.notificationsService.createNotificationForTenantAdmins(
         tenantId,
         'New Property Inquiry',
-        `${contact?.name || 'A customer'} is interested in${interestedPropertyName ? ' "' + interestedPropertyName + '"' : ' a property'}.`,
+        `${contact?.name || 'A customer'} is interested in${interestedPropertyName ? ' "' + interestedPropertyName + '"' : ' a property'}.${agentMsg}`,
         'inbox'
       ).catch(() => {});
 
@@ -1007,15 +1026,33 @@ export class OrchestratorService {
         });
       }
 
-      // 2. Move contact to Intake stage
+      // 2. Move contact to Intake stage & auto-assign front desk / reservation agent if unassigned
       const contact = await this.prisma.contact.findUnique({
         where: { id: contactId },
         include: { stage: true }
       });
+
+      let autoAssignedAgent: any = null;
+      if (!contact?.assignedUserId) {
+        // Find team agent / reservation specialist in tenant
+        autoAssignedAgent = await this.prisma.user.findFirst({
+          where: { tenantId, role: { in: ['admin', 'owner', 'member'] } },
+          orderBy: { createdAt: 'asc' }
+        });
+      }
+
+      const updateData: any = {};
       if (!contact?.stageId || !contact.stage) {
+        updateData.stageId = intakeStage.id;
+      }
+      if (autoAssignedAgent) {
+        updateData.assignedUserId = autoAssignedAgent.id;
+      }
+
+      if (Object.keys(updateData).length > 0) {
         await this.prisma.contact.update({
           where: { id: contactId },
-          data: { stageId: intakeStage.id }
+          data: updateData
         });
       }
 
@@ -1039,11 +1076,12 @@ export class OrchestratorService {
         metadataJson: { roomName: interestedRoomName || 'Unknown', source: 'ai' }
       });
 
-      // 5. Notify tenant admins
+      // 5. Notify tenant admins & assigned reservation agent
+      const agentMsg = autoAssignedAgent ? ` Assigned to front desk agent: ${autoAssignedAgent.name || autoAssignedAgent.email}.` : '';
       await this.notificationsService.createNotificationForTenantAdmins(
         tenantId,
         'New Hotel Room Reservation Inquiry',
-        `${contact?.name || 'A guest'} is inquiring about${interestedRoomName ? ' "' + interestedRoomName + '"' : ' room booking'}.`,
+        `${contact?.name || 'A guest'} is inquiring about${interestedRoomName ? ' "' + interestedRoomName + '"' : ' room booking'}.${agentMsg}`,
         'inbox'
       ).catch(() => {});
 
