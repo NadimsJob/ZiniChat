@@ -929,13 +929,13 @@ export default function AiTrainingPage() {
                   <div key={label.id} className="bg-background border border-border p-3.5 rounded-xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden flex flex-col justify-between">
                     <div className="absolute top-0 left-0 w-1.5 h-full" style={{ backgroundColor: label.color }} />
                     <div className="pl-2 space-y-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-[11px] font-bold border"
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold border min-w-0 truncate flex-1"
                           style={{ backgroundColor: `${label.color}15`, color: label.color, borderColor: `${label.color}30` }}>
-                          {label.name}
+                          <span className="truncate">{label.name}</span>
                         </span>
                         
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 shrink-0 ml-auto">
                           <label className="relative inline-flex items-center cursor-pointer shrink-0">
                             <input 
                               type="checkbox" 
@@ -943,18 +943,18 @@ export default function AiTrainingPage() {
                               onChange={() => handleToggleLabelActive(label.id, label.isActive ?? true)}
                               className="sr-only peer" 
                             />
-                            <div className="w-8 h-4.5 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-primary cursor-pointer after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all"></div>
+                            <div className="w-8 h-5 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
                           </label>
 
                           <button 
                             onClick={() => { setEditingLabel(label); setIsLabelFormOpen(true); }} 
-                            className="p-1 text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+                            className="p-1.5 text-muted-foreground hover:text-primary transition-colors cursor-pointer rounded-lg hover:bg-muted/50"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
                           <button 
                             onClick={() => handleDeleteLabel(label.id)} 
-                            className="p-1 text-muted-foreground hover:text-red-400 transition-colors cursor-pointer"
+                            className="p-1.5 text-muted-foreground hover:text-red-400 transition-colors cursor-pointer rounded-lg hover:bg-red-500/10"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
