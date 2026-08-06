@@ -11,6 +11,7 @@ import { InteractiveFeatureTabs, processFeatures } from '@/components/Interactiv
 import { PricingSection } from '@/components/PricingSection';
 import SetupWidgetMockup from '@/components/SetupWidgetMockup';
 import PwaInstallBanner from '@/components/PwaInstallBanner';
+import { IndustryShowcaseSection } from '@/components/IndustryShowcaseSection';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -618,6 +619,9 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Industry Showcase Section (All Business Natures) */}
+      <IndustryShowcaseSection />
 
       {/* Dynamic Features Section */}
       <section id="features" className="relative w-full bg-background py-16">
