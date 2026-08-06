@@ -74,6 +74,12 @@ describe('OrchestratorService', () => {
       conversationLabel: {
         findUnique: jest.fn().mockResolvedValue(null),
         create: jest.fn().mockResolvedValue({}),
+      },
+      tenant: {
+        findUnique: jest.fn().mockResolvedValue({ id: 'tenant1', businessNature: 'E-commerce' }),
+      },
+      businessNature: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'bn1', name: 'E-commerce', isPropertyMode: false }),
       }
     };
 
@@ -311,6 +317,33 @@ describe('OrchestratorService', () => {
         })
       );
       expect(prompt).toContain('MANDATORY ANTI-HALLUCINATION GUARDRAILS');
+    });
+
+    it('should handle property inquiry by creating ContactNote and moving stage to Intake in Property Mode', async () => {
+      prismaService.kanbanStage = {
+        findFirst: jest.fn().mockResolvedValue({ id: 'stage_intake', name: 'Intake' }),
+        create: jest.fn()
+      };
+      prismaService.contact = {
+        findUnique: jest.fn().mockResolvedValue({ id: 'contact1', name: 'Buyer', stageId: null }),
+        update: jest.fn().mockResolvedValue({})
+      };
+      prismaService.contactNote = {
+        create: jest.fn().mockResolvedValue({})
+      };
+
+      await (service as any).handlePropertyInquiry('t1', { contactId: 'contact1', tenantId: 't1' }, 'c1', '3 BHK Apartment', 'I want to visit this property');
+
+      expect(prismaService.contact.update).toHaveBeenCalledWith({
+        where: { id: 'contact1' },
+        data: { stageId: 'stage_intake' }
+      });
+      expect(prismaService.contactNote.create).toHaveBeenCalledWith({
+        data: {
+          contactId: 'contact1',
+          content: expect.stringContaining('3 BHK Apartment')
+        }
+      });
     });
   });
 });

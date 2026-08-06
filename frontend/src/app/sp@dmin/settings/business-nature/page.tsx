@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
-import { Loader2, Plus, Edit, Trash2, Save, X } from 'lucide-react';
+import { Loader2, Plus, Edit, Trash2, Save, X, ShoppingCart, Building2 } from 'lucide-react';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -13,7 +13,7 @@ export default function BusinessNaturePage() {
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   
-  const [formData, setFormData] = useState({ name: '', nameBn: '', isActive: true });
+  const [formData, setFormData] = useState({ name: '', nameBn: '', isActive: true, isPropertyMode: false });
   
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -53,7 +53,7 @@ export default function BusinessNaturePage() {
         await fetchNatures();
         setIsAdding(false);
         setEditingId(null);
-        setFormData({ name: '', nameBn: '', isActive: true });
+        setFormData({ name: '', nameBn: '', isActive: true, isPropertyMode: false });
       } else {
         const data = await res.json();
         setError(data.message || 'Failed to save');
@@ -87,7 +87,8 @@ export default function BusinessNaturePage() {
     setFormData({
       name: nature.name,
       nameBn: nature.nameBn || '',
-      isActive: nature.isActive
+      isActive: nature.isActive,
+      isPropertyMode: nature.isPropertyMode || false,
     });
   };
 
@@ -107,7 +108,7 @@ export default function BusinessNaturePage() {
             onClick={() => {
               setIsAdding(true);
               setEditingId(null);
-              setFormData({ name: '', nameBn: '', isActive: true });
+              setFormData({ name: '', nameBn: '', isActive: true, isPropertyMode: false });
             }}
             className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
           >
@@ -133,7 +134,7 @@ export default function BusinessNaturePage() {
                 value={formData.name}
                 onChange={e => setFormData({ ...formData, name: e.target.value })}
                 className="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20"
-                placeholder="e.g. E-commerce"
+                placeholder="e.g. Real Estate"
               />
             </div>
             <div>
@@ -143,18 +144,41 @@ export default function BusinessNaturePage() {
                 value={formData.nameBn}
                 onChange={e => setFormData({ ...formData, nameBn: e.target.value })}
                 className="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20"
-                placeholder="e.g. ই-কমার্স"
+                placeholder="e.g. রিয়েল এস্টেট"
               />
             </div>
-            <div className="flex items-center gap-2 md:col-span-2">
-              <input
-                type="checkbox"
-                checked={formData.isActive}
-                onChange={e => setFormData({ ...formData, isActive: e.target.checked })}
-                className="rounded border-slate-300 text-primary focus:ring-primary"
-                id="isActive"
-              />
-              <label htmlFor="isActive" className="text-sm font-medium text-slate-700 dark:text-zinc-300">Active (Visible in dropdown)</label>
+            <div className="md:col-span-2 flex flex-col gap-3">
+              <label className="flex items-center gap-2 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={formData.isActive}
+                  onChange={e => setFormData({ ...formData, isActive: e.target.checked })}
+                  className="rounded border-slate-300 text-primary focus:ring-primary"
+                  id="isActive"
+                />
+                <span className="text-sm font-medium text-slate-700 dark:text-zinc-300">Active (Visible in dropdown)</span>
+              </label>
+
+              {/* Property Listing Mode checkbox */}
+              <label className="flex items-start gap-3 p-3 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800/50 cursor-pointer hover:border-primary/50 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={formData.isPropertyMode}
+                  onChange={e => setFormData({ ...formData, isPropertyMode: e.target.checked })}
+                  className="rounded border-slate-300 text-primary focus:ring-primary mt-0.5"
+                  id="isPropertyMode"
+                />
+                <div>
+                  <div className="flex items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-zinc-300">
+                    <Building2 className="w-4 h-4 text-primary" />
+                    Property Listing Mode
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+                    Enables property gallery, area/bedroom fields, and inquiry-based AI flow (no orders). 
+                    Use for Real Estate, Hotel Booking, Car Rental, etc.
+                  </p>
+                </div>
+              </label>
             </div>
           </div>
           <div className="flex gap-2 justify-end pt-2">
@@ -182,6 +206,7 @@ export default function BusinessNaturePage() {
             <tr>
               <th className="px-4 py-3 font-medium">Name (EN)</th>
               <th className="px-4 py-3 font-medium">Name (BN)</th>
+              <th className="px-4 py-3 font-medium">Mode</th>
               <th className="px-4 py-3 font-medium">Status</th>
               <th className="px-4 py-3 font-medium text-right">Actions</th>
             </tr>
@@ -189,13 +214,24 @@ export default function BusinessNaturePage() {
           <tbody className="divide-y divide-slate-100 dark:divide-zinc-800/50">
             {natures.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-4 py-8 text-center text-slate-500">No records found.</td>
+                <td colSpan={5} className="px-4 py-8 text-center text-slate-500">No records found.</td>
               </tr>
             ) : (
               natures.map((nature) => (
                 <tr key={nature.id} className="hover:bg-slate-50/50 dark:hover:bg-zinc-800/30 transition-colors">
                   <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{nature.name}</td>
                   <td className="px-4 py-3 text-slate-600 dark:text-zinc-300">{nature.nameBn || '-'}</td>
+                  <td className="px-4 py-3">
+                    {nature.isPropertyMode ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-medium border border-blue-200 dark:border-blue-500/20">
+                        <Building2 className="w-3 h-3" /> Property
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 text-xs font-medium border border-orange-200 dark:border-orange-500/20">
+                        <ShoppingCart className="w-3 h-3" /> Products
+                      </span>
+                    )}
+                  </td>
                   <td className="px-4 py-3">
                     {nature.isActive ? (
                       <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-medium border border-emerald-200 dark:border-emerald-500/20">Active</span>

@@ -29,7 +29,11 @@ export class ProductsService {
         trackInventory: data.trackInventory || false,
         stockCount: data.stockCount || 0,
         attributes: data.attributes || {},
-        isActive: data.isActive !== undefined ? data.isActive : true
+        isActive: data.isActive !== undefined ? data.isActive : true,
+        // Property Listing Mode fields (optional)
+        listingType: data.listingType || null,
+        images: Array.isArray(data.images) ? data.images : [],
+        location: data.location || null,
       }
     });
   }
@@ -49,7 +53,11 @@ export class ProductsService {
         trackInventory: data.trackInventory,
         stockCount: data.stockCount,
         attributes: data.attributes,
-        isActive: data.isActive
+        isActive: data.isActive,
+        // Property Listing Mode fields
+        ...(data.listingType !== undefined && { listingType: data.listingType }),
+        ...(data.images !== undefined && { images: data.images }),
+        ...(data.location !== undefined && { location: data.location }),
       }
     });
   }
@@ -60,5 +68,33 @@ export class ProductsService {
 
     await this.prisma.product.delete({ where: { id } });
     return { success: true };
+  }
+
+  // ── Property Gallery Methods ──────────────────────────────
+
+  async addGalleryImage(tenantId: string, id: string, imageUrl: string) {
+    const existing = await this.prisma.product.findFirst({ where: { id, tenantId } });
+    if (!existing) throw new NotFoundException('Product not found');
+
+    const currentImages: string[] = Array.isArray(existing.images) ? (existing.images as string[]) : [];
+    const updated = [...currentImages, imageUrl].slice(0, 6); // max 6 photos
+
+    return this.prisma.product.update({
+      where: { id },
+      data: { images: updated }
+    });
+  }
+
+  async removeGalleryImage(tenantId: string, id: string, index: number) {
+    const existing = await this.prisma.product.findFirst({ where: { id, tenantId } });
+    if (!existing) throw new NotFoundException('Product not found');
+
+    const currentImages: string[] = Array.isArray(existing.images) ? (existing.images as string[]) : [];
+    const updated = currentImages.filter((_, i) => i !== index);
+
+    return this.prisma.product.update({
+      where: { id },
+      data: { images: updated }
+    });
   }
 }

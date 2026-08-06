@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
 import { useLanguage } from '@/components/LanguageProvider';
-import { ShoppingBag, ChevronLeft, RefreshCw, Filter, Search, Package, CheckCircle2, XCircle, Clock, RotateCcw, Plus, X, Trash2 } from 'lucide-react';
+import { ShoppingBag, ChevronLeft, RefreshCw, Filter, Search, Package, CheckCircle2, XCircle, Clock, RotateCcw, Plus, X, Trash2, Building2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function OrdersPage() {
@@ -12,6 +12,7 @@ export default function OrdersPage() {
  const [loading, setLoading] = useState(true);
  const [selectedOrder, setSelectedOrder] = useState<any>(null);
  const [statusUpdating, setStatusUpdating] = useState(false);
+ const [isPropertyMode, setIsPropertyMode] = useState(false);
 
  // Create Order Modal State
  const [isCreatingOrder, setIsCreatingOrder] = useState(false);
@@ -24,7 +25,28 @@ export default function OrdersPage() {
 
  useEffect(() => {
  fetchOrders();
+ fetchPropertyMode();
  }, []);
+
+ const fetchPropertyMode = async () => {
+ try {
+ const token = Cookies.get('access_token');
+ const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+ const [meRes, bnRes] = await Promise.all([
+ fetch(`${API}/auth/me`, { headers: { 'Authorization': `Bearer ${token}` } }),
+ fetch(`${API}/business-natures`),
+ ]);
+ if (meRes.ok && bnRes.ok) {
+ const meData = await meRes.json();
+ const natures: any[] = await bnRes.json();
+ const tenantNature = meData?.tenant?.businessNature || '';
+ const matched = natures.find((n: any) => n.name === tenantNature);
+ setIsPropertyMode(matched?.isPropertyMode ?? false);
+ }
+ } catch (err) {
+ console.error(err);
+ }
+ };
 
  const fetchOrders = async () => {
  try {
@@ -164,11 +186,11 @@ export default function OrdersPage() {
  <div className="flex items-center justify-between mb-4">
  <div>
  <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
- <ShoppingBag className="w-6 h-6 text-primary" />
- {language === 'en' ? 'Orders' : 'অর্ডারস'}
+ {isPropertyMode ? <Building2 className="w-6 h-6 text-primary" /> : <ShoppingBag className="w-6 h-6 text-primary" />}
+ {isPropertyMode ? (language === 'en' ? 'Inquiries' : 'ইনকোয়ারি') : (language === 'en' ? 'Orders' : 'অর্ডারস')}
  </h1>
  <p className="text-[11px] text-muted-foreground mt-1">
- {orders.length} {language === 'en' ? 'orders total' : 'টি অর্ডার আছে'}
+ {orders.length} {isPropertyMode ? (language === 'en' ? 'inquiries total' : 'টি ইনকোয়ারি আছে') : (language === 'en' ? 'orders total' : 'টি অর্ডার আছে')}
  </p>
  </div>
  <div className="flex gap-2">

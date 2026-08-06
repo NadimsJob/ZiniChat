@@ -14,12 +14,13 @@ import * as fs from 'fs';
 
 export interface StructuredAiClassification {
   replyText: string;
-  intent: 'general' | 'order_intent' | 'order_confirmation' | 'support_needed' | 'product_lookup';
+  intent: 'general' | 'order_intent' | 'order_confirmation' | 'support_needed' | 'product_lookup' | 'property_inquiry';
   orderProposal?: { productNameGuess: string; quantity: number }[];
   imageProductDescription?: string;
   supportSignal?: boolean;
   supportReason?: 'general' | 'complaint' | 'refund_return' | 'delivery_issue';
   matchedTags?: string[];
+  interestedPropertyName?: string; // Property mode: which property customer mentioned
 }
 
 @Injectable()
@@ -108,6 +109,16 @@ export class OrchestratorService {
 
       this.assertBelongsToTenant(assistant, tenantId, 'AiAssistant');
 
+      // Resolve Property Mode from BusinessNature
+      const tenantRecord = await this.prisma.tenant.findUnique({ where: { id: tenantId }, select: { businessNature: true } });
+      let isPropertyMode = false;
+      if (tenantRecord?.businessNature) {
+        const businessNature = await this.prisma.businessNature.findFirst({
+          where: { name: tenantRecord.businessNature }
+        });
+        isPropertyMode = businessNature?.isPropertyMode ?? false;
+      }
+
       // Map tool states
       const toolMap: Record<string, { isEnabled: boolean; configJson: any }> = {};
       (assistant.tools || []).forEach(t => {
@@ -120,10 +131,12 @@ export class OrchestratorService {
       const planSupportDetection = await this.quotaService.checkFeature(tenantId, 'ai_tool_support_detection').catch(() => false);
       const planProductMatching = await this.quotaService.checkFeature(tenantId, 'ai_tool_product_matching').catch(() => false);
 
-      const isOrderPlacementActive = (toolMap['order_placement']?.isEnabled ?? assistant.aiOrderEnabled) && planOrderPlacement;
+      // Property mode: order placement is always disabled to prevent AI from creating orders for inquiries
+      const isOrderPlacementActive = !isPropertyMode &&
+        (toolMap['order_placement']?.isEnabled ?? assistant.aiOrderEnabled) && planOrderPlacement;
       const isImageReadingActive = (toolMap['image_reading']?.isEnabled ?? true) && planImageReading;
       const isSupportDetectionActive = (toolMap['support_detection']?.isEnabled ?? false) && planSupportDetection;
-      const isProductMatchingActive = (toolMap['product_matching']?.isEnabled ?? false) && planProductMatching;
+      const isProductMatchingActive = !isPropertyMode && (toolMap['product_matching']?.isEnabled ?? false) && planProductMatching;
 
       // Resolve AI Config
       const customAiConfigId = assistant.tenant?.customAiConfigId || undefined;
@@ -199,7 +212,8 @@ export class OrchestratorService {
         isImage: canRunVision && imagePathsToPass.length > 0,
         caption: userCaption,
         isOrderPlacementActive,
-        isSupportDetectionActive
+        isSupportDetectionActive,
+        isPropertyMode,
       });
 
       let userText = '';
@@ -336,6 +350,17 @@ export class OrchestratorService {
         }
       }
 
+      // Handler 5: Property Inquiry → Lead Intake (Property Mode only)
+      if (isPropertyMode && classification.intent === 'property_inquiry') {
+        await this.handlePropertyInquiry(
+          tenantId,
+          message.conversation,
+          message.conversationId,
+          classification.interestedPropertyName,
+          userText
+        );
+      }
+
       // 6. Response Dispatch
       if (finalReplyText && finalReplyText.trim() !== '') {
         await this.inboxService.saveOutboundMessage(tenantId, message.conversationId, finalReplyText, 'text', undefined, assistant.id);
@@ -375,7 +400,7 @@ export class OrchestratorService {
       if (typeof parsed.replyText === 'string') {
         return {
           replyText: parsed.replyText,
-          intent: ['general', 'order_intent', 'order_confirmation', 'support_needed', 'product_lookup'].includes(parsed.intent)
+          intent: ['general', 'order_intent', 'order_confirmation', 'support_needed', 'product_lookup', 'property_inquiry'].includes(parsed.intent)
             ? parsed.intent
             : 'general',
           orderProposal: Array.isArray(parsed.orderProposal) ? parsed.orderProposal : undefined,
@@ -384,7 +409,8 @@ export class OrchestratorService {
           supportReason: ['general', 'complaint', 'refund_return', 'delivery_issue'].includes(parsed.supportReason)
             ? parsed.supportReason
             : 'general',
-          matchedTags: Array.isArray(parsed.matchedTags) ? parsed.matchedTags.map(String) : []
+          matchedTags: Array.isArray(parsed.matchedTags) ? parsed.matchedTags.map(String) : [],
+          interestedPropertyName: typeof parsed.interestedPropertyName === 'string' ? parsed.interestedPropertyName : undefined,
         };
       }
     } catch (e) {
@@ -657,7 +683,7 @@ export class OrchestratorService {
   private async buildContextPrompt(
     conversationId: string,
     assistant: any,
-    options?: { isImage: boolean; caption: string; isOrderPlacementActive: boolean; isSupportDetectionActive: boolean }
+    options?: { isImage: boolean; caption: string; isOrderPlacementActive: boolean; isSupportDetectionActive: boolean; isPropertyMode?: boolean }
   ): Promise<string> {
     const conversation = await this.prisma.conversation.findUnique({
       where: { id: conversationId },
@@ -752,11 +778,35 @@ export class OrchestratorService {
       });
     }
 
-    if (products.length > 0) {
-      prompt += `\n--- PRODUCT CATALOG ---\n`;
-      products.forEach(p => {
-        prompt += `- ${p.name}: BDT ${p.price.toString()} (SKU: ${p.sku || 'N/A'})\n`;
-      });
+    // ── Catalog / Listings context (branched by mode) ──────────────────────
+    if (options?.isPropertyMode) {
+      // Property mode: lightweight listing with key property attributes
+      if (products.length > 0) {
+        prompt += `\n--- PROPERTY LISTINGS (Source of Truth for Available Properties) ---\n`;
+        prompt += `IMPORTANT: You are a REAL ESTATE assistant. Do NOT take orders. Help customers find suitable properties and collect their interest.\n`;
+        products.forEach(p => {
+          const attrs = (p.attributes as any) || {};
+          const listingType = (p as any).listingType ? `[${((p as any).listingType as string).toUpperCase()}]` : '';
+          const location = (p as any).location || '';
+          const area = attrs.area || attrs['Area (sqft)'] || '';
+          const bedrooms = attrs.bedrooms || attrs['Bedrooms'] || '';
+          const bathrooms = attrs.bathrooms || attrs['Bathrooms'] || '';
+          prompt += `- ${listingType} ${p.name}`;
+          if (location) prompt += ` | 📍 ${location}`;
+          if (area) prompt += ` | 📐 ${area} sqft`;
+          if (bedrooms) prompt += ` | 🛏 ${bedrooms} BR`;
+          if (bathrooms) prompt += ` | 🚿 ${bathrooms} Bath`;
+          prompt += ` | 💰 BDT ${p.price.toString()}\n`;
+        });
+      }
+    } else {
+      // eCommerce mode: standard product catalog
+      if (products.length > 0) {
+        prompt += `\n--- PRODUCT CATALOG ---\n`;
+        products.forEach(p => {
+          prompt += `- ${p.name}: BDT ${p.price.toString()} (SKU: ${p.sku || 'N/A'})\n`;
+        });
+      }
     }
 
     prompt += `\n--- CONVERSATION HISTORY ---\n`;
@@ -796,7 +846,13 @@ export class OrchestratorService {
       prompt += `1. SUPPORT DETECTION IS DISABLED: You MUST ALWAYS set "supportSignal": false.\n`;
     }
 
-    if (!options?.isOrderPlacementActive) {
+    if (options?.isPropertyMode) {
+      prompt += `2. PROPERTY INQUIRY MODE IS ACTIVE:\n`;
+      prompt += `   - You MUST NOT create or propose any orders.\n`;
+      prompt += `   - If the customer shows interest in a specific property (wants to visit, wants more info, wants to buy/rent), set "intent": "property_inquiry".\n`;
+      prompt += `   - Set "interestedPropertyName" to the property name the customer is interested in.\n`;
+      prompt += `   - For general browsing or questions, use "intent": "general".\n`;
+    } else if (!options?.isOrderPlacementActive) {
       prompt += `2. ORDER PLACEMENT IS DISABLED: Set "intent": "general" or "product_lookup" and do NOT generate order proposals.\n`;
     }
 
@@ -804,8 +860,13 @@ export class OrchestratorService {
     prompt += `You MUST output a single valid JSON object with NO preamble. The JSON schema must strictly follow:\n`;
     prompt += `{\n`;
     prompt += `  "replyText": "your friendly response to customer",\n`;
-    prompt += `  "intent": "general | order_intent | order_confirmation | support_needed | product_lookup",\n`;
-    prompt += `  "orderProposal": [ { "productNameGuess": "Product Name", "quantity": 1 } ],\n`;
+    if (options?.isPropertyMode) {
+      prompt += `  "intent": "general | property_inquiry | support_needed | product_lookup",\n`;
+      prompt += `  "interestedPropertyName": "name of property customer is interested in (or empty string)",\n`;
+    } else {
+      prompt += `  "intent": "general | order_intent | order_confirmation | support_needed | product_lookup",\n`;
+      prompt += `  "orderProposal": [ { "productNameGuess": "Product Name", "quantity": 1 } ],\n`;
+    }
     prompt += `  "imageProductDescription": "short description of product seen in image",\n`;
     prompt += `  "supportSignal": false,\n`;
     prompt += `  "supportReason": "general | complaint | refund_return | delivery_issue",\n`;
@@ -813,5 +874,75 @@ export class OrchestratorService {
     prompt += `}\n`;
 
     return prompt;
+  }
+
+  // ── Property Inquiry Handler ─────────────────────────────────────────────
+  // Called when AI detects a property_inquiry intent in Property Mode.
+  // Moves contact to 'Intake' Kanban stage and records a ContactNote.
+  private async handlePropertyInquiry(
+    tenantId: string,
+    conversation: any,
+    conversationId: string,
+    interestedPropertyName: string | undefined,
+    userText: string
+  ) {
+    this.assertBelongsToTenant(conversation, tenantId, 'Conversation');
+    const contactId = conversation.contactId;
+
+    try {
+      // 1. Find or create 'Intake' stage
+      let intakeStage = await this.prisma.kanbanStage.findFirst({
+        where: { tenantId, name: 'Intake' }
+      });
+      if (!intakeStage) {
+        intakeStage = await this.prisma.kanbanStage.create({
+          data: { tenantId, name: 'Intake', color: '#8b5cf6', order: 0 }
+        });
+      }
+
+      // 2. Move contact to Intake stage (only if not already in a later stage)
+      const contact = await this.prisma.contact.findUnique({
+        where: { id: contactId },
+        include: { stage: true }
+      });
+      if (!contact?.stageId || !contact.stage) {
+        await this.prisma.contact.update({
+          where: { id: contactId },
+          data: { stageId: intakeStage.id }
+        });
+      }
+
+      // 3. Record ContactNote with inquiry details
+      const noteContent = [
+        '[AI Property Inquiry]',
+        interestedPropertyName ? `Property: ${interestedPropertyName}` : '',
+        `Customer message: "${userText.slice(0, 300)}"`
+      ].filter(Boolean).join(' | ');
+
+      await this.prisma.contactNote.create({
+        data: { contactId, content: noteContent }
+      });
+
+      // 4. Activity log
+      await this.activityLogService.record({
+        tenantId,
+        conversationId,
+        contactId,
+        type: 'PROPERTY_INQUIRY',
+        metadataJson: { propertyName: interestedPropertyName || 'Unknown', source: 'ai' }
+      });
+
+      // 5. Notify tenant admins
+      await this.notificationsService.createNotificationForTenantAdmins(
+        tenantId,
+        'New Property Inquiry',
+        `${contact?.name || 'A customer'} is interested in${interestedPropertyName ? ' "' + interestedPropertyName + '"' : ' a property'}.`,
+        'inbox'
+      ).catch(() => {});
+
+      this.logger.log(`Property inquiry recorded for contact ${contactId}, property: ${interestedPropertyName || 'N/A'}`);
+    } catch (err: any) {
+      this.logger.error(`handlePropertyInquiry failed: ${err.message}`);
+    }
   }
 }

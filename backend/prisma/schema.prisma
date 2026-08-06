@@ -586,8 +586,12 @@ model Product {
   imageUrl       String?
   trackInventory Boolean  @default(false)
   stockCount     Int      @default(0)
-  attributes     Json?    @default("{}") // Custom key-value pairs
+  attributes     Json?    @default("{}") // Custom key-value pairs (size, color, area, bedrooms, etc.)
   isActive       Boolean  @default(true)
+  // Property Listing Mode fields (optional — only used when BusinessNature.isPropertyMode = true)
+  listingType    String?  // "sale" | "rent" | "lease" | null (null = ecommerce product)
+  images         Json?    @default("[]") // String[] — multiple photo URLs for property gallery
+  location       String?  // e.g. "Gulshan-2, Dhaka"
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -987,11 +991,12 @@ model PaymentGatewayConfig {
 }
 
 model BusinessNature {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name      String
-  nameBn    String?
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String
+  nameBn         String?
+  isActive       Boolean  @default(true)
+  isPropertyMode Boolean  @default(false) // Enables Property Listing Mode for tenants with this type
+  createdAt      DateTime @default(now())
 
   @@map("business_natures")
 }

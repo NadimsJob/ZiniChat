@@ -42,7 +42,8 @@ import {
  Receipt,
  Lock,
  Pin,
- X
+ X,
+ Building2
 } from 'lucide-react';
 import NotificationBell from '@/components/NotificationBell';
 import SupportWidget from '@/components/SupportWidget';
@@ -65,6 +66,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  const [showFeatureLockedModal, setShowFeatureLockedModal] = useState(false);
  const [allowedFeatures, setAllowedFeatures] = useState<string[]>(['*']);
  const [avatarError, setAvatarError] = useState(false);
+ const [isPropertyMode, setIsPropertyMode] = useState(false);
 
 
  const hasAgentPresence = useFeature('agent_presence');
@@ -100,7 +102,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
       return language === 'en' ? 'Leads' : 'লিডস';
     }
     if (pathname.startsWith('/dashboard/orders')) {
-      return language === 'en' ? 'Orders' : 'অর্ডার';
+      return language === 'en' ? (isPropertyMode ? 'Inquiries' : 'Orders') : (isPropertyMode ? 'ইনকয়্যারিস' : 'অর্ডার');
     }
     if (pathname.startsWith('/dashboard/broadcasts')) {
       return language === 'en' ? 'Broadcast' : 'ব্রডকাস্ট';
@@ -159,9 +161,24 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  fetch(`${API}/billing/quotas`, { headers: { 'Authorization': `Bearer ${token}` } }),
  fetch(`${API}/inbox/unread-count`, { headers: { 'Authorization': `Bearer ${token}` } })
  ]);
- if (userRes.ok) {
- const userData = await userRes.json();
- setUserProfile(userData);
+  if (userRes.ok) {
+  const userData = await userRes.json();
+  setUserProfile(userData);
+
+  // Check Property Mode
+  if (userData.tenant?.businessNature) {
+    try {
+      const bnRes = await fetch(`${API}/business-natures`);
+      if (bnRes.ok) {
+        const natures: any[] = await bnRes.json();
+        const matched = natures.find((n: any) => n.name === userData.tenant.businessNature);
+        setIsPropertyMode(matched?.isPropertyMode ?? false);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
   if (userData.tenant && userData.tenant.isOnboarded === false && !window.location.pathname.includes('/onboarding')) {
   router.push('/dashboard/onboarding');
   }
@@ -377,8 +394,20 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
       title: language === 'en' ? 'OTHERS' : 'অন্যান্য',
       items: [
         { name: language === 'en' ? 'Leads' : 'লিডস', icon: UserCircle, href: '/dashboard/leads' },
-        { name: language === 'en' ? 'Product List' : 'প্রোডাক্ট লিস্ট', icon: ShoppingCart, href: '/dashboard/products' },
-        { name: language === 'en' ? 'Manage Order' : 'ম্যানেজ অর্ডার', icon: ShoppingBag, href: '/dashboard/orders' },
+        { 
+          name: isPropertyMode 
+            ? (language === 'en' ? 'Properties' : 'প্রপার্টি লিস্ট') 
+            : (language === 'en' ? 'Product List' : 'প্রোডাক্ট লিস্ট'), 
+          icon: isPropertyMode ? Building2 : ShoppingCart, 
+          href: '/dashboard/products' 
+        },
+        { 
+          name: isPropertyMode 
+            ? (language === 'en' ? 'Inquiries' : 'ইনকোয়ারি') 
+            : (language === 'en' ? 'Manage Order' : 'ম্যানেজ অর্ডার'), 
+          icon: isPropertyMode ? Building2 : ShoppingBag, 
+          href: '/dashboard/orders' 
+        },
         { name: language === 'en' ? 'Broadcasts' : 'ব্রডকাস্ট', icon: Megaphone, href: '/dashboard/broadcasts' },
         { name: language === 'en' ? 'Team' : 'টিম', icon: UserCircle, href: '/dashboard/team' },
         { name: language === 'en' ? 'Support Ticket' : 'সাপোর্ট টিকিট', icon: MessageSquare, href: '/dashboard/support' },
