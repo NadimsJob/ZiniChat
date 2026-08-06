@@ -32,7 +32,11 @@ All AI agents MUST adhere to these workspace-specific behavioral and technical g
 * **Android SMS APK**: Use the internal `android-sms-gateway` Kotlin App (zero-config, hardcoded parsers). Do not use third-party apps (JSON regex parsing bug). Build Debug APKs (`assembleDebug`), ensure `android.useAndroidX=true` and `Theme.AppCompat` in Manifest.
 
 ## 5. Integrations: AI, WhatsApp & Messaging
-* **Multi-Provider AI**: Use `aiConfig.provider` to resolve base URLs (e.g., Gemini `v1beta/openai`). Provide fallbacks for non-tool models.
+* **Multi-Vertical Adaptive System**:
+  - Vertical mode flags in `BusinessNature` (`isPropertyMode`, `isHospitalityMode`, `isTechSoftwareMode`, `isFinancialServiceMode`, `isHealthcareMode`, `isEducationMode`, `isManufacturingMode`, `isLogisticsMode`).
+  - `OrchestratorService` must branch system prompts, disable retail order placement for non-retail verticals, auto-create/move contacts to dedicated Kanban stages, log `ContactNote` details, and trigger targeted notifications.
+  - UI components (`products/page.tsx`, `orders/page.tsx`, `ClientLayout.tsx`, `/dashboard/page.tsx`) adapt labels, icons, attributes, and conversion stats based on active vertical mode.
+* **Specialized Team Notifications**: Use `NotificationsService.createNotificationForSpecializedTeam(tenantId, requiredTags, title, body)` to route AI lead alerts to team members with matching `User.specializationTags` (e.g. `Doctor Assistant`, `Logistics Dispatcher`, `Property Agent`).
 * **Inbox AI Two-Stage Classification (Code Decides)**: Stage A: LLM outputs strict JSON Interface. Stage B: Backend validates stock, plan features, and tenant isolation before execution. Never let LLM mutate records directly.
 * **AI Event Parity**: AI background actions (e.g., creating tickets) MUST trigger standard UI real-time sockets, notifications, and emails.
 * **WhatsApp Web (Baileys) Lifecycle**: 
