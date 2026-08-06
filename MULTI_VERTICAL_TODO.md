@@ -165,6 +165,21 @@
 
 ---
 
+## 🌟 ADVANCED SYSTEM ENHANCEMENT BACKLOG (CROSS-VERTICAL FEATS)
+
+> These enhanced capabilities can be optionally enabled for all verticals to provide enterprise-grade team productivity and analytics:
+
+- [ ] **1. Vertical Knowledge Base Prompt Presets (QnA Starter Templates)**:
+  - Automatically load pre-configured AI FAQ templates (e.g. Hotel Check-in Rules, Clinic Appointment Guidance, Real Estate Visit Booking) when a tenant selects their Business Nature.
+- [ ] **2. Team Role Specialization Tagging (`/dashboard/settings/team`)**:
+  - Allow Tenant Owners to assign employee tags (e.g. `Doctor Assistant`, `Property Agent`, `Account Executive`) to specific team members to refine auto-assignment precision.
+- [ ] **3. Dynamic Custom Attribute Builder UI**:
+  - Provide a visual key-value field builder in `products/page.tsx` for custom vertical specs (e.g., Warranty, Batch No, Expiry Date).
+- [ ] **4. Vertical Conversion Analytics Widget**:
+  - Display Vertical-specific conversion metrics on Tenant Dashboard (e.g., *Inquiry to Visit Ratio*, *Room Reservation Rate*, *Demo Request Conversion*).
+
+---
+
 ## 🛠️ Protocol for Marking a Vertical Complete
 
 When a vertical is finished:
