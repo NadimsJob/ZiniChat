@@ -16,14 +16,14 @@ export class BusinessNatureController {
   @Post()
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions('manage:tenants')
-  async create(@Body() data: { name: string; nameBn?: string; isActive?: boolean; isPropertyMode?: boolean; isHospitalityMode?: boolean }) {
+  async create(@Body() data: { name: string; nameBn?: string; isActive?: boolean; isPropertyMode?: boolean; isHospitalityMode?: boolean; isTechSoftwareMode?: boolean; isFinancialServiceMode?: boolean; isHealthcareMode?: boolean; isEducationMode?: boolean; isManufacturingMode?: boolean; isLogisticsMode?: boolean }) {
     return this.businessNatureService.create(data);
   }
 
   @Patch(':id')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions('manage:tenants')
-  async update(@Param('id') id: string, @Body() data: { name?: string; nameBn?: string; isActive?: boolean; isPropertyMode?: boolean; isHospitalityMode?: boolean }) {
+  async update(@Param('id') id: string, @Body() data: { name?: string; nameBn?: string; isActive?: boolean; isPropertyMode?: boolean; isHospitalityMode?: boolean; isTechSoftwareMode?: boolean; isFinancialServiceMode?: boolean; isHealthcareMode?: boolean; isEducationMode?: boolean; isManufacturingMode?: boolean; isLogisticsMode?: boolean }) {
     return this.businessNatureService.update(id, data);
   }
 

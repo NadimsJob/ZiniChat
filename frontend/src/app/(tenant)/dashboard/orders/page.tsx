@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
 import { useLanguage } from '@/components/LanguageProvider';
-import { ShoppingBag, ChevronLeft, RefreshCw, Filter, Search, Package, CheckCircle2, XCircle, Clock, RotateCcw, Plus, X, Trash2, Building2, Hotel } from 'lucide-react';
+import { ShoppingBag, ChevronLeft, RefreshCw, Filter, Search, Package, CheckCircle2, XCircle, Clock, RotateCcw, Plus, X, Trash2, Building2, Hotel, Cpu, Briefcase, Stethoscope, GraduationCap, Factory, Truck } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function OrdersPage() {
@@ -14,6 +14,12 @@ export default function OrdersPage() {
  const [statusUpdating, setStatusUpdating] = useState(false);
  const [isPropertyMode, setIsPropertyMode] = useState(false);
  const [isHospitalityMode, setIsHospitalityMode] = useState(false);
+ const [isTechSoftwareMode, setIsTechSoftwareMode] = useState(false);
+ const [isFinancialServiceMode, setIsFinancialServiceMode] = useState(false);
+ const [isHealthcareMode, setIsHealthcareMode] = useState(false);
+ const [isEducationMode, setIsEducationMode] = useState(false);
+ const [isManufacturingMode, setIsManufacturingMode] = useState(false);
+ const [isLogisticsMode, setIsLogisticsMode] = useState(false);
 
  // Create Order Modal State
  const [isCreatingOrder, setIsCreatingOrder] = useState(false);
@@ -23,6 +29,10 @@ export default function OrdersPage() {
  const [orderItems, setOrderItems] = useState<{ productId: string; quantity: number; priceAtTime: string }[]>([]);
  const [orderNotes, setOrderNotes] = useState('');
  const [isSubmitting, setIsSubmitting] = useState(false);
+
+ const calculateTotal = () => {
+   return orderItems.reduce((acc, item) => acc + (parseFloat(item.priceAtTime || '0') * item.quantity), 0);
+ };
 
  useEffect(() => {
  fetchOrders();
@@ -44,6 +54,12 @@ export default function OrdersPage() {
  const matched = natures.find((n: any) => n.name === tenantNature);
  setIsPropertyMode(matched?.isPropertyMode ?? false);
  setIsHospitalityMode(matched?.isHospitalityMode ?? false);
+ setIsTechSoftwareMode(matched?.isTechSoftwareMode ?? false);
+ setIsFinancialServiceMode(matched?.isFinancialServiceMode ?? false);
+ setIsHealthcareMode(matched?.isHealthcareMode ?? false);
+ setIsEducationMode(matched?.isEducationMode ?? false);
+ setIsManufacturingMode(matched?.isManufacturingMode ?? false);
+ setIsLogisticsMode(matched?.isLogisticsMode ?? false);
  }
  } catch (err) {
  console.error(err);
@@ -167,16 +183,12 @@ export default function OrdersPage() {
  const s = status.toLowerCase();
  if (s === 'pending') return <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-[11px] font-bold rounded-full flex items-center gap-1 w-fit"><Clock className="w-3 h-3" /> Pending</span>;
  if (s === 'confirmed') return <span className="px-2 py-1 bg-blue-100 text-blue-700 text-[11px] font-bold rounded-full flex items-center gap-1 w-fit"><CheckCircle2 className="w-3 h-3" /> Confirmed</span>;
- if (s === 'processing') return <span className="px-2 py-1 bg-purple-100 text-purple-700 text-[11px] font-bold rounded-full flex items-center gap-1 w-fit"><Package className="w-3 h-3" /> Processing</span>;
- if (s === 'shipped') return <span className="px-2 py-1 bg-indigo-100 text-indigo-700 text-[11px] font-bold rounded-full flex items-center gap-1 w-fit"><Package className="w-3 h-3" /> Shipped</span>;
+ if (s === 'processing') return <span className="px-2 py-1 bg-purple-100 text-purple-700 text-[11px] font-bold rounded-full flex items-center gap-1 w-fit"><ShoppingBag className="w-3 h-3" /> Processing</span>;
+ if (s === 'shipped') return <span className="px-2 py-1 bg-indigo-100 text-indigo-700 text-[11px] font-bold rounded-full flex items-center gap-1 w-fit"><ShoppingBag className="w-3 h-3" /> Shipped</span>;
  if (s === 'delivered') return <span className="px-2 py-1 bg-emerald-100 text-emerald-700 text-[11px] font-bold rounded-full flex items-center gap-1 w-fit"><CheckCircle2 className="w-3 h-3" /> Delivered</span>;
  if (s === 'cancelled') return <span className="px-2 py-1 bg-red-100 text-red-700 text-[11px] font-bold rounded-full flex items-center gap-1 w-fit"><XCircle className="w-3 h-3" /> Cancelled</span>;
- if (s === 'refunded') return <span className="px-2 py-1 bg-orange-100 text-orange-700 text-[11px] font-bold rounded-full flex items-center gap-1 w-fit"><RotateCcw className="w-3 h-3" /> Refunded</span>;
+ if (s === 'refunded') return <span className="px-2 py-1 bg-orange-100 text-orange-700 text-[11px] font-bold rounded-full flex items-center gap-1 w-fit"><XCircle className="w-3 h-3" /> Refunded</span>;
  return <span className="px-2 py-1 bg-muted text-muted-foreground text-[11px] font-bold rounded-full">{status}</span>;
- };
-
- const calculateTotal = () => {
- return orderItems.reduce((acc, item) => acc + (parseFloat(item.priceAtTime || '0') * item.quantity), 0);
  };
 
  return (
@@ -188,11 +200,11 @@ export default function OrdersPage() {
  <div className="flex items-center justify-between mb-4">
  <div>
  <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
- {isPropertyMode ? <Building2 className="w-6 h-6 text-primary" /> : isHospitalityMode ? <Hotel className="w-6 h-6 text-amber-500" /> : <ShoppingBag className="w-6 h-6 text-primary" />}
- {isPropertyMode ? (language === 'en' ? 'Inquiries' : 'ইনকোয়ারি') : isHospitalityMode ? (language === 'en' ? 'Reservations' : 'রিজার্ভেশন') : (language === 'en' ? 'Orders' : 'অর্ডারস')}
+ {isPropertyMode ? <Building2 className="w-6 h-6 text-primary" /> : isHospitalityMode ? <Hotel className="w-6 h-6 text-amber-500" /> : isTechSoftwareMode ? <Cpu className="w-6 h-6 text-indigo-500" /> : isFinancialServiceMode ? <Briefcase className="w-6 h-6 text-emerald-500" /> : isHealthcareMode ? <Stethoscope className="w-6 h-6 text-rose-500" /> : isEducationMode ? <GraduationCap className="w-6 h-6 text-purple-500" /> : isManufacturingMode ? <Factory className="w-6 h-6 text-amber-500" /> : isLogisticsMode ? <Truck className="w-6 h-6 text-sky-500" /> : <ShoppingBag className="w-6 h-6 text-primary" />}
+ {isPropertyMode ? (language === 'en' ? 'Inquiries' : 'ইনকোয়ারি') : isHospitalityMode ? (language === 'en' ? 'Reservations' : 'রিজার্ভেশন') : isTechSoftwareMode ? (language === 'en' ? 'Demo Requests' : 'ডেমো রিকুয়েস্ট') : isFinancialServiceMode ? (language === 'en' ? 'Consultations' : 'কন্সালটেন্সি') : isHealthcareMode ? (language === 'en' ? 'Appointments' : 'অ্যাপয়েন্টমেন্ট') : isEducationMode ? (language === 'en' ? 'Admissions' : 'ভর্তি ইনকোয়ারি') : isManufacturingMode ? (language === 'en' ? 'RFQ / Quotations' : 'কোটেশন রিকুয়েস্ট') : isLogisticsMode ? (language === 'en' ? 'Shipments & Bookings' : 'শিপমেন্ট ও বুকিং') : (language === 'en' ? 'Orders' : 'অর্ডারস')}
  </h1>
  <p className="text-[11px] text-muted-foreground mt-1">
- {orders.length} {isPropertyMode ? (language === 'en' ? 'inquiries total' : 'টি ইনকোয়ারি আছে') : isHospitalityMode ? (language === 'en' ? 'reservations total' : 'টি রিজার্ভেশন আছে') : (language === 'en' ? 'orders total' : 'টি অর্ডার আছে')}
+ {orders.length} {isPropertyMode ? (language === 'en' ? 'inquiries total' : 'টি ইনকোয়ারি আছে') : isHospitalityMode ? (language === 'en' ? 'reservations total' : 'টি রিজার্ভেশন আছে') : isTechSoftwareMode ? (language === 'en' ? 'demo requests total' : 'টি ডেমো রিকুয়েস্ট আছে') : isFinancialServiceMode ? (language === 'en' ? 'consultations total' : 'টি কন্সালটেন্সি রিকুয়েস্ট আছে') : isHealthcareMode ? (language === 'en' ? 'appointments total' : 'টি অ্যাপয়েন্টমেন্ট আছে') : isEducationMode ? (language === 'en' ? 'admissions total' : 'টি ভর্তি ইনকোয়ারি আছে') : isManufacturingMode ? (language === 'en' ? 'RFQs total' : 'টি কোটেশন রিকুয়েস্ট আছে') : isLogisticsMode ? (language === 'en' ? 'shipments total' : 'টি শিপমেন্ট রিকুয়েস্ট আছে') : (language === 'en' ? 'orders total' : 'টি অর্ডার আছে')}
  </p>
  </div>
  <div className="flex gap-2">
@@ -208,7 +220,7 @@ export default function OrdersPage() {
  <div className="flex gap-2">
  <div className="relative flex-1">
  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
- <input type="text" placeholder={language === 'en' ? 'Search orders...' : 'অর্ডার খুঁজুন...'} className="w-full pl-9 pr-3 py-2 bg-background border border-border rounded-lg text-[13px] focus:border-primary focus:outline-none text-foreground" />
+ <input type="text" placeholder={language === 'en' ? 'Search orders...' : '鄏�旭鄑温式鄏擒旭 鄏遤�鄏��鄑�成...'} className="w-full pl-9 pr-3 py-2 bg-background border border-border rounded-lg text-[13px] focus:border-primary focus:outline-none text-foreground" />
  </div>
  </div>
  </div>
@@ -219,7 +231,7 @@ export default function OrdersPage() {
  ) : orders.length === 0 ? (
  <div className="text-center p-4 text-muted-foreground">
  <ShoppingBag className="w-8 h-8 mx-auto mb-3 opacity-20" />
- <p className="text-[13px]">{language === 'en' ? 'No orders found' : 'কোনো অর্ডার নেই'}</p>
+ <p className="text-[13px]">{language === 'en' ? 'No orders found' : '鄏𨫼�鄏兒� 鄏�旭鄑温式鄏擒旭 鄏兒�鄏�'}</p>
  </div>
  ) : (
  orders.map(order => (
@@ -231,7 +243,7 @@ export default function OrdersPage() {
  <div className="flex items-start justify-between mb-2">
  <div>
  <div className="font-bold text-foreground text-[13px]">{order.contact?.name || 'Unknown Contact'}</div>
- <div className="text-[10px] text-muted-foreground mt-0.5">{format(new Date(order.createdAt), 'MMM dd, yyyy • hh:mm a')}</div>
+ <div className="text-[10px] text-muted-foreground mt-0.5">{format(new Date(order.createdAt), 'MMM dd, yyyy �� hh:mm a')}</div>
  </div>
  {getStatusBadge(order.status)}
  </div>

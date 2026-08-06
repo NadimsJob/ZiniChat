@@ -4,9 +4,9 @@ import { useState, useEffect, useRef } from 'react';
 import Cookies from 'js-cookie';
 import { useLanguage } from '@/components/LanguageProvider';
 import {
-  ShoppingCart, Building2, Hotel, Plus, Edit2, Trash2, X, Image as ImageIcon,
+  ShoppingCart, Building2, Hotel, Cpu, Briefcase, Stethoscope, GraduationCap, Factory, PackageCheck, FileText, BookOpen, Clock, Calendar, Plus, Edit2, Trash2, X, Image as ImageIcon,
   Save, RefreshCw, ChevronLeft, ChevronRight, MapPin, Home, BedDouble,
-  Bath, Layers, Compass, Sofa, Users, Wifi, Tv, Coffee, Sparkles
+  Bath, Layers, Compass, Sofa, Users, Wifi, Tv, Coffee, Sparkles, Truck, Navigation, Weight
 } from 'lucide-react';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -49,6 +49,12 @@ export default function ProductsPage() {
   const [saving, setSaving] = useState(false);
   const [isPropertyMode, setIsPropertyMode] = useState(false);
   const [isHospitalityMode, setIsHospitalityMode] = useState(false);
+  const [isTechSoftwareMode, setIsTechSoftwareMode] = useState(false);
+  const [isFinancialServiceMode, setIsFinancialServiceMode] = useState(false);
+  const [isHealthcareMode, setIsHealthcareMode] = useState(false);
+  const [isEducationMode, setIsEducationMode] = useState(false);
+  const [isManufacturingMode, setIsManufacturingMode] = useState(false);
+  const [isLogisticsMode, setIsLogisticsMode] = useState(false);
 
   const [formData, setFormData] = useState<any>(emptyForm(false));
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -84,6 +90,12 @@ export default function ProductsPage() {
         const matchedNature = natures.find((n: any) => n.name === tenantNature);
         setIsPropertyMode(matchedNature?.isPropertyMode ?? false);
         setIsHospitalityMode(matchedNature?.isHospitalityMode ?? false);
+        setIsTechSoftwareMode(matchedNature?.isTechSoftwareMode ?? false);
+        setIsFinancialServiceMode(matchedNature?.isFinancialServiceMode ?? false);
+        setIsHealthcareMode(matchedNature?.isHealthcareMode ?? false);
+        setIsEducationMode(matchedNature?.isEducationMode ?? false);
+        setIsManufacturingMode(matchedNature?.isManufacturingMode ?? false);
+        setIsLogisticsMode(matchedNature?.isLogisticsMode ?? false);
       }
 
       if (prodRes.ok) {
@@ -294,9 +306,21 @@ export default function ProductsPage() {
     ? (language === 'en' ? 'Properties' : 'প্রপার্টি')
     : isHospitalityMode
     ? (language === 'en' ? 'Rooms & Suites' : 'রুম ও স্যুট')
+    : isTechSoftwareMode
+    ? (language === 'en' ? 'Software Plans & Pricing' : 'সফটওয়্যার ও প্রাইসিং প্ল্যান')
+    : isFinancialServiceMode
+    ? (language === 'en' ? 'Service Packages' : 'সার্ভিস প্যাকেজ')
+    : isHealthcareMode
+    ? (language === 'en' ? 'Doctors & Care Services' : 'ডাক্তার ও ক্লিনিক সার্ভিস')
+    : isEducationMode
+    ? (language === 'en' ? 'Courses & Academic Programs' : 'কোর্স ও ব্যাচসমূহ')
+    : isManufacturingMode
+    ? (language === 'en' ? 'Wholesale Products & Factory Catalog' : 'হোলসেল প্রডাক্ট ক্যাটালগ')
+    : isLogisticsMode
+    ? (language === 'en' ? 'Freight Routes & Fleet Vehicles' : 'ফ্রেট রুট ও যানবাহন')
     : (language === 'en' ? 'Products' : 'প্রডাক্টস');
 
-  const addBtnLabel = isPropertyMode || isHospitalityMode
+  const addBtnLabel = isPropertyMode || isHospitalityMode || isTechSoftwareMode || isFinancialServiceMode || isHealthcareMode || isEducationMode || isManufacturingMode || isLogisticsMode
     ? (language === 'en' ? 'Add' : 'নতুন')
     : (language === 'en' ? 'Add' : 'নতুন');
 
@@ -304,6 +328,18 @@ export default function ProductsPage() {
     ? (formData.id ? (language === 'en' ? 'Edit Property' : 'প্রপার্টি এডিট') : (language === 'en' ? 'Add Property' : 'নতুন প্রপার্টি'))
     : isHospitalityMode
     ? (formData.id ? (language === 'en' ? 'Edit Room' : 'রুম এডিট') : (language === 'en' ? 'Add Room/Suite' : 'নতুন রুম যোগ'))
+    : isTechSoftwareMode
+    ? (formData.id ? (language === 'en' ? 'Edit Plan' : 'প্ল্যান এডিট') : (language === 'en' ? 'Add Software Plan' : 'নতুন সফটওয়্যার প্ল্যান'))
+    : isFinancialServiceMode
+    ? (formData.id ? (language === 'en' ? 'Edit Service' : 'সার্ভিস এডিট') : (language === 'en' ? 'Add Service Package' : 'নতুন সার্ভিস যোগ'))
+    : isHealthcareMode
+    ? (formData.id ? (language === 'en' ? 'Edit Doctor' : 'ডাক্তার এডিট') : (language === 'en' ? 'Add Doctor Profile' : 'নতুন ডাক্তার যোগ'))
+    : isEducationMode
+    ? (formData.id ? (language === 'en' ? 'Edit Course' : 'কোর্স এডিট') : (language === 'en' ? 'Add Course / Batch' : 'নতুন কোর্স যোগ'))
+    : isManufacturingMode
+    ? (formData.id ? (language === 'en' ? 'Edit Wholesale Product' : 'প্রডাক্ট এডিট') : (language === 'en' ? 'Add Wholesale Product' : 'নতুন প্রডাক্ট যোগ'))
+    : isLogisticsMode
+    ? (formData.id ? (language === 'en' ? 'Edit Freight Route/Vehicle' : 'ফ্রেট রুট এডিট') : (language === 'en' ? 'Add Freight Route / Fleet Vehicle' : 'নতুন ফ্রেট রুট/যানবাহন যোগ'))
     : (formData.id ? (language === 'en' ? 'Edit Product' : 'প্রডাক্ট এডিট') : (language === 'en' ? 'Add Product' : 'নতুন প্রডাক্ট'));
 
   return (
@@ -314,11 +350,11 @@ export default function ProductsPage() {
         <div className="p-1.5 border-b border-border shrink-0 flex items-center justify-between bg-background z-10">
           <div>
             <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-              {isPropertyMode ? <Building2 className="w-6 h-6 text-primary" /> : isHospitalityMode ? <Hotel className="w-6 h-6 text-amber-500" /> : <ShoppingCart className="w-6 h-6 text-primary" />}
+              {isPropertyMode ? <Building2 className="w-6 h-6 text-primary" /> : isHospitalityMode ? <Hotel className="w-6 h-6 text-amber-500" /> : isTechSoftwareMode ? <Cpu className="w-6 h-6 text-indigo-500" /> : isFinancialServiceMode ? <Briefcase className="w-6 h-6 text-emerald-500" /> : isHealthcareMode ? <Stethoscope className="w-6 h-6 text-teal-500" /> : isEducationMode ? <GraduationCap className="w-6 h-6 text-purple-500" /> : isManufacturingMode ? <Factory className="w-6 h-6 text-amber-500" /> : isLogisticsMode ? <Truck className="w-6 h-6 text-sky-500" /> : <ShoppingCart className="w-6 h-6 text-primary" />}
               {pageTitle}
             </h1>
             <p className="text-[11px] text-muted-foreground mt-1">
-              {products.length} {isPropertyMode ? (language === 'en' ? 'listings' : 'টি লিস্টিং') : isHospitalityMode ? (language === 'en' ? 'rooms & suites' : 'টি রুম আছে') : (language === 'en' ? 'items found' : 'টি প্রডাক্ট আছে')}
+              {products.length} {isPropertyMode ? (language === 'en' ? 'listings' : 'টি লিস্টিং') : isHospitalityMode ? (language === 'en' ? 'rooms & suites' : 'টি রুম আছে') : isTechSoftwareMode ? (language === 'en' ? 'software plans' : 'টি প্ল্যান আছে') : isFinancialServiceMode ? (language === 'en' ? 'service packages' : 'টি সার্ভিস প্যাকেজ আছে') : isHealthcareMode ? (language === 'en' ? 'doctors & services' : 'টি ডাক্তার ও সার্ভিস আছে') : isEducationMode ? (language === 'en' ? 'courses & academic programs' : 'টি কোর্স ও ব্যাচ আছে') : isManufacturingMode ? (language === 'en' ? 'wholesale & factory products' : 'টি হোলসেল প্রডাক্ট আছে') : (language === 'en' ? 'items found' : 'টি প্রডাক্ট আছে')}
             </p>
           </div>
           <button
@@ -413,6 +449,50 @@ export default function ProductsPage() {
                             {attrs.bedType && <span className="flex items-center gap-0.5"><BedDouble className="w-3 h-3 text-amber-500" />{attrs.bedType}</span>}
                           </div>
                           <div className="font-bold text-amber-500 text-[13px]">৳ {parseFloat(product.price).toLocaleString()} <span className="text-[10px] font-normal text-muted-foreground">/ night</span></div>
+                        </>
+                      ) : isTechSoftwareMode ? (
+                        <>
+                          <div className="flex flex-wrap gap-2 text-[10px] text-muted-foreground mb-1">
+                            {attrs.tier && <span className="px-1.5 py-0.5 bg-indigo-500/10 text-indigo-500 rounded font-semibold text-[9px]">{String(attrs.tier).toUpperCase()}</span>}
+                            {attrs.features && <span className="line-clamp-1">{Array.isArray(attrs.features) ? attrs.features.join(', ') : String(attrs.features)}</span>}
+                          </div>
+                          <div className="font-bold text-indigo-500 text-[13px]">৳ {parseFloat(product.price).toLocaleString()} <span className="text-[10px] font-normal text-muted-foreground">/ mo</span></div>
+                        </>
+                      ) : isFinancialServiceMode ? (
+                        <>
+                          <div className="flex flex-wrap gap-2 text-[10px] text-muted-foreground mb-1">
+                            {attrs.scope && <span className="line-clamp-1 flex items-center gap-0.5"><Briefcase className="w-3 h-3 text-emerald-500 shrink-0" />{String(attrs.scope)}</span>}
+                          </div>
+                          <div className="font-bold text-emerald-500 text-[13px]">৳ {parseFloat(product.price).toLocaleString()} <span className="text-[10px] font-normal text-muted-foreground">/ fee</span></div>
+                        </>
+                      ) : isHealthcareMode ? (
+                        <>
+                          <div className="flex flex-wrap gap-2 text-[10px] text-muted-foreground mb-1">
+                            {(attrs.specialization || attrs.specialty) && <span className="line-clamp-1 flex items-center gap-0.5"><Stethoscope className="w-3 h-3 text-teal-500 shrink-0" />{String(attrs.specialization || attrs.specialty)}</span>}
+                          </div>
+                          <div className="font-bold text-teal-500 text-[13px]">৳ {parseFloat(product.price).toLocaleString()} <span className="text-[10px] font-normal text-muted-foreground">/ visit</span></div>
+                        </>
+                      ) : isEducationMode ? (
+                        <>
+                          <div className="flex flex-wrap gap-2 text-[10px] text-muted-foreground mb-1">
+                            {(attrs.duration || attrs.courseDuration) && <span className="line-clamp-1 flex items-center gap-0.5"><Clock className="w-3 h-3 text-purple-500 shrink-0" />{String(attrs.duration || attrs.courseDuration)}</span>}
+                          </div>
+                          <div className="font-bold text-purple-500 text-[13px]">৳ {parseFloat(product.price).toLocaleString()} <span className="text-[10px] font-normal text-muted-foreground">/ course fee</span></div>
+                        </>
+                      ) : isManufacturingMode ? (
+                        <>
+                          <div className="flex flex-wrap gap-2 text-[10px] text-muted-foreground mb-1">
+                            {(attrs.moq || attrs.minimumOrderQty) && <span className="line-clamp-1 flex items-center gap-0.5"><PackageCheck className="w-3 h-3 text-amber-500 shrink-0" />MOQ: {String(attrs.moq || attrs.minimumOrderQty)}</span>}
+                          </div>
+                          <div className="font-bold text-amber-500 text-[13px]">৳ {parseFloat(product.price).toLocaleString()} <span className="text-[10px] font-normal text-muted-foreground">/ unit</span></div>
+                        </>
+                      ) : isLogisticsMode ? (
+                        <>
+                          <div className="flex flex-wrap gap-2 text-[10px] text-muted-foreground mb-1">
+                            {(attrs.route || attrs.originDestination) && <span className="line-clamp-1 flex items-center gap-0.5"><Navigation className="w-3 h-3 text-sky-500 shrink-0" />{String(attrs.route || attrs.originDestination)}</span>}
+                            {(attrs.capacity || attrs.vehicleType || attrs.weightLimit) && <span className="line-clamp-1 flex items-center gap-0.5"><Weight className="w-3 h-3 text-sky-500 shrink-0" />{String(attrs.capacity || attrs.vehicleType || attrs.weightLimit)}</span>}
+                          </div>
+                          <div className="font-bold text-sky-500 text-[13px]">৳ {parseFloat(product.price).toLocaleString()} <span className="text-[10px] font-normal text-muted-foreground">/ freight rate</span></div>
                         </>
                       ) : (
                         <>

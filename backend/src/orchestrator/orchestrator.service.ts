@@ -14,7 +14,7 @@ import * as fs from 'fs';
 
 export interface StructuredAiClassification {
   replyText: string;
-  intent: 'general' | 'order_intent' | 'order_confirmation' | 'support_needed' | 'product_lookup' | 'property_inquiry' | 'room_booking_inquiry';
+  intent: 'general' | 'order_intent' | 'order_confirmation' | 'support_needed' | 'product_lookup' | 'property_inquiry' | 'room_booking_inquiry' | 'demo_request' | 'software_inquiry' | 'consultation_request' | 'appointment_request' | 'doctor_inquiry' | 'course_admission_inquiry' | 'course_inquiry' | 'bulk_rfq_inquiry' | 'rfq_inquiry' | 'shipment_quote_request' | 'shipment_tracking_inquiry' | 'logistics_inquiry';
   orderProposal?: { productNameGuess: string; quantity: number }[];
   imageProductDescription?: string;
   supportSignal?: boolean;
@@ -22,6 +22,12 @@ export interface StructuredAiClassification {
   matchedTags?: string[];
   interestedPropertyName?: string; // Property mode: which property customer mentioned
   interestedRoomName?: string; // Hospitality mode: which hotel room/suite customer mentioned
+  interestedSoftwareName?: string; // Software mode: which software plan/product customer mentioned
+  interestedServiceName?: string; // Consulting mode: which service package customer mentioned
+  interestedDoctorName?: string; // Healthcare mode: which doctor/specialist patient mentioned
+  interestedCourseName?: string; // Education mode: which course/batch student mentioned
+  interestedRfqProductName?: string; // Manufacturing mode: which wholesale product buyer inquired about
+  interestedShipmentRoute?: string; // Logistics mode: which shipment route/fleet shipper inquired about
 }
 
 @Injectable()
@@ -114,12 +120,24 @@ export class OrchestratorService {
       const tenantRecord = await this.prisma.tenant.findUnique({ where: { id: tenantId }, select: { businessNature: true } });
       let isPropertyMode = false;
       let isHospitalityMode = false;
+      let isTechSoftwareMode = false;
+      let isFinancialServiceMode = false;
+      let isHealthcareMode = false;
+      let isEducationMode = false;
+      let isManufacturingMode = false;
+      let isLogisticsMode = false;
       if (tenantRecord?.businessNature) {
-        const businessNature = await this.prisma.businessNature.findFirst({
+        const businessNature: any = await this.prisma.businessNature.findFirst({
           where: { name: tenantRecord.businessNature }
         });
         isPropertyMode = businessNature?.isPropertyMode ?? false;
         isHospitalityMode = businessNature?.isHospitalityMode ?? false;
+        isTechSoftwareMode = businessNature?.isTechSoftwareMode ?? false;
+        isFinancialServiceMode = businessNature?.isFinancialServiceMode ?? false;
+        isHealthcareMode = businessNature?.isHealthcareMode ?? false;
+        isEducationMode = businessNature?.isEducationMode ?? false;
+        isManufacturingMode = businessNature?.isManufacturingMode ?? false;
+        isLogisticsMode = businessNature?.isLogisticsMode ?? false;
       }
 
       // Map tool states
@@ -134,8 +152,8 @@ export class OrchestratorService {
       const planSupportDetection = await this.quotaService.checkFeature(tenantId, 'ai_tool_support_detection').catch(() => false);
       const planProductMatching = await this.quotaService.checkFeature(tenantId, 'ai_tool_product_matching').catch(() => false);
 
-      // Property/Hospitality mode: order placement is always disabled to prevent AI from creating orders for inquiries/bookings
-      const isSpecialModeActive = isPropertyMode || isHospitalityMode;
+      // Special vertical modes (Property/Hospitality/Tech/Financial/Healthcare/Education/Manufacturing/Logistics): order placement is disabled to prevent AI from creating physical product orders
+      const isSpecialModeActive = isPropertyMode || isHospitalityMode || isTechSoftwareMode || isFinancialServiceMode || isHealthcareMode || isEducationMode || isManufacturingMode || isLogisticsMode;
       const isOrderPlacementActive = !isSpecialModeActive &&
         (toolMap['order_placement']?.isEnabled ?? assistant.aiOrderEnabled) && planOrderPlacement;
       const isImageReadingActive = (toolMap['image_reading']?.isEnabled ?? true) && planImageReading;
@@ -219,6 +237,12 @@ export class OrchestratorService {
         isSupportDetectionActive,
         isPropertyMode,
         isHospitalityMode,
+        isTechSoftwareMode,
+        isFinancialServiceMode,
+        isHealthcareMode,
+        isEducationMode,
+        isManufacturingMode,
+        isLogisticsMode,
       });
 
       let userText = '';
@@ -300,6 +324,18 @@ export class OrchestratorService {
         await this.handlePropertyInquiry(tenantId, message.conversation, message.conversationId, classification.interestedPropertyName, userText);
       } else if (isHospitalityMode && classification.intent === 'room_booking_inquiry') {
         await this.handleRoomBookingInquiry(tenantId, message.conversation, message.conversationId, classification.interestedRoomName, userText);
+      } else if (isTechSoftwareMode && (classification.intent === 'demo_request' || classification.intent === 'software_inquiry')) {
+        await this.handleDemoRequest(tenantId, message.conversation, message.conversationId, classification.interestedSoftwareName, userText);
+      } else if (isFinancialServiceMode && classification.intent === 'consultation_request') {
+        await this.handleConsultationRequest(tenantId, message.conversation, message.conversationId, classification.interestedServiceName, userText);
+      } else if (isHealthcareMode && (classification.intent === 'appointment_request' || classification.intent === 'doctor_inquiry')) {
+        await this.handleAppointmentRequest(tenantId, message.conversation, message.conversationId, classification.interestedDoctorName, userText);
+      } else if (isEducationMode && (classification.intent === 'course_admission_inquiry' || classification.intent === 'course_inquiry')) {
+        await this.handleCourseAdmissionInquiry(tenantId, message.conversation, message.conversationId, classification.interestedCourseName, userText);
+      } else if (isManufacturingMode && (classification.intent === 'bulk_rfq_inquiry' || classification.intent === 'rfq_inquiry')) {
+        await this.handleBulkRfqInquiry(tenantId, message.conversation, message.conversationId, classification.interestedRfqProductName, userText);
+      } else if (isLogisticsMode && (classification.intent === 'shipment_quote_request' || classification.intent === 'shipment_tracking_inquiry' || classification.intent === 'logistics_inquiry')) {
+        await this.handleShipmentInquiry(tenantId, message.conversation, message.conversationId, classification.interestedShipmentRoute, userText);
       }
 
       // Handler 2: Support Detection & Handover
@@ -409,7 +445,7 @@ export class OrchestratorService {
       if (typeof parsed.replyText === 'string') {
         return {
           replyText: parsed.replyText,
-          intent: ['general', 'order_intent', 'order_confirmation', 'support_needed', 'product_lookup', 'property_inquiry', 'room_booking_inquiry'].includes(parsed.intent)
+          intent: ['general', 'order_intent', 'order_confirmation', 'support_needed', 'product_lookup', 'property_inquiry', 'room_booking_inquiry', 'demo_request', 'software_inquiry', 'consultation_request', 'appointment_request', 'doctor_inquiry', 'course_admission_inquiry', 'course_inquiry', 'bulk_rfq_inquiry', 'rfq_inquiry', 'shipment_quote_request', 'shipment_tracking_inquiry', 'logistics_inquiry'].includes(parsed.intent)
             ? parsed.intent
             : 'general',
           orderProposal: Array.isArray(parsed.orderProposal) ? parsed.orderProposal : undefined,
@@ -421,6 +457,12 @@ export class OrchestratorService {
           matchedTags: Array.isArray(parsed.matchedTags) ? parsed.matchedTags.map(String) : [],
           interestedPropertyName: typeof parsed.interestedPropertyName === 'string' ? parsed.interestedPropertyName : undefined,
           interestedRoomName: typeof parsed.interestedRoomName === 'string' ? parsed.interestedRoomName : undefined,
+          interestedSoftwareName: typeof parsed.interestedSoftwareName === 'string' ? parsed.interestedSoftwareName : undefined,
+          interestedServiceName: typeof parsed.interestedServiceName === 'string' ? parsed.interestedServiceName : undefined,
+          interestedDoctorName: typeof parsed.interestedDoctorName === 'string' ? parsed.interestedDoctorName : undefined,
+          interestedCourseName: typeof parsed.interestedCourseName === 'string' ? parsed.interestedCourseName : undefined,
+          interestedRfqProductName: typeof parsed.interestedRfqProductName === 'string' ? parsed.interestedRfqProductName : undefined,
+          interestedShipmentRoute: typeof parsed.interestedShipmentRoute === 'string' ? parsed.interestedShipmentRoute : undefined,
         };
       }
     } catch (e) {
@@ -693,7 +735,7 @@ export class OrchestratorService {
   private async buildContextPrompt(
     conversationId: string,
     assistant: any,
-    options?: { isImage: boolean; caption: string; isOrderPlacementActive: boolean; isSupportDetectionActive: boolean; isPropertyMode?: boolean; isHospitalityMode?: boolean }
+    options?: { isImage: boolean; caption: string; isOrderPlacementActive: boolean; isSupportDetectionActive: boolean; isPropertyMode?: boolean; isHospitalityMode?: boolean; isTechSoftwareMode?: boolean; isFinancialServiceMode?: boolean; isHealthcareMode?: boolean; isEducationMode?: boolean; isManufacturingMode?: boolean; isLogisticsMode?: boolean }
   ): Promise<string> {
     const conversation = await this.prisma.conversation.findUnique({
       where: { id: conversationId },
@@ -827,6 +869,101 @@ export class OrchestratorService {
           prompt += ` | 💰 BDT ${p.price.toString()}/night\n`;
         });
       }
+    } else if (options?.isTechSoftwareMode) {
+      // Tech & Software mode: software plans & tiers with features & demo link
+      if (products.length > 0) {
+        prompt += `\n--- SOFTWARE & TECH PACKAGES (Source of Truth for Available Plans) ---\n`;
+        prompt += `IMPORTANT: You are a SOFTWARE & SAAS CONSULTANT. Do NOT create physical product orders. Help customers understand pricing tiers (Starter, Pro, Enterprise), key features, live demo links, and collect demo requests.\n`;
+        products.forEach(p => {
+          const attrs = (p.attributes as any) || {};
+          const tier = attrs.tier ? `[${String(attrs.tier).toUpperCase()}]` : '';
+          const features = Array.isArray(attrs.features) ? attrs.features.join(', ') : (attrs.features || '');
+          const demoUrl = attrs.demoUrl || attrs.demoLink || '';
+          prompt += `- ${tier} ${p.name}`;
+          if (features) prompt += ` | ⚡ Features: ${features}`;
+          if (demoUrl) prompt += ` | 🔗 Demo: ${demoUrl}`;
+          prompt += ` | 💰 BDT ${p.price.toString()}/mo\n`;
+        });
+      }
+    } else if (options?.isFinancialServiceMode) {
+      // Financial & Consulting mode: service packages with consultation fees, scope of work, & required docs
+      if (products.length > 0) {
+        prompt += `\n--- SERVICE PACKAGES & CONSULTANCY (Source of Truth for Services) ---\n`;
+        prompt += `IMPORTANT: You are a FINANCIAL & PROFESSIONAL SERVICES CONSULTANT. Do NOT create physical product orders. Help clients check consultation packages, fees, scope of work, required documents, and collect consultation booking requests.\n`;
+        products.forEach(p => {
+          const attrs = (p.attributes as any) || {};
+          const scope = attrs.scope || attrs.description || '';
+          const docs = Array.isArray(attrs.requiredDocs) ? attrs.requiredDocs.join(', ') : (attrs.requiredDocs || '');
+          prompt += `- ${p.name}`;
+          if (scope) prompt += ` | 💼 Scope: ${scope}`;
+          if (docs) prompt += ` | 📋 Required Documents: ${docs}`;
+          prompt += ` | 💰 Consultation Fee: BDT ${p.price.toString()}\n`;
+        });
+      }
+    } else if (options?.isHealthcareMode) {
+      // Healthcare & Clinic mode: doctors, specialties, visiting hours, & consultation fees
+      if (products.length > 0) {
+        prompt += `\n--- DOCTORS, CLINIC SERVICES & APPOINTMENTS (Source of Truth for Medical Care) ---\n`;
+        prompt += `IMPORTANT: You are a MEDICAL & CLINIC RECEPTION ASSISTANT. Do NOT create physical product orders. Help patients check doctor availability, specializations, visiting hours, consultation fees, and collect appointment booking requests.\n`;
+        products.forEach(p => {
+          const attrs = (p.attributes as any) || {};
+          const spec = attrs.specialization || attrs.specialty || '';
+          const hours = attrs.visitingHours || attrs.schedule || '';
+          prompt += `- Dr. ${p.name}`;
+          if (spec) prompt += ` | 🩺 Specialty: ${spec}`;
+          if (hours) prompt += ` | 🕒 Visiting Hours: ${hours}`;
+          prompt += ` | 💰 Consultation Fee: BDT ${p.price.toString()}\n`;
+        });
+      }
+    } else if (options?.isEducationMode) {
+      // Education & Academy mode: courses, batches, schedule, fees & syllabus
+      if (products.length > 0) {
+        prompt += `\n--- COURSES & ACADEMIC PROGRAMS (Source of Truth for Education & Academies) ---\n`;
+        prompt += `IMPORTANT: You are an ACADEMIC COUNSELOR & ADMISSIONS ASSISTANT. Do NOT create physical product orders. Help students check course details, batch schedules, fees, syllabus overview, and collect course admission inquiry requests.\n`;
+        products.forEach(p => {
+          const attrs = (p.attributes as any) || {};
+          const duration = attrs.duration || attrs.courseDuration || '';
+          const schedule = attrs.classSchedule || attrs.batchSchedule || '';
+          const syllabus = attrs.syllabusUrl || attrs.syllabusLink || '';
+          prompt += `- ${p.name}`;
+          if (duration) prompt += ` | ⏳ Duration: ${duration}`;
+          if (schedule) prompt += ` | 📅 Batch Schedule: ${schedule}`;
+          if (syllabus) prompt += ` | 📚 Syllabus: ${syllabus}`;
+          prompt += ` | 💰 Course Fee: BDT ${p.price.toString()}\n`;
+        });
+      }
+    } else if (options?.isManufacturingMode) {
+      // Manufacturing & Industrial mode: wholesale products, unit prices, MOQ, & spec sheets
+      if (products.length > 0) {
+        prompt += `\n--- B2B WHOLESALE & FACTORY PRODUCTS (Source of Truth for Manufacturing & Industrial) ---\n`;
+        prompt += `IMPORTANT: You are a B2B FACTORY & WHOLESALE SALES ASSISTANT. Do NOT create physical retail orders. Help wholesale buyers check unit prices, Minimum Order Quantity (MOQ), product specifications, and collect bulk RFQ quotation requests.\n`;
+        products.forEach(p => {
+          const attrs = (p.attributes as any) || {};
+          const moq = attrs.moq || attrs.minimumOrderQty || attrs.minimumOrderQuantity || '';
+          const spec = attrs.specifications || attrs.specSheet || attrs.material || '';
+          prompt += `- ${p.name}`;
+          if (moq) prompt += ` | 📦 MOQ: ${moq}`;
+          if (spec) prompt += ` | 🏭 Specs: ${spec}`;
+          prompt += ` | 💰 Wholesale Unit Price: BDT ${p.price.toString()}\n`;
+        });
+      }
+    } else if (options?.isLogisticsMode) {
+      // Logistics & Shipping mode: freight routes, fleet vehicle capacity, rates & tracking
+      if (products.length > 0) {
+        prompt += `\n--- LOGISTICS, FREIGHT & SHIPMENT SERVICES (Source of Truth for Logistics & Infrastructure) ---\n`;
+        prompt += `IMPORTANT: You are a LOGISTICS, FREIGHT & DISPATCH ASSISTANT. Do NOT create physical retail orders. Help shippers check cargo routes, vehicle/fleet capacity (Tons/CBM), freight rates, tracking info, and collect shipment booking requests.\n`;
+        products.forEach(p => {
+          const attrs = (p.attributes as any) || {};
+          const route = attrs.route || attrs.originDestination || '';
+          const capacity = attrs.capacity || attrs.vehicleType || attrs.weightLimit || '';
+          const rate = attrs.rate || attrs.freightRate || '';
+          prompt += `- ${p.name}`;
+          if (route) prompt += ` | 🛣 Route: ${route}`;
+          if (capacity) prompt += ` | 🚛 Fleet/Capacity: ${capacity}`;
+          if (rate) prompt += ` | 💰 Freight Rate: BDT ${p.price.toString()}`;
+          prompt += `\n`;
+        });
+      }
     } else {
       // eCommerce mode: standard product catalog
       if (products.length > 0) {
@@ -886,6 +1023,42 @@ export class OrchestratorService {
       prompt += `   - If the guest wants to book or reserve a room, check-in dates, or room info, set "intent": "room_booking_inquiry".\n`;
       prompt += `   - Set "interestedRoomName" to the room/suite name the guest is interested in.\n`;
       prompt += `   - For general questions, use "intent": "general".\n`;
+    } else if (options?.isTechSoftwareMode) {
+      prompt += `2. TECH & SOFTWARE DEMO MODE IS ACTIVE:\n`;
+      prompt += `   - You MUST NOT create or propose any product orders.\n`;
+      prompt += `   - If the customer wants a software demo, trial access, pricing quote, or consultation, set "intent": "demo_request".\n`;
+      prompt += `   - Set "interestedSoftwareName" to the software plan or product name the customer is inquiring about.\n`;
+      prompt += `   - For general questions, use "intent": "general".\n`;
+    } else if (options?.isFinancialServiceMode) {
+      prompt += `2. FINANCIAL & CONSULTING MODE IS ACTIVE:\n`;
+      prompt += `   - You MUST NOT create or propose any product orders.\n`;
+      prompt += `   - If the client wants a financial advice consultation, tax planning session, legal advice, or service package info, set "intent": "consultation_request".\n`;
+      prompt += `   - Set "interestedServiceName" to the service package name the client is inquiring about.\n`;
+      prompt += `   - For general questions, use "intent": "general".\n`;
+    } else if (options?.isHealthcareMode) {
+      prompt += `2. HEALTHCARE & CLINIC APPOINTMENT MODE IS ACTIVE:\n`;
+      prompt += `   - You MUST NOT create or propose any product orders.\n`;
+      prompt += `   - If the patient wants a doctor appointment, serial booking, visiting hours, or doctor info, set "intent": "appointment_request".\n`;
+      prompt += `   - Set "interestedDoctorName" to the doctor name or medical specialty the patient is inquiring about.\n`;
+      prompt += `   - For general questions, use "intent": "general".\n`;
+    } else if (options?.isEducationMode) {
+      prompt += `2. EDUCATION & ACADEMY ADMISSION MODE IS ACTIVE:\n`;
+      prompt += `   - You MUST NOT create or propose any product orders.\n`;
+      prompt += `   - If the student wants course admission, batch schedule, fee structure, syllabus, or course info, set "intent": "course_admission_inquiry".\n`;
+      prompt += `   - Set "interestedCourseName" to the course or batch name the student is inquiring about.\n`;
+      prompt += `   - For general questions, use "intent": "general".\n`;
+    } else if (options?.isManufacturingMode) {
+      prompt += `2. MANUFACTURING & B2B WHOLESALE MODE IS ACTIVE:\n`;
+      prompt += `   - You MUST NOT create or propose any retail product orders.\n`;
+      prompt += `   - If the buyer requests a wholesale quote, bulk order pricing, factory MOQ, custom manufacturing, or RFQ, set "intent": "bulk_rfq_inquiry".\n`;
+      prompt += `   - Set "interestedRfqProductName" to the wholesale product name the buyer is inquiring about.\n`;
+      prompt += `   - For general questions, use "intent": "general".\n`;
+    } else if (options?.isLogisticsMode) {
+      prompt += `2. LOGISTICS & TRUCK SHIPPING MODE IS ACTIVE:\n`;
+      prompt += `   - You MUST NOT create or propose any retail product orders.\n`;
+      prompt += `   - If the shipper requests a freight quote, truck booking, cargo shipping rate, container dispatch, or shipment tracking, set "intent": "shipment_quote_request".\n`;
+      prompt += `   - Set "interestedShipmentRoute" to the origin-destination route or vehicle type the shipper is inquiring about.\n`;
+      prompt += `   - For general questions, use "intent": "general".\n`;
     } else if (!options?.isOrderPlacementActive) {
       prompt += `2. ORDER PLACEMENT IS DISABLED: Set "intent": "general" or "product_lookup" and do NOT generate order proposals.\n`;
     }
@@ -900,6 +1073,24 @@ export class OrchestratorService {
     } else if (options?.isHospitalityMode) {
       prompt += `  "intent": "general | room_booking_inquiry | support_needed | product_lookup",\n`;
       prompt += `  "interestedRoomName": "name of hotel room/suite guest is interested in (or empty string)",\n`;
+    } else if (options?.isTechSoftwareMode) {
+      prompt += `  "intent": "general | demo_request | support_needed | product_lookup",\n`;
+      prompt += `  "interestedSoftwareName": "name of software plan or product customer is interested in (or empty string)",\n`;
+    } else if (options?.isFinancialServiceMode) {
+      prompt += `  "intent": "general | consultation_request | support_needed | product_lookup",\n`;
+      prompt += `  "interestedServiceName": "name of service package client is interested in (or empty string)",\n`;
+    } else if (options?.isHealthcareMode) {
+      prompt += `  "intent": "general | appointment_request | support_needed | product_lookup",\n`;
+      prompt += `  "interestedDoctorName": "name of doctor or specialty patient is interested in (or empty string)",\n`;
+    } else if (options?.isEducationMode) {
+      prompt += `  "intent": "general | course_admission_inquiry | support_needed | product_lookup",\n`;
+      prompt += `  "interestedCourseName": "name of course or batch student is interested in (or empty string)",\n`;
+    } else if (options?.isManufacturingMode) {
+      prompt += `  "intent": "general | bulk_rfq_inquiry | support_needed | product_lookup",\n`;
+      prompt += `  "interestedRfqProductName": "name of wholesale product buyer is inquiring about (or empty string)",\n`;
+    } else if (options?.isLogisticsMode) {
+      prompt += `  "intent": "general | shipment_quote_request | shipment_tracking_inquiry | support_needed | product_lookup",\n`;
+      prompt += `  "interestedShipmentRoute": "route or vehicle type shipper is inquiring about (or empty string)",\n`;
     } else {
       prompt += `  "intent": "general | order_intent | order_confirmation | support_needed | product_lookup",\n`;
       prompt += `  "orderProposal": [ { "productNameGuess": "Product Name", "quantity": 1 } ],\n`;
@@ -1052,6 +1243,432 @@ export class OrchestratorService {
       this.logger.log(`Room booking inquiry recorded for contact ${contactId}, room: ${interestedRoomName || 'N/A'}`);
     } catch (err: any) {
       this.logger.error(`handleRoomBookingInquiry failed: ${err.message}`);
+    }
+  }
+
+  // ── Software Demo Request Handler (Tech & Software Mode) ───────────────────
+  // Called when AI detects a demo_request intent in Tech & Software Mode.
+  // Moves contact to 'Qualified' Kanban stage and records a ContactNote.
+  private async handleDemoRequest(
+    tenantId: string,
+    conversation: any,
+    conversationId: string,
+    interestedSoftwareName: string | undefined,
+    userText: string
+  ) {
+    this.assertBelongsToTenant(conversation, tenantId, 'Conversation');
+    const contactId = conversation.contactId;
+
+    try {
+      // 1. Find or create 'Qualified' stage
+      let qualifiedStage = await this.prisma.kanbanStage.findFirst({
+        where: { tenantId, name: 'Qualified' }
+      });
+      if (!qualifiedStage) {
+        qualifiedStage = await this.prisma.kanbanStage.create({
+          data: { tenantId, name: 'Qualified', color: '#10b981', order: 1 }
+        });
+      }
+
+      // 2. Move contact to Qualified stage (only if not already assigned a stage)
+      const contact = await this.prisma.contact.findUnique({
+        where: { id: contactId },
+        include: { stage: true }
+      });
+
+      if (!contact?.stageId || !contact.stage) {
+        await this.prisma.contact.update({
+          where: { id: contactId },
+          data: { stageId: qualifiedStage.id }
+        });
+      }
+
+      // 3. Record ContactNote with demo request details
+      const noteContent = [
+        '[AI Software Demo Request]',
+        interestedSoftwareName ? `Software/Plan: ${interestedSoftwareName}` : '',
+        `Customer message: "${userText.slice(0, 300)}"`
+      ].filter(Boolean).join(' | ');
+
+      await this.prisma.contactNote.create({
+        data: { contactId, content: noteContent }
+      });
+
+      // 4. Activity log
+      await this.activityLogService.record({
+        tenantId,
+        conversationId,
+        contactId,
+        type: 'DEMO_REQUEST',
+        metadataJson: { softwareName: interestedSoftwareName || 'Unknown', source: 'ai' }
+      });
+
+      // 5. Notify tenant admins / product specialists
+      await this.notificationsService.createNotificationForTenantAdmins(
+        tenantId,
+        'New Software Demo Request',
+        `${contact?.name || 'A customer'} requested a software demo for${interestedSoftwareName ? ' "' + interestedSoftwareName + '"' : ' a product'}.`,
+        'inbox'
+      ).catch(() => {});
+
+      this.logger.log(`Software demo request recorded for contact ${contactId}, software: ${interestedSoftwareName || 'N/A'}`);
+    } catch (err: any) {
+      this.logger.error(`handleDemoRequest failed: ${err.message}`);
+    }
+  }
+
+  // ── Consultation Request Handler (Financial & Professional Services Mode) ──
+  // Called when AI detects a consultation_request intent in Financial Service Mode.
+  // Moves contact to 'Intake' Kanban stage and records a ContactNote.
+  private async handleConsultationRequest(
+    tenantId: string,
+    conversation: any,
+    conversationId: string,
+    interestedServiceName: string | undefined,
+    userText: string
+  ) {
+    this.assertBelongsToTenant(conversation, tenantId, 'Conversation');
+    const contactId = conversation.contactId;
+
+    try {
+      // 1. Find or create 'Intake' stage
+      let intakeStage = await this.prisma.kanbanStage.findFirst({
+        where: { tenantId, name: 'Intake' }
+      });
+      if (!intakeStage) {
+        intakeStage = await this.prisma.kanbanStage.create({
+          data: { tenantId, name: 'Intake', color: '#3b82f6', order: 0 }
+        });
+      }
+
+      // 2. Move contact to Intake stage (only if not already assigned a stage)
+      const contact = await this.prisma.contact.findUnique({
+        where: { id: contactId },
+        include: { stage: true }
+      });
+
+      if (!contact?.stageId || !contact.stage) {
+        await this.prisma.contact.update({
+          where: { id: contactId },
+          data: { stageId: intakeStage.id }
+        });
+      }
+
+      // 3. Record ContactNote with consultation details
+      const noteContent = [
+        '[AI Consultation Request]',
+        interestedServiceName ? `Service: ${interestedServiceName}` : '',
+        `Client message: "${userText.slice(0, 300)}"`
+      ].filter(Boolean).join(' | ');
+
+      await this.prisma.contactNote.create({
+        data: { contactId, content: noteContent }
+      });
+
+      // 4. Activity log
+      await this.activityLogService.record({
+        tenantId,
+        conversationId,
+        contactId,
+        type: 'CONSULTATION_REQUEST',
+        metadataJson: { serviceName: interestedServiceName || 'Unknown', source: 'ai' }
+      });
+
+      // 5. Notify tenant admins / financial advisors
+      await this.notificationsService.createNotificationForTenantAdmins(
+        tenantId,
+        'New Consultation Request',
+        `${contact?.name || 'A client'} requested a consultation for${interestedServiceName ? ' "' + interestedServiceName + '"' : ' a service package'}.`,
+        'inbox'
+      ).catch(() => {});
+
+      this.logger.log(`Consultation request recorded for contact ${contactId}, service: ${interestedServiceName || 'N/A'}`);
+    } catch (err: any) {
+      this.logger.error(`handleConsultationRequest failed: ${err.message}`);
+    }
+  }
+
+  // ── Appointment Request Handler (Healthcare & Clinic Mode) ────────────────
+  // Called when AI detects an appointment_request intent in Healthcare Mode.
+  // Moves contact to 'Triage' Kanban stage and records a ContactNote.
+  private async handleAppointmentRequest(
+    tenantId: string,
+    conversation: any,
+    conversationId: string,
+    interestedDoctorName: string | undefined,
+    userText: string
+  ) {
+    this.assertBelongsToTenant(conversation, tenantId, 'Conversation');
+    const contactId = conversation.contactId;
+
+    try {
+      // 1. Find or create 'Triage' stage
+      let triageStage = await this.prisma.kanbanStage.findFirst({
+        where: { tenantId, name: 'Triage' }
+      });
+      if (!triageStage) {
+        triageStage = await this.prisma.kanbanStage.create({
+          data: { tenantId, name: 'Triage', color: '#10b981', order: 0 }
+        });
+      }
+
+      // 2. Move contact to Triage stage (only if not already assigned a stage)
+      const contact = await this.prisma.contact.findUnique({
+        where: { id: contactId },
+        include: { stage: true }
+      });
+
+      if (!contact?.stageId || !contact.stage) {
+        await this.prisma.contact.update({
+          where: { id: contactId },
+          data: { stageId: triageStage.id }
+        });
+      }
+
+      // 3. Record ContactNote with appointment request details
+      const noteContent = [
+        '[AI Appointment Request]',
+        interestedDoctorName ? `Doctor/Specialty: ${interestedDoctorName}` : '',
+        `Patient message: "${userText.slice(0, 300)}"`
+      ].filter(Boolean).join(' | ');
+
+      await this.prisma.contactNote.create({
+        data: { contactId, content: noteContent }
+      });
+
+      // 4. Activity log
+      await this.activityLogService.record({
+        tenantId,
+        conversationId,
+        contactId,
+        type: 'APPOINTMENT_REQUEST',
+        metadataJson: { doctorName: interestedDoctorName || 'Unknown', source: 'ai' }
+      });
+
+      // 5. Notify tenant admins / clinic receptionists
+      await this.notificationsService.createNotificationForTenantAdmins(
+        tenantId,
+        'New Appointment Request',
+        `${contact?.name || 'A patient'} requested an appointment for${interestedDoctorName ? ' "' + interestedDoctorName + '"' : ' a doctor/clinic service'}.`,
+        'inbox'
+      ).catch(() => {});
+
+      this.logger.log(`Appointment request recorded for contact ${contactId}, doctor: ${interestedDoctorName || 'N/A'}`);
+    } catch (err: any) {
+      this.logger.error(`handleAppointmentRequest failed: ${err.message}`);
+    }
+  }
+
+  // ── Course Admission Inquiry Handler (Education & Academy Mode) ───────────
+  // Called when AI detects a course_admission_inquiry intent in Education Mode.
+  // Moves contact to 'Admissions' Kanban stage and records a ContactNote.
+  private async handleCourseAdmissionInquiry(
+    tenantId: string,
+    conversation: any,
+    conversationId: string,
+    interestedCourseName: string | undefined,
+    userText: string
+  ) {
+    this.assertBelongsToTenant(conversation, tenantId, 'Conversation');
+    const contactId = conversation.contactId;
+
+    try {
+      // 1. Find or create 'Admissions' stage
+      let admissionsStage = await this.prisma.kanbanStage.findFirst({
+        where: { tenantId, name: 'Admissions' }
+      });
+      if (!admissionsStage) {
+        admissionsStage = await this.prisma.kanbanStage.create({
+          data: { tenantId, name: 'Admissions', color: '#8b5cf6', order: 0 }
+        });
+      }
+
+      // 2. Move contact to Admissions stage (only if not already assigned a stage)
+      const contact = await this.prisma.contact.findUnique({
+        where: { id: contactId },
+        include: { stage: true }
+      });
+
+      if (!contact?.stageId || !contact.stage) {
+        await this.prisma.contact.update({
+          where: { id: contactId },
+          data: { stageId: admissionsStage.id }
+        });
+      }
+
+      // 3. Record ContactNote with course admission inquiry details
+      const noteContent = [
+        '[AI Course Admission Inquiry]',
+        interestedCourseName ? `Course/Batch: ${interestedCourseName}` : '',
+        `Student message: "${userText.slice(0, 300)}"`
+      ].filter(Boolean).join(' | ');
+
+      await this.prisma.contactNote.create({
+        data: { contactId, content: noteContent }
+      });
+
+      // 4. Activity log
+      await this.activityLogService.record({
+        tenantId,
+        conversationId,
+        contactId,
+        type: 'COURSE_ADMISSION_INQUIRY',
+        metadataJson: { courseName: interestedCourseName || 'Unknown', source: 'ai' }
+      });
+
+      // 5. Notify tenant admins / academic counselors
+      await this.notificationsService.createNotificationForTenantAdmins(
+        tenantId,
+        'New Course Admission Inquiry',
+        `${contact?.name || 'A student'} requested information for${interestedCourseName ? ' "' + interestedCourseName + '"' : ' a course/batch'}.`,
+        'inbox'
+      ).catch(() => {});
+
+      this.logger.log(`Course admission inquiry recorded for contact ${contactId}, course: ${interestedCourseName || 'N/A'}`);
+    } catch (err: any) {
+      this.logger.error(`handleCourseAdmissionInquiry failed: ${err.message}`);
+    }
+  }
+
+  // ── B2B Bulk RFQ Inquiry Handler (Manufacturing & Industrial Mode) ───────
+  // Called when AI detects a bulk_rfq_inquiry intent in Manufacturing Mode.
+  // Moves contact to 'RFQ / Quotations' Kanban stage and records a ContactNote.
+  private async handleBulkRfqInquiry(
+    tenantId: string,
+    conversation: any,
+    conversationId: string,
+    interestedRfqProductName: string | undefined,
+    userText: string
+  ) {
+    this.assertBelongsToTenant(conversation, tenantId, 'Conversation');
+    const contactId = conversation.contactId;
+
+    try {
+      // 1. Find or create 'RFQ / Quotations' stage
+      let rfqStage = await this.prisma.kanbanStage.findFirst({
+        where: { tenantId, name: 'RFQ / Quotations' }
+      });
+      if (!rfqStage) {
+        rfqStage = await this.prisma.kanbanStage.create({
+          data: { tenantId, name: 'RFQ / Quotations', color: '#f59e0b', order: 0 }
+        });
+      }
+
+      // 2. Move contact to RFQ / Quotations stage (only if not already assigned a stage)
+      const contact = await this.prisma.contact.findUnique({
+        where: { id: contactId },
+        include: { stage: true }
+      });
+
+      if (!contact?.stageId || !contact.stage) {
+        await this.prisma.contact.update({
+          where: { id: contactId },
+          data: { stageId: rfqStage.id }
+        });
+      }
+
+      // 3. Record ContactNote with B2B bulk RFQ details
+      const noteContent = [
+        '[AI B2B Bulk RFQ Inquiry]',
+        interestedRfqProductName ? `Wholesale Product: ${interestedRfqProductName}` : '',
+        `Buyer message: "${userText.slice(0, 300)}"`
+      ].filter(Boolean).join(' | ');
+
+      await this.prisma.contactNote.create({
+        data: { contactId, content: noteContent }
+      });
+
+      // 4. Activity log
+      await this.activityLogService.record({
+        tenantId,
+        conversationId,
+        contactId,
+        type: 'BULK_RFQ_INQUIRY',
+        metadataJson: { productName: interestedRfqProductName || 'Unknown', source: 'ai' }
+      });
+
+      // 5. Notify tenant admins / wholesale sales managers
+      await this.notificationsService.createNotificationForTenantAdmins(
+        tenantId,
+        'New B2B Bulk RFQ Inquiry',
+        `${contact?.name || 'A buyer'} requested a wholesale quotation for${interestedRfqProductName ? ' "' + interestedRfqProductName + '"' : ' a product'}.`,
+        'inbox'
+      ).catch(() => {});
+
+      this.logger.log(`B2B Bulk RFQ inquiry recorded for contact ${contactId}, product: ${interestedRfqProductName || 'N/A'}`);
+    } catch (err: any) {
+      this.logger.error(`handleBulkRfqInquiry failed: ${err.message}`);
+    }
+  }
+
+  // ── Logistics & Shipping Handler (Logistics & Infrastructure Mode) ───────
+  // Called when AI detects a shipment_quote_request intent in Logistics Mode.
+  // Moves contact to 'Shipments & Bookings' Kanban stage and records a ContactNote.
+  private async handleShipmentInquiry(
+    tenantId: string,
+    conversation: any,
+    conversationId: string,
+    interestedShipmentRoute: string | undefined,
+    userText: string
+  ) {
+    this.assertBelongsToTenant(conversation, tenantId, 'Conversation');
+    const contactId = conversation.contactId;
+
+    try {
+      // 1. Find or create 'Shipments & Bookings' stage
+      let shipmentStage = await this.prisma.kanbanStage.findFirst({
+        where: { tenantId, name: 'Shipments & Bookings' }
+      });
+      if (!shipmentStage) {
+        shipmentStage = await this.prisma.kanbanStage.create({
+          data: { tenantId, name: 'Shipments & Bookings', color: '#0284c7', order: 0 }
+        });
+      }
+
+      // 2. Move contact to Shipments & Bookings stage (only if not already assigned a stage)
+      const contact = await this.prisma.contact.findUnique({
+        where: { id: contactId },
+        include: { stage: true }
+      });
+
+      if (!contact?.stageId || !contact.stage) {
+        await this.prisma.contact.update({
+          where: { id: contactId },
+          data: { stageId: shipmentStage.id }
+        });
+      }
+
+      // 3. Record ContactNote with logistics shipment inquiry details
+      const noteContent = [
+        '[AI Logistics Shipment Inquiry]',
+        interestedShipmentRoute ? `Route/Fleet: ${interestedShipmentRoute}` : '',
+        `Shipper message: "${userText.slice(0, 300)}"`
+      ].filter(Boolean).join(' | ');
+
+      await this.prisma.contactNote.create({
+        data: { contactId, content: noteContent }
+      });
+
+      // 4. Activity log
+      await this.activityLogService.record({
+        tenantId,
+        conversationId,
+        contactId,
+        type: 'SHIPMENT_INQUIRY',
+        metadataJson: { route: interestedShipmentRoute || 'Unknown', source: 'ai' }
+      });
+
+      // 5. Notify tenant admins / logistics dispatchers
+      await this.notificationsService.createNotificationForTenantAdmins(
+        tenantId,
+        'New Shipment Booking Inquiry',
+        `${contact?.name || 'A shipper'} requested a logistics quote/booking for${interestedShipmentRoute ? ' "' + interestedShipmentRoute + '"' : ' a route/fleet'}.`,
+        'inbox'
+      ).catch(() => {});
+
+      this.logger.log(`Shipment inquiry recorded for contact ${contactId}, route: ${interestedShipmentRoute || 'N/A'}`);
+    } catch (err: any) {
+      this.logger.error(`handleShipmentInquiry failed: ${err.message}`);
     }
   }
 }

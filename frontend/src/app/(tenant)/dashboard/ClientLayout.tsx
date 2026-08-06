@@ -44,7 +44,13 @@ import {
  Pin,
  X,
  Building2,
- Hotel
+ Hotel,
+ Cpu,
+ Briefcase,
+ Stethoscope,
+ GraduationCap,
+ Factory,
+ Truck
 } from 'lucide-react';
 import NotificationBell from '@/components/NotificationBell';
 import SupportWidget from '@/components/SupportWidget';
@@ -69,6 +75,12 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  const [avatarError, setAvatarError] = useState(false);
  const [isPropertyMode, setIsPropertyMode] = useState(false);
  const [isHospitalityMode, setIsHospitalityMode] = useState(false);
+ const [isTechSoftwareMode, setIsTechSoftwareMode] = useState(false);
+ const [isFinancialServiceMode, setIsFinancialServiceMode] = useState(false);
+ const [isHealthcareMode, setIsHealthcareMode] = useState(false);
+ const [isEducationMode, setIsEducationMode] = useState(false);
+ const [isManufacturingMode, setIsManufacturingMode] = useState(false);
+ const [isLogisticsMode, setIsLogisticsMode] = useState(false);
 
 
  const hasAgentPresence = useFeature('agent_presence');
@@ -104,7 +116,9 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
       return language === 'en' ? 'Leads' : 'লিডস';
     }
     if (pathname.startsWith('/dashboard/orders')) {
-      return language === 'en' ? (isPropertyMode ? 'Inquiries' : 'Orders') : (isPropertyMode ? 'ইনকয়্যারিস' : 'অর্ডার');
+      return language === 'en'
+        ? (isPropertyMode ? 'Inquiries' : isHospitalityMode ? 'Reservations' : isTechSoftwareMode ? 'Demo Requests' : isFinancialServiceMode ? 'Consultations' : isHealthcareMode ? 'Appointments' : isEducationMode ? 'Admissions' : isManufacturingMode ? 'RFQ / Quotations' : isLogisticsMode ? 'Shipments & Bookings' : 'Orders')
+        : (isPropertyMode ? 'ইনকয়্যারিস' : isHospitalityMode ? 'রিজার্ভেশন' : isTechSoftwareMode ? 'ডেমো রিকুয়েস্ট' : isFinancialServiceMode ? 'কন্সালটেন্সি' : isHealthcareMode ? 'অ্যাপয়েন্টমেন্টস' : isEducationMode ? 'ভর্তি ইনকোয়ারি' : isManufacturingMode ? 'কোটেশন রিকুয়েস্ট' : isLogisticsMode ? 'শিপমেন্ট ও বুকিং' : 'অর্ডার');
     }
     if (pathname.startsWith('/dashboard/broadcasts')) {
       return language === 'en' ? 'Broadcast' : 'ব্রডকাস্ট';
@@ -176,6 +190,12 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
         const matched = natures.find((n: any) => n.name === userData.tenant.businessNature);
         setIsPropertyMode(matched?.isPropertyMode ?? false);
         setIsHospitalityMode(matched?.isHospitalityMode ?? false);
+        setIsTechSoftwareMode(matched?.isTechSoftwareMode ?? false);
+        setIsFinancialServiceMode(matched?.isFinancialServiceMode ?? false);
+        setIsHealthcareMode(matched?.isHealthcareMode ?? false);
+        setIsEducationMode(matched?.isEducationMode ?? false);
+        setIsManufacturingMode(matched?.isManufacturingMode ?? false);
+        setIsLogisticsMode(matched?.isLogisticsMode ?? false);
       }
     } catch (e) {
       console.error(e);
@@ -402,8 +422,20 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
             ? (language === 'en' ? 'Properties' : 'প্রপার্টি লিস্ট') 
             : isHospitalityMode
             ? (language === 'en' ? 'Rooms & Suites' : 'রুম ও স্যুট')
+            : isTechSoftwareMode
+            ? (language === 'en' ? 'Software Plans' : 'সফটওয়্যার প্ল্যান')
+            : isFinancialServiceMode
+            ? (language === 'en' ? 'Services' : 'সার্ভিসেস')
+            : isHealthcareMode
+            ? (language === 'en' ? 'Doctors & Care' : 'ডাক্তার ও সার্ভিস')
+            : isEducationMode
+            ? (language === 'en' ? 'Courses & Batches' : 'কোর্স ও ব্যাচ')
+            : isManufacturingMode
+            ? (language === 'en' ? 'Wholesale Catalog' : 'হোলসেল ক্যাটালগ')
+            : isLogisticsMode
+            ? (language === 'en' ? 'Freight Catalog' : 'ফ্রেট ক্যাটালগ')
             : (language === 'en' ? 'Product List' : 'প্রোডাক্ট লিস্ট'), 
-          icon: isPropertyMode ? Building2 : isHospitalityMode ? Hotel : ShoppingCart, 
+          icon: isPropertyMode ? Building2 : isHospitalityMode ? Hotel : isTechSoftwareMode ? Cpu : isFinancialServiceMode ? Briefcase : isHealthcareMode ? Stethoscope : isEducationMode ? GraduationCap : isManufacturingMode ? Factory : isLogisticsMode ? Truck : ShoppingCart, 
           href: '/dashboard/products' 
         },
         { 
@@ -411,8 +443,20 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
             ? (language === 'en' ? 'Inquiries' : 'ইনকোয়ারি') 
             : isHospitalityMode
             ? (language === 'en' ? 'Reservations' : 'রিজার্ভেশন')
+            : isTechSoftwareMode
+            ? (language === 'en' ? 'Demo Requests' : 'ডেমো রিকুয়েস্ট')
+            : isFinancialServiceMode
+            ? (language === 'en' ? 'Consultations' : 'কন্সালটেন্সি')
+            : isHealthcareMode
+            ? (language === 'en' ? 'Appointments' : 'অ্যাপয়েন্টমেন্টস')
+            : isEducationMode
+            ? (language === 'en' ? 'Admissions' : 'ভর্তি ইনকোয়ারি')
+            : isManufacturingMode
+            ? (language === 'en' ? 'RFQ / Quotations' : 'কোটেশন রিকুয়েস্ট')
+            : isLogisticsMode
+            ? (language === 'en' ? 'Shipments & Bookings' : 'শিপমেন্ট ও বুকিং')
             : (language === 'en' ? 'Manage Order' : 'ম্যানেজ অর্ডার'), 
-          icon: isPropertyMode ? Building2 : isHospitalityMode ? Hotel : ShoppingBag, 
+          icon: isPropertyMode ? Building2 : isHospitalityMode ? Hotel : isTechSoftwareMode ? Cpu : isFinancialServiceMode ? Briefcase : isHealthcareMode ? Stethoscope : isEducationMode ? GraduationCap : isManufacturingMode ? Factory : isLogisticsMode ? Truck : ShoppingBag, 
           href: '/dashboard/orders' 
         },
         { name: language === 'en' ? 'Broadcasts' : 'ব্রডকাস্ট', icon: Megaphone, href: '/dashboard/broadcasts' },

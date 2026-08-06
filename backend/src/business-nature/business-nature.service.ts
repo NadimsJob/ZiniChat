@@ -11,13 +11,13 @@ export class BusinessNatureService {
     });
   }
 
-  async create(data: { name: string; nameBn?: string; isActive?: boolean; isPropertyMode?: boolean; isHospitalityMode?: boolean }) {
+  async create(data: { name: string; nameBn?: string; isActive?: boolean; isPropertyMode?: boolean; isHospitalityMode?: boolean; isTechSoftwareMode?: boolean; isFinancialServiceMode?: boolean; isHealthcareMode?: boolean; isEducationMode?: boolean; isManufacturingMode?: boolean; isLogisticsMode?: boolean }) {
     return this.prisma.businessNature.create({
       data
     });
   }
 
-  async update(id: string, data: { name?: string; nameBn?: string; isActive?: boolean; isPropertyMode?: boolean; isHospitalityMode?: boolean }) {
+  async update(id: string, data: { name?: string; nameBn?: string; isActive?: boolean; isPropertyMode?: boolean; isHospitalityMode?: boolean; isTechSoftwareMode?: boolean; isFinancialServiceMode?: boolean; isHealthcareMode?: boolean; isEducationMode?: boolean; isManufacturingMode?: boolean; isLogisticsMode?: boolean }) {
     try {
       return await this.prisma.businessNature.update({
         where: { id },

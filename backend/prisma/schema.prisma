@@ -997,6 +997,12 @@ model BusinessNature {
   isActive          Boolean  @default(true)
   isPropertyMode    Boolean  @default(false) // Enables Property Listing Mode for tenants with this type
   isHospitalityMode Boolean  @default(false) // Enables Hotel Room & Reservation Mode for tenants with this type
+  isTechSoftwareMode Boolean @default(false) // Enables Tech & Software Mode for tenants with this type
+  isFinancialServiceMode Boolean @default(false) // Enables Financial & Consulting Mode for tenants with this type
+  isHealthcareMode Boolean @default(false) // Enables Healthcare & Clinic Mode for tenants with this type
+  isEducationMode  Boolean @default(false) // Enables Education & Course Mode for tenants with this type
+  isManufacturingMode Boolean @default(false) // Enables Factory B2B Bulk Quote Mode for tenants with this type
+  isLogisticsMode  Boolean @default(false) // Enables Truck Shipping & Logistics Mode for tenants with this type
   createdAt      DateTime @default(now())
 
   @@map("business_natures")

@@ -321,179 +321,6 @@ describe('OrchestratorService', () => {
       expect(prompt).toContain('MANDATORY STRUCTURED JSON RESPONSE OUTPUT FORMAT');
     });
 
-  it('should ignore non-inbound messages', async () => {
-    prismaService.message.findUnique.mockResolvedValue({ direction: 'outbound', type: 'text' });
-    await service.processMessage('msg1');
-    expect(prismaService.aiAssistant.findFirst).not.toHaveBeenCalled();
-  });
-
-  it('should ignore if AI is disabled globally', async () => {
-    prismaService.message.findUnique.mockResolvedValue({
-      id: 'msg1', direction: 'inbound', type: 'text', content: 'hello',
-      conversation: { tenantId: 't1', conversationId: 'c1' }
-    });
-    prismaService.aiAssistant.findFirst.mockResolvedValue({ tenantId: 't1', isActive: false });
-    
-    await service.processMessage('msg1');
-    expect(aiService.generateCompletion).not.toHaveBeenCalled();
-  });
-
-  it('should fallback gracefully to raw text reply if structured JSON parsing fails', async () => {
-    prismaService.message.findUnique.mockResolvedValue({
-      id: 'msg1', direction: 'inbound', type: 'text', content: { text: 'hello' },
-      conversationId: 'c1',
-      conversation: { 
-        tenantId: 't1', id: 'c1',
-        channelConnection: { id: 'conn1', isAiAutoReplyEnabled: true }
-      }
-    });
-    prismaService.aiAssistant.findFirst.mockResolvedValue({ 
-      id: 'ai1', tenantId: 't1', isActive: true, routingMode: 'ai_first', systemPrompt: 'Be nice', tools: []
-    });
-
-    aiService.generateCompletion.mockResolvedValue('Plain text response without JSON');
-
-    await service.processMessage('msg1');
-
-    expect(inboxService.saveOutboundMessage).toHaveBeenCalledWith(
-      't1', 'c1', 'Plain text response without JSON', 'text', undefined, 'ai1'
-    );
-  });
-
-  it('should charge only 1 credit if image_reading tool is disabled, even for vision models', async () => {
-    prismaService.message.findUnique.mockResolvedValue({
-      id: 'msg_img', direction: 'inbound', type: 'image', content: { caption: 'Product photo' },
-      conversationId: 'c1',
-      conversation: { 
-        tenantId: 't1', id: 'c1',
-        channelConnection: { id: 'conn1', isAiAutoReplyEnabled: true }
-      }
-    });
-    prismaService.aiAssistant.findFirst.mockResolvedValue({ 
-      id: 'ai1', tenantId: 't1', isActive: true, routingMode: 'ai_first', systemPrompt: 'Be nice',
-      tools: [{ toolType: 'image_reading', isEnabled: false }]
-    });
-
-    await service.processMessage('msg_img');
-
-    expect(prismaService.aiUsageLog.createMany).toHaveBeenCalled();
-    const callArg = prismaService.aiUsageLog.createMany.mock.calls[0][0];
-    expect(callArg.data.length).toBe(1); // 1 credit charged because image_reading is OFF
-  });
-
-  it('should process support detection and flag conversation for follow-up', async () => {
-    prismaService.message.findUnique.mockResolvedValue({
-      id: 'msg_sup', direction: 'inbound', type: 'text', content: 'I need refund for broken item',
-      conversationId: 'c1',
-      conversation: { 
-        tenantId: 't1', id: 'c1', contactId: 'cnt1', contact: { name: 'Alice' },
-        channelConnection: { id: 'conn1', isAiAutoReplyEnabled: true }
-      }
-    });
-    prismaService.aiAssistant.findFirst.mockResolvedValue({ 
-      id: 'ai1', tenantId: 't1', isActive: true, routingMode: 'ai_first',
-      tools: [{ toolType: 'support_detection', isEnabled: true }]
-    });
-
-    aiService.generateCompletion.mockResolvedValue(JSON.stringify({
-      replyText: 'Connecting you with support team.',
-      intent: 'support_needed',
-      supportSignal: true,
-      supportReason: 'refund_return'
-    }));
-
-    await service.processMessage('msg_sup');
-
-    expect(prismaService.conversation.update).toHaveBeenCalledWith({
-      where: { id: 'c1' },
-      data: { requiresFollowUp: true }
-    });
-    expect(activityLogService.record).toHaveBeenCalledWith(expect.objectContaining({
-      type: 'AI_HANDOVER',
-      metadataJson: { reason: 'refund_return' }
-    }));
-    expect(notificationsService.createNotificationForTenantAdmins).toHaveBeenCalled();
-  });
-
-  it('should enforce strict cross-tenant isolation and throw on cross-tenant security violation', () => {
-    expect(() => {
-      (service as any).assertBelongsToTenant({ tenantId: 'tenantA' }, 'tenantB', 'TestModel');
-    }).toThrow('Security Violation');
-  });
-
-  describe('Anti-Hallucination & Safety Features', () => {
-    it('should require explicit hard confirmation for order placement when soft consent is given', async () => {
-      const mockConv = {
-        id: 'c1', tenantId: 't1', contactId: 'cnt1',
-        pendingOrderProposal: {
-          items: [{ productId: 'p1', quantity: 1, priceAtTime: 500 }],
-          expiresAt: new Date(Date.now() + 100000).toISOString()
-        }
-      };
-
-      const result = await (service as any).handleOrderPlacement(
-        't1', mockConv, { replyText: 'Sure', intent: 'order_confirmation' }, 'c1', 'okay'
-      );
-
-      expect(result).toEqual({
-        overrideReplyText: expect.stringContaining("CONFIRM")
-      });
-      expect(ordersService.createOrder).not.toHaveBeenCalled();
-    });
-
-    it('should create order when explicit hard confirmation keyword is provided', async () => {
-      const mockConv = {
-        id: 'c1', tenantId: 't1', contactId: 'cnt1',
-        pendingOrderProposal: {
-          items: [{ productId: 'p1', quantity: 1, priceAtTime: 500 }],
-          expiresAt: new Date(Date.now() + 100000).toISOString()
-        }
-      };
-
-      prismaService.product.findFirst.mockResolvedValue({ id: 'p1', tenantId: 't1', price: 500, isActive: true });
-
-      const result = await (service as any).handleOrderPlacement(
-        't1', mockConv, { replyText: 'CONFIRM', intent: 'order_confirmation' }, 'c1', 'CONFIRM ORDER'
-      );
-
-      expect(ordersService.createOrder).toHaveBeenCalled();
-      expect(result.overrideReplyText).toContain('অর্ডারটি নিশ্চিত করা হয়েছে');
-    });
-
-    it('should send clarifying question for moderate confidence product matches (0.60 - 0.79)', async () => {
-      prismaService.product.findMany.mockResolvedValue([
-        { id: 'p1', name: 'Wireless Headphones Black', price: 2500, imageUrl: '/img.jpg', isActive: true }
-      ]);
-
-      await (service as any).handleProductMatching('t1', 'c1', {
-        replyText: 'Looking for Headphones',
-        intent: 'product_lookup',
-        imageProductDescription: 'Wireless Headphones Earbuds'
-      }, 0.8);
-
-      expect(inboxService.saveOutboundMessage).toHaveBeenCalledWith(
-        't1', 'c1', expect.stringContaining("প্রোডাক্টটি খুঁজছেন")
-      );
-    });
-
-    it('should filter out knowledge documents older than 60 days in buildContextPrompt', async () => {
-      prismaService.qnAKnowledgeBase = { findMany: jest.fn().mockResolvedValue([]) };
-      prismaService.knowledgeDocument = { findMany: jest.fn().mockResolvedValue([]) };
-
-      const prompt = await (service as any).buildContextPrompt('c1', { systemPrompt: 'System' });
-
-      expect(prismaService.knowledgeDocument.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
-            uploadedAt: expect.objectContaining({
-              gte: expect.any(Date)
-            })
-          })
-        })
-      );
-      expect(prompt).toContain('MANDATORY STRUCTURED JSON RESPONSE OUTPUT FORMAT');
-    });
-
     it('should handle property inquiry by creating ContactNote and moving stage to Intake in Property Mode', async () => {
       prismaService.kanbanStage = {
         findFirst: jest.fn().mockResolvedValue({ id: 'stage_intake', name: 'Intake' }),
@@ -547,7 +374,168 @@ describe('OrchestratorService', () => {
         }
       });
     });
+
+    it('should handle software demo request by creating ContactNote and moving stage to Qualified in Tech Mode', async () => {
+      prismaService.kanbanStage = {
+        findFirst: jest.fn().mockResolvedValue({ id: 'stage_qualified', name: 'Qualified' }),
+        create: jest.fn()
+      };
+      prismaService.contact = {
+        findUnique: jest.fn().mockResolvedValue({ id: 'contact1', name: 'Lead', stageId: null }),
+        update: jest.fn().mockResolvedValue({})
+      };
+      prismaService.contactNote = {
+        create: jest.fn().mockResolvedValue({})
+      };
+
+      await (service as any).handleDemoRequest('t1', { contactId: 'contact1', tenantId: 't1' }, 'c1', 'Enterprise SaaS Plan', 'Can I get a demo for 20 users?');
+
+      expect(prismaService.contact.update).toHaveBeenCalledWith({
+        where: { id: 'contact1' },
+        data: { stageId: 'stage_qualified' }
+      });
+      expect(prismaService.contactNote.create).toHaveBeenCalledWith({
+        data: {
+          contactId: 'contact1',
+          content: expect.stringContaining('Enterprise SaaS Plan')
+        }
+      });
+    });
+
+    it('should handle consultation request by creating ContactNote and moving stage to Intake in Financial Mode', async () => {
+      prismaService.kanbanStage = {
+        findFirst: jest.fn().mockResolvedValue({ id: 'stage_intake', name: 'Intake' }),
+        create: jest.fn()
+      };
+      prismaService.contact = {
+        findUnique: jest.fn().mockResolvedValue({ id: 'contact1', name: 'Client', stageId: null }),
+        update: jest.fn().mockResolvedValue({})
+      };
+      prismaService.contactNote = {
+        create: jest.fn().mockResolvedValue({})
+      };
+
+      await (service as any).handleConsultationRequest('t1', { contactId: 'contact1', tenantId: 't1' }, 'c1', 'Tax Audit Consultation', 'I need tax filing advice');
+
+      expect(prismaService.contact.update).toHaveBeenCalledWith({
+        where: { id: 'contact1' },
+        data: { stageId: 'stage_intake' }
+      });
+      expect(prismaService.contactNote.create).toHaveBeenCalledWith({
+        data: {
+          contactId: 'contact1',
+          content: expect.stringContaining('Tax Audit Consultation')
+        }
+      });
+    });
+
+    it('should handle appointment request by creating ContactNote and moving stage to Triage in Healthcare Mode', async () => {
+      prismaService.kanbanStage = {
+        findFirst: jest.fn().mockResolvedValue({ id: 'stage_triage', name: 'Triage' }),
+        create: jest.fn()
+      };
+      prismaService.contact = {
+        findUnique: jest.fn().mockResolvedValue({ id: 'contact1', name: 'Patient', stageId: null }),
+        update: jest.fn().mockResolvedValue({})
+      };
+      prismaService.contactNote = {
+        create: jest.fn().mockResolvedValue({})
+      };
+
+      await (service as any).handleAppointmentRequest('t1', { contactId: 'contact1', tenantId: 't1' }, 'c1', 'Dr. Rahman (Cardiologist)', 'I want an appointment for next Sunday');
+
+      expect(prismaService.contact.update).toHaveBeenCalledWith({
+        where: { id: 'contact1' },
+        data: { stageId: 'stage_triage' }
+      });
+      expect(prismaService.contactNote.create).toHaveBeenCalledWith({
+        data: {
+          contactId: 'contact1',
+          content: expect.stringContaining('Dr. Rahman (Cardiologist)')
+        }
+      });
+    });
+
+    it('should handle course admission inquiry by creating ContactNote and moving stage to Admissions in Education Mode', async () => {
+      prismaService.kanbanStage = {
+        findFirst: jest.fn().mockResolvedValue({ id: 'stage_admissions', name: 'Admissions' }),
+        create: jest.fn()
+      };
+      prismaService.contact = {
+        findUnique: jest.fn().mockResolvedValue({ id: 'contact1', name: 'Student', stageId: null }),
+        update: jest.fn().mockResolvedValue({})
+      };
+      prismaService.contactNote = {
+        create: jest.fn().mockResolvedValue({})
+      };
+
+      await (service as any).handleCourseAdmissionInquiry('t1', { contactId: 'contact1', tenantId: 't1' }, 'c1', 'Full-Stack Web Development Batch 12', 'I want to enroll in the full stack course');
+
+      expect(prismaService.contact.update).toHaveBeenCalledWith({
+        where: { id: 'contact1' },
+        data: { stageId: 'stage_admissions' }
+      });
+      expect(prismaService.contactNote.create).toHaveBeenCalledWith({
+        data: {
+          contactId: 'contact1',
+          content: expect.stringContaining('Full-Stack Web Development Batch 12')
+        }
+      });
+    });
+
+    it('should handle bulk RFQ inquiry by creating ContactNote and moving stage to RFQ / Quotations in Manufacturing Mode', async () => {
+      prismaService.kanbanStage = {
+        findFirst: jest.fn().mockResolvedValue({ id: 'stage_rfq', name: 'RFQ / Quotations' }),
+        create: jest.fn()
+      };
+      prismaService.contact = {
+        findUnique: jest.fn().mockResolvedValue({ id: 'contact1', name: 'Wholesale Buyer', stageId: null }),
+        update: jest.fn().mockResolvedValue({})
+      };
+      prismaService.contactNote = {
+        create: jest.fn().mockResolvedValue({})
+      };
+
+      await (service as any).handleBulkRfqInquiry('t1', { contactId: 'contact1', tenantId: 't1' }, 'c1', 'Industrial Cotton Fabric Roll (MOQ 500m)', 'We need a wholesale quotation for 2,000 meters of cotton fabric');
+
+      expect(prismaService.contact.update).toHaveBeenCalledWith({
+        where: { id: 'contact1' },
+        data: { stageId: 'stage_rfq' }
+      });
+      expect(prismaService.contactNote.create).toHaveBeenCalledWith({
+        data: {
+          contactId: 'contact1',
+          content: expect.stringContaining('Industrial Cotton Fabric Roll (MOQ 500m)')
+        }
+      });
+    });
+
+    it('should handle shipment inquiry by creating ContactNote and moving stage to Shipments & Bookings in Logistics Mode', async () => {
+      prismaService.kanbanStage = {
+        findFirst: jest.fn().mockResolvedValue({ id: 'stage_shipments', name: 'Shipments & Bookings' }),
+        create: jest.fn()
+      };
+      prismaService.contact = {
+        findUnique: jest.fn().mockResolvedValue({ id: 'contact1', name: 'Cargo Shipper', stageId: null }),
+        update: jest.fn().mockResolvedValue({})
+      };
+      prismaService.contactNote = {
+        create: jest.fn().mockResolvedValue({})
+      };
+
+      await (service as any).handleShipmentInquiry('t1', { contactId: 'contact1', tenantId: 't1' }, 'c1', 'Dhaka to Chittagong Port (10 Ton Covered Van)', 'We need a freight quote for shipping 8 tons of machinery from Dhaka to Chittagong');
+
+      expect(prismaService.contact.update).toHaveBeenCalledWith({
+        where: { id: 'contact1' },
+        data: { stageId: 'stage_shipments' }
+      });
+      expect(prismaService.contactNote.create).toHaveBeenCalledWith({
+        data: {
+          contactId: 'contact1',
+          content: expect.stringContaining('Dhaka to Chittagong Port (10 Ton Covered Van)')
+        }
+      });
+    });
   });
-});
 });
 
