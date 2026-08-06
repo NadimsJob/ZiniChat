@@ -29,6 +29,9 @@ export default function OrdersPage() {
  const [orderItems, setOrderItems] = useState<{ productId: string; quantity: number; priceAtTime: string }[]>([]);
  const [orderNotes, setOrderNotes] = useState('');
  const [isSubmitting, setIsSubmitting] = useState(false);
+ // Vertical extra fields
+ const [preferredDate, setPreferredDate] = useState('');
+ const [preferredTime, setPreferredTime] = useState('');
 
  const calculateTotal = () => {
    return orderItems.reduce((acc, item) => acc + (parseFloat(item.priceAtTime || '0') * item.quantity), 0);
@@ -162,7 +165,7 @@ export default function OrdersPage() {
  body: JSON.stringify({
  contactId: selectedContactId,
  items: validItems,
- notes: orderNotes
+ notes: [orderNotes, preferredDate ? `Date: ${preferredDate}` : '', preferredTime ? `Time: ${preferredTime}` : ''].filter(Boolean).join(' | ')
  })
  });
  if (res.ok) {
@@ -170,6 +173,8 @@ export default function OrdersPage() {
  setSelectedContactId('');
  setOrderItems([]);
  setOrderNotes('');
+ setPreferredDate('');
+ setPreferredTime('');
  fetchOrders();
  }
  } catch (err) {
@@ -357,101 +362,179 @@ export default function OrdersPage() {
  )}
  </div>
 
- {/* Create Order Modal */}
- {isCreatingOrder && (
- <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
- <div className="bg-surface border border-primary/10 shadow-xl shadow-primary/5 hover:border-primary/20 hover:shadow-primary/10 transition-all rounded-2xl w-[95vw] sm:w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh]">
- <div className="px-1.5 py-2.5 border-b border-border flex justify-between items-center bg-background rounded-t-2xl">
- <h2 className="text-xl font-bold text-foreground flex items-center">
- <ShoppingBag className="w-5 h-5 mr-2 text-primary" /> Create New Order
- </h2>
- <button onClick={() => setIsCreatingOrder(false)} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
- </div>
- 
- <form onSubmit={handleCreateOrder} className="flex-1 overflow-y-auto p-2 space-y-3">
- <div>
- <label className="block text-[13px] font-semibold text-foreground/80 mb-2">Customer (Lead)</label>
- <select 
- required
- value={selectedContactId}
- onChange={(e) => setSelectedContactId(e.target.value)}
- className="w-full bg-background border border-border rounded-lg px-1.5 py-2.5 text-[13px] focus:ring-2 focus:ring-primary focus:outline-none text-foreground"
- >
- <option value="">Select a customer...</option>
- {contacts.map(c => <option key={c.id} value={c.id}>{c.name || c.externalContactId}</option>)}
- </select>
- </div>
+ {/* Create Order Modal - Vertical Adaptive */}
+ {isCreatingOrder && (() => {
+   const modalTitle = isPropertyMode ? (language === 'en' ? 'New Property Inquiry' : 'নতুন প্রপার্টি অনুসন্ধান')
+     : isHospitalityMode ? (language === 'en' ? 'New Room Reservation' : 'নতুন রুম রিজার্ভেশন')
+     : isTechSoftwareMode ? (language === 'en' ? 'New Demo Request' : 'নতুন ডেমো রিকোয়েস্ট')
+     : isFinancialServiceMode ? (language === 'en' ? 'New Consultation Request' : 'নতুন কনসালটেশন রিকোয়েস্ট')
+     : isHealthcareMode ? (language === 'en' ? 'Book Appointment' : 'অ্যাপয়েন্টমেন্ট বুক')
+     : isEducationMode ? (language === 'en' ? 'New Admission / Enrollment' : 'নতুন ভর্তি রিকোয়েস্ট')
+     : isManufacturingMode ? (language === 'en' ? 'New RFQ / Quotation' : 'নতুন কোটেশন রিকোয়েস্ট')
+     : isLogisticsMode ? (language === 'en' ? 'Book Shipment' : 'নতুন শিপমেন্ট বুকিং')
+     : (language === 'en' ? 'Create New Order' : 'নতুন অর্ডার');
 
- <div>
- <div className="flex justify-between items-center mb-2">
- <label className="block text-[13px] font-semibold text-foreground/80">Order Items</label>
- <button type="button" onClick={handleAddOrderItem} className="text-primary text-[13px] font-semibold hover:underline flex items-center">
- <Plus className="w-3.5 h-3.5 mr-1" /> Add Product
- </button>
- </div>
- 
- <div className="space-y-3 bg-muted/30 p-1.5 rounded-xl border border-border">
- {orderItems.map((item, index) => (
- <div key={index} className="flex items-center gap-1.5 bg-background p-1.5 rounded-lg border border-border shadow-sm">
- <select
- required
- value={item.productId}
- onChange={(e) => handleUpdateOrderItem(index, 'productId', e.target.value)}
- className="flex-1 bg-surface border border-border rounded-md px-1.5 py-2 text-[13px] focus:ring-2 focus:ring-primary focus:outline-none text-foreground"
- >
- <option value="">Select Product...</option>
- {products.map(p => <option key={p.id} value={p.id}>{p.name} (BDT {p.price})</option>)}
- </select>
- 
- <div className="w-24">
- <input
- type="number"
- required min="1"
- value={item.quantity}
- onChange={(e) => handleUpdateOrderItem(index, 'quantity', parseInt(e.target.value) || 1)}
- className="w-full bg-surface border border-border rounded-md px-1.5 py-2 text-[13px] focus:ring-2 focus:ring-primary focus:outline-none text-foreground"
- placeholder="Qty"
- />
- </div>
- 
- <button type="button" onClick={() => handleRemoveOrderItem(index)} className="p-2 text-red-500 hover:bg-red-500/10 rounded-md">
- <Trash2 className="w-3.5 h-3.5" />
- </button>
- </div>
- ))}
- {orderItems.length === 0 && <p className="text-center text-[13px] text-muted-foreground py-2.5">No products added. Click 'Add Product'.</p>}
- </div>
- 
- <div className="mt-4 text-right">
- <span className="text-[13px] font-semibold text-muted-foreground mr-4">Total Amount:</span>
- <span className="text-xl font-bold text-primary">BDT {calculateTotal().toLocaleString()}</span>
- </div>
- </div>
+   const contactLabel = isHealthcareMode ? (language === 'en' ? 'Patient' : 'রোগী')
+     : isEducationMode ? (language === 'en' ? 'Student' : 'শিক্ষার্থী')
+     : isPropertyMode || isHospitalityMode ? (language === 'en' ? 'Guest / Client' : 'অতিথি / ক্লায়েন্ট')
+     : isLogisticsMode ? (language === 'en' ? 'Shipper / Client' : 'ক্লায়েন্ট')
+     : (language === 'en' ? 'Customer (Lead)' : 'কাস্টমার');
 
- <div>
- <label className="block text-[13px] font-semibold text-foreground/80 mb-2">Order Notes (Optional)</label>
- <textarea 
- value={orderNotes}
- onChange={(e) => setOrderNotes(e.target.value)}
- className="w-full bg-background border border-border rounded-lg px-1.5 py-1 text-[13px] focus:ring-2 focus:ring-primary focus:outline-none min-h-[100px] text-foreground"
- placeholder="Any special instructions or notes..."
- />
- </div>
- </form>
- 
- <div className="px-1.5 py-2.5 border-t border-border bg-background rounded-b-2xl flex justify-end gap-1.5">
- <button onClick={() => setIsCreatingOrder(false)} className="px-1.5 py-2 text-[13px] font-semibold text-muted-foreground hover:text-foreground">Cancel</button>
- <button 
- onClick={handleCreateOrder} 
- disabled={isSubmitting || orderItems.length === 0 || !selectedContactId}
- className="px-1.5 py-2 bg-primary text-primary-foreground text-[13px] font-bold rounded-lg hover:bg-primary/90 disabled:opacity-50"
- >
- {isSubmitting ? 'Creating...' : 'Create Order'}
- </button>
- </div>
- </div>
- </div>
- )}
+   const productLabel = isPropertyMode ? (language === 'en' ? 'Property' : 'প্রপার্টি')
+     : isHospitalityMode ? (language === 'en' ? 'Room / Suite' : 'রুম / স্যুট')
+     : isTechSoftwareMode ? (language === 'en' ? 'Software Plan' : 'সফটওয়্যার প্ল্যান')
+     : isFinancialServiceMode ? (language === 'en' ? 'Service Package' : 'সার্ভিস প্যাকেজ')
+     : isHealthcareMode ? (language === 'en' ? 'Doctor / Service' : 'ডাক্তার / সার্ভিস')
+     : isEducationMode ? (language === 'en' ? 'Course / Batch' : 'কোর্স / ব্যাচ')
+     : isManufacturingMode ? (language === 'en' ? 'Product / Item' : 'পণ্য')
+     : isLogisticsMode ? (language === 'en' ? 'Freight Route / Vehicle' : 'রুট / যানবাহন')
+     : (language === 'en' ? 'Product' : 'প্রডাক্ট');
+
+   const notesPlaceholder = isHospitalityMode ? (language === 'en' ? 'Special requests, check-in time, dietary needs...' : 'বিশেষ অনুরোধ, চেক-ইন সময়...')
+     : isTechSoftwareMode ? (language === 'en' ? 'Use case, team size, current tools used...' : 'ব্যবহারের উদ্দেশ্য, দলের আকার...')
+     : isHealthcareMode ? (language === 'en' ? 'Chief complaint, symptoms, previous reports...' : 'রোগের বিবরণ, উপসর্গ...')
+     : isEducationMode ? (language === 'en' ? 'Academic background, batch preference, payment plan...' : 'শিক্ষাগত যোগ্যতা, ব্যাচ পছন্দ...')
+     : isManufacturingMode ? (language === 'en' ? 'Delivery address, packing requirement, inspection notes...' : 'ডেলিভারি ঠিকানা, প্যাকিং নির্দেশনা...')
+     : isLogisticsMode ? (language === 'en' ? 'Cargo type, pickup address, special handling...' : 'কার্গো ধরন, পিকআপ ঠিকানা...')
+     : (language === 'en' ? 'Any special instructions or notes...' : 'বিশেষ নির্দেশনা...');
+
+   const needsDateTime = isHospitalityMode || isHealthcareMode || isTechSoftwareMode || isFinancialServiceMode;
+   const dateLabel = isHospitalityMode ? (language === 'en' ? 'Check-in Date' : 'চেক-ইন তারিখ')
+     : isHealthcareMode ? (language === 'en' ? 'Preferred Appointment Date' : 'অ্যাপয়েন্টমেন্টের তারিখ')
+     : isTechSoftwareMode ? (language === 'en' ? 'Preferred Demo Date' : 'ডেমোর পছন্দের তারিখ')
+     : (language === 'en' ? 'Preferred Date' : 'পছন্দের তারিখ');
+   const timeLabel = isHospitalityMode ? (language === 'en' ? 'Check-out Date' : 'চেক-আউট তারিখ')
+     : isHealthcareMode ? (language === 'en' ? 'Preferred Time Slot' : 'পছন্দের সময়')
+     : isTechSoftwareMode ? (language === 'en' ? 'Preferred Time' : 'পছন্দের সময়')
+     : (language === 'en' ? 'Preferred Time' : 'পছন্দের সময়');
+
+   const submitLabel = isPropertyMode ? (language === 'en' ? 'Submit Inquiry' : 'অনুসন্ধান পাঠান')
+     : isHospitalityMode ? (language === 'en' ? 'Confirm Reservation' : 'রিজার্ভেশন নিশ্চিত করুন')
+     : isTechSoftwareMode ? (language === 'en' ? 'Request Demo' : 'ডেমো রিকোয়েস্ট করুন')
+     : isFinancialServiceMode ? (language === 'en' ? 'Request Consultation' : 'কনসালটেশন রিকোয়েস্ট করুন')
+     : isHealthcareMode ? (language === 'en' ? 'Book Appointment' : 'অ্যাপয়েন্টমেন্ট বুক করুন')
+     : isEducationMode ? (language === 'en' ? 'Submit Enrollment' : 'ভর্তি রিকোয়েস্ট পাঠান')
+     : isManufacturingMode ? (language === 'en' ? 'Submit RFQ' : 'কোটেশন পাঠান')
+     : isLogisticsMode ? (language === 'en' ? 'Book Shipment' : 'শিপমেন্ট বুক করুন')
+     : (language === 'en' ? 'Create Order' : 'অর্ডার তৈরি করুন');
+
+   const modalIcon = isPropertyMode ? <Building2 className="w-5 h-5 mr-2 text-primary" />
+     : isHospitalityMode ? <Hotel className="w-5 h-5 mr-2 text-amber-500" />
+     : isTechSoftwareMode ? <Cpu className="w-5 h-5 mr-2 text-indigo-500" />
+     : isFinancialServiceMode ? <Briefcase className="w-5 h-5 mr-2 text-emerald-500" />
+     : isHealthcareMode ? <Stethoscope className="w-5 h-5 mr-2 text-teal-500" />
+     : isEducationMode ? <GraduationCap className="w-5 h-5 mr-2 text-purple-500" />
+     : isManufacturingMode ? <Factory className="w-5 h-5 mr-2 text-amber-500" />
+     : isLogisticsMode ? <Truck className="w-5 h-5 mr-2 text-sky-500" />
+     : <ShoppingBag className="w-5 h-5 mr-2 text-primary" />;
+
+   return (
+     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
+       <div className="bg-surface border border-primary/10 shadow-xl shadow-primary/5 hover:border-primary/20 hover:shadow-primary/10 transition-all rounded-2xl w-[95vw] sm:w-full max-w-2xl flex flex-col max-h-[90vh]">
+         <div className="px-1.5 py-2.5 border-b border-border flex justify-between items-center bg-background rounded-t-2xl">
+           <h2 className="text-xl font-bold text-foreground flex items-center">{modalIcon}{modalTitle}</h2>
+           <button onClick={() => setIsCreatingOrder(false)} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
+         </div>
+
+         <form onSubmit={handleCreateOrder} className="flex-1 overflow-y-auto p-2 space-y-3">
+           {/* Contact / Customer */}
+           <div>
+             <label className="block text-[13px] font-semibold text-foreground/80 mb-2">{contactLabel}</label>
+             <select required value={selectedContactId} onChange={(e) => setSelectedContactId(e.target.value)}
+               className="w-full bg-background border border-border rounded-lg px-1.5 py-2.5 text-[13px] focus:ring-2 focus:ring-primary focus:outline-none text-foreground">
+               <option value="">{language === 'en' ? `Select a ${contactLabel.toLowerCase()}...` : `${contactLabel} বেছে নিন...`}</option>
+               {contacts.map(c => <option key={c.id} value={c.id}>{c.name || c.externalContactId}</option>)}
+             </select>
+           </div>
+
+           {/* Date / Time fields for relevant verticals */}
+           {needsDateTime && (
+             <div className="grid grid-cols-2 gap-2">
+               <div>
+                 <label className="block text-[13px] font-semibold text-foreground/80 mb-2">{dateLabel}</label>
+                 <input type="date" value={preferredDate} onChange={e => setPreferredDate(e.target.value)}
+                   className="w-full bg-background border border-border rounded-lg px-1.5 py-2.5 text-[13px] focus:ring-2 focus:ring-primary focus:outline-none text-foreground" />
+               </div>
+               <div>
+                 <label className="block text-[13px] font-semibold text-foreground/80 mb-2">{timeLabel}</label>
+                 <input type={isHospitalityMode ? 'date' : 'time'} value={preferredTime} onChange={e => setPreferredTime(e.target.value)}
+                   className="w-full bg-background border border-border rounded-lg px-1.5 py-2.5 text-[13px] focus:ring-2 focus:ring-primary focus:outline-none text-foreground" />
+               </div>
+             </div>
+           )}
+
+           {/* Product / Service Items */}
+           <div>
+             <div className="flex justify-between items-center mb-2">
+               <label className="block text-[13px] font-semibold text-foreground/80">{productLabel}</label>
+               {!isTechSoftwareMode && !isHealthcareMode && !isEducationMode && !isFinancialServiceMode && !isHospitalityMode && (
+                 <button type="button" onClick={handleAddOrderItem} className="text-primary text-[13px] font-semibold hover:underline flex items-center">
+                   <Plus className="w-3.5 h-3.5 mr-1" />{language === 'en' ? 'Add' : 'যোগ করুন'}
+                 </button>
+               )}
+             </div>
+             <div className="space-y-3 bg-muted/30 p-1.5 rounded-xl border border-border">
+               {orderItems.map((item, index) => (
+                 <div key={index} className="flex items-center gap-1.5 bg-background p-1.5 rounded-lg border border-border shadow-sm">
+                   <select required value={item.productId} onChange={(e) => handleUpdateOrderItem(index, 'productId', e.target.value)}
+                     className="flex-1 bg-surface border border-border rounded-md px-1.5 py-2 text-[13px] focus:ring-2 focus:ring-primary focus:outline-none text-foreground">
+                     <option value="">{language === 'en' ? `Select ${productLabel}...` : `${productLabel} বেছে নিন...`}</option>
+                     {products.map(p => <option key={p.id} value={p.id}>{p.name} (BDT {p.price})</option>)}
+                   </select>
+                   {!isTechSoftwareMode && !isHealthcareMode && !isEducationMode && !isFinancialServiceMode && (
+                     <div className="w-24">
+                       <input type="number" required min="1" value={item.quantity}
+                         onChange={(e) => handleUpdateOrderItem(index, 'quantity', parseInt(e.target.value) || 1)}
+                         className="w-full bg-surface border border-border rounded-md px-1.5 py-2 text-[13px] focus:ring-2 focus:ring-primary focus:outline-none text-foreground"
+                         placeholder={isManufacturingMode ? 'MOQ' : isLogisticsMode ? 'Trips' : 'Qty'} />
+                     </div>
+                   )}
+                   {orderItems.length > 1 && (
+                     <button type="button" onClick={() => handleRemoveOrderItem(index)} className="p-2 text-red-500 hover:bg-red-500/10 rounded-md"><Trash2 className="w-3.5 h-3.5" /></button>
+                   )}
+                 </div>
+               ))}
+               {orderItems.length === 0 && (
+                 <div className="text-center py-2.5">
+                   <p className="text-[13px] text-muted-foreground mb-2">{language === 'en' ? `No ${productLabel.toLowerCase()} selected.` : `${productLabel} বেছে নিন।`}</p>
+                   <button type="button" onClick={handleAddOrderItem} className="text-primary text-[13px] font-semibold hover:underline flex items-center justify-center w-full">
+                     <Plus className="w-3.5 h-3.5 mr-1" />{language === 'en' ? `Add ${productLabel}` : `${productLabel} যোগ করুন`}
+                   </button>
+                 </div>
+               )}
+             </div>
+             {orderItems.some(i => i.productId) && (
+               <div className="mt-3 text-right">
+                 <span className="text-[13px] font-semibold text-muted-foreground mr-3">
+                   {isHealthcareMode ? (language === 'en' ? 'Consultation Fee:' : 'ফি:') : isEducationMode ? (language === 'en' ? 'Course Fee:' : 'কোর্স ফি:') : (language === 'en' ? 'Total Amount:' : 'মোট পরিমাণ:')}
+                 </span>
+                 <span className="text-xl font-bold text-primary">BDT {calculateTotal().toLocaleString()}</span>
+               </div>
+             )}
+           </div>
+
+           {/* Notes */}
+           <div>
+             <label className="block text-[13px] font-semibold text-foreground/80 mb-2">
+               {isHealthcareMode ? (language === 'en' ? 'Chief Complaint / Symptoms' : 'রোগের বিবরণ') : isLogisticsMode ? (language === 'en' ? 'Cargo Details & Notes' : 'কার্গো বিবরণ') : (language === 'en' ? 'Notes (Optional)' : 'নোট (ঐচ্ছিক)')}
+             </label>
+             <textarea value={orderNotes} onChange={(e) => setOrderNotes(e.target.value)}
+               className="w-full bg-background border border-border rounded-lg px-1.5 py-1 text-[13px] focus:ring-2 focus:ring-primary focus:outline-none min-h-[80px] text-foreground"
+               placeholder={notesPlaceholder} />
+           </div>
+         </form>
+
+         <div className="px-1.5 py-2.5 border-t border-border bg-background rounded-b-2xl flex justify-end gap-1.5">
+           <button onClick={() => setIsCreatingOrder(false)} className="px-1.5 py-2 text-[13px] font-semibold text-muted-foreground hover:text-foreground">{language === 'en' ? 'Cancel' : 'বাতিল'}</button>
+           <button onClick={handleCreateOrder} disabled={isSubmitting || orderItems.length === 0 || !selectedContactId}
+             className="px-3 py-2 bg-primary text-primary-foreground text-[13px] font-bold rounded-lg hover:bg-primary/90 disabled:opacity-50">
+             {isSubmitting ? (language === 'en' ? 'Submitting...' : 'পাঠানো হচ্ছে...') : submitLabel}
+           </button>
+         </div>
+       </div>
+     </div>
+   );
+ })()}
 
  </div>
  );

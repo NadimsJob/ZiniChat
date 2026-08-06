@@ -690,6 +690,184 @@ export default function ProductsPage() {
                       </div>
                     </div>
                   </>
+                ) : isHospitalityMode ? (
+                  /* ── HOSPITALITY MODE FORM ───────────────────────────── */
+                  <>
+                    {/* Room Image */}
+                    <div className="bg-surface p-1.5 border border-border shadow-md rounded-2xl">
+                      <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-3">
+                        {language === 'en' ? 'Room Photo' : 'রুমের ছবি'}
+                      </label>
+                      <div onClick={() => fileInputRef.current?.click()} className="h-24 bg-background border-2 border-dashed border-border hover:border-amber-500/50 transition-colors rounded-xl flex flex-col items-center justify-center cursor-pointer relative overflow-hidden group">
+                        {imagePreview ? (
+                          <><img src={imagePreview} alt="Preview" className="w-full h-full object-contain bg-black" /><div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white font-medium text-[13px] backdrop-blur-sm">Change Photo</div></>
+                        ) : (
+                          <div className="text-center text-muted-foreground flex flex-col items-center"><Hotel className="w-8 h-8 mb-2 opacity-40 text-amber-500" /><span className="text-[11px] font-bold uppercase tracking-wider">Click to upload</span></div>
+                        )}
+                      </div>
+                      <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageChange} />
+                    </div>
+                    {/* Room Details */}
+                    <div className="bg-surface p-1.5 border border-border shadow-md rounded-2xl space-y-3">
+                      <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2">{language === 'en' ? 'Room Details' : 'রুমের বিবরণ'}</label>
+                      <div>
+                        <label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Room / Suite Name *' : 'রুম / স্যুটের নাম *'}</label>
+                        <input type="text" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full bg-background border border-border rounded-lg px-1.5 py-2 text-[13px] focus:border-amber-500 focus:outline-none transition-colors text-foreground" placeholder={language === 'en' ? 'e.g. Deluxe Sea View Suite' : 'যেমন: ডিলাক্স সি ভিউ স্যুট'} />
+                      </div>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <div>
+                          <label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Price / Night *' : 'প্রতি রাত মূল্য *'}</label>
+                          <div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-[13px]">৳</span><input type="number" step="0.01" required value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} className="w-full bg-background border border-border rounded-lg pl-7 pr-3 py-2 text-[13px] focus:border-amber-500 focus:outline-none transition-colors text-foreground" placeholder="0.00" /></div>
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Room Type' : 'রুমের ধরন'}</label>
+                          <input type="text" value={formData.attributes?.roomType || ''} onChange={e => setFormData((prev: any) => ({ ...prev, attributes: { ...prev.attributes, roomType: e.target.value } }))} className="w-full bg-background border border-border rounded-lg px-1.5 py-2 text-[13px] focus:border-amber-500 focus:outline-none transition-colors text-foreground" placeholder="e.g. Standard, Deluxe" />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <div><label className="block text-[11px] font-medium text-muted-foreground mb-1 flex items-center gap-1"><Users className="w-3 h-3" />{language === 'en' ? 'Max Guests' : 'সর্বোচ্চ অতিথি'}</label><input type="text" value={formData.attributes?.maxGuests || ''} onChange={e => setFormData((prev: any) => ({ ...prev, attributes: { ...prev.attributes, maxGuests: e.target.value } }))} className="w-full bg-background border border-border rounded-lg px-2 py-2 text-[13px] focus:border-amber-500 focus:outline-none transition-colors text-foreground" placeholder="2" /></div>
+                        <div><label className="block text-[11px] font-medium text-muted-foreground mb-1 flex items-center gap-1"><BedDouble className="w-3 h-3" />{language === 'en' ? 'Bed Type' : 'বেড ধরন'}</label><input type="text" value={formData.attributes?.bedType || ''} onChange={e => setFormData((prev: any) => ({ ...prev, attributes: { ...prev.attributes, bedType: e.target.value } }))} className="w-full bg-background border border-border rounded-lg px-2 py-2 text-[13px] focus:border-amber-500 focus:outline-none transition-colors text-foreground" placeholder="King, Twin" /></div>
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-medium text-muted-foreground mb-2 flex items-center gap-1"><Wifi className="w-3 h-3" />{language === 'en' ? 'Amenities (check all)' : 'সুবিধাসমূহ'}</label>
+                        <div className="flex flex-wrap gap-1.5">
+                          {['WiFi', 'AC', 'TV', 'Balcony', 'Mini Bar', 'Pool Access', 'Gym', 'Breakfast Included'].map(a => {
+                            const amenities: string[] = (formData.attributes?.amenities || '').split(',').map((x: string) => x.trim()).filter(Boolean);
+                            const checked = amenities.includes(a);
+                            return (
+                              <button key={a} type="button" onClick={() => {
+                                const updated = checked ? amenities.filter(x => x !== a) : [...amenities, a];
+                                setFormData((prev: any) => ({ ...prev, attributes: { ...prev.attributes, amenities: updated.join(', ') } }));
+                              }} className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-all cursor-pointer ${checked ? 'bg-amber-500 text-white border-amber-500' : 'bg-background text-muted-foreground border-border hover:border-amber-500/50'}`}>{a}</button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Description' : 'বিবরণ'}</label><textarea rows={3} value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="w-full bg-background border border-border rounded-lg px-1.5 py-2 text-[13px] focus:border-amber-500 focus:outline-none resize-none custom-scrollbar transition-colors text-foreground" placeholder={language === 'en' ? 'Describe the room...' : 'রুমের বিবরণ দিন...'} /></div>
+                    </div>
+                  </>
+
+                ) : isTechSoftwareMode ? (
+                  /* ── TECH / SOFTWARE MODE FORM ───────────────────────── */
+                  <>
+                    <div className="bg-surface p-1.5 border border-border shadow-md rounded-2xl space-y-3">
+                      <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2"><Cpu className="w-3.5 h-3.5 inline mr-1 text-indigo-400" />{language === 'en' ? 'Software Plan Details' : 'সফটওয়্যার প্ল্যান বিবরণ'}</label>
+                      <div>
+                        <label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Plan Name *' : 'প্ল্যানের নাম *'}</label>
+                        <input type="text" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full bg-background border border-border rounded-lg px-1.5 py-2 text-[13px] focus:border-indigo-500 focus:outline-none transition-colors text-foreground" placeholder={language === 'en' ? 'e.g. Business Pro Plan' : 'যেমন: বিজনেস প্রো প্ল্যান'} />
+                      </div>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <div>
+                          <label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Monthly Price *' : 'মাসিক মূল্য *'}</label>
+                          <div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-[13px]">৳</span><input type="number" step="0.01" required value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} className="w-full bg-background border border-border rounded-lg pl-7 pr-3 py-2 text-[13px] focus:border-indigo-500 focus:outline-none transition-colors text-foreground" placeholder="0.00" /></div>
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'License Type' : 'লাইসেন্স ধরন'}</label>
+                          <input type="text" value={formData.attributes?.licenseType || ''} onChange={e => setFormData((prev: any) => ({ ...prev, attributes: { ...prev.attributes, licenseType: e.target.value } }))} className="w-full bg-background border border-border rounded-lg px-1.5 py-2 text-[13px] focus:border-indigo-500 focus:outline-none transition-colors text-foreground" placeholder="SaaS / Perpetual" />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Max Users' : 'সর্বোচ্চ ব্যবহারকারী'}</label><input type="text" value={formData.attributes?.maxUsers || ''} onChange={e => setFormData((prev: any) => ({ ...prev, attributes: { ...prev.attributes, maxUsers: e.target.value } }))} className="w-full bg-background border border-border rounded-lg px-2 py-2 text-[13px] focus:border-indigo-500 focus:outline-none transition-colors text-foreground" placeholder="50" /></div>
+                        <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'SLA / Uptime' : 'এসএলএ / আপটাইম'}</label><input type="text" value={formData.attributes?.sla || ''} onChange={e => setFormData((prev: any) => ({ ...prev, attributes: { ...prev.attributes, sla: e.target.value } }))} className="w-full bg-background border border-border rounded-lg px-2 py-2 text-[13px] focus:border-indigo-500 focus:outline-none transition-colors text-foreground" placeholder="99.9%" /></div>
+                      </div>
+                      <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Demo / Trial URL' : 'ডেমো লিংক'}</label><input type="text" value={formData.attributes?.demoUrl || ''} onChange={e => setFormData((prev: any) => ({ ...prev, attributes: { ...prev.attributes, demoUrl: e.target.value } }))} className="w-full bg-background border border-border rounded-lg px-1.5 py-2 text-[13px] focus:border-indigo-500 focus:outline-none transition-colors text-foreground" placeholder="https://demo.yourapp.com" /></div>
+                      <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Features / Description' : 'ফিচার সমূহ'}</label><textarea rows={4} value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="w-full bg-background border border-border rounded-lg px-1.5 py-2 text-[13px] focus:border-indigo-500 focus:outline-none resize-none custom-scrollbar transition-colors text-foreground" placeholder={language === 'en' ? 'List key features, e.g. Unlimited contacts, AI chatbot, API access...' : 'ফিচারগুলো লিখুন...'} /></div>
+                      <label className="flex items-center gap-1.5 p-1.5 bg-background border border-border rounded-lg cursor-pointer hover:border-indigo-500/50 transition-colors"><input type="checkbox" checked={formData.isActive} onChange={e => setFormData({ ...formData, isActive: e.target.checked })} className="w-3.5 h-3.5 text-primary rounded border-border" /><span className="text-[13px] font-medium text-foreground">{language === 'en' ? 'Plan is Active' : 'প্ল্যান অ্যাক্টিভ'}</span></label>
+                    </div>
+                  </>
+
+                ) : isFinancialServiceMode ? (
+                  /* ── FINANCIAL / CONSULTING MODE FORM ───────────────── */
+                  <>
+                    <div className="bg-surface p-1.5 border border-border shadow-md rounded-2xl space-y-3">
+                      <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2"><Briefcase className="w-3.5 h-3.5 inline mr-1 text-emerald-400" />{language === 'en' ? 'Service Package Details' : 'সার্ভিস প্যাকেজ বিবরণ'}</label>
+                      <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Service / Package Name *' : 'সার্ভিসের নাম *'}</label><input type="text" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full bg-background border border-border rounded-lg px-1.5 py-2 text-[13px] focus:border-emerald-500 focus:outline-none transition-colors text-foreground" placeholder={language === 'en' ? 'e.g. Tax Filing & Audit Package' : 'যেমন: ট্যাক্স ফাইলিং প্যাকেজ'} /></div>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Service Fee *' : 'সার্ভিস ফি *'}</label><div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-[13px]">৳</span><input type="number" step="0.01" required value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} className="w-full bg-background border border-border rounded-lg pl-7 pr-3 py-2 text-[13px] focus:border-emerald-500 focus:outline-none transition-colors text-foreground" placeholder="0.00" /></div></div>
+                        <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Engagement Duration' : 'সার্ভিস মেয়াদ'}</label><input type="text" value={formData.attributes?.duration || ''} onChange={e => setFormData((prev: any) => ({ ...prev, attributes: { ...prev.attributes, duration: e.target.value } }))} className="w-full bg-background border border-border rounded-lg px-1.5 py-2 text-[13px] focus:border-emerald-500 focus:outline-none transition-colors text-foreground" placeholder="e.g. 1 Month, 3 Sessions" /></div>
+                      </div>
+                      <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Lead Consultant' : 'প্রধান কনসালটেন্ট'}</label><input type="text" value={formData.attributes?.consultant || ''} onChange={e => setFormData((prev: any) => ({ ...prev, attributes: { ...prev.attributes, consultant: e.target.value } }))} className="w-full bg-background border border-border rounded-lg px-1.5 py-2 text-[13px] focus:border-emerald-500 focus:outline-none transition-colors text-foreground" placeholder="e.g. Mr. Karim (CA, ACCA)" /></div>
+                      <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Deliverables / Scope of Work' : 'কাজের পরিধি'}</label><textarea rows={4} value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="w-full bg-background border border-border rounded-lg px-1.5 py-2 text-[13px] focus:border-emerald-500 focus:outline-none resize-none custom-scrollbar transition-colors text-foreground" placeholder={language === 'en' ? 'Describe deliverables, e.g. Monthly balance sheet, Tax return, Advisory sessions...' : 'কাজের বিবরণ লিখুন...'} /></div>
+                      <label className="flex items-center gap-1.5 p-1.5 bg-background border border-border rounded-lg cursor-pointer"><input type="checkbox" checked={formData.isActive} onChange={e => setFormData({ ...formData, isActive: e.target.checked })} className="w-3.5 h-3.5 text-primary rounded border-border" /><span className="text-[13px] font-medium text-foreground">{language === 'en' ? 'Package is Active' : 'প্যাকেজ অ্যাক্টিভ'}</span></label>
+                    </div>
+                  </>
+
+                ) : isHealthcareMode ? (
+                  /* ── HEALTHCARE MODE FORM ────────────────────────────── */
+                  <>
+                    <div className="bg-surface p-1.5 border border-border shadow-md rounded-2xl space-y-3">
+                      <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2"><Stethoscope className="w-3.5 h-3.5 inline mr-1 text-teal-400" />{language === 'en' ? 'Doctor / Service Details' : 'ডাক্তার / সার্ভিস বিবরণ'}</label>
+                      <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Doctor Name / Service Title *' : 'ডাক্তারের নাম / সার্ভিস *'}</label><input type="text" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full bg-background border border-border rounded-lg px-1.5 py-2 text-[13px] focus:border-teal-500 focus:outline-none transition-colors text-foreground" placeholder={language === 'en' ? 'e.g. Dr. Rahman (Cardiologist)' : 'যেমন: ডা. রহমান (হৃদরোগ বিশেষজ্ঞ)'} /></div>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Consultation Fee *' : 'পরামর্শ ফি *'}</label><div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-[13px]">৳</span><input type="number" step="0.01" required value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} className="w-full bg-background border border-border rounded-lg pl-7 pr-3 py-2 text-[13px] focus:border-teal-500 focus:outline-none transition-colors text-foreground" placeholder="0.00" /></div></div>
+                        <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Specialty' : 'বিশেষত্ব'}</label><input type="text" value={formData.attributes?.specialty || ''} onChange={e => setFormData((prev: any) => ({ ...prev, attributes: { ...prev.attributes, specialty: e.target.value } }))} className="w-full bg-background border border-border rounded-lg px-1.5 py-2 text-[13px] focus:border-teal-500 focus:outline-none transition-colors text-foreground" placeholder="Cardiologist, GP" /></div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Visiting Hours' : 'ভিজিটিং সময়'}</label><input type="text" value={formData.attributes?.visitingHours || ''} onChange={e => setFormData((prev: any) => ({ ...prev, attributes: { ...prev.attributes, visitingHours: e.target.value } }))} className="w-full bg-background border border-border rounded-lg px-2 py-2 text-[13px] focus:border-teal-500 focus:outline-none transition-colors text-foreground" placeholder="Sat-Thu 9AM–1PM" /></div>
+                        <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Chamber / Room' : 'চেম্বার'}</label><input type="text" value={formData.attributes?.clinicRoom || ''} onChange={e => setFormData((prev: any) => ({ ...prev, attributes: { ...prev.attributes, clinicRoom: e.target.value } }))} className="w-full bg-background border border-border rounded-lg px-2 py-2 text-[13px] focus:border-teal-500 focus:outline-none transition-colors text-foreground" placeholder="Room 4, 2nd Floor" /></div>
+                      </div>
+                      <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Profile / Description' : 'বিবরণ'}</label><textarea rows={3} value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="w-full bg-background border border-border rounded-lg px-1.5 py-2 text-[13px] focus:border-teal-500 focus:outline-none resize-none custom-scrollbar transition-colors text-foreground" placeholder={language === 'en' ? 'MBBS, MD, 15 years experience...' : 'যোগ্যতা ও অভিজ্ঞতা লিখুন...'} /></div>
+                    </div>
+                  </>
+
+                ) : isEducationMode ? (
+                  /* ── EDUCATION MODE FORM ─────────────────────────────── */
+                  <>
+                    <div className="bg-surface p-1.5 border border-border shadow-md rounded-2xl space-y-3">
+                      <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2"><GraduationCap className="w-3.5 h-3.5 inline mr-1 text-purple-400" />{language === 'en' ? 'Course / Batch Details' : 'কোর্স / ব্যাচ বিবরণ'}</label>
+                      <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Course / Batch Name *' : 'কোর্সের নাম *'}</label><input type="text" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full bg-background border border-border rounded-lg px-1.5 py-2 text-[13px] focus:border-purple-500 focus:outline-none transition-colors text-foreground" placeholder={language === 'en' ? 'e.g. Full-Stack Web Dev Batch 12' : 'যেমন: ফুল-স্ট্যাক ওয়েব ডেভ ব্যাচ ১২'} /></div>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Course Fee *' : 'কোর্স ফি *'}</label><div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-[13px]">৳</span><input type="number" step="0.01" required value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} className="w-full bg-background border border-border rounded-lg pl-7 pr-3 py-2 text-[13px] focus:border-purple-500 focus:outline-none transition-colors text-foreground" placeholder="0.00" /></div></div>
+                        <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Duration' : 'মেয়াদ'}</label><input type="text" value={formData.attributes?.duration || ''} onChange={e => setFormData((prev: any) => ({ ...prev, attributes: { ...prev.attributes, duration: e.target.value } }))} className="w-full bg-background border border-border rounded-lg px-1.5 py-2 text-[13px] focus:border-purple-500 focus:outline-none transition-colors text-foreground" placeholder="3 Months" /></div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <div><label className="block text-[11px] font-medium text-muted-foreground mb-1"><Calendar className="w-3 h-3 inline" /> {language === 'en' ? 'Batch Schedule' : 'ব্যাচ শিডিউল'}</label><input type="text" value={formData.attributes?.batchSchedule || ''} onChange={e => setFormData((prev: any) => ({ ...prev, attributes: { ...prev.attributes, batchSchedule: e.target.value } }))} className="w-full bg-background border border-border rounded-lg px-2 py-2 text-[13px] focus:border-purple-500 focus:outline-none transition-colors text-foreground" placeholder="Fri-Sat 6–9 PM" /></div>
+                        <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Instructor' : 'প্রশিক্ষক'}</label><input type="text" value={formData.attributes?.instructor || ''} onChange={e => setFormData((prev: any) => ({ ...prev, attributes: { ...prev.attributes, instructor: e.target.value } }))} className="w-full bg-background border border-border rounded-lg px-2 py-2 text-[13px] focus:border-purple-500 focus:outline-none transition-colors text-foreground" placeholder="Tanvir Hossain" /></div>
+                      </div>
+                      <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Certificate / Description' : 'সার্টিফিকেট ও বিবরণ'}</label><textarea rows={3} value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="w-full bg-background border border-border rounded-lg px-1.5 py-2 text-[13px] focus:border-purple-500 focus:outline-none resize-none custom-scrollbar transition-colors text-foreground" placeholder={language === 'en' ? 'Course overview, certification, requirements...' : 'কোর্সের বিবরণ, সার্টিফিকেট, শর্তাবলি লিখুন...'} /></div>
+                    </div>
+                  </>
+
+                ) : isManufacturingMode ? (
+                  /* ── MANUFACTURING / WHOLESALE MODE FORM ─────────────── */
+                  <>
+                    <div className="bg-surface p-1.5 border border-border shadow-md rounded-2xl space-y-3">
+                      <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2"><Factory className="w-3.5 h-3.5 inline mr-1 text-amber-400" />{language === 'en' ? 'Wholesale Product Details' : 'হোলসেল প্রডাক্ট বিবরণ'}</label>
+                      <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Product / Item Name *' : 'পণ্যের নাম *'}</label><input type="text" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full bg-background border border-border rounded-lg px-1.5 py-2 text-[13px] focus:border-amber-500 focus:outline-none transition-colors text-foreground" placeholder={language === 'en' ? 'e.g. Industrial Cotton Fabric Roll (100m)' : 'যেমন: ইন্ডাস্ট্রিয়াল কটন ফেব্রিক রোল'} /></div>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Unit Price *' : 'একক মূল্য *'}</label><div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-[13px]">৳</span><input type="number" step="0.01" required value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} className="w-full bg-background border border-border rounded-lg pl-7 pr-3 py-2 text-[13px] focus:border-amber-500 focus:outline-none transition-colors text-foreground" placeholder="0.00" /></div></div>
+                        <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Minimum Order Qty (MOQ)' : 'সর্বনিম্ন অর্ডার (MOQ)'}</label><input type="text" value={formData.attributes?.moq || ''} onChange={e => setFormData((prev: any) => ({ ...prev, attributes: { ...prev.attributes, moq: e.target.value } }))} className="w-full bg-background border border-border rounded-lg px-1.5 py-2 text-[13px] focus:border-amber-500 focus:outline-none transition-colors text-foreground" placeholder="500 pcs" /></div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Material / Grade' : 'উপাদান / গ্রেড'}</label><input type="text" value={formData.attributes?.material || ''} onChange={e => setFormData((prev: any) => ({ ...prev, attributes: { ...prev.attributes, material: e.target.value } }))} className="w-full bg-background border border-border rounded-lg px-2 py-2 text-[13px] focus:border-amber-500 focus:outline-none transition-colors text-foreground" placeholder="100% Cotton, Grade A" /></div>
+                        <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Lead Time' : 'উৎপাদন সময়'}</label><input type="text" value={formData.attributes?.leadTime || ''} onChange={e => setFormData((prev: any) => ({ ...prev, attributes: { ...prev.attributes, leadTime: e.target.value } }))} className="w-full bg-background border border-border rounded-lg px-2 py-2 text-[13px] focus:border-amber-500 focus:outline-none transition-colors text-foreground" placeholder="7–14 days" /></div>
+                      </div>
+                      <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Specifications / Description' : 'বিস্তারিত বিবরণ'}</label><textarea rows={3} value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="w-full bg-background border border-border rounded-lg px-1.5 py-2 text-[13px] focus:border-amber-500 focus:outline-none resize-none custom-scrollbar transition-colors text-foreground" placeholder={language === 'en' ? 'Technical specs, certifications, packing details...' : 'টেকনিক্যাল স্পেসিফিকেশন লিখুন...'} /></div>
+                      <div>
+                        <label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Stock Count' : 'স্টক পরিমাণ'}</label>
+                        <input type="number" value={formData.stockCount} onChange={e => setFormData({ ...formData, stockCount: parseInt(e.target.value) || 0, trackInventory: true })} className="w-full bg-background border border-border rounded-lg px-1.5 py-2 text-[13px] focus:border-amber-500 focus:outline-none transition-colors text-foreground" placeholder="0" />
+                      </div>
+                    </div>
+                  </>
+
+                ) : isLogisticsMode ? (
+                  /* ── LOGISTICS MODE FORM ─────────────────────────────── */
+                  <>
+                    <div className="bg-surface p-1.5 border border-border shadow-md rounded-2xl space-y-3">
+                      <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2"><Truck className="w-3.5 h-3.5 inline mr-1 text-sky-400" />{language === 'en' ? 'Freight Route / Fleet Details' : 'ফ্রেট রুট / যানবাহন বিবরণ'}</label>
+                      <div><label className="block text-[11px] font-medium text-muted-foreground mb-1"><Navigation className="w-3 h-3 inline mr-1" />{language === 'en' ? 'Route / Vehicle Name *' : 'রুট / যানবাহন নাম *'}</label><input type="text" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full bg-background border border-border rounded-lg px-1.5 py-2 text-[13px] focus:border-sky-500 focus:outline-none transition-colors text-foreground" placeholder={language === 'en' ? 'e.g. Dhaka → Chittagong (Covered Van)' : 'যেমন: ঢাকা → চট্টগ্রাম (কভার্ড ভ্যান)'} /></div>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Base Freight Rate *' : 'বেস ভাড়া *'}</label><div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-[13px]">৳</span><input type="number" step="0.01" required value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} className="w-full bg-background border border-border rounded-lg pl-7 pr-3 py-2 text-[13px] focus:border-sky-500 focus:outline-none transition-colors text-foreground" placeholder="0.00" /></div></div>
+                        <div><label className="block text-[11px] font-medium text-muted-foreground mb-1"><Weight className="w-3 h-3 inline mr-1" />{language === 'en' ? 'Max Capacity (Ton)' : 'সর্বোচ্চ ধারণক্ষমতা'}</label><input type="text" value={formData.attributes?.capacity || ''} onChange={e => setFormData((prev: any) => ({ ...prev, attributes: { ...prev.attributes, capacity: e.target.value } }))} className="w-full bg-background border border-border rounded-lg px-1.5 py-2 text-[13px] focus:border-sky-500 focus:outline-none transition-colors text-foreground" placeholder="5 Ton" /></div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <div><label className="block text-[11px] font-medium text-muted-foreground mb-1"><Clock className="w-3 h-3 inline mr-1" />{language === 'en' ? 'Transit Time' : 'ডেলিভারি সময়'}</label><input type="text" value={formData.attributes?.transitTime || ''} onChange={e => setFormData((prev: any) => ({ ...prev, attributes: { ...prev.attributes, transitTime: e.target.value } }))} className="w-full bg-background border border-border rounded-lg px-2 py-2 text-[13px] focus:border-sky-500 focus:outline-none transition-colors text-foreground" placeholder="24–48 hrs" /></div>
+                        <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Vehicle Type' : 'যানবাহন ধরন'}</label><input type="text" value={formData.attributes?.vehicleType || ''} onChange={e => setFormData((prev: any) => ({ ...prev, attributes: { ...prev.attributes, vehicleType: e.target.value } }))} className="w-full bg-background border border-border rounded-lg px-2 py-2 text-[13px] focus:border-sky-500 focus:outline-none transition-colors text-foreground" placeholder="Covered Van, Flatbed" /></div>
+                      </div>
+                      <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Description / Notes' : 'বিবরণ'}</label><textarea rows={3} value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="w-full bg-background border border-border rounded-lg px-1.5 py-2 text-[13px] focus:border-sky-500 focus:outline-none resize-none custom-scrollbar transition-colors text-foreground" placeholder={language === 'en' ? 'Route details, special cargo types, terms...' : 'রুটের বিবরণ, কার্গো টাইপ, শর্তাবলি লিখুন...'} /></div>
+                    </div>
+                  </>
+
                 ) : (
                   /* ── eCOMMERCE MODE FORM (original) ───────────────── */
                   <>
