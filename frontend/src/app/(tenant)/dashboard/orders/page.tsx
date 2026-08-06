@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
 import { useLanguage } from '@/components/LanguageProvider';
-import { ShoppingBag, ChevronLeft, RefreshCw, Filter, Search, Package, CheckCircle2, XCircle, Clock, RotateCcw, Plus, X, Trash2, Building2 } from 'lucide-react';
+import { ShoppingBag, ChevronLeft, RefreshCw, Filter, Search, Package, CheckCircle2, XCircle, Clock, RotateCcw, Plus, X, Trash2, Building2, Hotel } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function OrdersPage() {
@@ -13,6 +13,7 @@ export default function OrdersPage() {
  const [selectedOrder, setSelectedOrder] = useState<any>(null);
  const [statusUpdating, setStatusUpdating] = useState(false);
  const [isPropertyMode, setIsPropertyMode] = useState(false);
+ const [isHospitalityMode, setIsHospitalityMode] = useState(false);
 
  // Create Order Modal State
  const [isCreatingOrder, setIsCreatingOrder] = useState(false);
@@ -42,6 +43,7 @@ export default function OrdersPage() {
  const tenantNature = meData?.tenant?.businessNature || '';
  const matched = natures.find((n: any) => n.name === tenantNature);
  setIsPropertyMode(matched?.isPropertyMode ?? false);
+ setIsHospitalityMode(matched?.isHospitalityMode ?? false);
  }
  } catch (err) {
  console.error(err);
@@ -186,11 +188,11 @@ export default function OrdersPage() {
  <div className="flex items-center justify-between mb-4">
  <div>
  <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
- {isPropertyMode ? <Building2 className="w-6 h-6 text-primary" /> : <ShoppingBag className="w-6 h-6 text-primary" />}
- {isPropertyMode ? (language === 'en' ? 'Inquiries' : 'ইনকোয়ারি') : (language === 'en' ? 'Orders' : 'অর্ডারস')}
+ {isPropertyMode ? <Building2 className="w-6 h-6 text-primary" /> : isHospitalityMode ? <Hotel className="w-6 h-6 text-amber-500" /> : <ShoppingBag className="w-6 h-6 text-primary" />}
+ {isPropertyMode ? (language === 'en' ? 'Inquiries' : 'ইনকোয়ারি') : isHospitalityMode ? (language === 'en' ? 'Reservations' : 'রিজার্ভেশন') : (language === 'en' ? 'Orders' : 'অর্ডারস')}
  </h1>
  <p className="text-[11px] text-muted-foreground mt-1">
- {orders.length} {isPropertyMode ? (language === 'en' ? 'inquiries total' : 'টি ইনকোয়ারি আছে') : (language === 'en' ? 'orders total' : 'টি অর্ডার আছে')}
+ {orders.length} {isPropertyMode ? (language === 'en' ? 'inquiries total' : 'টি ইনকোয়ারি আছে') : isHospitalityMode ? (language === 'en' ? 'reservations total' : 'টি রিজার্ভেশন আছে') : (language === 'en' ? 'orders total' : 'টি অর্ডার আছে')}
  </p>
  </div>
  <div className="flex gap-2">

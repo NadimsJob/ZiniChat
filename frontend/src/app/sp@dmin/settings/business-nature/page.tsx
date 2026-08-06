@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
-import { Loader2, Plus, Edit, Trash2, Save, X, ShoppingCart, Building2 } from 'lucide-react';
+import { Loader2, Plus, Edit, Trash2, Save, X, ShoppingCart, Building2, Hotel } from 'lucide-react';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -13,7 +13,7 @@ export default function BusinessNaturePage() {
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   
-  const [formData, setFormData] = useState({ name: '', nameBn: '', isActive: true, isPropertyMode: false });
+  const [formData, setFormData] = useState({ name: '', nameBn: '', isActive: true, isPropertyMode: false, isHospitalityMode: false });
   
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -53,7 +53,7 @@ export default function BusinessNaturePage() {
         await fetchNatures();
         setIsAdding(false);
         setEditingId(null);
-        setFormData({ name: '', nameBn: '', isActive: true, isPropertyMode: false });
+        setFormData({ name: '', nameBn: '', isActive: true, isPropertyMode: false, isHospitalityMode: false });
       } else {
         const data = await res.json();
         setError(data.message || 'Failed to save');
@@ -89,6 +89,7 @@ export default function BusinessNaturePage() {
       nameBn: nature.nameBn || '',
       isActive: nature.isActive,
       isPropertyMode: nature.isPropertyMode || false,
+      isHospitalityMode: nature.isHospitalityMode || false,
     });
   };
 
@@ -108,7 +109,7 @@ export default function BusinessNaturePage() {
             onClick={() => {
               setIsAdding(true);
               setEditingId(null);
-              setFormData({ name: '', nameBn: '', isActive: true, isPropertyMode: false });
+              setFormData({ name: '', nameBn: '', isActive: true, isPropertyMode: false, isHospitalityMode: false });
             }}
             className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
           >
@@ -174,8 +175,27 @@ export default function BusinessNaturePage() {
                     Property Listing Mode
                   </div>
                   <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
-                    Enables property gallery, area/bedroom fields, and inquiry-based AI flow (no orders). 
-                    Use for Real Estate, Hotel Booking, Car Rental, etc.
+                    Enables property gallery, area/bedroom fields, and inquiry-based AI flow (no orders).
+                  </p>
+                </div>
+              </label>
+
+              {/* Hospitality & Hotel Mode checkbox */}
+              <label className="flex items-start gap-3 p-3 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800/50 cursor-pointer hover:border-amber-500/50 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={formData.isHospitalityMode}
+                  onChange={e => setFormData({ ...formData, isHospitalityMode: e.target.checked })}
+                  className="rounded border-slate-300 text-amber-500 focus:ring-amber-500 mt-0.5"
+                  id="isHospitalityMode"
+                />
+                <div>
+                  <div className="flex items-center gap-1.5 text-sm font-medium text-amber-600 dark:text-amber-400">
+                    <Hotel className="w-4 h-4 text-amber-500" />
+                    Hospitality & Hotel Booking Mode
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+                    Enables room gallery, capacity/amenities fields, nightly rates, and room reservation AI flow (no orders).
                   </p>
                 </div>
               </label>
@@ -225,6 +245,10 @@ export default function BusinessNaturePage() {
                     {nature.isPropertyMode ? (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-medium border border-blue-200 dark:border-blue-500/20">
                         <Building2 className="w-3 h-3" /> Property
+                      </span>
+                    ) : nature.isHospitalityMode ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-medium border border-amber-200 dark:border-amber-500/20">
+                        <Hotel className="w-3 h-3" /> Room Booking
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 text-xs font-medium border border-orange-200 dark:border-orange-500/20">

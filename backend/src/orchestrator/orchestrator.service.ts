@@ -14,13 +14,14 @@ import * as fs from 'fs';
 
 export interface StructuredAiClassification {
   replyText: string;
-  intent: 'general' | 'order_intent' | 'order_confirmation' | 'support_needed' | 'product_lookup' | 'property_inquiry';
+  intent: 'general' | 'order_intent' | 'order_confirmation' | 'support_needed' | 'product_lookup' | 'property_inquiry' | 'room_booking_inquiry';
   orderProposal?: { productNameGuess: string; quantity: number }[];
   imageProductDescription?: string;
   supportSignal?: boolean;
   supportReason?: 'general' | 'complaint' | 'refund_return' | 'delivery_issue';
   matchedTags?: string[];
   interestedPropertyName?: string; // Property mode: which property customer mentioned
+  interestedRoomName?: string; // Hospitality mode: which hotel room/suite customer mentioned
 }
 
 @Injectable()
@@ -109,14 +110,16 @@ export class OrchestratorService {
 
       this.assertBelongsToTenant(assistant, tenantId, 'AiAssistant');
 
-      // Resolve Property Mode from BusinessNature
+      // Resolve Modes from BusinessNature
       const tenantRecord = await this.prisma.tenant.findUnique({ where: { id: tenantId }, select: { businessNature: true } });
       let isPropertyMode = false;
+      let isHospitalityMode = false;
       if (tenantRecord?.businessNature) {
         const businessNature = await this.prisma.businessNature.findFirst({
           where: { name: tenantRecord.businessNature }
         });
         isPropertyMode = businessNature?.isPropertyMode ?? false;
+        isHospitalityMode = businessNature?.isHospitalityMode ?? false;
       }
 
       // Map tool states
@@ -131,12 +134,13 @@ export class OrchestratorService {
       const planSupportDetection = await this.quotaService.checkFeature(tenantId, 'ai_tool_support_detection').catch(() => false);
       const planProductMatching = await this.quotaService.checkFeature(tenantId, 'ai_tool_product_matching').catch(() => false);
 
-      // Property mode: order placement is always disabled to prevent AI from creating orders for inquiries
-      const isOrderPlacementActive = !isPropertyMode &&
+      // Property/Hospitality mode: order placement is always disabled to prevent AI from creating orders for inquiries/bookings
+      const isSpecialModeActive = isPropertyMode || isHospitalityMode;
+      const isOrderPlacementActive = !isSpecialModeActive &&
         (toolMap['order_placement']?.isEnabled ?? assistant.aiOrderEnabled) && planOrderPlacement;
       const isImageReadingActive = (toolMap['image_reading']?.isEnabled ?? true) && planImageReading;
       const isSupportDetectionActive = (toolMap['support_detection']?.isEnabled ?? false) && planSupportDetection;
-      const isProductMatchingActive = !isPropertyMode && (toolMap['product_matching']?.isEnabled ?? false) && planProductMatching;
+      const isProductMatchingActive = !isSpecialModeActive && (toolMap['product_matching']?.isEnabled ?? false) && planProductMatching;
 
       // Resolve AI Config
       const customAiConfigId = assistant.tenant?.customAiConfigId || undefined;
@@ -214,6 +218,7 @@ export class OrchestratorService {
         isOrderPlacementActive,
         isSupportDetectionActive,
         isPropertyMode,
+        isHospitalityMode,
       });
 
       let userText = '';
@@ -283,7 +288,7 @@ export class OrchestratorService {
 
       // 5. Stage B — Deterministic Backend Handlers
 
-      // Handler 1: Order Placement Flow
+      // Handler 1: Order Placement Flow / Property Inquiry / Hospitality Booking
       let finalReplyText = classification.replyText;
 
       if (isOrderPlacementActive) {
@@ -291,6 +296,10 @@ export class OrchestratorService {
         if (orderResult?.overrideReplyText) {
           finalReplyText = orderResult.overrideReplyText;
         }
+      } else if (isPropertyMode && classification.intent === 'property_inquiry') {
+        await this.handlePropertyInquiry(tenantId, message.conversation, message.conversationId, classification.interestedPropertyName, userText);
+      } else if (isHospitalityMode && classification.intent === 'room_booking_inquiry') {
+        await this.handleRoomBookingInquiry(tenantId, message.conversation, message.conversationId, classification.interestedRoomName, userText);
       }
 
       // Handler 2: Support Detection & Handover
@@ -400,7 +409,7 @@ export class OrchestratorService {
       if (typeof parsed.replyText === 'string') {
         return {
           replyText: parsed.replyText,
-          intent: ['general', 'order_intent', 'order_confirmation', 'support_needed', 'product_lookup', 'property_inquiry'].includes(parsed.intent)
+          intent: ['general', 'order_intent', 'order_confirmation', 'support_needed', 'product_lookup', 'property_inquiry', 'room_booking_inquiry'].includes(parsed.intent)
             ? parsed.intent
             : 'general',
           orderProposal: Array.isArray(parsed.orderProposal) ? parsed.orderProposal : undefined,
@@ -411,6 +420,7 @@ export class OrchestratorService {
             : 'general',
           matchedTags: Array.isArray(parsed.matchedTags) ? parsed.matchedTags.map(String) : [],
           interestedPropertyName: typeof parsed.interestedPropertyName === 'string' ? parsed.interestedPropertyName : undefined,
+          interestedRoomName: typeof parsed.interestedRoomName === 'string' ? parsed.interestedRoomName : undefined,
         };
       }
     } catch (e) {
@@ -683,7 +693,7 @@ export class OrchestratorService {
   private async buildContextPrompt(
     conversationId: string,
     assistant: any,
-    options?: { isImage: boolean; caption: string; isOrderPlacementActive: boolean; isSupportDetectionActive: boolean; isPropertyMode?: boolean }
+    options?: { isImage: boolean; caption: string; isOrderPlacementActive: boolean; isSupportDetectionActive: boolean; isPropertyMode?: boolean; isHospitalityMode?: boolean }
   ): Promise<string> {
     const conversation = await this.prisma.conversation.findUnique({
       where: { id: conversationId },
@@ -799,6 +809,24 @@ export class OrchestratorService {
           prompt += ` | 💰 BDT ${p.price.toString()}\n`;
         });
       }
+    } else if (options?.isHospitalityMode) {
+      // Hospitality mode: hotel rooms & suites with capacity & amenities
+      if (products.length > 0) {
+        prompt += `\n--- HOTEL ROOMS & SUITES (Source of Truth for Available Rooms) ---\n`;
+        prompt += `IMPORTANT: You are a HOTEL & HOSPITALITY reservation assistant. Do NOT create product orders. Help guests check room options, amenities, rates, and collect booking requests.\n`;
+        products.forEach(p => {
+          const attrs = (p.attributes as any) || {};
+          const roomType = attrs.roomType ? `[${String(attrs.roomType).toUpperCase()}]` : '';
+          const capacity = attrs.capacity || attrs.guests || '';
+          const bedType = attrs.bedType || '';
+          const amenities = Array.isArray(attrs.amenities) ? attrs.amenities.join(', ') : (attrs.amenities || '');
+          prompt += `- ${roomType} ${p.name}`;
+          if (capacity) prompt += ` | 👥 Max ${capacity} Guests`;
+          if (bedType) prompt += ` | 🛏 ${bedType}`;
+          if (amenities) prompt += ` | ✨ ${amenities}`;
+          prompt += ` | 💰 BDT ${p.price.toString()}/night\n`;
+        });
+      }
     } else {
       // eCommerce mode: standard product catalog
       if (products.length > 0) {
@@ -852,6 +880,12 @@ export class OrchestratorService {
       prompt += `   - If the customer shows interest in a specific property (wants to visit, wants more info, wants to buy/rent), set "intent": "property_inquiry".\n`;
       prompt += `   - Set "interestedPropertyName" to the property name the customer is interested in.\n`;
       prompt += `   - For general browsing or questions, use "intent": "general".\n`;
+    } else if (options?.isHospitalityMode) {
+      prompt += `2. HOTEL & HOSPITALITY MODE IS ACTIVE:\n`;
+      prompt += `   - You MUST NOT create or propose any product orders.\n`;
+      prompt += `   - If the guest wants to book or reserve a room, check-in dates, or room info, set "intent": "room_booking_inquiry".\n`;
+      prompt += `   - Set "interestedRoomName" to the room/suite name the guest is interested in.\n`;
+      prompt += `   - For general questions, use "intent": "general".\n`;
     } else if (!options?.isOrderPlacementActive) {
       prompt += `2. ORDER PLACEMENT IS DISABLED: Set "intent": "general" or "product_lookup" and do NOT generate order proposals.\n`;
     }
@@ -863,6 +897,9 @@ export class OrchestratorService {
     if (options?.isPropertyMode) {
       prompt += `  "intent": "general | property_inquiry | support_needed | product_lookup",\n`;
       prompt += `  "interestedPropertyName": "name of property customer is interested in (or empty string)",\n`;
+    } else if (options?.isHospitalityMode) {
+      prompt += `  "intent": "general | room_booking_inquiry | support_needed | product_lookup",\n`;
+      prompt += `  "interestedRoomName": "name of hotel room/suite guest is interested in (or empty string)",\n`;
     } else {
       prompt += `  "intent": "general | order_intent | order_confirmation | support_needed | product_lookup",\n`;
       prompt += `  "orderProposal": [ { "productNameGuess": "Product Name", "quantity": 1 } ],\n`;
@@ -943,6 +980,76 @@ export class OrchestratorService {
       this.logger.log(`Property inquiry recorded for contact ${contactId}, property: ${interestedPropertyName || 'N/A'}`);
     } catch (err: any) {
       this.logger.error(`handlePropertyInquiry failed: ${err.message}`);
+    }
+  }
+
+  // ── Room Booking Inquiry Handler (Hospitality Mode) ──────────────────────
+  // Called when AI detects a room_booking_inquiry intent in Hospitality Mode.
+  // Moves contact to 'Intake' Kanban stage and records a ContactNote.
+  private async handleRoomBookingInquiry(
+    tenantId: string,
+    conversation: any,
+    conversationId: string,
+    interestedRoomName: string | undefined,
+    userText: string
+  ) {
+    this.assertBelongsToTenant(conversation, tenantId, 'Conversation');
+    const contactId = conversation.contactId;
+
+    try {
+      // 1. Find or create 'Intake' stage
+      let intakeStage = await this.prisma.kanbanStage.findFirst({
+        where: { tenantId, name: 'Intake' }
+      });
+      if (!intakeStage) {
+        intakeStage = await this.prisma.kanbanStage.create({
+          data: { tenantId, name: 'Intake', color: '#8b5cf6', order: 0 }
+        });
+      }
+
+      // 2. Move contact to Intake stage
+      const contact = await this.prisma.contact.findUnique({
+        where: { id: contactId },
+        include: { stage: true }
+      });
+      if (!contact?.stageId || !contact.stage) {
+        await this.prisma.contact.update({
+          where: { id: contactId },
+          data: { stageId: intakeStage.id }
+        });
+      }
+
+      // 3. Record ContactNote with room booking inquiry details
+      const noteContent = [
+        '[AI Hotel Room Reservation Inquiry]',
+        interestedRoomName ? `Room: ${interestedRoomName}` : '',
+        `Guest message: "${userText.slice(0, 300)}"`
+      ].filter(Boolean).join(' | ');
+
+      await this.prisma.contactNote.create({
+        data: { contactId, content: noteContent }
+      });
+
+      // 4. Activity log
+      await this.activityLogService.record({
+        tenantId,
+        conversationId,
+        contactId,
+        type: 'ROOM_BOOKING_INQUIRY',
+        metadataJson: { roomName: interestedRoomName || 'Unknown', source: 'ai' }
+      });
+
+      // 5. Notify tenant admins
+      await this.notificationsService.createNotificationForTenantAdmins(
+        tenantId,
+        'New Hotel Room Reservation Inquiry',
+        `${contact?.name || 'A guest'} is inquiring about${interestedRoomName ? ' "' + interestedRoomName + '"' : ' room booking'}.`,
+        'inbox'
+      ).catch(() => {});
+
+      this.logger.log(`Room booking inquiry recorded for contact ${contactId}, room: ${interestedRoomName || 'N/A'}`);
+    } catch (err: any) {
+      this.logger.error(`handleRoomBookingInquiry failed: ${err.message}`);
     }
   }
 }

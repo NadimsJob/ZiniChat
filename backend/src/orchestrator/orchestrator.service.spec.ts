@@ -311,12 +311,206 @@ describe('OrchestratorService', () => {
         expect.objectContaining({
           where: expect.objectContaining({
             uploadedAt: expect.objectContaining({
+    inboxGateway = {
+      broadcastToTenant: jest.fn(),
+    };
+
+    const aiCacheService = {
+      computeChecksum: jest.fn().mockReturnValue('checksum123'),
+      getOrCreateCache: jest.fn().mockResolvedValue({ isCached: false, cacheKey: null }),
+      invalidateCache: jest.fn(),
+    };
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        OrchestratorService,
+        { provide: PrismaService, useValue: prismaService },
+        { provide: AiService, useValue: aiService },
+        { provide: AiCacheService, useValue: aiCacheService },
+        { provide: InboxService, useValue: inboxService },
+        { provide: BillingService, useValue: billingService },
+        { provide: OrdersService, useValue: ordersService },
+        { provide: NotificationsService, useValue: notificationsService },
+        { provide: QuotaService, useValue: quotaService },
+        { provide: ActivityLogService, useValue: activityLogService },
+        { provide: InboxGateway, useValue: inboxGateway },
+      ],
+    }).compile();
+
+    service = module.get<OrchestratorService>(OrchestratorService);
+  });
+
+  it('should ignore non-inbound messages', async () => {
+    prismaService.message.findUnique.mockResolvedValue({ direction: 'outbound', type: 'text' });
+    await service.processMessage('msg1');
+    expect(prismaService.aiAssistant.findFirst).not.toHaveBeenCalled();
+  });
+
+  it('should ignore if AI is disabled globally', async () => {
+    prismaService.message.findUnique.mockResolvedValue({
+      id: 'msg1', direction: 'inbound', type: 'text', content: 'hello',
+      conversation: { tenantId: 't1', conversationId: 'c1' }
+    });
+    prismaService.aiAssistant.findFirst.mockResolvedValue({ tenantId: 't1', isActive: false });
+    
+    await service.processMessage('msg1');
+    expect(aiService.generateCompletion).not.toHaveBeenCalled();
+  });
+
+  it('should fallback gracefully to raw text reply if structured JSON parsing fails', async () => {
+    prismaService.message.findUnique.mockResolvedValue({
+      id: 'msg1', direction: 'inbound', type: 'text', content: { text: 'hello' },
+      conversationId: 'c1',
+      conversation: { 
+        tenantId: 't1', id: 'c1',
+        channelConnection: { id: 'conn1', isAiAutoReplyEnabled: true }
+      }
+    });
+    prismaService.aiAssistant.findFirst.mockResolvedValue({ 
+      id: 'ai1', tenantId: 't1', isActive: true, routingMode: 'ai_first', systemPrompt: 'Be nice', tools: []
+    });
+
+    aiService.generateCompletion.mockResolvedValue('Plain text response without JSON');
+
+    await service.processMessage('msg1');
+
+    expect(inboxService.saveOutboundMessage).toHaveBeenCalledWith(
+      't1', 'c1', 'Plain text response without JSON', 'text', undefined, 'ai1'
+    );
+  });
+
+  it('should charge only 1 credit if image_reading tool is disabled, even for vision models', async () => {
+    prismaService.message.findUnique.mockResolvedValue({
+      id: 'msg_img', direction: 'inbound', type: 'image', content: { caption: 'Product photo' },
+      conversationId: 'c1',
+      conversation: { 
+        tenantId: 't1', id: 'c1',
+        channelConnection: { id: 'conn1', isAiAutoReplyEnabled: true }
+      }
+    });
+    prismaService.aiAssistant.findFirst.mockResolvedValue({ 
+      id: 'ai1', tenantId: 't1', isActive: true, routingMode: 'ai_first', systemPrompt: 'Be nice',
+      tools: [{ toolType: 'image_reading', isEnabled: false }]
+    });
+
+    await service.processMessage('msg_img');
+
+    expect(prismaService.aiUsageLog.createMany).toHaveBeenCalled();
+    const callArg = prismaService.aiUsageLog.createMany.mock.calls[0][0];
+    expect(callArg.data.length).toBe(1); // 1 credit charged because image_reading is OFF
+  });
+
+  it('should process support detection and flag conversation for follow-up', async () => {
+    prismaService.message.findUnique.mockResolvedValue({
+      id: 'msg_sup', direction: 'inbound', type: 'text', content: 'I need refund for broken item',
+      conversationId: 'c1',
+      conversation: { 
+        tenantId: 't1', id: 'c1', contactId: 'cnt1', contact: { name: 'Alice' },
+        channelConnection: { id: 'conn1', isAiAutoReplyEnabled: true }
+      }
+    });
+    prismaService.aiAssistant.findFirst.mockResolvedValue({ 
+      id: 'ai1', tenantId: 't1', isActive: true, routingMode: 'ai_first',
+      tools: [{ toolType: 'support_detection', isEnabled: true }]
+    });
+
+    aiService.generateCompletion.mockResolvedValue(JSON.stringify({
+      replyText: 'Connecting you with support team.',
+      intent: 'support_needed',
+      supportSignal: true,
+      supportReason: 'refund_return'
+    }));
+
+    await service.processMessage('msg_sup');
+
+    expect(prismaService.conversation.update).toHaveBeenCalledWith({
+      where: { id: 'c1' },
+      data: { requiresFollowUp: true }
+    });
+    expect(activityLogService.record).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'AI_HANDOVER',
+      metadataJson: { reason: 'refund_return' }
+    }));
+    expect(notificationsService.createNotificationForTenantAdmins).toHaveBeenCalled();
+  });
+
+  it('should enforce strict cross-tenant isolation and throw on cross-tenant security violation', () => {
+    expect(() => {
+      (service as any).assertBelongsToTenant({ tenantId: 'tenantA' }, 'tenantB', 'TestModel');
+    }).toThrow('Security Violation');
+  });
+
+  describe('Anti-Hallucination & Safety Features', () => {
+    it('should require explicit hard confirmation for order placement when soft consent is given', async () => {
+      const mockConv = {
+        id: 'c1', tenantId: 't1', contactId: 'cnt1',
+        pendingOrderProposal: {
+          items: [{ productId: 'p1', quantity: 1, priceAtTime: 500 }],
+          expiresAt: new Date(Date.now() + 100000).toISOString()
+        }
+      };
+
+      const result = await (service as any).handleOrderPlacement(
+        't1', mockConv, { replyText: 'Sure', intent: 'order_confirmation' }, 'c1', 'okay'
+      );
+
+      expect(result).toEqual({
+        overrideReplyText: expect.stringContaining("CONFIRM")
+      });
+      expect(ordersService.createOrder).not.toHaveBeenCalled();
+    });
+
+    it('should create order when explicit hard confirmation keyword is provided', async () => {
+      const mockConv = {
+        id: 'c1', tenantId: 't1', contactId: 'cnt1',
+        pendingOrderProposal: {
+          items: [{ productId: 'p1', quantity: 1, priceAtTime: 500 }],
+          expiresAt: new Date(Date.now() + 100000).toISOString()
+        }
+      };
+
+      prismaService.product.findFirst.mockResolvedValue({ id: 'p1', tenantId: 't1', price: 500, isActive: true });
+
+      const result = await (service as any).handleOrderPlacement(
+        't1', mockConv, { replyText: 'CONFIRM', intent: 'order_confirmation' }, 'c1', 'CONFIRM ORDER'
+      );
+
+      expect(ordersService.createOrder).toHaveBeenCalled();
+      expect(result.overrideReplyText).toContain('অর্ডারটি নিশ্চিত করা হয়েছে');
+    });
+
+    it('should send clarifying question for moderate confidence product matches (0.60 - 0.79)', async () => {
+      prismaService.product.findMany.mockResolvedValue([
+        { id: 'p1', name: 'Wireless Headphones Black', price: 2500, imageUrl: '/img.jpg', isActive: true }
+      ]);
+
+      await (service as any).handleProductMatching('t1', 'c1', {
+        replyText: 'Looking for Headphones',
+        intent: 'product_lookup',
+        imageProductDescription: 'Wireless Headphones Earbuds'
+      }, 0.8);
+
+      expect(inboxService.saveOutboundMessage).toHaveBeenCalledWith(
+        't1', 'c1', expect.stringContaining("প্রোডাক্টটি খুঁজছেন")
+      );
+    });
+
+    it('should filter out knowledge documents older than 60 days in buildContextPrompt', async () => {
+      prismaService.qnAKnowledgeBase = { findMany: jest.fn().mockResolvedValue([]) };
+      prismaService.knowledgeDocument = { findMany: jest.fn().mockResolvedValue([]) };
+
+      const prompt = await (service as any).buildContextPrompt('c1', { systemPrompt: 'System' });
+
+      expect(prismaService.knowledgeDocument.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            uploadedAt: expect.objectContaining({
               gte: expect.any(Date)
             })
           })
         })
       );
-      expect(prompt).toContain('MANDATORY ANTI-HALLUCINATION GUARDRAILS');
+      expect(prompt).toContain('MANDATORY STRUCTURED JSON RESPONSE OUTPUT FORMAT');
     });
 
     it('should handle property inquiry by creating ContactNote and moving stage to Intake in Property Mode', async () => {
@@ -342,6 +536,33 @@ describe('OrchestratorService', () => {
         data: {
           contactId: 'contact1',
           content: expect.stringContaining('3 BHK Apartment')
+        }
+      });
+    });
+
+    it('should handle room booking inquiry by creating ContactNote and moving stage to Intake in Hospitality Mode', async () => {
+      prismaService.kanbanStage = {
+        findFirst: jest.fn().mockResolvedValue({ id: 'stage_intake', name: 'Intake' }),
+        create: jest.fn()
+      };
+      prismaService.contact = {
+        findUnique: jest.fn().mockResolvedValue({ id: 'contact1', name: 'Guest', stageId: null }),
+        update: jest.fn().mockResolvedValue({})
+      };
+      prismaService.contactNote = {
+        create: jest.fn().mockResolvedValue({})
+      };
+
+      await (service as any).handleRoomBookingInquiry('t1', { contactId: 'contact1', tenantId: 't1' }, 'c1', 'Presidential Suite', 'I want to reserve for 2 nights');
+
+      expect(prismaService.contact.update).toHaveBeenCalledWith({
+        where: { id: 'contact1' },
+        data: { stageId: 'stage_intake' }
+      });
+      expect(prismaService.contactNote.create).toHaveBeenCalledWith({
+        data: {
+          contactId: 'contact1',
+          content: expect.stringContaining('Presidential Suite')
         }
       });
     });

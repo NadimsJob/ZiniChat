@@ -43,7 +43,8 @@ import {
  Lock,
  Pin,
  X,
- Building2
+ Building2,
+ Hotel
 } from 'lucide-react';
 import NotificationBell from '@/components/NotificationBell';
 import SupportWidget from '@/components/SupportWidget';
@@ -67,6 +68,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  const [allowedFeatures, setAllowedFeatures] = useState<string[]>(['*']);
  const [avatarError, setAvatarError] = useState(false);
  const [isPropertyMode, setIsPropertyMode] = useState(false);
+ const [isHospitalityMode, setIsHospitalityMode] = useState(false);
 
 
  const hasAgentPresence = useFeature('agent_presence');
@@ -165,7 +167,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
   const userData = await userRes.json();
   setUserProfile(userData);
 
-  // Check Property Mode
+  // Check Modes
   if (userData.tenant?.businessNature) {
     try {
       const bnRes = await fetch(`${API}/business-natures`);
@@ -173,6 +175,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
         const natures: any[] = await bnRes.json();
         const matched = natures.find((n: any) => n.name === userData.tenant.businessNature);
         setIsPropertyMode(matched?.isPropertyMode ?? false);
+        setIsHospitalityMode(matched?.isHospitalityMode ?? false);
       }
     } catch (e) {
       console.error(e);
@@ -397,15 +400,19 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
         { 
           name: isPropertyMode 
             ? (language === 'en' ? 'Properties' : 'প্রপার্টি লিস্ট') 
+            : isHospitalityMode
+            ? (language === 'en' ? 'Rooms & Suites' : 'রুম ও স্যুট')
             : (language === 'en' ? 'Product List' : 'প্রোডাক্ট লিস্ট'), 
-          icon: isPropertyMode ? Building2 : ShoppingCart, 
+          icon: isPropertyMode ? Building2 : isHospitalityMode ? Hotel : ShoppingCart, 
           href: '/dashboard/products' 
         },
         { 
           name: isPropertyMode 
             ? (language === 'en' ? 'Inquiries' : 'ইনকোয়ারি') 
+            : isHospitalityMode
+            ? (language === 'en' ? 'Reservations' : 'রিজার্ভেশন')
             : (language === 'en' ? 'Manage Order' : 'ম্যানেজ অর্ডার'), 
-          icon: isPropertyMode ? Building2 : ShoppingBag, 
+          icon: isPropertyMode ? Building2 : isHospitalityMode ? Hotel : ShoppingBag, 
           href: '/dashboard/orders' 
         },
         { name: language === 'en' ? 'Broadcasts' : 'ব্রডকাস্ট', icon: Megaphone, href: '/dashboard/broadcasts' },

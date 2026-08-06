@@ -991,11 +991,12 @@ model PaymentGatewayConfig {
 }
 
 model BusinessNature {
-  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name           String
-  nameBn         String?
-  isActive       Boolean  @default(true)
-  isPropertyMode Boolean  @default(false) // Enables Property Listing Mode for tenants with this type
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name              String
+  nameBn            String?
+  isActive          Boolean  @default(true)
+  isPropertyMode    Boolean  @default(false) // Enables Property Listing Mode for tenants with this type
+  isHospitalityMode Boolean  @default(false) // Enables Hotel Room & Reservation Mode for tenants with this type
   createdAt      DateTime @default(now())
 
   @@map("business_natures")

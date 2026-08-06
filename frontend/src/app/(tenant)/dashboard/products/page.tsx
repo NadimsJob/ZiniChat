@@ -4,9 +4,9 @@ import { useState, useEffect, useRef } from 'react';
 import Cookies from 'js-cookie';
 import { useLanguage } from '@/components/LanguageProvider';
 import {
-  ShoppingCart, Building2, Plus, Edit2, Trash2, X, Image as ImageIcon,
+  ShoppingCart, Building2, Hotel, Plus, Edit2, Trash2, X, Image as ImageIcon,
   Save, RefreshCw, ChevronLeft, ChevronRight, MapPin, Home, BedDouble,
-  Bath, Layers, Compass, Sofa
+  Bath, Layers, Compass, Sofa, Users, Wifi, Tv, Coffee, Sparkles
 } from 'lucide-react';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -48,6 +48,7 @@ export default function ProductsPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [isPropertyMode, setIsPropertyMode] = useState(false);
+  const [isHospitalityMode, setIsHospitalityMode] = useState(false);
 
   const [formData, setFormData] = useState<any>(emptyForm(false));
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -82,6 +83,7 @@ export default function ProductsPage() {
         const tenantNature = meData?.tenant?.businessNature || '';
         const matchedNature = natures.find((n: any) => n.name === tenantNature);
         setIsPropertyMode(matchedNature?.isPropertyMode ?? false);
+        setIsHospitalityMode(matchedNature?.isHospitalityMode ?? false);
       }
 
       if (prodRes.ok) {
@@ -290,14 +292,18 @@ export default function ProductsPage() {
 
   const pageTitle = isPropertyMode
     ? (language === 'en' ? 'Properties' : 'প্রপার্টি')
+    : isHospitalityMode
+    ? (language === 'en' ? 'Rooms & Suites' : 'রুম ও স্যুট')
     : (language === 'en' ? 'Products' : 'প্রডাক্টস');
 
-  const addBtnLabel = isPropertyMode
+  const addBtnLabel = isPropertyMode || isHospitalityMode
     ? (language === 'en' ? 'Add' : 'নতুন')
     : (language === 'en' ? 'Add' : 'নতুন');
 
   const editTitle = isPropertyMode
     ? (formData.id ? (language === 'en' ? 'Edit Property' : 'প্রপার্টি এডিট') : (language === 'en' ? 'Add Property' : 'নতুন প্রপার্টি'))
+    : isHospitalityMode
+    ? (formData.id ? (language === 'en' ? 'Edit Room' : 'রুম এডিট') : (language === 'en' ? 'Add Room/Suite' : 'নতুন রুম যোগ'))
     : (formData.id ? (language === 'en' ? 'Edit Product' : 'প্রডাক্ট এডিট') : (language === 'en' ? 'Add Product' : 'নতুন প্রডাক্ট'));
 
   return (
@@ -308,11 +314,11 @@ export default function ProductsPage() {
         <div className="p-1.5 border-b border-border shrink-0 flex items-center justify-between bg-background z-10">
           <div>
             <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-              {isPropertyMode ? <Building2 className="w-6 h-6 text-primary" /> : <ShoppingCart className="w-6 h-6 text-primary" />}
+              {isPropertyMode ? <Building2 className="w-6 h-6 text-primary" /> : isHospitalityMode ? <Hotel className="w-6 h-6 text-amber-500" /> : <ShoppingCart className="w-6 h-6 text-primary" />}
               {pageTitle}
             </h1>
             <p className="text-[11px] text-muted-foreground mt-1">
-              {products.length} {isPropertyMode ? (language === 'en' ? 'listings' : 'টি লিস্টিং') : (language === 'en' ? 'items found' : 'টি প্রডাক্ট আছে')}
+              {products.length} {isPropertyMode ? (language === 'en' ? 'listings' : 'টি লিস্টিং') : isHospitalityMode ? (language === 'en' ? 'rooms & suites' : 'টি রুম আছে') : (language === 'en' ? 'items found' : 'টি প্রডাক্ট আছে')}
             </p>
           </div>
           <button
@@ -331,8 +337,8 @@ export default function ProductsPage() {
             </div>
           ) : products.length === 0 ? (
             <div className="text-center p-4 text-muted-foreground flex flex-col items-center">
-              {isPropertyMode ? <Building2 className="w-9 h-9 mb-3 opacity-20" /> : <ShoppingCart className="w-9 h-9 mb-3 opacity-20" />}
-              <p>{isPropertyMode ? (language === 'en' ? 'No properties yet. Add one!' : 'কোনো প্রপার্টি নেই।') : (language === 'en' ? 'No products found.' : 'কোনো প্রডাক্ট নেই।')}</p>
+              {isPropertyMode ? <Building2 className="w-9 h-9 mb-3 opacity-20" /> : isHospitalityMode ? <Hotel className="w-9 h-9 mb-3 text-amber-500 opacity-30" /> : <ShoppingCart className="w-9 h-9 mb-3 opacity-20" />}
+              <p>{isPropertyMode ? (language === 'en' ? 'No properties yet. Add one!' : 'কোনো প্রপার্টি নেই।') : isHospitalityMode ? (language === 'en' ? 'No rooms or suites added yet.' : 'কোনো রুম বা স্যুট যোগ করা হয়নি।') : (language === 'en' ? 'No products found.' : 'কোনো প্রডাক্ট নেই।')}</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -349,13 +355,13 @@ export default function ProductsPage() {
                   >
                     {/* Image / Gallery */}
                     <div className="aspect-[4/3] bg-muted relative shrink-0">
-                      {isPropertyMode && imgs.length > 0 ? (
+                      {(isPropertyMode || isHospitalityMode) && imgs.length > 0 ? (
                         <img src={`${API}${imgs[0]}`} alt={product.name} className="w-full h-full object-cover" />
                       ) : product.imageUrl ? (
                         <img src={`${API}${product.imageUrl}`} alt={product.name} className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground">
-                          {isPropertyMode ? <Building2 className="w-8 h-8 mb-1 opacity-30" /> : <ImageIcon className="w-8 h-8 mb-1 opacity-50" />}
+                          {isPropertyMode ? <Building2 className="w-8 h-8 mb-1 opacity-30" /> : isHospitalityMode ? <Hotel className="w-8 h-8 mb-1 text-amber-500 opacity-40" /> : <ImageIcon className="w-8 h-8 mb-1 opacity-50" />}
                         </div>
                       )}
                       <button
@@ -369,7 +375,12 @@ export default function ProductsPage() {
                           {product.listingType.toUpperCase()}
                         </div>
                       )}
-                      {!isPropertyMode && !product.isActive && (
+                      {isHospitalityMode && attrs.roomType && (
+                        <div className="absolute top-2 left-2 px-2 py-0.5 text-[9px] font-bold rounded border backdrop-blur bg-amber-500/20 text-amber-400 border-amber-500/30">
+                          {String(attrs.roomType).toUpperCase()}
+                        </div>
+                      )}
+                      {!isPropertyMode && !isHospitalityMode && !product.isActive && (
                         <div className="absolute top-2 left-2 px-1.5 py-0.5 bg-black/80 text-white text-[9px] font-bold rounded backdrop-blur">INACTIVE</div>
                       )}
                     </div>
@@ -394,6 +405,14 @@ export default function ProductsPage() {
                           <div className={`text-[10px] font-medium mt-0.5 ${getStatusColor(propertyStatus)}`}>
                             ● {propertyStatus.charAt(0).toUpperCase() + propertyStatus.slice(1)}
                           </div>
+                        </>
+                      ) : isHospitalityMode ? (
+                        <>
+                          <div className="flex flex-wrap gap-2 text-[10px] text-muted-foreground mb-1">
+                            {attrs.capacity && <span className="flex items-center gap-0.5"><Users className="w-3 h-3 text-amber-500" />Max {attrs.capacity} Guests</span>}
+                            {attrs.bedType && <span className="flex items-center gap-0.5"><BedDouble className="w-3 h-3 text-amber-500" />{attrs.bedType}</span>}
+                          </div>
+                          <div className="font-bold text-amber-500 text-[13px]">৳ {parseFloat(product.price).toLocaleString()} <span className="text-[10px] font-normal text-muted-foreground">/ night</span></div>
                         </>
                       ) : (
                         <>

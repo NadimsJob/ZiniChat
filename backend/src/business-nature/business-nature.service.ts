@@ -11,13 +11,13 @@ export class BusinessNatureService {
     });
   }
 
-  async create(data: { name: string; nameBn?: string; isActive?: boolean; isPropertyMode?: boolean }) {
+  async create(data: { name: string; nameBn?: string; isActive?: boolean; isPropertyMode?: boolean; isHospitalityMode?: boolean }) {
     return this.prisma.businessNature.create({
       data
     });
   }
 
-  async update(id: string, data: { name?: string; nameBn?: string; isActive?: boolean; isPropertyMode?: boolean }) {
+  async update(id: string, data: { name?: string; nameBn?: string; isActive?: boolean; isPropertyMode?: boolean; isHospitalityMode?: boolean }) {
     try {
       return await this.prisma.businessNature.update({
         where: { id },

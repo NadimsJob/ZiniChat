@@ -10,8 +10,8 @@
 | Vertical Category | Superadmin Flag | Status | Progress |
 | :--- | :--- | :--- | :--- |
 | **1. Real Estate & Construction** | `isPropertyMode` | 🟢 **COMPLETED & LIVE** | [x] 100% |
-| **2. Hospitality, Travel & Lifestyle** | `isHospitalityMode` | 🟡 **NEXT IN QUEUE** | [ ] 0% |
-| **3. Technology & Software** | `isTechSoftwareMode` | ⚪ BACKLOG | [ ] 0% |
+| **2. Hospitality, Travel & Lifestyle** | `isHospitalityMode` | 🟢 **COMPLETED & LIVE** | [x] 100% |
+| **3. Technology & Software** | `isTechSoftwareMode` | 🟡 **NEXT IN QUEUE** | [ ] 0% |
 | **4. Financial & Professional** | `isFinancialServiceMode` | ⚪ BACKLOG | [ ] 0% |
 | **5. Healthcare & Clinics** | `isHealthcareMode` | ⚪ BACKLOG | [ ] 0% |
 | **6. Education & Academies** | `isEducationMode` | ⚪ BACKLOG | [ ] 0% |
@@ -29,6 +29,14 @@
 - [x] **Superadmin UI**: Added `isPropertyMode` checkbox and table mode badge in `/sp@dmin/settings/business-nature`.
 - [x] **Tenant UI Adapter**: Adaptive `products/page.tsx` (Area, Bedrooms, Bathrooms, Gallery slider), `orders/page.tsx` ("Inquiries"), `ClientLayout.tsx` (Properties / Inquiries nav items).
 - [x] **Verification**: Unit tests 11/11 passed, frontend typecheck 0 errors, deployed to Live & Test servers.
+
+### ✅ Vertical 2: Hospitality, Travel & Lifestyle (`isHospitalityMode`)
+- [x] **Database Schema**: Added `BusinessNature.isHospitalityMode`. Executed `prisma db push`.
+- [x] **Backend Services**: Updated `BusinessNatureService` & `Controller` with `isHospitalityMode` DTO pass-through.
+- [x] **AI Orchestrator**: Added `room_booking_inquiry` intent & `interestedRoomName`. Branched `buildContextPrompt()` for Hotel Rooms (~300-400 token savings). Built `handleRoomBookingInquiry()` for auto-intake lead stage & ContactNote recording.
+- [x] **Superadmin UI**: Added `🏨 Hospitality & Hotel Booking Mode` checkbox & table badge in `/sp@dmin/settings/business-nature`.
+- [x] **Tenant UI Adapter**: Adaptive `products/page.tsx` ("Rooms & Suites", guest capacity, amenities checklist), `orders/page.tsx` ("Reservations"), `ClientLayout.tsx` ("Rooms & Suites" sidebar item & `Hotel` icon).
+- [x] **Verification**: Unit tests passed, NestJS build 0 errors, frontend typecheck 0 errors, deployed to Live.
 
 ---
 
