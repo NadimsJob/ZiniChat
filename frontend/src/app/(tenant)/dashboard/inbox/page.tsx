@@ -1315,7 +1315,7 @@ export default function InboxPage() {
 
 
             {/* Header Control Buttons */}
-            <div className="flex items-center gap-1 text-muted-foreground">
+            <div className="flex items-center gap-0.5 md:gap-1 text-muted-foreground shrink-0">
               {/* Star */}
               <button
                 onClick={handleToggleStar}
@@ -1335,11 +1335,34 @@ export default function InboxPage() {
               >
                 <Flag className={`w-4 h-4 ${activeConv.requiresFollowUp ? 'fill-red-500' : ''}`} />
               </button>
+              
+              {/* Assign Agent */}
+              <div className="relative" ref={assignMenuRef}>
+                <button
+                  onClick={() => setShowAssignMenu(!showAssignMenu)}
+                  className="p-1.5 rounded-lg hover:bg-muted transition-colors"
+                  title={language === 'en' ? 'Assign Agent — Transfer this conversation to a team member' : 'এজেন্ট অ্যাসাইন — চ্যাটটির দায়িত্ব টিমের অন্য এজেন্টকে দিতে'}
+                >
+                  <UserPlus className="w-4 h-4" />
+                </button>
+                {showAssignMenu && (
+                  <div className="absolute right-0 mt-1 w-44 bg-card border border-border rounded-xl shadow-lg p-1 z-50 animate-in fade-in zoom-in-95 duration-100 text-xs">
+                    <button onClick={() => handleAssignAgent(null)} className="w-full text-left px-2.5 py-1.5 hover:bg-muted rounded-lg text-amber-600 font-medium">
+                      Unassign
+                    </button>
+                    {agents.map(a => (
+                      <button key={a.id} onClick={() => handleAssignAgent(a.id)} className="w-full text-left px-2.5 py-1.5 hover:bg-muted rounded-lg text-foreground">
+                        {a.name} ({a.role})
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               {/* Resolve */}
               <button
                 onClick={handleToggleResolve}
-                className={`p-1.5 rounded-lg hover:bg-muted transition-colors ${activeConv.status === 'resolved' ? 'text-emerald-600' : ''}`}
+                className={`hidden md:inline-flex p-1.5 rounded-lg hover:bg-muted transition-colors ${activeConv.status === 'resolved' ? 'text-emerald-600' : ''}`}
                 title={activeConv.status === 'resolved'
                   ? (language === 'en' ? 'Reopen Conversation' : 'পুনরায় ওপেন করুন')
                   : (language === 'en' ? 'Resolve Conversation — Mark inquiry as solved when customer issue is completed' : 'রেসোলভ করুন — কাস্টমারের বিষয়ের সমাধান হলে চিহ্নিত করতে')}
@@ -1368,29 +1391,6 @@ export default function InboxPage() {
               >
                 <Ban className="w-4 h-4" />
               </button>
-
-              {/* Assign Agent */}
-              <div className="relative" ref={assignMenuRef}>
-                <button
-                  onClick={() => setShowAssignMenu(!showAssignMenu)}
-                  className="p-1.5 rounded-lg hover:bg-muted transition-colors"
-                  title={language === 'en' ? 'Assign Agent — Transfer this conversation to a team member' : 'এজেন্ট অ্যাসাইন — চ্যাটটির দায়িত্ব টিমের অন্য এজেন্টকে দিতে'}
-                >
-                  <UserPlus className="w-4 h-4" />
-                </button>
-                {showAssignMenu && (
-                  <div className="absolute right-0 mt-1 w-44 bg-card border border-border rounded-xl shadow-lg p-1 z-50 animate-in fade-in zoom-in-95 duration-100 text-xs">
-                    <button onClick={() => handleAssignAgent(null)} className="w-full text-left px-2.5 py-1.5 hover:bg-muted rounded-lg text-amber-600 font-medium">
-                      Unassign
-                    </button>
-                    {agents.map(a => (
-                      <button key={a.id} onClick={() => handleAssignAgent(a.id)} className="w-full text-left px-2.5 py-1.5 hover:bg-muted rounded-lg text-foreground">
-                        {a.name} ({a.role})
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
 
               {/* Add Collaborator */}
               {hasCollaborators && (
