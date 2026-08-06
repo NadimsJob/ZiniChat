@@ -32,7 +32,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
         <div className="max-w-7xl mx-auto flex h-16 sm:h-20 items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-4 lg:gap-8 shrink-0">
             <Link href="/" className="flex items-center hover:opacity-90 transition-opacity shrink-0">
-              <img src="/logo.png" alt="ZiniChat Logo" className="h-9 sm:h-11 md:h-12 w-auto object-contain shrink-0" />
+              <img src="/logo.png" alt="ZiniChat Logo" className="h-11 sm:h-13 md:h-15 w-auto object-contain shrink-0" />
             </Link>
             <nav className="hidden lg:flex items-center gap-6 text-sm font-medium text-muted-foreground">
               <Link href="/features" className="hover:text-foreground transition-colors">

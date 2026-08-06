@@ -114,12 +114,9 @@ export default function FeaturesPage() {
                 <h3 className="text-lg font-bold mb-2 group-hover:text-primary transition-colors text-foreground">
                   {language === 'en' ? feature.title.en : feature.title.bn}
                 </h3>
-                <p className="text-muted-foreground text-sm leading-relaxed line-clamp-3">
+                <p className="text-muted-foreground text-sm leading-relaxed">
                   {language === 'en' ? feature.description.en : feature.description.bn}
                 </p>
-                <div className={`mt-5 text-sm font-semibold ${feature.iconColor} flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity`}>
-                  {language === 'en' ? 'Learn more' : 'আরো জানুন'} <ArrowRight className="w-4 h-4" />
-                </div>
               </button>
             ))}
           </div>

@@ -488,10 +488,10 @@ export default function HomePage() {
           </div>
 
           {/* 3 Channel Feature Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
             {/* WhatsApp Cloud API */}
-            <div className="group rounded-3xl border border-border bg-card p-6 shadow-sm hover:border-[#075E54]/50 hover:shadow-xl hover:shadow-[#075E54]/10 transition-all duration-300 flex flex-col justify-between">
+            <div className="group rounded-3xl border border-border bg-card p-6 shadow-sm hover:border-primary/50 hover:shadow-xl hover:shadow-primary/10 transition-all duration-300 flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-black text-xl">
@@ -516,13 +516,13 @@ export default function HomePage() {
             </div>
 
             {/* Facebook Messenger */}
-            <div className="group rounded-3xl border border-border bg-card p-6 shadow-sm hover:border-[#0088CC]/50 hover:shadow-xl hover:shadow-[#0088CC]/10 transition-all duration-300 flex flex-col justify-between">
+            <div className="group rounded-3xl border border-border bg-card p-6 shadow-sm hover:border-[#0084FF]/50 hover:shadow-xl hover:shadow-[#0084FF]/10 transition-all duration-300 flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 rounded-2xl bg-[#0088CC]/10 text-[#0088CC] flex items-center justify-center font-black text-xl">
+                  <div className="w-12 h-12 rounded-2xl bg-[#0084FF]/10 text-[#0084FF] flex items-center justify-center font-black text-xl">
                     FB
                   </div>
-                  <span className="px-2.5 py-1 rounded-full bg-[#0088CC]/10 text-[#0088CC] text-[10px] font-extrabold border border-[#0088CC]/20">
+                  <span className="px-2.5 py-1 rounded-full bg-[#0084FF]/10 text-[#0084FF] text-[10px] font-extrabold border border-[#0084FF]/20">
                     1-Click OAuth
                   </span>
                 </div>
@@ -534,9 +534,9 @@ export default function HomePage() {
                 </p>
               </div>
               <ul className="space-y-2 border-t border-border/60 pt-4 text-xs font-semibold text-foreground/80">
-                <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-[#0088CC]" /> Facebook Page Sync</li>
-                <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-[#0088CC]" /> Post Comment Auto-Reply</li>
-                <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-[#0088CC]" /> Instant Lead Capture</li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-[#0084FF]" /> Facebook Page Sync</li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-[#0084FF]" /> Post Comment Auto-Reply</li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-[#0084FF]" /> Instant Lead Capture</li>
               </ul>
             </div>
 
@@ -562,6 +562,56 @@ export default function HomePage() {
                 <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-[#E4405F]" /> Story Reply Automation</li>
                 <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-[#E4405F]" /> Dynamic Product Cards</li>
                 <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-[#E4405F]" /> Unified Multi-Account</li>
+              </ul>
+            </div>
+
+            {/* Facebook Comment Automation */}
+            <div className="group rounded-3xl border border-border bg-card p-6 shadow-sm hover:border-orange-500/50 hover:shadow-xl hover:shadow-orange-500/10 transition-all duration-300 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 rounded-2xl bg-orange-500/10 text-orange-500 flex items-center justify-center font-black text-xl">
+                    CMT
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full bg-orange-500/10 text-orange-500 text-[10px] font-extrabold border border-orange-500/20">
+                    Auto-Engagement
+                  </span>
+                </div>
+                <h3 className="text-lg font-bold text-foreground mb-2">Facebook Comment Automation</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed mb-4">
+                  {language === 'en' 
+                    ? 'Automatically reply to Facebook post comments with public replies and instant private messages in their Messenger inbox.' 
+                    : 'ফেসবুক পোস্টের কমেন্টে পাবলিকলি রিপ্লাই দিন এবং মেসেঞ্জারে সাথে সাথেই অটোমেটিক প্রাইভেট মেসেজ পাঠিয়ে দিন।'}
+                </p>
+              </div>
+              <ul className="space-y-2 border-t border-border/60 pt-4 text-xs font-semibold text-foreground/80">
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-orange-500" /> Public & Private AI Reply</li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-orange-500" /> Keyword-based Filtering</li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-orange-500" /> CRM Auto-Sync & Logs</li>
+              </ul>
+            </div>
+
+            {/* Website Live Chat Widget */}
+            <div className="group rounded-3xl border border-border bg-card p-6 shadow-sm hover:border-teal-500/50 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 rounded-2xl bg-teal-500/10 text-teal-500 flex items-center justify-center font-black text-xl">
+                    WEB
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full bg-teal-500/10 text-teal-500 text-[10px] font-extrabold border border-teal-500/20">
+                    Live Chat
+                  </span>
+                </div>
+                <h3 className="text-lg font-bold text-foreground mb-2">Website Live Chat Widget</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed mb-4">
+                  {language === 'en' 
+                    ? 'Embed a beautiful, customizable live chat widget on your website. Allow visitors to chat with your AI or connect directly to human agents.' 
+                    : 'আপনার ওয়েবসাইটে একটি আকর্ষণীয় ও কাস্টমাইজড লাইভ চ্যাট উইজেট যুক্ত করুন। ভিজিটরদের এআই বা এজেন্টের সাথে চ্যাট করতে দিন।'}
+                </p>
+              </div>
+              <ul className="space-y-2 border-t border-border/60 pt-4 text-xs font-semibold text-foreground/80">
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-teal-500" /> Custom Colors & Design</li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-teal-500" /> AI Auto-Replies Enabled</li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-teal-500" /> Seamless Agent Takeover</li>
               </ul>
             </div>
 
