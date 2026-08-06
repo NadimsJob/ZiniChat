@@ -30,6 +30,9 @@ describe('OrchestratorService', () => {
         count: jest.fn().mockResolvedValue(0),
         findMany: jest.fn().mockResolvedValue([]),
       },
+      user: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'agent1', name: 'Agent Smith', email: 'agent@test.com' })
+      },
       aiAssistant: {
         findFirst: jest.fn(),
       },
@@ -508,7 +511,7 @@ describe('OrchestratorService', () => {
 
       expect(prismaService.contact.update).toHaveBeenCalledWith({
         where: { id: 'contact1' },
-        data: { stageId: 'stage_intake' }
+        data: { stageId: 'stage_intake', assignedUserId: 'agent1' }
       });
       expect(prismaService.contactNote.create).toHaveBeenCalledWith({
         data: {
@@ -535,7 +538,7 @@ describe('OrchestratorService', () => {
 
       expect(prismaService.contact.update).toHaveBeenCalledWith({
         where: { id: 'contact1' },
-        data: { stageId: 'stage_intake' }
+        data: { stageId: 'stage_intake', assignedUserId: 'agent1' }
       });
       expect(prismaService.contactNote.create).toHaveBeenCalledWith({
         data: {
