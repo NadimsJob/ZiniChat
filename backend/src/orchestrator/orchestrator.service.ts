@@ -19,6 +19,7 @@ export interface StructuredAiClassification {
   imageProductDescription?: string;
   supportSignal?: boolean;
   supportReason?: 'general' | 'complaint' | 'refund_return' | 'delivery_issue';
+  matchedTags?: string[];
 }
 
 @Injectable()
@@ -297,6 +298,44 @@ export class OrchestratorService {
         await this.handleProductMatching(tenantId, message.conversationId, classification, minConf);
       }
 
+      // Handler 4: Auto-Tagging / Conversation Labels Sync
+      if (classification.matchedTags && classification.matchedTags.length > 0) {
+        const matchingLabels = await this.prisma.label.findMany({
+          where: {
+            tenantId,
+            name: { in: classification.matchedTags },
+            isActive: true
+          }
+        });
+
+        for (const label of matchingLabels) {
+          const exists = await this.prisma.conversationLabel.findUnique({
+            where: {
+              conversationId_labelId: {
+                conversationId: message.conversationId,
+                labelId: label.id
+              }
+            }
+          });
+          if (!exists) {
+            await this.prisma.conversationLabel.create({
+              data: {
+                conversationId: message.conversationId,
+                labelId: label.id
+              }
+            });
+            await this.activityLogService.record({
+              tenantId,
+              conversationId: message.conversationId,
+              contactId: message.conversation.contactId,
+              type: 'TAG_ADDED',
+              actorUserId: undefined,
+              metadataJson: { labelId: label.id, autoMatched: true }
+            });
+          }
+        }
+      }
+
       // 6. Response Dispatch
       if (finalReplyText && finalReplyText.trim() !== '') {
         await this.inboxService.saveOutboundMessage(tenantId, message.conversationId, finalReplyText, 'text', undefined, assistant.id);
@@ -344,7 +383,8 @@ export class OrchestratorService {
           supportSignal: !!parsed.supportSignal,
           supportReason: ['general', 'complaint', 'refund_return', 'delivery_issue'].includes(parsed.supportReason)
             ? parsed.supportReason
-            : 'general'
+            : 'general',
+          matchedTags: Array.isArray(parsed.matchedTags) ? parsed.matchedTags.map(String) : []
         };
       }
     } catch (e) {
@@ -733,6 +773,20 @@ export class OrchestratorService {
       }
     });
 
+    const activeTags = await this.prisma.label.findMany({
+      where: { tenantId: conversation.tenantId, isActive: true }
+    });
+
+    if (activeTags.length > 0) {
+      prompt += `\n--- CONVERSATION TAGS RULES ---\n`;
+      prompt += `The following tags are active. If the customer's query matches any of these tag rules, you MUST apply its instruction/prompt to compose your response and return the matched tag name inside the "matchedTags" JSON array. Ignore any tags not listed below:\n`;
+      activeTags.forEach(tag => {
+        if (tag.aiPrompt) {
+          prompt += `- Tag: "${tag.name}"\n  Rule/Instruction: "${tag.aiPrompt}"\n`;
+        }
+      });
+    }
+
     prompt += `\n--- MANDATORY CLASSIFICATION & EVENT RULES ---\n`;
     if (options?.isSupportDetectionActive) {
       prompt += `1. SUPPORT DETECTION IS ENABLED:\n`;
@@ -754,7 +808,8 @@ export class OrchestratorService {
     prompt += `  "orderProposal": [ { "productNameGuess": "Product Name", "quantity": 1 } ],\n`;
     prompt += `  "imageProductDescription": "short description of product seen in image",\n`;
     prompt += `  "supportSignal": false,\n`;
-    prompt += `  "supportReason": "general | complaint | refund_return | delivery_issue"\n`;
+    prompt += `  "supportReason": "general | complaint | refund_return | delivery_issue",\n`;
+    prompt += `  "matchedTags": ["tag name 1", "tag name 2"]\n`;
     prompt += `}\n`;
 
     return prompt;

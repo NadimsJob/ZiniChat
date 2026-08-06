@@ -162,6 +162,44 @@ export class AuthService {
         }
       });
 
+      // Seed default tags/labels
+      await prisma.label.createMany({
+        data: [
+          {
+            tenantId: tenant.id,
+            name: 'Order Status',
+            color: '#10b981',
+            isActive: true,
+            description: 'Used to handle and check order status requests.',
+            aiPrompt: 'If the customer asks about an order status, politely ask for the order ID if unavailable, then explain that the order status will be checked.'
+          },
+          {
+            tenantId: tenant.id,
+            name: 'Pricing Inquiry',
+            color: '#3b82f6',
+            isActive: true,
+            description: 'Used to handle package and pricing details.',
+            aiPrompt: 'If the customer asks about pricing or packages, provide package information clearly and encourage them to choose the best plan.'
+          },
+          {
+            tenantId: tenant.id,
+            name: 'Human Support',
+            color: '#ef4444',
+            isActive: true,
+            description: 'Used to hand off customer to human support agent.',
+            aiPrompt: 'If the customer wants to talk to a human, requests an agent, or is frustrated, politely offer to connect them with a support representative.'
+          },
+          {
+            tenantId: tenant.id,
+            name: 'Business Hours',
+            color: '#f59e0b',
+            isActive: true,
+            description: 'Used to answer office timing and hours.',
+            aiPrompt: 'If the customer asks about office hours or availability, reply with the configured business hours.'
+          }
+        ]
+      });
+
       if (initialPlan) {
         const currentPeriodEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 1 month
         await prisma.subscription.create({
@@ -682,6 +720,44 @@ export class AuthService {
             planId: initialPlan?.id || null,
             customAiConfigId: defaultAiConfig?.id || null
           }
+        });
+
+        // Seed default tags/labels
+        await this.prisma.label.createMany({
+          data: [
+            {
+              tenantId: tenant.id,
+              name: 'Order Status',
+              color: '#10b981',
+              isActive: true,
+              description: 'Used to handle and check order status requests.',
+              aiPrompt: 'If the customer asks about an order status, politely ask for the order ID if unavailable, then explain that the order status will be checked.'
+            },
+            {
+              tenantId: tenant.id,
+              name: 'Pricing Inquiry',
+              color: '#3b82f6',
+              isActive: true,
+              description: 'Used to handle package and pricing details.',
+              aiPrompt: 'If the customer asks about pricing or packages, provide package information clearly and encourage them to choose the best plan.'
+            },
+            {
+              tenantId: tenant.id,
+              name: 'Human Support',
+              color: '#ef4444',
+              isActive: true,
+              description: 'Used to hand off customer to human support agent.',
+              aiPrompt: 'If the customer wants to talk to a human, requests an agent, or is frustrated, politely offer to connect them with a support representative.'
+            },
+            {
+              tenantId: tenant.id,
+              name: 'Business Hours',
+              color: '#f59e0b',
+              isActive: true,
+              description: 'Used to answer office timing and hours.',
+              aiPrompt: 'If the customer asks about office hours or availability, reply with the configured business hours.'
+            }
+          ]
         });
 
         if (initialPlan) {

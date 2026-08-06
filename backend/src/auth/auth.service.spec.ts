@@ -22,7 +22,8 @@ describe('AuthService', () => {
     subscription: { create: jest.fn() },
     googleAuthConfig: { findFirst: jest.fn() },
     facebookAuthConfig: { findFirst: jest.fn(), update: jest.fn(), create: jest.fn() },
-    aiConfig: { findFirst: jest.fn() }
+    aiConfig: { findFirst: jest.fn() },
+    label: { createMany: jest.fn() }
   };
 
   const mockUsersService = {

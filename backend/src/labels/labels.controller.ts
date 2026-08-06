@@ -13,12 +13,12 @@ export class LabelsController {
   }
 
   @Post()
-  async createLabel(@Request() req: any, @Body() body: { name: string; color: string; aiPrompt?: string }) {
+  async createLabel(@Request() req: any, @Body() body: { name: string; color: string; aiPrompt?: string; description?: string; isActive?: boolean }) {
     return this.labelsService.createLabel(req.user.tenantId, body);
   }
 
   @Patch(':id')
-  async updateLabel(@Request() req: any, @Param('id') id: string, @Body() body: { name?: string; color?: string; aiPrompt?: string }) {
+  async updateLabel(@Request() req: any, @Param('id') id: string, @Body() body: { name?: string; color?: string; aiPrompt?: string; description?: string; isActive?: boolean }) {
     return this.labelsService.updateLabel(req.user.tenantId, id, body);
   }
 

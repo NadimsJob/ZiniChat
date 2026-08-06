@@ -67,6 +67,13 @@ describe('OrchestratorService', () => {
       },
       websiteWidget: {
         findFirst: jest.fn().mockResolvedValue(null),
+      },
+      label: {
+        findMany: jest.fn().mockResolvedValue([]),
+      },
+      conversationLabel: {
+        findUnique: jest.fn().mockResolvedValue(null),
+        create: jest.fn().mockResolvedValue({}),
       }
     };
 

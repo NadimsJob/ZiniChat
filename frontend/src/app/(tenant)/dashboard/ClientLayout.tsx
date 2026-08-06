@@ -349,7 +349,6 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  '/dashboard/settings/inboxes': ['whatsapp', 'messenger', 'instagram_dm'],
  '/dashboard/settings/ai-training': ['ai_assistant'],
  '/dashboard/team': ['team_management'],
- '/dashboard/settings/labels': ['contact_labels'],
  };
 
  const hasAccess = (href: string) => {
@@ -382,7 +381,6 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
         { name: language === 'en' ? 'Manage Order' : 'ম্যানেজ অর্ডার', icon: ShoppingBag, href: '/dashboard/orders' },
         { name: language === 'en' ? 'Broadcasts' : 'ব্রডকাস্ট', icon: Megaphone, href: '/dashboard/broadcasts' },
         { name: language === 'en' ? 'Team' : 'টিম', icon: UserCircle, href: '/dashboard/team' },
-        { name: language === 'en' ? 'Tags' : 'ট্যাগ', icon: Tag, href: '/dashboard/settings/labels' },
         { name: language === 'en' ? 'Support Ticket' : 'সাপোর্ট টিকিট', icon: MessageSquare, href: '/dashboard/support' },
       ]
     },

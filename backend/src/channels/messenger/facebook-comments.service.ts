@@ -353,6 +353,16 @@ export class FacebookCommentsService {
 
       const qnaContext = qnaItems.map((q) => `Q: ${q.question}\nA: ${q.answer}`).join('\n\n');
 
+      // Retrieve active tags/labels
+      const activeTags = await this.prisma.label.findMany({
+        where: { tenantId, isActive: true }
+      });
+      let tagPrompt = '';
+      if (activeTags.length > 0) {
+        tagPrompt = `\n# ACTIVE CONVERSATION TAGS INSTRUCTIONS (ADAPT TONE IF MATCHED):\n` +
+          activeTags.map(tag => `- Tag "${tag.name}": ${tag.aiPrompt}`).join('\n');
+      }
+
       const systemPrompt = `# ROLE & INSTRUCTION
 You are a professional, helpful customer service AI representative for a business responding to Facebook Page comments.
 
@@ -361,6 +371,7 @@ You are a professional, helpful customer service AI representative for a busines
 2. Keep replies short, polite, and customer-friendly (1-2 sentences maximum).
 3. Do NOT make unauthorized price promises or false commitments.
 4. If relevant, encourage customer to check inbox or message the page for details.
+${tagPrompt}
 ${customInstruction ? `\n# CUSTOM COMMENT INSTRUCTION (MUST FOLLOW PERFECTLY):\n${customInstruction}\n` : ''}
 ${qnaContext ? `# STORE KNOWLEDGE BASE:\n${qnaContext}\n` : ''}`;
 

@@ -8,9 +8,10 @@ import { useFeature } from '@/hooks/useFeature';
 import { 
   Bot, Key, Save, AlertCircle, RefreshCw, MessageSquare, Plus, Edit2, 
   Trash2, X, Check, Wand2, Eye, Lock, Sliders, Sparkles, ShieldCheck, 
-  FileText, AlertTriangle, Send, PlayCircle, HelpCircle, User, CornerDownLeft
+  FileText, AlertTriangle, Send, PlayCircle, HelpCircle, User, CornerDownLeft, Tag
 } from 'lucide-react';
 import InstructionBanner from '@/components/InstructionBanner';
+import LabelForm from '@/components/labels/LabelForm';
 import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
 
@@ -61,6 +62,11 @@ export default function AiTrainingPage() {
   const [documents, setDocuments] = useState<any[]>([]);
   const [uploadingDoc, setUploadingDoc] = useState(false);
 
+  // Tags state
+  const [labels, setLabels] = useState<any[]>([]);
+  const [isLabelFormOpen, setIsLabelFormOpen] = useState(false);
+  const [editingLabel, setEditingLabel] = useState<any>(null);
+
   // Live Simulator State
   const [simulatorMessages, setSimulatorMessages] = useState<Array<{ id: string; sender: 'user' | 'ai'; text: string }>>([
     {
@@ -81,11 +87,12 @@ export default function AiTrainingPage() {
       const token = Cookies.get('access_token');
       const headers = { 'Authorization': `Bearer ${token}` };
       
-      const [configRes, toolsRes, qnaRes, docsRes] = await Promise.all([
+      const [configRes, toolsRes, qnaRes, docsRes, labelsRes] = await Promise.all([
         fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai-training/config`, { headers }),
         fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai-training/tools`, { headers }),
         fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai-training/qna`, { headers }),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai-training/documents`, { headers })
+        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai-training/documents`, { headers }),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/labels`, { headers })
       ]);
       
       if (configRes.ok) setConfig(await configRes.json());
@@ -99,6 +106,7 @@ export default function AiTrainingPage() {
       }
       if (qnaRes.ok) setQnas(await qnaRes.json());
       if (docsRes.ok) setDocuments(await docsRes.json());
+      if (labelsRes.ok) setLabels(await labelsRes.json());
     } catch (err) {
       console.error(err);
     } finally {
@@ -389,6 +397,81 @@ export default function AiTrainingPage() {
       if (res.ok) fetchData();
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleSaveLabel = async (data: { name: string; color: string; aiPrompt?: string; description?: string; isActive?: boolean }, id?: string) => {
+    try {
+      const token = Cookies.get('access_token');
+      const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const method = id ? 'PATCH' : 'POST';
+      const url = id ? `${API}/labels/${id}` : `${API}/labels`;
+      
+      const res = await fetch(url, {
+        method,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      });
+
+      if (res.ok) {
+        setIsLabelFormOpen(false);
+        setEditingLabel(null);
+        fetchData();
+        toast.success(id ? 'Tag updated' : 'Tag created');
+      } else {
+        toast.error('Failed to save tag');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Error saving tag');
+    }
+  };
+
+  const handleDeleteLabel = async (id: string) => {
+    if (!confirm(language === 'en' ? 'Are you sure you want to delete this tag?' : 'আপনি কি নিশ্চিত যে এই ট্যাগটি মুছে ফেলতে চান?')) return;
+    try {
+      const token = Cookies.get('access_token');
+      const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const res = await fetch(`${API}/labels/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        fetchData();
+        toast.success(language === 'en' ? 'Tag deleted' : 'ট্যাগ মুছে ফেলা হয়েছে');
+      } else {
+        toast.error('Failed to delete tag');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Error deleting tag');
+    }
+  };
+
+  const handleToggleLabelActive = async (id: string, currentActive: boolean) => {
+    try {
+      const token = Cookies.get('access_token');
+      const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const res = await fetch(`${API}/labels/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ isActive: !currentActive })
+      });
+      if (res.ok) {
+        fetchData();
+        toast.success(language === 'en' ? 'Tag status updated' : 'ট্যাগের স্ট্যাটাস আপডেট করা হয়েছে');
+      } else {
+        toast.error('Failed to update tag status');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Error updating tag status');
     }
   };
 
@@ -795,6 +878,103 @@ export default function AiTrainingPage() {
                   </div>
                 );
               })}
+            </div>
+          </div>
+
+          {/* Section 4: AI Response Tags / Conversation Tags (#tour-tags-section) */}
+          <div id="tour-tags-section" className="bg-card border border-border shadow-md rounded-2xl p-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-sm font-bold flex items-center gap-2 text-foreground">
+                  <Tag className="w-4 h-4 text-primary" />
+                  {language === 'en' ? 'Conversation Tags' : 'কনভারসেশন ট্যাগস'}
+                </h2>
+                <p className="text-[12px] text-muted-foreground font-sans">
+                  {language === 'en' 
+                    ? 'AI automatically matches enabled tags to incoming messages and adapts its tone.' 
+                    : 'গ্রাহকের মেসেজের ওপর ভিত্তি করে এআই স্বয়ংক্রিয়ভাবে এই ট্যাগগুলো চ্যাটে অ্যাসাইন করবে।'}
+                </p>
+              </div>
+              {!isLabelFormOpen && (
+                <button
+                  onClick={() => { setEditingLabel(null); setIsLabelFormOpen(true); }}
+                  className="px-3 py-1.5 bg-primary text-white font-bold rounded-xl text-[12px] hover:bg-primary/90 transition-all flex items-center gap-1 cursor-pointer shrink-0"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  {language === 'en' ? 'New Tag' : 'নতুন ট্যাগ'}
+                </button>
+              )}
+            </div>
+
+            {isLabelFormOpen && (
+              <div className="bg-card border border-border rounded-2xl p-1.5 shadow-sm animate-in zoom-in-95 duration-200">
+                <LabelForm 
+                  initialData={editingLabel} 
+                  onSave={handleSaveLabel} 
+                  onCancel={() => { setIsLabelFormOpen(false); setEditingLabel(null); }} 
+                />
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {labels.length === 0 ? (
+                <div className="col-span-full py-8 text-center bg-background/50 border border-border rounded-xl">
+                  <Tag className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
+                  <p className="text-muted-foreground text-xs font-semibold">
+                    {language === 'en' ? 'No tags created yet.' : 'এখনো কোনো ট্যাগ তৈরি করা হয়নি।'}
+                  </p>
+                </div>
+              ) : (
+                labels.map((label: any) => (
+                  <div key={label.id} className="bg-background border border-border p-3.5 rounded-xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden flex flex-col justify-between">
+                    <div className="absolute top-0 left-0 w-1.5 h-full" style={{ backgroundColor: label.color }} />
+                    <div className="pl-2 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-[11px] font-bold border"
+                          style={{ backgroundColor: `${label.color}15`, color: label.color, borderColor: `${label.color}30` }}>
+                          {label.name}
+                        </span>
+                        
+                        <div className="flex items-center gap-2">
+                          <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                            <input 
+                              type="checkbox" 
+                              checked={label.isActive ?? true}
+                              onChange={() => handleToggleLabelActive(label.id, label.isActive ?? true)}
+                              className="sr-only peer" 
+                            />
+                            <div className="w-8 h-4.5 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-primary cursor-pointer after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all"></div>
+                          </label>
+
+                          <button 
+                            onClick={() => { setEditingLabel(label); setIsLabelFormOpen(true); }} 
+                            className="p-1 text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteLabel(label.id)} 
+                            className="p-1 text-muted-foreground hover:text-red-400 transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {label.description && (
+                        <p className="text-[11px] text-muted-foreground font-sans line-clamp-1">{label.description}</p>
+                      )}
+
+                      {label.aiPrompt && (
+                        <div className="bg-card p-2 rounded-lg border border-border/50 flex items-start gap-1.5 text-[11px] text-muted-foreground">
+                          <Wand2 className="w-3.5 h-3.5 text-purple-400 shrink-0 mt-0.5" />
+                          <p className="line-clamp-2" title={label.aiPrompt}>{label.aiPrompt}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 

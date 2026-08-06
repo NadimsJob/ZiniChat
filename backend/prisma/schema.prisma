@@ -331,12 +331,14 @@ model Conversation {
 }
 
 model Label {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenantId  String   @db.Uuid
-  name      String
-  color     String   @default("#3b82f6")
-  aiPrompt  String?  @db.Text
-  createdAt DateTime @default(now())
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String   @db.Uuid
+  name        String
+  color       String   @default("#3b82f6")
+  aiPrompt    String?  @db.Text
+  description String?  @db.Text
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
 
   tenant        Tenant              @relation(fields: [tenantId], references: [id])
   conversations ConversationLabel[]
