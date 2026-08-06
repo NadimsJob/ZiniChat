@@ -1275,8 +1275,8 @@ export default function InboxPage() {
         }`}>
           
           {/* Header */}
-          <div className="h-14 px-2 md:px-4 border-b border-border bg-surface/80 backdrop-blur-xl flex items-center justify-between shrink-0 shadow-2xs">
-            <div className="flex items-center gap-2 md:gap-3 min-w-0">
+          <div className="h-14 px-2 md:px-4 border-b border-border bg-surface/80 backdrop-blur-xl flex items-center gap-2 shrink-0 shadow-2xs">
+            <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1 overflow-hidden">
               <button 
                 onClick={() => { setMobilePanelView('list'); setSelectedConvId(null); }}
                 className="md:hidden p-1.5 -ml-1 text-muted-foreground hover:bg-muted rounded-full"
@@ -1313,101 +1313,79 @@ export default function InboxPage() {
               </button>
             </div>
 
-
-            {/* Header Control Buttons */}
-            <div className="flex items-center gap-0.5 md:gap-1 text-muted-foreground shrink-0">
-              {/* Star */}
-              <button
-                onClick={handleToggleStar}
-                className={`p-1.5 rounded-lg hover:bg-muted transition-colors ${activeConv.isStarred ? 'text-amber-500' : ''}`}
-                title={activeConv.isStarred 
-                  ? (language === 'en' ? 'Unstar Conversation' : 'অনস্টার করুন')
-                  : (language === 'en' ? 'Star Conversation — Mark important chat for quick reference' : 'স্টার করুন — গুরুত্বপূর্ণ চ্যাট দ্রুত পাওয়ার জন্য চিহ্নিত করতে')}
-              >
-                <Star className={`w-4 h-4 ${activeConv.isStarred ? 'fill-amber-500' : ''}`} />
-              </button>
-
-              {/* Follow-up flag */}
-              <button
-                onClick={handleToggleFollowUp}
-                className={`p-1.5 rounded-lg hover:bg-muted transition-colors ${activeConv.requiresFollowUp ? 'text-red-500' : ''}`}
-                title={language === 'en' ? 'Flag for Follow-up — Flag when customer needs a future follow-up call or reply' : 'ফলো-আপ ফ্ল্যাগ — গ্রাহককে পরবর্তীতে কল বা মেসেজ দেয়ার প্রয়োজন হলে চিহ্নিত করতে'}
-              >
-                <Flag className={`w-4 h-4 ${activeConv.requiresFollowUp ? 'fill-red-500' : ''}`} />
-              </button>
-              
-              {/* Assign Agent */}
-              <div className="relative" ref={assignMenuRef}>
+            {/* Header Control Buttons — scrollable on mobile so all icons always visible */}
+            <div className="overflow-x-auto shrink-0 no-scrollbar">
+              <div className="flex items-center gap-0.5 text-muted-foreground w-max">
+                {/* Star */}
                 <button
-                  onClick={() => setShowAssignMenu(!showAssignMenu)}
-                  className="p-1.5 rounded-lg hover:bg-muted transition-colors"
-                  title={language === 'en' ? 'Assign Agent — Transfer this conversation to a team member' : 'এজেন্ট অ্যাসাইন — চ্যাটটির দায়িত্ব টিমের অন্য এজেন্টকে দিতে'}
+                  onClick={handleToggleStar}
+                  className={`p-1.5 rounded-lg hover:bg-muted transition-colors shrink-0 ${activeConv.isStarred ? 'text-amber-500' : ''}`}
+                  title={activeConv.isStarred 
+                    ? (language === 'en' ? 'Unstar Conversation' : 'অনস্টার করুন')
+                    : (language === 'en' ? 'Star Conversation' : 'স্টার করুন')}
                 >
-                  <UserPlus className="w-4 h-4" />
+                  <Star className={`w-4 h-4 ${activeConv.isStarred ? 'fill-amber-500' : ''}`} />
                 </button>
-                {showAssignMenu && (
-                  <div className="absolute right-0 mt-1 w-44 bg-card border border-border rounded-xl shadow-lg p-1 z-50 animate-in fade-in zoom-in-95 duration-100 text-xs">
-                    <button onClick={() => handleAssignAgent(null)} className="w-full text-left px-2.5 py-1.5 hover:bg-muted rounded-lg text-amber-600 font-medium">
-                      Unassign
-                    </button>
-                    {agents.map(a => (
-                      <button key={a.id} onClick={() => handleAssignAgent(a.id)} className="w-full text-left px-2.5 py-1.5 hover:bg-muted rounded-lg text-foreground">
-                        {a.name} ({a.role})
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
 
-              {/* Resolve */}
-              <button
-                onClick={handleToggleResolve}
-                className={`hidden md:inline-flex p-1.5 rounded-lg hover:bg-muted transition-colors ${activeConv.status === 'resolved' ? 'text-emerald-600' : ''}`}
-                title={activeConv.status === 'resolved'
-                  ? (language === 'en' ? 'Reopen Conversation' : 'পুনরায় ওপেন করুন')
-                  : (language === 'en' ? 'Resolve Conversation — Mark inquiry as solved when customer issue is completed' : 'রেসোলভ করুন — কাস্টমারের বিষয়ের সমাধান হলে চিহ্নিত করতে')}
-              >
-                <CheckCircle2 className="w-4 h-4" />
-              </button>
+                {/* Follow-up flag */}
+                <button
+                  onClick={handleToggleFollowUp}
+                  className={`p-1.5 rounded-lg hover:bg-muted transition-colors shrink-0 ${activeConv.requiresFollowUp ? 'text-red-500' : ''}`}
+                  title={language === 'en' ? 'Flag for Follow-up' : 'ফলো-আপ ফ্ল্যাগ'}
+                >
+                  <Flag className={`w-4 h-4 ${activeConv.requiresFollowUp ? 'fill-red-500' : ''}`} />
+                </button>
 
-              {/* Archive */}
-              <button
-                onClick={handleToggleArchive}
-                className={`hidden md:inline-flex p-1.5 rounded-lg hover:bg-muted transition-colors ${activeConv.isArchived ? 'text-blue-600' : ''}`}
-                title={activeConv.isArchived
-                  ? (language === 'en' ? 'Unarchive Conversation' : 'আনআর্কাইভ করুন')
-                  : (language === 'en' ? 'Archive Conversation — Move inactive chat out of active inbox' : 'আর্কাইভ করুন — নিষ্ক্রিয় চ্যাট ইনবক্স থেকে সরাতে')}
-              >
-                <Archive className="w-4 h-4" />
-              </button>
+                {/* Resolve */}
+                <button
+                  onClick={handleToggleResolve}
+                  className={`p-1.5 rounded-lg hover:bg-muted transition-colors shrink-0 ${activeConv.status === 'resolved' ? 'text-emerald-600' : ''}`}
+                  title={activeConv.status === 'resolved'
+                    ? (language === 'en' ? 'Reopen Conversation' : 'পুনরায় ওপেন করুন')
+                    : (language === 'en' ? 'Resolve Conversation' : 'রেসোলভ করুন')}
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                </button>
 
-              {/* Block */}
-              <button
-                onClick={handleToggleBlock}
-                className={`hidden md:inline-flex p-1.5 rounded-lg hover:bg-muted transition-colors ${activeConv.isBlocked || activeConv.contact?.isBlocked ? 'text-rose-600 bg-rose-500/10' : ''}`}
-                title={activeConv.isBlocked || activeConv.contact?.isBlocked
-                  ? (language === 'en' ? 'Unblock Contact' : 'আনব্লক করুন')
-                  : (language === 'en' ? 'Block Contact — Block contact and stop AI auto-replies' : 'ব্লক করুন — কাস্টমারকে ব্লক করতে ও এআই অটো-রিপ্লাই বন্ধ করতে')}
-              >
-                <Ban className="w-4 h-4" />
-              </button>
+                {/* Archive */}
+                <button
+                  onClick={handleToggleArchive}
+                  className={`p-1.5 rounded-lg hover:bg-muted transition-colors shrink-0 ${activeConv.isArchived ? 'text-blue-600' : ''}`}
+                  title={activeConv.isArchived
+                    ? (language === 'en' ? 'Unarchive Conversation' : 'আনআর্কাইভ করুন')
+                    : (language === 'en' ? 'Archive Conversation' : 'আর্কাইভ করুন')}
+                >
+                  <Archive className="w-4 h-4" />
+                </button>
 
-              {/* Add Collaborator */}
-              {hasCollaborators && (
-                <div className="relative hidden md:block" ref={collaboratorMenuRef}>
+                {/* Block */}
+                <button
+                  onClick={handleToggleBlock}
+                  className={`p-1.5 rounded-lg hover:bg-muted transition-colors shrink-0 ${activeConv.isBlocked || activeConv.contact?.isBlocked ? 'text-rose-600 bg-rose-500/10' : ''}`}
+                  title={activeConv.isBlocked || activeConv.contact?.isBlocked
+                    ? (language === 'en' ? 'Unblock Contact' : 'আনব্লক করুন')
+                    : (language === 'en' ? 'Block Contact' : 'ব্লক করুন')}
+                >
+                  <Ban className="w-4 h-4" />
+                </button>
+
+                {/* Assign Agent */}
+                <div className="relative shrink-0" ref={assignMenuRef}>
                   <button
-                    onClick={() => setShowCollaboratorMenu(!showCollaboratorMenu)}
+                    onClick={() => setShowAssignMenu(!showAssignMenu)}
                     className="p-1.5 rounded-lg hover:bg-muted transition-colors"
-                    title={language === 'en' ? 'Add Collaborator — Add team members to monitor or assist in this chat' : 'কোলাবোরেটর যুক্ত — সহযোগিতার জন্য সহকর্মীকে চ্যাটে যুক্ত করতে'}
+                    title={language === 'en' ? 'Assign Agent' : 'এজেন্ট অ্যাসাইন'}
                   >
-                    <UserCheck className="w-4 h-4" />
+                    <UserPlus className="w-4 h-4" />
                   </button>
-                  {showCollaboratorMenu && (
+                  {showAssignMenu && (
                     <div className="absolute right-0 mt-1 w-44 bg-card border border-border rounded-xl shadow-lg p-1 z-50 animate-in fade-in zoom-in-95 duration-100 text-xs">
-                      <p className="px-2.5 py-1 text-[10px] text-muted-foreground font-bold uppercase">Add Collaborator</p>
+                      <button onClick={() => handleAssignAgent(null)} className="w-full text-left px-2.5 py-1.5 hover:bg-muted rounded-lg text-amber-600 font-medium">
+                        Unassign
+                      </button>
                       {agents.map(a => (
-                        <button key={a.id} onClick={() => handleAddCollaborator(a.id)} className="w-full text-left px-2.5 py-1.5 hover:bg-muted rounded-lg text-foreground">
-                          {a.name}
+                        <button key={a.id} onClick={() => handleAssignAgent(a.id)} className="w-full text-left px-2.5 py-1.5 hover:bg-muted rounded-lg text-foreground">
+                          {a.name} ({a.role})
                         </button>
                       ))}
                     </div>
