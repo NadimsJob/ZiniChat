@@ -334,6 +334,11 @@ export class AiTrainingService {
   }
 
   async createCustomQna(tenantId: string, question: string, answer: string) {
+    const existingCount = await this.prisma.qnAKnowledgeBase.count({ where: { tenantId } });
+    if (existingCount >= 20) {
+      throw new BadRequestException('Maximum 20 Q&As allowed per tenant');
+    }
+
     const qna = await this.prisma.qnAKnowledgeBase.create({
       data: {
         tenantId,
@@ -358,8 +363,8 @@ export class AiTrainingService {
     const data: any = {};
     if (answer !== undefined) data.answer = answer;
     
-    // Cannot change question of default QnA
-    if (question !== undefined && !existing.isDefault) {
+    // Allow changing question of default QnA as well
+    if (question !== undefined) {
       data.question = question;
     }
 
@@ -378,10 +383,6 @@ export class AiTrainingService {
 
     if (!existing) {
       throw new NotFoundException('Q&A not found');
-    }
-
-    if (existing.isDefault) {
-      throw new BadRequestException('Cannot delete default business questions. You can clear the answer instead.');
     }
 
     await this.prisma.qnAKnowledgeBase.delete({
@@ -410,6 +411,10 @@ export class AiTrainingService {
   async uploadDocument(tenantId: string, file: any) {
     const existingCount = await this.prisma.knowledgeDocument.count({ where: { tenantId } });
     if (existingCount >= 2) throw new BadRequestException('Maximum 2 documents allowed per tenant');
+
+    if (file.size > 500 * 1024) {
+      throw new BadRequestException('File size must be 500KB or less');
+    }
 
     // Strict file & magic number validation
     const { detectedType } = this.fileValidationService.validateFile(file);

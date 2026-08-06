@@ -17,6 +17,11 @@ export class LabelsService {
   }
 
   async createLabel(tenantId: string, data: { name: string; color: string; aiPrompt?: string; description?: string; isActive?: boolean }) {
+    const existingCount = await this.prisma.label.count({ where: { tenantId } });
+    if (existingCount >= 10) {
+      throw new BadRequestException('Maximum 10 tags allowed per tenant');
+    }
+
     const label = await this.prisma.label.create({
       data: {
         tenantId,
