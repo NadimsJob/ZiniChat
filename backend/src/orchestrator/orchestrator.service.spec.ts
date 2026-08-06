@@ -301,7 +301,6 @@ describe('OrchestratorService', () => {
     });
 
     it('should filter out knowledge documents older than 60 days in buildContextPrompt', async () => {
-      const oldDate = new Date(Date.now() - 70 * 24 * 60 * 60 * 1000); // 70 days ago
       prismaService.qnAKnowledgeBase = { findMany: jest.fn().mockResolvedValue([]) };
       prismaService.knowledgeDocument = { findMany: jest.fn().mockResolvedValue([]) };
 
@@ -311,34 +310,13 @@ describe('OrchestratorService', () => {
         expect.objectContaining({
           where: expect.objectContaining({
             uploadedAt: expect.objectContaining({
-    inboxGateway = {
-      broadcastToTenant: jest.fn(),
-    };
-
-    const aiCacheService = {
-      computeChecksum: jest.fn().mockReturnValue('checksum123'),
-      getOrCreateCache: jest.fn().mockResolvedValue({ isCached: false, cacheKey: null }),
-      invalidateCache: jest.fn(),
-    };
-
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        OrchestratorService,
-        { provide: PrismaService, useValue: prismaService },
-        { provide: AiService, useValue: aiService },
-        { provide: AiCacheService, useValue: aiCacheService },
-        { provide: InboxService, useValue: inboxService },
-        { provide: BillingService, useValue: billingService },
-        { provide: OrdersService, useValue: ordersService },
-        { provide: NotificationsService, useValue: notificationsService },
-        { provide: QuotaService, useValue: quotaService },
-        { provide: ActivityLogService, useValue: activityLogService },
-        { provide: InboxGateway, useValue: inboxGateway },
-      ],
-    }).compile();
-
-    service = module.get<OrchestratorService>(OrchestratorService);
-  });
+              gte: expect.any(Date)
+            })
+          })
+        })
+      );
+      expect(prompt).toContain('MANDATORY STRUCTURED JSON RESPONSE OUTPUT FORMAT');
+    });
 
   it('should ignore non-inbound messages', async () => {
     prismaService.message.findUnique.mockResolvedValue({ direction: 'outbound', type: 'text' });
@@ -568,3 +546,5 @@ describe('OrchestratorService', () => {
     });
   });
 });
+});
+
