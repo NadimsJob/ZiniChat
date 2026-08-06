@@ -187,6 +187,7 @@ A multi-tenant SaaS platform enabling businesses (tenants) to manage customer co
 
 ## 5. Directory Structure & Key Files
 * `full-platform-architecture-v3.md`: Primary architectural specification.
+* `multi-vertical-architecture-roadmap.md`: Living Master Architecture Roadmap & Todo Checklist for 8 Industry Verticals.
 * `project-context.md`: Living developer context log (this file).
 * `.agents/AGENTS.md`: Workspace rules enforcing mandatory context tracking, Git safety, and UI guidelines.
 * `backend/`: NestJS modular monolith backend application (`src/inbox`, `src/broadcasts`, `src/quota`, `src/whatsapp`, `src/auth`, `src/labels`, etc.).
