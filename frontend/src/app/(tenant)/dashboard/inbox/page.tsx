@@ -1391,32 +1391,54 @@ export default function InboxPage() {
                     </div>
                   )}
                 </div>
-              )}
 
-              {/* Toggle Right Sidebar */}
-              <button
-                onClick={() => {
-                  // On mobile: switch to CRM panel view
-                  if (typeof window !== 'undefined' && window.innerWidth < 1024) {
-                    setMobilePanelView('crm');
-                  } else {
-                    setShowRightSidebar(!showRightSidebar);
-                  }
-                }}
-                className={`hidden lg:inline-flex p-1.5 rounded-lg hover:bg-muted transition-colors ${showRightSidebar ? 'text-primary lg:text-primary' : ''} ${mobilePanelView === 'crm' ? 'text-primary lg:text-inherit' : ''}`}
-                title={language === 'en' ? 'Toggle Sidebar — Show or hide customer CRM details & notes' : 'সাইডবার হাইড/শো — কাস্টমার CRM ডিটেইলস প্যানেল'}
-              >
-                <PanelRight className="w-4 h-4" />
-              </button>
+                {/* Add Collaborator */}
+                {hasCollaborators && (
+                  <div className="relative shrink-0" ref={collaboratorMenuRef}>
+                    <button
+                      onClick={() => setShowCollaboratorMenu(!showCollaboratorMenu)}
+                      className="p-1.5 rounded-lg hover:bg-muted transition-colors"
+                      title={language === 'en' ? 'Add Collaborator' : 'কোলাবোরেটর যুক্ত'}
+                    >
+                      <UserCheck className="w-4 h-4" />
+                    </button>
+                    {showCollaboratorMenu && (
+                      <div className="absolute right-0 mt-1 w-44 bg-card border border-border rounded-xl shadow-lg p-1 z-50 animate-in fade-in zoom-in-95 duration-100 text-xs">
+                        <p className="px-2.5 py-1 text-[10px] text-muted-foreground font-bold uppercase">Add Collaborator</p>
+                        {agents.map(a => (
+                          <button key={a.id} onClick={() => handleAddCollaborator(a.id)} className="w-full text-left px-2.5 py-1.5 hover:bg-muted rounded-lg text-foreground">
+                            {a.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
 
-              {/* Delete */}
-              <button
-                onClick={handleDeleteConversation}
-                className="hidden md:inline-flex p-1.5 rounded-lg hover:bg-red-50 text-red-500 transition-colors"
-                title={language === 'en' ? 'Delete Conversation — Permanently delete chat and messages' : 'কনভারসেশন মুছুন — স্থায়ীভাবে সকল মেসেজ মুছে ফেলতে'}
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
+                {/* Toggle Right Sidebar */}
+                <button
+                  onClick={() => {
+                    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+                      setMobilePanelView('crm');
+                    } else {
+                      setShowRightSidebar(!showRightSidebar);
+                    }
+                  }}
+                  className={`p-1.5 rounded-lg hover:bg-muted transition-colors shrink-0 ${showRightSidebar ? 'text-primary' : ''} ${mobilePanelView === 'crm' ? 'text-primary' : ''}`}
+                  title={language === 'en' ? 'Toggle Sidebar' : 'সাইডবার'}
+                >
+                  <PanelRight className="w-4 h-4" />
+                </button>
+
+                {/* Delete */}
+                <button
+                  onClick={handleDeleteConversation}
+                  className="p-1.5 rounded-lg hover:bg-red-500/10 text-red-500 transition-colors shrink-0"
+                  title={language === 'en' ? 'Delete Conversation' : 'কনভারসেশন মুছুন'}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
 
