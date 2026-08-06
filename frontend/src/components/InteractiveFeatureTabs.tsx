@@ -69,6 +69,93 @@ export function FeatureMockup({ featureId, language, iconColor, color }: { featu
     </div>
   );
 
+  if (featureId === 'whatsapp_api') return (
+    <div className="space-y-2 text-xs">
+      <div className="flex items-center gap-2 p-2 bg-[#075E54]/10 border border-[#075E54]/20 rounded-lg">
+        <span className="text-[#25D366] font-bold text-[14px]">💬</span>
+        <div className="flex-1">
+          <div className="font-bold text-[#25D366]">WhatsApp Cloud API</div>
+          <div className="text-[10px] text-zinc-400">{language === 'en' ? 'Official Meta Integration' : 'অফিসিয়াল মেটা ইন্টিগ্রেশন'}</div>
+        </div>
+      </div>
+      <div className="p-2.5 bg-surface rounded-lg border border-surface-hover space-y-1.5">
+        <div className="flex justify-between text-[9px] text-zinc-500">
+          <span>{language === 'en' ? 'Phone ID:' : 'ফোন আইডি:'} 109843...</span>
+          <span className="text-green-500 font-bold">{language === 'en' ? 'Verified' : 'ভেরিফাইড'}</span>
+        </div>
+        <div className="h-1.5 bg-zinc-700 rounded w-full" />
+        <div className="h-1.5 bg-zinc-700 rounded w-2/3" />
+      </div>
+      <div className="p-2 bg-green-500/10 border border-green-500/20 rounded-lg text-[10px] text-green-400 text-center">
+        {language === 'en' ? '⚡ Unlimited official outbound broadcasts allowed' : '⚡ আনলিমিটেড অফিশিয়াল ব্রডকাস্ট অনুমোদন'}
+      </div>
+    </div>
+  );
+
+  if (featureId === 'messenger_api') return (
+    <div className="space-y-2 text-xs">
+      <div className="flex items-center gap-2 p-2 bg-[#0084FF]/10 border border-[#0084FF]/20 rounded-lg">
+        <span className="text-[#0084FF] font-bold text-[14px]">🔵</span>
+        <div className="flex-1">
+          <div className="font-bold text-[#0084FF]">Meta Messenger</div>
+          <div className="text-[10px] text-zinc-400">{language === 'en' ? 'Direct Page Connection' : 'সরাসরি পেজ কানেকশন'}</div>
+        </div>
+      </div>
+      <div className="p-2.5 bg-surface rounded-lg border border-surface-hover space-y-1">
+        <div className="flex items-center gap-2">
+          <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-[10px] text-white">M</div>
+          <span className="font-medium text-zinc-300">StyleHub Page</span>
+        </div>
+        <p className="text-[10px] text-zinc-500 mt-1">
+          {language === 'en' ? '✓ Auto-synced Webhooks active' : '✓ অটো-সিঙ্কড ওয়েব হুক একটিভ'}
+        </p>
+      </div>
+    </div>
+  );
+
+  if (featureId === 'instagram_api') return (
+    <div className="space-y-2 text-xs">
+      <div className="flex items-center gap-2 p-2 bg-gradient-to-tr from-yellow-500/10 via-pink-500/10 to-purple-500/10 border border-pink-500/20 rounded-lg">
+        <span className="text-pink-500 font-bold text-[14px]">📸</span>
+        <div className="flex-1">
+          <div className="font-bold text-pink-500">Instagram DM</div>
+          <div className="text-[10px] text-zinc-400">{language === 'en' ? 'Direct Messages & Story Replies' : 'ডাইরেক্ট মেসেজ ও স্টোরি রিপ্লাই'}</div>
+        </div>
+      </div>
+      <div className="p-2.5 bg-surface rounded-lg border border-surface-hover space-y-1">
+        <div className="flex items-center gap-2">
+          <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-yellow-500 to-purple-500 flex items-center justify-center text-[9px] text-white">IG</div>
+          <span className="font-medium text-zinc-300">@stylehub.official</span>
+        </div>
+        <p className="text-[10px] text-zinc-500 mt-1">
+          {language === 'en' ? '✓ Story mention auto-replies active' : '✓ স্টোরি মেনশন অটো-রিপ্লাই একটিভ'}
+        </p>
+      </div>
+    </div>
+  );
+
+  if (featureId === 'website_widget') return (
+    <div className="space-y-2 text-xs">
+      <div className="flex items-center gap-2 p-2 bg-primary/10 border border-primary/20 rounded-lg">
+        <span className="text-primary font-bold text-[14px]">🌐</span>
+        <div className="flex-1">
+          <div className="font-bold text-primary">Website Chat Widget</div>
+          <div className="text-[10px] text-zinc-400">{language === 'en' ? 'Live Chat on Your Website' : 'আপনার ওয়েবসাইটে লাইভ চ্যাট'}</div>
+        </div>
+      </div>
+      <div className="p-2.5 bg-surface rounded-lg border border-surface-hover space-y-2">
+        <div className="bg-primary/20 p-1.5 rounded text-[9px] text-zinc-300">
+          {language === 'en' ? 'Hello! How can we help you today?' : 'হ্যালো! আজ আমরা আপনাকে কীভাবে সাহায্য করতে পারি?'}
+        </div>
+        <div className="flex justify-end">
+          <div className="bg-surface-hover p-1.5 rounded text-[9px] text-zinc-400">
+            {language === 'en' ? 'Show me your catalog' : 'আপনাদের ক্যাটালগ দেখান'}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   if (featureId === 'leads') return (
     <div className="space-y-2 text-xs">
       {[{stage: language === 'en' ? 'Intake' : 'ইনটেক', count: 12, color: 'bg-zinc-500/20 text-zinc-400'}, {stage: language === 'en' ? 'Interested' : 'আগ্রহী', count: 7, color: 'bg-blue-500/20 text-blue-400'}, {stage: language === 'en' ? 'Closed' : 'ক্লোজড', count: 4, color: 'bg-green-500/20 text-green-500'}].map((s, i) => (

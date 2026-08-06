@@ -38,6 +38,76 @@ async function main() {
             }
           },
           { 
+            id: 'whatsapp_api',
+            iconName: 'MessageCircle',
+            colorTheme: 'green',
+            title: { en: 'WhatsApp Business API', bn: 'হোয়াটসঅ্যাপ বিজনেস API' }, 
+            description: { 
+              en: 'Connect official WhatsApp Cloud API or pairing code based personal numbers. Send bulk broadcasts safely without risk of bans.', 
+              bn: 'অফিসিয়াল হোয়াটসঅ্যাপ ক্লাউড API অথবা পেয়ারিং কোড দিয়ে পার্সোনাল নাম্বার সংযুক্ত করুন। কোনো প্রকার ব্যান হওয়া ছাড়াই নিরাপদে বাল্ক মেসেজ ব্রডকাস্ট করুন।' 
+            },
+            bullets: {
+              en: ['Official Meta Cloud API', 'Personal WhatsApp pairing code', 'High-res image/video downloads', 'Verified green badge support', 'Anti-ban safety intervals'],
+              bn: ['অফিসিয়াল মেটা ক্লাউড API', 'পার্সোনাল হোয়াটসঅ্যাপ পেয়ারিং কোড', 'হাই-রেস ছবি ও ভিডিও ডাউনলোড', 'ভেরিফাইড গ্রিন ব্যাজ সাপোর্ট', 'ব্যান প্রটেকশন এআই সেফটি']
+            }
+          },
+          { 
+            id: 'messenger_api',
+            iconName: 'MessageSquare',
+            colorTheme: 'blue',
+            title: { en: 'Meta Messenger Integration', bn: 'মেটা মেসেঞ্জার ইন্টিগ্রেশন' }, 
+            description: { 
+              en: 'Connect unlimited Facebook Pages via Meta Login. Sync conversations in real-time, automate replies, and log leads directly in your CRM.', 
+              bn: 'মেটা লগইন এর মাধ্যমে আনলিমিটেড ফেসবুক পেজ কানেক্ট করুন। রিয়েল-টাইমে কথোপকথন সিঙ্ক করুন, এআই রিপ্লাই সেট করুন এবং সরাসরি কাস্টমার প্রোফাইল CRM-এ সেভ করুন।' 
+            },
+            bullets: {
+              en: ['One-click Facebook login', 'Automated Messenger inbox sync', 'Page welcome message setup', 'Instant private auto-replies', 'Collaborative multi-agent support'],
+              bn: ['ওয়ান-ক্লিক ফেসবুক লগইন', 'অটোমেটেড মেসেঞ্জার ইনবক্স সিঙ্ক', 'পেজ ওয়েলকাম মেসেজ সেটআপ', 'ইনস্ট্যান্ট প্রাইভেট অটো-রিপ্লাই', 'একাধিক এজেন্ট কোলাবোরেশন']
+            }
+          },
+          { 
+            id: 'instagram_api',
+            iconName: 'Instagram',
+            colorTheme: 'pink',
+            title: { en: 'Instagram Direct Messages', bn: 'ইনস্টাগ্রাম ডাইরেক্ট মেসেজ' }, 
+            description: { 
+              en: 'Automate Instagram Direct Messages, story mentions, and media replies. Engage customers instantly when they interact with your brand.', 
+              bn: 'ইনস্টাগ্রাম ডাইরেক্ট মেসেজ, স্টোরি মেনশন এবং মিডিয়া রিপ্লাই স্বয়ংক্রিয় করুন। গ্রাহকরা আপনার ব্র্যান্ডের সাথে যুক্ত হওয়ার সাথে সাথেই দ্রুত উত্তর দিন।' 
+            },
+            bullets: {
+              en: ['Instagram Story mention replies', 'Direct Messages (DM) sync', 'Product link auto-responses', 'Media attachment downloads', 'Interactive customer profile cards'],
+              bn: ['স্টোরি মেনশন অটো-রিপ্লাই', 'ডাইরেক্ট মেসেজ (DM) সিঙ্ক', 'প্রোডাক্ট লিঙ্ক অটো-রেসপন্স', 'মিডিয়া অ্যাটাচমেন্ট ডাউনলোড', 'ইন্টারেক্টিভ কাস্টমার প্রোফাইল কার্ড']
+            }
+          },
+          { 
+            id: 'website_widget',
+            iconName: 'Globe',
+            colorTheme: 'teal',
+            title: { en: 'Website Live Chat Widget', bn: 'ওয়েবসাইট লাইভ চ্যাট উইজেট' }, 
+            description: { 
+              en: 'Embed a beautiful, customizable live chat widget on your website. Allow visitors to chat with your AI or connect directly to human agents.', 
+              bn: 'আপনার ওয়েবসাইটে একটি আকর্ষণীয় ও কাস্টমাইজড লাইভ চ্যাট উইজেট যুক্ত করুন। কাস্টমারদের এআই-এর সাথে কথা বলার সুবিধা দিন বা সরাসরি লাইভ এজেন্টের সাথে যুক্ত করুন।' 
+            },
+            bullets: {
+              en: ['Custom bubble colors and icons', 'Bilingual greeting messages', 'AI auto-replies for website visitors', 'Seamless agent takeover', 'Zero-downtime widget updates'],
+              bn: ['কাস্টম বাবল কালার ও আইকন', 'দ্বিভাষিক শুভেচ্ছা বার্তা', 'ভিজিটরদের জন্য এআই অটো-রিপ্লাই', 'স্মার্ট এজেন্ট টেকওভার সুবিধা', 'রিয়েল-টাইম উইজেট আপডেট']
+            }
+          },
+          { 
+            id: 'facebook_comment_automation',
+            iconName: 'MessageSquare',
+            colorTheme: 'orange',
+            title: { en: 'Facebook Comment Automation', bn: 'ফেসবুক কমেন্ট অটোমেশন' },
+            description: {
+              en: 'Automatically reply to Facebook post comments with public replies and instant private messages in their Messenger inbox.',
+              bn: 'ফেসবুক পোস্টের কমেন্টে পাবলিকলি রিপ্লাই দিন এবং মেসেঞ্জারে সাথে সাথেই অটোমেটিক প্রাইভেট মেসেজ পাঠিয়ে দিন।'
+            },
+            bullets: {
+              en: ['Public & Private AI Reply Modes', 'Keyword-based Filtering', 'Commenter Rate Limiting', 'Lead CRM Auto-Sync', 'Full Reply logs & analytics'],
+              bn: ['পাবলিক ও প্রাইভেট এআই রিপ্লাই', 'কীওয়ার্ড-ভিত্তিক ফিল্টারিং', 'কমেন্টার রেট লিমিটিং', 'লিড সিআরএম অটো-সিঙ্ক', 'কমেন্ট রিপ্লাই লগ ও অ্যানালিটিক্স']
+            }
+          },
+          { 
             id: 'crm',
             iconName: 'Users',
             colorTheme: 'orange',
@@ -63,20 +133,6 @@ async function main() {
             bullets: {
               en: ['Role-based access control', 'Agent assignment for chats', 'Audit logs for superadmins', 'Real-time web notifications', 'Performance tracking'],
               bn: ['রোল-ভিত্তিক অ্যাক্সেস কন্ট্রোল', 'চ্যাটের জন্য এজেন্ট অ্যাসাইনমেন্ট', 'সুপারঅ্যাডমিনের জন্য অডিট লগ', 'রিয়েল-টাইম ওয়েব নোটিফিকেশন', 'পারফরম্যান্স ট্র্যাকিং']
-            }
-          },
-          {
-            id: 'facebook_comment_automation',
-            iconName: 'MessageSquare',
-            colorTheme: 'orange',
-            title: { en: 'Facebook Comment Automation', bn: 'ফেসবুক কমেন্ট অটোমেশন' },
-            description: {
-              en: 'Automatically reply to Facebook post comments with public replies and instant private messages in their Messenger inbox.',
-              bn: 'ফেসবুক পোস্টের কমেন্টে পাবলিকলি রিপ্লাই দিন এবং মেসেঞ্জারে সাথে সাথেই অটোমেটিক প্রাইভেট মেসেজ পাঠিয়ে দিন।'
-            },
-            bullets: {
-              en: ['Public & Private AI Reply Modes', 'Keyword-based Filtering', 'Commenter Rate Limiting', 'Lead CRM Auto-Sync', 'Full Reply logs & analytics'],
-              bn: ['পাবলিক ও প্রাইভেট এআই রিপ্লাই', 'কীওয়ার্ড-ভিত্তিক ফিল্টারিং', 'কমেন্টার রেট লিমিটিং', 'লিড সিআরএম অটো-সিঙ্ক', 'কমেন্ট রিপ্লাই লগ ও অ্যানালিটিক্স']
             }
           }
         ],
