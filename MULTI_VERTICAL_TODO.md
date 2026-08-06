@@ -28,6 +28,7 @@
 - [x] **AI Orchestrator**: Added `property_inquiry` intent, lighter prompt context (~300-400 token savings/msg), disabled order placement in property mode, auto-move to Intake stage & ContactNote creation.
 - [x] **Superadmin UI**: Added `isPropertyMode` checkbox and table mode badge in `/sp@dmin/settings/business-nature`.
 - [x] **Tenant UI Adapter**: Adaptive `products/page.tsx` (Area, Bedrooms, Bathrooms, Gallery slider), `orders/page.tsx` ("Inquiries"), `ClientLayout.tsx` (Properties / Inquiries nav items).
+- [x] **Team Role Routing**: Route property inquiries & lead notifications to Property Agents / Sales Admins (`role: { in: ['owner', 'admin'] }`).
 - [x] **Verification**: Unit tests 11/11 passed, frontend typecheck 0 errors, deployed to Live & Test servers.
 
 ### ✅ Vertical 2: Hospitality, Travel & Lifestyle (`isHospitalityMode`)
@@ -36,34 +37,12 @@
 - [x] **AI Orchestrator**: Added `room_booking_inquiry` intent & `interestedRoomName`. Branched `buildContextPrompt()` for Hotel Rooms (~300-400 token savings). Built `handleRoomBookingInquiry()` for auto-intake lead stage & ContactNote recording.
 - [x] **Superadmin UI**: Added `🏨 Hospitality & Hotel Booking Mode` checkbox & table badge in `/sp@dmin/settings/business-nature`.
 - [x] **Tenant UI Adapter**: Adaptive `products/page.tsx` ("Rooms & Suites", guest capacity, amenities checklist), `orders/page.tsx` ("Reservations"), `ClientLayout.tsx` ("Rooms & Suites" sidebar item & `Hotel` icon).
+- [x] **Team Role Routing**: Route reservation inquiries & room booking alerts to Front Desk / Reservation Managers.
 - [x] **Verification**: Unit tests passed, NestJS build 0 errors, frontend typecheck 0 errors, deployed to Live.
 
 ---
 
 ## 🚀 UPCOMING VERTICALS (ACTIONABLE TODO)
-
----
-
-### 🔵 Vertical 2: Hospitality, Travel & Lifestyle (`isHospitalityMode`)
-- [ ] **Phase 2.1 Database & Superadmin Setup**:
-  - [ ] Add `isHospitalityMode Boolean @default(false)` to `BusinessNature` model in `schema.prisma`.
-  - [ ] Add `isHospitalityMode` checkbox & mode badge in `sp@dmin/settings/business-nature/page.tsx`.
-  - [ ] Execute `npx prisma db push --accept-data-loss`.
-- [ ] **Phase 2.2 Backend & Products Service**:
-  - [ ] Pass `isHospitalityMode` through `BusinessNatureService` & `Controller`.
-  - [ ] Standardize room attributes (`roomType`, `capacity`, `nightlyRate`, `amenities`, `bedType`).
-- [ ] **Phase 2.3 AI Orchestrator & Token Optimization**:
-  - [ ] Add `room_booking_inquiry` intent & `interestedRoomName` to `StructuredAiClassification`.
-  - [ ] Branch `buildContextPrompt()` for `isHospitalityMode`: `--- HOTEL ROOMS & SUITES ---` (lighter context, disable order placement).
-  - [ ] Implement `handleRoomBookingInquiry()`: Move contact to Intake stage, create ContactNote `[Hotel Booking Inquiry] ...`, notify admins.
-- [ ] **Phase 2.4 Tenant UI Adaptation**:
-  - [ ] Adaptive `products/page.tsx`: Title "Rooms & Suites", Room Type (Deluxe, Suite, Standard), Capacity dropdown, Amenities checklist, Room Gallery slider.
-  - [ ] Adaptive `orders/page.tsx`: Title "Reservations" / "রিজার্ভেশন".
-  - [ ] Adaptive `ClientLayout.tsx`: Sidebar label `Rooms & Suites`, Icon: `Hotel`.
-- [ ] **Phase 2.5 Testing & Deployment**:
-  - [ ] Write unit tests in `orchestrator.service.spec.ts` & `products.service.spec.ts`.
-  - [ ] Run `npm run test` (Backend), `npm run build` (Backend), `npx tsc --noEmit` (Frontend).
-  - [ ] Push to Git & Deploy to Live via MCP (`invoke-mcp.js`).
 
 ---
 
@@ -76,11 +55,13 @@
   - [ ] Add `demo_request` / `software_inquiry` intent.
   - [ ] Branch `buildContextPrompt()`: `--- SOFTWARE & TECH PACKAGES ---` (Pricing Tiers, Feature list, Live Demo URL).
   - [ ] Implement `handleDemoRequest()`: Move contact to Qualified stage, create ContactNote with software module & team size.
-- [ ] **Phase 3.3 Tenant UI Adaptation**:
+- [ ] **Phase 3.3 Team Role Routing & CRM Assignment**:
+  - [ ] Target software demo alerts & lead assignment to **Account Executives / Product Specialists**.
+- [ ] **Phase 3.4 Tenant UI Adaptation**:
   - [ ] Adaptive `products/page.tsx`: Title "Software & Plans", Tiers (Starter, Pro, Enterprise), Feature bullet builder, Live Demo link.
   - [ ] Adaptive `orders/page.tsx`: Title "Demo Requests" / "ডেমো রিকুয়েস্ট".
   - [ ] Adaptive `ClientLayout.tsx`: Sidebar label `Software Plans`, Icon: `Cpu`.
-- [ ] **Phase 3.4 Testing & Deployment**:
+- [ ] **Phase 3.5 Testing & Deployment**:
   - [ ] Unit tests, TypeScript check, Git push & Deploy.
 
 ---
@@ -94,11 +75,13 @@
   - [ ] Add `consultation_request` intent.
   - [ ] Branch `buildContextPrompt()`: `--- SERVICE PACKAGES & CONSULTANCY ---` (Consultation Fee, Required Documents checklist).
   - [ ] Implement `handleConsultationRequest()`: Record ContactNote with client requirements & document checklist.
-- [ ] **Phase 4.3 Tenant UI Adaptation**:
+- [ ] **Phase 4.3 Team Role Routing & CRM Assignment**:
+  - [ ] Target consultation alerts to **Financial Advisors / Tax Consultants**.
+- [ ] **Phase 4.4 Tenant UI Adaptation**:
   - [ ] Adaptive `products/page.tsx`: Title "Service Packages", Fee, Scope of Work, Required Docs builder.
   - [ ] Adaptive `orders/page.tsx`: Title "Consultations" / "কন্সালটেন্সি".
   - [ ] Adaptive `ClientLayout.tsx`: Sidebar label `Services`, Icon: `Briefcase`.
-- [ ] **Phase 4.4 Testing & Deployment**:
+- [ ] **Phase 4.5 Testing & Deployment**:
   - [ ] Unit tests, TypeScript check, Git push & Deploy.
 
 ---
@@ -112,11 +95,13 @@
   - [ ] Add `doctor_appointment` intent.
   - [ ] Branch `buildContextPrompt()`: `--- DOCTORS & MEDICAL SERVICES ---` (Doctor Name, Specialization, Visiting Hours, Fee).
   - [ ] Implement `handleDoctorAppointment()`: Record appointment note, notify clinic desk.
-- [ ] **Phase 5.3 Tenant UI Adaptation**:
+- [ ] **Phase 5.3 Team Role Routing & CRM Assignment**:
+  - [ ] Target doctor appointment alerts & patient notes to **Clinic Receptionists / Medical Assistants**.
+- [ ] **Phase 5.4 Tenant UI Adaptation**:
   - [ ] Adaptive `products/page.tsx`: Title "Doctors & Services", Specialization, Visiting Schedule, Fee.
   - [ ] Adaptive `orders/page.tsx`: Title "Appointments" / "অ্যাপয়েন্টমেন্ট".
   - [ ] Adaptive `ClientLayout.tsx`: Sidebar label `Doctors & Services`, Icon: `Stethoscope`.
-- [ ] **Phase 5.4 Testing & Deployment**:
+- [ ] **Phase 5.5 Testing & Deployment**:
   - [ ] Unit tests, TypeScript check, Git push & Deploy.
 
 ---
@@ -130,11 +115,13 @@
   - [ ] Add `course_admission_inquiry` intent.
   - [ ] Branch `buildContextPrompt()`: `--- COURSES & ACADEMIC PROGRAMS ---` (Course Fee, Duration, Batch Schedule, Syllabus Overview).
   - [ ] Implement `handleCourseAdmissionInquiry()`: Move student lead to Admissions stage.
-- [ ] **Phase 6.3 Tenant UI Adaptation**:
+- [ ] **Phase 6.3 Team Role Routing & CRM Assignment**:
+  - [ ] Target admission inquiries to **Academic Counselors / Admission Desk**.
+- [ ] **Phase 6.4 Tenant UI Adaptation**:
   - [ ] Adaptive `products/page.tsx`: Title "Courses & Batches", Duration, Fee, Class Schedule, Syllabus PDF Link.
   - [ ] Adaptive `orders/page.tsx`: Title "Admissions" / "ভর্তি ইনকোয়ারি".
   - [ ] Adaptive `ClientLayout.tsx`: Sidebar label `Courses`, Icon: `GraduationCap`.
-- [ ] **Phase 6.4 Testing & Deployment**:
+- [ ] **Phase 6.5 Testing & Deployment**:
   - [ ] Unit tests, TypeScript check, Git push & Deploy.
 
 ---
@@ -148,11 +135,13 @@
   - [ ] Add `bulk_rfq_inquiry` intent.
   - [ ] Branch `buildContextPrompt()`: `--- B2B WHOLESALE PRODUCTS ---` (Unit Price, MOQ, Spec Sheet).
   - [ ] Implement `handleBulkRfqInquiry()`: Create B2B Lead Note with quantity requested & company details.
-- [ ] **Phase 7.3 Tenant UI Adaptation**:
+- [ ] **Phase 7.3 Team Role Routing & CRM Assignment**:
+  - [ ] Target B2B bulk RFQ quotes to **Wholesale Sales Managers / Plant Managers**.
+- [ ] **Phase 7.4 Tenant UI Adaptation**:
   - [ ] Adaptive `products/page.tsx`: Title "Wholesale Products", MOQ, Tiered Bulk Pricing.
   - [ ] Adaptive `orders/page.tsx`: Title "RFQ / Quotations" / "কোটেশন রিকুয়েস্ট".
   - [ ] Adaptive `ClientLayout.tsx`: Sidebar label `Wholesale Catalog`, Icon: `Factory`.
-- [ ] **Phase 7.4 Testing & Deployment**:
+- [ ] **Phase 7.5 Testing & Deployment**:
   - [ ] Unit tests, TypeScript check, Git push & Deploy.
 
 ---
@@ -165,11 +154,13 @@
 - [ ] **Phase 8.2 Backend & AI Orchestrator**:
   - [ ] Add `parcel_tracking_inquiry` intent.
   - [ ] Branch `buildContextPrompt()`: `--- SHIPPING SERVICES & RATES ---` (Route Rates, Weight Charges, Tracking Guide).
-- [ ] **Phase 8.3 Tenant UI Adaptation**:
+- [ ] **Phase 8.3 Team Role Routing & CRM Assignment**:
+  - [ ] Target parcel tracking & shipping inquiries to **Logistics Dispatchers / Fleet Operations**.
+- [ ] **Phase 8.4 Tenant UI Adaptation**:
   - [ ] Adaptive `products/page.tsx`: Title "Shipping Routes & Rates".
   - [ ] Adaptive `orders/page.tsx`: Title "Shipment Tracking".
   - [ ] Adaptive `ClientLayout.tsx`: Sidebar label `Routes & Rates`, Icon: `Truck`.
-- [ ] **Phase 8.4 Testing & Deployment**:
+- [ ] **Phase 8.5 Testing & Deployment**:
   - [ ] Unit tests, TypeScript check, Git push & Deploy.
 
 ---
