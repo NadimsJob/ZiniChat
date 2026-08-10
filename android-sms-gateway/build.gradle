@@ -1,3 +1,11 @@
+def localProperties = new File(rootDir, 'local.properties')
+if (!localProperties.exists()) {
+    def androidHome = System.getenv('ANDROID_HOME') ?: System.getenv('ANDROID_SDK_ROOT') ?: '/usr/local/lib/android/sdk'
+    if (androidHome) {
+        localProperties.text = "sdk.dir=${androidHome.replace('\\', '/')}\n"
+    }
+}
+
 buildscript {
     ext.kotlin_version = "1.9.0"
     repositories {
