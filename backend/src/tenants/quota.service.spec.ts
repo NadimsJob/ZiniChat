@@ -67,8 +67,54 @@ describe('QuotaService', () => {
     service = module.get<QuotaService>(QuotaService);
   });
 
-  it('should be defined', () => {
-    expect(service).toBeDefined();
+  // ─── isTenantSubscriptionActive ──────────────────────────────────────────────
+  describe('isTenantSubscriptionActive', () => {
+    it('returns TENANT_NOT_FOUND if tenant does not exist', async () => {
+      prisma.tenant.findUnique.mockResolvedValue(null);
+      const res = await service.isTenantSubscriptionActive(TENANT_ID);
+      expect(res).toEqual({ isActive: false, reason: 'TENANT_NOT_FOUND' });
+    });
+
+    it('returns TENANT_SUSPENDED if tenant status is suspended', async () => {
+      prisma.tenant.findUnique.mockResolvedValue({ id: TENANT_ID, status: 'suspended', subscriptions: [] });
+      const res = await service.isTenantSubscriptionActive(TENANT_ID);
+      expect(res).toEqual({ isActive: false, reason: 'TENANT_SUSPENDED' });
+    });
+
+    it('returns isActive: true if tenant is within trial period', async () => {
+      const futureTrial = new Date(Date.now() + 86400000);
+      prisma.tenant.findUnique.mockResolvedValue({
+        id: TENANT_ID,
+        status: 'active',
+        trialEndsAt: futureTrial,
+        subscriptions: []
+      });
+      const res = await service.isTenantSubscriptionActive(TENANT_ID);
+      expect(res).toEqual({ isActive: true });
+    });
+
+    it('returns isActive: true if tenant has an active subscription', async () => {
+      prisma.tenant.findUnique.mockResolvedValue({
+        id: TENANT_ID,
+        status: 'active',
+        trialEndsAt: null,
+        subscriptions: [{ id: 'sub-1', status: 'active' }]
+      });
+      const res = await service.isTenantSubscriptionActive(TENANT_ID);
+      expect(res).toEqual({ isActive: true });
+    });
+
+    it('returns SUBSCRIPTION_EXPIRED if trial has ended and no active subscription exists', async () => {
+      const pastTrial = new Date(Date.now() - 86400000);
+      prisma.tenant.findUnique.mockResolvedValue({
+        id: TENANT_ID,
+        status: 'active',
+        trialEndsAt: pastTrial,
+        subscriptions: []
+      });
+      const res = await service.isTenantSubscriptionActive(TENANT_ID);
+      expect(res).toEqual({ isActive: false, reason: 'SUBSCRIPTION_EXPIRED' });
+    });
   });
 
   // ─── checkMessageQuota ───────────────────────────────────────────────────────

@@ -853,6 +853,20 @@ export class InboxService {
     timestamp: Date;
     direction?: string;
   }) {
+    // ── Subscription Security Guard ──────────────────────────────────────────
+    // Verify tenant has an active subscription or valid trial before processing
+    // any message. This prevents DB writes, WebSocket broadcasts, and AI triggers
+    // for expired/suspended tenants while still returning 200 OK to Meta/webhook
+    // senders so they do not retry indefinitely.
+    const subStatus = await this.quotaService.isTenantSubscriptionActive(data.tenantId);
+    if (!subStatus.isActive) {
+      this.logger.warn(
+        `[Webhook Security Guard] Dropped incoming ${data.channel} message for Tenant ${data.tenantId}: Subscription/Trial Inactive (${subStatus.reason}).`
+      );
+      return { dropped: true, reason: 'SUBSCRIPTION_INACTIVE' };
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     const isOutboundFromPhone = data.direction === 'outbound';
     const direction = isOutboundFromPhone ? 'outbound' : 'inbound';
     const senderType = isOutboundFromPhone ? 'agent' : 'customer';

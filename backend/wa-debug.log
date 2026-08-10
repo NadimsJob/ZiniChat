@@ -441,3 +441,171 @@
 [2026-07-22T11:52:44.150Z] Initializing WhatsappWebService...
 [2026-07-22T11:52:44.247Z] Found 0 active connections to restore.
 [2026-07-22T11:52:44.259Z] Found 0 active connections to restore.
+[2026-08-10T09:48:30.714Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T09:48:30.718Z] Connection closed for tenant-1. Error: [object Object], statusCode: 401
+[2026-08-10T09:48:30.723Z] Logged out by WhatsApp for tenant tenant-1. Cleaning up session.
+[2026-08-10T09:48:30.738Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T09:48:30.738Z] Connection closed for tenant-1. Error: [object Object], statusCode: 503
+[2026-08-10T09:48:30.738Z] Connection closed for tenant tenant-1, scheduling automatic reconnect attempt 1/5 in 3000ms...
+[2026-08-10T09:48:30.770Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T09:48:30.770Z] Connection closed for tenant-1. Error: [object Object], statusCode: 500
+[2026-08-10T09:48:30.770Z] Connection closed for tenant tenant-1, scheduling automatic reconnect attempt 1/5 in 3000ms...
+[2026-08-10T09:48:30.770Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T09:48:30.770Z] Connection closed for tenant-1. Error: [object Object], statusCode: 500
+[2026-08-10T09:48:30.770Z] Connection closed for tenant tenant-1, scheduling automatic reconnect attempt 2/5 in 6000ms...
+[2026-08-10T09:48:30.770Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T09:48:30.770Z] Connection closed for tenant-1. Error: [object Object], statusCode: 500
+[2026-08-10T09:48:30.770Z] Connection closed for tenant tenant-1, scheduling automatic reconnect attempt 3/5 in 12000ms...
+[2026-08-10T09:48:30.770Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T09:48:30.770Z] Connection closed for tenant-1. Error: [object Object], statusCode: 500
+[2026-08-10T09:48:30.770Z] Connection closed for tenant tenant-1, scheduling automatic reconnect attempt 4/5 in 24000ms...
+[2026-08-10T09:48:30.770Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T09:48:30.770Z] Connection closed for tenant-1. Error: [object Object], statusCode: 500
+[2026-08-10T09:48:30.770Z] Connection closed for tenant tenant-1, scheduling automatic reconnect attempt 5/5 in 48000ms...
+[2026-08-10T09:48:30.770Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T09:48:30.770Z] Connection closed for tenant-1. Error: [object Object], statusCode: 500
+[2026-08-10T09:48:30.770Z] Max reconnect attempts (5) reached for tenant tenant-1. Marking status as disconnected.
+[2026-08-10T09:49:07.606Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T09:49:07.614Z] Connection closed for tenant-1. Error: [object Object], statusCode: 401
+[2026-08-10T09:49:07.621Z] Logged out by WhatsApp for tenant tenant-1. Cleaning up session.
+[2026-08-10T09:49:07.639Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T09:49:07.639Z] Connection closed for tenant-1. Error: [object Object], statusCode: 503
+[2026-08-10T09:49:07.639Z] Connection closed for tenant tenant-1, scheduling automatic reconnect attempt 1/5 in 3000ms...
+[2026-08-10T09:49:07.670Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T09:49:07.670Z] Connection closed for tenant-1. Error: [object Object], statusCode: 500
+[2026-08-10T09:49:07.670Z] Connection closed for tenant tenant-1, scheduling automatic reconnect attempt 1/5 in 3000ms...
+[2026-08-10T09:49:07.670Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T09:49:07.670Z] Connection closed for tenant-1. Error: [object Object], statusCode: 500
+[2026-08-10T09:49:07.670Z] Connection closed for tenant tenant-1, scheduling automatic reconnect attempt 2/5 in 6000ms...
+[2026-08-10T09:49:07.670Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T09:49:07.670Z] Connection closed for tenant-1. Error: [object Object], statusCode: 500
+[2026-08-10T09:49:07.670Z] Connection closed for tenant tenant-1, scheduling automatic reconnect attempt 3/5 in 12000ms...
+[2026-08-10T09:49:07.670Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T09:49:07.670Z] Connection closed for tenant-1. Error: [object Object], statusCode: 500
+[2026-08-10T09:49:07.670Z] Connection closed for tenant tenant-1, scheduling automatic reconnect attempt 4/5 in 24000ms...
+[2026-08-10T09:49:07.670Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T09:49:07.670Z] Connection closed for tenant-1. Error: [object Object], statusCode: 500
+[2026-08-10T09:49:07.670Z] Connection closed for tenant tenant-1, scheduling automatic reconnect attempt 5/5 in 48000ms...
+[2026-08-10T09:49:07.670Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T09:49:07.670Z] Connection closed for tenant-1. Error: [object Object], statusCode: 500
+[2026-08-10T09:49:07.670Z] Max reconnect attempts (5) reached for tenant tenant-1. Marking status as disconnected.
+[2026-08-10T09:49:39.619Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T09:49:39.625Z] Connection closed for tenant-1. Error: [object Object], statusCode: 401
+[2026-08-10T09:49:39.631Z] Logged out by WhatsApp for tenant tenant-1. Cleaning up session.
+[2026-08-10T09:49:39.649Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T09:49:39.649Z] Connection closed for tenant-1. Error: [object Object], statusCode: 503
+[2026-08-10T09:49:39.649Z] Connection closed for tenant tenant-1, scheduling automatic reconnect attempt 1/5 in 3000ms...
+[2026-08-10T09:49:39.681Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T09:49:39.681Z] Connection closed for tenant-1. Error: [object Object], statusCode: 500
+[2026-08-10T09:49:39.681Z] Connection closed for tenant tenant-1, scheduling automatic reconnect attempt 1/5 in 3000ms...
+[2026-08-10T09:49:39.681Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T09:49:39.681Z] Connection closed for tenant-1. Error: [object Object], statusCode: 500
+[2026-08-10T09:49:39.681Z] Connection closed for tenant tenant-1, scheduling automatic reconnect attempt 2/5 in 6000ms...
+[2026-08-10T09:49:39.681Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T09:49:39.681Z] Connection closed for tenant-1. Error: [object Object], statusCode: 500
+[2026-08-10T09:49:39.681Z] Connection closed for tenant tenant-1, scheduling automatic reconnect attempt 3/5 in 12000ms...
+[2026-08-10T09:49:39.681Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T09:49:39.681Z] Connection closed for tenant-1. Error: [object Object], statusCode: 500
+[2026-08-10T09:49:39.681Z] Connection closed for tenant tenant-1, scheduling automatic reconnect attempt 4/5 in 24000ms...
+[2026-08-10T09:49:39.681Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T09:49:39.681Z] Connection closed for tenant-1. Error: [object Object], statusCode: 500
+[2026-08-10T09:49:39.681Z] Connection closed for tenant tenant-1, scheduling automatic reconnect attempt 5/5 in 48000ms...
+[2026-08-10T09:49:39.681Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T09:49:39.681Z] Connection closed for tenant-1. Error: [object Object], statusCode: 500
+[2026-08-10T09:49:39.681Z] Max reconnect attempts (5) reached for tenant tenant-1. Marking status as disconnected.
+[2026-08-10T09:50:12.471Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T09:50:12.476Z] Connection closed for tenant-1. Error: [object Object], statusCode: 401
+[2026-08-10T09:50:12.482Z] Logged out by WhatsApp for tenant tenant-1. Cleaning up session.
+[2026-08-10T09:50:12.495Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T09:50:12.495Z] Connection closed for tenant-1. Error: [object Object], statusCode: 503
+[2026-08-10T09:50:12.495Z] Connection closed for tenant tenant-1, scheduling automatic reconnect attempt 1/5 in 3000ms...
+[2026-08-10T09:50:12.535Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T09:50:12.535Z] Connection closed for tenant-1. Error: [object Object], statusCode: 500
+[2026-08-10T09:50:12.535Z] Connection closed for tenant tenant-1, scheduling automatic reconnect attempt 1/5 in 3000ms...
+[2026-08-10T09:50:12.535Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T09:50:12.535Z] Connection closed for tenant-1. Error: [object Object], statusCode: 500
+[2026-08-10T09:50:12.535Z] Connection closed for tenant tenant-1, scheduling automatic reconnect attempt 2/5 in 6000ms...
+[2026-08-10T09:50:12.535Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T09:50:12.535Z] Connection closed for tenant-1. Error: [object Object], statusCode: 500
+[2026-08-10T09:50:12.535Z] Connection closed for tenant tenant-1, scheduling automatic reconnect attempt 3/5 in 12000ms...
+[2026-08-10T09:50:12.535Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T09:50:12.535Z] Connection closed for tenant-1. Error: [object Object], statusCode: 500
+[2026-08-10T09:50:12.535Z] Connection closed for tenant tenant-1, scheduling automatic reconnect attempt 4/5 in 24000ms...
+[2026-08-10T09:50:12.535Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T09:50:12.535Z] Connection closed for tenant-1. Error: [object Object], statusCode: 500
+[2026-08-10T09:50:12.535Z] Connection closed for tenant tenant-1, scheduling automatic reconnect attempt 5/5 in 48000ms...
+[2026-08-10T09:50:12.535Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T09:50:12.535Z] Connection closed for tenant-1. Error: [object Object], statusCode: 500
+[2026-08-10T09:50:12.535Z] Max reconnect attempts (5) reached for tenant tenant-1. Marking status as disconnected.
+[2026-08-10T09:50:40.649Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T09:50:40.654Z] Connection closed for tenant-1. Error: [object Object], statusCode: 401
+[2026-08-10T09:50:40.659Z] Logged out by WhatsApp for tenant tenant-1. Cleaning up session.
+[2026-08-10T09:50:40.671Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T09:50:40.671Z] Connection closed for tenant-1. Error: [object Object], statusCode: 503
+[2026-08-10T09:50:40.671Z] Connection closed for tenant tenant-1, scheduling automatic reconnect attempt 1/5 in 3000ms...
+[2026-08-10T09:50:40.717Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T09:50:40.717Z] Connection closed for tenant-1. Error: [object Object], statusCode: 500
+[2026-08-10T09:50:40.717Z] Connection closed for tenant tenant-1, scheduling automatic reconnect attempt 1/5 in 3000ms...
+[2026-08-10T09:50:40.717Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T09:50:40.717Z] Connection closed for tenant-1. Error: [object Object], statusCode: 500
+[2026-08-10T09:50:40.717Z] Connection closed for tenant tenant-1, scheduling automatic reconnect attempt 2/5 in 6000ms...
+[2026-08-10T09:50:40.717Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T09:50:40.717Z] Connection closed for tenant-1. Error: [object Object], statusCode: 500
+[2026-08-10T09:50:40.717Z] Connection closed for tenant tenant-1, scheduling automatic reconnect attempt 3/5 in 12000ms...
+[2026-08-10T09:50:40.717Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T09:50:40.717Z] Connection closed for tenant-1. Error: [object Object], statusCode: 500
+[2026-08-10T09:50:40.717Z] Connection closed for tenant tenant-1, scheduling automatic reconnect attempt 4/5 in 24000ms...
+[2026-08-10T09:50:40.717Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T09:50:40.717Z] Connection closed for tenant-1. Error: [object Object], statusCode: 500
+[2026-08-10T09:50:40.717Z] Connection closed for tenant tenant-1, scheduling automatic reconnect attempt 5/5 in 48000ms...
+[2026-08-10T09:50:40.717Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T09:50:40.717Z] Connection closed for tenant-1. Error: [object Object], statusCode: 500
+[2026-08-10T09:50:40.717Z] Max reconnect attempts (5) reached for tenant tenant-1. Marking status as disconnected.
+[2026-08-10T10:01:48.560Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T10:01:48.565Z] Connection closed for tenant-1. Error: [object Object], statusCode: 401
+[2026-08-10T10:01:48.571Z] Logged out by WhatsApp for tenant tenant-1. Cleaning up session.
+[2026-08-10T10:01:48.602Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T10:01:48.602Z] Connection closed for tenant-1. Error: [object Object], statusCode: 503
+[2026-08-10T10:01:48.602Z] Connection closed for tenant tenant-1, scheduling automatic reconnect attempt 1/5 in 3000ms...
+[2026-08-10T10:01:48.628Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T10:01:48.628Z] Connection closed for tenant-1. Error: [object Object], statusCode: 500
+[2026-08-10T10:01:48.628Z] Connection closed for tenant tenant-1, scheduling automatic reconnect attempt 1/5 in 3000ms...
+[2026-08-10T10:01:48.628Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T10:01:48.628Z] Connection closed for tenant-1. Error: [object Object], statusCode: 500
+[2026-08-10T10:01:48.628Z] Connection closed for tenant tenant-1, scheduling automatic reconnect attempt 2/5 in 6000ms...
+[2026-08-10T10:01:48.628Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T10:01:48.628Z] Connection closed for tenant-1. Error: [object Object], statusCode: 500
+[2026-08-10T10:01:48.628Z] Connection closed for tenant tenant-1, scheduling automatic reconnect attempt 3/5 in 12000ms...
+[2026-08-10T10:01:48.628Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T10:01:48.628Z] Connection closed for tenant-1. Error: [object Object], statusCode: 500
+[2026-08-10T10:01:48.628Z] Connection closed for tenant tenant-1, scheduling automatic reconnect attempt 4/5 in 24000ms...
+[2026-08-10T10:01:48.628Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T10:01:48.628Z] Connection closed for tenant-1. Error: [object Object], statusCode: 500
+[2026-08-10T10:01:48.628Z] Connection closed for tenant tenant-1, scheduling automatic reconnect attempt 5/5 in 48000ms...
+[2026-08-10T10:01:48.628Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T10:01:48.628Z] Connection closed for tenant-1. Error: [object Object], statusCode: 500
+[2026-08-10T10:01:48.628Z] Max reconnect attempts (5) reached for tenant tenant-1. Marking status as disconnected.
+[2026-08-10T10:05:30.009Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T10:05:30.014Z] Connection closed for tenant-1. Error: [object Object], statusCode: 401
+[2026-08-10T10:05:30.019Z] Logged out by WhatsApp for tenant tenant-1. Cleaning up session.
+[2026-08-10T10:05:30.029Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T10:05:30.029Z] Connection closed for tenant-1. Error: [object Object], statusCode: 503
+[2026-08-10T10:05:30.029Z] Connection closed for tenant tenant-1, scheduling automatic reconnect attempt 1/5 in 3000ms...
+[2026-08-10T10:05:30.075Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T10:05:30.075Z] Connection closed for tenant-1. Error: [object Object], statusCode: 500
+[2026-08-10T10:05:30.075Z] Connection closed for tenant tenant-1, scheduling automatic reconnect attempt 1/5 in 3000ms...
+[2026-08-10T10:05:30.075Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T10:05:30.075Z] Connection closed for tenant-1. Error: [object Object], statusCode: 500
+[2026-08-10T10:05:30.075Z] Connection closed for tenant tenant-1, scheduling automatic reconnect attempt 2/5 in 6000ms...
+[2026-08-10T10:05:30.075Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T10:05:30.075Z] Connection closed for tenant-1. Error: [object Object], statusCode: 500
+[2026-08-10T10:05:30.075Z] Connection closed for tenant tenant-1, scheduling automatic reconnect attempt 3/5 in 12000ms...
+[2026-08-10T10:05:30.075Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T10:05:30.075Z] Connection closed for tenant-1. Error: [object Object], statusCode: 500
+[2026-08-10T10:05:30.075Z] Connection closed for tenant tenant-1, scheduling automatic reconnect attempt 4/5 in 24000ms...
+[2026-08-10T10:05:30.075Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T10:05:30.075Z] Connection closed for tenant-1. Error: [object Object], statusCode: 500
+[2026-08-10T10:05:30.075Z] Connection closed for tenant tenant-1, scheduling automatic reconnect attempt 5/5 in 48000ms...
+[2026-08-10T10:05:30.075Z] Connection update for tenant-1: close [object Object]
+[2026-08-10T10:05:30.075Z] Connection closed for tenant-1. Error: [object Object], statusCode: 500
+[2026-08-10T10:05:30.075Z] Max reconnect attempts (5) reached for tenant tenant-1. Marking status as disconnected.

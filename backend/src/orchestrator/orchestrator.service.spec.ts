@@ -93,6 +93,13 @@ describe('OrchestratorService', () => {
         intent: 'general',
         supportSignal: false
       })),
+      generateCompletionDetailed: jest.fn().mockImplementation(async (prompt: string) => {
+        const result = await aiService.generateCompletion(prompt);
+        return {
+          text: typeof result === 'string' ? result : JSON.stringify(result),
+        };
+      }),
+      recordUsageLog: jest.fn().mockResolvedValue(true),
     };
 
     inboxService = {
@@ -113,6 +120,8 @@ describe('OrchestratorService', () => {
 
     quotaService = {
       checkFeature: jest.fn().mockResolvedValue(true),
+      isTenantSubscriptionActive: jest.fn().mockResolvedValue({ isActive: true }),
+      checkAiQuota: jest.fn().mockResolvedValue(undefined),
     };
 
     activityLogService = {
@@ -535,6 +544,63 @@ describe('OrchestratorService', () => {
           content: expect.stringContaining('Dhaka to Chittagong Port (10 Ton Covered Van)')
         }
       });
+    });
+  });
+
+  describe('Subscription & AI Quota Background Webhook Guards', () => {
+    it('Test 1 (Expired Subscription): should skip AI completion if tenant subscription is expired', async () => {
+      prismaService.message.findUnique.mockResolvedValue({
+        id: 'msg_sub_exp', direction: 'inbound', type: 'text', content: { text: 'hello' },
+        conversationId: 'c1',
+        conversation: { tenantId: 't_exp', id: 'c1' }
+      });
+
+      quotaService.isTenantSubscriptionActive.mockResolvedValue({
+        isActive: false,
+        reason: 'SUBSCRIPTION_EXPIRED'
+      });
+
+      const res = await service.processMessage('msg_sub_exp');
+
+      expect(res).toEqual({ skipped: true, reason: 'SUBSCRIPTION_EXPIRED' });
+      expect(aiService.generateCompletion).not.toHaveBeenCalled();
+    });
+
+    it('Test 2 (Exhausted AI Quota): should halt AI auto-reply execution safely when AI quota is exhausted', async () => {
+      prismaService.message.findUnique.mockResolvedValue({
+        id: 'msg_quota_exp', direction: 'inbound', type: 'text', content: { text: 'hello' },
+        conversationId: 'c1',
+        conversation: { tenantId: 't_quota', id: 'c1' }
+      });
+
+      quotaService.isTenantSubscriptionActive.mockResolvedValue({ isActive: true });
+      quotaService.checkAiQuota.mockRejectedValue(new Error('AI Quota Exhausted'));
+
+      const res = await service.processMessage('msg_quota_exp');
+
+      expect(res).toEqual({ skipped: true, reason: 'AI_QUOTA_EXHAUSTED' });
+      expect(aiService.generateCompletion).not.toHaveBeenCalled();
+    });
+
+    it('Test 3 (Active Subscription & Available Quota): should execute AI auto-reply normally', async () => {
+      prismaService.message.findUnique.mockResolvedValue({
+        id: 'msg_ok', direction: 'inbound', type: 'text', content: { text: 'hello' },
+        conversationId: 'c1',
+        conversation: { tenantId: 't_ok', id: 'c1' }
+      });
+      prismaService.aiAssistant.findFirst.mockResolvedValue({
+        id: 'ai1', tenantId: 't_ok', isActive: true, routingMode: 'ai_first', systemPrompt: 'Be helpful', tools: []
+      });
+
+      quotaService.isTenantSubscriptionActive.mockResolvedValue({ isActive: true });
+      quotaService.checkAiQuota.mockResolvedValue(undefined);
+      aiService.generateCompletion.mockResolvedValue('Normal AI response');
+
+      await service.processMessage('msg_ok');
+
+      expect(inboxService.saveOutboundMessage).toHaveBeenCalledWith(
+        't_ok', 'c1', 'Normal AI response', 'text', undefined, 'ai1'
+      );
     });
   });
 });

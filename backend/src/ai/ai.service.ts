@@ -579,9 +579,65 @@ export class AiService {
     return summary;
   }
 
+  /** The target vector dimension for pgvector storage — Gemini text-embedding-004 */
+  static readonly EMBEDDING_DIMENSION = 768;
+
+  /**
+   * Generate a 768-dim embedding vector using Gemini text-embedding-004.
+   * Throws a clear error if the API returns an unexpected dimension,
+   * preventing cryptic pgvector dimension mismatch errors downstream.
+   */
+  async generateEmbedding(text: string): Promise<number[]> {
+    const geminiApiKey = process.env.GEMINI_API_KEY;
+    if (!geminiApiKey) {
+      throw new Error('GEMINI_API_KEY is not configured for embedding generation.');
+    }
+
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${geminiApiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: 'models/text-embedding-004', content: { parts: [{ text }] } }),
+      }
+    );
+
+    if (!res.ok) {
+      const errBody = await res.text();
+      throw new Error(`Gemini Embedding API error (${res.status}): ${errBody}`);
+    }
+
+    const json = await res.json();
+    const vector: number[] = json?.embedding?.values;
+
+    if (!Array.isArray(vector)) {
+      throw new Error('Gemini embedding response did not contain a valid values array.');
+    }
+
+    // Runtime dimension guard — prevents silent data corruption in pgvector
+    if (vector.length !== AiService.EMBEDDING_DIMENSION) {
+      this.logger.error(
+        `Embedding dimension mismatch: expected ${AiService.EMBEDDING_DIMENSION}, got ${vector.length}`
+      );
+      throw new Error(
+        `Invalid embedding vector dimension: ${vector.length}. Expected ${AiService.EMBEDDING_DIMENSION}.`
+      );
+    }
+
+    return vector;
+  }
+
   async searchRelevantChunks(tenantId: string, queryVector: number[] | string, limit = 5) {
     if (!tenantId || tenantId.trim() === '') {
       throw new BadRequestException('tenantId is required for vector search');
+    }
+
+    // Validate query vector dimension before sending to PostgreSQL
+    if (Array.isArray(queryVector) && queryVector.length !== AiService.EMBEDDING_DIMENSION) {
+      throw new BadRequestException(
+        `Query vector dimension mismatch: expected ${AiService.EMBEDDING_DIMENSION}, got ${queryVector.length}. ` +
+        `Re-generate the query embedding using the correct model (Gemini text-embedding-004).`
+      );
     }
 
     const vectorStr = Array.isArray(queryVector) ? `[${queryVector.join(',')}]` : queryVector;

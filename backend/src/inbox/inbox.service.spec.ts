@@ -96,7 +96,7 @@ describe('InboxService', () => {
         { provide: AiService, useValue: { transcribeAudio: jest.fn(), extractTextFromPdf: jest.fn(), generateCompletion: jest.fn().mockResolvedValue('AI Summary') } },
         { provide: OrchestratorService, useValue: { processMessage: jest.fn().mockResolvedValue(true) } },
         { provide: NotificationsService, useValue: { createNotification: jest.fn().mockResolvedValue(true) } },
-        { provide: QuotaService, useValue: { checkFeature: jest.fn().mockResolvedValue(true), checkAiQuota: jest.fn().mockResolvedValue(undefined) } },
+        { provide: QuotaService, useValue: { checkFeature: jest.fn().mockResolvedValue(true), checkAiQuota: jest.fn().mockResolvedValue(undefined), isTenantSubscriptionActive: jest.fn().mockResolvedValue({ isActive: true }) } },
       ],
     }).compile();
 

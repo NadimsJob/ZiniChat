@@ -595,29 +595,58 @@ export class AiTrainingService {
         chunks.push(text.substring(i, i + chunkSize));
       }
 
-      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-      
+      const TARGET_DIMENSION = 768; // Gemini text-embedding-004 output dimension
+
       for (let i = 0; i < chunks.length; i++) {
         const chunk = chunks[i].trim();
         if (chunk.length < 10) continue;
 
         try {
-          const embeddingRes = await openai.embeddings.create({
-            model: 'text-embedding-3-small',
-            input: chunk
-          });
-          
-          const vector = embeddingRes.data[0].embedding;
-          
+          // Use Gemini text-embedding-004 (768-dim) — aligned with vector(768) schema
+          const geminiApiKey = process.env.GEMINI_API_KEY;
+          if (!geminiApiKey) {
+            throw new Error('GEMINI_API_KEY is not configured for embedding generation.');
+          }
+
+          const embRes = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${geminiApiKey}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ model: 'models/text-embedding-004', content: { parts: [{ text: chunk }] } }),
+            }
+          );
+
+          if (!embRes.ok) {
+            const errBody = await embRes.text();
+            throw new Error(`Gemini Embedding API error (${embRes.status}): ${errBody}`);
+          }
+
+          const embJson = await embRes.json();
+          const vector: number[] = embJson?.embedding?.values;
+
+          if (!Array.isArray(vector)) {
+            throw new Error('Gemini embedding response did not contain a valid values array.');
+          }
+
+          // Runtime dimension guard — prevents cryptic pgvector dimension mismatch errors
+          if (vector.length !== TARGET_DIMENSION) {
+            throw new Error(
+              `Embedding dimension mismatch: expected ${TARGET_DIMENSION}, got ${vector.length}. ` +
+              `Ensure the embedding model matches the database schema vector(${TARGET_DIMENSION}).`
+            );
+          }
+
           // pgvector raw query for insertion
           await this.prisma.$executeRaw`
             INSERT INTO knowledge_chunks (id, "documentId", content, embedding, "chunkIndex")
-            VALUES (gen_random_uuid(), ${docId}::uuid, ${chunk}, ${vector}::vector, ${i});
+            VALUES (gen_random_uuid(), ${docId}::uuid, ${chunk}, ${`[${vector.join(',')}]`}::vector, ${i});
           `;
         } catch (embErr) {
           console.error('Embedding error', embErr);
         }
       }
+
 
       await this.prisma.knowledgeDocument.update({
         where: { id: docId },
@@ -708,6 +737,16 @@ export class AiTrainingService {
   async searchRelevantChunks(tenantId: string, queryVector: number[] | string, limit = 5) {
     if (!tenantId || tenantId.trim() === '') {
       throw new BadRequestException('tenantId is required for vector search');
+    }
+
+    const TARGET_DIMENSION = 768; // Gemini text-embedding-004
+
+    // Validate query vector dimension before sending to PostgreSQL
+    if (Array.isArray(queryVector) && queryVector.length !== TARGET_DIMENSION) {
+      throw new BadRequestException(
+        `Query vector dimension mismatch: expected ${TARGET_DIMENSION}, got ${queryVector.length}. ` +
+        `Re-generate the query embedding using the correct model (Gemini text-embedding-004).`
+      );
     }
 
     const vectorStr = Array.isArray(queryVector) ? `[${queryVector.join(',')}]` : queryVector;

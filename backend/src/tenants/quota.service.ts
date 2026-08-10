@@ -79,6 +79,44 @@ export class QuotaService {
   }
 
   /**
+   * Checks if tenant subscription or trial is active.
+   * Returns { isActive: true } if within trialEndsAt or has active/trialing subscription with periodEnd > NOW().
+   * Returns { isActive: false, reason: 'SUBSCRIPTION_EXPIRED' | 'TENANT_SUSPENDED' | 'TENANT_NOT_FOUND' } otherwise.
+   */
+  async isTenantSubscriptionActive(tenantId: string): Promise<{ isActive: boolean; reason?: string }> {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      include: {
+        subscriptions: {
+          where: {
+            status: { in: ['active', 'trialing'] },
+            currentPeriodEnd: { gt: new Date() }
+          },
+          take: 1
+        }
+      }
+    });
+
+    if (!tenant) {
+      return { isActive: false, reason: 'TENANT_NOT_FOUND' };
+    }
+
+    if (tenant.status === 'suspended') {
+      return { isActive: false, reason: 'TENANT_SUSPENDED' };
+    }
+
+    const now = new Date();
+    const isWithinTrial = tenant.trialEndsAt ? new Date(tenant.trialEndsAt) > now : false;
+    const hasActiveSubscription = Array.isArray(tenant.subscriptions) && tenant.subscriptions.length > 0;
+
+    if (isWithinTrial || hasActiveSubscription) {
+      return { isActive: true };
+    }
+
+    return { isActive: false, reason: 'SUBSCRIPTION_EXPIRED' };
+  }
+
+  /**
    * AI Quota = number of AI auto-replies logged in the billing period.
    */
   async checkAiQuota(tenantId: string): Promise<void> {

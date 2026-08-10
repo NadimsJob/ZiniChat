@@ -254,9 +254,14 @@ export class MfsPaymentsService {
       let smsTx: any = null;
 
       if (cleanTrxId) {
-        // Find by TrxID exact match first
-        smsTx = await tx.mfsTransaction.findUnique({
-          where: { trxId: cleanTrxId },
+        // Find by TrxID using case-insensitive match (normalized to uppercase at ingestion, but insensitive for safety)
+        smsTx = await tx.mfsTransaction.findFirst({
+          where: {
+            trxId: {
+              equals: cleanTrxId,
+              mode: 'insensitive',
+            },
+          },
         });
 
         // If not found by exact match, search by last 4 (or N) digits of TrxID
@@ -472,9 +477,14 @@ export class MfsPaymentsService {
     });
     if (!payment) throw new NotFoundException('Payment not found');
 
-    // Look up transaction
-    const smsTx = await this.prisma.mfsTransaction.findUnique({
-      where: { trxId: cleanTrxId },
+    // Look up transaction (case-insensitive to handle DB inconsistencies)
+    const smsTx = await this.prisma.mfsTransaction.findFirst({
+      where: {
+        trxId: {
+          equals: cleanTrxId,
+          mode: 'insensitive',
+        },
+      },
     });
 
     if (smsTx) {

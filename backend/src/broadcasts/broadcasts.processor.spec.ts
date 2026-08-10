@@ -111,6 +111,8 @@ describe('BroadcastsProcessor', () => {
       const mockJob = {
         name: 'send-message',
         data: {
+          broadcastId: 'bc-1',
+          tenantId: 'tenant-1',
           targetPhone: '1234567890',
           templateName: 'promo_template',
           language: 'en_US',
@@ -125,6 +127,84 @@ describe('BroadcastsProcessor', () => {
       mockWhatsappQueue.add.mockRejectedValue(new Error('Queue Error'));
 
       await expect(processor.process(mockJob)).rejects.toThrow('Queue Error');
+    });
+
+    it('Test 1: should filter contacts by tags when segmentFilter contains tags', async () => {
+      mockPrismaService.broadcast.findUnique.mockResolvedValue({
+        id: 'bc-tags',
+        segmentFilter: { tags: ['VIP Customer'] },
+        template: { name: 'vip_offer', language: 'bn', bodyText: 'VIP offer' }
+      });
+      mockPrismaService.contact.findMany.mockResolvedValue([
+        { id: 'c-vip', phone: '12345' }
+      ]);
+
+      const mockJob = {
+        data: { broadcastId: 'bc-tags', tenantId: 'tenant-1' }
+      } as Job;
+
+      await processor.process(mockJob);
+
+      expect(mockPrismaService.contact.findMany).toHaveBeenCalledWith({
+        where: {
+          tenantId: 'tenant-1',
+          isBlocked: false,
+          phone: { not: null },
+          tags: { hasSome: ['VIP Customer'] }
+        }
+      });
+    });
+
+    it('Test 2: should filter contacts by stageId when segmentFilter contains stageId', async () => {
+      mockPrismaService.broadcast.findUnique.mockResolvedValue({
+        id: 'bc-stage',
+        segmentFilter: { stageId: 'stage_lead_123' },
+        template: { name: 'lead_followup', language: 'bn', bodyText: 'Lead message' }
+      });
+      mockPrismaService.contact.findMany.mockResolvedValue([
+        { id: 'c-lead', phone: '67890' }
+      ]);
+
+      const mockJob = {
+        data: { broadcastId: 'bc-stage', tenantId: 'tenant-1' }
+      } as Job;
+
+      await processor.process(mockJob);
+
+      expect(mockPrismaService.contact.findMany).toHaveBeenCalledWith({
+        where: {
+          tenantId: 'tenant-1',
+          isBlocked: false,
+          phone: { not: null },
+          stageId: 'stage_lead_123'
+        }
+      });
+    });
+
+    it('Test 3: should fall back to fetching all non-blocked contacts with valid phone when segmentFilter is empty', async () => {
+      mockPrismaService.broadcast.findUnique.mockResolvedValue({
+        id: 'bc-empty',
+        segmentFilter: {},
+        template: { name: 'all_contacts', language: 'bn', bodyText: 'General message' }
+      });
+      mockPrismaService.contact.findMany.mockResolvedValue([
+        { id: 'c-1', phone: '11111' },
+        { id: 'c-2', phone: '22222' }
+      ]);
+
+      const mockJob = {
+        data: { broadcastId: 'bc-empty', tenantId: 'tenant-1' }
+      } as Job;
+
+      await processor.process(mockJob);
+
+      expect(mockPrismaService.contact.findMany).toHaveBeenCalledWith({
+        where: {
+          tenantId: 'tenant-1',
+          isBlocked: false,
+          phone: { not: null }
+        }
+      });
     });
   });
 });

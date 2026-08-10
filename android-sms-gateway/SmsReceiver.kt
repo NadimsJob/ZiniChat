@@ -101,7 +101,8 @@ class SmsReceiver : BroadcastReceiver() {
         }
 
         if (trxId != null && amount != null) {
-            val finalTrxId = trxId!!
+            val finalTrxId = trxId!!.trim().uppercase()  // Normalize TrxID: trim whitespace & uppercase before sending
+
             val finalAmount = amount!!
             val sharedPref = context.getSharedPreferences("SmsGatewaySettings", Context.MODE_PRIVATE)
             val webhookUrl = sharedPref.getString("webhook_url", "https://api.zinichat.com/mfs-payments/sms-webhook") ?: return

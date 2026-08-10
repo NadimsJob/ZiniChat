@@ -101,6 +101,21 @@ export class OrchestratorService {
         return;
       }
 
+      // Check Tenant Subscription/Trial Status
+      const subStatus = await this.quotaService.isTenantSubscriptionActive(tenantId);
+      if (!subStatus.isActive) {
+        this.logger.warn(`[AI Gated] Skipped AI completion for Tenant ${tenantId}: ${subStatus.reason}`);
+        return { skipped: true, reason: subStatus.reason };
+      }
+
+      // Check AI Quota
+      try {
+        await this.quotaService.checkAiQuota(tenantId);
+      } catch (error: any) {
+        this.logger.warn(`[AI Gated] Skipped AI completion for Tenant ${tenantId}: AI Quota Exhausted.`);
+        return { skipped: true, reason: 'AI_QUOTA_EXHAUSTED' };
+      }
+
       // 2. Fetch AI Assistant & Assistant Tools
       const assistant = await this.prisma.aiAssistant.findFirst({
         where: { tenantId },

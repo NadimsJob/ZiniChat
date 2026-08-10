@@ -177,7 +177,8 @@ describe('MfsPaymentsService', () => {
 
     it('should throw BadRequestException if transaction ID is already claimed/used', async () => {
       mockPrismaService.payment.findFirst.mockResolvedValue(paymentStub);
-      mockPrismaService.mfsTransaction.findUnique.mockResolvedValue({ ...smsTxStub, isUsed: true });
+      // findFirst returns the record (with isUsed:true); the service then checks smsTx.isUsed explicitly
+      mockPrismaService.mfsTransaction.findFirst.mockResolvedValue({ ...smsTxStub, isUsed: true });
 
       await expect(
         service.verifyPayment('user-1', 'tenant-1', 'pay-1', 'TRX123'),
@@ -186,7 +187,7 @@ describe('MfsPaymentsService', () => {
 
     it('should throw BadRequestException if amount mismatches', async () => {
       mockPrismaService.payment.findFirst.mockResolvedValue(paymentStub);
-      mockPrismaService.mfsTransaction.findUnique.mockResolvedValue({ ...smsTxStub, amount: 490.0 });
+      mockPrismaService.mfsTransaction.findFirst.mockResolvedValue({ ...smsTxStub, amount: 490.0 });
 
       await expect(
         service.verifyPayment('user-1', 'tenant-1', 'pay-1', 'TRX123'),
@@ -195,7 +196,7 @@ describe('MfsPaymentsService', () => {
 
     it('should successfully verify, lock transaction, activate subscription and send notifications', async () => {
       mockPrismaService.payment.findFirst.mockResolvedValue(paymentStub);
-      mockPrismaService.mfsTransaction.findUnique.mockResolvedValue(smsTxStub);
+      mockPrismaService.mfsTransaction.findFirst.mockResolvedValue(smsTxStub);
       mockPrismaService.user.findFirst.mockResolvedValue({ id: 'user-1', email: 'owner@test.com' });
       mockPrismaService.tenant.findUnique.mockResolvedValue({ id: 'tenant-1', businessName: 'Tech Hub' });
 
@@ -233,6 +234,63 @@ describe('MfsPaymentsService', () => {
           isUsed: false
         })
       }));
+    });
+
+    it('(TrxID Case Sensitivity) should match lowercase user input against uppercase stored TrxID', async () => {
+      // DB stores uppercase '9J382A1K', user submits lowercase '9j382a1k'
+      const upperCaseTx = { ...smsTxStub, trxId: '9J382A1K' };
+
+      mockPrismaService.payment.findFirst.mockResolvedValue(paymentStub);
+      // findFirst is called with mode: 'insensitive' — mock returns the record (simulating DB match)
+      mockPrismaService.mfsTransaction.findFirst.mockResolvedValue(upperCaseTx);
+      mockPrismaService.user.findFirst.mockResolvedValue({ id: 'user-1', email: 'owner@test.com' });
+      mockPrismaService.tenant.findUnique.mockResolvedValue({ id: 'tenant-1', businessName: 'Tech Hub' });
+
+      const result = await service.verifyPayment('user-1', 'tenant-1', 'pay-1', '9j382a1k');
+
+      expect(result.success).toBe(true);
+      // Verify the lookup used mode: 'insensitive' with the UPPERCASED clean version
+      expect(mockPrismaService.mfsTransaction.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            trxId: {
+              equals: '9J382A1K',      // input is uppercased before query
+              mode: 'insensitive',
+            },
+          }),
+        }),
+      );
+      expect(mockPrismaService.mfsTransaction.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'tx-1' },
+          data: expect.objectContaining({ isUsed: true }),
+        }),
+      );
+    });
+
+    it('(TrxID Whitespace Trimming) should match padded user input after trimming', async () => {
+      const upperCaseTx = { ...smsTxStub, trxId: '9J382A1K' };
+
+      mockPrismaService.payment.findFirst.mockResolvedValue(paymentStub);
+      mockPrismaService.mfsTransaction.findFirst.mockResolvedValue(upperCaseTx);
+      mockPrismaService.user.findFirst.mockResolvedValue({ id: 'user-1', email: 'owner@test.com' });
+      mockPrismaService.tenant.findUnique.mockResolvedValue({ id: 'tenant-1', businessName: 'Tech Hub' });
+
+      // Input with leading/trailing whitespace
+      const result = await service.verifyPayment('user-1', 'tenant-1', 'pay-1', '  9j382a1k  ');
+
+      expect(result.success).toBe(true);
+      // After trim().toUpperCase() the value passed to Prisma should be clean
+      expect(mockPrismaService.mfsTransaction.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            trxId: {
+              equals: '9J382A1K',      // trimmed and uppercased
+              mode: 'insensitive',
+            },
+          }),
+        }),
+      );
     });
   });
 

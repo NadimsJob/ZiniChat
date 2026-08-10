@@ -355,9 +355,33 @@ export class BroadcastsService {
       throw new BadRequestException('Only Meta-APPROVED templates can be used for Broadcast Campaigns.');
     }
 
-    // Pre-check: Count how many contacts will receive this broadcast
+    // Pre-check: Count how many contacts will receive this broadcast matching segmentFilter
+    let filter = data.segmentFilter || {};
+    if (typeof filter === 'string') {
+      try { filter = JSON.parse(filter); } catch (e) { filter = {}; }
+    }
+
+    const whereClause: any = {
+      tenantId,
+      isBlocked: false,
+      phone: { not: null },
+    };
+
+    if (Array.isArray((filter as any).tags) && (filter as any).tags.length > 0) {
+      whereClause.tags = { hasSome: (filter as any).tags };
+    }
+    if ((filter as any).stageId) {
+      whereClause.stageId = (filter as any).stageId;
+    }
+    if ((filter as any).channel) {
+      whereClause.channel = (filter as any).channel;
+    }
+    if ((filter as any).assignedUserId) {
+      whereClause.assignedUserId = (filter as any).assignedUserId;
+    }
+
     const recipientCount = await this.prisma.contact.count({
-      where: { tenantId, phone: { not: null } }
+      where: whereClause
     });
 
     // Check if this broadcast would exceed the message quota

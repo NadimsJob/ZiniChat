@@ -51,8 +51,32 @@ export class BroadcastsProcessor extends WorkerHost {
       });
 
       // 2. Fetch contacts matching segmentFilter
+      let filter = broadcast.segmentFilter || {};
+      if (typeof filter === 'string') {
+        try { filter = JSON.parse(filter); } catch (e) { filter = {}; }
+      }
+
+      const whereClause: any = {
+        tenantId,
+        isBlocked: false,
+        phone: { not: null },
+      };
+
+      if (Array.isArray((filter as any).tags) && (filter as any).tags.length > 0) {
+        whereClause.tags = { hasSome: (filter as any).tags };
+      }
+      if ((filter as any).stageId) {
+        whereClause.stageId = (filter as any).stageId;
+      }
+      if ((filter as any).channel) {
+        whereClause.channel = (filter as any).channel;
+      }
+      if ((filter as any).assignedUserId) {
+        whereClause.assignedUserId = (filter as any).assignedUserId;
+      }
+
       const contacts = await this.prisma.contact.findMany({
-        where: { tenantId }
+        where: whereClause
       });
 
       this.logger.log(`Found ${contacts.length} recipients for broadcast ${broadcastId}`);
