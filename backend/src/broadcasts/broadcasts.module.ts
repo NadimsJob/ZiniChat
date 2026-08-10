@@ -14,8 +14,34 @@ import { TenantsModule } from '../tenants/tenants.module';
     PrismaModule, 
     BillingModule,
     TenantsModule,
-    BullModule.registerQueue({ name: 'broadcasts' }),
-    BullModule.registerQueue({ name: 'whatsapp-outbound' }),
+    BullModule.registerQueue({
+      name: 'broadcasts',
+      limiter: {
+        max: 20,
+        duration: 1000,
+      },
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 2000,
+        },
+      },
+    }),
+    BullModule.registerQueue({
+      name: 'whatsapp-outbound',
+      limiter: {
+        max: 20,
+        duration: 1000,
+      },
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 2000,
+        },
+      },
+    }),
     SmtpModule,
     NotificationsModule
   ],

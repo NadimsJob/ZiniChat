@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { InboxGateway } from '../../inbox/inbox.gateway';
 import { InboxService } from '../../inbox/inbox.service';
 import { BillingService } from '../../billing/billing.service';
+import { NotificationsService } from '../../notifications/notifications.service';
 import makeWASocket, { useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, downloadMediaMessage } from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
 
@@ -16,6 +17,7 @@ export class WhatsappWebService implements OnModuleInit {
   private sockets: Map<string, any> = new Map();
   // Cache connectionId per tenant to avoid race condition on first message
   private connectionIds: Map<string, string> = new Map();
+  private reconnectAttempts: Map<string, number> = new Map();
 
   private debugLog(msg: string) {
     fs.appendFileSync('wa-debug.log', `[${new Date().toISOString()}] ${msg}\n`);
@@ -27,7 +29,23 @@ export class WhatsappWebService implements OnModuleInit {
     private readonly inboxGateway: InboxGateway,
     private readonly inboxService: InboxService,
     private readonly billingService: BillingService,
+    private readonly notificationsService: NotificationsService,
   ) {}
+
+  async handleDisconnectionAlert(tenantId: string) {
+    this.inboxGateway.broadcastToTenant(tenantId, 'whatsapp:disconnected', {
+      tenantId,
+      status: 'disconnected',
+      message: 'Your WhatsApp Web session has disconnected. Please rescan the QR code to resume auto-replies.'
+    });
+
+    await this.notificationsService.createNotificationForTenantAdmins(
+      tenantId,
+      '🚨 WhatsApp Web Disconnected',
+      'Your WhatsApp Web session has disconnected. Please rescan the QR code to resume auto-replies.',
+      'info'
+    ).catch(err => this.logger.error(`Failed to create disconnect notification for ${tenantId}: ${err.message}`));
+  }
 
   isSocketConnected(tenantId: string): boolean {
     const sock = this.sockets.get(tenantId);
@@ -155,22 +173,38 @@ export class WhatsappWebService implements OnModuleInit {
             where: { tenantId, provider: 'WEB_QR' },
             data: { status: 'disconnected', qrStatus: 'DISCONNECTED' }
           }).catch(() => {});
+
+          this.handleDisconnectionAlert(tenantId);
         } else if (isReplaced) {
           this.debugLog(`Connection replaced/conflict (${statusCode}) for tenant ${tenantId}. Halting automatic reconnect loop.`);
-          // Do NOT schedule reconnect on replaced/conflict sockets to prevent endless ping-pong duplicate connection loop
+          this.handleDisconnectionAlert(tenantId);
         } else {
-          if (this.sockets.get(tenantId) === sock) {
-            this.debugLog(`Connection closed for tenant ${tenantId}, scheduling automatic reconnect...`);
+          const currentAttempts = (this.reconnectAttempts.get(tenantId) || 0) + 1;
+          this.reconnectAttempts.set(tenantId, currentAttempts);
+
+          if (currentAttempts <= 5) {
+            const delayMs = 3000 * Math.pow(2, currentAttempts - 1);
+            this.debugLog(`Connection closed for tenant ${tenantId}, scheduling automatic reconnect attempt ${currentAttempts}/5 in ${delayMs}ms...`);
+            
             setTimeout(() => {
               if (this.sockets.get(tenantId) === sock && !this.isSocketConnected(tenantId)) {
                 this.initSocket(tenantId).catch(err => {
-                  this.debugLog(`Reconnect attempt failed for ${tenantId}: ${err.message}`);
+                  this.debugLog(`Reconnect attempt ${currentAttempts} failed for ${tenantId}: ${err.message}`);
                 });
               }
-            }, 3000);
+            }, delayMs);
+          } else {
+            this.debugLog(`Max reconnect attempts (5) reached for tenant ${tenantId}. Marking status as disconnected.`);
+            this.prisma.channelConnection.updateMany({
+              where: { tenantId, provider: 'WEB_QR' },
+              data: { status: 'disconnected', qrStatus: 'DISCONNECTED' }
+            }).catch(() => {});
+            this.handleDisconnectionAlert(tenantId);
+            this.reconnectAttempts.delete(tenantId);
           }
         }
       } else if (connection === 'open') {
+        this.reconnectAttempts.delete(tenantId);
         this.debugLog(`Opened connection for tenant ${tenantId}`);
         this.sockets.set(tenantId, sock);
         

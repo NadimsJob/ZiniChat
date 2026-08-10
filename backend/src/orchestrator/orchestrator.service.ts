@@ -301,7 +301,8 @@ export class OrchestratorService {
       }
 
       // Call LLM
-      const rawLlmOutput = await this.aiService.generateCompletion(fullPrompt, customAiConfigId, actualImagePaths, activeCacheKey);
+      const llmResult = await this.aiService.generateCompletionDetailed(fullPrompt, customAiConfigId, actualImagePaths, activeCacheKey);
+      const rawLlmOutput = llmResult.text;
 
       if (!rawLlmOutput || rawLlmOutput.trim() === '') {
         return;
@@ -412,16 +413,21 @@ export class OrchestratorService {
       }
 
       // 7. Log AI Usage Credits
-      const logsToCreate = Array.from({ length: creditsNeeded }).map(() => ({
-        tenantId,
-        assistantId: assistant.id,
-        tokensUsed: 0,
-        costUsd: 0,
-      }));
+      if (llmResult?.usage) {
+        await this.aiService.recordUsageLog(tenantId, assistant.id, llmResult.usage);
+      } else {
+        const logsToCreate = Array.from({ length: creditsNeeded }).map(() => ({
+          tenantId,
+          assistantId: assistant.id,
+          tokensUsed: 0,
+          cachedTokens: 0,
+          costUsd: 0,
+        }));
 
-      await this.prisma.aiUsageLog.createMany({
-        data: logsToCreate
-      });
+        await this.prisma.aiUsageLog.createMany({
+          data: logsToCreate
+        });
+      }
 
       this.logger.log(`AI Orchestration completed for message ${messageId}. Deducted ${creditsNeeded} credit(s).`);
 

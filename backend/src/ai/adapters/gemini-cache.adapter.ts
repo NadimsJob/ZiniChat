@@ -15,7 +15,7 @@ export class GeminiCacheAdapter implements IAiCacheProvider {
   }
 
   async createCache(params: CreateCacheParams): Promise<CacheResult> {
-    const { systemPrompt, knowledgeContext, ttlSeconds, apiKey, modelName } = params;
+    const { systemPrompt, knowledgeContext, toolsConfig, ttlSeconds, apiKey, modelName } = params;
     const key = apiKey || process.env.GEMINI_API_KEY;
 
     if (!key) {
@@ -26,6 +26,15 @@ export class GeminiCacheAdapter implements IAiCacheProvider {
     const fullModelName = modelName || 'gemini-1.5-flash';
     const targetModel = fullModelName.startsWith('models/') ? fullModelName : `models/${fullModelName}`;
 
+    let cachedText = `${systemPrompt || ''}`;
+    if (toolsConfig) {
+      const toolsText = typeof toolsConfig === 'string' ? toolsConfig : JSON.stringify(toolsConfig);
+      cachedText += `\n\n--- ASSISTANT TOOLS CONFIGURATION ---\n${toolsText}`;
+    }
+    if (knowledgeContext) {
+      cachedText += `\n\n--- KNOWLEDGE BASE ---\n${knowledgeContext}`;
+    }
+
     try {
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/cachedContents?key=${key}`, {
         method: 'POST',
@@ -35,7 +44,7 @@ export class GeminiCacheAdapter implements IAiCacheProvider {
           contents: [
             {
               role: 'user',
-              parts: [{ text: `${systemPrompt}\n\n--- KNOWLEDGE BASE ---\n${knowledgeContext}` }]
+              parts: [{ text: cachedText }]
             }
           ],
           ttl: `${ttlSeconds}s`

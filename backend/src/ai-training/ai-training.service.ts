@@ -704,4 +704,23 @@ export class AiTrainingService {
 
     return { reply };
   }
+
+  async searchRelevantChunks(tenantId: string, queryVector: number[] | string, limit = 5) {
+    if (!tenantId || tenantId.trim() === '') {
+      throw new BadRequestException('tenantId is required for vector search');
+    }
+
+    const vectorStr = Array.isArray(queryVector) ? `[${queryVector.join(',')}]` : queryVector;
+
+    const chunks: any[] = await this.prisma.$queryRaw`
+      SELECT kc.id, kc.content, kc."documentId", kc."chunkIndex", (1 - (kc.embedding <=> ${vectorStr}::vector)) as similarity
+      FROM knowledge_chunks kc
+      JOIN knowledge_documents kd ON kc."documentId" = kd.id
+      WHERE kd."tenantId" = ${tenantId}::uuid AND kd.status = 'completed'
+      ORDER BY kc.embedding <=> ${vectorStr}::vector
+      LIMIT ${limit};
+    `;
+
+    return chunks;
+  }
 }

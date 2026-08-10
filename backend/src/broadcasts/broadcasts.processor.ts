@@ -1,4 +1,4 @@
-import { Processor, WorkerHost } from '@nestjs/bullmq';
+import { Processor, WorkerHost, OnWorkerEvent } from '@nestjs/bullmq';
 import { Job, Queue } from 'bullmq';
 import { Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
@@ -17,6 +17,18 @@ export class BroadcastsProcessor extends WorkerHost {
     private notificationsService: NotificationsService
   ) {
     super();
+  }
+
+  @OnWorkerEvent('failed')
+  async onFailed(job: Job, error: Error) {
+    this.logger.error(`Broadcast job ${job.id} failed after ${job.attemptsMade} attempts: ${error.message}`);
+    const { broadcastId } = job.data || {};
+    if (broadcastId) {
+      await this.prisma.broadcast.update({
+        where: { id: broadcastId },
+        data: { status: 'failed' }
+      }).catch(() => {});
+    }
   }
 
   async process(job: Job<any, any, string>): Promise<any> {

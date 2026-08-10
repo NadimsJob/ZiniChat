@@ -2,6 +2,7 @@ export interface CreateCacheParams {
   tenantId: string;
   systemPrompt: string;
   knowledgeContext: string;
+  toolsConfig?: any;
   ttlSeconds: number;
   modelName?: string;
   apiKey?: string;

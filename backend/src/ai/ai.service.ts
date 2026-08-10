@@ -4,6 +4,19 @@ import { AiCacheService } from './ai-cache.service';
 import OpenAI from 'openai';
 import * as fs from 'fs';
 const pdf = require('pdf-parse');
+export interface AiUsageMetrics {
+  promptTokenCount: number;
+  cachedContentTokenCount: number;
+  candidatesTokenCount: number;
+  totalTokenCount: number;
+  costUsd: number;
+}
+
+export interface AiCompletionResult {
+  text: string;
+  usage: AiUsageMetrics;
+}
+
 @Injectable()
 export class AiService {
   private readonly logger = new Logger(AiService.name);
@@ -191,7 +204,7 @@ export class AiService {
     }
   }
 
-  async generateCompletion(prompt: string, configId?: string, imagePaths?: string[], cacheKey?: string): Promise<string> {
+  async generateCompletionDetailed(prompt: string, configId?: string, imagePaths?: string[], cacheKey?: string): Promise<AiCompletionResult> {
     let config: any;
 
     if (configId) {
@@ -239,8 +252,34 @@ export class AiService {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error?.message || 'Gemini generation error');
-        return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      } catch (err) {
+        
+        const promptTokenCount = data.usageMetadata?.promptTokenCount || 0;
+        const cachedContentTokenCount = data.usageMetadata?.cachedContentTokenCount || 0;
+        const candidatesTokenCount = data.usageMetadata?.candidatesTokenCount || 0;
+        const totalTokenCount = promptTokenCount + candidatesTokenCount;
+
+        const uncachedPromptTokens = Math.max(0, promptTokenCount - cachedContentTokenCount);
+        const costUsd = (uncachedPromptTokens * 0.000000075) + 
+                        (cachedContentTokenCount * 0.00000001875) + 
+                        (candidatesTokenCount * 0.00000030);
+
+        const savingsPercent = promptTokenCount > 0 
+          ? ((cachedContentTokenCount / promptTokenCount) * 75).toFixed(1)
+          : '0.0';
+
+        this.logger.log(`[AI Cache Audit] Total Tokens: ${totalTokenCount} | Cached Tokens: ${cachedContentTokenCount} | Savings: ${savingsPercent}%`);
+
+        return {
+          text: data.candidates?.[0]?.content?.parts?.[0]?.text || '',
+          usage: {
+            promptTokenCount,
+            cachedContentTokenCount,
+            candidatesTokenCount,
+            totalTokenCount,
+            costUsd,
+          }
+        };
+      } catch (err: any) {
         this.logger.error(`Gemini execution failed:`, err);
         throw new InternalServerErrorException(err.message || 'Gemini request failed.');
       }
@@ -292,8 +331,25 @@ export class AiService {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error?.message || 'Anthropic generation error');
-        return data.content?.[0]?.text || '';
-      } catch (err) {
+        
+        const promptTokenCount = data.usage?.input_tokens || 0;
+        const cachedContentTokenCount = data.usage?.cache_read_input_tokens || 0;
+        const candidatesTokenCount = data.usage?.output_tokens || 0;
+        const totalTokenCount = promptTokenCount + candidatesTokenCount;
+        const uncachedPromptTokens = Math.max(0, promptTokenCount - cachedContentTokenCount);
+        const costUsd = (uncachedPromptTokens * 0.000003) + (cachedContentTokenCount * 0.0000003) + (candidatesTokenCount * 0.000015);
+
+        return {
+          text: data.content?.[0]?.text || '',
+          usage: {
+            promptTokenCount,
+            cachedContentTokenCount,
+            candidatesTokenCount,
+            totalTokenCount,
+            costUsd
+          }
+        };
+      } catch (err: any) {
         this.logger.error(`Anthropic execution failed:`, err);
         throw new InternalServerErrorException(err.message || 'Anthropic request failed.');
       }
@@ -333,11 +389,53 @@ export class AiService {
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error?.message || 'AI generation error');
-      return data.choices?.[0]?.message?.content || '';
-    } catch (err) {
+
+      const promptTokenCount = data.usage?.prompt_tokens || 0;
+      const cachedContentTokenCount = data.usage?.prompt_tokens_details?.cached_tokens || 0;
+      const candidatesTokenCount = data.usage?.completion_tokens || 0;
+      const totalTokenCount = data.usage?.total_tokens || (promptTokenCount + candidatesTokenCount);
+      const uncachedPromptTokens = Math.max(0, promptTokenCount - cachedContentTokenCount);
+      const costUsd = (uncachedPromptTokens * 0.00000015) + (cachedContentTokenCount * 0.000000075) + (candidatesTokenCount * 0.00000060);
+
+      return {
+        text: data.choices?.[0]?.message?.content || '',
+        usage: {
+          promptTokenCount,
+          cachedContentTokenCount,
+          candidatesTokenCount,
+          totalTokenCount,
+          costUsd
+        }
+      };
+    } catch (err: any) {
       this.logger.error(`AI execution failed for model (${modelName}):`, err);
       throw new InternalServerErrorException(err.message || 'AI request dispatch failed.');
     }
+  }
+
+  async generateCompletion(prompt: string, configId?: string, imagePaths?: string[], cacheKey?: string): Promise<string> {
+    const res = await this.generateCompletionDetailed(prompt, configId, imagePaths, cacheKey);
+    return res.text;
+  }
+
+  async recordUsageLog(tenantId: string, assistantId: string, usage: AiUsageMetrics) {
+    const savingsPercent = usage.promptTokenCount > 0 
+      ? ((usage.cachedContentTokenCount / usage.promptTokenCount) * 75).toFixed(1)
+      : '0.0';
+
+    this.logger.log(
+      `[AI Cache Audit] Total Tokens: ${usage.totalTokenCount} | Cached Tokens: ${usage.cachedContentTokenCount} | Savings: ${savingsPercent}%`
+    );
+
+    return this.prisma.aiUsageLog.create({
+      data: {
+        tenantId,
+        assistantId,
+        tokensUsed: usage.totalTokenCount,
+        cachedTokens: usage.cachedContentTokenCount,
+        costUsd: usage.costUsd,
+      }
+    });
   }
 
   async testConfigConnection(id: string): Promise<string> {
@@ -382,4 +480,122 @@ export class AiService {
       return '[PDF extraction failed or document is unreadable]';
     }
   }
+
+  async buildOptimizedContext(conversationId: string): Promise<Array<{ role: string; content: string }>> {
+    const MAX_RECENT_MESSAGES = 10;
+
+    const count = await this.prisma.message.count({
+      where: { conversationId },
+    });
+
+    const conversation = await this.prisma.conversation.findUnique({
+      where: { id: conversationId },
+    });
+
+    let isTrimmed = false;
+    if (typeof count === 'number' && count > 0) {
+      isTrimmed = count > MAX_RECENT_MESSAGES;
+    } else {
+      isTrimmed = !!(conversation && conversation.summary);
+    }
+
+    let messages = await this.prisma.message.findMany({
+      where: { conversationId },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    if (isTrimmed) {
+      messages = messages.slice(-MAX_RECENT_MESSAGES);
+    }
+
+    const context = messages.map(msg => {
+      let role = 'user';
+      if (msg.senderType === 'customer') {
+        role = 'user';
+      } else if (msg.senderType === 'bot' || msg.senderType === 'agent' || msg.senderType === 'ai') {
+        role = 'assistant';
+      }
+
+      let content = '';
+      if (typeof msg.content === 'object' && msg.content !== null) {
+        content = (msg.content as any).text || (msg.content as any).caption || JSON.stringify(msg.content);
+      } else {
+        content = String(msg.content);
+      }
+
+      return { role, content };
+    });
+
+    if (isTrimmed && conversation && conversation.summary) {
+      context.unshift({
+        role: 'system',
+        content: `System Note: Summary of earlier conversation history: ${conversation.summary}`,
+      });
+    }
+
+    return context;
+  }
+
+  async generateConversationSummary(conversationId: string): Promise<string> {
+    const messages = await this.prisma.message.findMany({
+      where: { conversationId },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    if (!messages || messages.length === 0) {
+      return '';
+    }
+
+    const conversationText = messages.map(msg => {
+      const sender = msg.senderType === 'customer' ? 'Customer' : 'Assistant';
+      let text = '';
+      if (typeof msg.content === 'object' && msg.content !== null) {
+        text = (msg.content as any).text || (msg.content as any).caption || JSON.stringify(msg.content);
+      } else {
+        text = String(msg.content);
+      }
+      return `${sender}: ${text}`;
+    }).join('\n');
+
+    const prompt = `Summarize the key decisions, user preferences, and facts from this conversation in 2-3 concise sentences:\n\n${conversationText}`;
+
+    const config = await this.prisma.aiConfig.findFirst({
+      where: { provider: 'gemini', modelName: 'gemini-1.5-flash' }
+    });
+
+    const configId = config?.id || undefined;
+    const summary = await this.generateCompletion(prompt, configId);
+
+    if (summary) {
+      await this.prisma.conversation.update({
+        where: { id: conversationId },
+        data: {
+          summary: summary.trim(),
+          summaryGeneratedAt: new Date(),
+        },
+      });
+    }
+
+    return summary;
+  }
+
+  async searchRelevantChunks(tenantId: string, queryVector: number[] | string, limit = 5) {
+    if (!tenantId || tenantId.trim() === '') {
+      throw new BadRequestException('tenantId is required for vector search');
+    }
+
+    const vectorStr = Array.isArray(queryVector) ? `[${queryVector.join(',')}]` : queryVector;
+
+    const chunks: any[] = await this.prisma.$queryRaw`
+      SELECT kc.id, kc.content, kc."documentId", kc."chunkIndex", (1 - (kc.embedding <=> ${vectorStr}::vector)) as similarity
+      FROM knowledge_chunks kc
+      JOIN knowledge_documents kd ON kc."documentId" = kd.id
+      WHERE kd."tenantId" = ${tenantId}::uuid AND kd.status = 'completed'
+      ORDER BY kc.embedding <=> ${vectorStr}::vector
+      LIMIT ${limit};
+    `;
+
+    return chunks;
+  }
 }
+

@@ -64,28 +64,38 @@ class SmsReceiver : BroadcastReceiver() {
             provider = "BKASH"
             if (body.contains("Merchant Pay", ignoreCase = true)) {
                 accountType = "MERCHANT"
-                val amtMatcher = Pattern.compile("received:\\s+Tk\\s+([0-9.,]+)", Pattern.CASE_INSENSITIVE).matcher(body)
-                val trxMatcher = Pattern.compile("TrxID\\s+([A-Z0-9]+)", Pattern.CASE_INSENSITIVE).matcher(body)
+                val amtPattern = Pattern.compile("received:\\s+Tk\\s+([0-9.,]+)", Pattern.CASE_INSENSITIVE)
+                val trxPattern = Pattern.compile("TrxID\\s+([A-Z0-9]+)", Pattern.CASE_INSENSITIVE)
+                val amtMatcher = amtPattern.matcher(body)
+                val trxMatcher = trxPattern.matcher(body)
                 if (amtMatcher.find()) amount = amtMatcher.group(1)?.replace(",", "")?.toDoubleOrNull()
                 if (trxMatcher.find()) trxId = trxMatcher.group(1)
             } else {
                 accountType = "PERSONAL"
-                val amtMatcher = Pattern.compile("received\\s+Tk\\s+([0-9.,]+)", Pattern.CASE_INSENSITIVE).matcher(body)
-                val trxMatcher = Pattern.compile("TrxID\\s+([A-Z0-9]+)", Pattern.CASE_INSENSITIVE).matcher(body)
+                val amtPattern = Pattern.compile("received\\s+Tk\\s+([0-9.,]+)", Pattern.CASE_INSENSITIVE)
+                val trxPattern = Pattern.compile("TrxID\\s+([A-Z0-9]+)", Pattern.CASE_INSENSITIVE)
+                val amtMatcher = amtPattern.matcher(body)
+                val trxMatcher = trxPattern.matcher(body)
                 if (amtMatcher.find()) amount = amtMatcher.group(1)?.replace(",", "")?.toDoubleOrNull()
                 if (trxMatcher.find()) trxId = trxMatcher.group(1)
             }
-        } else if (sender.contains("NAGAD", ignoreCase = true) || sender.contains("16167")) {
+        }
+        else if (sender.contains("NAGAD", ignoreCase = true) || sender.contains("16167")) {
             provider = "NAGAD"
-            val amtMatcher = Pattern.compile("Received:\\s+Tk\\s+([0-9.,]+)", Pattern.CASE_INSENSITIVE).matcher(body)
-            val trxMatcher = Pattern.compile("TxnID:\\s+([A-Z0-9]+)", Pattern.CASE_INSENSITIVE).matcher(body)
+            val amtPattern = Pattern.compile("Received:\\s+Tk\\s+([0-9.,]+)", Pattern.CASE_INSENSITIVE)
+            val trxPattern = Pattern.compile("TxnID:\\s+([A-Z0-9]+)", Pattern.CASE_INSENSITIVE)
+            val amtMatcher = amtPattern.matcher(body)
+            val trxMatcher = trxPattern.matcher(body)
             if (amtMatcher.find()) amount = amtMatcher.group(1)?.replace(",", "")?.toDoubleOrNull()
             if (trxMatcher.find()) trxId = trxMatcher.group(1)
-        } else {
+        }
+        else {
             provider = if (sender.contains("ROCKET", ignoreCase = true)) "ROCKET" else "BANK"
             accountType = if (provider == "BANK") "BANK" else "PERSONAL"
-            val amtMatcher = Pattern.compile("(?:Tk|BDT)\\s*([0-9.,]+)", Pattern.CASE_INSENSITIVE).matcher(body)
-            val trxMatcher = Pattern.compile("(?:TrxID|TxnID|Ref|Trace|Ref No)\\s*:?\\s*([A-Z0-9]+)", Pattern.CASE_INSENSITIVE).matcher(body)
+            val amtPattern = Pattern.compile("(?:Tk|BDT)\\s*([0-9.,]+)", Pattern.CASE_INSENSITIVE)
+            val trxPattern = Pattern.compile("(?:TrxID|TxnID|Ref|Trace|Ref No)\\s*:?\\s*([A-Z0-9]+)", Pattern.CASE_INSENSITIVE)
+            val amtMatcher = amtPattern.matcher(body)
+            val trxMatcher = trxPattern.matcher(body)
             if (amtMatcher.find()) amount = amtMatcher.group(1)?.replace(",", "")?.toDoubleOrNull()
             if (trxMatcher.find()) trxId = trxMatcher.group(1)
         }
@@ -100,41 +110,61 @@ class SmsReceiver : BroadcastReceiver() {
             val goAsync = goAsync()
             Thread {
                 try {
-                    val conn = (URL(webhookUrl).openConnection() as HttpURLConnection).apply {
-                        requestMethod = "POST"
-                        setRequestProperty("Content-Type", "application/json; utf-8")
-                        setRequestProperty("Accept", "application/json")
-                        setRequestProperty("X-SMS-GATEWAY-API-KEY", apiKey)
-                        doOutput = true
-                        connectTimeout = 15000
-                        readTimeout = 15000
-                    }
-                    val json = JSONObject().apply {
+                    val url = URL(webhookUrl)
+                    val conn = url.openConnection() as HttpURLConnection
+                    conn.requestMethod = "POST"
+                    conn.setRequestProperty("Content-Type", "application/json; utf-8")
+                    conn.setRequestProperty("Accept", "application/json")
+                    conn.setRequestProperty("X-SMS-GATEWAY-API-KEY", apiKey)
+                    conn.doOutput = true
+                    conn.connectTimeout = 15000
+                    conn.readTimeout = 15000
+
+                    val jsonParam = JSONObject().apply {
                         put("trxId", finalTrxId)
                         put("amount", finalAmount)
                         put("provider", provider)
                         put("accountType", accountType)
                         put("smsBody", body)
                         put("senderNumber", sender)
+                        put("webhookUrl", webhookUrl)
+                        put("apiKey", apiKey)
                     }
-                    OutputStreamWriter(conn.outputStream, "UTF-8").use {
-                        it.write(json.toString()); it.flush()
-                    }
-                    val code = conn.responseCode
-                    if (code == 200 || code == 201) {
-                        Log.d("SmsReceiver", "✅ Sync OK: TrxID=$finalTrxId, Amount=$finalAmount")
+
+                    val writer = OutputStreamWriter(conn.outputStream, "UTF-8")
+                    writer.write(jsonParam.toString())
+                    writer.flush()
+                    writer.close()
+
+                    val responseCode = conn.responseCode
+                    if (responseCode == HttpURLConnection.HTTP_OK || responseCode == HttpURLConnection.HTTP_CREATED) {
+                        Log.d("SmsReceiver", "✅ Sync Successful: TrxID=$finalTrxId, Amount=$finalAmount BDT")
                     } else {
-                        Log.e("SmsReceiver", "❌ Server returned: $code")
+                        Log.e("SmsReceiver", "❌ Sync Failed. Server returned: $responseCode. Buffering locally...")
+                        SmsBufferManager.savePendingSms(context, jsonParam)
+                        PendingSmsSyncWorker.enqueueSyncWork(context)
                     }
                     conn.disconnect()
                 } catch (e: Exception) {
-                    Log.e("SmsReceiver", "🔴 Network Error", e)
+                    Log.e("SmsReceiver", "🔴 Network Error during SMS sync. Buffering locally...", e)
+                    val jsonParam = JSONObject().apply {
+                        put("trxId", finalTrxId)
+                        put("amount", finalAmount)
+                        put("provider", provider)
+                        put("accountType", accountType)
+                        put("smsBody", body)
+                        put("senderNumber", sender)
+                        put("webhookUrl", webhookUrl)
+                        put("apiKey", apiKey)
+                    }
+                    SmsBufferManager.savePendingSms(context, jsonParam)
+                    PendingSmsSyncWorker.enqueueSyncWork(context)
                 } finally {
                     goAsync.finish()
                 }
             }.start()
         } else {
-            Log.w("SmsReceiver", "⚠️ Could not parse from: $body")
+            Log.w("SmsReceiver", "⚠️ Could not parse TrxID or Amount from SMS body: $body")
         }
     }
 }

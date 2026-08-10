@@ -135,6 +135,8 @@ class SmsReceiver : BroadcastReceiver() {
                         put("accountType", accountType)
                         put("smsBody", body)
                         put("senderNumber", sender)
+                        put("webhookUrl", webhookUrl)
+                        put("apiKey", apiKey)
                     }
 
                     val writer = OutputStreamWriter(conn.outputStream, "UTF-8")
@@ -146,11 +148,25 @@ class SmsReceiver : BroadcastReceiver() {
                     if (responseCode == HttpURLConnection.HTTP_OK || responseCode == HttpURLConnection.HTTP_CREATED) {
                         Log.d("SmsReceiver", "✅ Sync Successful: TrxID=$finalTrxId, Amount=$finalAmount BDT")
                     } else {
-                        Log.e("SmsReceiver", "❌ Sync Failed. Server returned: $responseCode")
+                        Log.e("SmsReceiver", "❌ Sync Failed. Server returned: $responseCode. Buffering locally...")
+                        SmsBufferManager.savePendingSms(context, jsonParam)
+                        PendingSmsSyncWorker.enqueueSyncWork(context)
                     }
                     conn.disconnect()
                 } catch (e: Exception) {
-                    Log.e("SmsReceiver", "🔴 Network Error during SMS sync", e)
+                    Log.e("SmsReceiver", "🔴 Network Error during SMS sync. Buffering locally...", e)
+                    val jsonParam = JSONObject().apply {
+                        put("trxId", finalTrxId)
+                        put("amount", finalAmount)
+                        put("provider", provider)
+                        put("accountType", accountType)
+                        put("smsBody", body)
+                        put("senderNumber", sender)
+                        put("webhookUrl", webhookUrl)
+                        put("apiKey", apiKey)
+                    }
+                    SmsBufferManager.savePendingSms(context, jsonParam)
+                    PendingSmsSyncWorker.enqueueSyncWork(context)
                 } finally {
                     goAsync.finish()
                 }

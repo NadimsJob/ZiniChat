@@ -476,6 +476,7 @@ model AiUsageLog {
   tenantId    String   @db.Uuid
   assistantId String   @db.Uuid
   tokensUsed  Int
+  cachedTokens Int     @default(0)
   costUsd     Decimal  @db.Decimal(10, 4)
   createdAt   DateTime @default(now())
 

@@ -979,11 +979,26 @@ export class InboxService {
       });
     }
 
+    this.checkAndTriggerSummarization(conversation.id);
+
     return {
       message,
       conversation,
       contact
     };
+  }
+
+  private async checkAndTriggerSummarization(conversationId: string) {
+    try {
+      const count = await this.prisma.message.count({ where: { conversationId } });
+      if (count >= 12 && (count === 12 || (count - 12) % 10 === 0)) {
+        this.aiService.generateConversationSummary(conversationId).catch(err => {
+          this.logger.error(`Failed to generate conversation summary for ${conversationId}: ${err.message}`);
+        });
+      }
+    } catch (err: any) {
+      this.logger.error(`Failed checking message count for summarization: ${err.message}`);
+    }
   }
 
   async saveOutboundMessage(tenantId: string, conversationId: string, content: string, type: string = 'text', senderUserId?: string, aiAssistantId?: string) {
@@ -1019,6 +1034,9 @@ export class InboxService {
       where: { id: conversation.id },
       data: { lastMessageAt: new Date() }
     });
+
+    this.checkAndTriggerSummarization(conversation.id);
+
 
     let channelConnId: string | null = null;
     const activeConn = await this.prisma.channelConnection.findFirst({

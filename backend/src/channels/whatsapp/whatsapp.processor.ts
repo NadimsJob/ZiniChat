@@ -1,4 +1,4 @@
-import { Processor, WorkerHost } from '@nestjs/bullmq';
+import { Processor, WorkerHost, OnWorkerEvent } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -17,6 +17,19 @@ export class WhatsappProcessor extends WorkerHost {
     private inboxGateway: InboxGateway,
   ) {
     super();
+  }
+
+  @OnWorkerEvent('failed')
+  async onFailed(job: Job, error: Error) {
+    this.logger.error(`Outbound message job ${job.id} failed after ${job.attemptsMade} attempts: ${error.message}`);
+    const { messageId } = job.data || {};
+    if (messageId && messageId.startsWith('broadcast_')) {
+      const recipientId = messageId.replace('broadcast_', '');
+      await this.prisma.broadcastRecipient.update({
+        where: { id: recipientId },
+        data: { status: 'failed' }
+      }).catch(e => this.logger.error(`Failed to update broadcast recipient status to failed: ${e.message}`));
+    }
   }
 
   async process(job: Job<any, any, string>): Promise<any> {
@@ -173,6 +186,14 @@ export class WhatsappProcessor extends WorkerHost {
       const isRateLimit = error.message === 'RATE_LIMIT_EXCEEDED';
       const finalStatus = isRateLimit ? 'rate_limited' : 'failed';
       
+      if (messageId && messageId.startsWith('broadcast_')) {
+        const recipientId = messageId.replace('broadcast_', '');
+        await this.prisma.broadcastRecipient.update({
+          where: { id: recipientId },
+          data: { status: 'failed' }
+        }).catch(e => this.logger.error(`Failed to update broadcast recipient status: ${e.message}`));
+      }
+
       // Update Message Status to failed & broadcast status
       await this.prisma.message.update({
         where: { id: messageId },
