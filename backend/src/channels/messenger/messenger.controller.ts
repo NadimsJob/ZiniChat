@@ -1,11 +1,13 @@
 import { Controller, Get, Post, Query, Body, Res, Headers, HttpStatus } from '@nestjs/common';
 import type { Response } from 'express';
 import * as crypto from 'crypto';
+import { Throttle } from '@nestjs/throttler';
 import { MessengerService } from './messenger.service';
 import { FacebookCommentsService } from './facebook-comments.service';
 import { InboxService } from '../../inbox/inbox.service';
 import { InboxGateway } from '../../inbox/inbox.gateway';
 
+@Throttle({ default: { ttl: 60000, limit: 300 }, webhooks: { ttl: 60000, limit: 300 } })
 @Controller('webhooks/messenger')
 export class MessengerController {
   constructor(

@@ -46,20 +46,25 @@ export class GoogleAnalyticsProcessor extends WorkerHost {
       return { skipped: true, reason: 'event_type_disabled' };
     }
 
-    const success = await this.gaService.sendEventToGA({
-      eventName: gaEventName,
-      eventParams: eventParams || {},
-      tenantId,
-      tenantEmail,
-      clientId,
-    });
+    try {
+      const success = await this.gaService.sendEventToGA({
+        eventName: gaEventName,
+        eventParams: eventParams || {},
+        tenantId,
+        tenantEmail,
+        clientId,
+      });
 
-    if (!success && job.attemptsMade < 1) {
-      this.logger.warn(`Failed to send event ${gaEventName} to GA. Triggering BullMQ retry.`);
-      throw new Error(`Failed to send event ${gaEventName} to GA.`);
+      if (!success) {
+        this.logger.warn(`Failed to send event ${gaEventName} to GA. Marking job as failed_permanently without throwing exception.`);
+        return { success: false, status: 'failed_permanently', gaEventName };
+      }
+
+      return { success: true, gaEventName };
+    } catch (err: any) {
+      this.logger.error(`Error processing GA tracking job (${gaEventName}): ${err.message}`);
+      return { success: false, status: 'failed_permanently', error: err.message };
     }
-
-    return { success, gaEventName };
   }
 
   private mapToGaEventName(name: string): string {

@@ -16,10 +16,6 @@ import { TenantsModule } from '../tenants/tenants.module';
     TenantsModule,
     BullModule.registerQueue({
       name: 'broadcasts',
-      limiter: {
-        max: 20,
-        duration: 1000,
-      },
       defaultJobOptions: {
         attempts: 3,
         backoff: {
@@ -30,10 +26,6 @@ import { TenantsModule } from '../tenants/tenants.module';
     }),
     BullModule.registerQueue({
       name: 'whatsapp-outbound',
-      limiter: {
-        max: 20,
-        duration: 1000,
-      },
       defaultJobOptions: {
         attempts: 3,
         backoff: {

@@ -49,10 +49,18 @@ import { GoogleAnalyticsModule } from './google-analytics/google-analytics.modul
 
 @Module({
   imports: [
-    ThrottlerModule.forRoot([{
-      ttl: 60000,
-      limit: 60,
-    }]),
+    ThrottlerModule.forRoot([
+      {
+        name: 'default',
+        ttl: 60000,
+        limit: 100,
+      },
+      {
+        name: 'webhooks',
+        ttl: 60000,
+        limit: 300,
+      },
+    ]),
     WebsiteWidgetModule,
     MetaPixelModule,
     GoogleAnalyticsModule,

@@ -89,23 +89,24 @@ describe('GoogleAnalyticsProcessor', () => {
     });
   });
 
-  it('should throw Error to trigger BullMQ retry on first failure', async () => {
+  it('should return failed_permanently status without throwing error on failure', async () => {
     mockGaService.getConfig.mockResolvedValue({
       isActive: true,
       trackLogin: true,
     });
     mockGaService.sendEventToGA.mockResolvedValue(false);
 
-    await expect(
-      processor.process(
-        mockJob(
-          {
-            eventName: 'purchase',
-            tenantId: 't-456',
-          },
-          0, // first attempt
-        ),
+    const res = await processor.process(
+      mockJob(
+        {
+          eventName: 'purchase',
+          tenantId: 't-456',
+        },
+        0, // first attempt
       ),
-    ).rejects.toThrow('Failed to send event purchase to GA.');
+    );
+
+    expect(res.success).toBe(false);
+    expect(res.status).toBe('failed_permanently');
   });
 });

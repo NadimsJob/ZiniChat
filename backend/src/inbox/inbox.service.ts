@@ -1001,6 +1001,65 @@ export class InboxService {
     }
   }
 
+  async checkBotLoopSafeguard(conversationId: string): Promise<boolean> {
+    try {
+      const last5Messages = await this.prisma.message.findMany({
+        where: { conversationId },
+        orderBy: { createdAt: 'desc' },
+        take: 5
+      });
+
+      if (last5Messages.length < 5) {
+        return false;
+      }
+
+      const allAi = last5Messages.every(
+        (m: any) => m.senderType === 'ai' || m.senderType === 'bot' || Boolean(m.aiAssistantId)
+      );
+
+      if (!allAi) {
+        return false;
+      }
+
+      const newestTime = new Date(last5Messages[0].createdAt).getTime();
+      const oldestTime = new Date(last5Messages[4].createdAt).getTime();
+      const timeDiffMs = Math.abs(newestTime - oldestTime);
+
+      if (timeDiffMs <= 30000) {
+        const conversation = await this.prisma.conversation.update({
+          where: { id: conversationId },
+          data: { isAiEnabled: false }
+        });
+
+        this.logger.warn(`AI Auto-Reply paused due to rapid back-to-front messaging loop for conversation ${conversationId}`);
+
+        await this.notificationsService.createNotificationForTenantAdmins(
+          conversation.tenantId,
+          'AI Auto-Reply Paused',
+          'AI Auto-Reply paused due to rapid back-to-front messaging loop.',
+          'warning'
+        ).catch((err: any) => {
+          this.logger.error(`Failed to send bot loop notification: ${err.message}`);
+        });
+
+        await this.activityLogService.record({
+          tenantId: conversation.tenantId,
+          conversationId,
+          contactId: conversation.contactId,
+          type: 'AI_HANDOVER',
+          actorUserId: undefined,
+          metadataJson: { isAiEnabled: false, reason: 'bot_loop_detected' }
+        }).catch(() => {});
+
+        return true;
+      }
+    } catch (err: any) {
+      this.logger.error(`Error in checkBotLoopSafeguard for conversation ${conversationId}: ${err.message}`);
+    }
+
+    return false;
+  }
+
   async saveOutboundMessage(tenantId: string, conversationId: string, content: string, type: string = 'text', senderUserId?: string, aiAssistantId?: string) {
     const conversation = await this.prisma.conversation.findFirst({
       where: { id: conversationId, tenantId },
@@ -1036,6 +1095,10 @@ export class InboxService {
     });
 
     this.checkAndTriggerSummarization(conversation.id);
+
+    if (senderType === 'ai' || aiAssistantId) {
+      await this.checkBotLoopSafeguard(conversation.id);
+    }
 
 
     let channelConnId: string | null = null;

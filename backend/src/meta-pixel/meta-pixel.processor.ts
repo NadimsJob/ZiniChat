@@ -44,39 +44,45 @@ export class MetaPixelProcessor extends WorkerHost {
       return { skipped: true, reason: 'event_type_disabled' };
     }
 
-    const payload = {
-      tenantEmail,
-      tenantId,
-      fbClickId,
-      fbPageId,
-      clientIp,
-      clientUserAgent,
-      referrerUrl,
-      metaEventId: metaEventId || `evt_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-      customData: {
-        ...(customData || {}),
-        ...(eventValue ? { value: eventValue, currency: 'BDT' } : {}),
-      },
-    };
+    try {
+      const payload = {
+        tenantEmail,
+        tenantId,
+        fbClickId,
+        fbPageId,
+        clientIp,
+        clientUserAgent,
+        referrerUrl,
+        metaEventId: metaEventId || `evt_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+        customData: {
+          ...(customData || {}),
+          ...(eventValue ? { value: eventValue, currency: 'BDT' } : {}),
+        },
+      };
 
-    const success = await this.metaPixelService.sendEventToMeta(eventName, payload);
+      const success = await this.metaPixelService.sendEventToMeta(eventName, payload);
 
-    await this.metaPixelService.logAcquisitionEvent({
-      tenantId,
-      tenantEmail,
-      eventName,
-      eventData: payload,
-      status: success ? 'sent' : 'failed',
-      sentToMeta: success,
-      metaEventId: payload.metaEventId,
-      fbClickId,
-      fbPageId,
-    });
+      await this.metaPixelService.logAcquisitionEvent({
+        tenantId,
+        tenantEmail,
+        eventName,
+        eventData: payload,
+        status: success ? 'sent' : 'failed_permanently',
+        sentToMeta: success,
+        metaEventId: payload.metaEventId,
+        fbClickId,
+        fbPageId,
+      });
 
-    if (!success && job.attemptsMade < 2) {
-      throw new Error(`Failed to send event ${eventName} to Meta. Triggering BullMQ retry.`);
+      if (!success) {
+        this.logger.warn(`Meta CAPI dispatch returned error/failed status for ${eventName}. Marking job as failed_permanently without throwing exception.`);
+        return { success: false, status: 'failed_permanently', eventName, metaEventId: payload.metaEventId };
+      }
+
+      return { success: true, eventName, metaEventId: payload.metaEventId };
+    } catch (err: any) {
+      this.logger.error(`Error processing Meta Pixel acquisition job (${eventName}): ${err.message}`);
+      return { success: false, status: 'failed_permanently', error: err.message };
     }
-
-    return { success, eventName, metaEventId: payload.metaEventId };
   }
 }

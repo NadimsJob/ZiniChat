@@ -100,7 +100,7 @@ describe('MetaPixelProcessor', () => {
     }));
   });
 
-  it('5. should throw error to trigger BullMQ retry when Meta API call fails on initial attempts', async () => {
+  it('5. should return failed_permanently status without throwing error when Meta API call fails', async () => {
     service.getPixelConfig.mockResolvedValue(mockConfig);
     service.sendEventToMeta.mockResolvedValue(false);
     service.logAcquisitionEvent.mockResolvedValue({ id: 'evt-2' });
@@ -111,14 +111,16 @@ describe('MetaPixelProcessor', () => {
       attemptsMade: 0,
     };
 
-    await expect(processor.process(job)).rejects.toThrow('Failed to send event CompleteRegistration to Meta');
+    const res = await processor.process(job);
+    expect(res.success).toBe(false);
+    expect(res.status).toBe('failed_permanently');
     expect(service.logAcquisitionEvent).toHaveBeenCalledWith(expect.objectContaining({
-      status: 'failed',
+      status: 'failed_permanently',
       sentToMeta: false,
     }));
   });
 
-  it('6. should not throw on last retry attempt (attemptsMade >= 2)', async () => {
+  it('6. should complete safely on last retry attempt (attemptsMade >= 2)', async () => {
     service.getPixelConfig.mockResolvedValue(mockConfig);
     service.sendEventToMeta.mockResolvedValue(false);
     service.logAcquisitionEvent.mockResolvedValue({ id: 'evt-3' });
@@ -131,6 +133,7 @@ describe('MetaPixelProcessor', () => {
 
     const res = await processor.process(job);
     expect(res.success).toBe(false);
+    expect(res.status).toBe('failed_permanently');
     expect(service.logAcquisitionEvent).toHaveBeenCalled();
   });
 
