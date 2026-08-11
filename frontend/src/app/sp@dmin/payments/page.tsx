@@ -68,7 +68,7 @@ export default function PendingPaymentsPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-[12px] text-left text-zinc-300">
+            <table className="w-full text-[12px] text-left text-zinc-300 min-w-[650px]">
               <thead className="text-[11px] uppercase bg-zinc-900/50 text-zinc-400 font-semibold">
                 <tr className="border-b border-zinc-800">
                   <th className="px-3 py-2.5">Tenant</th>

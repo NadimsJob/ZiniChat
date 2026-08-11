@@ -1,4 +1,5 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { BillingService } from '../billing/billing.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -12,6 +13,7 @@ export class TenantsService {
     private billingService: BillingService,
     private notificationsService: NotificationsService,
     private smtpService: SmtpService,
+    private jwtService: JwtService,
   ) {}
 
   async findAll() {
@@ -548,6 +550,67 @@ export class TenantsService {
     });
 
     return tenant;
+  }
+
+  async impersonateTenant(id: string, actorUserId: string) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id },
+      include: {
+        users: {
+          orderBy: { createdAt: 'asc' },
+        },
+      },
+    });
+
+    if (!tenant) {
+      throw new NotFoundException('Tenant not found');
+    }
+
+    const targetUser = tenant.users.find(u => u.role === 'owner') ||
+                       tenant.users.find(u => u.role === 'admin') ||
+                       tenant.users[0];
+
+    if (!targetUser) {
+      throw new BadRequestException('No active user found for this tenant');
+    }
+
+    const payload = {
+      email: targetUser.email,
+      sub: targetUser.id,
+      role: targetUser.role,
+      tenantId: targetUser.tenantId,
+      permissions: targetUser.permissions || [],
+      impersonatedBy: actorUserId,
+    };
+
+    const impersonationToken = this.jwtService.sign(payload, { expiresIn: '2h' });
+
+    await this.prisma.auditLog.create({
+      data: {
+        actorUserId,
+        targetTenantId: id,
+        action: 'SUPERADMIN_IMPERSONATED_TENANT',
+        metadataJson: {
+          targetUserId: targetUser.id,
+          targetUserEmail: targetUser.email,
+          tenantName: tenant.name,
+        },
+      },
+    });
+
+    return {
+      access_token: impersonationToken,
+      user: {
+        id: targetUser.id,
+        name: targetUser.name,
+        email: targetUser.email,
+        role: targetUser.role,
+      },
+      tenant: {
+        id: tenant.id,
+        name: tenant.name,
+      },
+    };
   }
 }
 

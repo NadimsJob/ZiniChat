@@ -137,7 +137,7 @@ export default function SuperadminPage() {
       {/* ── SECTION 1: KPI HERO ROW ── */}
       <div>
         <SectionTitle>{language === 'en' ? '📊 Key Performance Indicators' : '📊 মূল পারফরম্যান্স সূচক'}</SectionTitle>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           <StatCard
             icon={DollarSign}
             label={language === 'en' ? `MRR (${toCurrency})` : `মাসিক রেভিনিউ (${toCurrency})`}
@@ -187,8 +187,8 @@ export default function SuperadminPage() {
       {/* ── SECTION 2: REVENUE & SUBSCRIPTIONS ── */}
       <div>
         <SectionTitle>{language === 'en' ? '💰 Revenue & Subscriptions' : '💰 রেভিনিউ ও সাবস্ক্রিপশন'}</SectionTitle>
-        <div className="grid md:grid-cols-5 gap-4">
-          <ChartCard title={language === 'en' ? '6-Month Revenue Trend (BDT)' : '৬ মাসের রেভিনিউ ট্রেন্ড'} className="col-span-3">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <ChartCard title={language === 'en' ? '6-Month Revenue Trend (BDT)' : '৬ মাসের রেভিনিউ ট্রেন্ড'} className="col-span-1 md:col-span-3">
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={stats?.revenueTrend || []} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#ffffff08" />
@@ -200,7 +200,7 @@ export default function SuperadminPage() {
             </ResponsiveContainer>
           </ChartCard>
 
-          <ChartCard title={language === 'en' ? 'Subscriptions by Plan' : 'প্ল্যান অনুযায়ী সাবস্ক্রিপশন'} className="col-span-2">
+          <ChartCard title={language === 'en' ? 'Subscriptions by Plan' : 'প্ল্যান অনুযায়ী সাবস্ক্রিপশন'} className="col-span-1 md:col-span-2">
             <ResponsiveContainer width="100%" height={200}>
               <PieChart>
                 <Pie
@@ -228,7 +228,7 @@ export default function SuperadminPage() {
       {/* ── SECTION 3: ACTIVITY TRENDS ── */}
       <div>
         <SectionTitle>{language === 'en' ? '📈 Platform Activity (7 Days)' : '📈 প্ল্যাটফর্ম কার্যক্রম (৭ দিন)'}</SectionTitle>
-        <div className="grid md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <ChartCard title={language === 'en' ? 'Messages & Conversations' : 'মেসেজ ও কথোপকথন'}>
             <ResponsiveContainer width="100%" height={180}>
               <AreaChart data={stats?.messageTrend || []} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
@@ -270,7 +270,7 @@ export default function SuperadminPage() {
       {/* ── SECTION 4: TENANT INTELLIGENCE & CHANNELS ── */}
       <div>
         <SectionTitle>{language === 'en' ? '🏢 Tenant Intelligence & Channels' : '🏢 টেনান্ট বিশ্লেষণ ও চ্যানেল'}</SectionTitle>
-        <div className="grid lg:grid-cols-3 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <ChartCard title={language === 'en' ? 'Top Tenants by Messages' : 'মেসেজ অনুযায়ী শীর্ষ টেনান্ট'}>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart
@@ -351,7 +351,7 @@ export default function SuperadminPage() {
       {/* ── SECTION 5: OPERATIONAL OVERVIEW ── */}
       <div>
         <SectionTitle>{language === 'en' ? '⚙️ Operational Overview' : '⚙️ অপারেশনাল ওভারভিউ'}</SectionTitle>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
 
           {/* Ticket Status */}
           <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-xl p-4 shadow-lg">

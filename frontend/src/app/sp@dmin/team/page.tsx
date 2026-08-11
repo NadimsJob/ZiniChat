@@ -133,67 +133,69 @@ export default function TeamPage() {
 
   return (
     <div className="space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-[13px] font-bold text-foreground">Team Members</h1>
           <p className="text-[12px] text-zinc-500 mt-1">Manage superadmin employees and their access permissions.</p>
         </div>
         <button 
           onClick={() => openModal()}
-          className="bg-primary hover:bg-primary/90 text-white px-2.5 py-2 rounded-xl text-[12px] font-semibold shadow-lg shadow-primary/20 transition-all hover:-translate-y-0.5"
+          className="bg-primary hover:bg-primary/90 text-white px-2.5 py-2 rounded-xl text-[12px] font-semibold shadow-lg shadow-primary/20 transition-all hover:-translate-y-0.5 self-start sm:self-auto"
         >
           + Add Employee
         </button>
       </div>
 
       <div className="bg-surface rounded-xl border border-surface-hover overflow-hidden shadow-sm">
-        <table className="w-full text-[12px] text-left">
-          <thead className="bg-surface-hover/50 text-zinc-500 border-b border-surface-hover">
-            <tr>
-              <th className="px-3 py-2 font-semibold">Name</th>
-              <th className="px-3 py-2 font-semibold">Email</th>
-              <th className="px-3 py-2 font-semibold">Permissions</th>
-              <th className="px-3 py-2 font-semibold text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-surface-hover text-foreground">
-            {users.map(user => (
-              <tr key={user.id} className="hover:bg-surface-hover/30 transition-colors">
-                <td className="px-3 py-2 font-medium">{user.name}</td>
-                <td className="px-3 py-2 text-zinc-500">{user.email}</td>
-                <td className="px-3 py-2">
-                  {user.permissions.includes('*') ? (
-                    <span className="px-3 py-1 text-xs rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20">
-                      Master Admin
-                    </span>
-                  ) : (
-                    <div className="flex gap-1.5 flex-wrap">
-                      {user.permissions.length === 0 && <span className="text-xs text-zinc-400 italic">No access</span>}
-                      {user.permissions.map((p: string) => (
-                        <span key={p} className="px-2 py-1 text-xs rounded-md bg-secondary/10 text-secondary border border-secondary/20 font-medium">
-                          {p.replace('manage:', '')}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </td>
-                <td className="px-3 py-2 text-right">
-                  <div className="flex items-center justify-end gap-3">
-                    <button onClick={() => openModal(user)} className="text-blue-500 hover:text-blue-600 font-semibold transition-colors">Edit</button>
-                    {user.email !== 'admin@platform.com' && (
-                      <button onClick={() => handleDelete(user.id)} className="text-red-500 hover:text-red-600 font-semibold transition-colors">Remove</button>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {users.length === 0 && (
+        <div className="overflow-x-auto">
+          <table className="w-full text-[12px] text-left min-w-[600px]">
+            <thead className="bg-surface-hover/50 text-zinc-500 border-b border-surface-hover">
               <tr>
-                <td colSpan={4} className="px-3 py-2 text-center text-zinc-500">No team members found.</td>
+                <th className="px-3 py-2 font-semibold">Name</th>
+                <th className="px-3 py-2 font-semibold">Email</th>
+                <th className="px-3 py-2 font-semibold">Permissions</th>
+                <th className="px-3 py-2 font-semibold text-right">Actions</th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-surface-hover text-foreground">
+              {users.map(user => (
+                <tr key={user.id} className="hover:bg-surface-hover/30 transition-colors">
+                  <td className="px-3 py-2 font-medium">{user.name}</td>
+                  <td className="px-3 py-2 text-zinc-500">{user.email}</td>
+                  <td className="px-3 py-2">
+                    {user.permissions.includes('*') ? (
+                      <span className="px-3 py-1 text-xs rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20">
+                        Master Admin
+                      </span>
+                    ) : (
+                      <div className="flex gap-1.5 flex-wrap">
+                        {user.permissions.length === 0 && <span className="text-xs text-zinc-400 italic">No access</span>}
+                        {user.permissions.map((p: string) => (
+                          <span key={p} className="px-2 py-1 text-xs rounded-md bg-secondary/10 text-secondary border border-secondary/20 font-medium">
+                            {p.replace('manage:', '')}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-3 py-2 text-right">
+                    <div className="flex items-center justify-end gap-3">
+                      <button onClick={() => openModal(user)} className="text-blue-500 hover:text-blue-600 font-semibold transition-colors">Edit</button>
+                      {user.email !== 'admin@platform.com' && (
+                        <button onClick={() => handleDelete(user.id)} className="text-red-500 hover:text-red-600 font-semibold transition-colors">Remove</button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {users.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="px-3 py-2 text-center text-zinc-500">No team members found.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {modalOpen && (

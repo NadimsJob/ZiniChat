@@ -445,13 +445,13 @@ export default function NewInboxStepper() {
     <div className="flex gap-3 relative">
       {num > 1 && <div className="absolute left-[11px] top-[-28px] w-px h-7 bg-surface-hover" />}
       <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 transition-all ${
-        done ? 'bg-primary text-primary-foreground' : active ? 'bg-primary/20 text-primary border-2 border-primary' : 'bg-surface-hover text-zinc-400'
+        done ? 'bg-primary text-primary-foreground' : active ? 'bg-primary/20 text-primary border-2 border-primary' : 'bg-surface-hover text-muted-foreground'
       }`}>
         {done ? <CheckCircle2 className="w-4 h-4" /> : num}
       </div>
       <div>
-        <h3 className={`text-[13px] font-semibold ${active || done ? 'text-foreground' : 'text-zinc-500'}`}>{title}</h3>
-        <p className="text-[11px] text-zinc-500 mt-0.5 leading-relaxed">{desc}</p>
+        <h3 className={`text-[13px] font-semibold ${active || done ? 'text-foreground' : 'text-muted-foreground'}`}>{title}</h3>
+        <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">{desc}</p>
       </div>
     </div>
   );
@@ -463,7 +463,7 @@ export default function NewInboxStepper() {
       <div className="w-64 shrink-0 bg-surface/70 backdrop-blur-xl border-r border-surface-hover p-6 hidden md:flex flex-col">
         <button
           onClick={() => router.push('/dashboard/settings/inboxes')}
-          className="flex items-center text-[12px] font-medium text-zinc-400 hover:text-foreground mb-8 transition-colors">
+          className="flex items-center text-[12px] font-medium text-muted-foreground hover:text-foreground mb-8 transition-colors">
           <ArrowLeft className="w-4 h-4 mr-1.5" />
           {language === 'en' ? 'Back to Inboxes' : 'ইনবক্সে ফিরুন'}
         </button>
@@ -487,7 +487,7 @@ export default function NewInboxStepper() {
             <h1 className="text-2xl font-black text-foreground mb-1">
               {language === 'en' ? 'Select a Channel' : 'চ্যানেল সিলেক্ট করুন'}
             </h1>
-            <p className="text-[13px] text-zinc-400 mb-8">
+            <p className="text-[13px] text-muted-foreground mb-8">
               {language === 'en'
                 ? 'Choose a platform to connect. Locked channels have reached your plan\'s limit.'
                 : 'কানেক্ট করার প্ল্যাটফর্ম নির্বাচন করুন। লক থাকা চ্যানেলগুলো আপনার প্ল্যানের সীমায় পৌঁছে গেছে।'}
@@ -530,11 +530,11 @@ export default function NewInboxStepper() {
                       </div>
 
                       <h3 className="font-bold text-[14px] text-foreground mb-1">{ch.name}</h3>
-                      <p className="text-[11px] text-zinc-400 leading-relaxed mb-4">{ch.desc}</p>
+                      <p className="text-[11px] text-muted-foreground leading-relaxed mb-4">{ch.desc}</p>
 
                       {/* Quota bar */}
                       <div className="space-y-1.5">
-                        <div className="flex justify-between items-center text-[10px] text-zinc-400">
+                        <div className="flex justify-between items-center text-[10px] text-muted-foreground">
                           <span>{language === 'en' ? 'Connections' : 'কানেকশন'}</span>
                           <span className={`font-bold ${isLocked ? 'text-orange-400' : 'text-foreground'}`}>
                             {ch.current} / {ch.limit}
@@ -577,7 +577,7 @@ export default function NewInboxStepper() {
             {!quotasLoading && quotas && (
               <div className="mt-6 flex items-start gap-2.5 p-3.5 bg-blue-500/5 border border-blue-500/15 rounded-xl">
                 <TrendingUp className="w-4 h-4 text-blue-400 mt-0.5 shrink-0" />
-                <p className="text-[12px] text-zinc-400 leading-relaxed">
+                <p className="text-[12px] text-muted-foreground leading-relaxed">
                   {language === 'en'
                     ? `Your current plan allows: WhatsApp ×${quotas.whatsappLimit}, Messenger ×${quotas.messengerLimit}, Instagram ×${quotas.instagramLimit}, Website Widget ×${quotas.websiteWidgetLimit}.`
                     : `আপনার বর্তমান প্ল্যানে: WhatsApp ×${quotas.whatsappLimit}, Messenger ×${quotas.messengerLimit}, Instagram ×${quotas.instagramLimit}, ওয়েবসাইট উইজেট ×${quotas.websiteWidgetLimit} কানেক্ট করতে পারবেন।`}
@@ -593,7 +593,7 @@ export default function NewInboxStepper() {
         {/* Step 2: WhatsApp Provider Selection */}
         {step === 2 && selectedChannel === 'whatsapp' && (
           <div className="animate-in fade-in slide-in-from-right-8 duration-400">
-            <button onClick={() => setStep(1)} className="flex items-center text-[12px] text-zinc-400 hover:text-foreground mb-6 transition-colors">
+            <button onClick={() => setStep(1)} className="flex items-center text-[12px] text-muted-foreground hover:text-foreground mb-6 transition-colors">
               <ArrowLeft className="w-3.5 h-3.5 mr-1" /> {language === 'en' ? 'Back' : 'পেছনে'}
             </button>
             <h1 className="text-2xl font-black text-foreground mb-1">
@@ -1364,27 +1364,27 @@ export default function NewInboxStepper() {
                   <h1 className="text-xl font-black text-foreground">
                     {language === 'en' ? 'Widget Ready! 🎉' : 'উইজেট তৈরি হয়েছে! 🎉'}
                   </h1>
-                  <p className="text-[12px] text-zinc-400">
+                  <p className="text-[12px] text-muted-foreground">
                     {language === 'en' ? 'Copy the code and paste it into your website.' : 'কোডটি কপি করে আপনার ওয়েবসাইটে পেস্ট করুন।'}
                   </p>
                 </div>
               </div>
 
               {/* Code block */}
-              <div className="bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden mb-5">
-                <div className="flex items-center justify-between px-4 py-2.5 bg-zinc-900 border-b border-zinc-800">
-                  <span className="text-[11px] font-mono text-zinc-400">HTML — Paste before &lt;/body&gt;</span>
+              <div className="bg-background border border-border rounded-2xl overflow-hidden mb-5">
+                <div className="flex items-center justify-between px-4 py-2.5 bg-muted/50 border-b border-border">
+                  <span className="text-[11px] font-mono text-muted-foreground">HTML — Paste before &lt;/body&gt;</span>
                   <button
                     onClick={() => handleCopyCode(embedCode)}
                     className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-bold transition-all ${
-                      codeCopied ? 'bg-emerald-600 text-white' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+                      codeCopied ? 'bg-emerald-600 text-white' : 'bg-muted text-foreground hover:bg-muted/80 border border-border'
                     }`}
                   >
                     {codeCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                     {codeCopied ? (language === 'en' ? 'Copied!' : 'কপি হয়েছে!') : (language === 'en' ? 'Copy Code' : 'কপি করুন')}
                   </button>
                 </div>
-                <pre className="text-[11px] font-mono text-emerald-300 p-4 overflow-x-auto leading-relaxed whitespace-pre-wrap break-all">{embedCode}</pre>
+                <pre className="text-[11px] font-mono text-emerald-400 dark:text-emerald-300 p-4 overflow-x-auto leading-relaxed whitespace-pre-wrap break-all">{embedCode}</pre>
               </div>
 
               {/* Installation instructions */}

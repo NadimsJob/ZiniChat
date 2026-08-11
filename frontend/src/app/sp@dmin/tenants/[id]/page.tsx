@@ -77,7 +77,7 @@ export default function TenantReportPage() {
       </div>
 
       {/* Overview Cards */}
-      <div className="grid md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         {/* Profile Card */}
         <div className="bg-surface border border-surface-hover rounded-2xl p-4 shadow-xl">
           <div className="flex items-center gap-2 mb-4">
@@ -187,40 +187,42 @@ export default function TenantReportPage() {
           <CreditCard className="w-4 h-4 text-zinc-400" />
           <h2 className="text-sm font-bold text-white">Payment History</h2>
         </div>
-        <table className="w-full text-left text-xs">
-          <thead className="bg-surface-hover/30 text-zinc-400">
-            <tr>
-              <th className="px-4 py-2.5 font-medium">Date</th>
-              <th className="px-4 py-2.5 font-medium">TrxID / Ref</th>
-              <th className="px-4 py-2.5 font-medium">Provider</th>
-              <th className="px-4 py-2.5 font-medium text-right">Amount</th>
-              <th className="px-4 py-2.5 font-medium">Status</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-surface-hover/50 text-zinc-300">
-            {!tenant.payments || tenant.payments.length === 0 ? (
-              <tr><td colSpan={5} className="px-4 py-6 text-center text-zinc-500">No payment history found for this tenant.</td></tr>
-            ) : (
-              tenant.payments.map((payment: any) => (
-                <tr key={payment.id} className="hover:bg-surface-hover/20 transition-colors">
-                  <td className="px-4 py-2.5">{new Date(payment.createdAt).toLocaleString()}</td>
-                  <td className="px-4 py-2.5 font-mono text-zinc-400">{payment.trxId || 'N/A'}</td>
-                  <td className="px-4 py-2.5 capitalize">{payment.provider}</td>
-                  <td className="px-4 py-2.5 font-bold text-white text-right">{formatBDT(payment.amountBdt)}</td>
-                  <td className="px-4 py-2.5">
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
-                      payment.status === 'success' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                      payment.status === 'failed' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
-                      'bg-orange-500/10 text-orange-400 border-orange-500/20'
-                    }`}>
-                      {payment.status.toUpperCase()}
-                    </span>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs min-w-[600px]">
+            <thead className="bg-surface-hover/30 text-zinc-400">
+              <tr>
+                <th className="px-4 py-2.5 font-medium">Date</th>
+                <th className="px-4 py-2.5 font-medium">TrxID / Ref</th>
+                <th className="px-4 py-2.5 font-medium">Provider</th>
+                <th className="px-4 py-2.5 font-medium text-right">Amount</th>
+                <th className="px-4 py-2.5 font-medium">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-surface-hover/50 text-zinc-300">
+              {!tenant.payments || tenant.payments.length === 0 ? (
+                <tr><td colSpan={5} className="px-4 py-6 text-center text-zinc-500">No payment history found for this tenant.</td></tr>
+              ) : (
+                tenant.payments.map((payment: any) => (
+                  <tr key={payment.id} className="hover:bg-surface-hover/20 transition-colors">
+                    <td className="px-4 py-2.5">{new Date(payment.createdAt).toLocaleString()}</td>
+                    <td className="px-4 py-2.5 font-mono text-zinc-400">{payment.trxId || 'N/A'}</td>
+                    <td className="px-4 py-2.5 capitalize">{payment.provider}</td>
+                    <td className="px-4 py-2.5 font-bold text-white text-right">{formatBDT(payment.amountBdt)}</td>
+                    <td className="px-4 py-2.5">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+                        payment.status === 'success' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                        payment.status === 'failed' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
+                        'bg-orange-500/10 text-orange-400 border-orange-500/20'
+                      }`}>
+                        {payment.status.toUpperCase()}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

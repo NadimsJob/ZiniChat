@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { JwtService } from '@nestjs/jwt';
 import { TenantsService } from './tenants.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { BillingService } from '../billing/billing.service';
@@ -16,8 +17,13 @@ describe('TenantsService - Plan Customization', () => {
   let billingService: any;
   let notificationsService: any;
   let smtpService: any;
+  let jwtService: any;
 
   beforeEach(async () => {
+    jwtService = {
+      sign: jest.fn().mockReturnValue('mock_impersonation_token_123'),
+    };
+
     prisma = {
       tenant: {
         findMany: jest.fn(),
@@ -93,6 +99,7 @@ describe('TenantsService - Plan Customization', () => {
         { provide: BillingService, useValue: billingService },
         { provide: NotificationsService, useValue: notificationsService },
         { provide: SmtpService, useValue: smtpService },
+        { provide: JwtService, useValue: jwtService },
       ],
     }).compile();
 
@@ -282,6 +289,72 @@ describe('TenantsService - Plan Customization', () => {
         expect.stringContaining('Reactivated'),
         'system'
       );
+    });
+  });
+
+  describe('impersonateTenant', () => {
+    it('throws NotFoundException if tenant does not exist', async () => {
+      prisma.tenant.findUnique.mockResolvedValue(null);
+      await expect(service.impersonateTenant(TENANT_ID, ACTOR_ID)).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws BadRequestException if tenant has no users', async () => {
+      prisma.tenant.findUnique.mockResolvedValue({
+        id: TENANT_ID,
+        name: 'Test Tenant',
+        users: [],
+      });
+      await expect(service.impersonateTenant(TENANT_ID, ACTOR_ID)).rejects.toThrow(BadRequestException);
+    });
+
+    it('generates token for tenant owner and creates audit log', async () => {
+      const mockTenant = {
+        id: TENANT_ID,
+        name: 'Acme Corp',
+        users: [
+          { id: 'user-member', email: 'staff@acme.com', role: 'member', tenantId: TENANT_ID },
+          { id: 'user-owner', email: 'owner@acme.com', role: 'owner', tenantId: TENANT_ID, permissions: ['all'] },
+        ],
+      };
+      prisma.tenant.findUnique.mockResolvedValue(mockTenant);
+
+      const result = await service.impersonateTenant(TENANT_ID, ACTOR_ID);
+
+      expect(jwtService.sign).toHaveBeenCalledWith(
+        expect.objectContaining({
+          email: 'owner@acme.com',
+          sub: 'user-owner',
+          role: 'owner',
+          tenantId: TENANT_ID,
+          impersonatedBy: ACTOR_ID,
+        }),
+        { expiresIn: '2h' }
+      );
+      expect(prisma.auditLog.create).toHaveBeenCalledWith({
+        data: {
+          actorUserId: ACTOR_ID,
+          targetTenantId: TENANT_ID,
+          action: 'SUPERADMIN_IMPERSONATED_TENANT',
+          metadataJson: {
+            targetUserId: 'user-owner',
+            targetUserEmail: 'owner@acme.com',
+            tenantName: 'Acme Corp',
+          },
+        },
+      });
+      expect(result).toEqual({
+        access_token: 'mock_impersonation_token_123',
+        user: {
+          id: 'user-owner',
+          name: undefined,
+          email: 'owner@acme.com',
+          role: 'owner',
+        },
+        tenant: {
+          id: TENANT_ID,
+          name: 'Acme Corp',
+        },
+      });
     });
   });
 });

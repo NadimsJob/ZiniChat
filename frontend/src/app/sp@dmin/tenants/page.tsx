@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Cookies from 'js-cookie';
-import { Settings2, X, Eye } from 'lucide-react';
+import { Settings2, X, Eye, LogIn, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 
@@ -46,6 +46,39 @@ export default function TenantsPage() {
   });
 
   const [saving, setSaving] = useState(false);
+  const [impersonatingId, setImpersonatingId] = useState<string | null>(null);
+
+  const handleImpersonate = async (tenantId: string, tenantName: string) => {
+    try {
+      setImpersonatingId(tenantId);
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/tenants/${tenantId}/impersonate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Failed to impersonate tenant');
+      }
+
+      const data = await res.json();
+      if (data.access_token) {
+        toast.success(`Opening ${tenantName} workspace...`);
+        window.open(`/sp@dmin/impersonate?token=${data.access_token}`, '_blank');
+      } else {
+        throw new Error('No impersonation token returned');
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'Could not enter tenant workspace');
+    } finally {
+      setImpersonatingId(null);
+    }
+  };
 
   const fetchTenantsAndConfigs = async () => {
     try {
@@ -287,111 +320,127 @@ export default function TenantsPage() {
       </div>
 
       <div className="bg-surface border border-surface-hover rounded-xl overflow-hidden shadow-lg">
-        <table className="w-full text-left">
-          <thead className="bg-surface-hover/50 text-zinc-400 text-[12px]">
-            <tr>
-              <th className="px-3 py-2 font-medium">Business Name</th>
-              <th className="px-3 py-2 font-medium">Email</th>
-              <th className="px-3 py-2 font-medium">Sub. Status</th>
-              <th className="px-3 py-2 font-medium">Renewal</th>
-              <th className="px-3 py-2 font-medium">AI Responses</th>
-              <th className="px-3 py-2 font-medium">AI Model</th>
-              <th className="px-3 py-2 font-medium">Status</th>
-              <th className="px-3 py-2 font-medium text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-surface-hover text-[12px]">
-            {loading ? (
-              <tr><td colSpan={8} className="px-3 py-2 text-center text-zinc-500">Loading...</td></tr>
-            ) : tenants.length === 0 ? (
-              <tr><td colSpan={8} className="px-3 py-2 text-center text-zinc-500">No tenants found.</td></tr>
-            ) : (
-              tenants.map(tenant => (
-                <tr key={tenant.id} className="hover:bg-surface-hover/30 transition-colors">
-                  <td className="px-3 py-2 font-medium text-foreground">{tenant.name}</td>
-                  <td className="px-3 py-2 text-zinc-300">{tenant.email}</td>
-                  <td className="px-3 py-2">
-                    <div className="flex flex-col gap-0.5">
-                      <div className="flex items-center gap-1.5">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
-                          tenant.subscriptionStatus === 'active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 
-                          tenant.subscriptionStatus === 'past_due' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' : 
-                          'bg-zinc-800 text-zinc-500 border-zinc-700'
-                        }`}>
-                          {tenant.subscriptionStatus ? tenant.subscriptionStatus.toUpperCase() : 'NONE'}
-                        </span>
-                        {(tenant.customFeatures !== null || tenant.customPriceUsd !== null || tenant.customMessageQuota !== null || tenant.customPlanName !== null || tenant.customSeatLimit !== null) && (
-                          <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                            Customized
+        <div className="overflow-x-auto">
+          <table className="w-full text-left min-w-[850px]">
+            <thead className="bg-surface-hover/50 text-zinc-400 text-[12px]">
+              <tr>
+                <th className="px-3 py-2 font-medium">Business Name</th>
+                <th className="px-3 py-2 font-medium">Email</th>
+                <th className="px-3 py-2 font-medium">Sub. Status</th>
+                <th className="px-3 py-2 font-medium">Renewal</th>
+                <th className="px-3 py-2 font-medium">AI Responses</th>
+                <th className="px-3 py-2 font-medium">AI Model</th>
+                <th className="px-3 py-2 font-medium">Status</th>
+                <th className="px-3 py-2 font-medium text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-surface-hover text-[12px]">
+              {loading ? (
+                <tr><td colSpan={8} className="px-3 py-2 text-center text-zinc-500">Loading...</td></tr>
+              ) : tenants.length === 0 ? (
+                <tr><td colSpan={8} className="px-3 py-2 text-center text-zinc-500">No tenants found.</td></tr>
+              ) : (
+                tenants.map(tenant => (
+                  <tr key={tenant.id} className="hover:bg-surface-hover/30 transition-colors">
+                    <td className="px-3 py-2 font-medium text-foreground">{tenant.name}</td>
+                    <td className="px-3 py-2 text-zinc-300">{tenant.email}</td>
+                    <td className="px-3 py-2">
+                      <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center gap-1.5">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+                            tenant.subscriptionStatus === 'active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 
+                            tenant.subscriptionStatus === 'past_due' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' : 
+                            'bg-zinc-800 text-zinc-500 border-zinc-700'
+                          }`}>
+                            {tenant.subscriptionStatus ? tenant.subscriptionStatus.toUpperCase() : 'NONE'}
                           </span>
-                        )}
+                          {(tenant.customFeatures !== null || tenant.customPriceUsd !== null || tenant.customMessageQuota !== null || tenant.customPlanName !== null || tenant.customSeatLimit !== null) && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                              Customized
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[11px] text-zinc-400 font-medium truncate max-w-[120px]">
+                          {tenant.customPlanName || tenant.planName}
+                        </span>
                       </div>
-                      <span className="text-[11px] text-zinc-400 font-medium truncate max-w-[120px]">
-                        {tenant.customPlanName || tenant.planName}
+                    </td>
+                    <td className="px-3 py-2 text-zinc-400">
+                      {tenant.currentPeriodEnd ? new Date(tenant.currentPeriodEnd).toLocaleDateString() : 'N/A'}
+                    </td>
+                    <td className="px-3 py-2 text-zinc-300">
+                      {tenant.aiQuota ? (
+                        <span className="text-xs">
+                          <strong className="text-zinc-100">{tenant.aiQuota.used}</strong> / {tenant.aiQuota.limit}
+                        </span>
+                      ) : 'N/A'}
+                    </td>
+                    <td className="px-3 py-2">
+                      <select 
+                        value={tenant.customAiConfigId || (aiConfigs.find(c => c.isDefault)?.id || aiConfigs[0]?.id || '')} 
+                        onChange={(e) => handleAiConfigChange(tenant.id, e.target.value)}
+                        className="bg-[#09090b] border border-zinc-800 rounded px-2 py-1 text-[11px] text-white focus:outline-none focus:border-emerald-500 max-w-[130px] truncate"
+                      >
+                        {aiConfigs.map(c => (
+                          <option key={c.id} value={c.id}>{c.name}{c.isDefault ? ' (Default)' : ''}</option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="px-3 py-2">
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                        tenant.status === 'active' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
+                      }`}>
+                        {tenant.status.charAt(0).toUpperCase() + tenant.status.slice(1)}
                       </span>
-                    </div>
-                  </td>
-                  <td className="px-3 py-2 text-zinc-400">
-                    {tenant.currentPeriodEnd ? new Date(tenant.currentPeriodEnd).toLocaleDateString() : 'N/A'}
-                  </td>
-                  <td className="px-3 py-2 text-zinc-300">
-                    {tenant.aiQuota ? (
-                      <span className="text-xs">
-                        <strong className="text-zinc-100">{tenant.aiQuota.used}</strong> / {tenant.aiQuota.limit}
-                      </span>
-                    ) : 'N/A'}
-                  </td>
-                  <td className="px-3 py-2">
-                    <select 
-                      value={tenant.customAiConfigId || (aiConfigs.find(c => c.isDefault)?.id || aiConfigs[0]?.id || '')} 
-                      onChange={(e) => handleAiConfigChange(tenant.id, e.target.value)}
-                      className="bg-[#09090b] border border-zinc-800 rounded px-2 py-1 text-[11px] text-white focus:outline-none focus:border-emerald-500 max-w-[130px] truncate"
-                    >
-                      {aiConfigs.map(c => (
-                        <option key={c.id} value={c.id}>{c.name}{c.isDefault ? ' (Default)' : ''}</option>
-                      ))}
-                    </select>
-                  </td>
-                  <td className="px-3 py-2">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                      tenant.status === 'active' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
-                    }`}>
-                      {tenant.status.charAt(0).toUpperCase() + tenant.status.slice(1)}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2 text-right">
-                    <div className="flex justify-end items-center gap-2">
-                      <Link
-                        href={`/sp@dmin/tenants/${tenant.id}`}
-                        className="text-xs px-3 py-1.5 rounded-lg font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors flex items-center gap-1.5"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                        Report
-                      </Link>
-                      <button 
-                        onClick={() => openCustomizeModal(tenant)}
-                        className="text-xs px-3 py-1.5 rounded-lg font-medium bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors flex items-center gap-1.5"
-                      >
-                        <Settings2 className="w-3.5 h-3.5" />
-                        Customize
-                      </button>
-                      <button 
-                        onClick={() => handleStatusChange(tenant.id, tenant.status)}
-                        className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors ${
-                          tenant.status === 'active' 
-                            ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20' 
-                            : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
-                        }`}
-                      >
-                        {tenant.status === 'active' ? 'Suspend' : 'Activate'}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+                    </td>
+                    <td className="px-3 py-2 text-right">
+                      <div className="flex flex-wrap justify-end items-center gap-1.5 sm:gap-2">
+                        <button
+                          onClick={() => handleImpersonate(tenant.id, tenant.name)}
+                          disabled={impersonatingId === tenant.id}
+                          title="Enter Tenant Panel (Impersonate)"
+                          className="text-xs px-2.5 py-1.5 rounded-lg font-medium bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                        >
+                          {impersonatingId === tenant.id ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <LogIn className="w-3.5 h-3.5" />
+                          )}
+                          <span className="hidden sm:inline">Enter Panel</span>
+                          <span className="sm:hidden">Enter</span>
+                        </button>
+                        <Link
+                          href={`/sp@dmin/tenants/${tenant.id}`}
+                          className="text-xs px-2.5 py-1.5 rounded-lg font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors flex items-center gap-1.5"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">Report</span>
+                        </Link>
+                        <button 
+                          onClick={() => openCustomizeModal(tenant)}
+                          className="text-xs px-2.5 py-1.5 rounded-lg font-medium bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors flex items-center gap-1.5"
+                        >
+                          <Settings2 className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">Customize</span>
+                        </button>
+                        <button 
+                          onClick={() => handleStatusChange(tenant.id, tenant.status)}
+                          className={`text-xs px-2.5 py-1.5 rounded-lg font-medium transition-colors ${
+                            tenant.status === 'active' 
+                              ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20' 
+                              : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
+                          }`}
+                        >
+                          {tenant.status === 'active' ? 'Suspend' : 'Activate'}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {editingTenant && (
@@ -439,7 +488,7 @@ export default function TenantsPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-xs font-medium text-zinc-400">Monthly Price ($)</label>
                   <input
@@ -664,12 +713,12 @@ export default function TenantsPage() {
                 )}
               </div>
               
-              <div className="flex justify-between items-center pt-4 border-t border-zinc-800">
+              <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 pt-4 border-t border-zinc-800">
                 <button
                   type="button"
                   onClick={handleResetCustomPlan}
                   disabled={saving}
-                  className="px-3 py-1.5 rounded-xl text-xs font-medium text-amber-400 border border-amber-500/30 hover:bg-amber-500/10 transition-colors disabled:opacity-50"
+                  className="px-3 py-2 rounded-xl text-xs font-medium text-amber-400 border border-amber-500/30 hover:bg-amber-500/10 transition-colors disabled:opacity-50 text-center"
                 >
                   Reset Defaults
                 </button>
@@ -677,14 +726,14 @@ export default function TenantsPage() {
                   <button
                     type="button"
                     onClick={() => setEditingTenant(null)}
-                    className="px-4 py-2 rounded-xl text-sm font-medium text-zinc-300 hover:bg-zinc-800 transition-colors"
+                    className="flex-1 sm:flex-initial px-4 py-2 rounded-xl text-sm font-medium text-zinc-300 hover:bg-zinc-800 transition-colors text-center"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={saving}
-                    className="px-4 py-2 rounded-xl text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-500 transition-colors disabled:opacity-50"
+                    className="flex-1 sm:flex-initial px-4 py-2 rounded-xl text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-500 transition-colors disabled:opacity-50 text-center"
                   >
                     {saving ? 'Saving...' : 'Save Custom Plan'}
                   </button>

@@ -325,8 +325,8 @@ export default function PackagesPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-2.5 bg-primary/5 p-3 rounded-xl border border-primary/20 mt-3">
-                <div className="col-span-3 mb-1">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 bg-primary/5 p-3 rounded-xl border border-primary/20 mt-3">
+                <div className="col-span-1 sm:col-span-3 mb-1">
                   <h4 className="text-[13px] font-bold text-primary">Promotional Discounts</h4>
                 </div>
                 <div>
@@ -343,7 +343,7 @@ export default function PackagesPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-5 gap-2 mt-2.5">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 mt-2.5">
                 <div>
                   <label className="block text-[12px] font-medium mb-1 text-zinc-400">Team Members</label>
                   <input type="number" value={planForm.seatLimit} onChange={e => {
@@ -380,7 +380,7 @@ export default function PackagesPage() {
                   }} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none text-xs" />
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-2.5 mt-2.5">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 mt-2.5">
                 <div>
                   <label className="block text-[12px] font-medium mb-1 text-zinc-400">Trial (Days)</label>
                   <input type="number" value={planForm.trialDays} onChange={e => {

@@ -223,10 +223,10 @@ export default function ExecutiveDashboardPage() {
                 {sub.planName || 'Pro Plan'}
               </span>
             </div>
-            <p className="text-[12px] text-zinc-400 mt-0.5 flex items-center gap-2 flex-wrap">
+            <p className="text-[12px] text-muted-foreground mt-0.5 flex items-center gap-2 flex-wrap">
               <span>{compName}</span>
               <span>•</span>
-              <span className="text-zinc-400 font-medium">
+              <span className="text-muted-foreground font-medium">
                 {new Date().toLocaleDateString(language === 'bn' ? 'bn-BD' : 'en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
               </span>
             </p>
@@ -239,7 +239,7 @@ export default function ExecutiveDashboardPage() {
           {/* YouTube-Style Analytics Date Filter */}
           <div className="relative">
             <div className="bg-surface-hover/60 border border-surface-hover rounded-xl p-1 flex items-center gap-1">
-              <Filter className="w-3.5 h-3.5 text-zinc-400 ml-2" />
+              <Filter className="w-3.5 h-3.5 text-muted-foreground ml-2" />
               <select
                 value={range}
                 onChange={e => handleRangeChange(e.target.value)}
@@ -260,15 +260,15 @@ export default function ExecutiveDashboardPage() {
               <div className="absolute right-0 top-12 z-50 bg-surface/90 backdrop-blur-xl border border-surface-hover rounded-2xl p-4 shadow-2xl space-y-3 w-72">
                 <div className="text-[12px] font-bold text-foreground">{language === 'en' ? 'Select Custom Date Range' : 'তারিখ সীমানা সিলেক্ট করুন'}</div>
                 <div>
-                  <label className="text-[10px] font-bold text-zinc-400 block mb-1">Start Date</label>
-                  <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-1.5 text-xs" />
+                  <label className="text-[10px] font-bold text-muted-foreground block mb-1">Start Date</label>
+                  <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-1.5 text-xs text-foreground" />
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold text-zinc-400 block mb-1">End Date</label>
-                  <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-1.5 text-xs" />
+                  <label className="text-[10px] font-bold text-muted-foreground block mb-1">End Date</label>
+                  <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-1.5 text-xs text-foreground" />
                 </div>
                 <div className="flex justify-end gap-2 pt-2">
-                  <button onClick={() => setCustomOpen(false)} className="px-3 py-1 rounded-lg text-xs text-zinc-400 hover:text-foreground">Cancel</button>
+                  <button onClick={() => setCustomOpen(false)} className="px-3 py-1 rounded-lg text-xs text-muted-foreground hover:text-foreground">Cancel</button>
                   <button onClick={handleCustomApply} className="px-4 py-1 bg-primary text-primary-foreground text-xs font-bold rounded-lg shadow-sm">Apply</button>
                 </div>
               </div>
@@ -278,7 +278,7 @@ export default function ExecutiveDashboardPage() {
           {/* Refresh Button */}
           <button
             onClick={() => fetchAllData()}
-            className="p-2 bg-surface-hover/60 border border-surface-hover hover:border-primary/40 rounded-xl text-zinc-400 hover:text-foreground transition-all">
+            className="p-2 bg-surface-hover/60 border border-surface-hover hover:border-primary/40 rounded-xl text-muted-foreground hover:text-foreground transition-all">
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
 
@@ -316,7 +316,7 @@ export default function ExecutiveDashboardPage() {
         {/* KPI 1: Messages */}
         <div className="bg-emerald-500/5 backdrop-blur-xl border border-emerald-500/20 rounded-2xl p-4 flex flex-col justify-between hover:border-emerald-500/40 hover:bg-emerald-500/10 transition-all shadow-md shadow-black/5 hover:shadow-lg">
           <div>
-            <div className="flex items-center justify-between text-zinc-400 mb-2">
+            <div className="flex items-center justify-between text-muted-foreground mb-2">
               <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">{language === 'en' ? 'Messages Sent' : 'মেসেজ সেন্ড'}</span>
               <MessageSquare className="w-4 h-4 text-emerald-400" />
             </div>
@@ -326,10 +326,10 @@ export default function ExecutiveDashboardPage() {
                 {kpis.messages?.growth >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
                 {formatNumber(Math.abs(kpis.messages?.growth || 0))}%
               </span>
-              <span className="text-[10px] text-zinc-400">{language === 'en' ? 'vs prev' : 'পূর্ববর্তী'}</span>
+              <span className="text-[10px] text-muted-foreground">{language === 'en' ? 'vs prev' : 'পূর্ববর্তী'}</span>
             </div>
           </div>
-          <div className="mt-3 pt-2 border-t border-emerald-500/20 flex justify-between text-[11px] text-zinc-400">
+          <div className="mt-3 pt-2 border-t border-emerald-500/20 flex justify-between text-[11px] text-muted-foreground">
             <span>{language === 'en' ? 'Today:' : 'আজ:'} <strong className="text-foreground">{formatNumber(kpis.messages?.today || 0)}</strong></span>
             <span>{language === 'en' ? 'Used:' : 'ব্যবহৃত:'} <strong className="text-emerald-400">{formatNumber(kpis.messages?.pct || 0)}%</strong></span>
           </div>
@@ -338,7 +338,7 @@ export default function ExecutiveDashboardPage() {
         {/* KPI 2: AI Responses */}
         <div className="bg-purple-500/5 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-4 flex flex-col justify-between hover:border-purple-500/40 hover:bg-purple-500/10 transition-all shadow-md shadow-black/5 hover:shadow-lg">
           <div>
-            <div className="flex items-center justify-between text-zinc-400 mb-2">
+            <div className="flex items-center justify-between text-muted-foreground mb-2">
               <span className="text-[11px] font-bold uppercase tracking-wider text-purple-400">{language === 'en' ? 'AI Replies' : 'এআই রিপ্লাই'}</span>
               <Bot className="w-4 h-4 text-purple-400" />
             </div>
@@ -349,7 +349,7 @@ export default function ExecutiveDashboardPage() {
               </span>
             </div>
           </div>
-          <div className="mt-3 pt-2 border-t border-purple-500/20 flex justify-between text-[11px] text-zinc-400">
+          <div className="mt-3 pt-2 border-t border-purple-500/20 flex justify-between text-[11px] text-muted-foreground">
             <span>{language === 'en' ? 'Today:' : 'আজ:'} <strong className="text-foreground">{formatNumber(kpis.ai?.today || 0)}</strong></span>
             <span>Tokens: <strong className="text-foreground">{formatNumber(kpis.ai?.avgTokens || 0)}</strong></span>
           </div>
@@ -358,16 +358,16 @@ export default function ExecutiveDashboardPage() {
         {/* KPI 3: Human Responses */}
         <div className="bg-blue-500/5 backdrop-blur-xl border border-blue-500/20 rounded-2xl p-4 flex flex-col justify-between hover:border-blue-500/40 hover:bg-blue-500/10 transition-all shadow-md shadow-black/5 hover:shadow-lg">
           <div>
-            <div className="flex items-center justify-between text-zinc-400 mb-2">
+            <div className="flex items-center justify-between text-muted-foreground mb-2">
               <span className="text-[11px] font-bold uppercase tracking-wider text-blue-400">{language === 'en' ? 'Human Replies' : 'হিউম্যান রিপ্লাই'}</span>
               <Users className="w-4 h-4 text-blue-400" />
             </div>
             <div className="text-2xl sm:text-3xl font-black text-blue-400">{formatNumber(kpis.human?.month || 0)}</div>
-            <div className="flex items-center gap-1.5 mt-1 text-[11px] text-zinc-400">
+            <div className="flex items-center gap-1.5 mt-1 text-[11px] text-muted-foreground">
               <span>{formatNumber(kpis.human?.humanVsAiPct || 0)}% {language === 'en' ? 'Manual Split' : 'ম্যানুয়াল রিপ্লাই'}</span>
             </div>
           </div>
-          <div className="mt-3 pt-2 border-t border-blue-500/20 flex justify-between text-[11px] text-zinc-400">
+          <div className="mt-3 pt-2 border-t border-blue-500/20 flex justify-between text-[11px] text-muted-foreground">
             <span>{language === 'en' ? 'Today:' : 'আজ:'} <strong className="text-foreground">{formatNumber(kpis.human?.today || 0)}</strong></span>
             <span className="text-blue-400 font-bold">{language === 'en' ? 'Agent' : 'এজেন্ট'}</span>
           </div>
@@ -377,7 +377,7 @@ export default function ExecutiveDashboardPage() {
         {hasCommentAutomation && (
           <div className="bg-orange-500/5 backdrop-blur-xl border border-orange-500/20 rounded-2xl p-4 flex flex-col justify-between hover:border-orange-500/40 hover:bg-orange-500/10 transition-all shadow-md shadow-black/5 hover:shadow-lg">
             <div>
-              <div className="flex items-center justify-between text-zinc-400 mb-2">
+              <div className="flex items-center justify-between text-muted-foreground mb-2">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-orange-400">{language === 'en' ? 'FB Comments' : 'FB কমেন্ট'}</span>
                 <MessageSquare className="w-4 h-4 text-orange-400" />
               </div>
@@ -387,10 +387,10 @@ export default function ExecutiveDashboardPage() {
                   {(data?.facebookComments?.growth || 0) >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
                   {formatNumber(Math.abs(data?.facebookComments?.growth || 0))}%
                 </span>
-                <span className="text-[10px] text-zinc-400">{language === 'en' ? 'vs prev' : 'পূর্ববর্তী'}</span>
+                <span className="text-[10px] text-muted-foreground">{language === 'en' ? 'vs prev' : 'পূর্ববর্তী'}</span>
               </div>
             </div>
-            <div className="mt-3 pt-2 border-t border-orange-500/20 flex justify-between text-[11px] text-zinc-400">
+            <div className="mt-3 pt-2 border-t border-orange-500/20 flex justify-between text-[11px] text-muted-foreground">
               <span>{language === 'en' ? 'Today:' : 'আজ:'} <strong className="text-foreground">{formatNumber(data?.facebookComments?.today || 0)}</strong></span>
               <span>{language === 'en' ? 'Replied:' : 'উত্তর:'} <strong className="text-emerald-400">{formatNumber(data?.facebookComments?.replied || 0)}</strong></span>
             </div>
@@ -401,7 +401,7 @@ export default function ExecutiveDashboardPage() {
         {/* KPI 5: Open Conversations */}
         <div className="bg-amber-500/5 backdrop-blur-xl border border-amber-500/20 rounded-2xl p-4 flex flex-col justify-between hover:border-amber-500/40 hover:bg-amber-500/10 transition-all shadow-md shadow-black/5 hover:shadow-lg">
           <div>
-            <div className="flex items-center justify-between text-zinc-400 mb-2">
+            <div className="flex items-center justify-between text-muted-foreground mb-2">
               <span className="text-[11px] font-bold uppercase tracking-wider text-amber-400">{language === 'en' ? 'Open Inbox' : 'ওপেন ইনবক্স'}</span>
               <Activity className="w-4 h-4 text-amber-400" />
             </div>
@@ -422,7 +422,7 @@ export default function ExecutiveDashboardPage() {
               )}
             </div>
           </div>
-          <div className="mt-3 pt-2 border-t border-amber-500/20 flex justify-between text-[11px] text-zinc-400">
+          <div className="mt-3 pt-2 border-t border-amber-500/20 flex justify-between text-[11px] text-muted-foreground">
             <span>{language === 'en' ? 'Resolved:' : 'সমাধান:'} <strong className="text-foreground">{formatNumber(kpis.conversations?.resolvedToday || 0)}</strong></span>
           </div>
         </div>
@@ -430,14 +430,14 @@ export default function ExecutiveDashboardPage() {
         {/* KPI 6: Subscription Usage */}
         <div className="bg-primary/5 backdrop-blur-xl border border-primary/20 rounded-2xl p-4 flex flex-col justify-between hover:border-primary/40 hover:bg-primary/10 transition-all shadow-md shadow-black/5 hover:shadow-lg">
           <div>
-            <div className="flex items-center justify-between text-zinc-400 mb-2">
+            <div className="flex items-center justify-between text-muted-foreground mb-2">
               <span className="text-[11px] font-bold uppercase tracking-wider text-primary">{language === 'en' ? 'Plan Quota' : 'প্ল্যান কোটা'}</span>
               <Zap className="w-4 h-4 text-primary" />
             </div>
             <div className="text-xl sm:text-2xl font-black text-foreground">
-              {formatNumber(kpis.messages?.used || 0)} <span className="text-xs font-medium text-zinc-400">/ {formatNumber(kpis.messages?.limit || 0)}</span>
+              {formatNumber(kpis.messages?.used || 0)} <span className="text-xs font-medium text-muted-foreground">/ {formatNumber(kpis.messages?.limit || 0)}</span>
             </div>
-            <div className="text-[11px] text-zinc-400 mt-1 font-medium">
+            <div className="text-[11px] text-muted-foreground mt-1 font-medium">
               {formatNumber(kpis.messages?.remaining || 0)} {language === 'en' ? 'Messages Available' : 'মেসেজ অবশিষ্ট'}
             </div>
             <div className="w-full bg-surface-hover rounded-full h-1.5 mt-2 overflow-hidden">
@@ -445,7 +445,7 @@ export default function ExecutiveDashboardPage() {
             </div>
           </div>
           <div className="mt-3 pt-2 border-t border-primary/20 flex justify-between text-[11px]">
-            <span className="text-zinc-400">{kpis.messages?.pct || 0}% {language === 'en' ? 'Used' : 'ব্যবহৃত'}</span>
+            <span className="text-muted-foreground">{kpis.messages?.pct || 0}% {language === 'en' ? 'Used' : 'ব্যবহৃত'}</span>
             <Link href="/dashboard/settings/subscription" className="text-primary font-bold hover:underline">{language === 'en' ? 'Upgrade' : 'আপগ্রেড'}</Link>
           </div>
         </div>

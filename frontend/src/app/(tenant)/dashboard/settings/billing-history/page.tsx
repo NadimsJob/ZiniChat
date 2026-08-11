@@ -157,7 +157,7 @@ export default function BillingHistoryPage() {
             <Receipt className="w-5 h-5 text-primary" />
             {language === 'en' ? 'Billing & Purchase History' : 'বিলিং এবং ক্রয়ের হিস্ট্রি'}
           </h1>
-          <p className="text-[13px] text-zinc-400 mt-1">
+          <p className="text-[13px] text-muted-foreground mt-1">
             {language === 'en' 
               ? 'View upcoming renewal dates, pay in advance, and access past payment receipts.' 
               : 'আপনার আগামীর বিলিং তারিখ দেখুন, অগ্রিম পেমেন্ট করুন এবং পূর্ববর্তী রসিদগুলো দেখুন।'}
@@ -184,7 +184,7 @@ export default function BillingHistoryPage() {
                   <Crown className="w-3 h-3 text-yellow-400" />
                   {upcomingBill.planName}
                 </span>
-                <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
+                <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
                   ({upcomingBill.billingCycle === 'yearly' ? (language === 'en' ? 'Yearly' : 'বার্ষিক') : (language === 'en' ? 'Monthly' : 'মাসিক')})
                 </span>
               </div>
@@ -199,7 +199,7 @@ export default function BillingHistoryPage() {
                     })}
                   </span>
                 </h3>
-                <p className="text-[12px] text-zinc-400 mt-1 flex items-center gap-1">
+                <p className="text-[12px] text-muted-foreground mt-1 flex items-center gap-1">
                   <Clock className="w-3.5 h-3.5 text-amber-400" />
                   <span>
                     {formatNumber(upcomingBill.daysRemaining)} {language === 'en' ? 'days remaining in current cycle' : 'দিন অবশিষ্ট আছে'}
@@ -221,7 +221,7 @@ export default function BillingHistoryPage() {
             {/* Right Upcoming Amount & ALWAYS-ENABLE PAY BUTTON */}
             <div className="bg-surface/80 border border-surface-hover p-5 rounded-2xl text-center md:text-right shrink-0 min-w-[260px] space-y-3">
               <div>
-                <div className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                   {language === 'en' ? 'Upcoming Bill Amount' : 'আগামী বিলের পরিমাণ'}
                 </div>
                 <div className="text-2xl font-black text-emerald-400 mt-0.5">
@@ -257,7 +257,7 @@ export default function BillingHistoryPage() {
         {/* Table Filter Controls */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-surface-hover">
           <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-zinc-400" />
+            <Filter className="w-4 h-4 text-muted-foreground" />
             <span className="text-xs font-bold text-foreground">{language === 'en' ? 'Filter Payments:' : 'পেমেন্ট ফিল্টার:'}</span>
             <div className="flex items-center gap-1 bg-surface-hover/60 border border-surface-hover p-1 rounded-xl">
               {[
@@ -270,7 +270,7 @@ export default function BillingHistoryPage() {
                   key={f.id}
                   onClick={() => setStatusFilter(f.id)}
                   className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                    statusFilter === f.id ? 'bg-primary text-primary-foreground shadow-sm' : 'text-zinc-400 hover:text-foreground'
+                    statusFilter === f.id ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
                   {f.label}
@@ -281,7 +281,7 @@ export default function BillingHistoryPage() {
 
           {/* Search Box */}
           <div className="relative min-w-[220px]">
-            <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-2.5" />
+            <Search className="w-3.5 h-3.5 text-muted-foreground absolute left-3 top-2.5" />
             <input
               type="text"
               placeholder={language === 'en' ? 'Search TrxID or Package...' : 'TrxID বা প্যাকেজ খুঁজুন...'}
@@ -294,7 +294,7 @@ export default function BillingHistoryPage() {
 
         {/* Payments Table */}
         {loading ? (
-          <div className="p-12 text-center text-zinc-400 flex flex-col items-center gap-2">
+          <div className="p-12 text-center text-muted-foreground flex flex-col items-center gap-2">
             <RefreshCw className="w-6 h-6 animate-spin text-primary" />
             <span className="text-[13px]">
               {language === 'en' ? 'Loading billing transactions...' : 'বিলিং লেনদেন লোড করা হচ্ছে...'}
@@ -306,7 +306,7 @@ export default function BillingHistoryPage() {
             <h3 className="text-base font-bold">
               {language === 'en' ? 'No Matching Payments' : 'কোনো পেমেন্ট পাওয়া যায়নি'}
             </h3>
-            <p className="text-[13px] text-zinc-400 max-w-sm mx-auto">
+            <p className="text-[13px] text-muted-foreground max-w-sm mx-auto">
               {language === 'en' 
                 ? 'No transactions found matching your filter criteria.' 
                 : 'আপনার সিলেক্ট করা ফিল্টারের সাথে কোনো ট্রানজেকশন মেলেনি।'}
@@ -315,7 +315,7 @@ export default function BillingHistoryPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-[12px]">
-              <thead className="bg-surface-hover/60 border-b border-surface-hover text-zinc-400 font-semibold uppercase text-[10px] tracking-wider">
+              <thead className="bg-surface-hover/60 border-b border-surface-hover text-muted-foreground font-semibold uppercase text-[10px] tracking-wider">
                 <tr>
                   <th className="px-5 py-3.5">{language === 'en' ? 'Date & Time' : 'তারিখ ও সময়'}</th>
                   <th className="px-5 py-3.5">{language === 'en' ? 'Package / Addon' : 'প্যাকেজ / অ্যাডঅন'}</th>
@@ -334,7 +334,7 @@ export default function BillingHistoryPage() {
 
                   return (
                     <tr key={p.id} className="hover:bg-surface-hover/30 transition-colors">
-                      <td className="px-5 py-4 whitespace-nowrap text-zinc-400 font-mono">
+                      <td className="px-5 py-4 whitespace-nowrap text-muted-foreground font-mono">
                         {new Date(p.createdAt).toLocaleString(language === 'bn' ? 'bn-BD' : 'en-US', {
                           dateStyle: 'medium',
                           timeStyle: 'short'
@@ -350,10 +350,10 @@ export default function BillingHistoryPage() {
                           )}
                         </div>
                       </td>
-                      <td className="px-5 py-4 uppercase font-semibold text-zinc-400">
+                      <td className="px-5 py-4 uppercase font-semibold text-muted-foreground">
                         {p.provider || 'MFS'}
                       </td>
-                      <td className="px-5 py-4 font-mono text-zinc-300">
+                      <td className="px-5 py-4 font-mono text-foreground/80">
                         {p.trxId || 'N/A'}
                       </td>
                       <td className="px-5 py-4 font-bold font-mono text-amber-500">

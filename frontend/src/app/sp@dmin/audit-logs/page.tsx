@@ -36,40 +36,42 @@ export default function AuditLogsPage() {
       </div>
 
       <div className="bg-surface border border-surface-hover rounded-xl overflow-hidden shadow-lg">
-        <table className="w-full text-left">
-          <thead className="bg-surface-hover/50 text-zinc-400 text-[12px]">
-            <tr>
-              <th className="px-3 py-2 font-medium">Timestamp</th>
-              <th className="px-3 py-2 font-medium">Action</th>
-              <th className="px-3 py-2 font-medium">Actor User</th>
-              <th className="px-3 py-2 font-medium">Target Tenant</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-surface-hover text-[12px]">
-            {loading ? (
-              <tr><td colSpan={4} className="px-3 py-2 text-center text-zinc-500">Loading logs...</td></tr>
-            ) : logs.length === 0 ? (
-              <tr><td colSpan={4} className="px-3 py-2 text-center text-zinc-500">No audit logs found.</td></tr>
-            ) : (
-              logs.map(log => (
-                <tr key={log.id} className="hover:bg-surface-hover/30 transition-colors">
-                  <td className="px-3 py-2 text-zinc-400 whitespace-nowrap">
-                    {new Date(log.createdAt).toLocaleString()}
-                  </td>
-                  <td className="px-3 py-2 font-medium text-foreground">
-                    {log.action}
-                  </td>
-                  <td className="px-3 py-2 text-zinc-300">
-                    {log.actorUser?.email || log.actorUserId}
-                  </td>
-                  <td className="px-3 py-2 text-zinc-300">
-                    {log.targetTenant?.name || log.targetTenantId || '-'}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left min-w-[650px]">
+            <thead className="bg-surface-hover/50 text-zinc-400 text-[12px]">
+              <tr>
+                <th className="px-3 py-2 font-medium">Timestamp</th>
+                <th className="px-3 py-2 font-medium">Action</th>
+                <th className="px-3 py-2 font-medium">Actor User</th>
+                <th className="px-3 py-2 font-medium">Target Tenant</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-surface-hover text-[12px]">
+              {loading ? (
+                <tr><td colSpan={4} className="px-3 py-2 text-center text-zinc-500">Loading logs...</td></tr>
+              ) : logs.length === 0 ? (
+                <tr><td colSpan={4} className="px-3 py-2 text-center text-zinc-500">No audit logs found.</td></tr>
+              ) : (
+                logs.map(log => (
+                  <tr key={log.id} className="hover:bg-surface-hover/30 transition-colors">
+                    <td className="px-3 py-2 text-zinc-400 whitespace-nowrap">
+                      {new Date(log.createdAt).toLocaleString()}
+                    </td>
+                    <td className="px-3 py-2 font-medium text-foreground">
+                      {log.action}
+                    </td>
+                    <td className="px-3 py-2 text-zinc-300">
+                      {log.actorUser?.email || log.actorUserId}
+                    </td>
+                    <td className="px-3 py-2 text-zinc-300">
+                      {log.targetTenant?.name || log.targetTenantId || '-'}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

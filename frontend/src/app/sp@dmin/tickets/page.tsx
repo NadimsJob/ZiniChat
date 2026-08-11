@@ -117,7 +117,7 @@ export default function SuperadminTicketsPage() {
   if (loading) return <div className="p-8 text-center text-zinc-500">Loading tickets...</div>;
 
   return (
-    <div className="p-6 max-w-7xl mx-auto animate-in fade-in h-[calc(100vh-80px)] flex gap-6">
+    <div className="p-3 md:p-6 max-w-7xl mx-auto animate-in fade-in h-[calc(100vh-60px)] md:h-[calc(100vh-80px)] flex flex-col md:flex-row gap-4 md:gap-6">
       {/* Left List */}
       <div className={`flex-1 flex flex-col bg-surface border border-surface-hover rounded-2xl overflow-hidden ${selectedTicket ? 'hidden md:flex md:max-w-md' : 'flex'}`}>
         <div className="p-5 border-b border-surface-hover">

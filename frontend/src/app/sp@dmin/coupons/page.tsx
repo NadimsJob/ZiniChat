@@ -99,19 +99,19 @@ export default function CouponsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
             <Gift className="w-6 h-6 text-primary" />
             {language === 'en' ? 'Discount Coupons' : 'ডিসকাউন্ট কুপন'}
           </h1>
-          <p className="text-zinc-500 text-sm mt-1">
+          <p className="text-zinc-500 text-xs sm:text-sm mt-1">
             {language === 'en' ? 'Manage global and tenant-specific discount codes' : 'গ্লোবাল এবং টেন্যান্ট-নির্দিষ্ট ডিসকাউন্ট কোড পরিচালনা করুন'}
           </p>
         </div>
         <button 
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-xl text-sm font-medium transition-colors"
+          className="flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-xl text-sm font-medium transition-colors self-start sm:self-auto"
         >
           <Plus className="w-4 h-4" />
           {language === 'en' ? 'Create Coupon' : 'কুপন তৈরি করুন'}
@@ -120,7 +120,7 @@ export default function CouponsPage() {
 
       <div className="bg-surface/70 backdrop-blur-xl border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-[13px]">
+          <table className="w-full text-left text-[13px] min-w-[650px]">
             <thead className="bg-zinc-100/50 dark:bg-zinc-900/50 border-b border-zinc-200 dark:border-zinc-800 text-zinc-500 font-medium">
               <tr>
                 <th className="px-4 py-3">{language === 'en' ? 'Code' : 'কোড'}</th>

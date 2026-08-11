@@ -675,7 +675,7 @@ export default function AiTrainingPage() {
                   }}
                   className="sr-only peer" 
                 />
-                <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                <div className="w-11 h-6 bg-muted-foreground/30 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
               </label>
             </div>
 
@@ -916,7 +916,7 @@ export default function AiTrainingPage() {
                           onChange={(e) => handleToggleTool(tool.type, e.target.checked)}
                           className="sr-only peer" 
                         />
-                        <div className={`w-8 h-4.5 bg-zinc-700 peer-focus:outline-none rounded-full peer ${
+                        <div className={`w-8 h-4.5 bg-slate-300 dark:bg-zinc-700 peer-focus:outline-none rounded-full peer ${
                           isAllowed ? 'peer-checked:after:translate-x-full peer-checked:bg-primary cursor-pointer' : 'cursor-not-allowed opacity-50'
                         } after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all`}></div>
                       </label>
@@ -996,7 +996,7 @@ export default function AiTrainingPage() {
                               onChange={() => handleToggleLabelActive(label.id, label.isActive ?? true)}
                               className="sr-only peer" 
                             />
-                            <div className="w-8 h-5 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+                            <div className="w-8 h-5 bg-slate-300 dark:bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
                           </label>
 
                           <button 

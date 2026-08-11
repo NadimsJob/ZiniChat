@@ -271,13 +271,13 @@ export default function InboxesPage() {
                           <span className="truncate">{conn.displayName || conn.phoneNumber || getChannelName(conn.channelType)}</span>
                           <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold inline-flex items-center gap-1 shrink-0 ${
                             isChannelInactive
-                              ? 'bg-zinc-500/15 text-zinc-400 border border-zinc-500/20'
+                              ? 'bg-muted text-muted-foreground border border-border'
                               : isActive
                               ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' 
                               : 'bg-red-500/10 text-red-500 border border-red-500/20'
                           }`}>
                             <span className={`w-1.5 h-1.5 rounded-full ${
-                              isChannelInactive ? 'bg-zinc-400' : isActive ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'
+                              isChannelInactive ? 'bg-muted-foreground' : isActive ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'
                             }`} />
                             {isChannelInactive 
                               ? (language === 'en' ? 'Inactive ⚪' : 'নিষ্ক্রিয় ⚪')
@@ -627,7 +627,7 @@ function WidgetConfigModal({ widget, onClose, onRefresh, language, API }: any) {
                 <button
                   onClick={handleSaveSettings}
                   disabled={saving}
-                  className="px-3.5 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-lg hover:bg-slate-800 transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-xs"
+                  className="px-3.5 py-1.5 bg-primary text-white text-xs font-bold rounded-lg hover:bg-primary/90 transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-xs"
                 >
                   <Save className="w-3.5 h-3.5" />
                   <span>{saving ? 'Saving...' : (language === 'en' ? 'Save Design' : 'ডিজাইন সেভ করুন')}</span>
@@ -637,9 +637,9 @@ function WidgetConfigModal({ widget, onClose, onRefresh, language, API }: any) {
 
             {/* Script Code Block */}
             <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
+              <label className="text-xs font-bold text-foreground flex items-center justify-between">
                 <span>{language === 'en' ? 'Embed Code' : 'ওয়েবসাইট ইনটিগ্রেশন কোড'}</span>
-                <span className="text-[10px] text-slate-400 font-normal">
+                <span className="text-[10px] text-muted-foreground font-normal">
                   {language === 'en' ? 'Paste before </body> tag' : '</body> ট্যাগের ঠিক পূর্বে পেস্ট করুন'}
                 </span>
               </label>

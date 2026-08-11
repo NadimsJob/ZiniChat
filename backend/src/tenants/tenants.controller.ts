@@ -109,6 +109,18 @@ export class TenantsController {
     const actorUserId = req.user.userId;
     return this.tenantsService.updateAiConfig(id, customAiConfigId, actorUserId);
   }
+
+  @Post(':id/impersonate')
+  @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
+  @Roles('superadmin')
+  @RequirePermissions('manage:tenants')
+  impersonate(
+    @Param('id') id: string,
+    @Req() req: any,
+  ) {
+    const actorUserId = req.user.userId;
+    return this.tenantsService.impersonateTenant(id, actorUserId);
+  }
 }
 
 
