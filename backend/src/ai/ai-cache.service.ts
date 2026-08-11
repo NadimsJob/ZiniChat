@@ -146,10 +146,12 @@ export class AiCacheService {
     modelName: string;
     apiKey?: string;
     baseSystemPrompt: string;
+    verticalName?: string;
     ttlSeconds?: number;
   }): Promise<{ cacheKey: string | null; isCached: boolean }> {
-    const { aiConfigId, provider, modelName, apiKey, baseSystemPrompt } = params;
+    const { aiConfigId, provider, modelName, apiKey, baseSystemPrompt, verticalName } = params;
     const ttlSeconds = params.ttlSeconds || 86400; // 24 hours default TTL
+    const vertical = verticalName || 'retail';
 
     try {
       const config = await this.prisma.aiConfig.findUnique({
@@ -160,29 +162,71 @@ export class AiCacheService {
         return { cacheKey: null, isCached: false };
       }
 
-      const checksum = crypto.createHash('sha256').update(baseSystemPrompt).digest('hex');
+      // Checksum includes verticalName so each vertical has its own checksum
+      const checksum = crypto.createHash('sha256').update(`${vertical}::${baseSystemPrompt}`).digest('hex');
       const now = new Date();
 
+      // supportCacheKey stores a JSON map: { "retail": "cachedContents/xyz", "healthcare": "..." }
+      // supportCacheChecksum stores a JSON map: { "retail": "abc123...", "healthcare": "..." }
+      let cacheKeyMap: Record<string, string> = {};
+      let checksumMap: Record<string, string> = {};
+
+      try {
+        if (config.supportCacheKey) cacheKeyMap = JSON.parse(config.supportCacheKey);
+      } catch { cacheKeyMap = {}; }
+      try {
+        if (config.supportCacheChecksum) checksumMap = JSON.parse(config.supportCacheChecksum);
+      } catch { checksumMap = {}; }
+
+      const existingKey = cacheKeyMap[vertical];
+      const existingChecksum = checksumMap[vertical];
+      const expiresAt = config.supportCacheExpiresAt;
+
+      // Cache HIT: same vertical, same checksum, not expired
       if (
-        config.supportCacheKey &&
-        config.supportCacheChecksum === checksum &&
-        config.supportCacheExpiresAt &&
-        config.supportCacheExpiresAt > now
+        existingKey &&
+        existingChecksum === checksum &&
+        expiresAt &&
+        expiresAt > now
       ) {
-        this.logger.debug(`Hit Active Support AI Prompt Cache: ${config.supportCacheKey}`);
-        return { cacheKey: config.supportCacheKey, isCached: true };
+        this.logger.debug(`Hit Active Support AI Prompt Cache [${vertical}]: ${existingKey}`);
+        return { cacheKey: existingKey, isCached: true };
       }
 
       const adapter = this.getAdapter(provider);
       const estimatedTokens = this.estimateTokenCount(baseSystemPrompt);
 
+      // For Gemini: only create explicit cache if token threshold is met (32,768 tokens)
+      // For OpenAI: prefix-caching is automatic — we store a marker key so we know the prefix is stable
       if (!adapter.supportsNativeCaching(modelName, estimatedTokens)) {
+        if ((provider || 'gemini').toLowerCase() === 'openai') {
+          // OpenAI: prefix-caching is automatic. Store a stable marker so we know the prefix
+          // is consistent. No API call needed — just mark as cached.
+          const markerKey = `openai_prefix_cache::${vertical}::${checksum.slice(0, 16)}`;
+          cacheKeyMap[vertical] = markerKey;
+          checksumMap[vertical] = checksum;
+
+          await this.prisma.aiConfig.update({
+            where: { id: config.id },
+            data: {
+              supportCacheKey: JSON.stringify(cacheKeyMap),
+              supportCacheChecksum: JSON.stringify(checksumMap),
+              supportCacheExpiresAt: new Date(Date.now() + ttlSeconds * 1000)
+            }
+          });
+
+          this.logger.debug(`[Support Cache] OpenAI prefix-cache marker set [${vertical}]: stable prefix registered.`);
+          // Return false — OpenAI handles caching automatically, no explicit key needed
+          return { cacheKey: null, isCached: false };
+        }
+
         this.logger.debug(`Support AI System Prompt tokens (${estimatedTokens}) below ${provider} threshold. Skipping native cache.`);
         return { cacheKey: null, isCached: false };
       }
 
+      // Gemini native cache creation
       const cacheResult = await adapter.createCache({
-        tenantId: 'platform_support',
+        tenantId: `platform_support_${vertical}`,
         systemPrompt: baseSystemPrompt,
         knowledgeContext: '',
         ttlSeconds,
@@ -190,22 +234,26 @@ export class AiCacheService {
         apiKey: apiKey || config.apiKey
       });
 
+      cacheKeyMap[vertical] = cacheResult.cacheKey;
+      checksumMap[vertical] = checksum;
+
       await this.prisma.aiConfig.update({
         where: { id: config.id },
         data: {
-          supportCacheKey: cacheResult.cacheKey,
+          supportCacheKey: JSON.stringify(cacheKeyMap),
           supportCacheExpiresAt: cacheResult.expiresAt,
-          supportCacheChecksum: checksum
+          supportCacheChecksum: JSON.stringify(checksumMap)
         }
       });
 
-      this.logger.log(`Created Platform Support AI Cache: ${cacheResult.cacheKey}`);
+      this.logger.log(`Created Platform Support AI Cache [${vertical}]: ${cacheResult.cacheKey}`);
       return { cacheKey: cacheResult.cacheKey, isCached: true };
     } catch (err: any) {
       this.logger.warn(`Failed to create/retrieve Support AI cache: ${err.message}. Falling back.`);
       return { cacheKey: null, isCached: false };
     }
   }
+
 
   async invalidateSupportCache(aiConfigId?: string): Promise<void> {
     try {

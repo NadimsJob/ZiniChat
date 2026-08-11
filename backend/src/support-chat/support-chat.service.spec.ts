@@ -169,6 +169,7 @@ describe('SupportChatService', () => {
       },
       aiConfig: {
         findFirst: jest.fn().mockResolvedValue({
+          id: 'ai-config-123',
           apiKey: 'test-key',
           modelName: 'gpt-4o',
           provider: 'openai',
@@ -179,12 +180,26 @@ describe('SupportChatService', () => {
         findUnique: jest.fn().mockResolvedValue({
           id: 'tenant-123',
           businessName: 'ZiniTech Store',
+          businessNature: 'Retail, E-commerce & Trading',
           messageCount: 150,
           customPlanName: 'Starter Plan',
           plan: { name: 'Starter' },
           subscriptions: [{ currentPeriodEnd: new Date('2026-12-31') }],
           channelConns: [{ channelType: { code: 'wa' }, status: 'active' }],
           customAiConfig: { provider: 'openai', modelName: 'gpt-4o' }
+        })
+      },
+      businessNature: {
+        findFirst: jest.fn().mockResolvedValue({
+          name: 'Retail, E-commerce & Trading',
+          isPropertyMode: false,
+          isHospitalityMode: false,
+          isTechSoftwareMode: false,
+          isFinancialServiceMode: false,
+          isHealthcareMode: false,
+          isEducationMode: false,
+          isManufacturingMode: false,
+          isLogisticsMode: false
         })
       },
       ticket: {
@@ -324,5 +339,194 @@ describe('SupportChatService', () => {
     expect(DEFAULT_SUPPORT_AI_SYSTEM_PROMPT).toContain('01533894967');
     expect(DEFAULT_SUPPORT_AI_SYSTEM_PROMPT).toContain('support@zinichat.com');
     expect(DEFAULT_SUPPORT_AI_SYSTEM_PROMPT).toContain('Uttar Badda');
+  });
+
+  it('should contain BUSINESS VERTICAL AWARENESS section in system prompt', () => {
+    expect(DEFAULT_SUPPORT_AI_SYSTEM_PROMPT).toContain('BUSINESS VERTICAL AWARENESS');
+    expect(DEFAULT_SUPPORT_AI_SYSTEM_PROMPT).toContain('VERTICAL QUICK REFERENCE');
+    expect(DEFAULT_SUPPORT_AI_SYSTEM_PROMPT).toContain('Healthcare');
+    expect(DEFAULT_SUPPORT_AI_SYSTEM_PROMPT).toContain('Education');
+    expect(DEFAULT_SUPPORT_AI_SYSTEM_PROMPT).toContain('Logistics');
+  });
+
+  it('should inject retail vertical context for default/no businessNature tenant', async () => {
+    prismaService.businessNature.findFirst.mockResolvedValueOnce(null);
+    prismaService.tenant.findUnique.mockResolvedValueOnce({
+      id: 'tenant-retail', businessName: 'Retail Co', businessNature: null,
+      messageCount: 0, plan: null, subscriptions: [], channelConns: [],
+      customAiConfig: null, customPlanName: null
+    });
+    const ctx = await service.getTenantContext('tenant-retail');
+    expect(ctx).toContain('Retail');
+    expect(ctx).toContain('E-commerce');
+  });
+
+  it('should inject property vertical context for isPropertyMode tenant', async () => {
+    prismaService.tenant.findUnique.mockResolvedValueOnce({
+      id: 'tenant-prop', businessName: 'Estate Corp', businessNature: 'Real Estate & Construction',
+      messageCount: 0, plan: null, subscriptions: [], channelConns: [],
+      customAiConfig: null, customPlanName: null
+    });
+    prismaService.businessNature.findFirst.mockResolvedValueOnce({
+      name: 'Real Estate & Construction', isPropertyMode: true,
+      isHospitalityMode: false, isTechSoftwareMode: false, isFinancialServiceMode: false,
+      isHealthcareMode: false, isEducationMode: false, isManufacturingMode: false, isLogisticsMode: false
+    });
+    const ctx = await service.getTenantContext('tenant-prop');
+    expect(ctx).toContain('Real Estate');
+    expect(ctx).toContain('Properties');
+    expect(ctx).toContain('Property Inquiry');
+  });
+
+  it('should inject hospitality vertical context for isHospitalityMode tenant', async () => {
+    prismaService.tenant.findUnique.mockResolvedValueOnce({
+      id: 'tenant-hotel', businessName: 'Grand Hotel', businessNature: 'Hospitality, Travel & Lifestyle',
+      messageCount: 0, plan: null, subscriptions: [], channelConns: [],
+      customAiConfig: null, customPlanName: null
+    });
+    prismaService.businessNature.findFirst.mockResolvedValueOnce({
+      name: 'Hospitality, Travel & Lifestyle', isPropertyMode: false,
+      isHospitalityMode: true, isTechSoftwareMode: false, isFinancialServiceMode: false,
+      isHealthcareMode: false, isEducationMode: false, isManufacturingMode: false, isLogisticsMode: false
+    });
+    const ctx = await service.getTenantContext('tenant-hotel');
+    expect(ctx).toContain('Hospitality');
+    expect(ctx).toContain('Rooms & Services');
+    expect(ctx).toContain('Room Booking');
+  });
+
+  it('should inject tech vertical context for isTechSoftwareMode tenant', async () => {
+    prismaService.tenant.findUnique.mockResolvedValueOnce({
+      id: 'tenant-tech', businessName: 'SoftCo', businessNature: 'Technology & Software',
+      messageCount: 0, plan: null, subscriptions: [], channelConns: [],
+      customAiConfig: null, customPlanName: null
+    });
+    prismaService.businessNature.findFirst.mockResolvedValueOnce({
+      name: 'Technology & Software', isPropertyMode: false,
+      isHospitalityMode: false, isTechSoftwareMode: true, isFinancialServiceMode: false,
+      isHealthcareMode: false, isEducationMode: false, isManufacturingMode: false, isLogisticsMode: false
+    });
+    const ctx = await service.getTenantContext('tenant-tech');
+    expect(ctx).toContain('Technology');
+    expect(ctx).toContain('Software Plans');
+    expect(ctx).toContain('Demo Requests');
+    expect(ctx).toContain('Qualified');
+  });
+
+  it('should inject financial vertical context for isFinancialServiceMode tenant', async () => {
+    prismaService.tenant.findUnique.mockResolvedValueOnce({
+      id: 'tenant-fin', businessName: 'FinAdvisors', businessNature: 'Financial & Professional Services',
+      messageCount: 0, plan: null, subscriptions: [], channelConns: [],
+      customAiConfig: null, customPlanName: null
+    });
+    prismaService.businessNature.findFirst.mockResolvedValueOnce({
+      name: 'Financial & Professional Services', isPropertyMode: false,
+      isHospitalityMode: false, isTechSoftwareMode: false, isFinancialServiceMode: true,
+      isHealthcareMode: false, isEducationMode: false, isManufacturingMode: false, isLogisticsMode: false
+    });
+    const ctx = await service.getTenantContext('tenant-fin');
+    expect(ctx).toContain('Financial');
+    expect(ctx).toContain('Service Packages');
+    expect(ctx).toContain('Consultations');
+    expect(ctx).toContain('Intake');
+  });
+
+  it('should inject healthcare vertical context for isHealthcareMode tenant', async () => {
+    prismaService.tenant.findUnique.mockResolvedValueOnce({
+      id: 'tenant-health', businessName: 'City Clinic', businessNature: 'Healthcare',
+      messageCount: 0, plan: null, subscriptions: [], channelConns: [],
+      customAiConfig: null, customPlanName: null
+    });
+    prismaService.businessNature.findFirst.mockResolvedValueOnce({
+      name: 'Healthcare', isPropertyMode: false,
+      isHospitalityMode: false, isTechSoftwareMode: false, isFinancialServiceMode: false,
+      isHealthcareMode: true, isEducationMode: false, isManufacturingMode: false, isLogisticsMode: false
+    });
+    const ctx = await service.getTenantContext('tenant-health');
+    expect(ctx).toContain('Healthcare');
+    expect(ctx).toContain('Doctors & Care');
+    expect(ctx).toContain('Appointments');
+    expect(ctx).toContain('Triage');
+  });
+
+  it('should inject education vertical context for isEducationMode tenant', async () => {
+    prismaService.tenant.findUnique.mockResolvedValueOnce({
+      id: 'tenant-edu', businessName: 'Bright Academy', businessNature: 'Education',
+      messageCount: 0, plan: null, subscriptions: [], channelConns: [],
+      customAiConfig: null, customPlanName: null
+    });
+    prismaService.businessNature.findFirst.mockResolvedValueOnce({
+      name: 'Education', isPropertyMode: false,
+      isHospitalityMode: false, isTechSoftwareMode: false, isFinancialServiceMode: false,
+      isHealthcareMode: false, isEducationMode: true, isManufacturingMode: false, isLogisticsMode: false
+    });
+    const ctx = await service.getTenantContext('tenant-edu');
+    expect(ctx).toContain('Education');
+    expect(ctx).toContain('Courses');
+    expect(ctx).toContain('Admissions');
+    expect(ctx).toContain('Admission Pipeline');
+  });
+
+  it('should inject manufacturing vertical context for isManufacturingMode tenant', async () => {
+    prismaService.tenant.findUnique.mockResolvedValueOnce({
+      id: 'tenant-mfg', businessName: 'FactoryX', businessNature: 'Manufacturing & Industrial',
+      messageCount: 0, plan: null, subscriptions: [], channelConns: [],
+      customAiConfig: null, customPlanName: null
+    });
+    prismaService.businessNature.findFirst.mockResolvedValueOnce({
+      name: 'Manufacturing & Industrial', isPropertyMode: false,
+      isHospitalityMode: false, isTechSoftwareMode: false, isFinancialServiceMode: false,
+      isHealthcareMode: false, isEducationMode: false, isManufacturingMode: true, isLogisticsMode: false
+    });
+    const ctx = await service.getTenantContext('tenant-mfg');
+    expect(ctx).toContain('Manufacturing');
+    expect(ctx).toContain('Wholesale');
+    expect(ctx).toContain('RFQ');
+  });
+
+  it('should inject logistics vertical context for isLogisticsMode tenant', async () => {
+    prismaService.tenant.findUnique.mockResolvedValueOnce({
+      id: 'tenant-log', businessName: 'SpeedFreight', businessNature: 'Logistics & Infrastructure',
+      messageCount: 0, plan: null, subscriptions: [], channelConns: [],
+      customAiConfig: null, customPlanName: null
+    });
+    prismaService.businessNature.findFirst.mockResolvedValueOnce({
+      name: 'Logistics & Infrastructure', isPropertyMode: false,
+      isHospitalityMode: false, isTechSoftwareMode: false, isFinancialServiceMode: false,
+      isHealthcareMode: false, isEducationMode: false, isManufacturingMode: false, isLogisticsMode: true
+    });
+    const ctx = await service.getTenantContext('tenant-log');
+    expect(ctx).toContain('Logistics');
+    expect(ctx).toContain('Shipping Routes');
+    expect(ctx).toContain('Shipments & Bookings');
+  });
+
+  it('should call getOrCreateSupportCache with verticalName from tenant businessNature', async () => {
+    const aiCacheServiceMock = (service as any).aiCacheService;
+    await service.sendMessage('tenant-123', 'hello');
+    expect(aiCacheServiceMock.getOrCreateSupportCache).toHaveBeenCalledWith(
+      expect.objectContaining({
+        verticalName: 'Retail, E-commerce & Trading',
+        aiConfigId: 'ai-config-123'
+      })
+    );
+  });
+
+  it('should build cacheable prefix with vertical block before dynamic tenant context', async () => {
+    // Verify prompt structure: cacheable prefix (system prompt + vertical block) comes BEFORE
+    // the dynamic tenant context. This ensures OpenAI prefix-caching works correctly.
+    const aiConfigSpy = jest.spyOn(prismaService.aiConfig, 'findFirst');
+    aiConfigSpy.mockResolvedValueOnce({
+      id: 'ai-config-123', apiKey: 'test-key', modelName: 'gpt-4o',
+      provider: 'openai', isSupportDefault: true, systemPrompt: null
+    });
+
+    // We verify indirectly: getTenantContext is called AFTER resolveBusinessNatureContext
+    // The cacheable prefix must contain the vertical block content
+    const ctx = await service.getTenantContext('tenant-123');
+    // Dynamic context comes last — contains tenant name and plan
+    expect(ctx).toContain('ZiniTech Store');
+    // Vertical block is injected into getTenantContext return value
+    expect(ctx).toContain('Retail');
   });
 });

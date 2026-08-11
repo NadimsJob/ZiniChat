@@ -172,7 +172,31 @@ If a "Prior Conversation Context Summary" is provided at the top of your system 
 - Use ✅ ❌ 📌 emojis sparingly to highlight key info.
 - If the answer is one sentence, give one sentence. Do NOT pad responses.
 - Never repeat back what the user said. Just answer.
-- Action-oriented: tell the user what to do next, not what happened.`;
+- Action-oriented: tell the user what to do next, not what happened.
+
+--------------------------------------------------
+# BUSINESS VERTICAL AWARENESS
+ZiniChat supports multiple industry verticals. Each tenant may operate in a DIFFERENT vertical mode. When a tenant's BUSINESS VERTICAL CONTEXT is provided below, you MUST use the exact terminology, page labels, and navigation paths specific to that vertical.
+
+CRITICAL RULES:
+- If a tenant asks about "Products" but they are in Healthcare mode, the page is actually called "Doctors & Care Services" — use their terminology.
+- If a tenant asks about "Orders" but they are in Education mode, the page is actually called "Admissions" — use their terminology.
+- ALWAYS read the TENANT BUSINESS VERTICAL CONTEXT block provided in the system context and apply it strictly.
+- If no vertical context is provided, assume standard Retail/E-commerce mode.
+
+VERTICAL QUICK REFERENCE:
+| Vertical | Products Page | Orders Page | Key CRM Stage | AI Intent |
+|---|---|---|---|---|
+| Retail / E-commerce | Products | Orders | (default) | product_inquiry |
+| Real Estate | Properties | (N/A) | Property Inquiry | property_inquiry |
+| Hospitality | Rooms & Services | Room Bookings | Room Booking | room_booking_inquiry |
+| Technology & Software | Software Plans | Demo Requests | Qualified | demo_request |
+| Financial Services | Service Packages | Consultations | Intake | consultation_request |
+| Healthcare | Doctors & Care | Appointments | Triage | appointment_request |
+| Education | Courses & Programs | Admissions | Admission Pipeline | course_admission_inquiry |
+| Manufacturing | Wholesale Catalog | RFQ / Quotations | RFQ | bulk_rfq_inquiry |
+| Logistics | Shipping Routes | Shipments & Bookings | Shipments | shipment_quote_request |
+| Other | Products | Orders | (default) | product_inquiry |`;
 
 @Injectable()
 export class SupportChatService {
@@ -300,6 +324,9 @@ export class SupportChatService {
     const msLimit = tenant.customMessengerLimit ?? plan?.messengerLimit ?? 0;
     const widgetLimit = tenant.customWebsiteWidgetLimit ?? plan?.websiteWidgetLimit ?? 0;
 
+    // Resolve Business Nature vertical context
+    const verticalContext = await this.resolveBusinessNatureContext((tenant as any).businessNature);
+
     return `CURRENT TENANT REAL-TIME WORKSPACE CONTEXT:
 - Business Name: ${tenant.businessName} (Tenant ID: ${tenant.id})
 - Active Subscription Plan: ${planName} | Price: ৳${planPrice}/month
@@ -322,8 +349,302 @@ OFFICIAL ZINICHAT SUPPORT CONTACT DETAILS & HELPLINE:
 - Support Email: support@zinichat.com
 - Official Info Email: info@zinichat.com
 - Office Address: #386, Uttar Badda, Dhaka-1212, Bangladesh
-- Official Website: https://zinichat.com`;
+- Official Website: https://zinichat.com
 
+${verticalContext}`;
+
+  }
+
+  /**
+   * Resolves the business nature vertical context block for the Support AI.
+   * Looks up BusinessNature table by tenant.businessNature name and builds
+   * a vertical-specific guidance block with correct page labels, CRM stages,
+   * and onboarding Q&A for the active industry mode.
+   */
+  private async resolveBusinessNatureContext(businessNatureName?: string | null): Promise<string> {
+    if (!businessNatureName) {
+      return this.buildVerticalBlock('retail');
+    }
+
+    try {
+      const bn: any = await this.prisma.businessNature.findFirst({
+        where: { name: businessNatureName }
+      });
+
+      if (!bn) return this.buildVerticalBlock('retail');
+
+      if (bn.isPropertyMode)        return this.buildVerticalBlock('property');
+      if (bn.isHospitalityMode)     return this.buildVerticalBlock('hospitality');
+      if (bn.isTechSoftwareMode)    return this.buildVerticalBlock('tech');
+      if (bn.isFinancialServiceMode) return this.buildVerticalBlock('financial');
+      if (bn.isHealthcareMode)      return this.buildVerticalBlock('healthcare');
+      if (bn.isEducationMode)       return this.buildVerticalBlock('education');
+      if (bn.isManufacturingMode)   return this.buildVerticalBlock('manufacturing');
+      if (bn.isLogisticsMode)       return this.buildVerticalBlock('logistics');
+
+      return this.buildVerticalBlock('retail');
+    } catch (err) {
+      this.logger.warn(`resolveBusinessNatureContext failed: ${err.message}`);
+      return this.buildVerticalBlock('retail');
+    }
+  }
+
+  /**
+   * Returns a formatted vertical-specific Support AI guidance block.
+   */
+  private buildVerticalBlock(vertical: string): string {
+    const blocks: Record<string, string> = {
+      property: `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TENANT BUSINESS VERTICAL: Real Estate & Construction (রিয়েল এস্টেট ও নির্মাণ)
+🏠 এই ওয়ার্কস্পেস Property Mode-এ পরিচালিত।
+
+PAGE LABELS FOR THIS TENANT:
+- "/dashboard/products" পেজ = "Properties (প্রপার্টি)" — Property listings (type, price, area, bedrooms, floor plan)
+- "/dashboard/orders" পেজ = N/A — Order placement এই vertical-এ disabled
+- CRM Lead Stage = "Property Inquiry" (AI auto-captures property inquiries)
+- Sidebar label: "Properties"
+
+NAVIGATION GUIDE (PROPERTY CONTEXT):
+- Property/listing যোগ করতে → /dashboard/products
+- Property সম্পর্কিত Lead track করতে → /dashboard/leads ("Property Inquiry" stage)
+- AI Training করতে (property details, pricing FAQs) → /dashboard/settings/ai-training
+
+COMMON SUPPORT QUESTIONS — PROPERTY:
+Q: প্রপার্টি/ফ্ল্যাট যোগ করব কীভাবে?
+A: [/dashboard/products](/dashboard/products) → "Add Property" → Property type, price, area, bedrooms, floor plan image upload করুন। AI আপনার product list থেকে সরাসরি property info পড়ে customer-কে জানাবে।
+
+Q: Lead কোথায় আসবে?
+A: Customer WhatsApp/Messenger-এ property সম্পর্কে inquire করলে AI automatically তাকে CRM-এর "Property Inquiry" stage-এ যোগ করবে।
+
+Q: Property Agent notification কীভাবে পাবে?
+A: Team member-কে "Property Agent" specialization tag দিলে AI lead capture-এ সে automatically alert পাবে।`,
+
+      hospitality: `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TENANT BUSINESS VERTICAL: Hospitality, Travel & Lifestyle (হোটেল, ভ্রমণ ও লাইফস্টাইল)
+🏨 এই ওয়ার্কস্পেস Room Booking Mode-এ পরিচালিত।
+
+PAGE LABELS FOR THIS TENANT:
+- "/dashboard/products" পেজ = "Rooms & Services (রুম ও সেবা)" — Room type, capacity, price/night, amenities
+- "/dashboard/orders" পেজ = "Room Bookings (রুম বুকিং)" — Booking status, check-in/out dates
+- CRM Lead Stage = "Room Booking" (AI auto-captures room booking requests)
+- Sidebar label: "Rooms & Services"
+
+NAVIGATION GUIDE (HOSPITALITY CONTEXT):
+- Room/service যোগ করতে → /dashboard/products
+- Room Booking দেখতে ও ম্যানেজ করতে → /dashboard/orders
+- Booking lead track করতে → /dashboard/leads ("Room Booking" stage)
+- AI Training করতে (room details, pricing, amenities FAQs) → /dashboard/settings/ai-training
+
+COMMON SUPPORT QUESTIONS — HOSPITALITY:
+Q: রুম যোগ করব কীভাবে?
+A: [/dashboard/products](/dashboard/products) → "Add Room" → Room type, capacity, price per night, amenities, images দিন। AI product list থেকে room availability ও pricing জানাবে।
+
+Q: Room Booking কোথায় দেখব?
+A: [/dashboard/orders](/dashboard/orders) পেজে সব room booking request আসে।
+
+Q: AI কীভাবে booking নেয়?
+A: Customer room চাইলে AI automatically তাকে CRM-এর "Room Booking" stage-এ রেখে আপনাকে notify করে।`,
+
+      tech: `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TENANT BUSINESS VERTICAL: Technology & Software (প্রযুক্তি ও সফটওয়্যার)
+💻 এই ওয়ার্কস্পেস Software & Tech Mode-এ পরিচালিত।
+
+PAGE LABELS FOR THIS TENANT:
+- "/dashboard/products" পেজ = "Software Plans & Pricing (সফটওয়্যার প্ল্যান)" — Plan tier, features, demo URL
+- "/dashboard/orders" পেজ = "Demo Requests (ডেমো রিকুয়েস্ট)" — Demo request status
+- CRM Lead Stage = "Qualified" (AI auto-moves demo prospects)
+- Sidebar label: "Software Plans"
+- ⚠️ AI e-commerce order placement এই vertical-এ disabled
+
+NAVIGATION GUIDE (TECH CONTEXT):
+- Software plan/pricing যোগ করতে → /dashboard/products
+- Demo request দেখতে → /dashboard/orders
+- Qualified lead track করতে → /dashboard/leads ("Qualified" stage)
+- AI Training করতে → /dashboard/settings/ai-training
+
+COMMON SUPPORT QUESTIONS — TECH:
+Q: Software plan যোগ করব কীভাবে?
+A: [/dashboard/products](/dashboard/products) → "Add Plan" → Plan name, tier, features list, monthly/yearly price, demo URL দিন।
+
+Q: Demo Request কোথায় দেখব?
+A: [/dashboard/orders](/dashboard/orders) পেজে সব demo request আসে।
+
+Q: AI কীভাবে demo schedule করে?
+A: Customer demo চাইলে AI তাকে "Qualified" CRM stage-এ move করে Account Executive/Product Specialist-কে notify করে।`,
+
+      financial: `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TENANT BUSINESS VERTICAL: Financial & Professional Services (আর্থিক ও পেশাদার সেবা)
+💼 এই ওয়ার্কস্পেস Financial & Consulting Mode-এ পরিচালিত।
+
+PAGE LABELS FOR THIS TENANT:
+- "/dashboard/products" পেজ = "Service Packages (সেবা প্যাকেজ)" — Service name, scope of work, fees
+- "/dashboard/orders" পেজ = "Consultations (কনসালটেশন)" — Consultation requests
+- CRM Lead Stage = "Intake" (AI auto-captures consultation requests)
+- Sidebar label: "Services"
+- ⚠️ AI retail order placement এই vertical-এ disabled
+
+NAVIGATION GUIDE (FINANCIAL CONTEXT):
+- Service package যোগ করতে → /dashboard/products
+- Consultation request দেখতে → /dashboard/orders
+- Intake lead track করতে → /dashboard/leads ("Intake" stage)
+- AI Training করতে → /dashboard/settings/ai-training
+
+COMMON SUPPORT QUESTIONS — FINANCIAL:
+Q: Service package যোগ করব কীভাবে?
+A: [/dashboard/products](/dashboard/products) → "Add Service" → Service name, scope, fees, duration দিন।
+
+Q: Consultation request কোথায় দেখব?
+A: [/dashboard/orders](/dashboard/orders) পেজে সব consultation request আসে।
+
+Q: AI কীভাবে consultation capture করে?
+A: Customer service/consultation চাইলে AI তাকে CRM-এর "Intake" stage-এ যোগ করে।`,
+
+      healthcare: `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TENANT BUSINESS VERTICAL: Healthcare & Clinics (স্বাস্থ্যসেবা)
+🩺 এই ওয়ার্কস্পেস Healthcare & Clinic Mode-এ পরিচালিত।
+
+PAGE LABELS FOR THIS TENANT:
+- "/dashboard/products" পেজ = "Doctors & Care Services (ডাক্তার ও সেবা)" — Doctor name, specialization, visiting hours, fees
+- "/dashboard/orders" পেজ = "Appointments (অ্যাপয়েন্টমেন্ট)" — Appointment schedule and status
+- CRM Lead Stage = "Triage" (AI auto-captures appointment requests)
+- Sidebar label: "Doctors & Care"
+- ⚠️ AI retail order placement এই vertical-এ disabled
+
+NAVIGATION GUIDE (HEALTHCARE CONTEXT):
+- Doctor/service profile যোগ করতে → /dashboard/products
+- Appointment দেখতে ও ম্যানেজ করতে → /dashboard/orders
+- Patient/lead track করতে → /dashboard/leads ("Triage" stage)
+- AI Training করতে (doctor bios, services, visiting hours FAQs) → /dashboard/settings/ai-training
+
+COMMON SUPPORT QUESTIONS — HEALTHCARE:
+Q: ডাক্তার/সেবা যোগ করব কীভাবে?
+A: [/dashboard/products](/dashboard/products) → "Add Doctor" → নাম, বিভাগ (specialization), ভিজিটিং সময়, ফি, ছবি দিন। AI আপনার doctor list থেকে সরাসরি patient-কে info দেবে।
+
+Q: Appointment কোথায় দেখব?
+A: [/dashboard/orders](/dashboard/orders) পেজে সব appointment request আসে।
+
+Q: AI কীভাবে appointment নেয়?
+A: Customer doctor বা appointment চাইলে AI automatically তাকে CRM-এর "Triage" stage-এ যোগ করে এবং "Doctor Assistant" tagged team member-কে notify করে।`,
+
+      education: `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TENANT BUSINESS VERTICAL: Education & Academies (শিক্ষা)
+🎓 এই ওয়ার্কস্পেস Education & Course Mode-এ পরিচালিত।
+
+PAGE LABELS FOR THIS TENANT:
+- "/dashboard/products" পেজ = "Courses & Academic Programs (কোর্স ও একাডেমিক প্রোগ্রাম)" — Course name, duration, batch schedule, fees
+- "/dashboard/orders" পেজ = "Admissions (ভর্তি)" — Admission applications and status
+- CRM Lead Stage = "Admission Pipeline" (AI auto-captures course admission inquiries)
+- Sidebar label: "Courses & Batches"
+- ⚠️ AI retail order placement এই vertical-এ disabled
+
+NAVIGATION GUIDE (EDUCATION CONTEXT):
+- Course/batch যোগ করতে → /dashboard/products
+- Admission দেখতে ও ম্যানেজ করতে → /dashboard/orders
+- Admission lead track করতে → /dashboard/leads ("Admission Pipeline" stage)
+- AI Training করতে (course details, fees, batch FAQs) → /dashboard/settings/ai-training
+
+COMMON SUPPORT QUESTIONS — EDUCATION:
+Q: Course যোগ করব কীভাবে?
+A: [/dashboard/products](/dashboard/products) → "Add Course" → Course name, duration, batch schedule, fees, prerequisites দিন। AI course list থেকে student-দের সরাসরি info দেবে।
+
+Q: Admission কোথায় দেখব?
+A: [/dashboard/orders](/dashboard/orders) পেজে সব admission application আসে।
+
+Q: AI কীভাবে admission নেয়?
+A: Student course সম্পর্কে inquire করলে AI তাকে CRM-এর "Admission Pipeline" stage-এ যোগ করে।`,
+
+      manufacturing: `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TENANT BUSINESS VERTICAL: Manufacturing & Industrial (উৎপাদন ও শিল্প)
+🏭 এই ওয়ার্কস্পেস Factory B2B Bulk Quote Mode-এ পরিচালিত।
+
+PAGE LABELS FOR THIS TENANT:
+- "/dashboard/products" পেজ = "Wholesale Products & Factory Catalog (হোলসেল পণ্য)" — Product name, MOQ, bulk pricing, specs
+- "/dashboard/orders" পেজ = "RFQ / Quotations (আরএফকিউ)" — Bulk quote requests
+- CRM Lead Stage = "RFQ" (AI auto-captures bulk RFQ inquiries)
+- Sidebar label: "Wholesale Catalog"
+- ⚠️ AI retail order placement এই vertical-এ disabled (B2B bulk RFQ flow ব্যবহার হয়)
+
+NAVIGATION GUIDE (MANUFACTURING CONTEXT):
+- Factory product/catalog যোগ করতে → /dashboard/products
+- RFQ/Quotation দেখতে ও ম্যানেজ করতে → /dashboard/orders
+- B2B lead track করতে → /dashboard/leads ("RFQ" stage)
+- AI Training করতে (product specs, MOQ, pricing FAQs) → /dashboard/settings/ai-training
+
+COMMON SUPPORT QUESTIONS — MANUFACTURING:
+Q: Factory product/item catalog-এ যোগ করব কীভাবে?
+A: [/dashboard/products](/dashboard/products) → "Add Product" → Product name, MOQ, bulk unit price (tiered), specs দিন। AI catalog থেকে buyer-কে তথ্য দেবে।
+
+Q: RFQ / Quotation কোথায় দেখব?
+A: [/dashboard/orders](/dashboard/orders) পেজে সব bulk RFQ request আসে।
+
+Q: AI কীভাবে bulk order নেয়?
+A: Buyer bulk quantity বা quote চাইলে AI তাকে CRM-এর "RFQ" stage-এ যোগ করে।`,
+
+      logistics: `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TENANT BUSINESS VERTICAL: Logistics & Infrastructure (লজিস্টিকস, পরিবহন ও অবকাঠামো)
+🚛 এই ওয়ার্কস্পেস Shipping & Logistics Mode-এ পরিচালিত।
+
+PAGE LABELS FOR THIS TENANT:
+- "/dashboard/products" পেজ = "Shipping Routes & Rates (শিপিং রুট ও রেট)" — Route, fleet capacity, freight rates
+- "/dashboard/orders" পেজ = "Shipments & Bookings (শিপমেন্ট ও বুকিং)" — Shipment tracking and status
+- CRM Lead Stage = "Shipments & Bookings" (AI auto-captures shipment quote requests)
+- Sidebar label: "Routes & Rates"
+- ⚠️ AI retail order placement এই vertical-এ disabled
+
+NAVIGATION GUIDE (LOGISTICS CONTEXT):
+- Shipping route/rate যোগ করতে → /dashboard/products
+- Shipment দেখতে ও track করতে → /dashboard/orders
+- Shipment lead track করতে → /dashboard/leads ("Shipments & Bookings" stage)
+- AI Training করতে (routes, freight rates FAQs) → /dashboard/settings/ai-training
+
+COMMON SUPPORT QUESTIONS — LOGISTICS:
+Q: Shipping route যোগ করব কীভাবে?
+A: [/dashboard/products](/dashboard/products) → "Add Route" → Route name, origin-destination, fleet capacity, freight rate দিন। AI route list থেকে customer-কে shipping info দেবে।
+
+Q: Shipment কোথায় দেখব?
+A: [/dashboard/orders](/dashboard/orders) পেজে সব shipment booking আসে।
+
+Q: AI কীভাবে shipment quote নেয়?
+A: Customer route বা shipping quote চাইলে AI তাকে CRM-এর "Shipments & Bookings" stage-এ যোগ করে এবং "Logistics Dispatcher" tagged team member-কে notify করে।`,
+
+      retail: `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TENANT BUSINESS VERTICAL: Retail, E-commerce & Trading (খুচরা ব্যবসা ও ই-কমার্স)
+🛒 এই ওয়ার্কস্পেস Standard E-commerce/Retail Mode-এ পরিচালিত।
+
+PAGE LABELS FOR THIS TENANT:
+- "/dashboard/products" পেজ = "Products (পণ্য)" — Product name, price, stock, description, images
+- "/dashboard/orders" পেজ = "Orders (অর্ডার)" — Customer order management
+- CRM Lead Stage = Standard pipeline
+- Sidebar label: "Products"
+- ✅ AI order placement সক্রিয় (customer-রা WhatsApp-এ অর্ডার দিতে পারে)
+
+NAVIGATION GUIDE (RETAIL CONTEXT):
+- Product যোগ করতে → /dashboard/products
+- Order দেখতে → /dashboard/orders
+- Lead/CRM → /dashboard/leads
+- AI Training করতে → /dashboard/settings/ai-training
+
+COMMON SUPPORT QUESTIONS — RETAIL:
+Q: Product যোগ করব কীভাবে?
+A: [/dashboard/products](/dashboard/products) → "Add Product" → Name, price, stock, description, images দিন। AI product list থেকে customer-কে তথ্য ও অর্ডার নেবে।
+
+Q: Order কোথায় দেখব?
+A: [/dashboard/orders](/dashboard/orders) পেজে সব customer order দেখা যায়।
+
+Q: AI কীভাবে অর্ডার নেয়?
+A: Customer product নাম বললে AI stock check করে, confirm নিয়ে, Order record তৈরি করে আপনাকে notify করে।`
+    };
+
+    return blocks[vertical] ?? blocks['retail'];
   }
 
   /**
@@ -410,18 +731,26 @@ OFFICIAL ZINICHAT SUPPORT CONTACT DETAILS & HELPLINE:
       return { success: true, message: fallbackMsg };
     }
 
-    // Build Tenant Context
-    const tenantContext = await this.getTenantContext(tenantId);
+    // STEP 1: Resolve vertical block early — needed for cache key computation
+    const tenantRecord = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { businessNature: true }
+    }) as any;
+    const verticalName = tenantRecord?.businessNature || 'retail';
+    const verticalBlock = await this.resolveBusinessNatureContext(verticalName);
 
-    // Re-fetch conversation for contextSummary
-    const convo = await this.prisma.supportConversation.findUnique({
-      where: { id: conversation.id }
-    });
-
-    // Base System Prompt
+    // STEP 2: Build prompt parts
+    //   CACHEABLE PREFIX  = static system prompt + vertical block (stable across tenants of same vertical)
+    //   DYNAMIC SUFFIX    = tenant-specific context (name, plan, quota, channels) — NOT cached
     const baseSystemPrompt = aiConfig.systemPrompt || DEFAULT_SUPPORT_AI_SYSTEM_PROMPT;
 
-    // Retrieve or generate Support AI Prompt Cache
+    // Cacheable prefix: base system prompt + vertical block
+    // This stays identical for all tenants in the same vertical → OpenAI prefix-cache hits
+    const cacheablePrefix = `${baseSystemPrompt}\n\n${verticalBlock}`;
+
+    // STEP 3: Attempt prompt cache (vertical-aware)
+    // For Gemini: explicit cached_content reference (if threshold met)
+    // For OpenAI: stable prefix ensures automatic prefix-caching
     let activeSupportCacheKey: string | undefined = undefined;
     try {
       const supportCache = await this.aiCacheService.getOrCreateSupportCache({
@@ -429,21 +758,33 @@ OFFICIAL ZINICHAT SUPPORT CONTACT DETAILS & HELPLINE:
         provider: aiConfig.provider || 'gemini',
         modelName: aiConfig.modelName,
         apiKey: aiConfig.apiKey,
-        baseSystemPrompt: baseSystemPrompt
+        baseSystemPrompt: cacheablePrefix,
+        verticalName
       });
       if (supportCache.isCached && supportCache.cacheKey) {
         activeSupportCacheKey = supportCache.cacheKey;
+        this.logger.debug(`[Support Cache] HIT — vertical=${verticalName}, key=${activeSupportCacheKey}`);
       }
     } catch (cacheErr: any) {
       this.logger.debug(`Support AI prompt caching skipped or failed: ${cacheErr.message}`);
     }
 
-    // Inject prior context summary if available
+    // STEP 4: Build dynamic tenant context (NOT part of cache — changes per tenant)
+    const tenantContext = await this.getTenantContext(tenantId);
+
+    // STEP 5: Re-fetch conversation for contextSummary
+    const convo = await this.prisma.supportConversation.findUnique({
+      where: { id: conversation.id }
+    });
+
+    // STEP 6: Assemble full system prompt
+    // Structure: [CACHEABLE PREFIX] + [PRIOR SUMMARY (optional)] + [DYNAMIC TENANT CONTEXT]
+    // The cacheable prefix MUST come first and remain identical across calls for prefix-caching to work.
     const priorSummaryBlock = convo?.contextSummary
       ? `\n\n--------------------------------------------------\n# PRIOR CONVERSATION CONTEXT SUMMARY\n${convo.contextSummary}\n--------------------------------------------------`
       : '';
 
-    const fullSystemPrompt = `${baseSystemPrompt}${priorSummaryBlock}\n\n${tenantContext}`;
+    const fullSystemPrompt = `${cacheablePrefix}${priorSummaryBlock}\n\n${tenantContext}`;
 
     const messages_payload = [
       { role: 'system', content: fullSystemPrompt },
@@ -562,13 +903,20 @@ OFFICIAL ZINICHAT SUPPORT CONTACT DETAILS & HELPLINE:
 
       let responseMessage: any;
 
+      // Build extra parameters for Gemini native cached_content (if cache key is available)
+      // OpenAI prefix-caching is automatic — no extra params needed
+      const geminiCacheExtra = activeSupportCacheKey && (aiConfig.provider || 'gemini').toLowerCase() === 'gemini'
+        ? { extra_body: { cached_content: activeSupportCacheKey } }
+        : {};
+
       try {
         const response = await openai.chat.completions.create({
           model: aiConfig.modelName,
           messages: messages_payload as any,
           tools: tools as any,
-          tool_choice: 'auto'
-        });
+          tool_choice: 'auto',
+          ...geminiCacheExtra
+        } as any);
         responseMessage = response.choices[0].message;
       } catch (innerError) {
         this.logger.warn(`AI model ${aiConfig.modelName} failed: ${innerError.message}. Fallback...`);
