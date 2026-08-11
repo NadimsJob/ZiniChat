@@ -593,7 +593,7 @@ export class TenantsService {
         metadataJson: {
           targetUserId: targetUser.id,
           targetUserEmail: targetUser.email,
-          tenantName: tenant.name,
+          tenantName: tenant.businessName,
         },
       },
     });
@@ -608,7 +608,7 @@ export class TenantsService {
       },
       tenant: {
         id: tenant.id,
-        name: tenant.name,
+        name: tenant.businessName,
       },
     };
   }

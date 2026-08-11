@@ -310,7 +310,7 @@ describe('TenantsService - Plan Customization', () => {
     it('generates token for tenant owner and creates audit log', async () => {
       const mockTenant = {
         id: TENANT_ID,
-        name: 'Acme Corp',
+        businessName: 'Acme Corp',
         users: [
           { id: 'user-member', email: 'staff@acme.com', role: 'member', tenantId: TENANT_ID },
           { id: 'user-owner', email: 'owner@acme.com', role: 'owner', tenantId: TENANT_ID, permissions: ['all'] },
