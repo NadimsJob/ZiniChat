@@ -40,8 +40,8 @@ export class FacebookCommentsService {
     const verb = value.verb;
     const item = value.item;
 
-    // 1. Only process new comment additions
-    if (verb !== 'add' || item !== 'comment') {
+    // 1. Only process comment additions
+    if (item !== 'comment' || (verb && verb !== 'add')) {
       this.logger.debug(`Ignoring feed change: verb=${verb}, item=${item}`);
       return;
     }
@@ -65,13 +65,21 @@ export class FacebookCommentsService {
       return;
     }
 
-    // 3. Find active ChannelConnection for this page
-    const connection = await this.prisma.channelConnection.findFirst({
-      where: { externalAccountId: pageId, channelType: 'messenger' },
+    this.logger.log(`Received incoming Facebook comment ${commentId} on page ${pageId} from ${fromName} (${fromId}): "${message}"`);
+
+    // 3. Find ChannelConnection for this page
+    let connection = await this.prisma.channelConnection.findFirst({
+      where: { externalAccountId: pageId, channelType: 'messenger', status: { in: ['active', 'connected'] } },
     });
 
+    if (!connection) {
+      connection = await this.prisma.channelConnection.findFirst({
+        where: { externalAccountId: pageId, channelType: 'messenger' },
+      });
+    }
+
     if (!connection || connection.status === 'inactive') {
-      this.logger.warn(`No active Messenger ChannelConnection found or channel status is inactive for pageId: ${pageId}`);
+      this.logger.warn(`No active Messenger ChannelConnection found for pageId: ${pageId}`);
       return;
     }
 
