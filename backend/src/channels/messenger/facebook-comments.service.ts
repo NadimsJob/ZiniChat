@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { QuotaService } from '../../tenants/quota.service';
 import { AiService } from '../../ai/ai.service';
 import { InboxService } from '../../inbox/inbox.service';
+import { InboxGateway } from '../../inbox/inbox.gateway';
 
 export interface UpdateCommentSettingsDto {
   isCommentAutoReplyEnabled?: boolean;
@@ -25,6 +26,8 @@ export class FacebookCommentsService {
     private aiService: AiService,
     @Inject(forwardRef(() => InboxService))
     private inboxService: InboxService,
+    @Inject(forwardRef(() => InboxGateway))
+    private inboxGateway: InboxGateway,
   ) {}
 
   /**
@@ -459,9 +462,17 @@ ${qnaContext ? `# STORE KNOWLEDGE BASE:\n${qnaContext}\n` : ''}`;
     return true;
   }
 
-  private async saveLog(data: any): Promise<void> {
+  private async saveLog(data: any): Promise<any> {
     try {
-      await this.prisma.facebookCommentLog.create({
+      const initialHistory = data.replyHistory || (data.replyText || data.privateReplyText ? [{
+        id: `reply_ai_${Date.now()}`,
+        sender: 'ai',
+        replyType: data.privateReplyText ? (data.replyText ? 'both' : 'private') : 'public',
+        text: data.replyText || data.privateReplyText,
+        createdAt: new Date().toISOString(),
+      }] : []);
+
+      const saved = await this.prisma.facebookCommentLog.create({
         data: {
           tenantId: data.tenantId,
           channelConnectionId: data.channelConnectionId || null,
@@ -474,13 +485,26 @@ ${qnaContext ? `# STORE KNOWLEDGE BASE:\n${qnaContext}\n` : ''}`;
           commentText: data.commentText,
           replyText: data.replyText || null,
           privateReplyText: data.privateReplyText || null,
+          replyHistory: initialHistory,
           replyStatus: data.replyStatus || 'replied',
           skipReason: data.skipReason || null,
           aiCreditsUsed: data.aiCreditsUsed || 0,
         },
       });
+
+      // Emit real-time WebSocket event to tenant inbox room
+      try {
+        if (this.inboxGateway) {
+          this.inboxGateway.broadcastToTenant(data.tenantId, 'facebook_comment:new', saved);
+        }
+      } catch (wsErr: any) {
+        this.logger.warn(`Error broadcasting facebook_comment:new: ${wsErr.message}`);
+      }
+
+      return saved;
     } catch (err: any) {
       this.logger.error(`Error saving FacebookCommentLog: ${err.message}`);
+      return null;
     }
   }
 
@@ -574,9 +598,14 @@ ${qnaContext ? `# STORE KNOWLEDGE BASE:\n${qnaContext}\n` : ''}`;
   }
 
   /**
-   * Human Agent Re-comment API: Post custom manual comment reply to Meta Graph API
+   * Human Agent Re-comment API: Post custom manual comment reply to Meta Graph API (Supports Public, Private DM, or Both)
    */
-  async replyToCommentHuman(tenantId: string, commentId: string, replyText: string) {
+  async replyToCommentHuman(
+    tenantId: string,
+    commentId: string,
+    replyText: string,
+    replyType: 'public' | 'private' | 'both' = 'public',
+  ) {
     const hasPackageFeature = await this.quotaService.checkFeature(tenantId, 'facebook_comment_automation');
     if (!hasPackageFeature) {
       throw new ForbiddenException('Facebook Comment Automation feature is not included in your active plan package.');
@@ -601,35 +630,131 @@ ${qnaContext ? `# STORE KNOWLEDGE BASE:\n${qnaContext}\n` : ''}`;
     }
 
     const pageToken = connection.accessTokenEncrypted;
+    let publicSuccess = false;
+    let privateSuccess = false;
+    let errorMessage = '';
 
-    const res = await fetch(`https://graph.facebook.com/v21.0/${commentId}/comments`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message: replyText,
-        access_token: pageToken,
-      }),
-    });
+    // 1. Public Comment Reply via Graph API
+    if (replyType === 'public' || replyType === 'both') {
+      try {
+        const res = await fetch(`https://graph.facebook.com/v21.0/${commentId}/comments`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: replyText.trim(),
+            access_token: pageToken,
+          }),
+        });
 
-    const data = await res.json();
-    if (!res.ok || !data.id) {
-      throw new BadRequestException(`Meta Graph API error: ${data.error?.message || 'Failed to post comment reply'}`);
+        const data = await res.json();
+        if (res.ok && data.id) {
+          publicSuccess = true;
+          this.logger.log(`Human posted public comment reply to ${commentId}: ${data.id}`);
+        } else {
+          errorMessage = data.error?.message || JSON.stringify(data);
+          this.logger.error(`Failed posting public human reply to comment ${commentId}: ${errorMessage}`);
+        }
+      } catch (err: any) {
+        errorMessage = err.message;
+        this.logger.error(`Error posting public human reply to comment ${commentId}: ${err.message}`);
+      }
     }
+
+    // 2. Private Message via Graph API (Syncs into Messenger Inbox Thread)
+    if (replyType === 'private' || replyType === 'both') {
+      try {
+        const res = await fetch(`https://graph.facebook.com/v21.0/${commentLog.pageId}/messages`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            recipient: { comment_id: commentId },
+            message: { text: replyText.trim() },
+            access_token: pageToken,
+          }),
+        });
+
+        const data = await res.json();
+        if (res.ok && data.message_id) {
+          privateSuccess = true;
+          this.logger.log(`Human posted private DM to comment ${commentId}: ${data.message_id}`);
+          
+          // Sync Private Message into standard Messenger Inbox conversation thread
+          try {
+            await this.inboxService.handleIncomingMessage({
+              tenantId,
+              channel: 'messenger',
+              externalContactId: commentLog.userExternalId,
+              contactName: commentLog.userName || 'Facebook User',
+              messageType: 'text',
+              content: { text: replyText.trim() },
+              externalMessageId: data.message_id || `msg_private_human_${commentId}_${Date.now()}`,
+              timestamp: new Date(),
+            });
+          } catch (syncErr: any) {
+            this.logger.warn(`Error syncing private human reply to Messenger thread: ${syncErr.message}`);
+          }
+        } else {
+          if (!errorMessage) errorMessage = data.error?.message || JSON.stringify(data);
+          this.logger.error(`Failed posting private human reply to comment ${commentId}: ${data.error?.message}`);
+        }
+      } catch (err: any) {
+        if (!errorMessage) errorMessage = err.message;
+        this.logger.error(`Error posting private human reply to comment ${commentId}: ${err.message}`);
+      }
+    }
+
+    if (!publicSuccess && !privateSuccess) {
+      throw new BadRequestException(`Meta Graph API error: ${errorMessage || 'Failed to send comment reply'}`);
+    }
+
+    // Build/Append replyHistory array
+    let history: any[] = [];
+    if (Array.isArray(commentLog.replyHistory)) {
+      history = [...(commentLog.replyHistory as any[])];
+    } else if (commentLog.replyText) {
+      history = [{
+        id: `reply_prev_${commentLog.id}`,
+        sender: commentLog.skipReason === 'human_reply' ? 'human' : 'ai',
+        replyType: commentLog.privateReplyText ? 'both' : 'public',
+        text: commentLog.replyText,
+        createdAt: commentLog.createdAt ? new Date(commentLog.createdAt).toISOString() : new Date().toISOString(),
+      }];
+    }
+
+    const newReplyItem = {
+      id: `reply_human_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      sender: 'human',
+      replyType,
+      text: replyText.trim(),
+      createdAt: new Date().toISOString(),
+    };
+    history.push(newReplyItem);
 
     const updated = await this.prisma.facebookCommentLog.update({
       where: { commentId },
       data: {
-        replyText: replyText,
+        replyText: replyText.trim(),
         replyStatus: 'replied',
         skipReason: 'human_reply',
+        replyHistory: history,
       },
     });
+
+    // Emit real-time WebSocket update event
+    try {
+      if (this.inboxGateway) {
+        this.inboxGateway.broadcastToTenant(tenantId, 'facebook_comment:updated', updated);
+      }
+    } catch (wsErr: any) {
+      this.logger.warn(`Error broadcasting facebook_comment:updated: ${wsErr.message}`);
+    }
 
     return {
       success: true,
       commentId,
-      replyId: data.id,
       replyText: updated.replyText,
+      replyHistory: updated.replyHistory,
+      updatedLog: updated,
     };
   }
 

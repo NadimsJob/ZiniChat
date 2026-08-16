@@ -84,11 +84,13 @@ export class MessengerAuthController {
     @Request() req: any,
     @Param('commentId') commentId: string,
     @Body('replyText') replyText: string,
+    @Body('replyType') replyType?: 'public' | 'private' | 'both',
   ) {
     return this.facebookCommentsService.replyToCommentHuman(
       req.user.tenantId,
       commentId,
       replyText,
+      replyType || 'public',
     );
   }
 }

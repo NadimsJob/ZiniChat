@@ -198,6 +198,7 @@ model FacebookCommentLog {
   commentText         String   @db.Text
   replyText           String?  @db.Text
   privateReplyText    String?  @db.Text
+  replyHistory        Json?    @default("[]")
   replyStatus         String   @default("replied") // replied, skipped, failed
   skipReason          String?
   aiCreditsUsed       Int      @default(0)

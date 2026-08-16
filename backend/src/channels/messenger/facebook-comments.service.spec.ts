@@ -4,6 +4,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { QuotaService } from '../../tenants/quota.service';
 import { AiService } from '../../ai/ai.service';
 import { InboxService } from '../../inbox/inbox.service';
+import { InboxGateway } from '../../inbox/inbox.gateway';
 
 describe('FacebookCommentsService', () => {
   let service: FacebookCommentsService;
@@ -50,6 +51,10 @@ describe('FacebookCommentsService', () => {
     handleIncomingMessage: jest.fn(),
   };
 
+  const mockInboxGateway = {
+    broadcastToTenant: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -58,6 +63,7 @@ describe('FacebookCommentsService', () => {
         { provide: QuotaService, useValue: mockQuotaService },
         { provide: AiService, useValue: mockAiService },
         { provide: InboxService, useValue: mockInboxService },
+        { provide: InboxGateway, useValue: mockInboxGateway },
       ],
     }).compile();
 

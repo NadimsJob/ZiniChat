@@ -81,6 +81,7 @@ export default function InboxPage() {
   const [commentLogs, setCommentLogs] = useState<any[]>([]);
   const [selectedCommentId, setSelectedCommentId] = useState<string | null>(null);
   const [humanReplyText, setHumanReplyText] = useState('');
+  const [humanReplyType, setHumanReplyType] = useState<'public' | 'private' | 'both'>('public');
   const [sendingHumanReply, setSendingHumanReply] = useState(false);
   const [commentLogsLoading, setCommentLogsLoading] = useState(false);
 
@@ -190,14 +191,24 @@ export default function InboxPage() {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ replyText: humanReplyText }),
+        body: JSON.stringify({ replyText: humanReplyText, replyType: humanReplyType }),
       });
 
       if (res.ok) {
         const data = await res.json();
-        toast.success(language === 'en' ? 'Reply posted to Facebook!' : 'ফেসবুকে কমেন্ট রিপ্লাই পোস্ট হয়েছে!');
+        toast.success(language === 'en' ? 'Reply posted successfully!' : 'রিপ্লাই সফলভাবে পোস্ট হয়েছে!');
         setHumanReplyText('');
-        setCommentLogs(prev => prev.map(c => c.commentId === commentId ? { ...c, replyText: data.replyText, replyStatus: 'replied', skipReason: 'human_reply' } : c));
+        if (data.updatedLog) {
+          setCommentLogs(prev => prev.map(c => c.commentId === commentId ? data.updatedLog : c));
+        } else {
+          setCommentLogs(prev => prev.map(c => c.commentId === commentId ? {
+            ...c,
+            replyText: data.replyText,
+            replyHistory: data.replyHistory || c.replyHistory,
+            replyStatus: 'replied',
+            skipReason: 'human_reply',
+          } : c));
+        }
       } else {
         const errData = await res.json();
         toast.error(`Failed to post reply: ${errData.message || 'Error'}`);
@@ -278,6 +289,17 @@ export default function InboxPage() {
 
     socket.on('conversation:collaboratorAdded', () => {
       fetchConversations();
+    });
+
+    socket.on('facebook_comment:new', (newComment) => {
+      setCommentLogs(prev => {
+        if (prev.some(c => c.commentId === newComment.commentId)) return prev;
+        return [newComment, ...prev];
+      });
+    });
+
+    socket.on('facebook_comment:updated', (updatedComment) => {
+      setCommentLogs(prev => prev.map(c => c.commentId === updatedComment.commentId ? updatedComment : c));
     });
 
     // Fetch initial auxiliary metadata
@@ -1211,19 +1233,52 @@ export default function InboxPage() {
                 </div>
               </div>
 
-              {/* Main Comment & Reply View */}
+              {/* Main Comment & Reply View (Thread View) */}
               <div className="flex-1 p-4 overflow-y-auto space-y-4 font-sans bg-muted/10">
+                {/* Customer Original Comment (Left Bubble) */}
                 <div className="p-4 bg-card rounded-2xl border border-border/70 shadow-2xs max-w-xl">
-                  <span className="text-[10px] font-bold text-primary uppercase tracking-wider block mb-1">
-                    Customer Comment:
-                  </span>
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <span className="text-[10px] font-bold text-primary uppercase tracking-wider">
+                      Customer Comment ({selectedComment.userName || 'Facebook User'}):
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {new Date(selectedComment.createdAt).toLocaleString()}
+                    </span>
+                  </div>
                   <p className="text-xs text-foreground font-medium leading-relaxed">"{selectedComment.commentText}"</p>
-                  <span className="text-[10px] text-muted-foreground mt-2 block text-right">
-                    {new Date(selectedComment.createdAt).toLocaleString()}
-                  </span>
                 </div>
 
-                {selectedComment.replyText ? (
+                {/* Reply History Thread */}
+                {Array.isArray(selectedComment.replyHistory) && selectedComment.replyHistory.length > 0 ? (
+                  selectedComment.replyHistory.map((item: any, idx: number) => {
+                    const isAi = item.sender === 'ai';
+                    return (
+                      <div
+                        key={item.id || idx}
+                        className={`p-4 rounded-2xl border max-w-xl ml-auto ${
+                          isAi
+                            ? 'bg-emerald-500/10 border-emerald-500/20 text-right'
+                            : 'bg-orange-500/10 border-orange-500/20 text-right'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <span className="text-[10px] text-muted-foreground">
+                            {item.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                          </span>
+                          <span
+                            className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                              isAi ? 'bg-emerald-500/20 text-emerald-400' : 'bg-orange-500/20 text-orange-400'
+                            }`}
+                          >
+                            {isAi ? '🤖 AI Auto-Reply' : '👤 Human Agent'}
+                            {item.replyType ? ` (${item.replyType === 'private' ? 'Messenger DM' : item.replyType === 'both' ? 'Public & DM' : 'Public Comment'})` : ''}
+                          </span>
+                        </div>
+                        <p className="text-xs text-foreground font-medium leading-relaxed">"{item.text}"</p>
+                      </div>
+                    );
+                  })
+                ) : selectedComment.replyText ? (
                   <div className="p-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/20 max-w-xl ml-auto text-right">
                     <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block mb-1">
                       {selectedComment.skipReason === 'human_reply' ? 'Human Agent Reply:' : 'AI Auto-Reply:'}
@@ -1232,19 +1287,65 @@ export default function InboxPage() {
                   </div>
                 ) : (
                   <div className="p-3.5 bg-amber-500/10 rounded-xl border border-amber-500/20 text-xs text-amber-400 font-medium">
-                    Status: {selectedComment.replyStatus} ({selectedComment.skipReason || 'No reply generated'})
+                    Status: {selectedComment.replyStatus} ({selectedComment.skipReason || 'No reply generated yet'})
                   </div>
                 )}
               </div>
 
-              {/* Human Re-comment Form */}
-              <div className="p-3 border-t border-border bg-surface/80 backdrop-blur-md">
+              {/* Human Re-comment Form with Mode Selector */}
+              <div className="p-3 border-t border-border bg-surface/80 backdrop-blur-md space-y-2">
+                {/* Reply Type Mode Selector */}
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-muted-foreground font-medium">
+                    {language === 'en' ? 'Reply Mode:' : 'রিপ্লাই মোড:'}
+                  </span>
+                  <div className="flex items-center gap-1.5 bg-muted/40 p-1 rounded-lg border border-border/50">
+                    <button
+                      type="button"
+                      onClick={() => setHumanReplyType('public')}
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                        humanReplyType === 'public'
+                          ? 'bg-orange-500 text-white shadow-2xs'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      {language === 'en' ? 'Public Comment' : 'পাবলিক কমেন্ট'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setHumanReplyType('private')}
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                        humanReplyType === 'private'
+                          ? 'bg-blue-500 text-white shadow-2xs'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      {language === 'en' ? 'Private DM' : 'প্রাইভেট মেসেঞ্জার'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setHumanReplyType('both')}
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                        humanReplyType === 'both'
+                          ? 'bg-purple-500 text-white shadow-2xs'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      {language === 'en' ? 'Both' : 'উভয়ই'}
+                    </button>
+                  </div>
+                </div>
+
                 <form onSubmit={(e) => { e.preventDefault(); handleSendHumanCommentReply(selectedComment.commentId); }} className="flex items-center gap-2">
                   <input
                     type="text"
                     value={humanReplyText}
                     onChange={(e) => setHumanReplyText(e.target.value)}
-                    placeholder={language === 'en' ? 'Type human comment reply to post on Facebook...' : 'কমেন্টের পাবলিক উত্তর লিখুন (ফেসবুকে পোস্ট হবে)...'}
+                    placeholder={
+                      humanReplyType === 'private'
+                        ? (language === 'en' ? 'Type private Messenger DM to customer...' : 'গ্রাহকের মেসেঞ্জারে প্রাইভেট মেসেজ লিখুন...')
+                        : (language === 'en' ? 'Type comment reply to post on Facebook...' : 'কমেন্টের পাবলিক উত্তর লিখুন (ফেসবুকে পোস্ট হবে)...')
+                    }
                     className="flex-1 p-2.5 bg-background border border-border rounded-xl text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                   />
                   <button
