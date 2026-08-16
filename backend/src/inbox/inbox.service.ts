@@ -1148,7 +1148,7 @@ export class InboxService {
           backoff: { type: 'exponential', delay: 1000 },
         }
       );
-    } else if (conversation.channel === 'messenger') {
+    } else if (conversation.channel === 'messenger' || conversation.channel === 'instagram') {
       await this.messengerQueue.add(
         'send-message',
         {
@@ -1159,6 +1159,7 @@ export class InboxService {
           content,
           conversationId,
           channelConnectionId: conversation.channelConnectionId,
+          channel: conversation.channel, // Pass channel so processor knows if it's instagram or messenger
         },
         {
           attempts: 3,

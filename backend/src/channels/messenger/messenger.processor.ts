@@ -18,16 +18,17 @@ export class MessengerProcessor extends WorkerHost {
 
     this.logger.log(`Processing outbound messenger job ${job.id}`);
     
-    const { tenantId, messageId, to, type, content, conversationId } = job.data;
+    const { tenantId, messageId, to, type, content, conversationId, channel } = job.data;
+    const channelType = channel === 'instagram' ? 'instagram' : 'messenger';
 
     try {
       // 1. Fetch the active channel connection for this tenant
       const connection = await this.prisma.channelConnection.findFirst({
-        where: { tenantId, channelType: 'messenger', status: 'active' }
+        where: { tenantId, channelType, status: { in: ['active', 'connected'] } }
       });
 
       if (!connection || !connection.accessTokenEncrypted || !connection.externalAccountId) {
-        throw new Error('No active Messenger connection found for this tenant');
+        throw new Error(`No active ${channelType} connection found for tenant ${tenantId}`);
       }
 
       // 3. Prepare payload for Meta Graph API (Messenger Send API)
@@ -69,13 +70,14 @@ export class MessengerProcessor extends WorkerHost {
       }
 
       // 3. Send HTTP Request to Meta
-      this.logger.debug(`Sending to Meta Messenger API for ${to}`);
+      this.logger.debug(`Sending to Meta ${channelType} API for ${to}`);
       
       let externalMessageId = `mock_ext_msg_${Date.now()}`;
       
       if (!connection.accessTokenEncrypted.startsWith('mock_')) {
-        // Facebook Graph API Endpoint for Messenger
-        // POST https://graph.facebook.com/v21.0/{page-id}/messages?access_token={page-access-token}
+        // For both Messenger and Instagram DM, the endpoint is:
+        // POST https://graph.facebook.com/v21.0/{page-or-ig-account-id}/messages
+        // Instagram uses the IG Business Account ID and page access token stored in the connection
         const response = await fetch(`https://graph.facebook.com/v21.0/${connection.externalAccountId}/messages?access_token=${connection.accessTokenEncrypted}`, {
           method: 'POST',
           headers: {
@@ -87,7 +89,7 @@ export class MessengerProcessor extends WorkerHost {
         const data = await response.json();
         
         if (!response.ok) {
-          this.logger.error(`Meta API Error: ${JSON.stringify(data)}`);
+          this.logger.error(`Meta ${channelType} API Error: ${JSON.stringify(data)}`);
           throw new Error(`Meta API Error: ${data.error?.message || 'Unknown Error'}`);
         }
         
