@@ -99,8 +99,8 @@ export default function WhatsappWebConnectModal({ isOpen, onClose, onSuccess }: 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white dark:bg-[#121214] border border-slate-200 dark:border-zinc-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden relative">
-        <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-zinc-800">
+      <div className="bg-white dark:bg-[#121214] border border-slate-200 dark:border-zinc-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden relative max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-zinc-800 shrink-0">
           <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <Smartphone className="w-5 h-5 text-green-500" />
             {language === 'en' ? 'Link Device' : 'ডিভাইস কানেক্ট করুন'}
@@ -111,7 +111,7 @@ export default function WhatsappWebConnectModal({ isOpen, onClose, onSuccess }: 
         </div>
 
         {/* Tabs inside modal */}
-        <div className="flex border-b border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900/50">
+        <div className="flex border-b border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900/50 shrink-0">
           <button
             onClick={() => setConnectMethod('qr')}
             className={`flex-1 py-3 text-sm font-medium transition-colors border-b-2 ${connectMethod === 'qr' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
@@ -126,9 +126,9 @@ export default function WhatsappWebConnectModal({ isOpen, onClose, onSuccess }: 
           </button>
         </div>
 
-        <div className="p-4">
+        <div className="p-4 overflow-y-auto flex-1">
           {error && (
-            <div className="mb-4 p-2 rounded-lg bg-red-50 text-red-600 text-sm flex items-center gap-2">
+            <div className="mb-4 p-2 rounded-lg bg-red-50 text-red-600 text-sm flex items-center gap-2 shrink-0">
               <AlertCircle className="w-4 h-4" /> {error}
             </div>
           )}

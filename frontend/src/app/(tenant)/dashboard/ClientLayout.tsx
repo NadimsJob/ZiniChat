@@ -123,7 +123,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
     if (pathname.startsWith('/dashboard/broadcasts')) {
       return language === 'en' ? 'Broadcast' : 'ব্রডকাস্ট';
     }
-    if (pathname.startsWith('/dashboard/ai-training')) {
+    if (pathname.startsWith('/dashboard/ai-training') || pathname.startsWith('/dashboard/settings/ai-training')) {
       return language === 'en' ? 'AI Training' : 'এআই ট্রেনিং';
     }
     if (pathname.startsWith('/dashboard/settings/inboxes')) {
@@ -387,7 +387,6 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  '/dashboard/orders': ['commerce'],
  '/dashboard/broadcasts': ['broadcast'],
  '/dashboard/settings/inboxes': ['whatsapp', 'messenger', 'instagram_dm'],
- '/dashboard/settings/ai-training': ['ai_assistant'],
  '/dashboard/team': ['team_management'],
  };
 
