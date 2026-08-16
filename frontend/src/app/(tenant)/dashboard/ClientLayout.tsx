@@ -280,7 +280,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  });
  socket.on('new_message', (data: any) => {
  // If we are not currently on the inbox page, increment badge & show bottom-right toast
- if (!window.location.pathname.includes('/dashboard/inbox')) {
+ if (!window.location.pathname.startsWith('/dashboard/inbox')) {
  setInboxUnreadCount(prev => prev + 1);
 
         const senderName =
@@ -359,7 +359,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
 
  // Clear unread count when visiting inbox
  useEffect(() => {
- if (pathname.includes('/dashboard/inbox')) {
+ if (pathname === '/dashboard/inbox' || pathname.startsWith('/dashboard/inbox/')) {
  setInboxUnreadCount(0);
  }
  }, [pathname]);
@@ -745,7 +745,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  </header>
 
  {/* Page Content */}
- <div className={`flex-1 ${pathname.includes('/inbox') ? 'overflow-hidden p-0' : 'overflow-auto p-3'} custom-scrollbar pb-14 md:pb-0`}>
+ <div className={`flex-1 ${isInboxPage ? 'overflow-hidden p-0' : 'overflow-auto p-3'} custom-scrollbar pb-14 md:pb-0`}>
  {children}
  </div>
 
@@ -761,7 +761,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
 
    <Link 
      href="/dashboard/inbox" 
-     className={`flex flex-col items-center justify-center w-full h-full text-[11px] font-medium transition-colors relative ${pathname.includes('/inbox') ? 'text-primary font-bold' : 'text-muted-foreground hover:text-foreground'}`}
+     className={`flex flex-col items-center justify-center w-full h-full text-[11px] font-medium transition-colors relative ${isInboxPage ? 'text-primary font-bold' : 'text-muted-foreground hover:text-foreground'}`}
    >
      <div className="relative">
        <Inbox className="w-5 h-5 mb-1" />

@@ -107,8 +107,19 @@ export default function NewInboxStepper() {
     };
   }, []);
 
+  const getChannelDisplayName = () => {
+    switch (selectedChannel) {
+      case 'whatsapp': return language === 'en' ? 'WhatsApp' : 'হোয়াটসঅ্যাপ';
+      case 'messenger': return language === 'en' ? 'Messenger' : 'মেসেঞ্জার';
+      case 'instagram': return language === 'en' ? 'Instagram' : 'ইনস্টাগ্রাম';
+      case 'website': return language === 'en' ? 'Website Widget' : 'ওয়েবসাইট উইজেট';
+      default: return 'Channel';
+    }
+  };
+
   const handleConnectedSuccess = () => {
-    toast.success(language === 'en' ? 'WhatsApp Web connected successfully! 🎉' : 'হোয়াটসঅ্যাপ ওয়েব সফলভাবে কানেক্ট হয়েছে! 🎉');
+    const channelName = getChannelDisplayName();
+    toast.success(language === 'en' ? `${channelName} connected successfully! 🎉` : `${channelName} সফলভাবে কানেক্ট হয়েছে! 🎉`);
     setStep(4);
     setTimeout(() => {
       router.push('/dashboard/settings/inboxes');
@@ -457,7 +468,7 @@ export default function NewInboxStepper() {
   );
 
   return (
-    <div className="min-h-full flex bg-background">
+    <div className="min-h-full flex flex-col md:flex-row bg-background">
       
       {/* Sidebar Stepper */}
       <div className="w-64 shrink-0 bg-surface/70 backdrop-blur-xl border-r border-surface-hover p-6 hidden md:flex flex-col">
@@ -479,7 +490,7 @@ export default function NewInboxStepper() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 p-5 md:p-8 max-w-5xl overflow-y-auto">
+      <div className="flex-1 p-5 md:p-8 max-w-5xl">
 
         {/* Step 1: Channel Selection with quota */}
         {step === 1 && (
