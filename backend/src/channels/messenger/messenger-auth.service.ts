@@ -288,4 +288,43 @@ export class MessengerAuthService {
       data: { isAiAutoReplyEnabled: isEnabled }
     });
   }
+
+  /**
+   * Re-subscribe the Facebook Page to Meta Webhooks (including 'feed' for comment events).
+   * Use when comments are not showing up in the inbox.
+   */
+  async resubscribeWebhooks(tenantId: string, connectionId: string) {
+    const connection = await this.prisma.channelConnection.findUnique({
+      where: { id: connectionId }
+    });
+
+    if (!connection || connection.tenantId !== tenantId) {
+      throw new NotFoundException('Connection not found');
+    }
+
+    const pageId = connection.externalAccountId;
+    const pageToken = connection.accessTokenEncrypted;
+
+    if (!pageId || !pageToken) {
+      throw new BadRequestException('Connection is missing page credentials');
+    }
+
+    try {
+      const fields = 'messages,messaging_postbacks,message_deliveries,message_reads,feed';
+      const url = `https://graph.facebook.com/v21.0/${pageId}/subscribed_apps?subscribed_fields=${encodeURIComponent(fields)}&access_token=${pageToken}`;
+      const res = await fetch(url, { method: 'POST' });
+      const data = await res.json();
+
+      if (data.success) {
+        this.logger.log(`Re-subscribed Facebook Page ${pageId} to Meta Webhooks (including feed/comments)`);
+        return { success: true, message: 'Webhook subscription refreshed. Facebook comments should now appear in the inbox.' };
+      } else {
+        this.logger.warn(`Resubscribe returned: ${JSON.stringify(data)}`);
+        throw new BadRequestException(`Meta API returned: ${JSON.stringify(data.error || data)}`);
+      }
+    } catch (err: any) {
+      if (err instanceof BadRequestException) throw err;
+      throw new BadRequestException(`Resubscription failed: ${err.message}`);
+    }
+  }
 }

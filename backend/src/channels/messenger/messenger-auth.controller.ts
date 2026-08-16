@@ -93,4 +93,9 @@ export class MessengerAuthController {
       replyType || 'public',
     );
   }
+
+  @Post('connections/:id/resubscribe-webhooks')
+  resubscribeWebhooks(@Request() req: any, @Param('id') id: string) {
+    return this.messengerAuthService.resubscribeWebhooks(req.user.tenantId, id);
+  }
 }
