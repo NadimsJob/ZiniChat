@@ -74,25 +74,35 @@ export class FacebookCommentsService {
 
     const tenantId = connection.tenantId;
 
-    // 4. Package Plan Feature Enforcement
-    const hasPackageFeature = await this.quotaService.checkFeature(tenantId, 'facebook_comment_automation');
-    if (!hasPackageFeature) {
-      this.logger.warn(`Tenant ${tenantId} does not have 'facebook_comment_automation' enabled in their package plan. Skipping.`);
-      return;
-    }
-
-    // 5. Check if comment auto-reply is enabled on channel
-    if (!connection.isCommentAutoReplyEnabled) {
-      this.logger.debug(`Comment auto-reply is disabled for tenant ${tenantId}, page ${pageId}`);
-      return;
-    }
-
-    // 5. Duplicate Check (Queue & DB Idempotency)
+    // 4. Duplicate Check (Queue & DB Idempotency)
     const existingLog = await this.prisma.facebookCommentLog.findUnique({
       where: { commentId },
     });
     if (existingLog) {
       this.logger.debug(`Comment ${commentId} already processed. Skipping.`);
+      return;
+    }
+
+    // 5. Package Plan Feature Enforcement
+    const hasPackageFeature = await this.quotaService.checkFeature(tenantId, 'facebook_comment_automation');
+    if (!hasPackageFeature) {
+      this.logger.warn(`Tenant ${tenantId} does not have 'facebook_comment_automation' enabled in their package plan. Skipping reply.`);
+      await this.saveLog({
+        tenantId, channelConnectionId: connection.id, pageId, postId, commentId, parentId,
+        userExternalId: fromId, userName: fromName, commentText: message,
+        replyStatus: 'skipped', skipReason: 'feature_locked', aiCreditsUsed: 0,
+      });
+      return;
+    }
+
+    // 6. Check if comment auto-reply is enabled on channel
+    if (!connection.isCommentAutoReplyEnabled) {
+      this.logger.debug(`Comment auto-reply is disabled for tenant ${tenantId}, page ${pageId}`);
+      await this.saveLog({
+        tenantId, channelConnectionId: connection.id, pageId, postId, commentId, parentId,
+        userExternalId: fromId, userName: fromName, commentText: message,
+        replyStatus: 'skipped', skipReason: 'auto_reply_disabled', aiCreditsUsed: 0,
+      });
       return;
     }
 
