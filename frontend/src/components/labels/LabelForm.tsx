@@ -40,7 +40,7 @@ export default function LabelForm({ initialData, onSave, onCancel }: LabelFormPr
   };
 
   return (
-    <div className="bg-card border border-border rounded-2xl p-4 shadow-sm animate-in zoom-in-95 duration-200 text-foreground">
+    <div className="bg-card border border-border rounded-2xl p-4 shadow-sm animate-in zoom-in-95 duration-200 text-foreground max-h-[90vh] overflow-y-auto">
       <div className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-3">

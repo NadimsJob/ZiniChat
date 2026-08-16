@@ -51,6 +51,12 @@ const mockInboxService = {
   handleIncomingMessage: jest.fn(),
 };
 
+import { NotificationsService } from '../../notifications/notifications.service';
+
+const mockNotificationsService = {
+  createNotificationForTenantAdmins: jest.fn().mockResolvedValue(undefined),
+};
+
 const mockBillingService = {
   getTenantQuotas: jest.fn(),
 };
@@ -67,6 +73,7 @@ describe('WhatsappWebService', () => {
         { provide: InboxGateway, useValue: mockInboxGateway },
         { provide: InboxService, useValue: mockInboxService },
         { provide: BillingService, useValue: mockBillingService },
+        { provide: NotificationsService, useValue: mockNotificationsService },
       ],
     }).compile();
 

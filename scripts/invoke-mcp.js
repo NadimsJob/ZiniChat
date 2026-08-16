@@ -36,8 +36,15 @@ async function deploy(target, branch) {
 }
 
 async function run() {
-  await deploy("test", "staging");
-  await deploy("live", "main");
+  const target = process.argv[2];
+  const branch = process.argv[3] || "main";
+
+  if (target) {
+    await deploy(target, branch);
+  } else {
+    await deploy("test", "staging");
+    await deploy("live", "main");
+  }
 }
 
 run();

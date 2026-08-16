@@ -1164,9 +1164,9 @@ export default function AiTrainingPage() {
 
       {/* Q&A Modal */}
       {isQnaModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-card border border-border rounded-2xl max-w-lg w-full p-4 space-y-4 shadow-2xl animate-in zoom-in-95">
-            <div className="flex items-center justify-between border-b border-border pb-3">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-card border border-border rounded-2xl max-w-lg w-full max-h-[90vh] flex flex-col shadow-2xl animate-in zoom-in-95 overflow-hidden">
+            <div className="flex items-center justify-between border-b border-border p-4 shrink-0">
               <h3 className="font-bold text-foreground text-base">
                 {qnaForm.id 
                   ? (language === 'en' ? 'Edit Question & Answer' : 'প্রশ্ন ও উত্তর এডিট করুন') 
@@ -1177,7 +1177,7 @@ export default function AiTrainingPage() {
               </button>
             </div>
 
-            <div className="space-y-3">
+            <div className="p-4 space-y-3 flex-1 overflow-y-auto">
               <div>
                 <div className="flex justify-between items-center mb-1">
                   <label className="text-[12px] font-medium text-muted-foreground">
@@ -1216,7 +1216,7 @@ export default function AiTrainingPage() {
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 border-t border-surface-hover pt-3">
+            <div className="flex justify-end gap-2 border-t border-border p-4 bg-muted/20 shrink-0">
               <button
                 onClick={() => setIsQnaModalOpen(false)}
                 className="px-4 py-2 bg-muted text-muted-foreground hover:text-foreground rounded-xl text-[12px] font-bold cursor-pointer"

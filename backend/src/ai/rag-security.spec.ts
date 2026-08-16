@@ -84,7 +84,7 @@ describe('RAG Vector Search Security - Strict Multi-Tenant Isolation', () => {
       return Promise.resolve(filteredResults);
     });
 
-    const dummyVector = Array.from({ length: 1536 }, () => 0.1);
+    const dummyVector = Array.from({ length: 768 }, () => 0.1);
 
     const resultsA = await aiService.searchRelevantChunks(tenantA, dummyVector, 5);
 
@@ -100,7 +100,7 @@ describe('RAG Vector Search Security - Strict Multi-Tenant Isolation', () => {
       return Promise.resolve(filteredResults);
     });
 
-    const dummyVector = [0.1, 0.2, 0.3];
+    const dummyVector = Array.from({ length: 768 }, () => 0.1);
 
     const resultsB = await aiTrainingService.searchRelevantChunks(tenantB, dummyVector, 5);
 
@@ -110,7 +110,7 @@ describe('RAG Vector Search Security - Strict Multi-Tenant Isolation', () => {
   });
 
   it('should throw BadRequestException if tenantId is missing or empty', async () => {
-    const dummyVector = [0.1, 0.2];
+    const dummyVector = Array.from({ length: 768 }, () => 0.1);
 
     await expect(aiService.searchRelevantChunks('', dummyVector)).rejects.toThrow(BadRequestException);
     await expect(aiTrainingService.searchRelevantChunks('', dummyVector)).rejects.toThrow(BadRequestException);

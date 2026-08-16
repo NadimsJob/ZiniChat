@@ -547,7 +547,7 @@ export default function AiSettingsPage() {
       {/* Default Permission Modal */}
       {defaultModal.isOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-2.5 z-50 animate-in fade-in duration-300">
-          <div className="bg-[#121214] border border-zinc-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+          <div className="bg-[#121214] border border-zinc-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-bold text-white">Set Default AI Model</h3>
             <p className="text-sm text-zinc-400">
               You are setting <strong>{defaultModal.config?.name}</strong> as the new Platform Default. How should this affect existing tenants?

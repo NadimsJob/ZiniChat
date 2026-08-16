@@ -386,7 +386,6 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  '/dashboard/products': ['commerce'],
  '/dashboard/orders': ['commerce'],
  '/dashboard/broadcasts': ['broadcast'],
- '/dashboard/settings/inboxes': ['whatsapp', 'messenger', 'instagram_dm'],
  '/dashboard/team': ['team_management'],
  };
 
@@ -802,19 +801,19 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
 
  {/* Trial Expired Modal */}
  {showTrialModal && (
- <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-1.5">
- <div className="bg-card rounded-2xl shadow-2xl max-w-md w-full p-8 text-center border border-red-500/20">
- <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6">
+ <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-4">
+ <div className="bg-card text-card-foreground rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8 text-center border border-red-500/20 max-h-[90vh] overflow-y-auto">
+ <div className="w-16 h-16 bg-red-100 dark:bg-red-950/40 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6 shrink-0">
  <Crown className="w-8 h-8" />
  </div>
  <h3 className="text-2xl font-bold text-foreground mb-2">Trial Expired</h3>
- <p className="text-muted-foreground mb-8">
+ <p className="text-muted-foreground mb-8 text-sm">
  Your free trial has ended. Please subscribe to a plan to continue using this feature and unlock all premium capabilities.
  </p>
  <div className="flex gap-2">
  <button 
  onClick={() => setShowTrialModal(false)}
- className="flex-1 px-1.5 py-1 rounded-xl border border-border font-medium hover:bg-muted text-foreground transition-colors"
+ className="flex-1 px-3 py-2 rounded-xl border border-border font-medium hover:bg-muted text-foreground transition-colors text-sm"
  >
  Close
  </button>

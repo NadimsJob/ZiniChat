@@ -336,8 +336,8 @@ export default function TeamPage() {
       {/* Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-card border border-border rounded-2xl shadow-2xl w-[95vw] sm:w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-4 border-b border-border">
+          <div className="bg-card border border-border rounded-2xl shadow-2xl w-[95vw] sm:w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-border shrink-0">
               <h2 className="text-[15px] font-bold text-foreground">
                 {editingAgent
                   ? (language === 'en' ? 'Edit Team Member' : 'মেম্বার এডিট করুন')
@@ -348,7 +348,7 @@ export default function TeamPage() {
               </button>
             </div>
 
-            <div className="p-4">
+            <div className="p-4 flex-1 overflow-y-auto">
               {error && (
                 <div className="mb-3 p-2.5 bg-red-50 border border-red-200 text-red-600 text-[12px] rounded-xl">
                   {error}
@@ -577,7 +577,7 @@ export default function TeamPage() {
               </form>
             </div>
 
-            <div className="px-4 py-3 border-t border-border bg-muted/30 flex justify-end gap-2 rounded-b-2xl">
+            <div className="px-4 py-3 border-t border-border bg-muted/30 flex justify-end gap-2 rounded-b-2xl shrink-0">
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
