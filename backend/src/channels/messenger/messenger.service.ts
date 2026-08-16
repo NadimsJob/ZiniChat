@@ -15,53 +15,92 @@ export class MessengerService implements IChannelAdapter {
   async parseWebhookPayload(payload: any): Promise<UnifiedMessage[]> {
     const messages: UnifiedMessage[] = [];
 
-    if (payload.object !== 'page') {
+    const objectType = payload.object; // 'page' for Messenger, 'instagram' for Instagram DM
+
+    if (objectType !== 'page' && objectType !== 'instagram') {
+      this.logger.debug(`Ignoring webhook with object type: ${objectType}`);
       return messages;
     }
 
     for (const entry of payload.entry || []) {
-      const pageId = entry.id;
+      const accountId = entry.id;
 
-      // Lookup Tenant ID from the DB
-      const connection = await this.prisma.channelConnection.findFirst({
-        where: { externalAccountId: pageId, channelType: 'messenger', status: 'active' }
-      });
+      let connection: any = null;
+
+      if (objectType === 'page') {
+        // Messenger DM: lookup by page ID with channelType messenger
+        connection = await this.prisma.channelConnection.findFirst({
+          where: { externalAccountId: accountId, channelType: 'messenger', status: { in: ['active', 'connected'] } }
+        });
+
+        if (!connection) {
+          connection = await this.prisma.channelConnection.findFirst({
+            where: { externalAccountId: accountId, channelType: 'messenger' }
+          });
+        }
+      } else if (objectType === 'instagram') {
+        // Instagram DM: lookup by Instagram Business Account ID with channelType instagram
+        connection = await this.prisma.channelConnection.findFirst({
+          where: { externalAccountId: accountId, channelType: 'instagram', status: { in: ['active', 'connected'] } }
+        });
+
+        if (!connection) {
+          connection = await this.prisma.channelConnection.findFirst({
+            where: { externalAccountId: accountId, channelType: 'instagram' }
+          });
+        }
+      }
 
       if (!connection) {
-        this.logger.warn(`Received webhook for unknown pageId: ${pageId}`);
-        continue; 
+        this.logger.warn(`Received ${objectType} webhook for unknown accountId: ${accountId}`);
+        continue;
       }
 
       const tenantId = connection.tenantId;
+      const channel = objectType === 'instagram' ? 'instagram' : 'messenger';
 
+      // Handle messaging events (DMs)
       for (const messaging of entry.messaging || []) {
         if (messaging.message) {
-          const senderId = messaging.sender.id;
+          const senderId = messaging.sender?.id;
+          const recipientId = messaging.recipient?.id;
           const msg = messaging.message;
 
-          this.logger.log(`Received messenger message: ${JSON.stringify(msg)}`);
-          
-          // Meta Messenger attachments
+          // Skip echo messages (bot's own messages sent back)
+          if (msg.is_echo) {
+            this.logger.debug(`Skipping echo message for ${channel}`);
+            continue;
+          }
+
+          // Skip if sender is the page/account itself
+          if (senderId === accountId || senderId === recipientId) {
+            this.logger.debug(`Skipping self-message from ${channel} account`);
+            continue;
+          }
+
+          this.logger.log(`Received ${channel} DM from ${senderId} to ${accountId} (tenant: ${tenantId})`);
+
+          // Handle attachments
           let type = 'text';
           let finalContent: any = { text: msg.text };
 
           if (msg.attachments && msg.attachments.length > 0) {
             const attachment = msg.attachments[0];
             type = attachment.type; // image, video, audio, file
-            finalContent = { 
+            finalContent = {
               url: attachment.payload?.url,
-              id: attachment.payload?.sticker_id || null, // Optional sticker tracking
-              text: msg.text || '' // Sometimes images come with text
+              id: attachment.payload?.sticker_id || null,
+              text: msg.text || ''
             };
           }
 
           messages.push({
             tenantId,
-            channel: 'messenger',
+            channel,
             externalContactId: senderId,
-            contactName: 'Messenger User', // Fetching actual profile requires Graph API call, placeholder for now
+            contactName: channel === 'instagram' ? 'Instagram User' : 'Messenger User',
             direction: 'inbound',
-            type, 
+            type,
             content: finalContent,
             messageId: msg.mid,
             timestamp: new Date(messaging.timestamp),

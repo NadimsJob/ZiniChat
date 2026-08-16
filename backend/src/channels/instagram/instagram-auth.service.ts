@@ -149,7 +149,7 @@ export class InstagramAuthService {
     });
   }
 
-  async connectViaFacebook(tenantId: string, accessToken: string) {
+  async connectViaFacebook(tenantId: string, accessToken: string, selectedIgAccountId?: string) {
     await this.checkAccessControlAndQuota(tenantId);
 
     try {
@@ -170,7 +170,7 @@ export class InstagramAuthService {
       
       const finalToken = longLivedData.access_token || accessToken;
 
-      // Step 2: Get user's pages
+      // Step 2: Get all Facebook Pages of the user
       const pagesRes = await fetch(`https://graph.facebook.com/v21.0/me/accounts?access_token=${finalToken}`);
       const pagesData = await pagesRes.json();
       
@@ -182,10 +182,8 @@ export class InstagramAuthService {
         throw new BadRequestException('No Facebook Pages found for this account.');
       }
 
-      // We'll just connect the first Instagram Business Account found linked to these pages for simplicity
-      // Or we can connect all of them. Let's find the first one that has an instagram_business_account
-      let igAccountId = null;
-      let igDisplayName = 'Instagram Account';
+      // Step 3: Collect all Instagram Business Accounts linked to those pages
+      const igAccounts: Array<{ igId: string; username: string; pageId: string; pageToken: string; pageName: string }> = [];
 
       for (const page of pagesData.data) {
         const pageToken = page.access_token;
@@ -193,46 +191,67 @@ export class InstagramAuthService {
         const igData = await igRes.json();
 
         if (igData.instagram_business_account) {
-          igAccountId = igData.instagram_business_account.id;
-          
+          const igId = igData.instagram_business_account.id;
+
           // Get the IG account username
-          const igUserRes = await fetch(`https://graph.facebook.com/v21.0/${igAccountId}?fields=username&access_token=${pageToken}`);
+          const igUserRes = await fetch(`https://graph.facebook.com/v21.0/${igId}?fields=username,name&access_token=${pageToken}`);
           const igUserData = await igUserRes.json();
-          if (igUserData.username) {
-            igDisplayName = igUserData.username;
-          }
-          break; // Just connect the first one found for now to simplify
+          const username = igUserData.username || igUserData.name || `ig_${igId}`;
+
+          // Skip already-connected accounts
+          const alreadyConnected = await this.prisma.channelConnection.findFirst({
+            where: { tenantId, channelType: 'instagram', externalAccountId: igId }
+          });
+          if (alreadyConnected) continue;
+
+          igAccounts.push({
+            igId,
+            username,
+            pageId: page.id,
+            pageToken,
+            pageName: page.name,
+          });
         }
       }
 
-      if (!igAccountId) {
-         throw new BadRequestException('No Instagram Business Accounts linked to your Facebook Pages. Please link your Instagram account to a Facebook Page first.');
+      if (igAccounts.length === 0) {
+        throw new BadRequestException('No Instagram Business Accounts found (they may already be connected, or no Instagram account is linked to your Facebook Pages).');
       }
 
-      const existing = await this.prisma.channelConnection.findFirst({
-        where: { tenantId, channelType: 'instagram', externalAccountId: igAccountId }
-      });
+      // Step 4: If no specific account selected, return list for user to choose
+      if (!selectedIgAccountId) {
+        return {
+          requiresSelection: true,
+          accounts: igAccounts.map(a => ({ id: a.igId, username: a.username, pageName: a.pageName })),
+          token: finalToken, // Pass token back to use in step 2
+        };
+      }
 
-      if (existing) {
-        throw new BadRequestException('This Instagram Account is already connected');
+      // Step 5: Connect the selected Instagram account
+      const selected = igAccounts.find(a => a.igId === selectedIgAccountId);
+      if (!selected) {
+        throw new BadRequestException('Selected Instagram account not found. Please try again.');
       }
 
       const connection = await this.prisma.channelConnection.create({
         data: {
           tenantId,
           channelType: 'instagram',
-          externalAccountId: igAccountId,
-          accessTokenEncrypted: finalToken, // Storing the user long-lived token
-          displayName: igDisplayName,
+          externalAccountId: selected.igId,
+          accessTokenEncrypted: finalToken,
+          displayName: selected.username,
           connectionMethod: 'facebook_login',
           status: 'active'
         }
       });
 
+      // Subscribe the linked Facebook Page to Instagram messaging webhooks
+      await this.subscribePageForInstagram(selected.pageId, selected.pageToken);
+
       const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
       this.notificationsService.createSystemNotificationForSuperadmins(
         'New Instagram Connection',
-        `Tenant "${tenant?.businessName}" connected Instagram (${igDisplayName}) via Facebook Login.`,
+        `Tenant "${tenant?.businessName}" connected Instagram (@${selected.username}) via Facebook Login.`,
         'info'
       ).catch(e => this.logger.error('Failed to send notification', e));
 
@@ -242,7 +261,7 @@ export class InstagramAuthService {
         this.notificationsService.createNotification(
           admin.id,
           '✅ Instagram Account Connected',
-          `Your Instagram account "${igDisplayName}" has been successfully connected via Facebook.`,
+          `Your Instagram account "@${selected.username}" has been successfully connected via Facebook.`,
           'system'
         ).catch(() => {});
       }
@@ -253,6 +272,77 @@ export class InstagramAuthService {
       this.logger.error('Facebook Login Error:', error);
       if (error instanceof BadRequestException || error instanceof ForbiddenException) throw error;
       throw new BadRequestException(`Facebook Login Failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Subscribe the linked Facebook Page to Instagram messaging webhook fields.
+   * Instagram DM webhooks require the LINKED Facebook Page to subscribe with
+   * instagram_messaging fields — Instagram Business Account ID alone is not enough.
+   */
+  private async subscribePageForInstagram(pageId: string, pageToken: string): Promise<void> {
+    try {
+      const fields = 'messages,messaging_postbacks,message_deliveries,message_reads,feed,instagram_messaging_seen';
+      const url = `https://graph.facebook.com/v21.0/${pageId}/subscribed_apps?subscribed_fields=${encodeURIComponent(fields)}&access_token=${pageToken}`;
+      const res = await fetch(url, { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        this.logger.log(`Successfully subscribed page ${pageId} to Instagram messaging webhooks`);
+      } else {
+        this.logger.warn(`Webhook subscription for page ${pageId} returned: ${JSON.stringify(data)}`);
+      }
+    } catch (err: any) {
+      this.logger.warn(`Failed to subscribe page ${pageId} for Instagram webhooks: ${err.message}`);
+    }
+  }
+
+  /**
+   * Re-subscribe existing Instagram connection's linked Facebook Page to receive DM webhooks.
+   * Use this for connections made before webhook subscription was implemented.
+   */
+  async resubscribeWebhooks(tenantId: string, connectionId: string) {
+    const connection = await this.prisma.channelConnection.findUnique({
+      where: { id: connectionId }
+    });
+
+    if (!connection || connection.tenantId !== tenantId) {
+      throw new NotFoundException('Connection not found');
+    }
+
+    const igAccountId = connection.externalAccountId;
+    const accessToken = connection.accessTokenEncrypted;
+
+    try {
+      // Find which Facebook Pages this IG account is linked to
+      const pagesRes = await fetch(`https://graph.facebook.com/v21.0/me/accounts?access_token=${accessToken}`);
+      const pagesData = await pagesRes.json();
+
+      if (pagesData.error || !pagesData.data) {
+        throw new BadRequestException('Could not fetch linked Facebook Pages. Token may be expired.');
+      }
+
+      let subscribed = false;
+      for (const page of pagesData.data) {
+        const pageToken = page.access_token;
+        const igRes = await fetch(`https://graph.facebook.com/v21.0/${page.id}?fields=instagram_business_account&access_token=${pageToken}`);
+        const igData = await igRes.json();
+
+        if (igData.instagram_business_account?.id === igAccountId) {
+          await this.subscribePageForInstagram(page.id, pageToken);
+          subscribed = true;
+          this.logger.log(`Re-subscribed page ${page.id} for IG account ${igAccountId}`);
+          break;
+        }
+      }
+
+      if (!subscribed) {
+        throw new BadRequestException('Could not find the linked Facebook Page for this Instagram account.');
+      }
+
+      return { success: true, message: 'Webhook subscription refreshed. Instagram DMs will now appear in the inbox.' };
+    } catch (error: any) {
+      if (error instanceof BadRequestException) throw error;
+      throw new BadRequestException(`Resubscription failed: ${error.message}`);
     }
   }
 

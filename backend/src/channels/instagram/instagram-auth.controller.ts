@@ -24,8 +24,13 @@ export class InstagramAuthController {
   }
 
   @Post('connect/facebook')
-  connectFacebook(@Request() req: any, @Body() body: { code: string }) {
-    return this.instagramAuthService.connectViaFacebook(req.user.tenantId, body.code);
+  connectFacebook(@Request() req: any, @Body() body: { code: string; igAccountId?: string }) {
+    return this.instagramAuthService.connectViaFacebook(req.user.tenantId, body.code, body.igAccountId);
+  }
+
+  @Post('connections/:id/resubscribe')
+  resubscribe(@Request() req: any, @Param('id') id: string) {
+    return this.instagramAuthService.resubscribeWebhooks(req.user.tenantId, id);
   }
 
   @Delete('connections/:id')
