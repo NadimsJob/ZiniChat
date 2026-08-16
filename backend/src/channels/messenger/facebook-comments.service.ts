@@ -759,9 +759,34 @@ ${qnaContext ? `# STORE KNOWLEDGE BASE:\n${qnaContext}\n` : ''}`;
   }
 
   /**
+   * Proactively verify & re-subscribe Meta Page Webhooks (feed) for active connections
+   */
+  async ensurePageSubscriptions(tenantId: string): Promise<void> {
+    try {
+      const connections = await this.prisma.channelConnection.findMany({
+        where: { tenantId, channelType: 'messenger', status: 'active' },
+      });
+
+      for (const conn of connections) {
+        if (conn.externalAccountId && conn.accessTokenEncrypted) {
+          const url = `https://graph.facebook.com/v21.0/${conn.externalAccountId}/subscribed_apps?subscribed_fields=messages,messaging_postbacks,message_deliveries,message_reads,feed&access_token=${conn.accessTokenEncrypted}`;
+          fetch(url, { method: 'POST' }).catch((err) => {
+            this.logger.warn(`Failed to auto-resubscribe page ${conn.externalAccountId}: ${err.message}`);
+          });
+        }
+      }
+    } catch (err: any) {
+      this.logger.warn(`Error in ensurePageSubscriptions for tenant ${tenantId}: ${err.message}`);
+    }
+  }
+
+  /**
    * Fetch all comment logs for tenant across all connected pages (for Inbox FB Comments tab)
    */
   async getAllTenantCommentLogs(tenantId: string, page = 1, limit = 50) {
+    // Proactively refresh page webhook subscriptions on Meta Graph API
+    this.ensurePageSubscriptions(tenantId).catch(() => {});
+
     const skip = (page - 1) * limit;
     const [items, total] = await Promise.all([
       this.prisma.facebookCommentLog.findMany({
