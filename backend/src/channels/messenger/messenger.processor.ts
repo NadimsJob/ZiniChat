@@ -75,10 +75,12 @@ export class MessengerProcessor extends WorkerHost {
       let externalMessageId = `mock_ext_msg_${Date.now()}`;
       
       if (!connection.accessTokenEncrypted.startsWith('mock_')) {
-        // For both Messenger and Instagram DM, the endpoint is:
-        // POST https://graph.facebook.com/v21.0/{page-or-ig-account-id}/messages
-        // Instagram uses the IG Business Account ID and page access token stored in the connection
-        const response = await fetch(`https://graph.facebook.com/v21.0/${connection.externalAccountId}/messages?access_token=${connection.accessTokenEncrypted}`, {
+        // For Messenger, we use connection.externalAccountId (Page ID).
+        // For Instagram, we must call the linked Facebook Page's ID endpoint.
+        // We store the linked Page ID in connection.verifyToken when connecting.
+        // If verifyToken is not set (e.g. legacy or manual), we fallback to 'me' which resolves via the Page Access Token.
+        const endpointId = channelType === 'instagram' ? (connection.verifyToken || 'me') : connection.externalAccountId;
+        const response = await fetch(`https://graph.facebook.com/v21.0/${endpointId}/messages?access_token=${connection.accessTokenEncrypted}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -151,7 +153,8 @@ export class MessengerProcessor extends WorkerHost {
 
       // Send mark_seen via Meta Graph API
       if (!connection.accessTokenEncrypted.startsWith('mock_')) {
-        await fetch(`https://graph.facebook.com/v21.0/${connection.externalAccountId}/messages?access_token=${connection.accessTokenEncrypted}`, {
+        const endpointId = conversation.channel === 'instagram' ? (connection.verifyToken || 'me') : connection.externalAccountId;
+        await fetch(`https://graph.facebook.com/v21.0/${endpointId}/messages?access_token=${connection.accessTokenEncrypted}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
