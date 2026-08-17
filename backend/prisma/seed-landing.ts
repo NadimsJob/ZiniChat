@@ -1,5 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 
+declare const process: any;
+
 const prisma = new PrismaClient();
 
 async function main() {
@@ -114,11 +116,21 @@ async function main() {
       {
         question: { 
           en: 'Will the AI give wrong answers or offer unauthorized discounts?', 
-          bn: 'এআই কি ভুল উত্তর বা ফেক ডিসকাウント দেবে?' 
+          bn: 'এআই কি ভুল উত্তর বা ফেক ডিসকাউন্ট দেবে?' 
         },
         answer: { 
           en: 'No. ZiniChat uses an enterprise-grade anti-hallucination framework. The AI strictly follows your uploaded documents and Q&A. It is programmed to ask for a human agent if it is unsure, ensuring zero liability for your business.', 
           bn: 'না। ZiniChat এন্টারপ্রাইজ-গ্রেড অ্যান্টি-হ্যালুসিনেশন ফ্রেমওয়ার্ক ব্যবহার করে। এআই কঠোরভাবে আপনার আপলোড করা নথি এবং Q&A অনুসরণ করে। কোনো বিষয়ে নিশ্চিত না হলে এটি মানব এজেন্টের সহায়তা নেওয়ার জন্য প্রোগ্রাম করা হয়েছে, যা আপনার ব্যবসার জন্য শূন্য ঝুঁকি নিশ্চিত করে।' 
+        }
+      },
+      {
+        question: { 
+          en: 'Does unused message or AI response quota carry forward to the next month?', 
+          bn: 'অব্যবহৃত মেসেজ বা এআই রেসপন্স কোটা কি পরের মাসে ক্যারি ফরওয়ার্ড হবে?' 
+        },
+        answer: { 
+          en: 'Yes! For all paid plans, any unused AI response or total message balance will automatically carry forward when you renew your subscription for the next month. However, for the Free (0 BDT) plan, unused quotas reset each month and do not carry forward.', 
+          bn: 'হ্যাঁ! যেকোনো পেইড প্ল্যানে রিনিউ করলে আপনার আগের মাসের অব্যবহৃত এআই রেসপন্স ও মেসেজ কোটা স্বয়ংক্রিয়ভাবে পরের মাসে যোগ (Carry Forward) হবে। তবে ফ্রি (০ টাকা) প্ল্যানের ক্ষেত্রে অব্যবহৃত কোটা পরবর্তী মাসে ক্যারি ফরওয়ার্ড হবে না, স্বয়ংক্রিয়ভাবে রিসেট হয়ে যাবে।' 
         }
       }
     ]

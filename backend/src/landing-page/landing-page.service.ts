@@ -74,6 +74,7 @@ export class LandingPageService {
             categories: [
               { id: 'all', icon: 'Search', en: 'All Questions', bn: 'সব প্রশ্ন' },
               { id: 'general', icon: 'MessageCircleQuestion', en: 'General', bn: 'সাধারণ' },
+              { id: 'pricing', icon: 'Receipt', en: 'Pricing & Quota', bn: 'মূল্য ও কোটা' },
               { id: 'ai', icon: 'Bot', en: 'AI Assistant', bn: 'এআই অ্যাসিস্ট্যান্ট' }
             ],
             faqs: [
@@ -81,6 +82,17 @@ export class LandingPageService {
                 categoryId: 'general',
                 question: { en: 'What is ZiniChat?', bn: 'ZiniChat কী?' }, 
                 answer: { en: 'ZiniChat is an omnichannel AI platform.', bn: 'ZiniChat একটি অমনিচ্যানেল এআই প্ল্যাটফর্ম।' } 
+              },
+              {
+                categoryId: 'pricing',
+                question: { 
+                  en: 'Does unused message or AI quota carry forward to the next month?', 
+                  bn: 'অব্যবহৃত মেসেজ বা এআই রেসপন্স কোটা কি পরের মাসে ক্যারি ফরওয়ার্ড হবে?' 
+                },
+                answer: { 
+                  en: 'Yes! For all paid plans, any unused AI response or total message balance will automatically carry forward when you renew your subscription for the next month. However, for the Free (0 BDT) plan, unused quotas reset each month and do not carry forward.', 
+                  bn: 'হ্যাঁ! যেকোনো পেইড প্ল্যানে রিনিউ করলে আপনার আগের মাসের অব্যবহৃত এআই রেসপন্স ও মেসেজ কোটা স্বয়ংক্রিয়ভাবে পরের মাসে যোগ (Carry Forward) হবে। তবে ফ্রি (০ টাকা) প্ল্যানের ক্ষেত্রে অব্যবহৃত কোটা পরবর্তী মাসে ক্যারি ফরওয়ার্ড হবে না, স্বয়ংক্রিয়ভাবে রিসেট হয়ে যাবে।' 
+                }
               }
             ]
           },

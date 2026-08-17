@@ -720,14 +720,16 @@ model Addon {
 }
 
 model Subscription {
-  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenantId           String   @db.Uuid
-  planId             String   @db.Uuid
-  status             String // active, past_due, canceled
-  billingCycle       String   @default("monthly") // monthly, yearly
-  currentPeriodStart DateTime @default(now())
-  currentPeriodEnd   DateTime
-  couponId           String?  @db.Uuid
+  id                         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId                   String   @db.Uuid
+  planId                     String   @db.Uuid
+  status                     String // active, past_due, canceled
+  billingCycle               String   @default("monthly") // monthly, yearly
+  currentPeriodStart         DateTime @default(now())
+  currentPeriodEnd           DateTime
+  couponId                   String?  @db.Uuid
+  carriedForwardAiQuota      Int      @default(0)
+  carriedForwardMessageQuota Int      @default(0)
 
   tenant   Tenant    @relation(fields: [tenantId], references: [id])
   plan     Plan      @relation(fields: [planId], references: [id])

@@ -61,6 +61,9 @@ export class BillingService {
       }),
     ]);
 
+    const baseMessageQuota = tenant?.customMessageQuota ?? plan?.messageQuota ?? 100;
+    const baseAiQuota = tenant?.customAiQuota ?? plan?.aiQuota ?? 50;
+
     return {
       subscription: activeSubscription,
       whatsappLimit: tenant?.customWhatsappLimit ?? plan?.whatsappLimit ?? 1,
@@ -69,8 +72,10 @@ export class BillingService {
       websiteWidgetLimit: tenant?.customWebsiteWidgetLimit ?? plan?.websiteWidgetLimit ?? 0,
       productCatalogLimit: tenant?.customProductCatalogLimit ?? plan?.productCatalogLimit ?? 50,
       contactsLimit: tenant?.customContactsLimit ?? plan?.contactsLimit ?? null,
-      messageQuota: tenant?.customMessageQuota ?? plan?.messageQuota ?? 100,
-      aiQuota: tenant?.customAiQuota ?? plan?.aiQuota ?? 50,
+      messageQuota: baseMessageQuota + (activeSubscription?.carriedForwardMessageQuota ?? 0),
+      aiQuota: baseAiQuota + (activeSubscription?.carriedForwardAiQuota ?? 0),
+      carriedForwardMessageQuota: activeSubscription?.carriedForwardMessageQuota ?? 0,
+      carriedForwardAiQuota: activeSubscription?.carriedForwardAiQuota ?? 0,
       seatLimit: tenant?.customSeatLimit ?? plan?.seatLimit ?? 1,
       storageLimitMb: tenant?.customStorageLimitMb ?? plan?.storageLimitMb ?? 500,
       allowByok: tenant?.customAllowByok ?? plan?.allowByok ?? false,
@@ -127,11 +132,14 @@ export class BillingService {
       periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
     }
 
+    const baseMessageQuota = tenant?.customMessageQuota ?? plan?.messageQuota ?? 100;
+    const baseAiQuota = tenant?.customAiQuota ?? plan?.aiQuota ?? 50;
+
     return {
       periodStart,
       periodEnd,
-      messageQuota: tenant?.customMessageQuota ?? plan?.messageQuota ?? 100,
-      aiQuota: tenant?.customAiQuota ?? plan?.aiQuota ?? 50,
+      messageQuota: baseMessageQuota + (activeSubscription?.carriedForwardMessageQuota ?? 0),
+      aiQuota: baseAiQuota + (activeSubscription?.carriedForwardAiQuota ?? 0),
       subscription: activeSubscription
     };
   }

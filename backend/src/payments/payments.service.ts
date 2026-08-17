@@ -182,16 +182,70 @@ export class PaymentsService {
       }
     }
 
+    // Helper method to calculate carried forward quotas upon renewal
+    let carriedForwardAi = 0;
+    let carriedForwardMessage = 0;
+
+    const previousSub = await this.prisma.subscription.findFirst({
+      where: { tenantId, status: { in: ['active', 'expired'] } },
+      include: { plan: true },
+      orderBy: { currentPeriodEnd: 'desc' }
+    });
+
+    if (previousSub && previousSub.plan && Number(previousSub.plan.priceMonthlyBdt) > 0) {
+      const pStart = previousSub.currentPeriodStart;
+      const [aiUsed, directMsgUsed, broadcastMsgUsed] = await Promise.all([
+        this.prisma.aiUsageLog.count({
+          where: { tenantId, createdAt: { gte: pStart } }
+        }),
+        this.prisma.message.count({
+          where: { direction: 'outbound', conversation: { tenantId }, createdAt: { gte: pStart } }
+        }),
+        this.prisma.broadcastRecipient.count({
+          where: { broadcast: { tenantId, createdAt: { gte: pStart } }, status: { notIn: ['pending', 'failed'] } }
+        })
+      ]);
+
+      const totalMsgUsed = directMsgUsed + broadcastMsgUsed;
+      const totalAiQuota = (tenant?.customAiQuota ?? previousSub.plan.aiQuota) + (previousSub.carriedForwardAiQuota || 0);
+      const totalMsgQuota = (tenant?.customMessageQuota ?? previousSub.plan.messageQuota) + (previousSub.carriedForwardMessageQuota || 0);
+
+      carriedForwardAi = Math.max(0, totalAiQuota - aiUsed);
+      carriedForwardMessage = Math.max(0, totalMsgQuota - totalMsgUsed);
+    } else {
+      // Free plan (priceMonthlyBdt === 0) or no previous sub -> reset carry forward to 0
+      carriedForwardAi = 0;
+      carriedForwardMessage = 0;
+    }
+
     let subscription = await this.prisma.subscription.findFirst({ where: { tenantId, planId } });
     const periodDays = billingCycle === 'yearly' ? 365 : 30;
     if (!subscription) {
       subscription = await this.prisma.subscription.create({
-        data: { tenantId, planId, billingCycle, couponId, status: 'active', currentPeriodStart: new Date(), currentPeriodEnd: new Date(Date.now() + periodDays * 24 * 60 * 60 * 1000) }
+        data: {
+          tenantId,
+          planId,
+          billingCycle,
+          couponId,
+          status: 'active',
+          currentPeriodStart: new Date(),
+          currentPeriodEnd: new Date(Date.now() + periodDays * 24 * 60 * 60 * 1000),
+          carriedForwardAiQuota: carriedForwardAi,
+          carriedForwardMessageQuota: carriedForwardMessage,
+        }
       });
     } else {
       subscription = await this.prisma.subscription.update({
         where: { id: subscription.id },
-        data: { status: 'active', billingCycle, couponId, currentPeriodStart: new Date(), currentPeriodEnd: new Date(Date.now() + periodDays * 24 * 60 * 60 * 1000) }
+        data: {
+          status: 'active',
+          billingCycle,
+          couponId,
+          currentPeriodStart: new Date(),
+          currentPeriodEnd: new Date(Date.now() + periodDays * 24 * 60 * 60 * 1000),
+          carriedForwardAiQuota: carriedForwardAi,
+          carriedForwardMessageQuota: carriedForwardMessage,
+        }
       });
     }
     const payment = await this.prisma.payment.create({
@@ -378,10 +432,48 @@ export class PaymentsService {
     });
 
     if (payment.subscriptionId) {
+      // Helper to calculate carried forward quotas upon manual approval
+      let carriedForwardAi = 0;
+      let carriedForwardMessage = 0;
+
+      const previousSub = await this.prisma.subscription.findFirst({
+        where: { tenantId: payment.tenantId, id: { not: payment.subscriptionId }, status: { in: ['active', 'expired'] } },
+        include: { plan: true },
+        orderBy: { currentPeriodEnd: 'desc' }
+      });
+
+      if (previousSub && previousSub.plan && Number(previousSub.plan.priceMonthlyBdt) > 0) {
+        const pStart = previousSub.currentPeriodStart;
+        const [aiUsed, directMsgUsed, broadcastMsgUsed] = await Promise.all([
+          this.prisma.aiUsageLog.count({
+            where: { tenantId: payment.tenantId, createdAt: { gte: pStart } }
+          }),
+          this.prisma.message.count({
+            where: { direction: 'outbound', conversation: { tenantId: payment.tenantId }, createdAt: { gte: pStart } }
+          }),
+          this.prisma.broadcastRecipient.count({
+            where: { broadcast: { tenantId: payment.tenantId, createdAt: { gte: pStart } }, status: { notIn: ['pending', 'failed'] } }
+          })
+        ]);
+
+        const totalMsgUsed = directMsgUsed + broadcastMsgUsed;
+        const totalAiQuota = (tenant?.customAiQuota ?? previousSub.plan.aiQuota) + (previousSub.carriedForwardAiQuota || 0);
+        const totalMsgQuota = (tenant?.customMessageQuota ?? previousSub.plan.messageQuota) + (previousSub.carriedForwardMessageQuota || 0);
+
+        carriedForwardAi = Math.max(0, totalAiQuota - aiUsed);
+        carriedForwardMessage = Math.max(0, totalMsgQuota - totalMsgUsed);
+      }
+
       // Subscription Payment
       const subscription = await this.prisma.subscription.update({
         where: { id: payment.subscriptionId },
-        data: { status: 'active', currentPeriodStart: new Date(), currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
+        data: {
+          status: 'active',
+          currentPeriodStart: new Date(),
+          currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          carriedForwardAiQuota: carriedForwardAi,
+          carriedForwardMessageQuota: carriedForwardMessage,
+        },
         include: { plan: true }
       });
 

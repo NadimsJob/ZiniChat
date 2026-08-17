@@ -188,14 +188,34 @@ export default function SubscriptionSettingsPage() {
             {quotaData && (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-center">
                 {[
-                  { label: language === 'en' ? 'Messages' : 'মেসেজ', value: formatNumber(quotaData.messageQuota), icon: MessageSquare },
-                  { label: language === 'en' ? 'AI Credits' : 'এআই ক্রেডিট', value: formatNumber(quotaData.aiQuota), icon: Bot },
-                  { label: language === 'en' ? 'Seats' : 'সিট', value: formatNumber(quotaData.seatLimit), icon: Users },
-                ].map(({ label, value, icon: Icon }) => (
-                  <div key={label} className="bg-surface/60 backdrop-blur-sm border border-surface-hover rounded-xl px-3 py-2">
+                  { 
+                    label: language === 'en' ? 'Messages' : 'মেসেজ', 
+                    value: formatNumber(quotaData.messageQuota), 
+                    icon: MessageSquare,
+                    carried: quotaData.carriedForwardMessageQuota || 0
+                  },
+                  { 
+                    label: language === 'en' ? 'AI Responses' : 'এআই রেসপন্স', 
+                    value: formatNumber(quotaData.aiQuota), 
+                    icon: Bot,
+                    carried: quotaData.carriedForwardAiQuota || 0
+                  },
+                  { 
+                    label: language === 'en' ? 'Seats' : 'সিট', 
+                    value: formatNumber(quotaData.seatLimit), 
+                    icon: Users,
+                    carried: 0
+                  },
+                ].map(({ label, value, icon: Icon, carried }) => (
+                  <div key={label} className="bg-surface/60 backdrop-blur-sm border border-surface-hover rounded-xl px-3 py-2 relative">
                     <Icon className="w-3.5 h-3.5 text-primary mx-auto mb-0.5" />
                     <div className="text-lg font-black text-foreground">{value}</div>
                     <div className="text-[10px] text-muted-foreground">{label}/mo</div>
+                    {carried > 0 && (
+                      <div className="mt-1 inline-block px-1.5 py-0.5 bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded text-[9px] font-bold">
+                        +{formatNumber(carried)} {language === 'en' ? 'carried over' : 'ক্যারি ফরওয়ার্ড'}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

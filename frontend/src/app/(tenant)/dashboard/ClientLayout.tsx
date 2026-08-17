@@ -535,7 +535,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
         </div>
 
         {/* Navigation Links */}
-        <nav className="flex-1 px-1.5 py-2 space-y-3 overflow-y-auto custom-scrollbar">
+        <nav className="flex-1 px-1.5 py-2 space-y-3 overflow-y-auto custom-scrollbar pb-20">
           {menuGroups.map((group, groupIdx) => (
             <div key={groupIdx} className="flex flex-col">
               {!isSidebarCollapsed && (
