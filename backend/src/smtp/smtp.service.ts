@@ -153,6 +153,41 @@ Password: {{password}}
 সময়: {{timestamp}}
 
 আপনার ড্যাশবোর্ডে লগইন করে বিস্তারিত রিপোর্ট চেক করতে পারেন।`,
+
+  storageWarning80Subject: '⚠️ সতর্কতা: স্টোরেজ ৮০% পূর্ণ হয়ে গেছে – {{tenantName}}',
+  storageWarning80Body: `প্রিয় {{tenantName}},
+
+আপনার ZiniChat অ্যাকাউন্টের স্টোরেজ বর্তমানে {{usedMb}} MB ব্যবহৃত হয়েছে, যা মোট সীমা {{limitMb}} MB-এর {{percent}}% পূর্ণ।
+
+আপনার স্টোরেজ সম্পূর্ণ পূর্ণ হওয়ার আগেই পদক্ষেপ নিন:
+• পুরনো চ্যাট মিডিয়া, AI ডকুমেন্ট বা পণ্যের ছবি মুছে দিন
+• অথবা একটি উচ্চতর প্ল্যানে আপগ্রেড করুন যেখানে আরো স্টোরেজ থাকবে
+
+স্টোরেজ ম্যানেজ করতে: আপনার ড্যাশবোর্ড → সেটিংস → স্টোরেজ
+
+যেকোনো সহায়তার জন্য আমাদের সাপোর্ট টিমের সাথে যোগাযোগ করুন।
+
+ধন্যবাদ,
+ZiniChat টিম`,
+
+  storageWarning100Subject: '🚨 জরুরি সতর্কতা: স্টোরেজ সম্পূর্ণ পূর্ণ! ফাইল আপলোড বন্ধ হয়েছে – {{tenantName}}',
+  storageWarning100Body: `প্রিয় {{tenantName}},
+
+আপনার ZiniChat অ্যাকাউন্টের স্টোরেজ সম্পূর্ণ পূর্ণ হয়ে গেছে ({{usedMb}} MB / {{limitMb}} MB)।
+
+⛔ এই মুহূর্তে কোনো নতুন ফাইল, ছবি বা ডকুমেন্ট আপলোড করা সম্ভব হচ্ছে না।
+
+আপনার সার্ভিস স্বাভাবিক রাখতে অবিলম্বে পদক্ষেপ নিন:
+১. পুরনো চ্যাট মিডিয়া, AI ডকুমেন্ট বা পণ্যের ছবি মুছে দিন
+২. অথবা একটি উচ্চতর প্ল্যানে আপগ্রেড করুন
+
+স্টোরেজ ম্যানেজ করতে: আপনার ড্যাশবোর্ড → সেটিংস → স্টোরেজ
+আপগ্রেড করতে: আপনার ড্যাশবোর্ড → সেটিংস → সাবস্ক্রিপশন
+
+যেকোনো সহায়তার জন্য আমাদের সাপোর্ট টিমের সাথে যোগাযোগ করুন।
+
+ধন্যবাদ,
+ZiniChat টিম`,
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -217,6 +252,12 @@ export class SmtpService {
           broadcastCompletedEnabled: true,
           broadcastCompletedSubject: TEMPLATES.broadcastCompletedSubject,
           broadcastCompletedBody: TEMPLATES.broadcastCompletedBody,
+          storageWarning80Enabled: true,
+          storageWarning80Subject: TEMPLATES.storageWarning80Subject,
+          storageWarning80Body: TEMPLATES.storageWarning80Body,
+          storageWarning100Enabled: true,
+          storageWarning100Subject: TEMPLATES.storageWarning100Subject,
+          storageWarning100Body: TEMPLATES.storageWarning100Body,
         }
       });
     } else {
@@ -239,6 +280,8 @@ export class SmtpService {
       if (!config.ticketStatusSubject) { updates.ticketStatusSubject = TEMPLATES.ticketStatusSubject; updates.ticketStatusBody = TEMPLATES.ticketStatusBody; needsUpdate = true; }
       if (!config.ticketAssignedSubject) { updates.ticketAssignedSubject = TEMPLATES.ticketAssignedSubject; updates.ticketAssignedBody = TEMPLATES.ticketAssignedBody; needsUpdate = true; }
       if (!config.broadcastCompletedSubject) { updates.broadcastCompletedSubject = TEMPLATES.broadcastCompletedSubject; updates.broadcastCompletedBody = TEMPLATES.broadcastCompletedBody; needsUpdate = true; }
+      if (!config.storageWarning80Subject) { updates.storageWarning80Subject = TEMPLATES.storageWarning80Subject; updates.storageWarning80Body = TEMPLATES.storageWarning80Body; needsUpdate = true; }
+      if (!config.storageWarning100Subject) { updates.storageWarning100Subject = TEMPLATES.storageWarning100Subject; updates.storageWarning100Body = TEMPLATES.storageWarning100Body; needsUpdate = true; }
 
       if (needsUpdate) {
         config = await this.prisma.smtpConfig.update({
@@ -307,6 +350,12 @@ export class SmtpService {
         broadcastCompletedEnabled: data.broadcastCompletedEnabled !== undefined ? !!data.broadcastCompletedEnabled : config.broadcastCompletedEnabled,
         broadcastCompletedSubject: data.broadcastCompletedSubject ?? config.broadcastCompletedSubject,
         broadcastCompletedBody: data.broadcastCompletedBody ?? config.broadcastCompletedBody,
+        storageWarning80Enabled: data.storageWarning80Enabled !== undefined ? !!data.storageWarning80Enabled : config.storageWarning80Enabled,
+        storageWarning80Subject: data.storageWarning80Subject ?? config.storageWarning80Subject,
+        storageWarning80Body: data.storageWarning80Body ?? config.storageWarning80Body,
+        storageWarning100Enabled: data.storageWarning100Enabled !== undefined ? !!data.storageWarning100Enabled : config.storageWarning100Enabled,
+        storageWarning100Subject: data.storageWarning100Subject ?? config.storageWarning100Subject,
+        storageWarning100Body: data.storageWarning100Body ?? config.storageWarning100Body,
       }
     });
   }
@@ -611,5 +660,28 @@ export class SmtpService {
     const subject = '📧 ইমেইল ভেরিফাই করুন – ZiniChat';
     const plainText = `প্রিয় ${userName},\n\nআপনার ZiniChat অ্যাকাউন্টের ইমেইল ঠিকানা ভেরিফাই করতে নিচের লিংকে ক্লিক করুন:\n\n${verifyLink}\n\nএই লিংকটি আগামী ২৪ ঘণ্টার জন্য কার্যকর থাকবে।\n\nধন্যবাদ,\nZiniChat টিম`;
     await this.sendMail({ to: toEmail, subject, plainText });
+  }
+
+  async triggerStorageWarningEmail(
+    toEmail: string,
+    tenantName: string,
+    percent: number,
+    usedMb: string,
+    limitMb: string
+  ) {
+    const config = await this.getConfig();
+    const vars = { tenantName, percent: String(percent), usedMb, limitMb };
+
+    if (percent >= 100) {
+      if (!config.storageWarning100Enabled) return;
+      const subject = this.replacePlaceholders(config.storageWarning100Subject || TEMPLATES.storageWarning100Subject, vars);
+      const bodyText = this.replacePlaceholders(config.storageWarning100Body || TEMPLATES.storageWarning100Body, vars);
+      await this.sendMail({ to: toEmail, subject, plainText: bodyText });
+    } else {
+      if (!config.storageWarning80Enabled) return;
+      const subject = this.replacePlaceholders(config.storageWarning80Subject || TEMPLATES.storageWarning80Subject, vars);
+      const bodyText = this.replacePlaceholders(config.storageWarning80Body || TEMPLATES.storageWarning80Body, vars);
+      await this.sendMail({ to: toEmail, subject, plainText: bodyText });
+    }
   }
 }

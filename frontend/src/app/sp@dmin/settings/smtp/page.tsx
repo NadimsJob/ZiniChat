@@ -131,6 +131,43 @@ support@zinichat.com`,
 ZiniChat সিকিউরিটি টিম
 security@zinichat.com`,
   },
+  storageWarning80: {
+    subject: '⚠️ সতর্কতা: স্টোরেজ ৮০% পূর্ণ হয়ে গেছে – {{tenantName}}',
+    body: `প্রিয় {{tenantName}},
+
+আপনার ZiniChat অ্যাকাউন্টের স্টোরেজ বর্তমানে {{usedMb}} MB ব্যবহৃত হয়েছে, যা মোট সীমা {{limitMb}} MB-এর {{percent}}% পূর্ণ।
+
+আপনার স্টোরেজ সম্পূর্ণ পূর্ণ হওয়ার আগেই পদক্ষেপ নিন:
+• পুরনো চ্যাট মিডিয়া, AI ডকুমেন্ট বা পণ্যের ছবি মুছে দিন
+• অথবা একটি উচ্চতর প্ল্যানে আপগ্রেড করুন যেখানে আরো স্টোরেজ থাকবে
+
+স্টোরেজ ম্যানেজ করতে: আপনার ড্যাশবোর্ড → সেটিংস → স্টোরেজ
+
+যেকোনো সহায়তার জন্য আমাদের সাপোর্ট টিমের সাথে যোগাযোগ করুন।
+
+ধন্যবাদ,
+ZiniChat টিম`,
+  },
+  storageWarning100: {
+    subject: '🚨 জরুরি সতর্কতা: স্টোরেজ সম্পূর্ণ পূর্ণ! ফাইল আপলোড বন্ধ হয়েছে – {{tenantName}}',
+    body: `প্রিয় {{tenantName}},
+
+আপনার ZiniChat অ্যাকাউন্টের স্টোরেজ সম্পূর্ণ পূর্ণ হয়ে গেছে ({{usedMb}} MB / {{limitMb}} MB)।
+
+⛔ এই মুহূর্তে কোনো নতুন ফাইল, ছবি বা ডকুমেন্ট আপলোড করা সম্ভব হচ্ছে না।
+
+আপনার সার্ভিস স্বাভাবিক রাখতে অবিলম্বে পদক্ষেপ নিন:
+১. পুরনো চ্যাট মিডিয়া, AI ডকুমেন্ট বা পণ্যের ছবি মুছে দিন
+২. অথবা একটি উচ্চতর প্ল্যানে আপগ্রেড করুন
+
+স্টোরেজ ম্যানেজ করতে: আপনার ড্যাশবোর্ড → সেটিংস → স্টোরেজ
+আপগ্রেড করতে: আপনার ড্যাশবোর্ড → সেটিংস → সাবস্ক্রিপশন
+
+যেকোনো সহায়তার জন্য আমাদের সাপোর্ট টিমের সাথে যোগাযোগ করুন।
+
+ধন্যবাদ,
+ZiniChat টিম`,
+  },
 };
 
 const EMAIL_CATEGORIES = [
@@ -298,6 +335,28 @@ const EMAIL_CATEGORIES = [
     subjectField: 'ticketAssignedSubject',
     bodyField: 'ticketAssignedBody',
     vars: ['{{adminName}}', '{{tenantName}}', '{{subject}}'],
+  },
+  {
+    key: 'storageWarning80',
+    label: 'Storage Warning (80% Full)',
+    labelBn: 'স্টোরেজ সতর্কতা (৮০% পূর্ণ হলে)',
+    description: 'টেন্যান্টের স্টোরেজ ৮০% পূর্ণ হলে তাকে ইমেইল রিমাইন্ডার পাঠানো হবে',
+    icon: AlertCircle,
+    enabledField: 'storageWarning80Enabled',
+    subjectField: 'storageWarning80Subject',
+    bodyField: 'storageWarning80Body',
+    vars: ['{{tenantName}}', '{{percent}}', '{{usedMb}}', '{{limitMb}}'],
+  },
+  {
+    key: 'storageWarning100',
+    label: 'Storage Warning (100% Full)',
+    labelBn: 'স্টোরেজ সতর্কতা (১০০% পূর্ণ হলে)',
+    description: 'টেন্যান্টের স্টোরেজ সম্পূর্ণ পূর্ণ হলে তাকে ফাইল আপলোড বন্ধের সতর্কবার্তা পাঠানো হবে',
+    icon: AlertCircle,
+    enabledField: 'storageWarning100Enabled',
+    subjectField: 'storageWarning100Subject',
+    bodyField: 'storageWarning100Body',
+    vars: ['{{tenantName}}', '{{percent}}', '{{usedMb}}', '{{limitMb}}'],
   },
 ];
 

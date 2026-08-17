@@ -28,8 +28,10 @@ model Tenant {
   trialEndsAt    DateTime?
 
   // Custom Plan Overrides & Usage Tracking
-  storageUsedBytes     BigInt   @default(0)
-  messageCount         Int      @default(0)
+  storageUsedBytes              BigInt   @default(0)
+  messageCount                  Int      @default(0)
+  storageWarning80Notified      Boolean  @default(false)
+  storageWarning100Notified     Boolean  @default(false)
   customPlanName       String?
   customPriceUsd       Decimal? @db.Decimal(10, 2)
   customMessageQuota   Int?
@@ -924,6 +926,16 @@ model SmtpConfig {
   ticketAssignedEnabled Boolean @default(true)
   ticketAssignedSubject String? @db.Text
   ticketAssignedBody    String? @db.Text
+
+  // Storage Warning - 80%
+  storageWarning80Enabled Boolean @default(true)
+  storageWarning80Subject String?
+  storageWarning80Body    String? @db.Text
+
+  // Storage Warning - 100% (Full)
+  storageWarning100Enabled Boolean @default(true)
+  storageWarning100Subject String?
+  storageWarning100Body    String? @db.Text
 
   createdAt DateTime @default(now())
 

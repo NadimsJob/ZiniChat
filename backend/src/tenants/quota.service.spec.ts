@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { BillingService } from '../billing/billing.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { ForbiddenException } from '@nestjs/common';
+import { SmtpService } from '../smtp/smtp.service';
 
 // ─── Shared Fixtures ───────────────────────────────────────────────────────────
 const TENANT_ID = 'tenant-uuid-001';
@@ -61,6 +62,7 @@ describe('QuotaService', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: BillingService, useValue: billing },
         { provide: NotificationsService, useValue: { createNotification: jest.fn().mockResolvedValue({}) } },
+        { provide: SmtpService, useValue: { triggerStorageWarningEmail: jest.fn().mockResolvedValue({}) } },
       ],
     }).compile();
 
@@ -295,6 +297,104 @@ describe('QuotaService', () => {
 
       await expect(service.checkStorageQuota(TENANT_ID, 100)).resolves.toBeUndefined();
     });
+
+    it('triggers 80% warning if storage usage hits 80% and warning flag is not set', async () => {
+      const limitMb = 100;
+      // 80% of 100MB is 80MB = 83886080 bytes
+      const bytesUsed80 = BigInt(80 * 1024 * 1024);
+      const tenantMock = {
+        ...mockActiveTenant({ storageUsedBytes: bytesUsed80 }),
+        subscriptions: [{ plan: { storageLimitMb: limitMb } }],
+        storageWarning80Notified: false
+      };
+
+      prisma.tenant.findUnique.mockResolvedValue(tenantMock);
+      prisma.tenant.update.mockResolvedValue({});
+      prisma.user.findMany.mockResolvedValue([{ id: 'admin-1', email: 'admin@test.com', role: 'admin' }]);
+
+      const notificationsService = (service as any).notificationsService;
+      const smtpService = (service as any).smtpService;
+
+      await service.checkStorageQuota(TENANT_ID, 0);
+
+      // Verify DB flag update
+      expect(prisma.tenant.update).toHaveBeenCalledWith({
+        where: { id: TENANT_ID },
+        data: { storageWarning80Notified: true }
+      });
+      // Verify notification creation
+      expect(notificationsService.createNotification).toHaveBeenCalledWith(
+        'admin-1',
+        expect.stringContaining('৮০%'),
+        expect.any(String),
+        'system'
+      );
+      // Verify SMTP trigger
+      expect(smtpService.triggerStorageWarningEmail).toHaveBeenCalledWith(
+        'admin@test.com',
+        expect.any(String),
+        80,
+        expect.any(String),
+        '100'
+      );
+    });
+
+    it('does not trigger 80% warning if flag is already set', async () => {
+      const limitMb = 100;
+      const bytesUsed80 = BigInt(80 * 1024 * 1024);
+      const tenantMock = {
+        ...mockActiveTenant({ storageUsedBytes: bytesUsed80 }),
+        subscriptions: [{ plan: { storageLimitMb: limitMb } }],
+        storageWarning80Notified: true
+      };
+
+      prisma.tenant.findUnique.mockResolvedValue(tenantMock);
+      prisma.tenant.update.mockClear();
+
+      await service.checkStorageQuota(TENANT_ID, 0);
+
+      expect(prisma.tenant.update).not.toHaveBeenCalled();
+    });
+
+    it('triggers 100% warning if storage usage hits 100% and warning flag is not set', async () => {
+      const limitMb = 100;
+      const bytesUsed100 = BigInt(100 * 1024 * 1024);
+      const tenantMock = {
+        ...mockActiveTenant({ storageUsedBytes: bytesUsed100 }),
+        subscriptions: [{ plan: { storageLimitMb: limitMb } }],
+        storageWarning100Notified: false
+      };
+
+      prisma.tenant.findUnique.mockResolvedValue(tenantMock);
+      prisma.tenant.update.mockResolvedValue({});
+      prisma.user.findMany.mockResolvedValue([{ id: 'admin-1', email: 'admin@test.com', role: 'admin' }]);
+
+      const notificationsService = (service as any).notificationsService;
+      const smtpService = (service as any).smtpService;
+
+      // Wrap in try-catch because it will also throw storage quota exceeded ForbiddenException
+      try {
+        await service.checkStorageQuota(TENANT_ID, 0);
+      } catch (e) {}
+
+      expect(prisma.tenant.update).toHaveBeenCalledWith({
+        where: { id: TENANT_ID },
+        data: { storageWarning100Notified: true }
+      });
+      expect(notificationsService.createNotification).toHaveBeenCalledWith(
+        'admin-1',
+        expect.stringContaining('সম্পূর্ণ পূর্ণ'),
+        expect.any(String),
+        'system'
+      );
+      expect(smtpService.triggerStorageWarningEmail).toHaveBeenCalledWith(
+        'admin@test.com',
+        expect.any(String),
+        100,
+        expect.any(String),
+        '100'
+      );
+    });
   });
 
   // ─── checkFeature ─────────────────────────────────────────────────────────────
@@ -370,7 +470,33 @@ describe('QuotaService', () => {
 
       expect(prisma.tenant.update).toHaveBeenCalledWith({
         where: { id: TENANT_ID },
-        data: { storageUsedBytes: BigInt(0) },
+        data: {
+          storageUsedBytes: BigInt(0),
+          storageWarning80Notified: false,
+          storageWarning100Notified: false
+        },
+      });
+    });
+
+    it('resets notification flags if usage drops below thresholds on decrement', async () => {
+      const limitMb = 100;
+      // Start at 90MB, decrement by 20MB down to 70MB (70% full)
+      const initialBytes = BigInt(90 * 1024 * 1024);
+      prisma.tenant.findUnique.mockResolvedValue({
+        storageUsedBytes: initialBytes,
+        customStorageLimitMb: limitMb
+      });
+      prisma.tenant.update.mockResolvedValue({});
+
+      await service.decrementStorage(TENANT_ID, 20 * 1024 * 1024);
+
+      expect(prisma.tenant.update).toHaveBeenCalledWith({
+        where: { id: TENANT_ID },
+        data: {
+          storageUsedBytes: BigInt(70 * 1024 * 1024),
+          storageWarning80Notified: false,
+          storageWarning100Notified: false
+        }
       });
     });
   });

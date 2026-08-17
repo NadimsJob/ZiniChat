@@ -2,6 +2,7 @@ import { Injectable, ForbiddenException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { BillingService } from '../billing/billing.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { SmtpService } from '../smtp/smtp.service';
 
 @Injectable()
 export class QuotaService {
@@ -11,6 +12,7 @@ export class QuotaService {
     private readonly prisma: PrismaService,
     private readonly billingService: BillingService,
     private readonly notificationsService: NotificationsService,
+    private readonly smtpService: SmtpService,
   ) {}
 
   /**
@@ -170,6 +172,77 @@ export class QuotaService {
     const usedBytes = tenant.storageUsedBytes || BigInt(0);
     const totalBytes = usedBytes + BigInt(Math.floor(additionalBytes));
 
+    // Calculate usage percentage for warnings
+    const usagePercent = limitBytes > BigInt(0)
+      ? Number((totalBytes * BigInt(100)) / limitBytes)
+      : 0;
+    const usedMb = (Number(usedBytes) / (1024 * 1024)).toFixed(1);
+    const limitMbStr = String(limitMb);
+
+    // ── 100% Warning (fire & forget) ──────────────────────────────
+    if (usagePercent >= 100 && !tenant.storageWarning100Notified) {
+      this.prisma.tenant.update({
+        where: { id: tenantId },
+        data: { storageWarning100Notified: true }
+      }).catch(() => {});
+
+      // Fetch owner/admin users for email notifications
+      this.prisma.user.findMany({ where: { tenantId, role: { in: ['owner', 'admin'] } } })
+        .then(admins => {
+          for (const admin of admins) {
+            this.notificationsService.createNotification(
+              admin.id,
+              '🚨 স্টোরেজ সম্পূর্ণ পূর্ণ! ফাইল আপলোড বন্ধ',
+              `আপনার স্টোরেজ ${usedMb} MB / ${limitMbStr} MB — সম্পূর্ণ পূর্ণ। নতুন ফাইল আপলোড করতে পুরনো ফাইল মুছুন বা প্ল্যান আপগ্রেড করুন।`,
+              'system'
+            ).catch(() => {});
+
+            if (admin.email) {
+              this.smtpService.triggerStorageWarningEmail(
+                admin.email,
+                tenant.name || tenant.slug,
+                100,
+                usedMb,
+                limitMbStr
+              ).catch(() => {});
+            }
+          }
+        })
+        .catch(() => {});
+    }
+
+    // ── 80% Warning (fire & forget, only if 100% not yet hit) ─────
+    if (usagePercent >= 80 && usagePercent < 100 && !tenant.storageWarning80Notified) {
+      this.prisma.tenant.update({
+        where: { id: tenantId },
+        data: { storageWarning80Notified: true }
+      }).catch(() => {});
+
+      this.prisma.user.findMany({ where: { tenantId, role: { in: ['owner', 'admin'] } } })
+        .then(admins => {
+          for (const admin of admins) {
+            this.notificationsService.createNotification(
+              admin.id,
+              '⚠️ স্টোরেজ ৮০% পূর্ণ হয়ে গেছে',
+              `আপনার স্টোরেজ ${usedMb} MB / ${limitMbStr} MB (${usagePercent}%) ব্যবহৃত হয়েছে। পুরনো ফাইল মুছুন অথবা প্ল্যান আপগ্রেড করুন।`,
+              'system'
+            ).catch(() => {});
+
+            if (admin.email) {
+              this.smtpService.triggerStorageWarningEmail(
+                admin.email,
+                tenant.name || tenant.slug,
+                usagePercent,
+                usedMb,
+                limitMbStr
+              ).catch(() => {});
+            }
+          }
+        })
+        .catch(() => {});
+    }
+
+    // ── Block upload if over limit ─────────────────────────────────
     if (totalBytes > limitBytes) {
       throw new ForbiddenException('Storage quota exceeded. Please clear some space or upgrade your plan.');
     }
@@ -190,9 +263,22 @@ export class QuotaService {
     const toSubtract = BigInt(Math.floor(bytes));
     const newValue = current - toSubtract < BigInt(0) ? BigInt(0) : current - toSubtract;
 
+    // Calculate new usage percent to determine if we should reset warning flags
+    const limitMb = tenant.customStorageLimitMb ?? 500;
+    const limitBytes = BigInt(limitMb) * BigInt(1024 * 1024);
+    const newPercent = limitBytes > BigInt(0)
+      ? Number((newValue * BigInt(100)) / limitBytes)
+      : 0;
+
+    const resetFlags: any = { storageUsedBytes: newValue };
+    // Reset 80% flag so user gets warned again if they fill up again
+    if (newPercent < 80) resetFlags.storageWarning80Notified = false;
+    // Reset 100% flag if below 100%
+    if (newPercent < 100) resetFlags.storageWarning100Notified = false;
+
     await this.prisma.tenant.update({
       where: { id: tenantId },
-      data: { storageUsedBytes: newValue }
+      data: resetFlags
     });
   }
 

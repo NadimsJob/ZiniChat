@@ -74,6 +74,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  const [showFeatureLockedModal, setShowFeatureLockedModal] = useState(false);
  const [allowedFeatures, setAllowedFeatures] = useState<string[]>(['*']);
  const [avatarError, setAvatarError] = useState(false);
+ const [storageStats, setStorageStats] = useState<any>(null);
  const [isPropertyMode, setIsPropertyMode] = useState(false);
  const [isHospitalityMode, setIsHospitalityMode] = useState(false);
  const [isTechSoftwareMode, setIsTechSoftwareMode] = useState(false);
@@ -271,6 +272,17 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
       if (ticketUnreadRes.ok) {
         const tData = await ticketUnreadRes.json();
         setTicketUnreadCount(tData.unreadCount || 0);
+      }
+
+      // Fetch storage stats safely
+      try {
+        const storageRes = await fetch(`${API}/storage/stats`, { headers: { 'Authorization': `Bearer ${token}` } });
+        if (storageRes.ok) {
+          const sData = await storageRes.json();
+          setStorageStats(sData);
+        }
+      } catch (err) {
+        console.warn('Unable to fetch storage stats:', err);
       }
     } catch (err) { console.error(err); }
   };
@@ -825,6 +837,58 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
 
  {/* Page Content */}
  <div className={`flex-1 ${isInboxPage ? 'overflow-hidden p-0' : 'overflow-auto p-3'} custom-scrollbar pb-14 md:pb-0`}>
+  {mounted && storageStats && (
+    (() => {
+      const totalUsedBytes = storageStats.totalUsedBytes || 0;
+      const storageLimitBytes = storageStats.storageLimitBytes || 0;
+      const storagePercent = storageLimitBytes > 0 ? (totalUsedBytes * 100) / storageLimitBytes : 0;
+      const isStorage80 = storagePercent >= 80 && storagePercent < 100;
+      const isStorage100 = storagePercent >= 100;
+
+      if (!isStorage80 && !isStorage100) return null;
+
+      return (
+        <div className={`mb-3 p-3 rounded-xl border flex flex-col sm:flex-row items-center justify-between gap-3 text-xs backdrop-blur-md shadow-sm ${
+          isStorage100 
+            ? 'bg-red-500/10 border-red-500/20 text-red-500 dark:text-red-400' 
+            : 'bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400'
+        }`}>
+          <div className="flex items-center gap-2.5">
+            <span className={`w-2 h-2 rounded-full animate-pulse shrink-0 ${isStorage100 ? 'bg-red-500' : 'bg-amber-500'}`} />
+            <span className="font-medium">
+              {isStorage100 ? (
+                language === 'en'
+                  ? `🚨 Critical: Storage is fully utilized (${(totalUsedBytes / (1024 * 1024)).toFixed(1)} MB / ${(storageLimitBytes / (1024 * 1024)).toFixed(0)} MB). File uploads are blocked.`
+                  : `🚨 জরুরি সতর্কতা: আপনার স্টোরেজ সম্পূর্ণ পূর্ণ (${(totalUsedBytes / (1024 * 1024)).toFixed(1)} MB / ${(storageLimitBytes / (1024 * 1024)).toFixed(0)} MB)। ফাইল আপলোড বন্ধ রয়েছে।`
+              ) : (
+                language === 'en'
+                  ? `⚠️ Warning: Storage is ${storagePercent.toFixed(0)}% full (${(totalUsedBytes / (1024 * 1024)).toFixed(1)} MB / ${(storageLimitBytes / (1024 * 1024)).toFixed(0)} MB). Please clean up files or upgrade.`
+                  : `⚠️ সতর্কতা: আপনার স্টোরেজ ${storagePercent.toFixed(0)}% পূর্ণ (${(totalUsedBytes / (1024 * 1024)).toFixed(1)} MB / ${(storageLimitBytes / (1024 * 1024)).toFixed(0)} MB)। ফাইল খালি করুন অথবা আপগ্রেড করুন।`
+              )}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto justify-end">
+            <Link 
+              href="/dashboard/settings/storage" 
+              className={`px-3 py-1.5 rounded-lg font-bold border transition-colors text-center w-full sm:w-auto ${
+                isStorage100 
+                  ? 'bg-red-500 text-white border-red-600 hover:bg-red-600' 
+                  : 'bg-amber-500 text-white border-amber-600 hover:bg-amber-600'
+              }`}
+            >
+              {language === 'en' ? 'Manage Storage' : 'স্টোরেজ খালি করুন'}
+            </Link>
+            <Link 
+              href="/dashboard/settings/subscription" 
+              className="px-3 py-1.5 rounded-lg font-bold bg-muted hover:bg-muted/80 border border-border text-foreground transition-colors text-center w-full sm:w-auto"
+            >
+              {language === 'en' ? 'Upgrade' : 'আপগ্রেড'}
+            </Link>
+          </div>
+        </div>
+      );
+    })()
+  )}
  {children}
  </div>
 
