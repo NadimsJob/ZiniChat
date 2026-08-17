@@ -40,13 +40,7 @@ export class FacebookCommentsService {
     const verb = value.verb;
     const item = value.item;
 
-    // 1. Only process comment additions
-    if (item !== 'comment' || (verb && verb !== 'add')) {
-      this.logger.debug(`Ignoring feed change: verb=${verb}, item=${item}`);
-      return;
-    }
-
-    const commentId = value.comment_id;
+    const commentId = value.comment_id || (item === 'comment' ? (value.comment_id || value.id) : null);
     const postId = value.post_id || value.parent_id;
     const parentId = value.parent_id !== postId ? value.parent_id : null;
     const fromId = value.from?.id;
@@ -54,7 +48,13 @@ export class FacebookCommentsService {
     const message = value.message || '';
     const createdTime = value.created_time ? new Date(value.created_time * 1000) : new Date();
 
-    if (!commentId || !fromId || !message.trim()) {
+    // 1. Only process comment additions (must have commentId, fromId, non-empty message, and verb must be 'add' if present)
+    if (!commentId || (verb && verb !== 'add')) {
+      this.logger.debug(`Ignoring feed change: verb=${verb}, item=${item}, commentId=${commentId}`);
+      return;
+    }
+
+    if (!fromId || !message.trim()) {
       this.logger.debug(`Missing required comment fields for commentId: ${commentId}`);
       return;
     }
