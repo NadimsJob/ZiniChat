@@ -80,10 +80,51 @@ export default function InboxPage() {
   // FB Comments State
   const [commentLogs, setCommentLogs] = useState<any[]>([]);
   const [selectedCommentId, setSelectedCommentId] = useState<string | null>(null);
+  const [commentContact, setCommentContact] = useState<any>(null);
   const [humanReplyText, setHumanReplyText] = useState('');
   const [humanReplyType, setHumanReplyType] = useState<'public' | 'private' | 'both'>('public');
   const [sendingHumanReply, setSendingHumanReply] = useState(false);
   const [commentLogsLoading, setCommentLogsLoading] = useState(false);
+
+  // Fetch or construct contact for selected comment user
+  useEffect(() => {
+    if (channelFilter === 'facebook_comments' && selectedCommentId) {
+      const selectedComment = commentLogs.find(c => c.commentId === selectedCommentId);
+      if (selectedComment && selectedComment.userExternalId) {
+        const token = Cookies.get('access_token');
+        fetch(`${API}/contacts/external/${selectedComment.userExternalId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+          .then(res => res.ok ? res.json() : null)
+          .then(contact => {
+            if (contact) {
+              setCommentContact(contact);
+            } else {
+              setCommentContact({
+                id: `temp_${selectedComment.userExternalId}`,
+                name: selectedComment.userName || 'Facebook User',
+                externalContactId: selectedComment.userExternalId,
+                channel: 'messenger',
+                leadStatus: 'NEW',
+                kanbanStage: 'NEW_LEAD',
+                labels: [], notes: [], tickets: [], orders: []
+              });
+            }
+          })
+          .catch(() => {
+            setCommentContact({
+              id: `temp_${selectedComment.userExternalId}`,
+              name: selectedComment.userName || 'Facebook User',
+              externalContactId: selectedComment.userExternalId,
+              channel: 'messenger',
+              leadStatus: 'NEW',
+              kanbanStage: 'NEW_LEAD',
+              labels: [], notes: [], tickets: [], orders: []
+            });
+          });
+      }
+    }
+  }, [channelFilter, selectedCommentId, commentLogs]);
 
   const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -355,6 +396,27 @@ export default function InboxPage() {
   }, [messages]);
 
   const activeConv = conversations.find(c => c.id === selectedConvId);
+
+  const selectedCommentForSidebar = commentLogs.find(c => c.commentId === selectedCommentId);
+  const activeCommentConv = (channelFilter === 'facebook_comments' && selectedCommentForSidebar) ? {
+    id: `comment_conv_${selectedCommentForSidebar.commentId}`,
+    channel: 'messenger',
+    status: 'open',
+    contactId: commentContact?.id,
+    contact: commentContact || {
+      id: `temp_${selectedCommentForSidebar.userExternalId}`,
+      name: selectedCommentForSidebar.userName || 'Facebook User',
+      externalContactId: selectedCommentForSidebar.userExternalId,
+      channel: 'messenger',
+      leadStatus: 'NEW',
+      kanbanStage: 'NEW_LEAD',
+      labels: [], notes: [], tickets: [], orders: []
+    },
+    messages: [],
+    unreadCount: 0,
+  } : null;
+
+  const sidebarConv = activeConv || activeCommentConv;
 
   // Actions
   const handleToggleStar = async () => {
@@ -773,8 +835,11 @@ export default function InboxPage() {
   };
 
   const handleUpdateContactInList = (contactId: string, updatedContactData: any) => {
+    if (channelFilter === 'facebook_comments') {
+      setCommentContact((prev: any) => prev ? { ...prev, ...updatedContactData } : updatedContactData);
+    }
     setConversations(prev => prev.map(c => {
-      if (c.contactId === contactId) {
+      if (c.contactId === contactId || c.contact?.id === contactId) {
         return { ...c, contact: { ...c.contact, ...updatedContactData } };
       }
       return c;
@@ -908,15 +973,25 @@ export default function InboxPage() {
             </button>
           ))}
           {(hasCommentAutomation || activeChannels.some((c: any) => ['messenger', 'instagram'].includes(c.channelType))) && (
-            <button
-              onClick={() => setChannelFilter('facebook_comments')}
-              className={`px-3 py-1 rounded-md text-[11px] transition-colors cursor-pointer border border-transparent flex items-center gap-1.5 ${
-                channelFilter === 'facebook_comments' ? 'bg-orange-500 text-white font-bold shadow-sm' : 'text-muted-foreground hover:bg-muted/50 border-border/40'
-              }`}
-            >
-              <MessageSquare className="w-3.5 h-3.5" />
-              <span>{language === 'en' ? 'FB Comments' : 'FB কমেন্ট'}</span>
-            </button>
+            (() => {
+              const unreadCommentsCount = commentLogs.filter(c => c.replyStatus === 'pending' || c.replyStatus === 'failed' || !c.isRead).length;
+              return (
+                <button
+                  onClick={() => setChannelFilter('facebook_comments')}
+                  className={`px-3 py-1 rounded-md text-[11px] transition-colors cursor-pointer border border-transparent flex items-center gap-1.5 ${
+                    channelFilter === 'facebook_comments' ? 'bg-orange-500 text-white font-bold shadow-sm' : 'text-muted-foreground hover:bg-muted/50 border-border/40'
+                  }`}
+                >
+                  <MessageSquare className="w-3.5 h-3.5" />
+                  <span>{language === 'en' ? 'FB Comments' : 'FB কমেন্ট'}</span>
+                  {unreadCommentsCount > 0 && (
+                    <span className="bg-red-500 text-white text-[10px] md:text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-xs">
+                      {unreadCommentsCount}
+                    </span>
+                  )}
+                </button>
+              );
+            })()
           )}
         </div>
       </div>
@@ -1827,13 +1902,13 @@ export default function InboxPage() {
       )}
 
       {/* RIGHT COLUMN: CRM Sidebar Component */}
-      {selectedConvId && activeConv && (
+      {sidebarConv && (
         <>
           {/* Desktop Right Sidebar — controlled by showRightSidebar toggle */}
           {showRightSidebar && (
             <div className="hidden lg:block w-80 shrink-0">
               <ConversationSidebar
-                conversation={activeConv}
+                conversation={sidebarConv}
                 availableLabels={availableLabels}
                 onToggleLabel={handleToggleLabel}
                 onCreateLabel={handleCreateLabel}
@@ -1854,21 +1929,21 @@ export default function InboxPage() {
                   <ChevronLeft className="w-5 h-5" />
                 </button>
                 <div className="w-8 h-8 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-xs border border-primary/20 shrink-0">
-                  {activeConv.contact?.name ? activeConv.contact.name[0].toUpperCase() : 'C'}
+                  {sidebarConv.contact?.name ? sidebarConv.contact.name[0].toUpperCase() : 'C'}
                 </div>
                 <div className="min-w-0">
                   <h3 className="font-bold text-sm text-foreground truncate">
                     {language === 'en' ? 'CRM Details' : 'CRM ডিটেইলস'}
                   </h3>
                   <p className="text-[10px] text-muted-foreground truncate">
-                    {activeConv.contact?.name || activeConv.contact?.phone || 'Customer'}
+                    {sidebarConv.contact?.name || sidebarConv.contact?.phone || 'Customer'}
                   </p>
                 </div>
               </div>
               {/* CRM Content */}
               <div className="flex-1 overflow-hidden">
                 <ConversationSidebar
-                  conversation={activeConv}
+                  conversation={sidebarConv}
                   availableLabels={availableLabels}
                   onToggleLabel={handleToggleLabel}
                   onCreateLabel={handleCreateLabel}
