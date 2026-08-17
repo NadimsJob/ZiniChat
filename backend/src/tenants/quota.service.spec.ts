@@ -458,7 +458,11 @@ describe('QuotaService', () => {
 
       expect(prisma.tenant.update).toHaveBeenCalledWith({
         where: { id: TENANT_ID },
-        data: { storageUsedBytes: BigInt(3000) },
+        data: {
+          storageUsedBytes: BigInt(3000),
+          storageWarning80Notified: false,
+          storageWarning100Notified: false,
+        },
       });
     });
 

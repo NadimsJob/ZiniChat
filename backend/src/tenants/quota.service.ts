@@ -178,68 +178,79 @@ export class QuotaService {
       : 0;
     const usedMb = (Number(usedBytes) / (1024 * 1024)).toFixed(1);
     const limitMbStr = String(limitMb);
+    const tenantName = (tenant as any).name || (tenant as any).slug || 'Tenant';
 
-    // ── 100% Warning (fire & forget) ──────────────────────────────
+    // ── 100% Warning ──────────────────────────────
     if (usagePercent >= 100 && !tenant.storageWarning100Notified) {
-      this.prisma.tenant.update({
-        where: { id: tenantId },
-        data: { storageWarning100Notified: true }
-      }).catch(() => {});
+      try {
+        await this.prisma.tenant.update({
+          where: { id: tenantId },
+          data: { storageWarning100Notified: true }
+        });
+      } catch (err) {
+        this.logger.warn(`Failed to update tenant warning 100 flag: ${err.message}`);
+      }
 
       // Fetch owner/admin users for email notifications
-      this.prisma.user.findMany({ where: { tenantId, role: { in: ['owner', 'admin'] } } })
-        .then(admins => {
-          for (const admin of admins) {
-            this.notificationsService.createNotification(
-              admin.id,
-              '🚨 স্টোরেজ সম্পূর্ণ পূর্ণ! ফাইল আপলোড বন্ধ',
-              `আপনার স্টোরেজ ${usedMb} MB / ${limitMbStr} MB — সম্পূর্ণ পূর্ণ। নতুন ফাইল আপলোড করতে পুরনো ফাইল মুছুন বা প্ল্যান আপগ্রেড করুন।`,
-              'system'
-            ).catch(() => {});
+      try {
+        const admins = await this.prisma.user.findMany({ where: { tenantId, role: { in: ['owner', 'admin'] } } });
+        for (const admin of admins) {
+          this.notificationsService.createNotification(
+            admin.id,
+            '🚨 স্টোরেজ সম্পূর্ণ পূর্ণ! ফাইল আপলোড বন্ধ',
+            `আপনার স্টোরেজ ${usedMb} MB / ${limitMbStr} MB — সম্পূর্ণ পূর্ণ। নতুন ফাইল আপলোড করতে পুরনো ফাইল মুছুন বা প্ল্যান আপগ্রেড করুন।`,
+            'system'
+          ).catch(() => {});
 
-            if (admin.email) {
-              this.smtpService.triggerStorageWarningEmail(
-                admin.email,
-                tenant.name || tenant.slug,
-                100,
-                usedMb,
-                limitMbStr
-              ).catch(() => {});
-            }
+          if (admin.email) {
+            this.smtpService.triggerStorageWarningEmail(
+              admin.email,
+              tenantName,
+              100,
+              usedMb,
+              limitMbStr
+            ).catch(() => {});
           }
-        })
-        .catch(() => {});
+        }
+      } catch (err) {
+        this.logger.warn(`Failed to process admin notifications for 100% storage warning: ${err.message}`);
+      }
     }
 
-    // ── 80% Warning (fire & forget, only if 100% not yet hit) ─────
+    // ── 80% Warning (only if 100% not yet hit) ─────
     if (usagePercent >= 80 && usagePercent < 100 && !tenant.storageWarning80Notified) {
-      this.prisma.tenant.update({
-        where: { id: tenantId },
-        data: { storageWarning80Notified: true }
-      }).catch(() => {});
+      try {
+        await this.prisma.tenant.update({
+          where: { id: tenantId },
+          data: { storageWarning80Notified: true }
+        });
+      } catch (err) {
+        this.logger.warn(`Failed to update tenant warning 80 flag: ${err.message}`);
+      }
 
-      this.prisma.user.findMany({ where: { tenantId, role: { in: ['owner', 'admin'] } } })
-        .then(admins => {
-          for (const admin of admins) {
-            this.notificationsService.createNotification(
-              admin.id,
-              '⚠️ স্টোরেজ ৮০% পূর্ণ হয়ে গেছে',
-              `আপনার স্টোরেজ ${usedMb} MB / ${limitMbStr} MB (${usagePercent}%) ব্যবহৃত হয়েছে। পুরনো ফাইল মুছুন অথবা প্ল্যান আপগ্রেড করুন।`,
-              'system'
+      try {
+        const admins = await this.prisma.user.findMany({ where: { tenantId, role: { in: ['owner', 'admin'] } } });
+        for (const admin of admins) {
+          this.notificationsService.createNotification(
+            admin.id,
+            '⚠️ স্টোরেজ ৮০% পূর্ণ হয়ে গেছে',
+            `আপনার স্টোরেজ ${usedMb} MB / ${limitMbStr} MB (${usagePercent}%) ব্যবহৃত হয়েছে। পুরনো ফাইল মুছুন অথবা প্ল্যান আপগ্রেড করুন।`,
+            'system'
+          ).catch(() => {});
+
+          if (admin.email) {
+            this.smtpService.triggerStorageWarningEmail(
+              admin.email,
+              tenantName,
+              usagePercent,
+              usedMb,
+              limitMbStr
             ).catch(() => {});
-
-            if (admin.email) {
-              this.smtpService.triggerStorageWarningEmail(
-                admin.email,
-                tenant.name || tenant.slug,
-                usagePercent,
-                usedMb,
-                limitMbStr
-              ).catch(() => {});
-            }
           }
-        })
-        .catch(() => {});
+        }
+      } catch (err) {
+        this.logger.warn(`Failed to process admin notifications for 80% storage warning: ${err.message}`);
+      }
     }
 
     // ── Block upload if over limit ─────────────────────────────────
