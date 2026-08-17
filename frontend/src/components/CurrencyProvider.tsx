@@ -96,11 +96,13 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
         }
       })
       .catch(() => {
-        fetch('https://ip-api.com/json/?fields=countryCode')
+        // Fallback to freeipapi.com which supports HTTPS and has generous limits
+        fetch('https://freeipapi.com/api/json')
           .then(res => res.json())
           .then(data => {
-            if (data && data.countryCode) {
-              const isBD = data.countryCode === 'BD';
+            if (data && (data.countryCode || data.country_code)) {
+              const code = data.countryCode || data.country_code;
+              const isBD = code === 'BD';
               if (!savedCurrency) {
                 setDisplayCurrency(isBD ? 'BDT' : 'USD');
               }
