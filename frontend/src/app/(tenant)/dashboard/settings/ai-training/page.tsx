@@ -222,6 +222,17 @@ export default function AiTrainingPage() {
           } 
         },
         { 
+          element: '#tour-website', 
+          popover: { 
+            title: language === 'en' ? '🌐 Website Data Fetch & AI Training' : '🌐 ওয়েবসাইট অটো ডাটা ফেচ ও AI ট্রেইনিং', 
+            description: language === 'en' 
+              ? 'Enter your website URL to automatically crawl pages and generate a 3,000-char AI knowledge summary (2 AI credits).' 
+              : 'আপনার ওয়েবসাইট লিংক দিয়ে অটোমেটিক সব পেজ স্ক্যান করে ৩,০০০ অক্ষরের AI নলেজ সামারি তৈরি করুন (২টি AI কোটা)।',
+            side: "bottom", 
+            align: 'start' 
+          } 
+        },
+        { 
           element: '#tour-tags', 
           popover: { 
             title: language === 'en' ? '🏷️ Smart Event Toggles & Tags' : '🏷️ ইভেন্ট ও স্মার্ট ট্যাগ টগলস', 
@@ -910,8 +921,8 @@ export default function AiTrainingPage() {
             )}
           </div>
 
-          {/* Section 2B: Website Knowledge Crawling & AI Training */}
-          <div className="bg-card border border-border shadow-md rounded-2xl p-4 space-y-3">
+          {/* Section 2B: Website Knowledge Crawling & AI Training (#tour-website) */}
+          <div id="tour-website" className="bg-card border border-border shadow-md rounded-2xl p-4 space-y-3">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-sm font-bold flex items-center gap-2 text-foreground">
