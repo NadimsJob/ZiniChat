@@ -69,7 +69,51 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     fetchCurrentRate();
+
+    const savedCurrency = localStorage.getItem('app-currency') as 'BDT' | 'USD';
+    
+    // Fast Timezone check
+    const timeZone = typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : '';
+    const isDhakaTz = timeZone === 'Asia/Dhaka';
+
+    if (savedCurrency) {
+      setDisplayCurrency(savedCurrency);
+    } else if (!isDhakaTz && timeZone) {
+      setDisplayCurrency('USD');
+    } else {
+      setDisplayCurrency('BDT');
+    }
+
+    // Verify via Geo IP API
+    fetch('https://ipapi.co/json/')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.country_code) {
+          const isBD = data.country_code === 'BD';
+          if (!savedCurrency) {
+            setDisplayCurrency(isBD ? 'BDT' : 'USD');
+          }
+        }
+      })
+      .catch(() => {
+        fetch('https://ip-api.com/json/?fields=countryCode')
+          .then(res => res.json())
+          .then(data => {
+            if (data && data.countryCode) {
+              const isBD = data.countryCode === 'BD';
+              if (!savedCurrency) {
+                setDisplayCurrency(isBD ? 'BDT' : 'USD');
+              }
+            }
+          })
+          .catch(() => {});
+      });
   }, []);
+
+  const handleSetDisplayCurrency = (currency: 'BDT' | 'USD') => {
+    setDisplayCurrency(currency);
+    localStorage.setItem('app-currency', currency);
+  };
 
   const { language } = useLanguage();
 
@@ -138,7 +182,7 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
         isFallback,
         loading,
         displayCurrency,
-        setDisplayCurrency,
+        setDisplayCurrency: handleSetDisplayCurrency,
         formatPrice,
         formatBDT,
         formatBdtDirect,

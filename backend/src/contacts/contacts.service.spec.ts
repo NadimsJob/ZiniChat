@@ -59,4 +59,22 @@ describe('ContactsService', () => {
       expect(note.content).toBe('New Note');
     });
   });
+
+  describe('importContacts', () => {
+    it('should import contacts and assign campaign tag', async () => {
+      prismaService.contact.findFirst.mockResolvedValue(null);
+      prismaService.contact.create = jest.fn().mockResolvedValue({ id: 'c1' });
+
+      const res = await service.importContacts('t1', [
+        { name: 'Rahim', phone: '01712345678', tags: 'VIP' },
+        { name: 'Karim', phone: '01887654321' },
+        { name: 'Invalid', phone: '123' }
+      ], 'Eid_Promo_2026');
+
+      expect(res.importedCount).toBe(2);
+      expect(res.skippedCount).toBe(1);
+      expect(res.tag).toBe('Eid_Promo_2026');
+      expect(prismaService.contact.create).toHaveBeenCalledTimes(2);
+    });
+  });
 });

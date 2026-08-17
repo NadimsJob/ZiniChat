@@ -1,6 +1,8 @@
-import { Controller, Post, Body, UnauthorizedException, Get, UseGuards, Request, Patch, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Post, Body, UnauthorizedException, Get, UseGuards, Request, Patch, UseInterceptors, UploadedFile, Req } from '@nestjs/common';
+import type { Request as ExpressRequest } from 'express';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
+import { LoginLogsService } from '../login-logs/login-logs.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -13,16 +15,67 @@ import { LoginDto, SignupDto, ForgotPasswordDto, ResetPasswordDto, VerifyEmailDt
 
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private loginLogsService: LoginLogsService,
+  ) {}
 
   @Throttle({ default: { ttl: 60000, limit: 10 } })
   @Post('login')
-  async login(@Body() body: LoginDto) {
-    const user = await this.authService.validateUser(body.email, body.password);
-    if (!user) {
+  async login(@Body() body: LoginDto, @Req() req: ExpressRequest) {
+    // Extract real IP (handles proxies/load balancers)
+    const ip = (
+      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
+      (req.headers['x-real-ip'] as string) ||
+      req.socket?.remoteAddress ||
+      'unknown'
+    );
+    const userAgent = req.headers['user-agent'] || '';
+
+    let user: any = null;
+    try {
+      user = await this.authService.validateUser(body.email, body.password);
+    } catch {
+      // Account suspended — still log
+      this.loginLogsService.createLogAsync({
+        email: body.email,
+        userId: null,
+        ipAddress: ip,
+        userAgent,
+        status: 'LOCKED_OUT',
+        failReason: 'account_suspended',
+        authMethod: 'password',
+      });
       throw new UnauthorizedException('Invalid email or password');
     }
-    return this.authService.login(user);
+
+    if (!user) {
+      // Log failed attempt — fire and forget, never blocks response
+      this.loginLogsService.createLogAsync({
+        email: body.email,
+        userId: null,
+        ipAddress: ip,
+        userAgent,
+        status: 'FAILED',
+        failReason: 'invalid_credentials',
+        authMethod: 'password',
+      });
+      throw new UnauthorizedException('Invalid email or password');
+    }
+
+    const result = await this.authService.login(user);
+
+    // Log successful login — fire and forget
+    this.loginLogsService.createLogAsync({
+      email: user.email,
+      userId: user.id,
+      ipAddress: ip,
+      userAgent,
+      status: 'SUCCESS',
+      authMethod: 'password',
+    });
+
+    return result;
   }
 
   @Throttle({ default: { ttl: 60000, limit: 10 } })
@@ -169,8 +222,41 @@ export class AuthController {
 
   @Throttle({ default: { ttl: 60000, limit: 10 } })
   @Post('google/callback')
-  async googleCallback(@Body() body: GoogleCallbackDto) {
-    return this.authService.googleCallback(body.credential, body.planId);
+  async googleCallback(@Body() body: GoogleCallbackDto, @Req() req: ExpressRequest) {
+    const ip = (
+      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
+      (req.headers['x-real-ip'] as string) ||
+      req.socket?.remoteAddress ||
+      'unknown'
+    );
+    const userAgent = req.headers['user-agent'] || '';
+
+    try {
+      const result = await this.authService.googleCallback(body.credential, body.planId);
+      // Log successful Google OAuth login (email extracted from result.user)
+      if (result?.user?.email) {
+        this.loginLogsService.createLogAsync({
+          email: result.user.email,
+          userId: result.user.id || null,
+          ipAddress: ip,
+          userAgent,
+          status: 'SUCCESS',
+          authMethod: 'google_oauth',
+        });
+      }
+      return result;
+    } catch (err) {
+      this.loginLogsService.createLogAsync({
+        email: body.credential?.substring(0, 50) || 'google-oauth-unknown',
+        userId: null,
+        ipAddress: ip,
+        userAgent,
+        status: 'FAILED',
+        failReason: 'google_oauth_failed',
+        authMethod: 'google_oauth',
+      });
+      throw err;
+    }
   }
 
   // Endpoint for tenants/public to get active Facebook App ID and WhatsApp Config ID

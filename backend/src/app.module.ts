@@ -46,6 +46,7 @@ import { MfsPaymentsModule } from './mfs-payments/mfs-payments.module';
 import { WebsiteWidgetModule } from './website-widget/website-widget.module';
 import { MetaPixelModule } from './meta-pixel/meta-pixel.module';
 import { GoogleAnalyticsModule } from './google-analytics/google-analytics.module';
+import { LoginLogsModule } from './login-logs/login-logs.module';
 
 @Module({
   imports: [
@@ -110,7 +111,8 @@ import { GoogleAnalyticsModule } from './google-analytics/google-analytics.modul
     BusinessNatureModule,
     BroadcastsModule,
     InstagramAuthModule,
-    MfsPaymentsModule
+    MfsPaymentsModule,
+    LoginLogsModule
   ],
   controllers: [AppController],
   providers: [

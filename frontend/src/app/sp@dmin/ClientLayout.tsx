@@ -20,6 +20,7 @@ import {
   ChevronDown,
   Menu,
   ShieldCheck,
+  ShieldAlert,
   DollarSign,
   Mail,
   Bot,
@@ -191,6 +192,7 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
     { name: language === 'en' ? 'Audit Logs' : 'অডিট লগস', icon: ClipboardList, href: '/sp@dmin/audit-logs', show: hasPermission('manage:audit') },
     { name: language === 'en' ? 'Inquiries' : 'ইনকোয়ারি', icon: Mail, href: '/sp@dmin/inquiries', show: hasPermission('manage:site') },
     { name: language === 'en' ? 'Support Tickets' : 'সাপোর্ট টিকিট', icon: ClipboardList, href: '/sp@dmin/tickets', show: hasPermission('manage:site') },
+    { name: language === 'en' ? 'Security Logs' : 'সিকিউরিটি লগস', icon: ShieldAlert, href: '/sp@dmin/security-logs', show: hasPermission('manage:audit') },
     { name: language === 'en' ? 'Message Templates' : 'মেসেজ টেমপ্লেটস', icon: MessageSquare, href: '/sp@dmin/templates', show: hasPermission('manage:site') },
     { name: language === 'en' ? 'AI Support Chats' : 'এআই সাপোর্ট চ্যাটস', icon: Bot, href: '/sp@dmin/support-chats', show: hasPermission('manage:site') },
     { 

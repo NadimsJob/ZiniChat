@@ -87,18 +87,29 @@ export class WhatsappProcessor extends WorkerHost {
       }
 
       // 3. Prepare payload for Meta Graph API
-      // Constructing standard WhatsApp Cloud API payload
+      const isMarketingType = type === 'marketing_template' || job.data.isMarketing === true || (type === 'template' && job.data.templateName);
+      
       const payload: any = {
         messaging_product: 'whatsapp',
         recipient_type: 'individual',
         to: to,
-        type: type,
       };
 
       if (type === 'text') {
+        payload.type = 'text';
         payload.text = { body: finalContentText };
+      } else if (type === 'template' || type === 'marketing_template') {
+        payload.type = 'template';
+        const tName = job.data.templateName || (typeof content === 'object' ? content.name : content);
+        const tLang = job.data.templateLanguage || (typeof content === 'object' ? content.language?.code || 'en' : 'en');
+        const tComp = job.data.components || (typeof content === 'object' ? content.components : undefined);
+        payload.template = {
+          name: tName,
+          language: { code: tLang },
+          ...(tComp ? { components: tComp } : {})
+        };
       } else {
-        // Handle other types like image, template, etc. later
+        payload.type = type;
         payload[type] = content;
       }
 
@@ -139,7 +150,11 @@ export class WhatsappProcessor extends WorkerHost {
       } else {
         // CLOUD_API logic
         if (!connection.accessTokenEncrypted.startsWith('mock_')) {
-          const response = await fetch(`https://graph.facebook.com/v21.0/${connection.phoneNumberId}/messages`, {
+          const apiEndpoint = isMarketingType
+            ? `https://graph.facebook.com/v25.0/${connection.phoneNumberId}/marketing_messages`
+            : `https://graph.facebook.com/v25.0/${connection.phoneNumberId}/messages`;
+
+          let response = await fetch(apiEndpoint, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${connection.accessTokenEncrypted}`,
@@ -147,6 +162,20 @@ export class WhatsappProcessor extends WorkerHost {
             },
             body: JSON.stringify(payload)
           });
+
+          // Fallback to standard /messages endpoint if marketing_messages returns error
+          if (!response.ok && isMarketingType) {
+            this.logger.warn(`marketing_messages endpoint returned ${response.status}. Retrying via /messages endpoint...`);
+            const fallbackEndpoint = `https://graph.facebook.com/v25.0/${connection.phoneNumberId}/messages`;
+            response = await fetch(fallbackEndpoint, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${connection.accessTokenEncrypted}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(payload)
+            });
+          }
 
           const data = await response.json();
           

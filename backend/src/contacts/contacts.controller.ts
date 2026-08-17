@@ -13,6 +13,14 @@ export class ContactsController {
     return this.contactsService.getContacts(req.user.tenantId);
   }
 
+  @Post('import')
+  async importContacts(
+    @Request() req: any,
+    @Body() body: { contacts: any[], tag?: string }
+  ) {
+    return this.contactsService.importContacts(req.user.tenantId, body.contacts, body.tag);
+  }
+
   @Get(':id')
   async getContact(@Request() req: any, @Param('id') id: string) {
     return this.contactsService.getContact(req.user.tenantId, id);

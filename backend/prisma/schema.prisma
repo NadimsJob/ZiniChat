@@ -113,6 +113,7 @@ model User {
   presence           UserPresence?
   sentMessages       Message[]                @relation("SentMessages")
   pushSubscriptions  UserPushSubscription[]
+  loginLogs          LoginLog[]
 
   @@map("users")
 }
@@ -145,6 +146,35 @@ model AuditLog {
 
   @@map("audit_logs")
 }
+
+// ─── Secure Login Audit Log (Isolated, Superadmin-only, 90-day TTL) ────────
+model LoginLog {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String?  @db.Uuid          // null for failed attempts with unknown email
+  email         String                      // attempted email (even if user not found)
+  ipAddress     String   @default("unknown")
+  userAgent     String?                     // raw user-agent string
+  browser       String?                     // parsed: Chrome 125 / Firefox 128 / Safari 17
+  os            String?                     // parsed: Windows 11 / macOS 14 / Android 14
+  deviceType    String?                     // Desktop / Mobile / Tablet / Bot
+  country       String?
+  region        String?
+  city          String?
+  status        String                      // SUCCESS, FAILED, LOCKED_OUT
+  failReason    String?                     // invalid_credentials, user_not_found, account_suspended
+  authMethod    String   @default("password") // password, google_oauth, google_sso
+  createdAt     DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([email, createdAt])
+  @@index([ipAddress, createdAt])
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+  @@index([createdAt])
+  @@map("login_logs")
+}
+
 
 // Channels
 enum WhatsappProvider {

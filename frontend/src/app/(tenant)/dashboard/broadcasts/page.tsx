@@ -60,6 +60,121 @@ export default function BroadcastsPage() {
   const [campaignName, setCampaignName] = useState('');
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
 
+  // Contact CSV Import State
+  const [isContactImportModalOpen, setIsContactImportModalOpen] = useState(false);
+  const [csvTagInput, setCsvTagInput] = useState('Eid_Promo_2026');
+  const [csvFileName, setCsvFileName] = useState('');
+  const [parsedCsvContacts, setParsedCsvContacts] = useState<any[]>([]);
+  const [isUploadingCsvContacts, setIsUploadingCsvContacts] = useState(false);
+
+  const downloadSampleCsv = () => {
+    const headers = ['Name', 'Phone', 'Email', 'Tags', 'Notes'];
+    const sampleRows = [
+      ['Rahim Ahmed', '01712345678', 'rahim@example.com', 'Eid_Offer_2026', 'VIP Customer'],
+      ['Karim Hassan', '01887654321', 'karim@example.com', 'Eid_Offer_2026', 'Regular Client'],
+      ['Nusrat Jahan', '01911223344', 'nusrat@example.com', 'Broadcast_Import', 'New Lead']
+    ];
+    const csvContent = [headers.join(','), ...sampleRows.map(row => row.map(v => `"${v}"`).join(','))].join('\n');
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'sample_broadcast_contacts.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success(language === 'en' ? 'Sample CSV downloaded!' : 'স্যাম্পল CSV ডাউনলোড হয়েছে!');
+  };
+
+  const parseCsvText = (text: string) => {
+    const lines = text.split(/\r\n|\n/).map(l => l.trim()).filter(Boolean);
+    if (lines.length < 2) return [];
+
+    const rawHeaders = lines[0].split(',').map(h => h.replace(/^"|"$/g, '').trim());
+    const result: any[] = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i].match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || lines[i].split(',');
+      const cleanValues = values.map(v => v ? v.replace(/^"|"$/g, '').trim() : '');
+
+      const row: any = {};
+      rawHeaders.forEach((header, idx) => {
+        const val = cleanValues[idx] || '';
+        const keyLower = header.toLowerCase();
+        if (keyLower.includes('name')) row.name = val;
+        else if (keyLower.includes('phone') || keyLower.includes('mobile') || keyLower.includes('number')) row.phone = val;
+        else if (keyLower.includes('email')) row.email = val;
+        else if (keyLower.includes('tag')) row.tags = val;
+        else if (keyLower.includes('note')) row.notes = val;
+        else row[header] = val;
+      });
+
+      if (row.phone || row.Name || row.Phone) {
+        result.push(row);
+      }
+    }
+    return result;
+  };
+
+  const handleCsvFileSelect = (file: File) => {
+    setCsvFileName(file.name);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result as string;
+      if (content) {
+        const parsed = parseCsvText(content);
+        setParsedCsvContacts(parsed);
+        if (parsed.length === 0) {
+          toast.error(language === 'en' ? 'No valid contacts found in CSV' : 'CSV ফাইলে কোনো কন্টাক্ট পাওয়া যায়নি');
+        } else {
+          toast.success(language === 'en' ? `Found ${parsed.length} rows in CSV!` : `CSV ফাইলে ${parsed.length}টি সারি পাওয়া গেছে!`);
+        }
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleUploadCsvContactsSubmit = async () => {
+    if (parsedCsvContacts.length === 0) {
+      toast.error(language === 'en' ? 'Please select a valid CSV file first' : 'দয়া করে একটি সঠিক CSV ফাইল সিলেক্ট করুন');
+      return;
+    }
+
+    setIsUploadingCsvContacts(true);
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/contacts/import`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          contacts: parsedCsvContacts,
+          tag: csvTagInput || 'Broadcast_Import'
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Import failed');
+
+      toast.success(
+        language === 'en'
+          ? `Successfully imported ${data.importedCount} contacts under tag '${data.tag}'! (${data.skippedCount} skipped)`
+          : `সফলভাবে ${data.importedCount}টি কন্টাক্ট '${data.tag}' ট্যাগে আপলোড করা হয়েছে! (${data.skippedCount}টি স্কিপড)`
+      );
+
+      setIsContactImportModalOpen(false);
+      setParsedCsvContacts([]);
+      setCsvFileName('');
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to import contacts');
+    } finally {
+      setIsUploadingCsvContacts(false);
+    }
+  };
+
   const bodyTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -391,7 +506,25 @@ export default function BroadcastsPage() {
           </p>
         </div>
         {activeTab !== 'library' && (
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            {activeTab === 'campaigns' && (
+              <>
+                <button
+                  onClick={downloadSampleCsv}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20 text-xs font-bold rounded-xl transition-all whitespace-nowrap cursor-pointer">
+                  <FileText className="w-3.5 h-3.5 shrink-0" />
+                  <span>{language === 'en' ? 'Sample CSV Format' : 'স্যাম্পল CSV ফরম্যাট'}</span>
+                </button>
+
+                <button
+                  onClick={() => setIsContactImportModalOpen(true)}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-primary/20 text-primary hover:bg-primary/30 border border-primary/30 text-xs font-bold rounded-xl transition-all whitespace-nowrap cursor-pointer">
+                  <Upload className="w-3.5 h-3.5 shrink-0" />
+                  <span>{language === 'en' ? 'Import Contacts (CSV)' : 'কন্টাক্ট আপলোড (CSV)'}</span>
+                </button>
+              </>
+            )}
+
             {activeTab === 'templates' && (
               <button
                 onClick={handleSyncFromMeta}
@@ -402,6 +535,7 @@ export default function BroadcastsPage() {
                 <span>{isSyncing ? (language === 'en' ? 'Syncing...' : 'সিঙ্ক হচ্ছে...') : (language === 'en' ? 'Sync from Meta' : 'Meta থেকে Sync')}</span>
               </button>
             )}
+
             <button 
               onClick={() => activeTab === 'campaigns' ? setIsCampaignModalOpen(true) : setIsTemplateModalOpen(true)}
               className="flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-xs font-bold rounded-xl shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all whitespace-nowrap">
@@ -412,6 +546,72 @@ export default function BroadcastsPage() {
             </button>
           </div>
         )}
+      </div>
+
+      {/* 4-Step Broadcast Campaign & CSV Import Guidelines */}
+      <div className="bg-gradient-to-r from-primary/10 via-emerald-500/10 to-blue-500/10 border border-primary/20 p-4 rounded-2xl space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>{language === 'en' ? '4-Step WhatsApp Marketing & Contact Upload Guide' : '৪-ধাপে হোয়াটসঅ্যাপ মার্কেটিং ও কন্টাক্ট আপলোড নির্দেশিকা'}</span>
+          </h2>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={downloadSampleCsv}
+              className="flex items-center gap-1 px-2.5 py-1 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 border border-emerald-500/30 rounded-lg text-[11px] font-bold transition-all cursor-pointer">
+              <FileText className="w-3 h-3" />
+              <span>{language === 'en' ? 'Download Sample CSV' : 'স্যাম্পল ফাইল ডাউনলোড'}</span>
+            </button>
+            <button
+              onClick={() => setIsContactImportModalOpen(true)}
+              className="flex items-center gap-1 px-2.5 py-1 bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg text-[11px] font-bold transition-all cursor-pointer shadow-sm">
+              <Upload className="w-3 h-3" />
+              <span>{language === 'en' ? 'Upload Contacts CSV' : 'কন্টাক্ট আপলোড করুন'}</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+          <div className="bg-background/60 p-3 rounded-xl border border-border/60 space-y-1">
+            <div className="flex items-center gap-1.5 font-bold text-emerald-400">
+              <span className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center text-[10px] shrink-0">১</span>
+              <span>{language === 'en' ? 'Download Sample Format' : '১. স্যাম্পল ফরম্যাট ডাউনলোড'}</span>
+            </div>
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              {language === 'en' ? 'Click "Sample CSV Format" to download standard CSV file columns (Name, Phone, Email, Tags).' : '"স্যাম্পল CSV ফরম্যাট" বাটনে ক্লিক করে ফরম্যাটেড স্যাম্পল ফাইলটি নামিয়ে নিন।'}
+            </p>
+          </div>
+
+          <div className="bg-background/60 p-3 rounded-xl border border-border/60 space-y-1">
+            <div className="flex items-center gap-1.5 font-bold text-blue-400">
+              <span className="w-5 h-5 rounded-full bg-blue-500/20 flex items-center justify-center text-[10px] shrink-0">২</span>
+              <span>{language === 'en' ? 'Fill Customer Contacts' : '২. মোবাইল নম্বর বসান'}</span>
+            </div>
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              {language === 'en' ? 'Fill customer names and 11-digit Bangladeshi mobile numbers (e.g. 017XXXXXXXX) into the CSV file.' : 'কাস্টমারের নাম এবং ১১-ডিজিটের মোবাইল নম্বর (উদাঃ 017XXXXXXXX) ফাইলের কলামে বসান।'}
+            </p>
+          </div>
+
+          <div className="bg-background/60 p-3 rounded-xl border border-border/60 space-y-1">
+            <div className="flex items-center gap-1.5 font-bold text-purple-400">
+              <span className="w-5 h-5 rounded-full bg-purple-500/20 flex items-center justify-center text-[10px] shrink-0">৩</span>
+              <span>{language === 'en' ? 'Upload & Auto-Tag CRM' : '৩. ফাইল আপলোড ও ট্যাগিং'}</span>
+            </div>
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              {language === 'en' ? 'Upload the CSV file. All contacts are auto-synced into ZiniChat CRM with your campaign tag.' : 'CSV আপলোড করলেই সব কন্টাক্ট স্বয়ংক্রিয়ভাবে আপনার কাস্টম ক্যাম্পেইন ট্যাগে সেভ হবে।'}
+            </p>
+          </div>
+
+          <div className="bg-background/60 p-3 rounded-xl border border-border/60 space-y-1">
+            <div className="flex items-center gap-1.5 font-bold text-amber-400">
+              <span className="w-5 h-5 rounded-full bg-amber-500/20 flex items-center justify-center text-[10px] shrink-0">৪</span>
+              <span>{language === 'en' ? 'Launch WhatsApp Campaign' : '৪. ব্রডকাস্ট ক্যাম্পেইন পাঠান'}</span>
+            </div>
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              {language === 'en' ? 'Select your Meta-Approved WhatsApp Template and send bulk marketing messages in 1 click!' : 'মেটা-অ্যাপ্রুভড টেমপ্লেট নির্বাচন করে ১-ক্লিকে বাল্ক হোয়াটসঅ্যাপ মার্কেটিং চালান!'}
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Meta API Exclusive Policy Notice */}
@@ -551,6 +751,137 @@ export default function BroadcastsPage() {
           </div>
         )}
       </div>
+
+      {/* Contact CSV Import Modal */}
+      {isContactImportModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-surface border border-surface-hover w-full max-w-lg rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
+            <div className="flex justify-between items-center p-4 border-b border-surface-hover shrink-0">
+              <h2 className="text-base font-bold flex items-center gap-2 text-foreground">
+                <Upload className="w-5 h-5 text-primary" />
+                <span>{language === 'en' ? 'Import Contacts CSV for WhatsApp Broadcast' : 'হোয়াটসঅ্যাপ ব্রডকাস্টের জন্য কন্টাক্ট আপলোড'}</span>
+              </h2>
+              <button onClick={() => setIsContactImportModalOpen(false)} className="p-1 hover:bg-surface-hover rounded-lg text-muted-foreground hover:text-foreground transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-4 overflow-y-auto space-y-4">
+              {/* Campaign Tag Input */}
+              <div>
+                <label className="block text-[13px] font-bold text-muted-foreground mb-1">
+                  {language === 'en' ? 'Campaign / Target Tag Name' : 'ক্যাম্পেইন / টার্গেট ট্যাগের নাম'} <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={csvTagInput}
+                  onChange={(e) => setCsvTagInput(e.target.value)}
+                  placeholder="e.g. Eid_Offer_2026"
+                  className="w-full bg-background border border-surface-hover rounded-xl px-3 py-2 text-[13px] outline-none focus:border-primary transition-colors text-foreground font-semibold"
+                />
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  {language === 'en'
+                    ? 'All imported contacts will be automatically tagged with this campaign tag for quick broadcast targeting.'
+                    : 'আপলোড করা সব কন্টাক্ট স্বয়ংক্রিয়ভাবে এই ট্যাগ দিয়ে সেভ হবে যেন ব্রডকাস্ট পাঠানোর সময় এক ক্লিকে টার্গেট করা যায়।'}
+                </p>
+              </div>
+
+              {/* Sample File Download Shortcut */}
+              <div className="p-3 bg-primary/10 border border-primary/20 rounded-xl flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-primary shrink-0" />
+                  <span className="text-xs font-semibold text-foreground">
+                    {language === 'en' ? 'Don\'t have the CSV format?' : 'কন্টাক্ট আপলোড করার স্যাম্পল ফাইল নেই?'}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={downloadSampleCsv}
+                  className="px-2.5 py-1 bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-bold rounded-lg transition-all shrink-0 cursor-pointer">
+                  {language === 'en' ? 'Download Sample' : 'স্যাম্পল ডাউনলোড'}
+                </button>
+              </div>
+
+              {/* File Dropzone */}
+              <div>
+                <label className="block text-[13px] font-bold text-muted-foreground mb-1">
+                  {language === 'en' ? 'Select CSV File (.csv)' : 'CSV ফাইল বেছে নিন (.csv)'}
+                </label>
+                <div
+                  className="border-2 border-dashed border-surface-hover hover:border-primary/50 bg-background/50 rounded-xl p-5 text-center cursor-pointer transition-colors"
+                  onClick={() => document.getElementById('csv-file-input')?.click()}>
+                  <Upload className="w-8 h-8 text-primary mx-auto mb-2 opacity-80" />
+                  <p className="text-xs font-bold text-foreground">
+                    {csvFileName ? csvFileName : (language === 'en' ? 'Click to select CSV file' : 'ফাইল সিলেক্ট করতে এখানে ক্লিক করুন')}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    {language === 'en' ? 'Supports Name, Phone, Email, Tags, Notes columns' : 'Name, Phone, Email, Tags কলাম সমর্থিত'}
+                  </p>
+                </div>
+                <input
+                  type="file"
+                  id="csv-file-input"
+                  accept=".csv,text/csv"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleCsvFileSelect(file);
+                  }}
+                />
+              </div>
+
+              {/* Parsed Contacts Preview */}
+              {parsedCsvContacts.length > 0 && (
+                <div className="space-y-2 border-t border-surface-hover pt-3">
+                  <div className="flex items-center justify-between text-xs font-bold">
+                    <span className="text-emerald-400">
+                      ✓ {language === 'en' ? `Parsed ${parsedCsvContacts.length} contacts` : `${parsedCsvContacts.length}টি কন্টাক্ট পাওয়া গেছে`}
+                    </span>
+                    <span className="text-muted-foreground text-[11px]">
+                      {language === 'en' ? 'First 5 rows preview:' : 'প্রথম ৫টি সারির প্রিভিউ:'}
+                    </span>
+                  </div>
+
+                  <div className="max-h-36 overflow-y-auto border border-surface-hover rounded-xl divide-y divide-surface-hover text-xs bg-background/30">
+                    {parsedCsvContacts.slice(0, 5).map((c, i) => (
+                      <div key={i} className="p-2 flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="font-bold text-foreground truncate">{c.name || 'Customer'}</p>
+                          <p className="text-[11px] text-muted-foreground font-mono">{c.phone}</p>
+                        </div>
+                        <span className="px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-bold rounded-full shrink-0">
+                          {csvTagInput}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 border-t border-surface-hover flex justify-end gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsContactImportModalOpen(false)}
+                className="px-4 py-2 text-[13px] font-bold text-muted-foreground hover:text-foreground hover:bg-surface-hover rounded-xl transition-all">
+                {language === 'en' ? 'Cancel' : 'বাতিল'}
+              </button>
+              <button
+                type="button"
+                onClick={handleUploadCsvContactsSubmit}
+                disabled={isUploadingCsvContacts || parsedCsvContacts.length === 0}
+                className="px-4 py-2 bg-primary text-primary-foreground text-[13px] font-bold rounded-xl shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all disabled:opacity-50 flex items-center gap-1.5 cursor-pointer">
+                <Upload className="w-4 h-4" />
+                <span>
+                  {isUploadingCsvContacts
+                    ? (language === 'en' ? 'Uploading...' : 'আপলোড হচ্ছে...')
+                    : (language === 'en' ? `Upload & Sync (${parsedCsvContacts.length})` : `আপলোড ও সিঙ্ক (${parsedCsvContacts.length})`)}
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Campaign Modal */}
       {isCampaignModalOpen && (

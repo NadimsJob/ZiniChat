@@ -5,11 +5,11 @@ import { UsersModule } from '../users/users.module';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { JwtStrategy } from './strategies/jwt.strategy';
-
 import { PrismaModule } from '../prisma/prisma.module';
 import { SmtpModule } from '../smtp/smtp.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { BullModule } from '@nestjs/bullmq';
+import { LoginLogsModule } from '../login-logs/login-logs.module';
 
 @Module({
   imports: [
@@ -22,6 +22,7 @@ import { BullModule } from '@nestjs/bullmq';
     }),
     SmtpModule,
     NotificationsModule,
+    LoginLogsModule,
     BullModule.registerQueue({ name: 'meta-pixel' }),
     BullModule.registerQueue({ name: 'google-analytics' }),
   ],

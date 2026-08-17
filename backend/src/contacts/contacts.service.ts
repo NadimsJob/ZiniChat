@@ -158,4 +158,93 @@ export class ContactsService {
       }
     });
   }
+
+  async importContacts(tenantId: string, contacts: any[], defaultTag?: string) {
+    if (!Array.isArray(contacts) || contacts.length === 0) {
+      return { importedCount: 0, skippedCount: 0, tag: defaultTag || 'Broadcast_Import' };
+    }
+
+    const tagToApply = (defaultTag || 'Broadcast_Import').trim();
+    let importedCount = 0;
+    let skippedCount = 0;
+
+    const bnDigitsMap: { [key: string]: string } = {
+      '০': '0', '১': '1', '২': '2', '৩': '3', '৪': '4',
+      '৫': '5', '৬': '6', '৭': '7', '৮': '8', '৯': '9'
+    };
+
+    for (const item of contacts) {
+      let rawPhone = String(item.phone || item.Phone || item.mobile || item.Mobile || item.PhoneNo || item.phoneNo || '').trim();
+      if (!rawPhone) {
+        skippedCount++;
+        continue;
+      }
+
+      // Convert Bengali digits to English
+      for (const [bn, en] of Object.entries(bnDigitsMap)) {
+        rawPhone = rawPhone.replaceAll(bn, en);
+      }
+
+      // Strip non-digit characters except optional leading '+'
+      let cleanPhone = rawPhone.replace(/[^\d+]/g, '');
+
+      // Normalize Bangladeshi phone numbers
+      if (cleanPhone.startsWith('+8801')) {
+        cleanPhone = '01' + cleanPhone.slice(5);
+      } else if (cleanPhone.startsWith('8801')) {
+        cleanPhone = '01' + cleanPhone.slice(4);
+      }
+
+      // Validate 11-digit Bangladeshi mobile numbers or valid international numbers
+      if (!/^01[3-9]\d{8}$/.test(cleanPhone) && !/^\+?\d{8,15}$/.test(cleanPhone)) {
+        skippedCount++;
+        continue;
+      }
+
+      const name = String(item.name || item.Name || 'Customer').trim();
+      const email = item.email || item.Email || null;
+
+      // Extract custom row tags if provided in CSV
+      const rowTagsRaw = item.tags || item.Tags || '';
+      const rowTags = typeof rowTagsRaw === 'string' 
+        ? rowTagsRaw.split(',').map(t => t.trim()).filter(Boolean)
+        : (Array.isArray(rowTagsRaw) ? rowTagsRaw : []);
+
+      const combinedTags = Array.from(new Set([tagToApply, ...rowTags]));
+
+      // Check if contact already exists by phone & tenantId
+      const existing = await this.prisma.contact.findFirst({
+        where: { tenantId, OR: [{ phone: cleanPhone }, { externalContactId: cleanPhone }] }
+      });
+
+      if (existing) {
+        const mergedTags = Array.from(new Set([...existing.tags, ...combinedTags]));
+        await this.prisma.contact.update({
+          where: { id: existing.id },
+          data: {
+            name: name !== 'Customer' ? name : existing.name,
+            email: email || existing.email,
+            tags: mergedTags,
+            phone: cleanPhone
+          }
+        });
+      } else {
+        await this.prisma.contact.create({
+          data: {
+            tenantId,
+            name,
+            phone: cleanPhone,
+            externalContactId: cleanPhone,
+            channel: 'whatsapp',
+            email,
+            tags: combinedTags
+          }
+        });
+      }
+
+      importedCount++;
+    }
+
+    return { importedCount, skippedCount, tag: tagToApply };
+  }
 }
