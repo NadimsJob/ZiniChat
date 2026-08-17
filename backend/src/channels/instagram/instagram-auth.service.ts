@@ -238,8 +238,14 @@ export class InstagramAuthService {
           tenantId,
           channelType: 'instagram',
           externalAccountId: selected.igId,
-          accessTokenEncrypted: finalToken,
+          // IMPORTANT: Store the Page Access Token (NOT the user token).
+          // Instagram Messaging API (/{ig-id}/messages) requires a Page Access Token.
+          // The pageToken from /me/accounts (called with a long-lived user token)
+          // is itself a long-lived Page Access Token (no expiry).
+          accessTokenEncrypted: selected.pageToken,
           displayName: selected.username,
+          // Store the Facebook Page ID in verifyToken for webhook resubscription.
+          verifyToken: selected.pageId,
           connectionMethod: 'facebook_login',
           status: 'active'
         }
@@ -309,36 +315,20 @@ export class InstagramAuthService {
       throw new NotFoundException('Connection not found');
     }
 
-    const igAccountId = connection.externalAccountId;
-    const accessToken = connection.accessTokenEncrypted;
+    // For facebook_login connections, verifyToken stores the Facebook Page ID
+    // and accessTokenEncrypted stores the Page Access Token.
+    const pageId = connection.verifyToken;
+    const pageToken = connection.accessTokenEncrypted;
+
+    if (!pageId) {
+      throw new BadRequestException(
+        'No linked Facebook Page ID found for this connection. Please disconnect and reconnect via Facebook Login to fix this.'
+      );
+    }
 
     try {
-      // Find which Facebook Pages this IG account is linked to
-      const pagesRes = await fetch(`https://graph.facebook.com/v21.0/me/accounts?access_token=${accessToken}`);
-      const pagesData = await pagesRes.json();
-
-      if (pagesData.error || !pagesData.data) {
-        throw new BadRequestException('Could not fetch linked Facebook Pages. Token may be expired.');
-      }
-
-      let subscribed = false;
-      for (const page of pagesData.data) {
-        const pageToken = page.access_token;
-        const igRes = await fetch(`https://graph.facebook.com/v21.0/${page.id}?fields=instagram_business_account&access_token=${pageToken}`);
-        const igData = await igRes.json();
-
-        if (igData.instagram_business_account?.id === igAccountId) {
-          await this.subscribePageForInstagram(page.id, pageToken);
-          subscribed = true;
-          this.logger.log(`Re-subscribed page ${page.id} for IG account ${igAccountId}`);
-          break;
-        }
-      }
-
-      if (!subscribed) {
-        throw new BadRequestException('Could not find the linked Facebook Page for this Instagram account.');
-      }
-
+      await this.subscribePageForInstagram(pageId, pageToken);
+      this.logger.log(`Re-subscribed page ${pageId} for IG account ${connection.externalAccountId}`);
       return { success: true, message: 'Webhook subscription refreshed. Instagram DMs will now appear in the inbox.' };
     } catch (error: any) {
       if (error instanceof BadRequestException) throw error;
