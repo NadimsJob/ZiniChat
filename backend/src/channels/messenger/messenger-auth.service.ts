@@ -212,7 +212,9 @@ export class MessengerAuthService {
           accessTokenEncrypted: pageToken,
           displayName: pageName,
           connectionMethod: 'facebook_login',
-          status: 'active'
+          status: 'active',
+          isCommentAutoReplyEnabled: true,
+          hasCommentPermissions: true,
         }
       });
 
@@ -316,6 +318,10 @@ export class MessengerAuthService {
       const data = await res.json();
 
       if (data.success) {
+        await this.prisma.channelConnection.update({
+          where: { id: connectionId },
+          data: { isCommentAutoReplyEnabled: true, hasCommentPermissions: true }
+        });
         this.logger.log(`Re-subscribed Facebook Page ${pageId} to Meta Webhooks (including feed/comments)`);
         return { success: true, message: 'Webhook subscription refreshed. Facebook comments should now appear in the inbox.' };
       } else {

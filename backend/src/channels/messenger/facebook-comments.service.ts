@@ -67,14 +67,25 @@ export class FacebookCommentsService {
 
     this.logger.log(`Received incoming Facebook comment ${commentId} on page ${pageId} from ${fromName} (${fromId}): "${message}"`);
 
-    // 3. Find ChannelConnection for this page
+    // 3. Find ChannelConnection for this page (match by externalAccountId OR verifyToken for Instagram-linked pages)
     let connection = await this.prisma.channelConnection.findFirst({
-      where: { externalAccountId: pageId, channelType: 'messenger', status: { in: ['active', 'connected'] } },
+      where: {
+        OR: [
+          { externalAccountId: pageId },
+          { verifyToken: pageId }
+        ],
+        status: { in: ['active', 'connected'] }
+      },
     });
 
     if (!connection) {
       connection = await this.prisma.channelConnection.findFirst({
-        where: { externalAccountId: pageId, channelType: 'messenger' },
+        where: {
+          OR: [
+            { externalAccountId: pageId },
+            { verifyToken: pageId }
+          ]
+        },
       });
     }
 
@@ -630,9 +641,29 @@ ${qnaContext ? `# STORE KNOWLEDGE BASE:\n${qnaContext}\n` : ''}`;
       throw new NotFoundException('Comment log not found for this tenant');
     }
 
-    const connection = await this.prisma.channelConnection.findFirst({
-      where: { externalAccountId: commentLog.pageId, channelType: 'messenger', tenantId },
+    let connection = await this.prisma.channelConnection.findFirst({
+      where: {
+        tenantId,
+        OR: [
+          { externalAccountId: commentLog.pageId },
+          { verifyToken: commentLog.pageId }
+        ],
+        status: { in: ['active', 'connected'] }
+      },
     });
+
+    if (!connection) {
+      connection = await this.prisma.channelConnection.findFirst({
+        where: {
+          tenantId,
+          OR: [
+            { externalAccountId: commentLog.pageId },
+            { verifyToken: commentLog.pageId }
+          ]
+        },
+      });
+    }
+
     if (!connection) {
       throw new NotFoundException('Channel connection for page not found');
     }

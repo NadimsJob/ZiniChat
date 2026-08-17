@@ -247,7 +247,9 @@ export class InstagramAuthService {
           // Store the Facebook Page ID in verifyToken for webhook resubscription.
           verifyToken: selected.pageId,
           connectionMethod: 'facebook_login',
-          status: 'active'
+          status: 'active',
+          isCommentAutoReplyEnabled: true,
+          hasCommentPermissions: true,
         }
       });
 
@@ -288,7 +290,7 @@ export class InstagramAuthService {
    */
   private async subscribePageForInstagram(pageId: string, pageToken: string): Promise<void> {
     try {
-      const fields = 'messages,messaging_postbacks,message_deliveries,message_reads,feed,instagram_messaging_seen';
+      const fields = 'messages,messaging_postbacks,message_deliveries,message_reads,feed';
       const url = `https://graph.facebook.com/v21.0/${pageId}/subscribed_apps?subscribed_fields=${encodeURIComponent(fields)}&access_token=${pageToken}`;
       const res = await fetch(url, { method: 'POST' });
       const data = await res.json();
@@ -328,6 +330,10 @@ export class InstagramAuthService {
 
     try {
       await this.subscribePageForInstagram(pageId, pageToken);
+      await this.prisma.channelConnection.update({
+        where: { id: connectionId },
+        data: { isCommentAutoReplyEnabled: true, hasCommentPermissions: true }
+      });
       this.logger.log(`Re-subscribed page ${pageId} for IG account ${connection.externalAccountId}`);
       return { success: true, message: 'Webhook subscription refreshed. Instagram DMs will now appear in the inbox.' };
     } catch (error: any) {
