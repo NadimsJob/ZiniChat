@@ -387,6 +387,24 @@ export class InboxService {
     }
   }
 
+  extractPhoneFromText(text: string): string | null {
+    if (!text || typeof text !== 'string') return null;
+
+    const bnToEnMap: { [key: string]: string } = {
+      '০': '0', '১': '1', '২': '2', '৩': '3', '৪': '4',
+      '৫': '5', '৬': '6', '৭': '7', '৮': '8', '৯': '9'
+    };
+    const convertedText = text.replace(/[০-৯]/g, m => bnToEnMap[m] || m);
+    const normalized = convertedText.replace(/[\s\-\(\)]/g, '');
+
+    const match = normalized.match(/(?:\+?88)?(01[3-9]\d{8})/);
+    if (match && match[1]) {
+      return match[1];
+    }
+
+    return null;
+  }
+
   async getInboxCounts(tenantId: string, user: any) {
     let baseWhere: any = { tenantId };
 
@@ -991,15 +1009,18 @@ export class InboxService {
     }
 
     // Auto-extract phone number from message content if contact.phone is missing
-    if (!contact.phone && typeof data.content === 'object' && data.content !== null) {
-      const textVal = data.content.text || data.content.body || '';
-      const phoneMatch = textVal.match(/(?:\+?88)?01[3-9]\d{8}/);
-      if (phoneMatch) {
-        const extractedPhone = phoneMatch[0];
+    const textContent = typeof data.content === 'string' 
+      ? data.content 
+      : (data.content?.text || data.content?.body || data.content?.caption || '');
+    
+    if (!contact.phone && textContent) {
+      const extractedPhone = this.extractPhoneFromText(textContent);
+      if (extractedPhone) {
         contact = await this.prisma.contact.update({
           where: { id: contact.id },
           data: { phone: extractedPhone }
         });
+        this.logger.log(`Auto-extracted phone number for contact ${contact.id}: ${extractedPhone}`);
         if (this.inboxGateway) {
           this.inboxGateway.broadcastToTenant(data.tenantId, 'contact:updated', contact);
         }
