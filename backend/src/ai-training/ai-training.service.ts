@@ -780,30 +780,68 @@ ${combinedText}`;
     // 1. Check AI Quota (deducts 1 credit or throws if depleted)
     await this.quotaService.checkAiQuota(tenantId);
 
-    // 2. Build prompt context from persona, QnAs, and processed documents
+    // 2. Build prompt context from persona, QnAs, website knowledge, and processed documents
     const assistant = await this.ensureAiAssistantExists(tenantId);
-    const qnas = await this.prisma.qnAKnowledgeBase.findMany({ where: { tenantId } });
-    const docs = await this.prisma.knowledgeDocument.findMany({
+    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+    const qnas = await this.prisma.qnAKnowledgeBase.findMany({ where: { tenantId, isActive: true } });
+    const freshDocs = await this.prisma.knowledgeDocument.findMany({
       where: { tenantId, status: 'completed' },
+      include: { chunks: { take: 5 } },
       take: 5
     });
+    const products = await this.aiService.searchRelevantProducts(tenantId, message, 5);
 
-    let prompt = `You are a helpful customer support AI assistant named "${assistant.agentName || 'Support AI'}" for this business.\n\n`;
+    let prompt = `You are a helpful customer support AI assistant named "${assistant.agentName || 'Support AI'}" for ${tenant?.businessName || 'this business'}.\n\n`;
     prompt += `### System Persona & Rules:\n${assistant.systemPrompt || 'Always reply politely to customer inquiries.'}\n\n`;
+
+    // Extract websiteSummary text robustly
+    let websiteSummaryText = '';
+    if (tenant?.websiteSummary) {
+      const ws: any = tenant.websiteSummary;
+      if (typeof ws === 'string') {
+        try {
+          const parsed = JSON.parse(ws);
+          websiteSummaryText = parsed.summary || parsed.text || ws;
+        } catch {
+          websiteSummaryText = ws;
+        }
+      } else if (typeof ws === 'object' && ws !== null) {
+        websiteSummaryText = ws.summary || ws.text || JSON.stringify(ws);
+      }
+    }
+
+    if (websiteSummaryText && websiteSummaryText.trim()) {
+      prompt += `### Verified Website Knowledge Summary (${tenant?.websiteUrl || ''}):\n`;
+      prompt += `${websiteSummaryText.trim()}\n\n`;
+    }
 
     if (qnas.length > 0) {
       prompt += `### Q&A Knowledge Base:\n`;
       qnas.forEach((q: any) => {
-        prompt += `- Q: ${q.question}\n  A: ${q.answer}\n`;
+        if (q.answer && q.answer.trim()) {
+          prompt += `- Q: ${q.question}\n  A: ${q.answer}\n`;
+        }
       });
       prompt += `\n`;
     }
 
-    if (docs.length > 0) {
+    if (freshDocs.length > 0) {
       prompt += `### Uploaded Knowledge Documents:\n`;
-      docs.forEach((d: any) => {
-        prompt += `[Doc: ${d.filename}]\n\n`;
+      freshDocs.forEach((d: any) => {
+        prompt += `[Doc: ${d.filename}]\n`;
+        (d.chunks || []).forEach((c: any) => {
+          prompt += `Content: ${c.content}\n`;
+        });
       });
+      prompt += `\n`;
+    }
+
+    if (products.length > 0) {
+      prompt += `### Product Catalog:\n`;
+      products.forEach((p: any) => {
+        prompt += `- ${p.name}: BDT ${p.price} (SKU: ${p.sku || 'N/A'})\n`;
+      });
+      prompt += `\n`;
     }
 
     prompt += `### Customer Test Query:\n${message}\n\nPlease reply directly to the customer as the trained AI assistant.`;

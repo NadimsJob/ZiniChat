@@ -39,6 +39,12 @@ All AI agents MUST adhere to these workspace-specific behavioral and technical g
 * **Specialized Team Notifications**: Use `NotificationsService.createNotificationForSpecializedTeam(tenantId, requiredTags, title, body)` to route AI lead alerts to team members with matching `User.specializationTags` (e.g. `Doctor Assistant`, `Logistics Dispatcher`, `Property Agent`).
 * **Inbox AI Two-Stage Classification (Code Decides)**: Stage A: LLM outputs strict JSON Interface. Stage B: Backend validates stock, plan features, and tenant isolation before execution. Never let LLM mutate records directly.
 * **AI Event Parity**: AI background actions (e.g., creating tickets) MUST trigger standard UI real-time sockets, notifications, and emails.
+* **AI Prompt Caching Layering & Token Optimization**:
+  - Always structure LLM prompts into 2 distinct sections: **Static Header** at the top (System persona, Anti-hallucination rules, Tag rules, Event rules, JSON Output Format schema) for 100% prompt cache hits across calls, and **Dynamic Footer** at the bottom (Customer info, RAG search results, Chat history).
+  - Implement Stage 0 Dynamic Indexing (`searchRelevantProducts`, `searchRelevantQnas`) to retrieve max 5 matching items based on user query intent. Generic greetings ("hi", "salam", etc.) MUST skip product catalog & vector DB queries to reduce input tokens from 5,000+ to ~300-500.
+* **Prisma JSON Field Safety & AI Simulator Parity**:
+  - Never dereference raw properties directly on Prisma `Json` columns (e.g. `(tenant.websiteSummary as any).summary`). Always wrap in a robust JSON deserialization guard handling objects, parsed JSON strings, and raw strings.
+  - Any knowledge source added to live inbox AI (`OrchestratorService`) MUST be mirrored in the AI Training Live Simulator (`AiTrainingService.testSimulate`).
 * **WhatsApp Web (Baileys) Lifecycle**: 
   - Store `creds.json` in Docker volume `zinichat_backend_sessions`. Set `keepAliveIntervalMs: 25000`.
   - Prevent duplicate socket 440/409 conflicts: DO NOT auto-reconnect on 440/409. Cleanly `destroySocket` (unbind events) before `makeWASocket`. Wrap `sendMessage` in auto-retry for stale sockets.

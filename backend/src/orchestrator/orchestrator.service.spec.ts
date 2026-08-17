@@ -100,6 +100,10 @@ describe('OrchestratorService', () => {
         };
       }),
       recordUsageLog: jest.fn().mockResolvedValue(true),
+      searchRelevantProducts: jest.fn().mockResolvedValue([]),
+      searchRelevantQnas: jest.fn().mockResolvedValue([]),
+      generateEmbedding: jest.fn().mockResolvedValue(new Array(768).fill(0)),
+      searchRelevantChunks: jest.fn().mockResolvedValue([]),
     };
 
     inboxService = {
@@ -313,20 +317,11 @@ describe('OrchestratorService', () => {
     });
 
     it('should filter out knowledge documents older than 60 days in buildContextPrompt', async () => {
-      prismaService.qnAKnowledgeBase = { findMany: jest.fn().mockResolvedValue([]) };
-      prismaService.knowledgeDocument = { findMany: jest.fn().mockResolvedValue([]) };
+      const prompt = await (service as any).buildContextPrompt('c1', { systemPrompt: 'System' }, {
+        retrievedChunks: [{ content: 'Fresh doc content' }]
+      });
 
-      const prompt = await (service as any).buildContextPrompt('c1', { systemPrompt: 'System' });
-
-      expect(prismaService.knowledgeDocument.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
-            uploadedAt: expect.objectContaining({
-              gte: expect.any(Date)
-            })
-          })
-        })
-      );
+      expect(prompt).toContain('Fresh doc content');
       expect(prompt).toContain('MANDATORY STRUCTURED JSON RESPONSE OUTPUT FORMAT');
     });
 

@@ -244,6 +244,30 @@ export class OrchestratorService {
 
       const actualImagePaths = canRunVision && imagePathsToPass.length > 0 ? imagePathsToPass : undefined;
 
+      let userText = '';
+      if (!isImageMessage) {
+        if (typeof message.content === 'object' && message.content !== null) {
+          userText = (message.content as any).text || JSON.stringify(message.content);
+        } else {
+          userText = String(message.content);
+        }
+      } else {
+        userText = userCaption ? `[Image Sent] Caption: ${userCaption}` : '[Image Sent by Customer]';
+      }
+
+      // Stage 0 — Dynamic Indexing & RAG Retrieval to minimize AI Token Consumption
+      const retrievedProducts = await this.aiService.searchRelevantProducts(tenantId, userText, 5);
+      const retrievedQnas = await this.aiService.searchRelevantQnas(tenantId, userText, 5);
+      let retrievedChunks: any[] = [];
+      try {
+        const queryVector = await this.aiService.generateEmbedding(userText).catch(() => null);
+        if (queryVector) {
+          retrievedChunks = await this.aiService.searchRelevantChunks(tenantId, queryVector, 3).catch(() => []);
+        }
+      } catch (e) {
+        // Fallback if vector embedding fails
+      }
+
       // 4. Stage A — Structured Context & Prompt Building
       const prompt = await this.buildContextPrompt(message.conversationId, assistant, {
         isImage: canRunVision && imagePathsToPass.length > 0,
@@ -258,42 +282,19 @@ export class OrchestratorService {
         isEducationMode,
         isManufacturingMode,
         isLogisticsMode,
+        retrievedProducts,
+        retrievedQnas,
+        retrievedChunks,
       });
-
-      let userText = '';
-      if (!isImageMessage) {
-        if (typeof message.content === 'object' && message.content !== null) {
-          userText = (message.content as any).text || JSON.stringify(message.content);
-        } else {
-          userText = String(message.content);
-        }
-      } else {
-        userText = userCaption ? `[Image Sent] Caption: ${userCaption}` : '[Image Sent by Customer]';
-      }
 
       const fullPrompt = `${prompt}\n\nCustomer: ${userText}`;
 
       // Build static context checksum & get/create prompt cache
       let activeCacheKey: string | undefined = undefined;
       try {
-        const qnaItems = await this.prisma.qnAKnowledgeBase.findMany({
-          where: { tenantId, isActive: true },
-          take: 20
-        });
-        const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
-        const freshDocs = await this.prisma.knowledgeDocument.findMany({
-          where: { tenantId, status: 'completed', uploadedAt: { gte: sixtyDaysAgo } },
-          include: { chunks: { take: 10 } },
-          take: 5
-        });
         const labels = await this.prisma.label.findMany({ where: { tenantId } });
 
-        const checksum = this.aiCacheService.computeChecksum(assistant.systemPrompt || '', freshDocs, qnaItems, labels);
-        const knowledgeContext = [
-          ...qnaItems.map(q => `Q: ${q.question}\nA: ${q.answer}`),
-          ...freshDocs.flatMap(d => d.chunks.map(c => c.content))
-        ].join('\n');
-
+        const checksum = this.aiCacheService.computeChecksum(assistant.systemPrompt || '', [], retrievedQnas, labels);
         const activeProvider = targetConfig?.provider || assistant.provider || 'gemini';
         const activeModelName = targetConfig?.modelName || assistant.modelName || 'gemini-1.5-flash';
         const activeApiKey = targetConfig?.apiKey;
@@ -304,7 +305,7 @@ export class OrchestratorService {
           modelName: activeModelName,
           apiKey: activeApiKey,
           systemPrompt: assistant.systemPrompt || '',
-          knowledgeContext,
+          knowledgeContext: prompt,
           checksum
         });
 
@@ -756,7 +757,23 @@ export class OrchestratorService {
   private async buildContextPrompt(
     conversationId: string,
     assistant: any,
-    options?: { isImage: boolean; caption: string; isOrderPlacementActive: boolean; isSupportDetectionActive: boolean; isPropertyMode?: boolean; isHospitalityMode?: boolean; isTechSoftwareMode?: boolean; isFinancialServiceMode?: boolean; isHealthcareMode?: boolean; isEducationMode?: boolean; isManufacturingMode?: boolean; isLogisticsMode?: boolean }
+    options?: {
+      isImage: boolean;
+      caption: string;
+      isOrderPlacementActive: boolean;
+      isSupportDetectionActive: boolean;
+      isPropertyMode?: boolean;
+      isHospitalityMode?: boolean;
+      isTechSoftwareMode?: boolean;
+      isFinancialServiceMode?: boolean;
+      isHealthcareMode?: boolean;
+      isEducationMode?: boolean;
+      isManufacturingMode?: boolean;
+      isLogisticsMode?: boolean;
+      retrievedProducts?: any[];
+      retrievedQnas?: any[];
+      retrievedChunks?: any[];
+    }
   ): Promise<string> {
     const conversation = await this.prisma.conversation.findUnique({
       where: { id: conversationId },
@@ -765,10 +782,36 @@ export class OrchestratorService {
 
     if (!conversation) return assistant.systemPrompt || '';
 
-    const products = await this.prisma.product.findMany({
-      where: { tenantId: conversation.tenantId, isActive: true },
-      take: 50
-    });
+    let products = options?.retrievedProducts;
+    if (products === undefined) {
+      products = await this.prisma.product.findMany({
+        where: { tenantId: conversation.tenantId, isActive: true },
+        take: 50
+      });
+    }
+
+    let qnaItems = options?.retrievedQnas;
+    if (qnaItems === undefined) {
+      qnaItems = await this.prisma.qnAKnowledgeBase.findMany({
+        where: { tenantId: conversation.tenantId, isActive: true },
+        take: 20
+      });
+    }
+
+    let retrievedChunks = options?.retrievedChunks;
+    if (retrievedChunks === undefined) {
+      const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
+      const freshDocs = await this.prisma.knowledgeDocument.findMany({
+        where: {
+          tenantId: conversation.tenantId,
+          status: 'completed',
+          uploadedAt: { gte: sixtyDaysAgo }
+        },
+        include: { chunks: { take: 10 } },
+        take: 5
+      });
+      retrievedChunks = freshDocs.flatMap(d => d.chunks);
+    }
 
     const history = await this.prisma.message.findMany({
       where: { conversationId },
@@ -776,26 +819,13 @@ export class OrchestratorService {
       take: 10
     });
 
-    // Fetch tenant Q&A knowledge base
-    const qnaItems = await this.prisma.qnAKnowledgeBase.findMany({
-      where: { tenantId: conversation.tenantId, isActive: true },
-      take: 20
+    const activeTags = await this.prisma.label.findMany({
+      where: { tenantId: conversation.tenantId, isActive: true }
     });
 
-    // 60-Day Freshness Document Validation: Filter out knowledge older than 60 days
-    const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
-    const freshDocs = await this.prisma.knowledgeDocument.findMany({
-      where: {
-        tenantId: conversation.tenantId,
-        status: 'completed',
-        uploadedAt: { gte: sixtyDaysAgo }
-      },
-      include: {
-        chunks: { take: 10 }
-      },
-      take: 5
-    });
-
+    // =========================================================================
+    // SECTION 1: STATIC HEADER (100% STATIC PER TENANT - OPTIMIZED FOR PROMPT CACHING)
+    // =========================================================================
     let prompt = `You are a helpful AI assistant for ${conversation.tenant.businessName}.\n`;
 
     prompt += `\n=== MANDATORY ANTI-HALLUCINATION GUARDRAILS ===\n`;
@@ -812,211 +842,6 @@ export class OrchestratorService {
     if (systemPrompt) {
       prompt += `\nYour Core Instructions:\n${systemPrompt}\n`;
     }
-
-    if (options?.isImage) {
-      prompt += `\n--- IMAGE ANALYSIS INSTRUCTIONS ---\n`;
-      prompt += `The customer sent an image. Examine it carefully and describe the product seen in 'imageProductDescription'.\n`;
-      if (options.caption) {
-        prompt += `Caption: "${options.caption}"\n`;
-      }
-    }
-
-    prompt += `\n--- CUSTOMER INFO ---\n`;
-    prompt += `Name: ${conversation.contact.name}\n`;
-    if (conversation.contact.phone) prompt += `Phone: ${conversation.contact.phone}\n`;
-    if (conversation.contact.email) prompt += `Email: ${conversation.contact.email}\n`;
-    prompt += `Stage: ${conversation.contact.stage?.name || 'Lead'}\n`;
-
-    if (conversation.pendingOrderProposal) {
-      prompt += `\n--- ACTIVE PENDING ORDER PROPOSAL ---\n`;
-      prompt += `${JSON.stringify(conversation.pendingOrderProposal)}\n`;
-    }
-
-    if (qnaItems.length > 0) {
-      prompt += `\n--- OFFICIAL BUSINESS Q&A (SOURCE OF TRUTH) ---\n`;
-      qnaItems.forEach(q => {
-        if (q.answer && q.answer.trim()) {
-          prompt += `Q: ${q.question}\nA: ${q.answer}\n`;
-        }
-      });
-    }
-
-    if (conversation.tenant?.websiteSummary && (conversation.tenant.websiteSummary as any).summary) {
-      prompt += `\n--- VERIFIED WEBSITE KNOWLEDGE SUMMARY (${conversation.tenant.websiteUrl || ''}) ---\n`;
-      prompt += `${(conversation.tenant.websiteSummary as any).summary}\n`;
-    }
-
-    if (freshDocs.length > 0) {
-      prompt += `\n--- VERIFIED KNOWLEDGE DOCUMENTS (FRESH <60 DAYS) ---\n`;
-      freshDocs.forEach(doc => {
-        prompt += `Document: ${doc.filename} (Uploaded: ${doc.uploadedAt.toISOString().split('T')[0]})\n`;
-        doc.chunks.forEach(c => {
-          prompt += `Content: ${c.content}\n`;
-        });
-      });
-    }
-
-    // ── Catalog / Listings context (branched by mode) ──────────────────────
-    if (options?.isPropertyMode) {
-      // Property mode: lightweight listing with key property attributes
-      if (products.length > 0) {
-        prompt += `\n--- PROPERTY LISTINGS (Source of Truth for Available Properties) ---\n`;
-        prompt += `IMPORTANT: You are a REAL ESTATE assistant. Do NOT take orders. Help customers find suitable properties and collect their interest.\n`;
-        products.forEach(p => {
-          const attrs = (p.attributes as any) || {};
-          const listingType = (p as any).listingType ? `[${((p as any).listingType as string).toUpperCase()}]` : '';
-          const location = (p as any).location || '';
-          const area = attrs.area || attrs['Area (sqft)'] || '';
-          const bedrooms = attrs.bedrooms || attrs['Bedrooms'] || '';
-          const bathrooms = attrs.bathrooms || attrs['Bathrooms'] || '';
-          prompt += `- ${listingType} ${p.name}`;
-          if (location) prompt += ` | 📍 ${location}`;
-          if (area) prompt += ` | 📐 ${area} sqft`;
-          if (bedrooms) prompt += ` | 🛏 ${bedrooms} BR`;
-          if (bathrooms) prompt += ` | 🚿 ${bathrooms} Bath`;
-          prompt += ` | 💰 BDT ${p.price.toString()}\n`;
-        });
-      }
-    } else if (options?.isHospitalityMode) {
-      // Hospitality mode: hotel rooms & suites with capacity & amenities
-      if (products.length > 0) {
-        prompt += `\n--- HOTEL ROOMS & SUITES (Source of Truth for Available Rooms) ---\n`;
-        prompt += `IMPORTANT: You are a HOTEL & HOSPITALITY reservation assistant. Do NOT create product orders. Help guests check room options, amenities, rates, and collect booking requests.\n`;
-        products.forEach(p => {
-          const attrs = (p.attributes as any) || {};
-          const roomType = attrs.roomType ? `[${String(attrs.roomType).toUpperCase()}]` : '';
-          const capacity = attrs.capacity || attrs.guests || '';
-          const bedType = attrs.bedType || '';
-          const amenities = Array.isArray(attrs.amenities) ? attrs.amenities.join(', ') : (attrs.amenities || '');
-          prompt += `- ${roomType} ${p.name}`;
-          if (capacity) prompt += ` | 👥 Max ${capacity} Guests`;
-          if (bedType) prompt += ` | 🛏 ${bedType}`;
-          if (amenities) prompt += ` | ✨ ${amenities}`;
-          prompt += ` | 💰 BDT ${p.price.toString()}/night\n`;
-        });
-      }
-    } else if (options?.isTechSoftwareMode) {
-      // Tech & Software mode: software plans & tiers with features & demo link
-      if (products.length > 0) {
-        prompt += `\n--- SOFTWARE & TECH PACKAGES (Source of Truth for Available Plans) ---\n`;
-        prompt += `IMPORTANT: You are a SOFTWARE & SAAS CONSULTANT. Do NOT create physical product orders. Help customers understand pricing tiers (Starter, Pro, Enterprise), key features, live demo links, and collect demo requests.\n`;
-        products.forEach(p => {
-          const attrs = (p.attributes as any) || {};
-          const tier = attrs.tier ? `[${String(attrs.tier).toUpperCase()}]` : '';
-          const features = Array.isArray(attrs.features) ? attrs.features.join(', ') : (attrs.features || '');
-          const demoUrl = attrs.demoUrl || attrs.demoLink || '';
-          prompt += `- ${tier} ${p.name}`;
-          if (features) prompt += ` | ⚡ Features: ${features}`;
-          if (demoUrl) prompt += ` | 🔗 Demo: ${demoUrl}`;
-          prompt += ` | 💰 BDT ${p.price.toString()}/mo\n`;
-        });
-      }
-    } else if (options?.isFinancialServiceMode) {
-      // Financial & Consulting mode: service packages with consultation fees, scope of work, & required docs
-      if (products.length > 0) {
-        prompt += `\n--- SERVICE PACKAGES & CONSULTANCY (Source of Truth for Services) ---\n`;
-        prompt += `IMPORTANT: You are a FINANCIAL & PROFESSIONAL SERVICES CONSULTANT. Do NOT create physical product orders. Help clients check consultation packages, fees, scope of work, required documents, and collect consultation booking requests.\n`;
-        products.forEach(p => {
-          const attrs = (p.attributes as any) || {};
-          const scope = attrs.scope || attrs.description || '';
-          const docs = Array.isArray(attrs.requiredDocs) ? attrs.requiredDocs.join(', ') : (attrs.requiredDocs || '');
-          prompt += `- ${p.name}`;
-          if (scope) prompt += ` | 💼 Scope: ${scope}`;
-          if (docs) prompt += ` | 📋 Required Documents: ${docs}`;
-          prompt += ` | 💰 Consultation Fee: BDT ${p.price.toString()}\n`;
-        });
-      }
-    } else if (options?.isHealthcareMode) {
-      // Healthcare & Clinic mode: doctors, specialties, visiting hours, & consultation fees
-      if (products.length > 0) {
-        prompt += `\n--- DOCTORS, CLINIC SERVICES & APPOINTMENTS (Source of Truth for Medical Care) ---\n`;
-        prompt += `IMPORTANT: You are a MEDICAL & CLINIC RECEPTION ASSISTANT. Do NOT create physical product orders. Help patients check doctor availability, specializations, visiting hours, consultation fees, and collect appointment booking requests.\n`;
-        products.forEach(p => {
-          const attrs = (p.attributes as any) || {};
-          const spec = attrs.specialization || attrs.specialty || '';
-          const hours = attrs.visitingHours || attrs.schedule || '';
-          prompt += `- Dr. ${p.name}`;
-          if (spec) prompt += ` | 🩺 Specialty: ${spec}`;
-          if (hours) prompt += ` | 🕒 Visiting Hours: ${hours}`;
-          prompt += ` | 💰 Consultation Fee: BDT ${p.price.toString()}\n`;
-        });
-      }
-    } else if (options?.isEducationMode) {
-      // Education & Academy mode: courses, batches, schedule, fees & syllabus
-      if (products.length > 0) {
-        prompt += `\n--- COURSES & ACADEMIC PROGRAMS (Source of Truth for Education & Academies) ---\n`;
-        prompt += `IMPORTANT: You are an ACADEMIC COUNSELOR & ADMISSIONS ASSISTANT. Do NOT create physical product orders. Help students check course details, batch schedules, fees, syllabus overview, and collect course admission inquiry requests.\n`;
-        products.forEach(p => {
-          const attrs = (p.attributes as any) || {};
-          const duration = attrs.duration || attrs.courseDuration || '';
-          const schedule = attrs.classSchedule || attrs.batchSchedule || '';
-          const syllabus = attrs.syllabusUrl || attrs.syllabusLink || '';
-          prompt += `- ${p.name}`;
-          if (duration) prompt += ` | ⏳ Duration: ${duration}`;
-          if (schedule) prompt += ` | 📅 Batch Schedule: ${schedule}`;
-          if (syllabus) prompt += ` | 📚 Syllabus: ${syllabus}`;
-          prompt += ` | 💰 Course Fee: BDT ${p.price.toString()}\n`;
-        });
-      }
-    } else if (options?.isManufacturingMode) {
-      // Manufacturing & Industrial mode: wholesale products, unit prices, MOQ, & spec sheets
-      if (products.length > 0) {
-        prompt += `\n--- B2B WHOLESALE & FACTORY PRODUCTS (Source of Truth for Manufacturing & Industrial) ---\n`;
-        prompt += `IMPORTANT: You are a B2B FACTORY & WHOLESALE SALES ASSISTANT. Do NOT create physical retail orders. Help wholesale buyers check unit prices, Minimum Order Quantity (MOQ), product specifications, and collect bulk RFQ quotation requests.\n`;
-        products.forEach(p => {
-          const attrs = (p.attributes as any) || {};
-          const moq = attrs.moq || attrs.minimumOrderQty || attrs.minimumOrderQuantity || '';
-          const spec = attrs.specifications || attrs.specSheet || attrs.material || '';
-          prompt += `- ${p.name}`;
-          if (moq) prompt += ` | 📦 MOQ: ${moq}`;
-          if (spec) prompt += ` | 🏭 Specs: ${spec}`;
-          prompt += ` | 💰 Wholesale Unit Price: BDT ${p.price.toString()}\n`;
-        });
-      }
-    } else if (options?.isLogisticsMode) {
-      // Logistics & Shipping mode: freight routes, fleet vehicle capacity, rates & tracking
-      if (products.length > 0) {
-        prompt += `\n--- LOGISTICS, FREIGHT & SHIPMENT SERVICES (Source of Truth for Logistics & Infrastructure) ---\n`;
-        prompt += `IMPORTANT: You are a LOGISTICS, FREIGHT & DISPATCH ASSISTANT. Do NOT create physical retail orders. Help shippers check cargo routes, vehicle/fleet capacity (Tons/CBM), freight rates, tracking info, and collect shipment booking requests.\n`;
-        products.forEach(p => {
-          const attrs = (p.attributes as any) || {};
-          const route = attrs.route || attrs.originDestination || '';
-          const capacity = attrs.capacity || attrs.vehicleType || attrs.weightLimit || '';
-          const rate = attrs.rate || attrs.freightRate || '';
-          prompt += `- ${p.name}`;
-          if (route) prompt += ` | 🛣 Route: ${route}`;
-          if (capacity) prompt += ` | 🚛 Fleet/Capacity: ${capacity}`;
-          if (rate) prompt += ` | 💰 Freight Rate: BDT ${p.price.toString()}`;
-          prompt += `\n`;
-        });
-      }
-    } else {
-      // eCommerce mode: standard product catalog
-      if (products.length > 0) {
-        prompt += `\n--- PRODUCT CATALOG ---\n`;
-        products.forEach(p => {
-          prompt += `- ${p.name}: BDT ${p.price.toString()} (SKU: ${p.sku || 'N/A'})\n`;
-        });
-      }
-    }
-
-    prompt += `\n--- CONVERSATION HISTORY ---\n`;
-    [...history].reverse().forEach(msg => {
-      const sender = msg.direction === 'inbound' ? 'Customer' : 'Assistant';
-      let text = '';
-      if (typeof msg.content === 'object' && msg.content !== null) {
-        text = (msg.content as any).text || (msg.content as any).caption || '';
-      } else {
-        text = String(msg.content);
-      }
-      if (text) {
-        prompt += `${sender}: ${text}\n`;
-      }
-    });
-
-    const activeTags = await this.prisma.label.findMany({
-      where: { tenantId: conversation.tenantId, isActive: true }
-    });
 
     if (activeTags.length > 0) {
       prompt += `\n--- CONVERSATION TAGS RULES ---\n`;
@@ -1126,6 +951,213 @@ export class OrchestratorService {
     prompt += `  "supportReason": "general | complaint | refund_return | delivery_issue",\n`;
     prompt += `  "matchedTags": ["tag name 1", "tag name 2"]\n`;
     prompt += `}\n`;
+
+    // =========================================================================
+    // SECTION 2: DYNAMIC FOOTER (DYNAMIC RETRIEVED DATA + CUSTOMER CONTEXT)
+    // =========================================================================
+    if (options?.isImage) {
+      prompt += `\n--- IMAGE ANALYSIS INSTRUCTIONS ---\n`;
+      prompt += `The customer sent an image. Examine it carefully and describe the product seen in 'imageProductDescription'.\n`;
+      if (options.caption) {
+        prompt += `Caption: "${options.caption}"\n`;
+      }
+    }
+
+    prompt += `\n--- CUSTOMER INFO ---\n`;
+    prompt += `Name: ${conversation.contact.name}\n`;
+    if (conversation.contact.phone) prompt += `Phone: ${conversation.contact.phone}\n`;
+    if (conversation.contact.email) prompt += `Email: ${conversation.contact.email}\n`;
+    prompt += `Stage: ${conversation.contact.stage?.name || 'Lead'}\n`;
+
+    if (conversation.pendingOrderProposal) {
+      prompt += `\n--- ACTIVE PENDING ORDER PROPOSAL ---\n`;
+      prompt += `${JSON.stringify(conversation.pendingOrderProposal)}\n`;
+    }
+
+    if (qnaItems.length > 0) {
+      prompt += `\n--- DYNAMICALLY INDEXED BUSINESS Q&A (MATCHED SOURCE OF TRUTH) ---\n`;
+      qnaItems.forEach(q => {
+        if (q.answer && q.answer.trim()) {
+          prompt += `Q: ${q.question}\nA: ${q.answer}\n`;
+        }
+      });
+    }
+
+    let websiteSummaryText = '';
+    if (conversation.tenant?.websiteSummary) {
+      const ws: any = conversation.tenant.websiteSummary;
+      if (typeof ws === 'string') {
+        try {
+          const parsed = JSON.parse(ws);
+          websiteSummaryText = parsed.summary || parsed.text || ws;
+        } catch {
+          websiteSummaryText = ws;
+        }
+      } else if (typeof ws === 'object' && ws !== null) {
+        websiteSummaryText = ws.summary || ws.text || JSON.stringify(ws);
+      }
+    }
+
+    if (websiteSummaryText && websiteSummaryText.trim()) {
+      prompt += `\n--- VERIFIED WEBSITE KNOWLEDGE SUMMARY (${conversation.tenant.websiteUrl || ''}) ---\n`;
+      prompt += `${websiteSummaryText.trim()}\n`;
+    }
+
+    if (retrievedChunks.length > 0) {
+      prompt += `\n--- DYNAMICALLY INDEXED KNOWLEDGE DOCS (VECTOR RAG MATCHES) ---\n`;
+      retrievedChunks.forEach((c: any) => {
+        prompt += `Content: ${c.content}\n`;
+      });
+    }
+
+    // ── Catalog / Listings context (branched by mode) ──────────────────────
+    if (options?.isPropertyMode) {
+      if (products.length > 0) {
+        prompt += `\n--- PROPERTY LISTINGS (Source of Truth for Available Properties) ---\n`;
+        prompt += `IMPORTANT: You are a REAL ESTATE assistant. Do NOT take orders. Help customers find suitable properties and collect their interest.\n`;
+        products.forEach(p => {
+          const attrs = (p.attributes as any) || {};
+          const listingType = (p as any).listingType ? `[${((p as any).listingType as string).toUpperCase()}]` : '';
+          const location = (p as any).location || '';
+          const area = attrs.area || attrs['Area (sqft)'] || '';
+          const bedrooms = attrs.bedrooms || attrs['Bedrooms'] || '';
+          const bathrooms = attrs.bathrooms || attrs['Bathrooms'] || '';
+          prompt += `- ${listingType} ${p.name}`;
+          if (location) prompt += ` | 📍 ${location}`;
+          if (area) prompt += ` | 📐 ${area} sqft`;
+          if (bedrooms) prompt += ` | 🛏 ${bedrooms} BR`;
+          if (bathrooms) prompt += ` | 🚿 ${bathrooms} Bath`;
+          prompt += ` | 💰 BDT ${p.price.toString()}\n`;
+        });
+      }
+    } else if (options?.isHospitalityMode) {
+      if (products.length > 0) {
+        prompt += `\n--- HOTEL ROOMS & SUITES (Source of Truth for Available Rooms) ---\n`;
+        prompt += `IMPORTANT: You are a HOTEL & HOSPITALITY reservation assistant. Do NOT create product orders. Help guests check room options, amenities, rates, and collect booking requests.\n`;
+        products.forEach(p => {
+          const attrs = (p.attributes as any) || {};
+          const roomType = attrs.roomType ? `[${String(attrs.roomType).toUpperCase()}]` : '';
+          const capacity = attrs.capacity || attrs.guests || '';
+          const bedType = attrs.bedType || '';
+          const amenities = Array.isArray(attrs.amenities) ? attrs.amenities.join(', ') : (attrs.amenities || '');
+          prompt += `- ${roomType} ${p.name}`;
+          if (capacity) prompt += ` | 👥 Max ${capacity} Guests`;
+          if (bedType) prompt += ` | 🛏 ${bedType}`;
+          if (amenities) prompt += ` | ✨ ${amenities}`;
+          prompt += ` | 💰 BDT ${p.price.toString()}/night\n`;
+        });
+      }
+    } else if (options?.isTechSoftwareMode) {
+      if (products.length > 0) {
+        prompt += `\n--- SOFTWARE & TECH PACKAGES (Source of Truth for Available Plans) ---\n`;
+        prompt += `IMPORTANT: You are a SOFTWARE & SAAS CONSULTANT. Do NOT create physical product orders. Help customers understand pricing tiers (Starter, Pro, Enterprise), key features, live demo links, and collect demo requests.\n`;
+        products.forEach(p => {
+          const attrs = (p.attributes as any) || {};
+          const tier = attrs.tier ? `[${String(attrs.tier).toUpperCase()}]` : '';
+          const features = Array.isArray(attrs.features) ? attrs.features.join(', ') : (attrs.features || '');
+          const demoUrl = attrs.demoUrl || attrs.demoLink || '';
+          prompt += `- ${tier} ${p.name}`;
+          if (features) prompt += ` | ⚡ Features: ${features}`;
+          if (demoUrl) prompt += ` | 🔗 Demo: ${demoUrl}`;
+          prompt += ` | 💰 BDT ${p.price.toString()}/mo\n`;
+        });
+      }
+    } else if (options?.isFinancialServiceMode) {
+      if (products.length > 0) {
+        prompt += `\n--- SERVICE PACKAGES & CONSULTANCY (Source of Truth for Services) ---\n`;
+        prompt += `IMPORTANT: You are a FINANCIAL & PROFESSIONAL SERVICES CONSULTANT. Do NOT create physical product orders. Help clients check consultation packages, fees, scope of work, required documents, and collect consultation booking requests.\n`;
+        products.forEach(p => {
+          const attrs = (p.attributes as any) || {};
+          const scope = attrs.scope || attrs.description || '';
+          const docs = Array.isArray(attrs.requiredDocs) ? attrs.requiredDocs.join(', ') : (attrs.requiredDocs || '');
+          prompt += `- ${p.name}`;
+          if (scope) prompt += ` | 💼 Scope: ${scope}`;
+          if (docs) prompt += ` | 📋 Required Documents: ${docs}`;
+          prompt += ` | 💰 Consultation Fee: BDT ${p.price.toString()}\n`;
+        });
+      }
+    } else if (options?.isHealthcareMode) {
+      if (products.length > 0) {
+        prompt += `\n--- DOCTORS, CLINIC SERVICES & APPOINTMENTS (Source of Truth for Medical Care) ---\n`;
+        prompt += `IMPORTANT: You are a MEDICAL & CLINIC RECEPTION ASSISTANT. Do NOT create physical product orders. Help patients check doctor availability, specializations, visiting hours, consultation fees, and collect appointment booking requests.\n`;
+        products.forEach(p => {
+          const attrs = (p.attributes as any) || {};
+          const spec = attrs.specialization || attrs.specialty || '';
+          const hours = attrs.visitingHours || attrs.schedule || '';
+          prompt += `- Dr. ${p.name}`;
+          if (spec) prompt += ` | 🩺 Specialty: ${spec}`;
+          if (hours) prompt += ` | 🕒 Visiting Hours: ${hours}`;
+          prompt += ` | 💰 Consultation Fee: BDT ${p.price.toString()}\n`;
+        });
+      }
+    } else if (options?.isEducationMode) {
+      if (products.length > 0) {
+        prompt += `\n--- COURSES & ACADEMIC PROGRAMS (Source of Truth for Education & Academies) ---\n`;
+        prompt += `IMPORTANT: You are an ACADEMIC COUNSELOR & ADMISSIONS ASSISTANT. Do NOT create physical product orders. Help students check course details, batch schedules, fees, syllabus overview, and collect course admission inquiry requests.\n`;
+        products.forEach(p => {
+          const attrs = (p.attributes as any) || {};
+          const duration = attrs.duration || attrs.courseDuration || '';
+          const schedule = attrs.classSchedule || attrs.batchSchedule || '';
+          const syllabus = attrs.syllabusUrl || attrs.syllabusLink || '';
+          prompt += `- ${p.name}`;
+          if (duration) prompt += ` | ⏳ Duration: ${duration}`;
+          if (schedule) prompt += ` | 📅 Batch Schedule: ${schedule}`;
+          if (syllabus) prompt += ` | 📚 Syllabus: ${syllabus}`;
+          prompt += ` | 💰 Course Fee: BDT ${p.price.toString()}\n`;
+        });
+      }
+    } else if (options?.isManufacturingMode) {
+      if (products.length > 0) {
+        prompt += `\n--- B2B WHOLESALE & FACTORY PRODUCTS (Source of Truth for Manufacturing & Industrial) ---\n`;
+        prompt += `IMPORTANT: You are a B2B FACTORY & WHOLESALE SALES ASSISTANT. Do NOT create physical retail orders. Help wholesale buyers check unit prices, Minimum Order Quantity (MOQ), product specifications, and collect bulk RFQ quotation requests.\n`;
+        products.forEach(p => {
+          const attrs = (p.attributes as any) || {};
+          const moq = attrs.moq || attrs.minimumOrderQty || attrs.minimumOrderQuantity || '';
+          const spec = attrs.specifications || attrs.specSheet || attrs.material || '';
+          prompt += `- ${p.name}`;
+          if (moq) prompt += ` | 📦 MOQ: ${moq}`;
+          if (spec) prompt += ` | 🏭 Specs: ${spec}`;
+          prompt += ` | 💰 Wholesale Unit Price: BDT ${p.price.toString()}\n`;
+        });
+      }
+    } else if (options?.isLogisticsMode) {
+      if (products.length > 0) {
+        prompt += `\n--- LOGISTICS, FREIGHT & SHIPMENT SERVICES (Source of Truth for Logistics & Infrastructure) ---\n`;
+        prompt += `IMPORTANT: You are a LOGISTICS, FREIGHT & DISPATCH ASSISTANT. Do NOT create physical retail orders. Help shippers check cargo routes, vehicle/fleet capacity (Tons/CBM), freight rates, tracking info, and collect shipment booking requests.\n`;
+        products.forEach(p => {
+          const attrs = (p.attributes as any) || {};
+          const route = attrs.route || attrs.originDestination || '';
+          const capacity = attrs.capacity || attrs.vehicleType || attrs.weightLimit || '';
+          const rate = attrs.rate || attrs.freightRate || '';
+          prompt += `- ${p.name}`;
+          if (route) prompt += ` | 🛣 Route: ${route}`;
+          if (capacity) prompt += ` | 🚛 Fleet/Capacity: ${capacity}`;
+          if (rate) prompt += ` | 💰 Freight Rate: BDT ${p.price.toString()}`;
+          prompt += `\n`;
+        });
+      }
+    } else {
+      if (products.length > 0) {
+        prompt += `\n--- DYNAMICALLY INDEXED PRODUCT CATALOG ---\n`;
+        products.forEach(p => {
+          prompt += `- ${p.name}: BDT ${p.price.toString()} (SKU: ${p.sku || 'N/A'})\n`;
+        });
+      }
+    }
+
+    prompt += `\n--- CONVERSATION HISTORY ---\n`;
+    [...history].reverse().forEach(msg => {
+      const sender = msg.direction === 'inbound' ? 'Customer' : 'Assistant';
+      let text = '';
+      if (typeof msg.content === 'object' && msg.content !== null) {
+        text = (msg.content as any).text || (msg.content as any).caption || '';
+      } else {
+        text = String(msg.content);
+      }
+      if (text) {
+        prompt += `${sender}: ${text}\n`;
+      }
+    });
 
     return prompt;
   }
