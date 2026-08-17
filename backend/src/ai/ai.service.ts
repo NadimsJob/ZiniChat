@@ -661,55 +661,60 @@ export class AiService {
   async searchRelevantProducts(tenantId: string, queryText: string, limit = 5): Promise<any[]> {
     if (!tenantId || !queryText) return [];
 
-    const cleanText = queryText.trim().toLowerCase();
-    const genericGreetings = ['hi', 'hello', 'hey', 'salam', 'assalamu alaikum', 'hola', 'test', 'hlw', 'hlo', 'kemon achen', 'good morning', 'good evening'];
-    
-    // If generic greeting or ultra-short, do not load product catalog
-    if (genericGreetings.includes(cleanText) || cleanText.length <= 3) {
+    try {
+      const cleanText = queryText.trim().toLowerCase();
+      const genericGreetings = ['hi', 'hello', 'hey', 'salam', 'assalamu alaikum', 'hola', 'test', 'hlw', 'hlo', 'kemon achen', 'good morning', 'good evening'];
+      
+      // If generic greeting or ultra-short, do not load product catalog
+      if (genericGreetings.includes(cleanText) || cleanText.length <= 3) {
+        return [];
+      }
+
+      // Extract significant search keywords (>2 chars)
+      const keywords = cleanText
+        .replace(/[^\w\s\u0980-\u09FF]/gi, ' ')
+        .split(/\s+/)
+        .filter(w => w.length > 2 && !['the', 'and', 'for', 'you', 'have', 'what', 'price', 'cost', 'dam', 'koto', 'naki', 'ache'].includes(w));
+
+      const orConditions: any[] = [];
+      keywords.forEach(kw => {
+        orConditions.push({ name: { contains: kw, mode: 'insensitive' } });
+        orConditions.push({ sku: { contains: kw, mode: 'insensitive' } });
+        orConditions.push({ description: { contains: kw, mode: 'insensitive' } });
+        orConditions.push({ location: { contains: kw, mode: 'insensitive' } });
+      });
+
+      if (orConditions.length > 0) {
+        const matched = await this.prisma.product.findMany({
+          where: {
+            tenantId,
+            isActive: true,
+            OR: orConditions
+          },
+          take: limit
+        });
+
+        if (matched.length > 0) {
+          return matched;
+        }
+      }
+
+      // Fallback: If query mentions product/catalog terms, return top `limit` products
+      const productIntentTerms = ['product', 'item', 'catalog', 'price', 'list', 'buy', 'order', 'room', 'property', 'doctor', 'course', 'package', 'shipping', 'দাম', 'প্রোডাক্ট', 'মাল', 'অর্ডার', 'ক্যাটালগ', 'তালিকা', 'সার্ভিস', 'service'];
+      const looksLikeProductQuery = productIntentTerms.some(term => cleanText.includes(term));
+
+      if (looksLikeProductQuery) {
+        return await this.prisma.product.findMany({
+          where: { tenantId, isActive: true },
+          take: limit
+        });
+      }
+
+      return [];
+    } catch (err: any) {
+      this.logger.error(`Error in searchRelevantProducts: ${err.message}`);
       return [];
     }
-
-    // Extract significant search keywords (>2 chars)
-    const keywords = cleanText
-      .replace(/[^\w\s\u0980-\u09FF]/gi, ' ')
-      .split(/\s+/)
-      .filter(w => w.length > 2 && !['the', 'and', 'for', 'you', 'have', 'what', 'price', 'cost', 'dam', 'koto', 'naki', 'ache', 'koto'].includes(w));
-
-    const orConditions: any[] = [];
-    keywords.forEach(kw => {
-      orConditions.push({ name: { contains: kw, mode: 'insensitive' } });
-      orConditions.push({ sku: { contains: kw, mode: 'insensitive' } });
-      orConditions.push({ category: { contains: kw, mode: 'insensitive' } });
-      orConditions.push({ description: { contains: kw, mode: 'insensitive' } });
-    });
-
-    if (orConditions.length > 0) {
-      const matched = await this.prisma.product.findMany({
-        where: {
-          tenantId,
-          isActive: true,
-          OR: orConditions
-        },
-        take: limit
-      });
-
-      if (matched.length > 0) {
-        return matched;
-      }
-    }
-
-    // Fallback: If query mentions product/catalog terms, return top `limit` products
-    const productIntentTerms = ['product', 'item', 'catalog', 'price', 'list', 'buy', 'order', 'room', 'property', 'doctor', 'course', 'package', 'shipping', 'দাম', 'প্রোডাক্ট', 'মাল', 'অর্ডার', 'ক্যাটালগ', 'তালিকা'];
-    const looksLikeProductQuery = productIntentTerms.some(term => cleanText.includes(term));
-
-    if (looksLikeProductQuery) {
-      return this.prisma.product.findMany({
-        where: { tenantId, isActive: true },
-        take: limit
-      });
-    }
-
-    return [];
   }
 
   /**
@@ -718,42 +723,47 @@ export class AiService {
   async searchRelevantQnas(tenantId: string, queryText: string, limit = 5): Promise<any[]> {
     if (!tenantId) return [];
 
-    const allQnas = await this.prisma.qnAKnowledgeBase.findMany({
-      where: { tenantId, isActive: true }
-    });
-
-    if (allQnas.length === 0) return [];
-
-    const cleanText = (queryText || '').trim().toLowerCase();
-    if (!cleanText || ['hi', 'hello', 'hey', 'salam', 'test'].includes(cleanText)) {
-      // For generic greetings, include only default or top 2 Q&As
-      return allQnas.filter(q => q.answer && q.answer.trim()).slice(0, 2);
-    }
-
-    const keywords = cleanText
-      .replace(/[^\w\s\u0980-\u09FF]/gi, ' ')
-      .split(/\s+/)
-      .filter(w => w.length > 2);
-
-    const scored = allQnas.map(q => {
-      let score = 0;
-      const qText = `${q.question} ${q.answer}`.toLowerCase();
-      keywords.forEach(kw => {
-        if (qText.includes(kw)) score += 1;
+    try {
+      const allQnas = await this.prisma.qnAKnowledgeBase.findMany({
+        where: { tenantId, isActive: true }
       });
-      return { qna: q, score };
-    });
 
-    // Sort by score descending
-    scored.sort((a, b) => b.score - a.score);
+      if (allQnas.length === 0) return [];
 
-    // Return items with score > 0, or top default Q&As if none matched
-    const matches = scored.filter(s => s.score > 0).map(s => s.qna);
-    if (matches.length > 0) {
-      return matches.slice(0, limit);
+      const cleanText = (queryText || '').trim().toLowerCase();
+      if (!cleanText || ['hi', 'hello', 'hey', 'salam', 'test'].includes(cleanText)) {
+        // For generic greetings, include only default or top 2 Q&As
+        return allQnas.filter(q => q.answer && q.answer.trim()).slice(0, 2);
+      }
+
+      const keywords = cleanText
+        .replace(/[^\w\s\u0980-\u09FF]/gi, ' ')
+        .split(/\s+/)
+        .filter(w => w.length > 2);
+
+      const scored = allQnas.map(q => {
+        let score = 0;
+        const qText = `${q.question} ${q.answer}`.toLowerCase();
+        keywords.forEach(kw => {
+          if (qText.includes(kw)) score += 1;
+        });
+        return { qna: q, score };
+      });
+
+      // Sort by score descending
+      scored.sort((a, b) => b.score - a.score);
+
+      // Return items with score > 0, or top default Q&As if none matched
+      const matches = scored.filter(s => s.score > 0).map(s => s.qna);
+      if (matches.length > 0) {
+        return matches.slice(0, limit);
+      }
+
+      return allQnas.filter(q => q.answer && q.answer.trim()).slice(0, limit);
+    } catch (err: any) {
+      this.logger.error(`Error in searchRelevantQnas: ${err.message}`);
+      return [];
     }
-
-    return allQnas.filter(q => q.answer && q.answer.trim()).slice(0, limit);
   }
 }
 
