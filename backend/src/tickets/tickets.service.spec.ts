@@ -123,4 +123,18 @@ describe('TicketsService', () => {
       await expect(service.getTicket('invalid-id', { role: 'superadmin' })).rejects.toThrow(NotFoundException);
     });
   });
+
+  describe('unread ticket notifications', () => {
+    it('should return unread ticket count for user', async () => {
+      mockPrisma.notification = { count: jest.fn().mockResolvedValue(3), updateMany: jest.fn().mockResolvedValue({ count: 3 }) };
+      const res = await service.getUnreadTicketCount({ id: 'u-1' });
+      expect(res).toEqual({ unreadCount: 3 });
+    });
+
+    it('should mark unread ticket notifications as read', async () => {
+      mockPrisma.notification = { count: jest.fn().mockResolvedValue(3), updateMany: jest.fn().mockResolvedValue({ count: 3 }) };
+      const res = await service.markTicketNotificationsAsRead({ id: 'u-1' });
+      expect(res).toEqual({ success: true });
+    });
+  });
 });

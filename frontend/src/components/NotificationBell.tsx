@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Cookies from 'js-cookie';
 import { io, Socket } from 'socket.io-client';
-import { Bell, Check, X, ShieldAlert, Sparkles, Inbox as InboxIcon, Info } from 'lucide-react';
+import { Bell, Check, X, ShieldAlert, Sparkles, Inbox as InboxIcon, Info, MessageSquare } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageProvider';
 
 interface Notification {
@@ -130,6 +130,8 @@ export default function NotificationBell() {
         return <ShieldAlert className="w-4 h-4 text-amber-500" />;
       case 'inbox':
         return <InboxIcon className="w-4 h-4 text-primary" />;
+      case 'ticket':
+        return <MessageSquare className="w-4 h-4 text-blue-500" />;
       default:
         return <Info className="w-4 h-4 text-zinc-400" />;
     }

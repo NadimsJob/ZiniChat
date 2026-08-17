@@ -16,6 +16,16 @@ export class TicketsController {
     return this.ticketsService.getTickets(req.user);
   }
 
+  @Get('unread-count')
+  async getUnreadCount(@Request() req: any) {
+    return this.ticketsService.getUnreadTicketCount(req.user);
+  }
+
+  @Post('mark-read')
+  async markRead(@Request() req: any) {
+    return this.ticketsService.markTicketNotificationsAsRead(req.user);
+  }
+
   @Get(':id')
   async getTicket(@Param('id') id: string, @Request() req: any) {
     if (id === 'admins') {

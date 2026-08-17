@@ -27,6 +27,20 @@ export default function SuperadminTicketsPage() {
         headers: { Authorization: `Bearer ${token}` }
       });
       setTickets(res.data);
+
+      // Auto mark ticket notifications as read
+      axios.post(`${process.env.NEXT_PUBLIC_API_URL}/tickets/mark-read`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      }).catch(() => {});
+
+      // Check URL query for ticket ID
+      if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search);
+        const ticketId = urlParams.get('id');
+        if (ticketId) {
+          fetchTicketDetails(ticketId);
+        }
+      }
     } catch (error) {
       console.error(error);
     } finally {

@@ -225,7 +225,7 @@ export default function OrdersPage() {
  <div className="flex gap-2">
  <div className="relative flex-1">
  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
- <input type="text" placeholder={language === 'en' ? 'Search orders...' : '鄏�旭鄑温式鄏擒旭 鄏遤�鄏��鄑�成...'} className="w-full pl-9 pr-3 py-2 bg-background border border-border rounded-lg text-[13px] focus:border-primary focus:outline-none text-foreground" />
+ <input type="text" placeholder={language === 'en' ? 'Search orders...' : (isPropertyMode ? 'ইনকোয়ারি খুঁজুন...' : isHospitalityMode ? 'রিজার্ভেশন খুঁজুন...' : isTechSoftwareMode ? 'রিকুয়েস্ট খুঁজুন...' : 'অর্ডার খুঁজুন...')} className="w-full pl-9 pr-3 py-2 bg-background border border-border rounded-lg text-[13px] focus:border-primary focus:outline-none text-foreground" />
  </div>
  </div>
  </div>
@@ -236,7 +236,7 @@ export default function OrdersPage() {
  ) : orders.length === 0 ? (
  <div className="text-center p-4 text-muted-foreground">
  <ShoppingBag className="w-8 h-8 mx-auto mb-3 opacity-20" />
- <p className="text-[13px]">{language === 'en' ? 'No orders found' : '鄏𨫼�鄏兒� 鄏�旭鄑温式鄏擒旭 鄏兒�鄏�'}</p>
+ <p className="text-[13px]">{language === 'en' ? 'No orders found' : (isPropertyMode ? 'কোন ইনকোয়ারি পাওয়া যায়নি' : isHospitalityMode ? 'কোন রিজার্ভেশন পাওয়া যায়নি' : isTechSoftwareMode ? 'কোন ডেমো রিকুয়েস্ট পাওয়া যায়নি' : 'কোন অর্ডার পাওয়া যায়নি')}</p>
  </div>
  ) : (
  orders.map(order => (

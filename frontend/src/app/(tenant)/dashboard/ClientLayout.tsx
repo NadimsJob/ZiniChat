@@ -69,6 +69,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
  const [userProfile, setUserProfile] = useState<any>(null);
  const [inboxUnreadCount, setInboxUnreadCount] = useState(0);
+ const [ticketUnreadCount, setTicketUnreadCount] = useState(0);
  const [showTrialModal, setShowTrialModal] = useState(false);
  const [showFeatureLockedModal, setShowFeatureLockedModal] = useState(false);
  const [allowedFeatures, setAllowedFeatures] = useState<string[]>(['*']);
@@ -170,199 +171,267 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  return response;
  };
  
- const fetchUserAndQuotas = async () => {
- try {
- const [userRes, quotasRes, unreadRes] = await Promise.all([
- fetch(`${API}/auth/me`, { headers: { 'Authorization': `Bearer ${token}` } }),
- fetch(`${API}/billing/quotas`, { headers: { 'Authorization': `Bearer ${token}` } }),
- fetch(`${API}/inbox/unread-count`, { headers: { 'Authorization': `Bearer ${token}` } })
- ]);
-  if (userRes.ok) {
-  const userData = await userRes.json();
-  setUserProfile(userData);
-
-  // Check Modes
-  if (userData.tenant?.businessNature) {
+  const fetchUserAndQuotas = async () => {
     try {
-      const bnRes = await fetch(`${API}/business-natures`);
-      if (bnRes.ok) {
-        const natures: any[] = await bnRes.json();
-        const matched = natures.find((n: any) => n.name === userData.tenant.businessNature);
-        setIsPropertyMode(matched?.isPropertyMode ?? false);
-        setIsHospitalityMode(matched?.isHospitalityMode ?? false);
-        setIsTechSoftwareMode(matched?.isTechSoftwareMode ?? false);
-        setIsFinancialServiceMode(matched?.isFinancialServiceMode ?? false);
-        setIsHealthcareMode(matched?.isHealthcareMode ?? false);
-        setIsEducationMode(matched?.isEducationMode ?? false);
-        setIsManufacturingMode(matched?.isManufacturingMode ?? false);
-        setIsLogisticsMode(matched?.isLogisticsMode ?? false);
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  }
+      const [userRes, quotasRes, unreadRes, ticketUnreadRes] = await Promise.all([
+        fetch(`${API}/auth/me`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch(`${API}/billing/quotas`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch(`${API}/inbox/unread-count`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch(`${API}/tickets/unread-count`, { headers: { 'Authorization': `Bearer ${token}` } })
+      ]);
+      if (userRes.ok) {
+        const userData = await userRes.json();
+        setUserProfile(userData);
 
-  if (userData.tenant && userData.tenant.isOnboarded === false && !window.location.pathname.includes('/onboarding')) {
-  router.push('/dashboard/onboarding');
-  }
-
-  // Global Spotlight Tour for New Tenants
-  if (typeof window !== 'undefined') {
-    const tourSeen = localStorage.getItem('zinichat_global_tour_seen') === 'true';
-    if (!tourSeen) {
-      setTimeout(() => {
-        try {
-          const driverObj = driver({
-            showProgress: true,
-            animate: true,
-            onDestroyed: () => {
-              localStorage.setItem('zinichat_global_tour_seen', 'true');
-            },
-            steps: [
-              { 
-                element: '#sidebar-inbox', 
-                popover: { 
-                  title: language === 'en' ? '📬 Live Inbox' : '📬 লাইভ ইনবক্স', 
-                  description: language === 'en' ? 'Manage customer conversations from WhatsApp, Facebook, and Instagram in real-time.' : 'হোয়াটসঅ্যাপ, ফেসবুক ও ইনস্টাগ্রামের সমস্ত কাস্টমার চ্যাট এক ইনবক্সে হ্যান্ডেল করুন।',
-                  side: "right", 
-                  align: 'start' 
-                } 
-              },
-              { 
-                element: '#sidebar-ai-training', 
-                popover: { 
-                  title: language === 'en' ? '🤖 AI Assistant Training' : '🤖 এআই ট্রেইনিং', 
-                  description: language === 'en' ? 'Train your AI assistant with your business Q&As, products, and persona.' : 'আপনার ব্যবসার তথ্য ও প্রম্পট দিয়ে এআই-কে স্মার্ট করার ট্রেনিং দিন।',
-                  side: "right", 
-                  align: 'start' 
-                } 
-              },
-              { 
-                element: '#sidebar-inboxes', 
-                popover: { 
-                  title: language === 'en' ? '🔌 Channel Integration' : '🔌 চ্যানেল ইন্টিগ্রেশন', 
-                  description: language === 'en' ? 'Connect Meta Official WhatsApp API, Facebook Pages, or Instagram DMs.' : 'অফিসিয়াল হোয়াটসঅ্যাপ এপিআই বা সামাজিক মাধ্যম কানেক্ট করুন।',
-                  side: "right", 
-                  align: 'start' 
-                } 
-              }
-            ]
-          });
-          driverObj.drive();
-        } catch (e) {
-          console.error('Driver.js tour error', e);
-        }
-      }, 1200);
-    }
-  }
- }
- if (quotasRes.ok) {
- const quotas = await quotasRes.json();
- if (quotas.features) {
- setAllowedFeatures(quotas.features);
- }
- }
- if (unreadRes.ok) {
- const unreadData = await unreadRes.json();
- setInboxUnreadCount(unreadData.unreadCount || 0);
- }
- } catch (err) { console.error(err); }
- };
- if (token) fetchUserAndQuotas();
-
- // Connect to Inbox Socket for global unread badge & bottom-right real-time toast
- let socket: any;
- if (token) {
- import('socket.io-client').then(({ io }) => {
- socket = io(`${API}/inbox`, { 
- auth: { token },
- transports: ['polling', 'websocket'] 
- });
- socket.on('new_message', (data: any) => {
- // If we are not currently on the inbox page, increment badge & show bottom-right toast
- if (!window.location.pathname.startsWith('/dashboard/inbox')) {
- setInboxUnreadCount(prev => prev + 1);
-
-        const senderName =
-          data.contact?.name ||
-          data.contact?.pushName ||
-          data.conversation?.contact?.name ||
-          data.conversation?.contactName ||
-          data.contactName ||
-          data.message?.senderName ||
-          data.contact?.phoneNo ||
-          data.contact?.phoneNumber ||
-          data.conversation?.externalThreadId ||
-          'New Contact';
-
-        let msgSnippet = data.text || data.message?.content?.body || data.message?.content?.text || '';
-        if (!msgSnippet && typeof data.message?.content === 'string') {
+        // Check Modes
+        if (userData.tenant?.businessNature) {
           try {
-            const parsed = JSON.parse(data.message.content);
-            msgSnippet = parsed.body || parsed.text || (parsed.mediaUrl ? '📷 Photo' : 'New Message');
+            const bnRes = await fetch(`${API}/business-natures`);
+            if (bnRes.ok) {
+              const natures: any[] = await bnRes.json();
+              const matched = natures.find((n: any) => n.name === userData.tenant.businessNature);
+              setIsPropertyMode(matched?.isPropertyMode ?? false);
+              setIsHospitalityMode(matched?.isHospitalityMode ?? false);
+              setIsTechSoftwareMode(matched?.isTechSoftwareMode ?? false);
+              setIsFinancialServiceMode(matched?.isFinancialServiceMode ?? false);
+              setIsHealthcareMode(matched?.isHealthcareMode ?? false);
+              setIsEducationMode(matched?.isEducationMode ?? false);
+              setIsManufacturingMode(matched?.isManufacturingMode ?? false);
+              setIsLogisticsMode(matched?.isLogisticsMode ?? false);
+            }
           } catch (e) {
-            msgSnippet = data.message.content;
+            console.error(e);
           }
         }
-        if (!msgSnippet) msgSnippet = 'New Message';
 
-        toast.custom(
-          (t) => (
-            <div
-              onClick={() => {
-                toast.dismiss(t.id);
-                router.push(`/dashboard/inbox?id=${data.conversation?.id || data.conversationId || ''}`);
-              }}
-              className={`${
-                t.visible ? 'animate-in slide-in-from-bottom-5 duration-300' : 'animate-out fade-out duration-200'
-              } max-w-sm w-full bg-card text-card-foreground shadow-2xl rounded-2xl p-3.5 border border-border flex items-start gap-3 cursor-pointer hover:bg-muted transition-all group`}
-            >
-              <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs shrink-0 shadow-md">
-                {senderName.substring(0, 2).toUpperCase()}
+        if (userData.tenant && userData.tenant.isOnboarded === false && !window.location.pathname.includes('/onboarding')) {
+          router.push('/dashboard/onboarding');
+        }
+
+        // Global Spotlight Tour for New Tenants
+        if (typeof window !== 'undefined') {
+          const tourSeen = localStorage.getItem('zinichat_global_tour_seen') === 'true';
+          if (!tourSeen) {
+            setTimeout(() => {
+              try {
+                const driverObj = driver({
+                  showProgress: true,
+                  animate: true,
+                  onDestroyed: () => {
+                    localStorage.setItem('zinichat_global_tour_seen', 'true');
+                  },
+                  steps: [
+                    { 
+                      element: '#sidebar-inbox', 
+                      popover: { 
+                        title: language === 'en' ? '📬 Live Inbox' : '📬 লাইভ ইনবক্স', 
+                        description: language === 'en' ? 'Manage customer conversations from WhatsApp, Facebook, and Instagram in real-time.' : 'হোয়াটসঅ্যাপ, ফেসবুক ও ইনস্টাগ্রামের সমস্ত কাস্টমার চ্যাট এক ইনবক্সে হ্যান্ডেল করুন।',
+                        side: "right", 
+                        align: 'start' 
+                      } 
+                    },
+                    { 
+                      element: '#sidebar-ai-training', 
+                      popover: { 
+                        title: language === 'en' ? '🤖 AI Assistant Training' : '🤖 এআই ট্রেইনিং', 
+                        description: language === 'en' ? 'Train your AI assistant with your business Q&As, products, and persona.' : 'আপনার ব্যবসার তথ্য ও প্রম্পট দিয়ে এআই-কে স্মার্ট করার ট্রেনিং দিন।',
+                        side: "right", 
+                        align: 'start' 
+                      } 
+                    },
+                    { 
+                      element: '#sidebar-inboxes', 
+                      popover: { 
+                        title: language === 'en' ? '🔌 Channel Integration' : '🔌 চ্যানেল ইন্টিগ্রেশন', 
+                        description: language === 'en' ? 'Connect Meta Official WhatsApp API, Facebook Pages, or Instagram DMs.' : 'অফিসিয়াল হোয়াটসঅ্যাপ এপিআই বা সামাজিক মাধ্যম কানেক্ট করুন।',
+                        side: "right", 
+                        align: 'start' 
+                      } 
+                    }
+                  ]
+                });
+                driverObj.drive();
+              } catch (e) {
+                console.error('Driver.js tour error', e);
+              }
+            }, 1200);
+          }
+        }
+      }
+      if (quotasRes.ok) {
+        const quotas = await quotasRes.json();
+        if (quotas.features) {
+          setAllowedFeatures(quotas.features);
+        }
+      }
+      if (unreadRes.ok) {
+        const unreadData = await unreadRes.json();
+        setInboxUnreadCount(unreadData.unreadCount || 0);
+      }
+      if (ticketUnreadRes.ok) {
+        const tData = await ticketUnreadRes.json();
+        setTicketUnreadCount(tData.unreadCount || 0);
+      }
+    } catch (err) { console.error(err); }
+  };
+  if (token) fetchUserAndQuotas();
+
+  // Connect to Inbox Socket for global unread badge & bottom-right real-time toast
+  let socket: any;
+  let notifSocket: any;
+  if (token) {
+    import('socket.io-client').then(({ io }) => {
+      socket = io(`${API}/inbox`, { 
+        auth: { token },
+        transports: ['polling', 'websocket'] 
+      });
+      socket.on('new_message', (data: any) => {
+        if (!window.location.pathname.startsWith('/dashboard/inbox')) {
+          setInboxUnreadCount(prev => prev + 1);
+
+          const senderName =
+            data.contact?.name ||
+            data.contact?.pushName ||
+            data.conversation?.contact?.name ||
+            data.conversation?.contactName ||
+            data.contactName ||
+            data.message?.senderName ||
+            data.contact?.phoneNo ||
+            data.contact?.phoneNumber ||
+            data.conversation?.externalThreadId ||
+            'New Contact';
+
+          let msgSnippet = data.text || data.message?.content?.body || data.message?.content?.text || '';
+          if (!msgSnippet && typeof data.message?.content === 'string') {
+            try {
+              const parsed = JSON.parse(data.message.content);
+              msgSnippet = parsed.body || parsed.text || (parsed.mediaUrl ? '📷 Photo' : 'New Message');
+            } catch (e) {
+              msgSnippet = data.message.content;
+            }
+          }
+          if (!msgSnippet) msgSnippet = 'New Message';
+
+          toast.custom(
+            (t) => (
+              <div
+                onClick={() => {
+                  toast.dismiss(t.id);
+                  router.push(`/dashboard/inbox?id=${data.conversation?.id || data.conversationId || ''}`);
+                }}
+                className={`${
+                  t.visible ? 'animate-in slide-in-from-bottom-5 duration-300' : 'animate-out fade-out duration-200'
+                } max-w-sm w-full bg-card text-card-foreground shadow-2xl rounded-2xl p-3.5 border border-border flex items-start gap-3 cursor-pointer hover:bg-muted transition-all group`}
+              >
+                <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs shrink-0 shadow-md">
+                  {senderName.substring(0, 2).toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-1">
+                    <h4 className="text-xs font-bold text-primary truncate">{senderName}</h4>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className="text-[10px] text-muted-foreground">Just now</span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toast.dismiss(t.id);
+                        }}
+                        className="p-1 hover:bg-background rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                        title="Close notification"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground truncate mt-0.5">{msgSnippet}</p>
+                  <span className="text-[10px] text-primary font-semibold mt-1 inline-flex items-center gap-1 group-hover:underline">
+                    Click to reply →
+                  </span>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-1">
-                  <h4 className="text-xs font-bold text-primary truncate">{senderName}</h4>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <span className="text-[10px] text-muted-foreground">Just now</span>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toast.dismiss(t.id);
-                      }}
-                      className="p-1 hover:bg-background rounded-md text-muted-foreground hover:text-foreground transition-colors"
-                      title="Close notification"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
+            ),
+            { position: 'bottom-right', duration: 5000 }
+          );
+        }
+      });
+
+      notifSocket = io(`${API}/notifications`, {
+        auth: { token },
+        transports: ['polling', 'websocket']
+      });
+      notifSocket.on('notification_received', (data: any) => {
+        if (data.type === 'ticket') {
+          if (!window.location.pathname.startsWith('/dashboard/support')) {
+            setTicketUnreadCount(prev => prev + 1);
+
+            toast.custom(
+              (t) => (
+                <div
+                  onClick={() => {
+                    toast.dismiss(t.id);
+                    router.push('/dashboard/support');
+                  }}
+                  className={`${
+                    t.visible ? 'animate-in slide-in-from-bottom-5 duration-300' : 'animate-out fade-out duration-200'
+                  } max-w-sm w-full bg-card text-card-foreground shadow-2xl rounded-2xl p-3.5 border border-border flex items-start gap-3 cursor-pointer hover:bg-muted transition-all group`}
+                >
+                  <div className="w-9 h-9 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center font-bold text-xs shrink-0 shadow-md">
+                    <MessageSquare className="w-4 h-4" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-1">
+                      <h4 className="text-xs font-bold text-foreground truncate">{data.title || 'Support Ticket Update'}</h4>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toast.dismiss(t.id);
+                        }}
+                        className="p-1 hover:bg-background rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                        title="Close notification"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground truncate mt-0.5">{data.message}</p>
+                    <span className="text-[10px] text-primary font-semibold mt-1 inline-flex items-center gap-1 group-hover:underline">
+                      {language === 'en' ? 'Click to view ticket →' : 'টিকিট দেখতে ক্লিক করুন →'}
+                    </span>
                   </div>
                 </div>
-                <p className="text-[11px] text-muted-foreground truncate mt-0.5">{msgSnippet}</p>
-                <span className="text-[10px] text-primary font-semibold mt-1 inline-flex items-center gap-1 group-hover:underline">
-                  Click to reply →
-                </span>
-              </div>
-            </div>
-          ),
-          { position: 'bottom-right', duration: 5000 }
-        ); }
- });
- });
- }
+              ),
+              { position: 'bottom-right', duration: 6000 }
+            );
+          }
+        }
+      });
+    });
+  }
 
- return () => {
- if (socket) socket.disconnect();
- window.fetch = originalFetch;
- };
- }, []);
+  return () => {
+    if (socket) socket.disconnect();
+    if (notifSocket) notifSocket.disconnect();
+    window.fetch = originalFetch;
+  };
+  }, []);
 
- // Clear unread count when visiting inbox
- useEffect(() => {
- if (pathname === '/dashboard/inbox' || pathname.startsWith('/dashboard/inbox/')) {
- setInboxUnreadCount(0);
- }
- }, [pathname]);
+  // Clear unread counts when visiting inbox or support
+  useEffect(() => {
+    if (pathname === '/dashboard/inbox' || pathname.startsWith('/dashboard/inbox/')) {
+      setInboxUnreadCount(0);
+    }
+    if (pathname === '/dashboard/support' || pathname.startsWith('/dashboard/support/')) {
+      setTicketUnreadCount(0);
+      const token = Cookies.get('access_token');
+      if (token) {
+        fetch(`${API}/tickets/mark-read`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        }).catch(err => console.error(err));
+      }
+    }
+  }, [pathname]);
 
  // Prevent direct URL access to locked features
  useEffect(() => {
@@ -578,7 +647,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
                           )}
                         </div>
                         
-                        {/* Inbox Badge */}
+                        {/* Inbox & Ticket Badges */}
                         {!isSidebarCollapsed ? (
                           <div className="flex items-center gap-2">
                             {(item.name === 'Live Inbox' || item.name === 'লাইভ ইনবক্স') && inboxUnreadCount > 0 && (
@@ -586,11 +655,21 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
                                 {inboxUnreadCount > 99 ? '99+' : inboxUnreadCount}
                               </span>
                             )}
+                            {(item.name === 'Support Ticket' || item.name === 'সাপোর্ট টিকিট') && ticketUnreadCount > 0 && (
+                              <span className="flex h-5 items-center justify-center rounded-full bg-red-500 px-2 text-[10px] font-bold text-white">
+                                {ticketUnreadCount > 99 ? '99+' : ticketUnreadCount}
+                              </span>
+                            )}
                           </div>
                         ) : (
-                          (item.name === 'Live Inbox' || item.name === 'লাইভ ইনবক্স') && inboxUnreadCount > 0 && (
-                            <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                          )
+                          <>
+                            {(item.name === 'Live Inbox' || item.name === 'লাইভ ইনবক্স') && inboxUnreadCount > 0 && (
+                              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                            )}
+                            {(item.name === 'Support Ticket' || item.name === 'সাপোর্ট টিকিট') && ticketUnreadCount > 0 && (
+                              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                            )}
+                          </>
                         )}
                       </Link>
                     </div>

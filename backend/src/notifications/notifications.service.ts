@@ -14,7 +14,7 @@ export class NotificationsService {
   async getUserNotifications(userId: string, role?: string) {
     const whereCondition: any = { userId };
     if (role === 'superadmin') {
-      whereCondition.type = 'system';
+      whereCondition.type = { in: ['system', 'ticket'] };
     } else {
       whereCondition.type = { not: 'system' };
     }
@@ -29,7 +29,7 @@ export class NotificationsService {
   async getUnreadCount(userId: string, role?: string) {
     const whereCondition: any = { userId, isRead: false };
     if (role === 'superadmin') {
-      whereCondition.type = 'system';
+      whereCondition.type = { in: ['system', 'ticket'] };
     } else {
       whereCondition.type = { not: 'system' };
     }

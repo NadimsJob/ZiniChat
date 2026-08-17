@@ -29,9 +29,11 @@ import {
   Clock,
   MessageSquare,
   Activity,
-  BarChart3
+  BarChart3,
+  X
 } from 'lucide-react';
 import NotificationBell from '@/components/NotificationBell';
+import { toast } from 'react-hot-toast';
 
 function parseJwt(token: string) {
   try {
@@ -62,6 +64,7 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
   const [mounted, setMounted] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
+  const [ticketUnreadCount, setTicketUnreadCount] = useState(0);
 
   useEffect(() => {
     setMounted(true);
@@ -73,8 +76,92 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
         setUserRole(payload.role || '');
         setUserEmail(payload.email || '');
       }
+
+      const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      fetch(`${API}/tickets/unread-count`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      }).then(res => res.json()).then(data => {
+        setTicketUnreadCount(data.unreadCount || 0);
+      }).catch(err => console.error(err));
     }
   }, []);
+
+  useEffect(() => {
+    const token = Cookies.get('access_token');
+    if (!token) return;
+    const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+    let notifSocket: any;
+    import('socket.io-client').then(({ io }) => {
+      notifSocket = io(`${API}/notifications`, {
+        auth: { token },
+        transports: ['polling', 'websocket']
+      });
+      notifSocket.on('notification_received', (data: any) => {
+        if (data.type === 'ticket') {
+          if (!window.location.pathname.startsWith('/sp@dmin/tickets')) {
+            setTicketUnreadCount(prev => prev + 1);
+
+            toast.custom(
+              (t) => (
+                <div
+                  onClick={() => {
+                    toast.dismiss(t.id);
+                    router.push('/sp@dmin/tickets');
+                  }}
+                  className={`${
+                    t.visible ? 'animate-in slide-in-from-bottom-5 duration-300' : 'animate-out fade-out duration-200'
+                  } max-w-sm w-full bg-card text-card-foreground shadow-2xl rounded-2xl p-3.5 border border-border flex items-start gap-3 cursor-pointer hover:bg-muted transition-all group`}
+                >
+                  <div className="w-9 h-9 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center font-bold text-xs shrink-0 shadow-md">
+                    <MessageSquare className="w-4 h-4" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-1">
+                      <h4 className="text-xs font-bold text-foreground truncate">{data.title || 'Support Ticket Update'}</h4>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toast.dismiss(t.id);
+                        }}
+                        className="p-1 hover:bg-background rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground truncate mt-0.5">{data.message}</p>
+                    <span className="text-[10px] text-primary font-semibold mt-1 inline-flex items-center gap-1 group-hover:underline">
+                      {language === 'en' ? 'Click to view ticket →' : 'টিকিট দেখতে ক্লিক করুন →'}
+                    </span>
+                  </div>
+                </div>
+              ),
+              { position: 'bottom-right', duration: 6000 }
+            );
+          }
+        }
+      });
+    });
+
+    return () => {
+      if (notifSocket) notifSocket.disconnect();
+    };
+  }, [language, router]);
+
+  useEffect(() => {
+    if (pathname === '/sp@dmin/tickets' || pathname.startsWith('/sp@dmin/tickets/')) {
+      setTicketUnreadCount(0);
+      const token = Cookies.get('access_token');
+      if (token) {
+        const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        fetch(`${API}/tickets/mark-read`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        }).catch(err => console.error(err));
+      }
+    }
+  }, [pathname]);
 
   const hasPermission = (perm: string) => {
     const roleFromCookie = Cookies.get('user_role');
@@ -191,9 +278,14 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
                       : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-zinc-800/50 hover:text-slate-900 dark:hover:text-zinc-200'
                   }`}
                 >
-                  <div className="flex items-center gap-2.5">
-                    <item.icon className={`w-3.5 h-3.5 ${isActive ? 'text-secondary' : 'text-slate-400 dark:text-zinc-500'}`} />
-                    <span className={isActive ? 'text-secondary' : ''}>{item.name}</span>
+                  <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                    <item.icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-secondary' : 'text-slate-400 dark:text-zinc-500'}`} />
+                    <span className={`truncate ${isActive ? 'text-secondary' : ''}`}>{item.name}</span>
+                    {(item.name === 'Support Tickets' || item.name === 'সাপোর্ট টিকিট') && ticketUnreadCount > 0 && (
+                      <span className="flex h-4 items-center justify-center rounded-full bg-red-500 px-1.5 text-[9px] font-bold text-white ml-auto shrink-0">
+                        {ticketUnreadCount > 99 ? '99+' : ticketUnreadCount}
+                      </span>
+                    )}
                   </div>
                   
                   {item.hasSubmenu && (

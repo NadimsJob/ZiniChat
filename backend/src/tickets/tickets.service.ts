@@ -175,11 +175,11 @@ export class TicketsService {
       if (ticket.assignedToId) {
         const assignedAdmin = await this.prisma.user.findUnique({ where: { id: ticket.assignedToId } });
         if (assignedAdmin) {
-          this.notificationsService.createNotification(assignedAdmin.id, `Ticket Reply`, `${ticket.tenant.businessName} replied to ticket '${ticket.subject}'`, 'system').catch(() => {});
+          this.notificationsService.createNotification(assignedAdmin.id, `Ticket Reply`, `${ticket.tenant.businessName} replied to ticket '${ticket.subject}'`, 'ticket').catch(() => {});
           await this.smtpService.triggerTicketRepliedEmail(assignedAdmin.email, ticket.subject, message).catch(() => {});
         }
       } else {
-        await this.notificationsService.createSystemNotificationForSuperadmins(`Ticket Reply`, `${ticket.tenant.businessName} replied to ticket '${ticket.subject}'`, 'system');
+        await this.notificationsService.createSystemNotificationForSuperadmins(`Ticket Reply`, `${ticket.tenant.businessName} replied to ticket '${ticket.subject}'`, 'ticket');
         const superadminEmails = await this.smtpService.getAdminNotificationEmails();
         for (const email of superadminEmails) {
           await this.smtpService.triggerTicketRepliedEmail(email, ticket.subject, message).catch(() => {});
@@ -188,5 +188,28 @@ export class TicketsService {
     }
 
     return newMessage;
+  }
+
+  async getUnreadTicketCount(user: any) {
+    const count = await this.prisma.notification.count({
+      where: {
+        userId: user.id,
+        type: 'ticket',
+        isRead: false
+      }
+    });
+    return { unreadCount: count };
+  }
+
+  async markTicketNotificationsAsRead(user: any) {
+    await this.prisma.notification.updateMany({
+      where: {
+        userId: user.id,
+        type: 'ticket',
+        isRead: false
+      },
+      data: { isRead: true }
+    });
+    return { success: true };
   }
 }
