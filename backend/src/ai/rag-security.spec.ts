@@ -7,6 +7,7 @@ import { QuotaService } from '../tenants/quota.service';
 import { CryptoService } from '../crypto/crypto.service';
 import { FileValidationService } from '../file-validation/file-validation.service';
 import { ToolConfigValidatorService } from '../ai-training/services/tool-config-validator.service';
+import { WebsiteCrawlerService } from '../ai-training/website-crawler.service';
 import { BadRequestException } from '@nestjs/common';
 
 describe('RAG Vector Search Security - Strict Multi-Tenant Isolation', () => {
@@ -69,6 +70,7 @@ describe('RAG Vector Search Security - Strict Multi-Tenant Isolation', () => {
         { provide: PrismaService, useValue: mockPrisma },
         { provide: AiCacheService, useValue: mockAiCacheService },
         { provide: QuotaService, useValue: mockQuotaService },
+        { provide: WebsiteCrawlerService, useValue: { crawlWebsite: jest.fn().mockResolvedValue({ combinedText: '', pageCount: 0 }) } },
       ],
     }).compile();
 

@@ -44,6 +44,8 @@ model Tenant {
   customContactsLimit       Int?
   customAllowByok           Boolean?
   customFeatures            Json?
+  websiteUrl           String?
+  websiteSummary       Json?
   customAiConfigId          String?   @db.Uuid
   customPlanUpdatedAt       DateTime?
   customPlanUpdatedBy       String?   @db.Uuid

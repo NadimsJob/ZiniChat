@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AiTrainingController } from './ai-training.controller';
 import { AiTrainingService } from './ai-training.service';
+import { WebsiteCrawlerService } from './website-crawler.service';
 import { TenantsModule } from '../tenants/tenants.module';
 import { CryptoModule } from '../crypto/crypto.module';
 import { AiModule } from '../ai/ai.module';
@@ -10,6 +11,7 @@ import { ToolConfigValidatorService } from './services/tool-config-validator.ser
 @Module({
   imports: [TenantsModule, CryptoModule, AiModule],
   controllers: [AiTrainingController],
-  providers: [AiTrainingService, FileValidationService, ToolConfigValidatorService],
+  providers: [AiTrainingService, WebsiteCrawlerService, FileValidationService, ToolConfigValidatorService],
+  exports: [AiTrainingService, WebsiteCrawlerService],
 })
 export class AiTrainingModule {}

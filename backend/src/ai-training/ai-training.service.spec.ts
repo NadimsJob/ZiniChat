@@ -8,6 +8,7 @@ import { ToolConfigValidatorService } from './services/tool-config-validator.ser
 
 import { AiCacheService } from '../ai/ai-cache.service';
 import { AiService } from '../ai/ai.service';
+import { WebsiteCrawlerService } from './website-crawler.service';
 
 describe('AiTrainingService', () => {
   let service: AiTrainingService;
@@ -58,9 +59,10 @@ describe('AiTrainingService', () => {
         FileValidationService,
         ToolConfigValidatorService,
         { provide: PrismaService, useValue: mockPrisma },
-        { provide: QuotaService, useValue: { checkFeature: jest.fn().mockResolvedValue(true), checkAiQuota: jest.fn().mockResolvedValue(true) } },
+        { provide: QuotaService, useValue: { checkFeature: jest.fn().mockResolvedValue(true), checkAiQuota: jest.fn().mockResolvedValue(true), getActivePeriodForTenant: jest.fn().mockResolvedValue({ periodStart: new Date(), aiQuota: 100 }) } },
         { provide: AiCacheService, useValue: { invalidateCache: jest.fn(), getOrCreateCache: jest.fn(), computeChecksum: jest.fn() } },
         { provide: AiService, useValue: { generateCompletion: jest.fn().mockResolvedValue('Mock AI response') } },
+        { provide: WebsiteCrawlerService, useValue: { crawlWebsite: jest.fn().mockResolvedValue({ combinedText: 'Mock content', pageCount: 1 }) } },
       ],
     }).compile();
 

@@ -8,7 +8,7 @@ import { useFeature } from '@/hooks/useFeature';
 import { 
   Bot, Key, Save, AlertCircle, RefreshCw, MessageSquare, Plus, Edit2, 
   Trash2, X, Check, Wand2, Eye, Lock, Sliders, Sparkles, ShieldCheck, 
-  FileText, AlertTriangle, Send, PlayCircle, HelpCircle, User, CornerDownLeft, Tag
+  FileText, AlertTriangle, Send, PlayCircle, HelpCircle, User, CornerDownLeft, Tag, Globe
 } from 'lucide-react';
 import InstructionBanner from '@/components/InstructionBanner';
 import LabelForm from '@/components/labels/LabelForm';
@@ -31,6 +31,11 @@ export default function AiTrainingPage() {
   const canSupportDetection = useFeature('ai_tool_support_detection');
   const canProductMatching = useFeature('ai_tool_product_matching');
 
+  // Website Fetch State
+  const [websiteInput, setWebsiteInput] = useState('');
+  const [fetchingWebsite, setFetchingWebsite] = useState(false);
+  const [isWebsiteConfirmModalOpen, setIsWebsiteConfirmModalOpen] = useState(false);
+
   // Config state
   const [config, setConfig] = useState<any>({
     routingMode: 'system_only',
@@ -41,7 +46,9 @@ export default function AiTrainingPage() {
     isActive: true,
     replyWhenAssigned: false,
     agentName: '',
-    systemPrompt: ''
+    systemPrompt: '',
+    websiteUrl: '',
+    websiteSummary: null
   });
   const [apiKey, setApiKey] = useState('');
   
@@ -119,7 +126,11 @@ export default function AiTrainingPage() {
         fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/labels`, { headers })
       ]);
       
-      if (configRes.ok) setConfig(await configRes.json());
+      if (configRes.ok) {
+        const cfgData = await configRes.json();
+        setConfig(cfgData);
+        if (cfgData.websiteUrl) setWebsiteInput(cfgData.websiteUrl);
+      }
       if (toolsRes.ok) {
         const toolsList = await toolsRes.json();
         const map: Record<string, { isEnabled: boolean; configJson: any }> = {};
@@ -135,6 +146,41 @@ export default function AiTrainingPage() {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleFetchWebsite = async () => {
+    if (!websiteInput || !websiteInput.trim()) {
+      toast.error(language === 'en' ? 'Please enter a valid website URL' : 'দয়া করে একটি সঠিক ওয়েবসাইট লিংক দিন');
+      return;
+    }
+
+    setFetchingWebsite(true);
+    setIsWebsiteConfirmModalOpen(false);
+
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai-training/website-fetch`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ url: websiteInput.trim() })
+      });
+
+      if (res.ok) {
+        toast.success(language === 'en' ? 'Website content fetched and AI trained successfully!' : 'ওয়েবসাইট ডাটা ফেচ সম্পন্ন হয়েছে এবং AI ট্রেইন করা হয়েছে!');
+        fetchData();
+      } else {
+        const err = await res.json();
+        toast.error(err.message || (language === 'en' ? 'Failed to fetch website content' : 'ওয়েবসাইট ফেচ করতে ব্যর্থ হয়েছে'));
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error(language === 'en' ? 'Network error during website fetch' : 'নেটওয়ার্ক এরর দেখা দিয়েছে');
+    } finally {
+      setFetchingWebsite(false);
     }
   };
 
@@ -864,6 +910,67 @@ export default function AiTrainingPage() {
             )}
           </div>
 
+          {/* Section 2B: Website Knowledge Crawling & AI Training */}
+          <div className="bg-card border border-border shadow-md rounded-2xl p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-sm font-bold flex items-center gap-2 text-foreground">
+                  <Globe className="w-4 h-4 text-primary" />
+                  {language === 'en' ? 'Website Data Fetch & AI Training' : 'ওয়েবসাইট থেকে অটো ডাটা ফেচ ও AI ট্রেইনিং'}
+                </h2>
+                <p className="text-[12px] text-muted-foreground font-sans">
+                  {language === 'en' 
+                    ? 'AI will automatically crawl your website links and generate a structured summary (<3,000 chars).' 
+                    : 'আপনার ওয়েবসাইট লিংক দিলে AI সব পেজ স্ক্যান করে ৩,০০০ অক্ষরের ভেতর নিখুঁত তথ্য সংগ্রহ করবে।'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="relative flex-1">
+                <Globe className="w-4 h-4 text-muted-foreground absolute left-3 top-2.5" />
+                <input
+                  type="url"
+                  value={websiteInput}
+                  onChange={(e) => setWebsiteInput(e.target.value)}
+                  placeholder="https://example.com"
+                  className="w-full bg-background border border-border rounded-xl pl-9 pr-3 py-2 text-xs focus:ring-1 focus:ring-primary outline-none"
+                />
+              </div>
+              <button
+                onClick={() => {
+                  if (!websiteInput || !websiteInput.trim()) {
+                    toast.error(language === 'en' ? 'Please enter a valid website URL' : 'দয়া করে একটি সঠিক ওয়েবসাইট লিংক দিন');
+                    return;
+                  }
+                  setIsWebsiteConfirmModalOpen(true);
+                }}
+                disabled={fetchingWebsite}
+                className="px-4 py-2 bg-primary text-white font-bold rounded-xl text-xs hover:bg-primary/90 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0"
+              >
+                {fetchingWebsite ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
+                {config.websiteSummary ? (language === 'en' ? 'Refresh Website Data' : 'ডাটা রিফ্রেশ করুন') : (language === 'en' ? 'Fetch Website Data' : 'ডাটা ফেচ করুন')}
+              </button>
+            </div>
+
+            {config.websiteSummary && (
+              <div className="bg-background border border-border rounded-xl p-3 space-y-2 mt-2">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="font-bold text-foreground flex items-center gap-1">
+                    <Check className="w-3.5 h-3.5 text-emerald-500" />
+                    {language === 'en' ? 'Active Website Summary' : 'অ্যাক্টিভ ওয়েবসাইট সামারি'}
+                  </span>
+                  <span className="text-muted-foreground">
+                    {config.websiteSummary.charCount || 0}/3000 {language === 'en' ? 'chars' : 'অক্ষর'} • {config.websiteSummary.pageCount || 1} {language === 'en' ? 'pages scanned' : 'পেজ স্ক্যানড'}
+                  </span>
+                </div>
+                <div className="text-[12px] text-foreground bg-card p-2.5 rounded-lg border border-border/50 max-h-40 overflow-y-auto custom-scrollbar font-sans whitespace-pre-line leading-relaxed">
+                  {config.websiteSummary.summary}
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Section 3: Event-Wise AI Behavior & Smart Tags (#tour-tags) */}
           <div id="tour-tags" className="bg-card border border-border shadow-md rounded-2xl p-4 space-y-3">
             <div className="flex items-center gap-2 mb-1">
@@ -1228,6 +1335,63 @@ export default function AiTrainingPage() {
                 className="px-4 py-2 bg-primary text-white font-bold rounded-xl text-[12px] hover:bg-primary/90 cursor-pointer"
               >
                 {language === 'en' ? 'Save Q&A' : 'সেভ করুন'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Website Fetch Confirmation Modal (2 AI Quotas Warning) */}
+      {isWebsiteConfirmModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-card border border-border rounded-2xl max-w-md w-full shadow-2xl animate-in zoom-in-95 overflow-hidden">
+            <div className="flex items-center justify-between border-b border-border p-4">
+              <h3 className="font-bold text-foreground text-sm flex items-center gap-2">
+                <Globe className="w-4 h-4 text-primary" />
+                {language === 'en' ? 'Website Data Fetch & AI Training' : 'ওয়েবসাইট ডাটা ফেচ ও AI ট্রেইনিং'}
+              </h3>
+              <button onClick={() => setIsWebsiteConfirmModalOpen(false)} className="text-muted-foreground hover:text-foreground cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-4 space-y-3 font-sans text-xs">
+              <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl space-y-1">
+                <div className="font-bold text-amber-500 flex items-center gap-1.5 text-xs">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  {language === 'en' ? 'Quota Deduction Notice' : 'কোটা সংক্রান্ত সতর্কতা'}
+                </div>
+                <p className="text-[11.5px] text-muted-foreground leading-relaxed">
+                  {language === 'en' 
+                    ? 'Fetching and summarizing this website will deduct 2 AI Response credits from your monthly plan:'
+                    : 'এই ওয়েবসাইট ডাটা ফেচ ও সামারাইজ করার জন্য আপনার একাউন্ট থেকে ২টি AI Response কোটা কাটা হবে:'}
+                </p>
+                <ul className="list-disc list-inside text-[11px] text-foreground font-semibold space-y-0.5 pt-1">
+                  <li>{language === 'en' ? '1 Credit: Website link crawling & fetching' : '১টি কোটা: ওয়েবসাইট লিংক ও পেজ স্ক্যানিং'}</li>
+                  <li>{language === 'en' ? '1 Credit: AI Knowledge Summarization (<3,000 chars)' : '১টি কোটা: AI সামারাইজেশন (সর্বোচ্চ ৩,০০০ অক্ষর)'}</li>
+                </ul>
+              </div>
+
+              <div className="bg-background border border-border rounded-xl p-2.5 text-[11.5px]">
+                <span className="text-muted-foreground font-medium">{language === 'en' ? 'Target URL: ' : 'টার্গেট লিংক: '}</span>
+                <span className="font-bold text-primary truncate block">{websiteInput}</span>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 border-t border-border p-3.5 bg-muted/20">
+              <button
+                onClick={() => setIsWebsiteConfirmModalOpen(false)}
+                className="px-4 py-2 bg-muted text-muted-foreground hover:text-foreground rounded-xl text-xs font-bold cursor-pointer"
+              >
+                {language === 'en' ? 'Cancel' : 'বাতিল'}
+              </button>
+              <button
+                onClick={handleFetchWebsite}
+                disabled={fetchingWebsite}
+                className="px-4 py-2 bg-primary text-white font-bold rounded-xl text-xs hover:bg-primary/90 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                {fetchingWebsite ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
+                {language === 'en' ? 'Confirm (Deduct 2 Credits)' : 'নিশ্চিত করুন (২ কোটা কাটুন)'}
               </button>
             </div>
           </div>

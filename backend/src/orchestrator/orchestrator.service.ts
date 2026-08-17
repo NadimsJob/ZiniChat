@@ -841,6 +841,11 @@ export class OrchestratorService {
       });
     }
 
+    if (conversation.tenant?.websiteSummary && (conversation.tenant.websiteSummary as any).summary) {
+      prompt += `\n--- VERIFIED WEBSITE KNOWLEDGE SUMMARY (${conversation.tenant.websiteUrl || ''}) ---\n`;
+      prompt += `${(conversation.tenant.websiteSummary as any).summary}\n`;
+    }
+
     if (freshDocs.length > 0) {
       prompt += `\n--- VERIFIED KNOWLEDGE DOCUMENTS (FRESH <60 DAYS) ---\n`;
       freshDocs.forEach(doc => {

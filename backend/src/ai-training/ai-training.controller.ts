@@ -98,6 +98,12 @@ export class AiTrainingController {
     return this.aiTrainingService.deleteDocument(req.user.tenantId, id);
   }
 
+  @Post('website-fetch')
+  async fetchWebsiteSummary(@Request() req: any, @Body() body: { url: string }) {
+    if (!body || !body.url) throw new BadRequestException('Website URL is required');
+    return this.aiTrainingService.fetchWebsiteSummary(req.user.tenantId, body.url);
+  }
+
   @Post('test-simulate')
   async testSimulate(@Request() req: any, @Body('message') message: string) {
     return this.aiTrainingService.testSimulate(req.user.tenantId, message);

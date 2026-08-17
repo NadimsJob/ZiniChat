@@ -12,8 +12,14 @@ import { ToolConfigValidatorService } from './services/tool-config-validator.ser
 import { AiCacheService } from '../ai/ai-cache.service';
 import { AiService } from '../ai/ai.service';
 
+import { Logger } from '@nestjs/common';
+
+import { WebsiteCrawlerService } from './website-crawler.service';
+
 @Injectable()
 export class AiTrainingService {
+  private readonly logger = new Logger(AiTrainingService.name);
+
   constructor(
     private prisma: PrismaService,
     private quotaService: QuotaService,
@@ -21,7 +27,8 @@ export class AiTrainingService {
     private fileValidationService: FileValidationService,
     private toolConfigValidator: ToolConfigValidatorService,
     private aiCacheService: AiCacheService,
-    private aiService: AiService
+    private aiService: AiService,
+    private websiteCrawlerService: WebsiteCrawlerService
   ) {}
 
   private async ensureAiAssistantExists(tenantId: string) {
@@ -180,6 +187,93 @@ export class AiTrainingService {
       allowByok,
       planName: activeSub?.plan?.name || 'No Active Plan',
       aiQuota: activeSub?.plan?.aiQuota || 0,
+      websiteUrl: tenant?.websiteUrl || null,
+      websiteSummary: tenant?.websiteSummary || null
+    };
+  }
+
+  async fetchWebsiteSummary(tenantId: string, url: string) {
+    if (!url || !url.trim()) {
+      throw new BadRequestException('Website URL is required');
+    }
+
+    // 1. Quota Check (Requires at least 2 AI response credits)
+    await this.quotaService.checkAiQuota(tenantId);
+    
+    // Additional check to ensure user has at least 2 credits left
+    const { aiQuota } = await this.quotaService.getActivePeriodForTenant(tenantId);
+    const aiUsed = await this.prisma.aiUsageLog.count({
+      where: { tenantId, createdAt: { gte: (await this.quotaService.getActivePeriodForTenant(tenantId)).periodStart } }
+    });
+
+    if (aiUsed + 2 > aiQuota) {
+      throw new BadRequestException(`Insufficient AI response credits (${aiUsed}/${aiQuota}). Fetching website knowledge requires 2 credits.`);
+    }
+
+    const assistant = await this.ensureAiAssistantExists(tenantId);
+
+    // Deduct 2 AI Usage Log Credits (1 for Crawl/Fetch + 1 for Summarization)
+    await this.prisma.aiUsageLog.createMany({
+      data: [
+        { tenantId, assistantId: assistant.id, tokensUsed: 500, costUsd: 0.001 },
+        { tenantId, assistantId: assistant.id, tokensUsed: 1500, costUsd: 0.003 },
+      ]
+    });
+
+    // 2. Crawl Website Pages
+    const { combinedText, pageCount } = await this.websiteCrawlerService.crawlWebsite(url, 12);
+
+    if (!combinedText || combinedText.trim().length < 30) {
+      throw new BadRequestException('Could not extract readable text from the provided website URL. Please check the URL.');
+    }
+
+    // 3. Summarize with AI into <= 3000 chars
+    const prompt = `You are an expert AI knowledge summarizer for customer support.
+Extract the core business information, products/services offered, FAQs, policies, working hours, and contact details from the following website content.
+
+MANDATORY RULES:
+1. Summarize into clear, clean, structured bullet points.
+2. Provide explanations in both Bengali and English where relevant.
+3. STRICT LIMIT: The summary MUST NOT exceed 3000 characters total.
+
+WEBSITE CONTENT:
+${combinedText}`;
+
+    let summaryText = '';
+    try {
+      summaryText = await this.aiService.generateCompletion(prompt);
+    } catch (err: any) {
+      this.logger.error(`AI Summarization error: ${err.message}`);
+      // Fallback truncated raw text
+      summaryText = combinedText.substring(0, 2900);
+    }
+
+    if (summaryText.length > 3000) {
+      summaryText = summaryText.substring(0, 2990) + '...';
+    }
+
+    const summaryPayload = {
+      summary: summaryText,
+      charCount: summaryText.length,
+      pageCount,
+      lastFetchedAt: new Date().toISOString()
+    };
+
+    // 4. Save to Tenant DB
+    await this.prisma.tenant.update({
+      where: { id: tenantId },
+      data: {
+        websiteUrl: url.trim(),
+        websiteSummary: summaryPayload
+      }
+    });
+
+    await this.aiCacheService.invalidateCache(tenantId);
+
+    return {
+      success: true,
+      websiteUrl: url.trim(),
+      websiteSummary: summaryPayload
     };
   }
 

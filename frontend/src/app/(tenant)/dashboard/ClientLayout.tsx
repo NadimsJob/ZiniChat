@@ -657,7 +657,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
   
    {mounted && <NotificationBell />}
 
-   {mounted && hasAgentPresence && (
+    {mounted && false && (
      <div className="relative z-50">
        <button
          onClick={() => setShowPresenceMenu(!showPresenceMenu)}
