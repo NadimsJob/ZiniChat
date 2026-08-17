@@ -13,26 +13,30 @@ const Youtube = ({ className }: { className?: string }) => <svg xmlns="http://ww
 
 import Image from 'next/image';
 
+import { useTheme } from 'next-themes';
+
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
   const { language, setLanguage } = useLanguage();
+  const { setTheme } = useTheme();
   const [config, setConfig] = useState<any>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
+    setTheme('dark');
     fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/landing-page/config`)
       .then(res => res.json())
       .then(data => setConfig(data))
       .catch(console.error);
-  }, []);
+  }, [setTheme]);
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground transition-colors duration-300">
       {/* Navbar */}
       <header className="sticky top-0 z-50 w-full border-b border-border bg-background/90 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto flex h-16 sm:h-20 items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto flex h-20 items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-4 lg:gap-8 shrink-0">
             <Link href="/" className="flex items-center hover:opacity-90 transition-opacity shrink-0">
-              <img src="/logo.png" alt="ZiniChat Logo" className="h-[52px] sm:h-[58px] md:h-[65px] w-auto object-contain shrink-0" />
+              <img src="/logo.png" alt="ZiniChat Logo" className="h-[60px] w-auto object-contain shrink-0" />
             </Link>
             <nav className="hidden lg:flex items-center gap-6 text-sm font-medium text-muted-foreground">
               <Link href="/features" className="hover:text-foreground transition-colors">
