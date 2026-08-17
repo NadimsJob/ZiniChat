@@ -38,6 +38,9 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
               <Link href="/features" className="hover:text-foreground transition-colors">
                 {language === 'en' ? 'Features' : 'ফিচার্স'}
               </Link>
+              <Link href="/success-stories" className="hover:text-foreground transition-colors">
+                {language === 'en' ? 'Success Stories' : 'সাফল্যের গল্প'}
+              </Link>
               <Link href="/pricing" className="hover:text-foreground transition-colors">
                 {language === 'en' ? 'Pricing' : 'প্রাইসিং'}
               </Link>
@@ -89,6 +92,10 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
           <div className="lg:hidden absolute top-full left-0 w-full bg-background/95 backdrop-blur-xl border-b border-border shadow-2xl p-5 flex flex-col gap-1 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
             <Link href="/features" className="text-sm font-semibold hover:text-primary transition-colors py-3 border-b border-border/40 flex items-center justify-between" onClick={() => setIsMobileMenuOpen(false)}>
               <span>{language === 'en' ? 'Features' : 'ফিচার্স'}</span>
+              <ArrowRight className="w-4 h-4 text-muted-foreground" />
+            </Link>
+            <Link href="/success-stories" className="text-sm font-semibold hover:text-primary transition-colors py-3 border-b border-border/40 flex items-center justify-between" onClick={() => setIsMobileMenuOpen(false)}>
+              <span>{language === 'en' ? 'Success Stories' : 'সাফল্যের গল্প'}</span>
               <ArrowRight className="w-4 h-4 text-muted-foreground" />
             </Link>
             <Link href="/pricing" className="text-sm font-semibold hover:text-primary transition-colors py-3 border-b border-border/40 flex items-center justify-between" onClick={() => setIsMobileMenuOpen(false)}>
@@ -144,6 +151,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
               </h4>
               <ul className="space-y-2 text-xs text-muted-foreground font-medium">
                 <li><Link href="/features" className="hover:text-primary transition-colors">{language === 'en' ? 'Features' : 'ফিচার্স'}</Link></li>
+                <li><Link href="/success-stories" className="hover:text-primary transition-colors">{language === 'en' ? 'Success Stories' : 'সাফল্যের গল্প'}</Link></li>
                 <li><Link href="/pricing" className="hover:text-primary transition-colors">{language === 'en' ? 'Pricing' : 'প্রাইসিং'}</Link></li>
                 <li><Link href="/contact" className="hover:text-primary transition-colors">{language === 'en' ? 'Contact Us' : 'যোগাযোগ'}</Link></li>
               </ul>
