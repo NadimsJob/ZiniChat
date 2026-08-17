@@ -93,6 +93,28 @@ export class LandingPageService {
                   en: 'Yes! For all paid plans, any unused AI response or total message balance will automatically carry forward when you renew your subscription for the next month. However, for the Free (0 BDT) plan, unused quotas reset each month and do not carry forward.', 
                   bn: 'হ্যাঁ! যেকোনো পেইড প্ল্যানে রিনিউ করলে আপনার আগের মাসের অব্যবহৃত এআই রেসপন্স ও মেসেজ কোটা স্বয়ংক্রিয়ভাবে পরের মাসে যোগ (Carry Forward) হবে। তবে ফ্রি (০ টাকা) প্ল্যানের ক্ষেত্রে অব্যবহৃত কোটা পরবর্তী মাসে ক্যারি ফরওয়ার্ড হবে না, স্বয়ংক্রিয়ভাবে রিসেট হয়ে যাবে।' 
                 }
+              },
+              {
+                categoryId: 'ai',
+                question: {
+                  en: 'How do I automatically train my AI Assistant using my Website URL?',
+                  bn: 'ওয়েবসাইট লিংক দিয়ে কীভাবে স্বয়ংক্রিয়ভাবে এআই ট্রেন করা যায়?'
+                },
+                answer: {
+                  en: 'In Dashboard -> Settings -> AI Training, enter your website URL and click "Fetch Website Knowledge & Train AI". ZiniChat will automatically crawl your site, extract key pages & policies, create a structured summary, and save it directly into your AI Assistant context.',
+                  bn: 'ড্যাশবোর্ডের Settings -> AI Training পেজে গিয়ে আপনার ওয়েবসাইট URL বসিয়ে "Fetch Website Knowledge & Train AI" বাটনে ক্লিক করলেই ZiniChat ওয়েবসাইটের বিভিন্ন পেজ ও পলিসি স্ক্র্যাপ করে অটোমেটিক এআই নলেজ বেসে ট্রেনিং সম্পন্ন করে নেবে।'
+                }
+              },
+              {
+                categoryId: 'ai',
+                question: {
+                  en: 'How does ZiniChat minimize AI token consumption and cost?',
+                  bn: 'ZiniChat কীভাবে এআই টোকেন খরচ ও সার্ভিস খরচ সাশ্রয় করে?'
+                },
+                answer: {
+                  en: 'ZiniChat uses a 2-stage dynamic indexing & prompt caching architecture. Common greetings skip product catalog queries, dynamic retrieval fetches only top relevant items, and prompt headers are prefix-cached for up to 80% input token cost savings.',
+                  bn: 'ZiniChat ২-স্টেজ ডাইনামিক ইনডেক্সিং এবং প্রম্পট ক্যাশিং আর্কিটেকচার ব্যবহার করে। সাধারণ মেসেজে ক্যাটাগরি সার্চ স্কিপ করা হয় এবং ডাইনামিক ফিল্টারিং দিয়ে ইনপুট টোকেন কস্ট ৮০% পর্যন্ত সাশ্রয় করা হয়।'
+                }
               }
             ]
           },
