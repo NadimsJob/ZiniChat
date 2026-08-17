@@ -907,7 +907,7 @@ export default function InboxPage() {
               {ch.channelType}
             </button>
           ))}
-          {hasCommentAutomation && (
+          {(hasCommentAutomation || activeChannels.some((c: any) => ['messenger', 'instagram'].includes(c.channelType))) && (
             <button
               onClick={() => setChannelFilter('facebook_comments')}
               className={`px-3 py-1 rounded-md text-[11px] transition-colors cursor-pointer border border-transparent flex items-center gap-1.5 ${
