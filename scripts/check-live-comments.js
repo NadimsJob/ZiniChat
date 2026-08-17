@@ -15,43 +15,9 @@ async function checkComments() {
 
     console.log('✅ Connected to LIVE server\n');
 
-    const jsCode = `
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
-async function main() {
-  console.log('=== TENANTS & FEATURES ===');
-  const tenants = await prisma.tenant.findMany({
-    include: {
-      subscriptions: {
-        include: { plan: true }
-      }
-    }
-  });
-  for (const t of tenants) {
-    console.log("Tenant:", t.id, t.businessName);
-    console.log("Custom Features:", t.customFeatures);
-    if (t.subscriptions && t.subscriptions[0]) {
-      console.log("Active Plan Features:", t.subscriptions[0].plan.features);
-    }
-  }
-
-  console.log('=== CHANNEL CONNECTIONS ===');
-  const conns = await prisma.channelConnection.findMany();
-  console.log(JSON.stringify(conns, null, 2));
-
-  console.log('=== FACEBOOK COMMENT LOGS ===');
-  const logs = await prisma.facebookCommentLog.findMany({
-    take: 10,
-    orderBy: { createdAt: 'desc' }
-  });
-  console.log(JSON.stringify(logs, null, 2));
-}
-main().finally(() => prisma['$disconnect']());
-    `.replace(/\n/g, ' ');
-
-    const cmd = `docker compose --env-file .env.live exec -T backend node -e ${JSON.stringify(jsCode)}`;
-    const res = await ssh.execCommand(cmd, { cwd: process.env.LIVE_PROJECT_PATH });
-    console.log(res.stdout || res.stderr);
+    console.log('=== LAST 100 BACKEND LOG LINES ===');
+    const logsRes = await ssh.execCommand('docker compose --env-file .env.live logs --tail=100 backend 2>&1', { cwd: process.env.LIVE_PROJECT_PATH });
+    console.log(logsRes.stdout || logsRes.stderr);
 
     ssh.dispose();
   } catch (err) {

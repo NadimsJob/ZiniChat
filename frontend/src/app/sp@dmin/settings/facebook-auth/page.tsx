@@ -333,8 +333,8 @@ export default function FacebookAuthSettingsPage() {
             </li>
             <li>
               {language === 'en' 
-                ? 'Under Webhooks, subscribe to messages, messaging_postbacks, and instagram_manage_messages fields.' 
-                : 'ওয়েবহুক সেটিংসে messages, messaging_postbacks এবং instagram_manage_messages ফিল্ডগুলো সাবস্ক্রাইব করুন।'}
+                ? 'Under Webhooks -> Page, subscribe to feed, messages, messaging_postbacks, message_deliveries, and message_reads fields.' 
+                : 'ওয়েবহুক সেটিংসে (Webhooks -> Page) feed, messages, messaging_postbacks, message_deliveries এবং message_reads ফিল্ডগুলো সাবস্ক্রাইব করুন (কমেন্ট অটোমেশনের জন্য feed আবশ্যক)।'}
             </li>
           </ol>
         </div>
