@@ -147,7 +147,7 @@ export default function ConversationSidebar({
     if (contact) {
       setContactForm({
         name: contact.name || '',
-        phone: contact.phone || contact.externalContactId || '',
+        phone: contact.phone || '',
         email: contact.email || '',
         company: contact.company || '',
         address: contact.address || '',
@@ -478,16 +478,21 @@ export default function ConversationSidebar({
               </div>
             ) : (
               <div className="space-y-2 text-[11px]">
-                {contact?.name && (
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <User className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-                    <span className="text-foreground font-semibold">{contact.name}</span>
-                  </div>
-                )}
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <User className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                  <span className="text-foreground font-semibold">{contact?.name || 'Customer'}</span>
+                </div>
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Phone className="w-3.5 h-3.5 text-primary shrink-0" />
-                  <span className="text-foreground select-all">{contact?.phone || contact?.externalContactId || 'N/A'}</span>
+                  <span className="text-foreground select-all font-medium">
+                    {contact?.phone ? contact.phone : (language === 'en' ? 'No phone set' : 'ফোন নম্বর যুক্ত নেই')}
+                  </span>
                 </div>
+                {contact?.externalContactId && (
+                  <div className="text-[10px] text-muted-foreground/70 font-mono pl-5">
+                    ID: {contact.externalContactId}
+                  </div>
+                )}
                 {contact?.email && (
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Mail className="w-3.5 h-3.5 text-secondary shrink-0" />

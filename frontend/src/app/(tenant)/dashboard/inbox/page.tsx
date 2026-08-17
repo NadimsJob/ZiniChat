@@ -81,6 +81,29 @@ export default function InboxPage() {
   const [commentLogs, setCommentLogs] = useState<any[]>([]);
   const [selectedCommentId, setSelectedCommentId] = useState<string | null>(null);
   const [commentContact, setCommentContact] = useState<any>(null);
+  const [readCommentIds, setReadCommentIds] = useState<string[]>(() => {
+    try {
+      const saved = typeof window !== 'undefined' ? localStorage.getItem('read_comment_ids') : null;
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  const markCommentAsRead = useCallback((commentId: string | null) => {
+    if (!commentId) return;
+    setReadCommentIds(prev => {
+      if (prev.includes(commentId)) return prev;
+      const next = [...prev, commentId];
+      try {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('read_comment_ids', JSON.stringify(next));
+        }
+      } catch (e) {}
+      return next;
+    });
+  }, []);
+
   const [humanReplyText, setHumanReplyText] = useState('');
   const [humanReplyType, setHumanReplyType] = useState<'public' | 'private' | 'both'>('public');
   const [sendingHumanReply, setSendingHumanReply] = useState(false);
@@ -89,6 +112,7 @@ export default function InboxPage() {
   // Fetch or construct contact for selected comment user
   useEffect(() => {
     if (channelFilter === 'facebook_comments' && selectedCommentId) {
+      markCommentAsRead(selectedCommentId);
       const selectedComment = commentLogs.find(c => c.commentId === selectedCommentId);
       if (selectedComment && selectedComment.userExternalId) {
         const token = Cookies.get('access_token');
@@ -124,7 +148,7 @@ export default function InboxPage() {
           });
       }
     }
-  }, [channelFilter, selectedCommentId, commentLogs]);
+  }, [channelFilter, selectedCommentId, commentLogs, markCommentAsRead]);
 
   const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -301,6 +325,14 @@ export default function InboxPage() {
 
     socket.on('message:status', ({ messageId, status }) => {
       setMessages(prev => prev.map(m => m.id === messageId ? { ...m, status } : m));
+    });
+
+    socket.on('contact:updated', (updatedContact) => {
+      setConversations(prev => prev.map(c => 
+        c.contactId === updatedContact.id || c.contact?.id === updatedContact.id
+          ? { ...c, contact: { ...(c.contact || {}), ...updatedContact } }
+          : c
+      ));
     });
 
     socket.on('conversation:read', (data) => {
@@ -974,7 +1006,7 @@ export default function InboxPage() {
           ))}
           {(hasCommentAutomation || activeChannels.some((c: any) => ['messenger', 'instagram'].includes(c.channelType))) && (
             (() => {
-              const unreadCommentsCount = commentLogs.filter(c => c.replyStatus === 'pending' || c.replyStatus === 'failed' || !c.isRead).length;
+              const unreadCommentsCount = commentLogs.filter(c => !readCommentIds.includes(c.commentId) && !c.isRead).length;
               return (
                 <button
                   onClick={() => setChannelFilter('facebook_comments')}
@@ -1081,6 +1113,7 @@ export default function InboxPage() {
                     key={c.id}
                     onClick={() => {
                       setSelectedCommentId(c.commentId);
+                      markCommentAsRead(c.commentId);
                       setMobilePanelView('chat');
                     }}
                     className={`px-3 py-2.5 cursor-pointer transition-all hover:bg-muted/50 ${
@@ -1480,7 +1513,7 @@ export default function InboxPage() {
                     <span className="text-xs md:text-[10px] text-muted-foreground font-normal capitalize">({activeConv.channel})</span>
                   </h3>
                   <p className="text-[11px] md:text-[10px] text-muted-foreground flex items-center gap-2">
-                    <span>{activeConv.contact?.phone || activeConv.contact?.externalContactId}</span>
+                    <span>{activeConv.contact?.phone ? activeConv.contact.phone : `ID: ${activeConv.contact?.externalContactId || ''}`}</span>
                     {activeConv.assignedAgent && (
                       <span className="text-primary font-medium">· Assigned to: {activeConv.assignedAgent.name}</span>
                     )}

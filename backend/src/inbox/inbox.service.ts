@@ -8,6 +8,7 @@ import { ActivityLogService } from './activity-log.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import * as path from 'path';
 
+import { InboxGateway } from './inbox.gateway';
 import { QuotaService } from '../tenants/quota.service';
 
 @Injectable()
@@ -23,7 +24,9 @@ export class InboxService {
     private orchestratorService: OrchestratorService,
     private activityLogService: ActivityLogService,
     private notificationsService: NotificationsService,
-    private quotaService: QuotaService
+    private quotaService: QuotaService,
+    @Inject(forwardRef(() => InboxGateway))
+    private inboxGateway: InboxGateway
   ) {}
 
   async getActiveChannels(tenantId: string) {
@@ -288,7 +291,7 @@ export class InboxService {
       whereClause.channel = channel;
     }
 
-    return this.prisma.conversation.findMany({
+    const conversations = await this.prisma.conversation.findMany({
       where: whereClause,
       include: {
         contact: true,
@@ -316,6 +319,72 @@ export class InboxService {
       },
       orderBy: { lastMessageAt: 'desc' },
     });
+
+    // Auto-fetch Meta User Profile in background for any contact with generic default name
+    for (const conv of conversations) {
+      if (conv.contact && ['messenger', 'instagram'].includes(conv.contact.channel)) {
+        const isGeneric = !conv.contact.name || 
+          conv.contact.name === 'Messenger User' || 
+          conv.contact.name === 'Instagram User' || 
+          conv.contact.name === conv.contact.externalContactId;
+        if (isGeneric) {
+          this.fetchAndUpdateMetaUserProfile(tenantId, conv.contact.id, conv.contact.externalContactId, conv.contact.channel).catch(() => {});
+        }
+      }
+    }
+
+    return conversations;
+  }
+
+  async fetchAndUpdateMetaUserProfile(tenantId: string, contactId: string, externalContactId: string, channel: string) {
+    try {
+      if (!['messenger', 'instagram'].includes(channel)) return;
+
+      const connection = await this.prisma.channelConnection.findFirst({
+        where: { tenantId, channelType: channel, status: { in: ['active', 'connected'] } }
+      });
+
+      if (!connection || !connection.accessTokenEncrypted) return;
+
+      const pageToken = connection.accessTokenEncrypted;
+      let fullName: string | null = null;
+
+      if (channel === 'messenger') {
+        const res = await fetch(`https://graph.facebook.com/v21.0/${externalContactId}?fields=first_name,last_name,name,profile_pic&access_token=${pageToken}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.name) {
+            fullName = data.name;
+          } else if (data.first_name || data.last_name) {
+            fullName = `${data.first_name || ''} ${data.last_name || ''}`.trim();
+          }
+        }
+      } else if (channel === 'instagram') {
+        const res = await fetch(`https://graph.facebook.com/v21.0/${externalContactId}?fields=name,username,profile_pic&access_token=${pageToken}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.name) {
+            fullName = data.name;
+          } else if (data.username) {
+            fullName = data.username;
+          }
+        }
+      }
+
+      if (fullName && fullName.trim() !== '') {
+        const updatedContact = await this.prisma.contact.update({
+          where: { id: contactId },
+          data: { name: fullName.trim() }
+        });
+        this.logger.log(`Fetched Meta User Profile for ${channel} contact ${contactId}: ${fullName}`);
+
+        if (this.inboxGateway) {
+          this.inboxGateway.broadcastToTenant(tenantId, 'contact:updated', updatedContact);
+        }
+      }
+    } catch (err: any) {
+      this.logger.warn(`Failed fetching Meta user profile for ${externalContactId}: ${err.message}`);
+    }
   }
 
   async getInboxCounts(tenantId: string, user: any) {
@@ -921,6 +990,33 @@ export class InboxService {
       });
     }
 
+    // Auto-extract phone number from message content if contact.phone is missing
+    if (!contact.phone && typeof data.content === 'object' && data.content !== null) {
+      const textVal = data.content.text || data.content.body || '';
+      const phoneMatch = textVal.match(/(?:\+?88)?01[3-9]\d{8}/);
+      if (phoneMatch) {
+        const extractedPhone = phoneMatch[0];
+        contact = await this.prisma.contact.update({
+          where: { id: contact.id },
+          data: { phone: extractedPhone }
+        });
+        if (this.inboxGateway) {
+          this.inboxGateway.broadcastToTenant(data.tenantId, 'contact:updated', contact);
+        }
+      }
+    }
+
+    // Trigger Meta User Profile fetch (name) asynchronously if generic or missing
+    if (['messenger', 'instagram'].includes(data.channel)) {
+      const isGeneric = !contact.name || 
+        contact.name === 'Messenger User' || 
+        contact.name === 'Instagram User' || 
+        contact.name === cleanId;
+      if (isGeneric) {
+        this.fetchAndUpdateMetaUserProfile(data.tenantId, contact.id, cleanId, data.channel).catch(() => {});
+      }
+    }
+
     let conversation = await this.prisma.conversation.findFirst({
       where: { 
         tenantId: data.tenantId, 
@@ -1166,6 +1262,16 @@ export class InboxService {
           backoff: { type: 'exponential', delay: 1000 },
         }
       );
+    }
+
+    // Real-time WebSocket broadcast for outbound AI/Agent messages
+    if (this.inboxGateway) {
+      this.inboxGateway.broadcastToTenant(tenantId, 'new_message', {
+        message,
+        conversation,
+        contact: conversation.contact,
+        conversationId: conversation.id
+      });
     }
 
     return { message, conversation };
