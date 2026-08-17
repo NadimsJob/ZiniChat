@@ -32,6 +32,10 @@ model Tenant {
   messageCount                  Int      @default(0)
   storageWarning80Notified      Boolean  @default(false)
   storageWarning100Notified     Boolean  @default(false)
+  messageQuota80NotifiedAt      DateTime?
+  messageQuota100NotifiedAt     DateTime?
+  aiQuota80NotifiedAt           DateTime?
+  aiQuota100NotifiedAt          DateTime?
   customPlanName       String?
   customPriceUsd       Decimal? @db.Decimal(10, 2)
   customMessageQuota   Int?
@@ -936,6 +940,26 @@ model SmtpConfig {
   storageWarning100Enabled Boolean @default(true)
   storageWarning100Subject String?
   storageWarning100Body    String? @db.Text
+
+  // Message Warning - 80%
+  messageWarning80Enabled Boolean @default(true)
+  messageWarning80Subject String?
+  messageWarning80Body    String? @db.Text
+
+  // Message Warning - 100% (Exceeded)
+  messageWarning100Enabled Boolean @default(true)
+  messageWarning100Subject String?
+  messageWarning100Body    String? @db.Text
+
+  // AI Warning - 80%
+  aiWarning80Enabled       Boolean @default(true)
+  aiWarning80Subject       String?
+  aiWarning80Body          String? @db.Text
+
+  // AI Warning - 100% (Exceeded)
+  aiWarning100Enabled      Boolean @default(true)
+  aiWarning100Subject      String?
+  aiWarning100Body         String? @db.Text
 
   createdAt DateTime @default(now())
 

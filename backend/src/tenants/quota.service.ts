@@ -27,21 +27,89 @@ export class QuotaService {
 
     const { periodStart, messageQuota } = await this.billingService.getActivePeriod(tenantId);
     const used = await this.getMessageUsage(tenantId, periodStart);
+    const usagePercent = messageQuota > 0 ? (used * 100) / messageQuota : 0;
+    const tenantName = (tenant as any).name || (tenant as any).slug || 'Tenant';
 
-    if (used >= messageQuota) {
-      // Notify tenant admins/owners (fire & forget)
-      this.prisma.user.findMany({ where: { tenantId, role: { in: ['owner', 'admin'] } } })
-        .then(admins => {
-          for (const admin of admins) {
-            this.notificationsService.createNotification(
-              admin.id,
-              '🚨 Message Quota Limit Reached',
-              `Your monthly message quota has been fully used (${used}/${messageQuota}). Please upgrade your plan to continue sending messages.`,
-              'system'
+    const hasNotified100 = tenant.messageQuota100NotifiedAt 
+      ? new Date(tenant.messageQuota100NotifiedAt).getTime() === new Date(periodStart).getTime()
+      : false;
+    const hasNotified80 = tenant.messageQuota80NotifiedAt
+      ? new Date(tenant.messageQuota80NotifiedAt).getTime() === new Date(periodStart).getTime()
+      : false;
+
+    // ── 100% Warning ──────────────────────────────
+    if (usagePercent >= 100 && !hasNotified100) {
+      try {
+        await this.prisma.tenant.update({
+          where: { id: tenantId },
+          data: { messageQuota100NotifiedAt: periodStart }
+        });
+      } catch (err) {
+        this.logger.warn(`Failed to update tenant message quota 100 notified date: ${err.message}`);
+      }
+
+      try {
+        const admins = await this.prisma.user.findMany({ where: { tenantId, role: { in: ['owner', 'admin'] } } });
+        for (const admin of admins) {
+          this.notificationsService.createNotification(
+            admin.id,
+            '🚨 মেসেজ কোটা সম্পূর্ণ শেষ!',
+            `আপনার মাসিক মেসেজ কোটা সম্পূর্ণ শেষ হয়ে গেছে (${used}/${messageQuota})। মেসেজ বা ব্রডকাস্ট পাঠাতে প্ল্যান আপগ্রেড করুন।`,
+            'system'
+          ).catch(() => {});
+
+          if (admin.email) {
+            this.smtpService.triggerMessageWarningEmail(
+              admin.email,
+              tenantName,
+              100,
+              used,
+              messageQuota
             ).catch(() => {});
           }
-        })
-        .catch(() => {});
+        }
+      } catch (err) {
+        this.logger.warn(`Failed to process admin notifications for 100% message warning: ${err.message}`);
+      }
+    }
+
+    // ── 80% Warning ──────────────────────────────
+    if (usagePercent >= 80 && usagePercent < 100 && !hasNotified80) {
+      try {
+        await this.prisma.tenant.update({
+          where: { id: tenantId },
+          data: { messageQuota80NotifiedAt: periodStart }
+        });
+      } catch (err) {
+        this.logger.warn(`Failed to update tenant message quota 80 notified date: ${err.message}`);
+      }
+
+      try {
+        const admins = await this.prisma.user.findMany({ where: { tenantId, role: { in: ['owner', 'admin'] } } });
+        for (const admin of admins) {
+          this.notificationsService.createNotification(
+            admin.id,
+            '⚠️ মেসেজ কোটা ৮০% ব্যবহৃত হয়েছে',
+            `আপনার মাসিক মেসেজ কোটা ৮০% ব্যবহৃত হয়েছে (${used}/${messageQuota})। সার্ভিস সচল রাখতে প্ল্যান আপগ্রেড করার কথা ভাবুন।`,
+            'system'
+          ).catch(() => {});
+
+          if (admin.email) {
+            this.smtpService.triggerMessageWarningEmail(
+              admin.email,
+              tenantName,
+              Math.floor(usagePercent),
+              used,
+              messageQuota
+            ).catch(() => {});
+          }
+        }
+      } catch (err) {
+        this.logger.warn(`Failed to process admin notifications for 80% message warning: ${err.message}`);
+      }
+    }
+
+    if (used >= messageQuota) {
       throw new ForbiddenException(`Message quota exceeded (${used}/${messageQuota}). Please upgrade your plan.`);
     }
   }
@@ -134,21 +202,89 @@ export class QuotaService {
         createdAt: { gte: periodStart }
       }
     });
+    const usagePercent = aiQuota > 0 ? (aiUsed * 100) / aiQuota : 0;
+    const tenantName = (tenant as any).name || (tenant as any).slug || 'Tenant';
 
-    if (aiUsed >= aiQuota) {
-      // Notify tenant admins/owners (fire & forget)
-      this.prisma.user.findMany({ where: { tenantId, role: { in: ['owner', 'admin'] } } })
-        .then(admins => {
-          for (const admin of admins) {
-            this.notificationsService.createNotification(
-              admin.id,
-              '🚨 AI Quota Limit Reached',
-              `Your monthly AI response quota has been fully used (${aiUsed}/${aiQuota}). Please upgrade your plan to continue using AI auto-replies.`,
-              'system'
+    const hasNotified100 = tenant.aiQuota100NotifiedAt
+      ? new Date(tenant.aiQuota100NotifiedAt).getTime() === new Date(periodStart).getTime()
+      : false;
+    const hasNotified80 = tenant.aiQuota80NotifiedAt
+      ? new Date(tenant.aiQuota80NotifiedAt).getTime() === new Date(periodStart).getTime()
+      : false;
+
+    // ── 100% Warning ──────────────────────────────
+    if (usagePercent >= 100 && !hasNotified100) {
+      try {
+        await this.prisma.tenant.update({
+          where: { id: tenantId },
+          data: { aiQuota100NotifiedAt: periodStart }
+        });
+      } catch (err) {
+        this.logger.warn(`Failed to update tenant AI quota 100 notified date: ${err.message}`);
+      }
+
+      try {
+        const admins = await this.prisma.user.findMany({ where: { tenantId, role: { in: ['owner', 'admin'] } } });
+        for (const admin of admins) {
+          this.notificationsService.createNotification(
+            admin.id,
+            '🚨 এআই রেসপন্স কোটা সম্পূর্ণ শেষ!',
+            `আপনার মাসিক এআই রেসপন্স কোটা সম্পূর্ণ শেষ হয়ে গেছে (${aiUsed}/${aiQuota})। চ্যাটবটের উত্তর পাঠানো বন্ধ রয়েছে। প্ল্যান আপগ্রেড করুন।`,
+            'system'
+          ).catch(() => {});
+
+          if (admin.email) {
+            this.smtpService.triggerAiWarningEmail(
+              admin.email,
+              tenantName,
+              100,
+              aiUsed,
+              aiQuota
             ).catch(() => {});
           }
-        })
-        .catch(() => {});
+        }
+      } catch (err) {
+        this.logger.warn(`Failed to process admin notifications for 100% AI warning: ${err.message}`);
+      }
+    }
+
+    // ── 80% Warning ──────────────────────────────
+    if (usagePercent >= 80 && usagePercent < 100 && !hasNotified80) {
+      try {
+        await this.prisma.tenant.update({
+          where: { id: tenantId },
+          data: { aiQuota80NotifiedAt: periodStart }
+        });
+      } catch (err) {
+        this.logger.warn(`Failed to update tenant AI quota 80 notified date: ${err.message}`);
+      }
+
+      try {
+        const admins = await this.prisma.user.findMany({ where: { tenantId, role: { in: ['owner', 'admin'] } } });
+        for (const admin of admins) {
+          this.notificationsService.createNotification(
+            admin.id,
+            '⚠️ এআই রেসপন্স কোটা ৮০% ব্যবহৃত হয়েছে',
+            `Your monthly AI response quota is 80% used (${aiUsed}/${aiQuota}). Upgrade your plan to prevent AI auto-replies from stopping.`,
+            'system'
+          ).catch(() => {});
+
+          if (admin.email) {
+            this.smtpService.triggerAiWarningEmail(
+              admin.email,
+              tenantName,
+              Math.floor(usagePercent),
+              aiUsed,
+              aiQuota
+            ).catch(() => {});
+          }
+        }
+      } catch (err) {
+        this.logger.warn(`Failed to process admin notifications for 80% AI warning: ${err.message}`);
+      }
+    }
+
+    if (aiUsed >= aiQuota) {
       throw new ForbiddenException(`AI quota exceeded (${aiUsed}/${aiQuota}). Please upgrade your plan.`);
     }
   }

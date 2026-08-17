@@ -61,6 +61,31 @@ export class BillingService {
       }),
     ]);
 
+    const activePeriod = await this.getActivePeriod(tenantId);
+    const [messagesUsed, aiUsed] = await Promise.all([
+      this.prisma.message.count({
+        where: {
+          direction: 'outbound',
+          conversation: { tenantId },
+          createdAt: { gte: activePeriod.periodStart }
+        }
+      }).then(async (directCount) => {
+        const broadcastCount = await this.prisma.broadcastRecipient.count({
+          where: {
+            broadcast: { tenantId, createdAt: { gte: activePeriod.periodStart } },
+            status: { notIn: ['pending', 'failed'] }
+          }
+        });
+        return directCount + broadcastCount;
+      }),
+      this.prisma.aiUsageLog.count({
+        where: {
+          tenantId,
+          createdAt: { gte: activePeriod.periodStart }
+        }
+      })
+    ]);
+
     const baseMessageQuota = tenant?.customMessageQuota ?? plan?.messageQuota ?? 100;
     const baseAiQuota = tenant?.customAiQuota ?? plan?.aiQuota ?? 50;
 
@@ -74,6 +99,8 @@ export class BillingService {
       contactsLimit: tenant?.customContactsLimit ?? plan?.contactsLimit ?? null,
       messageQuota: baseMessageQuota + (activeSubscription?.carriedForwardMessageQuota ?? 0),
       aiQuota: baseAiQuota + (activeSubscription?.carriedForwardAiQuota ?? 0),
+      messagesUsed,
+      aiUsed,
       carriedForwardMessageQuota: activeSubscription?.carriedForwardMessageQuota ?? 0,
       carriedForwardAiQuota: activeSubscription?.carriedForwardAiQuota ?? 0,
       seatLimit: tenant?.customSeatLimit ?? plan?.seatLimit ?? 1,

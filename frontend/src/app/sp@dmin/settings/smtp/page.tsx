@@ -168,6 +168,64 @@ ZiniChat টিম`,
 ধন্যবাদ,
 ZiniChat টিম`,
   },
+  messageWarning80: {
+    subject: '⚠️ সতর্কতা: মাসিক মেসেজ কোটা ৮০% ব্যবহৃত হয়েছে – {{tenantName}}',
+    body: `প্রিয় {{tenantName}},
+
+আপনার ZiniChat অ্যাকাউন্টের মাসিক আউটবাউন্ড মেসেজ কোটার ৮০% ব্যবহৃত হয়ে গেছে ({{used}} / {{limit}} মেসেজ)।
+
+কোটা সম্পূর্ণ শেষ হওয়ার আগেই আপনার সার্ভিস নিরবচ্ছিন্ন রাখতে পদক্ষেপ নিন:
+• অযাচিত ব্রডকাস্ট ক্যাম্পেইন কমান
+• অথবা এখনই আপনার প্ল্যানটি আপগ্রেড করুন
+
+আপগ্রেড করতে: আপনার ড্যাশবোর্ড → সেটিংস → সাবস্ক্রিপশন
+
+ধন্যবাদ,
+ZiniChat টিম`,
+  },
+  messageWarning100: {
+    subject: '🚨 জরুরি সতর্কতা: মাসিক মেসেজ কোটা সম্পূর্ণ শেষ! – {{tenantName}}',
+    body: `প্রিয় {{tenantName}},
+
+আপনার ZiniChat অ্যাকাউন্টের মাসিক আউটবাউন্ড মেসেজ কোটা সম্পূর্ণ শেষ হয়ে গেছে ({{used}} / {{limit}} মেসেজ)।
+
+⛔ এই মুহূর্তে কাস্টমারদের কোনো আউটবাউন্ড মেসেজ (এজেন্ট চ্যাট অথবা ব্রডকাস্ট) পাঠানো যাবে না।
+
+আপনার ব্যবসা ও গ্রাহক সেবা সচল রাখতে অবিলম্বে আপনার প্ল্যানটি আপগ্রেড করুন।
+
+আপগ্রেড করতে: আপনার ড্যাশবোর্ড → সেটিংস → সাবস্ক্রিপশন
+
+ধন্যবাদ,
+ZiniChat টিম`,
+  },
+  aiWarning80: {
+    subject: '⚠️ সতর্কতা: মাসিক এআই রেসপন্স কোটা ৮০% ব্যবহৃত হয়েছে – {{tenantName}}',
+    body: `প্রিয় {{tenantName}},
+
+আপনার ZiniChat অ্যাকাউন্টের মাসিক এআই রেসপন্স (AI Auto-Replies) কোটার ৮০% ব্যবহৃত হয়ে গেছে ({{used}} / {{limit}} রেসপন্স)।
+
+কোটা সম্পূর্ণ শেষ হওয়ার আগেই এআই সেবা নিরবচ্ছিন্ন রাখতে এখনই আপনার প্ল্যানটি আপগ্রেড করুন।
+
+আপগ্রেড করতে: আপনার ড্যাশবোর্ড → সেটিংস → সাবস্ক্রিপশন
+
+ধন্যবাদ,
+ZiniChat টিম`,
+  },
+  aiWarning100: {
+    subject: '🚨 জরুরি সতর্কতা: মাসিক এআই রেসপন্স কোটা সম্পূর্ণ শেষ! – {{tenantName}}',
+    body: `প্রিয় {{tenantName}},
+
+আপনার ZiniChat অ্যাকাউন্টের মাসিক এআই রেসপন্স (AI Auto-Replies) কোটা সম্পূর্ণ শেষ হয়ে গেছে ({{used}} / {{limit}} রেসপন্স)।
+
+⛔ চ্যাটবট এখন আর গ্রাহকদের স্বয়ংক্রিয় উত্তর দিতে পারবে না। কাস্টমারদের সমস্ত ইনকোয়ারি এখন ম্যানুয়ালি উত্তর দিতে হবে।
+
+চ্যাটবট অটো-রিপ্লাই পুনরায় চালু করতে অবিলম্বে আপনার প্ল্যানটি আপগ্রেড করুন।
+
+আপগ্রেড করতে: আপনার ড্যাশবোর্ড → সেটিংস → সাবস্ক্রিপশন
+
+ধন্যবাদ,
+ZiniChat টিম`,
+  },
 };
 
 const EMAIL_CATEGORIES = [
@@ -357,6 +415,50 @@ const EMAIL_CATEGORIES = [
     subjectField: 'storageWarning100Subject',
     bodyField: 'storageWarning100Body',
     vars: ['{{tenantName}}', '{{percent}}', '{{usedMb}}', '{{limitMb}}'],
+  },
+  {
+    key: 'messageWarning80',
+    label: 'Message Warning (80% Used)',
+    labelBn: 'মেসেজ কোটা সতর্কতা (৮০% ব্যবহৃত হলে)',
+    description: 'মাসিক আউটবাউন্ড মেসেজ কোটা ৮০% ব্যবহৃত হলে টেন্যান্টকে সতর্কতা পাঠানো হবে',
+    icon: AlertCircle,
+    enabledField: 'messageWarning80Enabled',
+    subjectField: 'messageWarning80Subject',
+    bodyField: 'messageWarning80Body',
+    vars: ['{{tenantName}}', '{{percent}}', '{{used}}', '{{limit}}'],
+  },
+  {
+    key: 'messageWarning100',
+    label: 'Message Warning (100% Consumed)',
+    labelBn: 'মেসেজ কোটা সতর্কতা (১০০% ব্যবহৃত হলে)',
+    description: 'মাসিক আউটবাউন্ড মেসেজ কোটা সম্পূর্ণ শেষ হলে টেন্যান্টকে সতর্কবার্তা পাঠানো হবে',
+    icon: AlertCircle,
+    enabledField: 'messageWarning100Enabled',
+    subjectField: 'messageWarning100Subject',
+    bodyField: 'messageWarning100Body',
+    vars: ['{{tenantName}}', '{{percent}}', '{{used}}', '{{limit}}'],
+  },
+  {
+    key: 'aiWarning80',
+    label: 'AI Warning (80% Used)',
+    labelBn: 'এআই কোটা সতর্কতা (৮০% ব্যবহৃত হলে)',
+    description: 'মাসিক এআই রেসপন্স কোটা ৮০% ব্যবহৃত হলে টেন্যান্টকে সতর্কতা পাঠানো হবে',
+    icon: AlertCircle,
+    enabledField: 'aiWarning80Enabled',
+    subjectField: 'aiWarning80Subject',
+    bodyField: 'aiWarning80Body',
+    vars: ['{{tenantName}}', '{{percent}}', '{{used}}', '{{limit}}'],
+  },
+  {
+    key: 'aiWarning100',
+    label: 'AI Warning (100% Consumed)',
+    labelBn: 'এআই কোটা সতর্কতা (১০০% ব্যবহৃত হলে)',
+    description: 'মাসিক এআই রেসপন্স কোটা সম্পূর্ণ শেষ হলে টেন্যান্টকে সতর্কবার্তা পাঠানো হবে',
+    icon: AlertCircle,
+    enabledField: 'aiWarning100Enabled',
+    subjectField: 'aiWarning100Subject',
+    bodyField: 'aiWarning100Body',
+    vars: ['{{tenantName}}', '{{percent}}', '{{used}}', '{{limit}}'],
   },
 ];
 

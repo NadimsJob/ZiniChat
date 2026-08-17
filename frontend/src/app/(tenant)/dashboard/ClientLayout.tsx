@@ -75,6 +75,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  const [allowedFeatures, setAllowedFeatures] = useState<string[]>(['*']);
  const [avatarError, setAvatarError] = useState(false);
  const [storageStats, setStorageStats] = useState<any>(null);
+ const [quotasData, setQuotasData] = useState<any>(null);
  const [isPropertyMode, setIsPropertyMode] = useState(false);
  const [isHospitalityMode, setIsHospitalityMode] = useState(false);
  const [isTechSoftwareMode, setIsTechSoftwareMode] = useState(false);
@@ -261,6 +262,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
       }
       if (quotasRes.ok) {
         const quotas = await quotasRes.json();
+        setQuotasData(quotas);
         if (quotas.features) {
           setAllowedFeatures(quotas.features);
         }
@@ -886,6 +888,99 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
             </Link>
           </div>
         </div>
+      );
+    })()
+  )}
+  {mounted && quotasData && (
+    (() => {
+      // ── Message Quota Warnings ──
+      const messagesUsed = quotasData.messagesUsed || 0;
+      const messageQuota = quotasData.messageQuota || 0;
+      const messagePercent = messageQuota > 0 ? (messagesUsed * 100) / messageQuota : 0;
+      const isMsg80 = messagePercent >= 80 && messagePercent < 100;
+      const isMsg100 = messagePercent >= 100;
+
+      // ── AI Quota Warnings ──
+      const aiUsed = quotasData.aiUsed || 0;
+      const aiQuota = quotasData.aiQuota || 0;
+      const aiPercent = aiQuota > 0 ? (aiUsed * 100) / aiQuota : 0;
+      const isAi80 = aiPercent >= 80 && aiPercent < 100;
+      const isAi100 = aiPercent >= 100;
+
+      return (
+        <>
+          {/* Message Quota Warning Banner */}
+          {(isMsg80 || isMsg100) && (
+            <div className={`mb-3 p-3 rounded-xl border flex flex-col sm:flex-row items-center justify-between gap-3 text-xs backdrop-blur-md shadow-sm ${
+              isMsg100 
+                ? 'bg-red-500/10 border-red-500/20 text-red-500 dark:text-red-400' 
+                : 'bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400'
+            }`}>
+              <div className="flex items-center gap-2.5">
+                <span className={`w-2 h-2 rounded-full animate-pulse shrink-0 ${isMsg100 ? 'bg-red-500' : 'bg-amber-500'}`} />
+                <span className="font-medium">
+                  {isMsg100 ? (
+                    language === 'en'
+                      ? `🚨 Critical: Monthly message quota fully consumed (${messagesUsed} / ${messageQuota}). Sending messages is blocked.`
+                      : `🚨 জরুরি সতর্কতা: মাসিক মেসেজ কোটা সম্পূর্ণ শেষ (${messagesUsed} / ${messageQuota})। মেসেজ পাঠানো ব্লক রয়েছে।`
+                  ) : (
+                    language === 'en'
+                      ? `⚠️ Warning: Monthly message quota is ${messagePercent.toFixed(0)}% full (${messagesUsed} / ${messageQuota}).`
+                      : `⚠️ সতর্কতা: আপনার মাসিক মেসেজ কোটা ${messagePercent.toFixed(0)}% পূর্ণ (${messagesUsed} / ${messageQuota})।`
+                  )}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto justify-end">
+                <Link 
+                  href="/dashboard/settings/subscription" 
+                  className={`px-3 py-1.5 rounded-lg font-bold border transition-colors text-center w-full sm:w-auto ${
+                    isMsg100 
+                      ? 'bg-red-500 text-white border-red-600 hover:bg-red-600' 
+                      : 'bg-amber-500 text-white border-amber-600 hover:bg-amber-600'
+                  }`}
+                >
+                  {language === 'en' ? 'Upgrade Plan' : 'আপগ্রেড প্ল্যান'}
+                </Link>
+              </div>
+            </div>
+          )}
+
+          {/* AI Quota Warning Banner */}
+          {(isAi80 || isAi100) && (
+            <div className={`mb-3 p-3 rounded-xl border flex flex-col sm:flex-row items-center justify-between gap-3 text-xs backdrop-blur-md shadow-sm ${
+              isAi100 
+                ? 'bg-red-500/10 border-red-500/20 text-red-500 dark:text-red-400' 
+                : 'bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400'
+            }`}>
+              <div className="flex items-center gap-2.5">
+                <span className={`w-2 h-2 rounded-full animate-pulse shrink-0 ${isAi100 ? 'bg-red-500' : 'bg-amber-500'}`} />
+                <span className="font-medium">
+                  {isAi100 ? (
+                    language === 'en'
+                      ? `🚨 Critical: Monthly AI responses quota fully consumed (${aiUsed} / ${aiQuota}). AI chatbot auto-replies are disabled.`
+                      : `🚨 জরুরি সতর্কতা: মাসিক এআই রেসপন্স কোটা সম্পূর্ণ শেষ (${aiUsed} / ${aiQuota})। চ্যাটবট অটো-রিপ্লাই বন্ধ রয়েছে।`
+                  ) : (
+                    language === 'en'
+                      ? `⚠️ Warning: Monthly AI responses quota is ${aiPercent.toFixed(0)}% full (${aiUsed} / ${aiQuota}).`
+                      : `⚠️ সতর্কতা: আপনার মাসিক এআই রেসপন্স কোটা ${aiPercent.toFixed(0)}% পূর্ণ (${aiUsed} / ${aiQuota})।`
+                  )}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto justify-end">
+                <Link 
+                  href="/dashboard/settings/subscription" 
+                  className={`px-3 py-1.5 rounded-lg font-bold border transition-colors text-center w-full sm:w-auto ${
+                    isAi100 
+                      ? 'bg-red-500 text-white border-red-600 hover:bg-red-600' 
+                      : 'bg-amber-500 text-white border-amber-600 hover:bg-amber-600'
+                  }`}
+                >
+                  {language === 'en' ? 'Upgrade Plan' : 'আপগ্রেড প্ল্যান'}
+                </Link>
+              </div>
+            </div>
+          )}
+        </>
       );
     })()
   )}

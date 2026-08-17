@@ -62,7 +62,11 @@ describe('QuotaService', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: BillingService, useValue: billing },
         { provide: NotificationsService, useValue: { createNotification: jest.fn().mockResolvedValue({}) } },
-        { provide: SmtpService, useValue: { triggerStorageWarningEmail: jest.fn().mockResolvedValue({}) } },
+        { provide: SmtpService, useValue: {
+          triggerStorageWarningEmail: jest.fn().mockResolvedValue({}),
+          triggerMessageWarningEmail: jest.fn().mockResolvedValue({}),
+          triggerAiWarningEmail: jest.fn().mockResolvedValue({})
+        } },
       ],
     }).compile();
 
@@ -183,6 +187,91 @@ describe('QuotaService', () => {
         })
       );
     });
+
+    it('triggers 80% message warning if usage hits 80% and period not yet notified', async () => {
+      const tenantMock = mockActiveTenant({
+        messageQuota80NotifiedAt: null
+      });
+      prisma.tenant.findUnique.mockResolvedValue(tenantMock);
+      billing.getActivePeriod.mockResolvedValue(mockActivePeriod({ messageQuota: 100 }));
+      prisma.message.count.mockResolvedValue(80); // 80% of 100
+      prisma.broadcastRecipient.count.mockResolvedValue(0);
+      prisma.user.findMany.mockResolvedValue([{ id: 'admin-1', email: 'admin@test.com', role: 'admin' }]);
+
+      const notificationsService = (service as any).notificationsService;
+      const smtpService = (service as any).smtpService;
+
+      await service.checkMessageQuota(TENANT_ID);
+
+      expect(prisma.tenant.update).toHaveBeenCalledWith({
+        where: { id: TENANT_ID },
+        data: { messageQuota80NotifiedAt: PERIOD_START }
+      });
+      expect(notificationsService.createNotification).toHaveBeenCalledWith(
+        'admin-1',
+        expect.stringContaining('৮০%'),
+        expect.any(String),
+        'system'
+      );
+      expect(smtpService.triggerMessageWarningEmail).toHaveBeenCalledWith(
+        'admin@test.com',
+        expect.any(String),
+        80,
+        80,
+        100
+      );
+    });
+
+    it('does not trigger 80% message warning if already notified for current period', async () => {
+      const tenantMock = mockActiveTenant({
+        messageQuota80NotifiedAt: PERIOD_START
+      });
+      prisma.tenant.findUnique.mockResolvedValue(tenantMock);
+      billing.getActivePeriod.mockResolvedValue(mockActivePeriod({ messageQuota: 100 }));
+      prisma.message.count.mockResolvedValue(80);
+      prisma.broadcastRecipient.count.mockResolvedValue(0);
+      prisma.tenant.update.mockClear();
+
+      await service.checkMessageQuota(TENANT_ID);
+
+      expect(prisma.tenant.update).not.toHaveBeenCalled();
+    });
+
+    it('triggers 100% message warning if usage hits 100% and period not yet notified', async () => {
+      const tenantMock = mockActiveTenant({
+        messageQuota100NotifiedAt: null
+      });
+      prisma.tenant.findUnique.mockResolvedValue(tenantMock);
+      billing.getActivePeriod.mockResolvedValue(mockActivePeriod({ messageQuota: 100 }));
+      prisma.message.count.mockResolvedValue(100);
+      prisma.broadcastRecipient.count.mockResolvedValue(0);
+      prisma.user.findMany.mockResolvedValue([{ id: 'admin-1', email: 'admin@test.com', role: 'admin' }]);
+
+      const notificationsService = (service as any).notificationsService;
+      const smtpService = (service as any).smtpService;
+
+      try {
+        await service.checkMessageQuota(TENANT_ID);
+      } catch (e) {}
+
+      expect(prisma.tenant.update).toHaveBeenCalledWith({
+        where: { id: TENANT_ID },
+        data: { messageQuota100NotifiedAt: PERIOD_START }
+      });
+      expect(notificationsService.createNotification).toHaveBeenCalledWith(
+        'admin-1',
+        expect.stringContaining('সম্পূর্ণ শেষ'),
+        expect.any(String),
+        'system'
+      );
+      expect(smtpService.triggerMessageWarningEmail).toHaveBeenCalledWith(
+        'admin@test.com',
+        expect.any(String),
+        100,
+        100,
+        100
+      );
+    });
   });
 
   // ─── getMessageUsage ─────────────────────────────────────────────────────────
@@ -257,6 +346,88 @@ describe('QuotaService', () => {
             createdAt: { gte: PERIOD_START },
           }),
         })
+      );
+    });
+
+    it('triggers 80% AI warning if usage hits 80% and period not yet notified', async () => {
+      const tenantMock = mockActiveTenant({
+        aiQuota80NotifiedAt: null
+      });
+      prisma.tenant.findUnique.mockResolvedValue(tenantMock);
+      billing.getActivePeriod.mockResolvedValue(mockActivePeriod({ aiQuota: 100 }));
+      prisma.aiUsageLog.count.mockResolvedValue(80);
+      prisma.user.findMany.mockResolvedValue([{ id: 'admin-1', email: 'admin@test.com', role: 'admin' }]);
+
+      const notificationsService = (service as any).notificationsService;
+      const smtpService = (service as any).smtpService;
+
+      await service.checkAiQuota(TENANT_ID);
+
+      expect(prisma.tenant.update).toHaveBeenCalledWith({
+        where: { id: TENANT_ID },
+        data: { aiQuota80NotifiedAt: PERIOD_START }
+      });
+      expect(notificationsService.createNotification).toHaveBeenCalledWith(
+        'admin-1',
+        expect.stringContaining('৮০%'),
+        expect.any(String),
+        'system'
+      );
+      expect(smtpService.triggerAiWarningEmail).toHaveBeenCalledWith(
+        'admin@test.com',
+        expect.any(String),
+        80,
+        80,
+        100
+      );
+    });
+
+    it('does not trigger 80% AI warning if already notified for current period', async () => {
+      const tenantMock = mockActiveTenant({
+        aiQuota80NotifiedAt: PERIOD_START
+      });
+      prisma.tenant.findUnique.mockResolvedValue(tenantMock);
+      billing.getActivePeriod.mockResolvedValue(mockActivePeriod({ aiQuota: 100 }));
+      prisma.aiUsageLog.count.mockResolvedValue(80);
+      prisma.tenant.update.mockClear();
+
+      await service.checkAiQuota(TENANT_ID);
+
+      expect(prisma.tenant.update).not.toHaveBeenCalled();
+    });
+
+    it('triggers 100% AI warning if usage hits 100% and period not yet notified', async () => {
+      const tenantMock = mockActiveTenant({
+        aiQuota100NotifiedAt: null
+      });
+      prisma.tenant.findUnique.mockResolvedValue(tenantMock);
+      billing.getActivePeriod.mockResolvedValue(mockActivePeriod({ aiQuota: 100 }));
+      prisma.aiUsageLog.count.mockResolvedValue(100);
+      prisma.user.findMany.mockResolvedValue([{ id: 'admin-1', email: 'admin@test.com', role: 'admin' }]);
+
+      const notificationsService = (service as any).notificationsService;
+      const smtpService = (service as any).smtpService;
+
+      try {
+        await service.checkAiQuota(TENANT_ID);
+      } catch (e) {}
+
+      expect(prisma.tenant.update).toHaveBeenCalledWith({
+        where: { id: TENANT_ID },
+        data: { aiQuota100NotifiedAt: PERIOD_START }
+      });
+      expect(notificationsService.createNotification).toHaveBeenCalledWith(
+        'admin-1',
+        expect.stringContaining('সম্পূর্ণ শেষ'),
+        expect.any(String),
+        'system'
+      );
+      expect(smtpService.triggerAiWarningEmail).toHaveBeenCalledWith(
+        'admin@test.com',
+        expect.any(String),
+        100,
+        100,
+        100
       );
     });
   });

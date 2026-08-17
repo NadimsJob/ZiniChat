@@ -188,7 +188,62 @@ ZiniChat টিম`,
 
 ধন্যবাদ,
 ZiniChat টিম`,
+
+  messageWarning80Subject: '⚠️ সতর্কতা: মাসিক মেসেজ কোটা ৮০% ব্যবহৃত হয়েছে – {{tenantName}}',
+  messageWarning80Body: `প্রিয় {{tenantName}},
+
+আপনার ZiniChat অ্যাকাউন্টের মাসিক আউটবাউন্ড মেসেজ কোটার ৮০% ব্যবহৃত হয়ে গেছে ({{used}} / {{limit}} মেসেজ)।
+
+কোটা সম্পূর্ণ শেষ হওয়ার আগেই আপনার সার্ভিস নিরবচ্ছিন্ন রাখতে পদক্ষেপ নিন:
+• অযাচিত ব্রডকাস্ট ক্যাম্পেইন কমান
+• অথবা এখনই আপনার প্ল্যানটি আপগ্রেড করুন
+
+আপগ্রেড করতে: আপনার ড্যাশবোর্ড → সেটিংস → সাবস্ক্রিপশন
+
+ধন্যবাদ,
+ZiniChat টিম`,
+
+  messageWarning100Subject: '🚨 জরুরি সতর্কতা: মাসিক মেসেজ কোটা সম্পূর্ণ শেষ! – {{tenantName}}',
+  messageWarning100Body: `প্রিয় {{tenantName}},
+
+আপনার ZiniChat অ্যাকাউন্টের মাসিক আউটবাউন্ড মেসেজ কোটা সম্পূর্ণ শেষ হয়ে গেছে ({{used}} / {{limit}} মেসেজ)।
+
+⛔ এই মুহূর্তে কাস্টমারদের কোনো আউটবাউন্ড মেসেজ (এজেন্ট চ্যাট অথবা ব্রডকাস্ট) পাঠানো যাবে না।
+
+আপনার ব্যবসা ও গ্রাহক সেবা সচল রাখতে অবিলম্বে আপনার প্ল্যানটি আপগ্রেড করুন।
+
+আপগ্রেড করতে: আপনার ড্যাশবোর্ড → সেটিংস → সাবস্ক্রিপশন
+
+ধন্যবাদ,
+ZiniChat টিম`,
+
+  aiWarning80Subject: '⚠️ সতর্কতা: মাসিক এআই রেসপন্স কোটা ৮০% ব্যবহৃত হয়েছে – {{tenantName}}',
+  aiWarning80Body: `প্রিয় {{tenantName}},
+
+আপনার ZiniChat অ্যাকাউন্টের মাসিক এআই রেসপন্স (AI Auto-Replies) কোটার ৮০% ব্যবহৃত হয়ে গেছে ({{used}} / {{limit}} রেসপন্স)।
+
+কোটা সম্পূর্ণ শেষ হওয়ার আগেই এআই সেবা নিরবচ্ছিন্ন রাখতে এখনই আপনার প্ল্যানটি আপগ্রেড করুন।
+
+আপগ্রেড করতে: আপনার ড্যাশবোর্ড → সেটিংস → সাবস্ক্রিপশন
+
+ধন্যবাদ,
+ZiniChat টিম`,
+
+  aiWarning100Subject: '🚨 জরুরি সতর্কতা: মাসিক এআই রেসপন্স কোটা সম্পূর্ণ শেষ! – {{tenantName}}',
+  aiWarning100Body: `প্রিয় {{tenantName}},
+
+আপনার ZiniChat অ্যাকাউন্টের মাসিক এআই রেসপন্স (AI Auto-Replies) কোটা সম্পূর্ণ শেষ হয়ে গেছে ({{used}} / {{limit}} রেসপন্স)।
+
+⛔ চ্যাটবট এখন আর গ্রাহকদের স্বয়ংক্রিয় উত্তর দিতে পারবে না। কাস্টমারদের সমস্ত ইনকোয়ারি এখন ম্যানুয়ালি উত্তর দিতে হবে।
+
+চ্যাটবট অটো-রিপ্লাই পুনরায় চালু করতে অবিলম্বে আপনার প্ল্যানটি আপগ্রেড করুন।
+
+আপগ্রেড করতে: আপনার ড্যাশবোর্ড → সেটিংস → সাবস্ক্রিপশন
+
+ধন্যবাদ,
+ZiniChat টিম`,
 };
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -258,6 +313,18 @@ export class SmtpService {
           storageWarning100Enabled: true,
           storageWarning100Subject: TEMPLATES.storageWarning100Subject,
           storageWarning100Body: TEMPLATES.storageWarning100Body,
+          messageWarning80Enabled: true,
+          messageWarning80Subject: TEMPLATES.messageWarning80Subject,
+          messageWarning80Body: TEMPLATES.messageWarning80Body,
+          messageWarning100Enabled: true,
+          messageWarning100Subject: TEMPLATES.messageWarning100Subject,
+          messageWarning100Body: TEMPLATES.messageWarning100Body,
+          aiWarning80Enabled: true,
+          aiWarning80Subject: TEMPLATES.aiWarning80Subject,
+          aiWarning80Body: TEMPLATES.aiWarning80Body,
+          aiWarning100Enabled: true,
+          aiWarning100Subject: TEMPLATES.aiWarning100Subject,
+          aiWarning100Body: TEMPLATES.aiWarning100Body,
         }
       });
     } else {
@@ -282,6 +349,10 @@ export class SmtpService {
       if (!config.broadcastCompletedSubject) { updates.broadcastCompletedSubject = TEMPLATES.broadcastCompletedSubject; updates.broadcastCompletedBody = TEMPLATES.broadcastCompletedBody; needsUpdate = true; }
       if (!config.storageWarning80Subject) { updates.storageWarning80Subject = TEMPLATES.storageWarning80Subject; updates.storageWarning80Body = TEMPLATES.storageWarning80Body; needsUpdate = true; }
       if (!config.storageWarning100Subject) { updates.storageWarning100Subject = TEMPLATES.storageWarning100Subject; updates.storageWarning100Body = TEMPLATES.storageWarning100Body; needsUpdate = true; }
+      if (!config.messageWarning80Subject) { updates.messageWarning80Subject = TEMPLATES.messageWarning80Subject; updates.messageWarning80Body = TEMPLATES.messageWarning80Body; needsUpdate = true; }
+      if (!config.messageWarning100Subject) { updates.messageWarning100Subject = TEMPLATES.messageWarning100Subject; updates.messageWarning100Body = TEMPLATES.messageWarning100Body; needsUpdate = true; }
+      if (!config.aiWarning80Subject) { updates.aiWarning80Subject = TEMPLATES.aiWarning80Subject; updates.aiWarning80Body = TEMPLATES.aiWarning80Body; needsUpdate = true; }
+      if (!config.aiWarning100Subject) { updates.aiWarning100Subject = TEMPLATES.aiWarning100Subject; updates.aiWarning100Body = TEMPLATES.aiWarning100Body; needsUpdate = true; }
 
       if (needsUpdate) {
         config = await this.prisma.smtpConfig.update({
@@ -356,6 +427,18 @@ export class SmtpService {
         storageWarning100Enabled: data.storageWarning100Enabled !== undefined ? !!data.storageWarning100Enabled : config.storageWarning100Enabled,
         storageWarning100Subject: data.storageWarning100Subject ?? config.storageWarning100Subject,
         storageWarning100Body: data.storageWarning100Body ?? config.storageWarning100Body,
+        messageWarning80Enabled: data.messageWarning80Enabled !== undefined ? !!data.messageWarning80Enabled : config.messageWarning80Enabled,
+        messageWarning80Subject: data.messageWarning80Subject ?? config.messageWarning80Subject,
+        messageWarning80Body: data.messageWarning80Body ?? config.messageWarning80Body,
+        messageWarning100Enabled: data.messageWarning100Enabled !== undefined ? !!data.messageWarning100Enabled : config.messageWarning100Enabled,
+        messageWarning100Subject: data.messageWarning100Subject ?? config.messageWarning100Subject,
+        messageWarning100Body: data.messageWarning100Body ?? config.messageWarning100Body,
+        aiWarning80Enabled: data.aiWarning80Enabled !== undefined ? !!data.aiWarning80Enabled : config.aiWarning80Enabled,
+        aiWarning80Subject: data.aiWarning80Subject ?? config.aiWarning80Subject,
+        aiWarning80Body: data.aiWarning80Body ?? config.aiWarning80Body,
+        aiWarning100Enabled: data.aiWarning100Enabled !== undefined ? !!data.aiWarning100Enabled : config.aiWarning100Enabled,
+        aiWarning100Subject: data.aiWarning100Subject ?? config.aiWarning100Subject,
+        aiWarning100Body: data.aiWarning100Body ?? config.aiWarning100Body,
       }
     });
   }
@@ -681,6 +764,52 @@ export class SmtpService {
       if (!config.storageWarning80Enabled) return;
       const subject = this.replacePlaceholders(config.storageWarning80Subject || TEMPLATES.storageWarning80Subject, vars);
       const bodyText = this.replacePlaceholders(config.storageWarning80Body || TEMPLATES.storageWarning80Body, vars);
+      await this.sendMail({ to: toEmail, subject, plainText: bodyText });
+    }
+  }
+
+  async triggerMessageWarningEmail(
+    toEmail: string,
+    tenantName: string,
+    percent: number,
+    used: number,
+    limit: number
+  ) {
+    const config = await this.getConfig();
+    const vars = { tenantName, percent: String(percent), used: String(used), limit: String(limit) };
+
+    if (percent >= 100) {
+      if (!config.messageWarning100Enabled) return;
+      const subject = this.replacePlaceholders(config.messageWarning100Subject || TEMPLATES.messageWarning100Subject, vars);
+      const bodyText = this.replacePlaceholders(config.messageWarning100Body || TEMPLATES.messageWarning100Body, vars);
+      await this.sendMail({ to: toEmail, subject, plainText: bodyText });
+    } else {
+      if (!config.messageWarning80Enabled) return;
+      const subject = this.replacePlaceholders(config.messageWarning80Subject || TEMPLATES.messageWarning80Subject, vars);
+      const bodyText = this.replacePlaceholders(config.messageWarning80Body || TEMPLATES.messageWarning80Body, vars);
+      await this.sendMail({ to: toEmail, subject, plainText: bodyText });
+    }
+  }
+
+  async triggerAiWarningEmail(
+    toEmail: string,
+    tenantName: string,
+    percent: number,
+    used: number,
+    limit: number
+  ) {
+    const config = await this.getConfig();
+    const vars = { tenantName, percent: String(percent), used: String(used), limit: String(limit) };
+
+    if (percent >= 100) {
+      if (!config.aiWarning100Enabled) return;
+      const subject = this.replacePlaceholders(config.aiWarning100Subject || TEMPLATES.aiWarning100Subject, vars);
+      const bodyText = this.replacePlaceholders(config.aiWarning100Body || TEMPLATES.aiWarning100Body, vars);
+      await this.sendMail({ to: toEmail, subject, plainText: bodyText });
+    } else {
+      if (!config.aiWarning80Enabled) return;
+      const subject = this.replacePlaceholders(config.aiWarning80Subject || TEMPLATES.aiWarning80Subject, vars);
+      const bodyText = this.replacePlaceholders(config.aiWarning80Body || TEMPLATES.aiWarning80Body, vars);
       await this.sendMail({ to: toEmail, subject, plainText: bodyText });
     }
   }
