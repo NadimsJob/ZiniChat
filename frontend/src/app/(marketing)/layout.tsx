@@ -39,6 +39,9 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
               <img src="/logo.png" alt="ZiniChat Logo" className="h-[60px] w-auto object-contain shrink-0" />
             </Link>
             <nav className="hidden lg:flex items-center gap-6 text-sm font-medium text-muted-foreground">
+              <Link href="/" className="hover:text-foreground transition-colors">
+                {language === 'en' ? 'Home' : 'হোম'}
+              </Link>
               <Link href="/features" className="hover:text-foreground transition-colors">
                 {language === 'en' ? 'Features' : 'ফিচার্স'}
               </Link>
@@ -94,6 +97,10 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
         {/* Mobile Menu Dropdown */}
         {isMobileMenuOpen && (
           <div className="lg:hidden absolute top-full left-0 w-full bg-background/95 backdrop-blur-xl border-b border-border shadow-2xl p-5 flex flex-col gap-1 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+            <Link href="/" className="text-sm font-semibold hover:text-primary transition-colors py-3 border-b border-border/40 flex items-center justify-between" onClick={() => setIsMobileMenuOpen(false)}>
+              <span>{language === 'en' ? 'Home' : 'হোম'}</span>
+              <ArrowRight className="w-4 h-4 text-muted-foreground" />
+            </Link>
             <Link href="/features" className="text-sm font-semibold hover:text-primary transition-colors py-3 border-b border-border/40 flex items-center justify-between" onClick={() => setIsMobileMenuOpen(false)}>
               <span>{language === 'en' ? 'Features' : 'ফিচার্স'}</span>
               <ArrowRight className="w-4 h-4 text-muted-foreground" />
