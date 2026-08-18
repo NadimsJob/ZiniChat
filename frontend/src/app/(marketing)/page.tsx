@@ -202,18 +202,18 @@ export default function HomePage() {
             
             <div className="mt-10 flex items-center gap-6 border-t border-border pt-6 sm:gap-10">
               <div>
+                <p className="text-2xl font-bold text-foreground">98%</p>
+                <p className="text-xs text-muted-foreground">{language === 'en' ? 'WA Open Rate' : 'হোয়াটসঅ্যাপ ওপেন রেট'}</p>
+              </div>
+              <div className="h-8 w-px bg-border"></div>
+              <div>
+                <p className="text-2xl font-bold text-foreground">9</p>
+                <p className="text-xs text-muted-foreground">{language === 'en' ? 'Industry Modes' : 'ইন্ডাস্ট্রি মোড'}</p>
+              </div>
+              <div className="h-8 w-px bg-border"></div>
+              <div>
                 <p className="text-2xl font-bold text-foreground">24/7</p>
-                <p className="text-xs text-muted-foreground">{language === 'en' ? 'Always Online' : 'সবসময় অনলাইন'}</p>
-              </div>
-              <div className="h-8 w-px bg-border"></div>
-              <div>
-                <p className="text-2xl font-bold text-foreground">5+</p>
-                <p className="text-xs text-muted-foreground">{language === 'en' ? 'Platforms' : 'প্ল্যাটফর্ম'}</p>
-              </div>
-              <div className="h-8 w-px bg-border"></div>
-              <div>
-                <p className="text-2xl font-bold text-foreground">10x</p>
-                <p className="text-xs text-muted-foreground">{language === 'en' ? 'Faster Replies' : 'দ্রুত জবাব'}</p>
+                <p className="text-xs text-muted-foreground">{language === 'en' ? 'AI Autopilot' : '২৪/৭ এআই অটো-পাইলট'}</p>
               </div>
             </div>
           </div>

@@ -11,8 +11,10 @@ const integrations = [
   { name: 'WhatsApp Business', icon: '💬', desc: { en: 'Official API + QR Web', bn: 'অফিসিয়াল API + QR Web' }, color: 'bg-green-500/10 border-green-500/30 text-green-500' },
   { name: 'Meta Messenger', icon: '📘', desc: { en: 'Facebook Page Inbox', bn: 'ফেসবুক পেজ ইনবক্স' }, color: 'bg-blue-500/10 border-blue-500/30 text-blue-500' },
   { name: 'Instagram DM', icon: '📸', desc: { en: 'Direct Message integration', bn: 'ডাইরেক্ট মেসেজ ইন্টিগ্রেশন' }, color: 'bg-pink-500/10 border-pink-500/30 text-pink-500' },
-  { name: 'MFS Auto Gateway', icon: '💸', desc: { en: 'bKash / Nagad SMS Match', bn: 'অটো SMS পেমেন্ট ট্র্যাকিং' }, color: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500' },
-  { name: 'EMVCo Bangla QR', icon: '📱', desc: { en: 'Dynamic Bangla QR', bn: 'ডাইনামিক বাংলা কিউআর' }, color: 'bg-amber-500/10 border-amber-500/30 text-amber-500' },
+  { name: 'FB Comment Auto', icon: '💬', desc: { en: 'Public & Private DM Reply', bn: 'কমেন্ট অটো-রিপ্লাই ও DM' }, color: 'bg-orange-500/10 border-orange-500/30 text-orange-500' },
+  { name: 'MFS Auto Gateway', icon: '💸', desc: { en: 'bKash / Nagad TrxID Match', bn: 'অটো SMS পেমেন্ট ট্র্যাকিং' }, color: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500' },
+  { name: 'Mobile PWA App', icon: '📱', desc: { en: 'Android & iOS Install', bn: 'হোম স্ক্রিন ইন্সটল PWA' }, color: 'bg-purple-500/10 border-purple-500/30 text-purple-500' },
+  { name: 'BYOK API Key', icon: '🔑', desc: { en: 'OpenAI / Gemini / Claude', bn: 'নিজের AI কী ব্যবহারের সুযোগ' }, color: 'bg-amber-500/10 border-amber-500/30 text-amber-500' },
   { name: 'OpenAI GPT-4o', icon: '🤖', desc: { en: 'Vision & Text AI Engine', bn: 'ভিশন ও টেক্সট এআই ইনজিন' }, color: 'bg-zinc-500/10 border-zinc-500/30 text-zinc-500' },
 ];
 

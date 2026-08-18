@@ -253,6 +253,125 @@ export function FeatureMockup({ featureId, language, iconColor, color }: { featu
     </div>
   );
 
+  if (featureId === 'rag') return (
+    <div className="space-y-2 text-xs">
+      <div className="p-2.5 bg-purple-500/10 border border-purple-500/20 rounded-xl space-y-1.5">
+        <div className="flex items-center justify-between font-bold text-purple-400">
+          <span>📄 catalog_policy_2026.pdf</span>
+          <span className="text-[10px] bg-purple-500/20 px-2 py-0.5 rounded-full text-purple-300">Indexed</span>
+        </div>
+        <p className="text-[10px] text-zinc-400">pgvector HNSW H-Index • 100% Cache Hit Rate</p>
+      </div>
+      <div className="p-2 bg-surface rounded-lg border border-surface-hover flex items-center justify-between text-[10px]">
+        <span className="text-zinc-300">🔗 https://yourbusiness.com</span>
+        <span className="text-green-500 font-bold">Fetched (2m ago)</span>
+      </div>
+    </div>
+  );
+
+  if (featureId === 'verticals') return (
+    <div className="space-y-2 text-xs">
+      <div className="grid grid-cols-2 gap-1.5">
+        <div className="p-2 bg-orange-500/10 border border-orange-500/20 rounded-lg text-[10px]">
+          <div className="font-bold text-orange-400">🩺 Healthcare</div>
+          <div className="text-zinc-400">Doctors & Care Services</div>
+        </div>
+        <div className="p-2 bg-blue-500/10 border border-blue-500/20 rounded-lg text-[10px]">
+          <div className="font-bold text-blue-400">🎓 Education</div>
+          <div className="text-zinc-400">Course Admissions</div>
+        </div>
+        <div className="p-2 bg-green-500/10 border border-green-500/20 rounded-lg text-[10px]">
+          <div className="font-bold text-green-400">🏠 Real Estate</div>
+          <div className="text-zinc-400">Property Booking Leads</div>
+        </div>
+        <div className="p-2 bg-purple-500/10 border border-purple-500/20 rounded-lg text-[10px]">
+          <div className="font-bold text-purple-400">🏭 B2B / Mfg</div>
+          <div className="text-zinc-400">Bulk RFQ Quotations</div>
+        </div>
+      </div>
+    </div>
+  );
+
+  if (featureId === 'broadcast') return (
+    <div className="space-y-2 text-xs">
+      <div className="p-2.5 bg-teal-500/10 border border-teal-500/20 rounded-xl space-y-1">
+        <div className="flex items-center justify-between font-bold text-teal-400 text-[11px]">
+          <span>📢 Eid Campaign 2026</span>
+          <span className="bg-teal-500/20 text-teal-300 text-[9px] px-2 py-0.5 rounded-full">Sent</span>
+        </div>
+        <div className="flex justify-between text-[10px] text-zinc-400">
+          <span>Recipients: 2,500 contacts</span>
+          <span className="text-teal-400 font-bold">98% Delivered</span>
+        </div>
+      </div>
+      <div className="p-2 bg-surface rounded-lg border border-surface-hover text-[10px] text-zinc-400">
+        ✓ Meta Graph API v25.0 Marketing Messages
+      </div>
+    </div>
+  );
+
+  if (featureId === 'mfs') return (
+    <div className="space-y-2 text-xs">
+      <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl space-y-1.5">
+        <div className="flex items-center justify-between text-emerald-400 font-bold">
+          <span>bKash / Nagad TrxID</span>
+          <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full">Verified</span>
+        </div>
+        <div className="text-[10px] text-zinc-300 font-mono">TrxID: 9X82M1K9 • ৳2,450</div>
+      </div>
+      <div className="p-2 bg-amber-500/10 border border-amber-500/20 rounded-lg text-[10px] text-amber-400 flex items-center justify-between">
+        <span>📱 EMVCo Bangla QR Payload Tag 63</span>
+        <span className="font-bold">Active</span>
+      </div>
+    </div>
+  );
+
+  if (featureId === 'mobile_pwa') return (
+    <div className="space-y-2 text-xs">
+      <div className="p-2.5 bg-purple-500/10 border border-purple-500/20 rounded-xl flex items-center gap-2">
+        <div className="w-7 h-7 rounded-lg bg-purple-500 text-white flex items-center justify-center font-black">Z</div>
+        <div>
+          <div className="font-bold text-purple-300">ZiniChat Mobile PWA</div>
+          <div className="text-[9px] text-zinc-400">Added to Home Screen • Push Enabled</div>
+        </div>
+      </div>
+      <div className="p-2 bg-surface rounded-lg border border-surface-hover text-[10px] text-zinc-400 flex items-center justify-between">
+        <span>📲 Lock Screen Alert</span>
+        <span className="text-purple-400 font-bold">New Lead #1042</span>
+      </div>
+    </div>
+  );
+
+  if (featureId === 'security') return (
+    <div className="space-y-2 text-xs">
+      <div className="p-2.5 bg-blue-500/10 border border-blue-500/20 rounded-xl space-y-1">
+        <div className="flex items-center justify-between text-blue-400 font-bold">
+          <span>🔒 AES-256-CBC Encrypted</span>
+          <span className="text-[9px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full">Passed Audit</span>
+        </div>
+        <p className="text-[10px] text-zinc-400">90-Day Login Trail • IP & Geo Tracking</p>
+      </div>
+      <div className="p-2 bg-surface rounded-lg border border-surface-hover text-[10px] text-zinc-300">
+        ✓ Meta Webhook HMAC-SHA256 Signed
+      </div>
+    </div>
+  );
+
+  if (featureId === 'byok') return (
+    <div className="space-y-2 text-xs">
+      <div className="p-2.5 bg-green-500/10 border border-green-500/20 rounded-xl space-y-1">
+        <div className="flex items-center justify-between text-green-400 font-bold">
+          <span>🔑 Custom API Key Mode</span>
+          <span className="text-[9px] bg-green-500/20 text-green-300 px-2 py-0.5 rounded-full">BYOK Active</span>
+        </div>
+        <p className="text-[10px] text-zinc-400">OpenAI sk-proj-... • Gemini Pro • Claude 3.5</p>
+      </div>
+      <div className="p-2 bg-surface rounded-lg border border-surface-hover text-[10px] text-zinc-300">
+        ⚡ Direct API Connection • Zero Vendor Lock-in
+      </div>
+    </div>
+  );
+
   // Generic Mockup for new dynamically added features
   return (
     <div className="space-y-2 text-xs">
