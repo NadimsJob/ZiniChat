@@ -18,6 +18,13 @@ export class BillingController {
     return this.billingService.getSubscriptions();
   }
 
+  @Get('admin/overview')
+  @Roles('superadmin')
+  @RequirePermissions('manage:billing')
+  getAdminBillingOverview() {
+    return this.billingService.getAdminBillingOverview();
+  }
+
   @Get('payments')
   @Roles('superadmin')
   @RequirePermissions('manage:billing')

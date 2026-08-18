@@ -8,53 +8,59 @@ import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from 'recharts';
+import Link from 'next/link';
 import {
   Users, MessageSquare, Bot, TrendingUp, DollarSign,
   Ticket, Wifi, ShoppingBag, Zap, Activity, Globe,
   ArrowUpRight, ArrowDownRight, Building2, UserCheck,
-  LayoutGrid, Radio
+  LayoutGrid, Radio, AlertTriangle, ShieldAlert, CreditCard
 } from 'lucide-react';
 
 const BRAND_GREEN = '#1F824A';
 const BRAND_ORANGE = '#EE8D27';
 const COLORS = ['#1F824A', '#EE8D27', '#3b82f6', '#8b5cf6', '#ec4899', '#06b6d4'];
 
-function StatCard({ icon: Icon, label, value, sub, trend, color = 'text-foreground' }: any) {
-  return (
-    <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-xl p-4 flex flex-col gap-2 shadow-lg hover:border-primary/40 transition-all duration-300 group">
+function StatCard({ icon: Icon, label, value, sub, trend, href, color = 'text-foreground' }: any) {
+  const content = (
+    <div className="bg-white dark:bg-surface/70 backdrop-blur-xl border border-slate-200/80 dark:border-surface-hover rounded-xl p-4 flex flex-col gap-2 shadow-sm dark:shadow-lg hover:border-primary/40 transition-all duration-300 group cursor-pointer h-full">
       <div className="flex items-center justify-between">
-        <div className={`p-2 rounded-lg bg-background/60`}>
+        <div className="p-2 rounded-lg bg-slate-100 dark:bg-background/60">
           <Icon className={`w-4 h-4 ${color}`} />
         </div>
         {trend !== undefined && (
-          <span className={`text-[10px] font-bold flex items-center gap-0.5 ${trend >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+          <span className={`text-[10px] font-bold flex items-center gap-0.5 ${trend >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
             {trend >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
             {Math.abs(trend)}%
           </span>
         )}
       </div>
       <div>
-        <p className="text-[11px] text-zinc-400 font-medium">{label}</p>
+        <p className="text-[11px] text-slate-600 dark:text-zinc-400 font-semibold">{label}</p>
         <p className={`text-[22px] font-bold tracking-tight ${color}`}>{value}</p>
-        {sub && <p className="text-[10px] text-zinc-500 mt-0.5">{sub}</p>}
+        {sub && <p className="text-[10px] text-slate-500 dark:text-zinc-400 mt-0.5 font-medium">{sub}</p>}
       </div>
     </div>
   );
+
+  if (href) {
+    return <Link href={href} className="block h-full">{content}</Link>;
+  }
+  return content;
 }
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-2 mb-3">
       <div className="w-1 h-4 rounded-full bg-gradient-to-b from-primary to-secondary" />
-      <h2 className="text-[13px] font-bold text-foreground">{children}</h2>
+      <h2 className="text-[13px] font-bold text-slate-900 dark:text-zinc-100">{children}</h2>
     </div>
   );
 }
 
 function ChartCard({ title, children, className = '' }: any) {
   return (
-    <div className={`bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-xl p-4 shadow-lg ${className}`}>
-      <p className="text-[12px] font-bold text-zinc-300 mb-3">{title}</p>
+    <div className={`bg-white dark:bg-surface/70 backdrop-blur-xl border border-slate-200/80 dark:border-surface-hover rounded-xl p-4 shadow-sm dark:shadow-lg ${className}`}>
+      {title && <p className="text-[12px] font-bold text-slate-800 dark:text-zinc-200 mb-3">{title}</p>}
       {children}
     </div>
   );
@@ -63,8 +69,8 @@ function ChartCard({ title, children, className = '' }: any) {
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-background/95 border border-surface-hover rounded-lg px-3 py-2 text-[11px] shadow-xl">
-        <p className="font-bold text-zinc-300 mb-1">{label}</p>
+      <div className="bg-white dark:bg-background/95 border border-slate-200 dark:border-surface-hover rounded-lg px-3 py-2 text-[11px] shadow-xl text-slate-900 dark:text-zinc-100">
+        <p className="font-bold text-slate-800 dark:text-zinc-200 mb-1">{label}</p>
         {payload.map((p: any, i: number) => (
           <p key={i} style={{ color: p.color }}>{p.name}: <span className="font-bold">{p.value?.toLocaleString()}</span></p>
         ))}
@@ -134,8 +140,26 @@ export default function SuperadminPage() {
         </div>
       </div>
 
+      {/* ── PENDING PAYMENTS ALERT BANNER ── */}
+      {stats?.pendingPaymentsCount > 0 && (
+        <Link 
+          href="/sp@dmin/payments"
+          className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3 px-4 flex items-center justify-between hover:bg-amber-500/20 transition-all shadow-lg group cursor-pointer"
+        >
+          <div className="flex items-center gap-2.5">
+            <AlertTriangle className="w-4.5 h-4.5 text-amber-400 animate-pulse shrink-0" />
+            <span className="text-xs font-semibold text-amber-200">
+              <strong>{stats.pendingPaymentsCount} Manual Payment Claim(s)</strong> awaiting superadmin approval ({formatBDT(stats.pendingPaymentsAmount || 0)} total).
+            </span>
+          </div>
+          <span className="text-xs font-bold text-amber-400 group-hover:underline flex items-center gap-1 shrink-0">
+            Review Payments <ArrowUpRight className="w-3.5 h-3.5" />
+          </span>
+        </Link>
+      )}
+
       {/* ── SECTION 1: KPI HERO ROW ── */}
-      <div>
+      <div className="space-y-3">
         <SectionTitle>{language === 'en' ? '📊 Key Performance Indicators' : '📊 মূল পারফরম্যান্স সূচক'}</SectionTitle>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           <StatCard
@@ -144,6 +168,7 @@ export default function SuperadminPage() {
             value={formatBDT(stats?.monthRevenue || 0)}
             sub={language === 'en' ? `Total: ${formatBDT(stats?.totalRevenue || 0)}` : `মোট: ${formatBDT(stats?.totalRevenue || 0)}`}
             trend={revenueGrowthNum}
+            href="/sp@dmin/billing"
             color="text-emerald-400"
           />
           <StatCard
@@ -151,6 +176,7 @@ export default function SuperadminPage() {
             label={language === 'en' ? 'Total Tenants' : 'মোট টেনান্ট'}
             value={stats?.totalTenants || 0}
             sub={language === 'en' ? `+${stats?.newTenantsThisMonth || 0} this month` : `+${stats?.newTenantsThisMonth || 0} এই মাসে`}
+            href="/sp@dmin/tenants"
             color="text-blue-400"
           />
           <StatCard
@@ -158,13 +184,15 @@ export default function SuperadminPage() {
             label={language === 'en' ? 'Total Messages' : 'মোট মেসেজ'}
             value={(stats?.totalMessages || 0).toLocaleString()}
             sub={language === 'en' ? `${stats?.openConversations || 0} open convs` : `${stats?.openConversations || 0} টি খোলা কথোপকথন`}
+            href="/sp@dmin/tenants"
             color="text-purple-400"
           />
           <StatCard
             icon={Bot}
-            label={language === 'en' ? 'AI Tokens (Month)' : 'এআই টোকেন (মাসে)'}
-            value={(stats?.monthAiTokens || 0).toLocaleString()}
-            sub={language === 'en' ? `Total: ${(stats?.totalAiTokens || 0).toLocaleString()}` : `মোট: ${(stats?.totalAiTokens || 0).toLocaleString()}`}
+            label={language === 'en' ? 'AI Responses (Tokens)' : 'এআই রেসপন্স (টোকেন)'}
+            value={(stats?.monthAiResponses || 0).toLocaleString()}
+            sub={language === 'en' ? `${(stats?.monthAiTokens || 0).toLocaleString()} Tokens Used` : `${(stats?.monthAiTokens || 0).toLocaleString()} টোকেন খরচ`}
+            href="/sp@dmin/billing"
             color="text-orange-400"
           />
           <StatCard
@@ -172,6 +200,7 @@ export default function SuperadminPage() {
             label={language === 'en' ? 'Open Tickets' : 'খোলা টিকেট'}
             value={stats?.openTickets || 0}
             sub={language === 'en' ? `${stats?.resolvedTickets || 0} resolved` : `${stats?.resolvedTickets || 0} সমাধান হয়েছে`}
+            href="/sp@dmin/tickets"
             color={stats?.openTickets > 10 ? 'text-red-400' : 'text-amber-400'}
           />
           <StatCard
@@ -179,8 +208,41 @@ export default function SuperadminPage() {
             label={language === 'en' ? 'Active Subs' : 'সক্রিয় সাবস্ক্রিপশন'}
             value={stats?.activeSubscriptions || 0}
             sub={language === 'en' ? `${stats?.trialSubscriptions || 0} on trial` : `${stats?.trialSubscriptions || 0} ট্রায়ালে`}
+            href="/sp@dmin/billing"
             color="text-primary"
           />
+        </div>
+
+        {/* Tenant Health & Status Breakdown */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-surface/50 border border-surface-hover rounded-xl p-3 shadow-md">
+          <div className="flex items-center gap-2 px-2 border-r border-surface-hover/50">
+            <UserCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+            <div>
+              <p className="text-[10px] text-zinc-400">Active Tenants</p>
+              <p className="text-sm font-bold text-emerald-400">{stats?.activeTenants || 0}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 px-2 border-r border-surface-hover/50">
+            <Building2 className="w-4 h-4 text-blue-400 shrink-0" />
+            <div>
+              <p className="text-[10px] text-zinc-400">Onboarded Workspaces</p>
+              <p className="text-sm font-bold text-white">{stats?.onboardedTenants || 0}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 px-2 border-r border-surface-hover/50">
+            <Radio className="w-4 h-4 text-amber-400 shrink-0" />
+            <div>
+              <p className="text-[10px] text-zinc-400">Trial Subscriptions</p>
+              <p className="text-sm font-bold text-amber-400">{stats?.trialSubscriptions || 0}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 px-2">
+            <ShieldAlert className="w-4 h-4 text-red-400 shrink-0" />
+            <div>
+              <p className="text-[10px] text-zinc-400">Suspended / Expired</p>
+              <p className="text-sm font-bold text-red-400">{(stats?.suspendedTenants || 0) + (stats?.expiredSubscriptions || 0)}</p>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -354,10 +416,10 @@ export default function SuperadminPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
 
           {/* Ticket Status */}
-          <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-xl p-4 shadow-lg">
+          <div className="bg-white dark:bg-surface/70 backdrop-blur-xl border border-slate-200/80 dark:border-surface-hover rounded-xl p-4 shadow-sm dark:shadow-lg">
             <div className="flex items-center gap-2 mb-3">
-              <Ticket className="w-4 h-4 text-amber-400" />
-              <p className="text-[11px] font-bold text-zinc-300">{language === 'en' ? 'Support Tickets' : 'সাপোর্ট টিকেট'}</p>
+              <Ticket className="w-4 h-4 text-amber-500 dark:text-amber-400" />
+              <p className="text-[11px] font-bold text-slate-800 dark:text-zinc-200">{language === 'en' ? 'Support Tickets' : 'সাপোর্ট টিকেট'}</p>
             </div>
             <div className="space-y-2">
               {[
@@ -368,19 +430,19 @@ export default function SuperadminPage() {
                 <div key={item.label} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className={`w-1.5 h-1.5 rounded-full ${item.color}`} />
-                    <span className="text-[10px] text-zinc-400">{item.label}</span>
+                    <span className="text-[10px] text-slate-600 dark:text-zinc-400 font-medium">{item.label}</span>
                   </div>
-                  <span className="text-[12px] font-bold text-foreground">{item.value}</span>
+                  <span className="text-[12px] font-bold text-slate-900 dark:text-zinc-100">{item.value}</span>
                 </div>
               ))}
             </div>
           </div>
 
           {/* Team */}
-          <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-xl p-4 shadow-lg">
+          <div className="bg-white dark:bg-surface/70 backdrop-blur-xl border border-slate-200/80 dark:border-surface-hover rounded-xl p-4 shadow-sm dark:shadow-lg">
             <div className="flex items-center gap-2 mb-3">
-              <Users className="w-4 h-4 text-blue-400" />
-              <p className="text-[11px] font-bold text-zinc-300">{language === 'en' ? 'Team Stats' : 'টিম পরিসংখ্যান'}</p>
+              <Users className="w-4 h-4 text-blue-500 dark:text-blue-400" />
+              <p className="text-[11px] font-bold text-slate-800 dark:text-zinc-200">{language === 'en' ? 'Team Stats' : 'টিম পরিসংখ্যান'}</p>
             </div>
             <div className="space-y-2">
               {[
@@ -389,18 +451,18 @@ export default function SuperadminPage() {
                 { label: language === 'en' ? 'Onboarded' : 'অনবোর্ডেড', value: stats?.onboardedTenants || 0 },
               ].map((item) => (
                 <div key={item.label} className="flex items-center justify-between">
-                  <span className="text-[10px] text-zinc-400">{item.label}</span>
-                  <span className="text-[12px] font-bold text-foreground">{item.value}</span>
+                  <span className="text-[10px] text-slate-600 dark:text-zinc-400 font-medium">{item.label}</span>
+                  <span className="text-[12px] font-bold text-slate-900 dark:text-zinc-100">{item.value}</span>
                 </div>
               ))}
             </div>
           </div>
 
           {/* Commerce */}
-          <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-xl p-4 shadow-lg">
+          <div className="bg-white dark:bg-surface/70 backdrop-blur-xl border border-slate-200/80 dark:border-surface-hover rounded-xl p-4 shadow-sm dark:shadow-lg">
             <div className="flex items-center gap-2 mb-3">
-              <ShoppingBag className="w-4 h-4 text-purple-400" />
-              <p className="text-[11px] font-bold text-zinc-300">{language === 'en' ? 'Commerce' : 'কমার্স'}</p>
+              <ShoppingBag className="w-4 h-4 text-purple-500 dark:text-purple-400" />
+              <p className="text-[11px] font-bold text-slate-800 dark:text-zinc-200">{language === 'en' ? 'Commerce' : 'কমার্স'}</p>
             </div>
             <div className="space-y-2">
               {[
@@ -409,18 +471,18 @@ export default function SuperadminPage() {
                 { label: language === 'en' ? 'Order Revenue' : 'অর্ডার রেভিনিউ', value: formatBDT(stats?.orderRevenue || 0) },
               ].map((item) => (
                 <div key={item.label} className="flex items-center justify-between">
-                  <span className="text-[10px] text-zinc-400">{item.label}</span>
-                  <span className="text-[12px] font-bold text-foreground">{item.value}</span>
+                  <span className="text-[10px] text-slate-600 dark:text-zinc-400 font-medium">{item.label}</span>
+                  <span className="text-[12px] font-bold text-slate-900 dark:text-zinc-100">{item.value}</span>
                 </div>
               ))}
             </div>
           </div>
 
           {/* Engagement */}
-          <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-xl p-4 shadow-lg">
+          <div className="bg-white dark:bg-surface/70 backdrop-blur-xl border border-slate-200/80 dark:border-surface-hover rounded-xl p-4 shadow-sm dark:shadow-lg">
             <div className="flex items-center gap-2 mb-3">
-              <Zap className="w-4 h-4 text-yellow-400" />
-              <p className="text-[11px] font-bold text-zinc-300">{language === 'en' ? 'Engagement' : 'এনগেজমেন্ট'}</p>
+              <Zap className="w-4 h-4 text-amber-500 dark:text-yellow-400" />
+              <p className="text-[11px] font-bold text-slate-800 dark:text-zinc-200">{language === 'en' ? 'Engagement' : 'এনগেজমেন্ট'}</p>
             </div>
             <div className="space-y-2">
               {[
@@ -429,8 +491,8 @@ export default function SuperadminPage() {
                 { label: language === 'en' ? 'Broadcasts' : 'ব্রডকাস্ট', value: stats?.totalBroadcasts || 0 },
               ].map((item) => (
                 <div key={item.label} className="flex items-center justify-between">
-                  <span className="text-[10px] text-zinc-400">{item.label}</span>
-                  <span className="text-[12px] font-bold text-foreground">{item.value}</span>
+                  <span className="text-[10px] text-slate-600 dark:text-zinc-400 font-medium">{item.label}</span>
+                  <span className="text-[12px] font-bold text-slate-900 dark:text-zinc-100">{item.value}</span>
                 </div>
               ))}
             </div>

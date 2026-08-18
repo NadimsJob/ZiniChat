@@ -19,6 +19,8 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageProvider';
+import AdminLoader from '@/components/AdminLoader';
+import AdminPagination from '@/components/AdminPagination';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -28,6 +30,10 @@ export default function MfsSettingsPage() {
   const [accounts, setAccounts] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [accPage, setAccPage] = useState(1);
+  const [accPageSize, setAccPageSize] = useState(10);
+  const [txPage, setTxPage] = useState(1);
+  const [txPageSize, setTxPageSize] = useState(10);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingAccount, setEditingAccount] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -328,143 +334,151 @@ export default function MfsSettingsPage() {
 
       {/* Main Content Area */}
       {loading ? (
-        <div className="flex justify-center items-center py-10 text-zinc-400">
-          <RefreshCw className="w-5 h-5 animate-spin mr-2" />
-          Loading...
-        </div>
+        <AdminLoader message="Loading MFS & Bank Gateway accounts..." />
       ) : activeTab === 'accounts' ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {accounts.length === 0 ? (
-            <div className="col-span-full bg-surface/30 border border-dashed border-zinc-800 rounded-xl p-8 text-center text-zinc-500">
-              <AlertCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
-              {language === 'en' ? 'No Accounts Added Yet' : 'কোনো অ্যাকাউন্ট যুক্ত করা হয়নি'}
-            </div>
-          ) : (
-            accounts.map(acc => (
-              <div 
-                key={acc.id} 
-                className={`bg-surface/60 backdrop-blur-xl border rounded-xl p-3 relative hover:border-zinc-700 transition-all flex flex-col justify-between ${
-                  acc.provider === 'BANGLA_QR' ? 'border-amber-500/40 shadow-md shadow-amber-500/5' : 'border-zinc-800'
-                }`}
-              >
-                <div>
-                  <div className="flex justify-between items-start mb-2">
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                      acc.provider === 'BKASH' ? 'bg-pink-600/20 text-pink-400' :
-                      acc.provider === 'NAGAD' ? 'bg-orange-600/20 text-orange-400' :
-                      acc.provider === 'ROCKET' ? 'bg-purple-600/20 text-purple-400' :
-                      acc.provider === 'UPAY' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/20' :
-                      acc.provider === 'BANGLA_QR' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
-                      'bg-sky-600/20 text-sky-400'
-                    }`}>
-                      {acc.provider === 'BANGLA_QR' ? 'BANGLA QR (Universal)' : `${acc.provider} (${acc.accountType})`}
-                    </span>
-                    
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleToggleActive(acc)}
-                        className={`w-8 h-4 rounded-full transition-colors relative ${acc.isActive ? 'bg-[#1F824A]' : 'bg-zinc-800'}`}
-                      >
-                        <span className={`absolute top-0.5 left-0.5 bg-white w-3 h-3 rounded-full transition-transform ${acc.isActive ? 'translate-x-4' : ''}`} />
-                      </button>
-                      
-                      <button
-                        onClick={() => handleEditClick(acc)}
-                        className="text-zinc-500 hover:text-primary transition-colors p-1"
-                        title={language === 'en' ? 'Edit Account' : 'সম্পাদনা করুন'}
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </button>
-
-                      <button
-                        onClick={() => handleDeleteAccount(acc.id)}
-                        className="text-zinc-500 hover:text-red-400 transition-colors p-1"
-                        title={language === 'en' ? 'Delete Account' : 'ডিলিট করুন'}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <h3 className="font-bold text-[14px] text-zinc-200 mt-1 flex items-center gap-1">
-                    {acc.provider === 'BANK' ? <Landmark className="w-4 h-4 text-sky-400" /> : <Smartphone className="w-4 h-4 text-primary" />}
-                    {acc.number}
-                  </h3>
-
-                  {acc.provider === 'BANK' && (
-                    <div className="mt-2 text-[11px] text-zinc-400 bg-zinc-950/40 rounded p-1.5 space-y-0.5">
-                      <div><span className="font-medium text-zinc-500">Bank:</span> {acc.bankName || 'N/A'}</div>
-                      <div><span className="font-medium text-zinc-500">Routing:</span> {acc.routingNumber || 'N/A'}</div>
-                    </div>
-                  )}
-
-                  {acc.merchantId && (
-                    <div className="mt-1 text-[11px] text-zinc-400">
-                      <span className="font-medium text-zinc-500">Merchant ID:</span> {acc.merchantId}
-                    </div>
-                  )}
-
-                  <div className="mt-1 text-[11px] text-zinc-400 flex items-center gap-1.5">
-                    <span className="font-medium text-zinc-500">Platform Charge:</span> 
-                    <span className="text-amber-400 font-bold">{acc.chargePercent || '0'}%</span>
-                  </div>
-
-                  {acc.qrCodeUrl && (
-                    <div className="mt-2 flex items-center gap-1.5 text-[11px] text-zinc-400 bg-zinc-950/20 p-1 rounded">
-                      <QrCode className="w-3.5 h-3.5" />
-                      <span className="truncate">{acc.qrCodeUrl}</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="mt-3 pt-2 border-t border-zinc-800/40 flex justify-between items-center text-[10px] text-zinc-500">
-                  <span>Added: {new Date(acc.createdAt).toLocaleDateString()}</span>
-                  <span>{acc.isActive ? 'Active' : 'Inactive'}</span>
-                </div>
+        <div className="bg-white dark:bg-surface border border-slate-200 dark:border-surface-hover rounded-2xl overflow-hidden shadow-sm dark:shadow-xl p-4 space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {accounts.length === 0 ? (
+              <div className="col-span-full bg-slate-50 dark:bg-surface/30 border border-dashed border-slate-300 dark:border-zinc-800 rounded-xl p-8 text-center text-slate-500 dark:text-zinc-500">
+                <AlertCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                {language === 'en' ? 'No Accounts Added Yet' : 'কোনো অ্যাকাউন্ট যুক্ত করা হয়নি'}
               </div>
-            ))
-          )}
+            ) : (
+              accounts.slice((accPage - 1) * accPageSize, accPage * accPageSize).map(acc => (
+                <div 
+                  key={acc.id} 
+                  className={`bg-slate-50 dark:bg-surface/60 backdrop-blur-xl border rounded-xl p-3 relative hover:border-slate-300 dark:hover:border-zinc-700 transition-all flex flex-col justify-between ${
+                    acc.provider === 'BANGLA_QR' ? 'border-amber-500/40 shadow-md shadow-amber-500/5' : 'border-slate-200 dark:border-zinc-800'
+                  }`}
+                >
+                  <div>
+                    <div className="flex justify-between items-start mb-2">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                        acc.provider === 'BKASH' ? 'bg-pink-600/20 text-pink-600 dark:text-pink-400' :
+                        acc.provider === 'NAGAD' ? 'bg-orange-600/20 text-orange-600 dark:text-orange-400' :
+                        acc.provider === 'ROCKET' ? 'bg-purple-600/20 text-purple-600 dark:text-purple-400' :
+                        acc.provider === 'UPAY' ? 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border border-yellow-500/20' :
+                        acc.provider === 'BANGLA_QR' ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30' :
+                        'bg-sky-600/20 text-sky-600 dark:text-sky-400'
+                      }`}>
+                        {acc.provider === 'BANGLA_QR' ? 'BANGLA QR (Universal)' : `${acc.provider} (${acc.accountType})`}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleToggleActive(acc)}
+                          className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                            acc.isActive ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' : 'bg-slate-200 dark:bg-zinc-800 text-slate-500 dark:text-zinc-500'
+                          }`}
+                        >
+                          {acc.isActive ? 'Active' : 'Disabled'}
+                        </button>
+                        <button
+                          onClick={() => handleEditClick(acc)}
+                          className="p-1 hover:bg-slate-200 dark:hover:bg-zinc-800 rounded text-slate-400 hover:text-primary transition-colors cursor-pointer"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteAccount(acc.id)}
+                          className="p-1 hover:bg-red-500/10 rounded text-slate-400 hover:text-red-500 transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="font-mono text-base font-bold text-slate-900 dark:text-white flex items-center justify-between">
+                      <span>{acc.number}</span>
+                      <button 
+                        onClick={() => copyToClipboard(acc.number)}
+                        className="p-1 hover:bg-slate-200 dark:hover:bg-zinc-800 rounded text-slate-400 hover:text-primary transition-colors cursor-pointer"
+                      >
+                        <Clipboard className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    {acc.bankName && (
+                      <div className="mt-1 text-[11px] text-slate-600 dark:text-zinc-400">
+                        <span className="font-medium text-slate-500 dark:text-zinc-500">Bank:</span> {acc.bankName} {acc.routingNumber ? `(Routing: ${acc.routingNumber})` : ''}
+                      </div>
+                    )}
+
+                    {acc.merchantId && (
+                      <div className="mt-1 text-[11px] text-slate-600 dark:text-zinc-400">
+                        <span className="font-medium text-slate-500 dark:text-zinc-500">Merchant ID:</span> {acc.merchantId}
+                      </div>
+                    )}
+
+                    <div className="mt-1 text-[11px] text-slate-600 dark:text-zinc-400 flex items-center gap-1.5">
+                      <span className="font-medium text-slate-500 dark:text-zinc-500">Platform Charge:</span> 
+                      <span className="text-amber-600 dark:text-amber-400 font-bold">{acc.chargePercent || '0'}%</span>
+                    </div>
+
+                    {acc.qrCodeUrl && (
+                      <div className="mt-2 flex items-center gap-1.5 text-[11px] text-slate-600 dark:text-zinc-400 bg-slate-100 dark:bg-zinc-950/20 p-1 rounded">
+                        <QrCode className="w-3.5 h-3.5" />
+                        <span className="truncate">{acc.qrCodeUrl}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mt-3 pt-2 border-t border-slate-200 dark:border-zinc-800/40 flex justify-between items-center text-[10px] text-slate-500 dark:text-zinc-500">
+                    <span>Added: {new Date(acc.createdAt).toLocaleDateString()}</span>
+                    <span>{acc.isActive ? 'Active' : 'Inactive'}</span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          <AdminPagination
+            currentPage={accPage}
+            totalItems={accounts.length}
+            pageSize={accPageSize}
+            onPageChange={setAccPage}
+            onPageSizeChange={setAccPageSize}
+          />
         </div>
       ) : (
         /* Transactions Logs */
         <div className="space-y-3">
           {/* Instructions Box */}
-          <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-3 space-y-2 text-[12px] text-zinc-300">
+          <div className="bg-slate-50 dark:bg-zinc-900/50 border border-slate-200 dark:border-zinc-800 rounded-xl p-3 space-y-2 text-[12px] text-slate-800 dark:text-zinc-300">
             <div className="font-bold text-primary flex items-center gap-1.5 mb-1">
               <AlertCircle className="w-4 h-4 text-primary" />
               {language === 'en' ? 'SMS Gateway Mobile App Sync Configurations' : 'এসএমএস গেটওয়ে মোবাইল অ্যাপ কনফিগারেশন গাইড'}
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
-              <div className="bg-zinc-950/40 p-2.5 rounded-lg border border-zinc-850">
-                <span className="text-[10px] text-zinc-500 font-semibold block uppercase">1. Webhook Endpoint URL</span>
+              <div className="bg-white dark:bg-zinc-950/40 p-2.5 rounded-lg border border-slate-200 dark:border-zinc-850 shadow-sm">
+                <span className="text-[10px] text-slate-500 dark:text-zinc-500 font-semibold block uppercase">1. Webhook Endpoint URL</span>
                 <div className="flex items-center justify-between mt-1">
-                  <code className="text-zinc-200 font-mono select-all text-[11px] break-all">{`${API}/mfs-payments/sms-webhook`}</code>
+                  <code className="text-slate-900 dark:text-zinc-200 font-mono select-all text-[11px] break-all">{`${API}/mfs-payments/sms-webhook`}</code>
                   <button 
                     onClick={() => copyToClipboard(`${API}/mfs-payments/sms-webhook`)}
-                    className="p-1 hover:bg-zinc-800 rounded text-zinc-400 hover:text-primary transition-colors shrink-0 ml-2"
+                    className="p-1 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded text-slate-400 hover:text-primary transition-colors shrink-0 ml-2 cursor-pointer"
                   >
                     <Clipboard className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
               
-              <div className="bg-zinc-950/40 p-2.5 rounded-lg border border-zinc-850">
-                <span className="text-[10px] text-zinc-500 font-semibold block uppercase">2. Security Gateway Key (Header: X-SMS-GATEWAY-API-KEY)</span>
+              <div className="bg-white dark:bg-zinc-950/40 p-2.5 rounded-lg border border-slate-200 dark:border-zinc-850 shadow-sm">
+                <span className="text-[10px] text-slate-500 dark:text-zinc-500 font-semibold block uppercase">2. Security Gateway Key (Header: X-SMS-GATEWAY-API-KEY)</span>
                 <div className="flex items-center justify-between mt-1">
-                  <code className="text-zinc-200 font-mono select-all text-[11px]">{gatewayApiKey}</code>
+                  <code className="text-slate-900 dark:text-zinc-200 font-mono select-all text-[11px]">{gatewayApiKey}</code>
                   <button 
                     onClick={() => copyToClipboard(gatewayApiKey)}
-                    className="p-1 hover:bg-zinc-800 rounded text-zinc-400 hover:text-primary transition-colors shrink-0 ml-2"
+                    className="p-1 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded text-slate-400 hover:text-primary transition-colors shrink-0 ml-2 cursor-pointer"
                   >
                     <Clipboard className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
             </div>
-            <div className="bg-zinc-950/20 border border-zinc-800/40 rounded-lg p-2.5 space-y-2 mt-2">
+            <div className="bg-slate-100 dark:bg-zinc-950/20 border border-slate-200 dark:border-zinc-800/40 rounded-lg p-2.5 space-y-2 mt-2">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                <div className="text-[11px] text-zinc-400">
-                  <span className="font-bold text-zinc-300">💡 {language === 'en' ? 'Zero-Config Official ZiniChat SMS Gateway:' : 'জিরো-কনফিগারেশন অফিশিয়াল ZiniChat অ্যাপ:'}</span>
+                <div className="text-[11px] text-slate-600 dark:text-zinc-400">
+                  <span className="font-bold text-slate-900 dark:text-zinc-300">💡 {language === 'en' ? 'Zero-Config Official ZiniChat SMS Gateway:' : 'জিরো-কনফিগারেশন অফিশিয়াল ZiniChat অ্যাপ:'}</span>
                   <p className="mt-0.5">{language === 'en' 
                     ? 'Download the ZiniChat App with built-in ON/OFF toggles for bKash, Nagad, Rocket & BD Banks. Zero manual JSON or Regex typing required!' 
                     : 'ZiniChat কাস্টম অ্যাপ ডাউনলোড করুন। এর ভেতরে bKash, Nagad, Rocket ও Bank SMS এর বিল্ট-ইন অন/অফ সুইচ দেওয়া আছে। কোনো কোড বা টেমপ্লেট লেখা লাগবে না!'}</p>
@@ -477,110 +491,112 @@ export default function MfsSettingsPage() {
                   📥 Download ZiniChat SMS Gateway APK
                 </a>
               </div>
-
-
             </div>
-
-            <p className="text-[10px] text-zinc-500 pt-1">
-              {language === 'en' 
-                ? '* Input these two values in your SMS Gateway Android App settings to enable real-time payment sync.'
-                : '* আপনার ফোনের এসএমএস গেটওয়ে অ্যাপে এই দুটি ভ্যালু ইনপুট দিয়ে সচল করুন যাতে পেমেন্ট রিয়েল-টাইমে সিঙ্ক হতে পারে।'}
-            </p>
           </div>
 
-          <div className="bg-surface/50 border border-zinc-800 rounded-xl overflow-hidden backdrop-blur-xl">
-            {/* Search bar */}
-            <div className="p-3 border-b border-zinc-800 flex justify-between gap-2 items-center bg-zinc-950/20">
-              <div className="relative w-full md:w-80">
-                <Search className="absolute left-2.5 top-2 w-4 h-4 text-zinc-500" />
-                <input
-                  type="text"
-                  placeholder={language === 'en' ? 'Search by TrxID or SMS...' : 'ট্রানজেকশন আইডি বা এসএমএস খুঁজুন...'}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-zinc-900/60 border border-zinc-800 rounded-lg pl-9 pr-3 py-1.5 text-[12px] focus:outline-none focus:border-primary text-zinc-300"
-                />
-              </div>
+          {/* Search Header */}
+          <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 bg-white dark:bg-surface border border-slate-200 dark:border-zinc-800 rounded-xl p-3 shadow-sm">
+            <div className="flex items-center gap-2">
+              <span className="text-[12px] font-bold text-slate-900 dark:text-white">Synced SMS Logs:</span>
+              <span className="bg-primary/10 text-primary text-[11px] font-bold px-2 py-0.5 rounded-full">{filteredTransactions.length}</span>
+            </div>
+            <div className="relative w-full sm:w-64">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400 dark:text-zinc-500" />
+              <input
+                type="text"
+                placeholder={language === 'en' ? 'Search TRX ID or SMS...' : 'TRX ID বা SMS সার্চ করুন...'}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white rounded-lg pl-9 pr-3 py-1.5 text-[12px] focus:outline-none focus:border-primary"
+              />
             </div>
           </div>
 
           {/* Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-zinc-800 bg-zinc-900/20 text-zinc-400 font-semibold text-[11px]">
-                  <th className="p-2">Time</th>
-                  <th className="p-2">Provider</th>
-                  <th className="p-2">Trx ID</th>
-                  <th className="p-2 text-right">Amount (BDT)</th>
-                  <th className="p-2">Sender</th>
-                  <th className="p-2 max-w-xs">SMS Content</th>
-                  <th className="p-2 text-center">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-900/50">
-                {filteredTransactions.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="p-8 text-center text-zinc-500">
-                      {language === 'en' ? 'No transactions synced' : 'কোনো ট্রানজেকশন মেলেনি'}
-                    </td>
+          <div className="bg-white dark:bg-surface border border-slate-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm dark:shadow-xl">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-200 dark:border-zinc-800 bg-slate-100/90 dark:bg-zinc-900/20 text-slate-700 dark:text-zinc-400 font-semibold text-[11px]">
+                    <th className="p-2">Time</th>
+                    <th className="p-2">Provider</th>
+                    <th className="p-2">Trx ID</th>
+                    <th className="p-2 text-right">Amount (BDT)</th>
+                    <th className="p-2">Sender</th>
+                    <th className="p-2 max-w-xs">SMS Content</th>
+                    <th className="p-2 text-center">Status</th>
                   </tr>
-                ) : (
-                  filteredTransactions.map(tx => (
-                    <tr key={tx.id} className="hover:bg-zinc-900/30 transition-colors text-zinc-300">
-                      <td className="p-2 text-[11px] text-zinc-500">
-                        {new Date(tx.createdAt).toLocaleString()}
-                      </td>
-                      <td className="p-2">
-                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                          tx.provider === 'BKASH' ? 'bg-pink-600/10 text-pink-400' :
-                          tx.provider === 'NAGAD' ? 'bg-orange-600/10 text-orange-400' :
-                          tx.provider === 'ROCKET' ? 'bg-purple-600/10 text-purple-400' :
-                          tx.provider === 'UPAY' ? 'bg-yellow-500/10 text-yellow-400' :
-                          tx.provider === 'BANGLA_QR' ? 'bg-amber-500/10 text-amber-400' :
-                          'bg-sky-600/10 text-sky-400'
-                        }`}>
-                          {tx.provider}
-                        </span>
-                      </td>
-                      <td className="p-2 font-mono font-bold text-zinc-200">
-                        <span className="flex items-center gap-1.5">
-                          {tx.trxId}
-                          <button 
-                            onClick={() => copyToClipboard(tx.trxId)}
-                            className="text-zinc-500 hover:text-zinc-300"
-                          >
-                            <Clipboard className="w-3.5 h-3.5" />
-                          </button>
-                        </span>
-                      </td>
-                      <td className="p-2 text-right font-bold text-primary">
-                        {Number(tx.amount).toFixed(2)}
-                      </td>
-                      <td className="p-2 font-mono text-zinc-400">
-                        {tx.senderNumber || 'N/A'}
-                      </td>
-                      <td className="p-2 text-[11px] text-zinc-400 max-w-xs truncate" title={tx.smsBody}>
-                        {tx.smsBody}
-                      </td>
-                      <td className="p-2 text-center">
-                        {tx.isUsed ? (
-                          <span className="px-2 py-0.5 rounded bg-zinc-800 text-zinc-500 text-[10px] font-medium flex items-center justify-center gap-1 w-max mx-auto">
-                            <X className="w-3 h-3 text-red-500" />
-                            Claimed
-                          </span>
-                        ) : (
-                          <span className="px-2 py-0.5 rounded bg-emerald-950/40 text-emerald-400 text-[10px] font-bold flex items-center justify-center gap-1 w-max mx-auto">
-                            <Check className="w-3 h-3 text-emerald-400" />
-                            Unclaimed
-                          </span>
-                        )}
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-zinc-900/50 text-slate-900 dark:text-zinc-300">
+                  {filteredTransactions.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="p-8 text-center text-slate-500 dark:text-zinc-500">
+                        {language === 'en' ? 'No transactions synced' : 'কোনো ট্রানজেকশন মেলেনি'}
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    filteredTransactions.slice((txPage - 1) * txPageSize, txPage * txPageSize).map(tx => (
+                      <tr key={tx.id} className="hover:bg-slate-50 dark:hover:bg-zinc-900/30 transition-colors">
+                        <td className="p-2 text-[11px] text-slate-500 dark:text-zinc-500 whitespace-nowrap">
+                          {new Date(tx.createdAt).toLocaleString()}
+                        </td>
+                        <td className="p-2">
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                            tx.provider === 'BKASH' ? 'bg-pink-600/10 text-pink-600 dark:text-pink-400' :
+                            tx.provider === 'NAGAD' ? 'bg-orange-600/10 text-orange-600 dark:text-orange-400' :
+                            tx.provider === 'ROCKET' ? 'bg-purple-600/10 text-purple-600 dark:text-purple-400' :
+                            tx.provider === 'UPAY' ? 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400' :
+                            tx.provider === 'BANGLA_QR' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' :
+                            'bg-sky-600/10 text-sky-600 dark:text-sky-400'
+                          }`}>
+                            {tx.provider}
+                          </span>
+                        </td>
+                        <td className="p-2 font-mono font-bold text-slate-900 dark:text-zinc-200">
+                          <span className="flex items-center gap-1.5">
+                            {tx.trxId}
+                            <button 
+                              onClick={() => copyToClipboard(tx.trxId)}
+                              className="text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 cursor-pointer"
+                            >
+                              <Clipboard className="w-3.5 h-3.5" />
+                            </button>
+                          </span>
+                        </td>
+                        <td className="p-2 text-right font-bold text-primary">
+                          {Number(tx.amount).toFixed(2)}
+                        </td>
+                        <td className="p-2 font-mono text-slate-600 dark:text-zinc-400">
+                          {tx.senderNumber || '-'}
+                        </td>
+                        <td className="p-2 max-w-xs text-[11px] text-slate-600 dark:text-zinc-400 truncate" title={tx.smsBody}>
+                          {tx.smsBody || '-'}
+                        </td>
+                        <td className="p-2 text-center">
+                          {tx.isClaimed ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                              Claimed
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                              Unclaimed
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <AdminPagination
+              currentPage={txPage}
+              totalItems={filteredTransactions.length}
+              pageSize={txPageSize}
+              onPageChange={setTxPage}
+              onPageSizeChange={setTxPageSize}
+            />
           </div>
         </div>
       )}

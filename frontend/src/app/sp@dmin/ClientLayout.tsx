@@ -165,10 +165,23 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
   }, [pathname]);
 
   const hasPermission = (perm: string) => {
-    const roleFromCookie = Cookies.get('user_role');
-    if (userRole === 'superadmin' || roleFromCookie === 'superadmin') return true;
-    if (userEmail === 'admin@platform.com') return true; 
-    return permissions.includes('*') || permissions.includes(perm);
+    if (userEmail === 'admin@platform.com' || permissions.includes('*')) return true;
+    if (permissions.includes(perm)) return true;
+
+    // Legacy permission mapping fallback
+    const categoryMap: Record<string, string[]> = {
+      'manage:tenants': ['view:tenants', 'manage:tenants', 'impersonate:tenants', 'delete:tenants'],
+      'manage:billing': ['view:billing', 'manage:billing', 'view:packages', 'manage:packages', 'view:coupons', 'manage:coupons', 'view:payments', 'approve:payments'],
+      'manage:site': ['view:site_editor', 'manage:site_editor', 'view:inquiries', 'manage:inquiries', 'view:tickets', 'manage:tickets', 'view:templates', 'manage:templates', 'view:support_chats', 'view:settings', 'manage:settings', 'manage:currency'],
+      'manage:audit': ['view:audit_logs', 'view:security_logs', 'manage:audit'],
+      'manage:team': ['view:team', 'manage:team'],
+    };
+
+    for (const [legacy, subPerms] of Object.entries(categoryMap)) {
+      if (permissions.includes(legacy) && subPerms.includes(perm)) return true;
+    }
+
+    return false;
   };
 
   const handleLogout = () => {
@@ -184,17 +197,17 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
 
   const navItems = [
     { name: language === 'en' ? 'Platform Overview' : 'প্ল্যাটফর্ম ওভারভিউ', icon: LayoutGrid, href: '/sp@dmin', show: true },
-    { name: language === 'en' ? 'Tenants' : 'টেন্যান্টস', icon: Users, href: '/sp@dmin/tenants', show: hasPermission('manage:tenants') },
-    { name: language === 'en' ? 'Packages & Plans' : 'প্যাকেজ ও প্ল্যান', icon: Package, href: '/sp@dmin/packages', show: hasPermission('manage:billing') },
-    { name: language === 'en' ? 'Coupons' : 'কুপন', icon: Package, href: '/sp@dmin/coupons', show: hasPermission('manage:billing') },
-    { name: language === 'en' ? 'Billing' : 'বিলিং', icon: CreditCard, href: '/sp@dmin/billing', show: hasPermission('manage:billing') },
-    { name: language === 'en' ? 'Pending Payments' : 'পেন্ডিং পেমেন্ট', icon: Clock, href: '/sp@dmin/payments', show: hasPermission('manage:billing') },
-    { name: language === 'en' ? 'Audit Logs' : 'অডিট লগস', icon: ClipboardList, href: '/sp@dmin/audit-logs', show: hasPermission('manage:audit') },
-    { name: language === 'en' ? 'Inquiries' : 'ইনকোয়ারি', icon: Mail, href: '/sp@dmin/inquiries', show: hasPermission('manage:site') },
-    { name: language === 'en' ? 'Support Tickets' : 'সাপোর্ট টিকিট', icon: ClipboardList, href: '/sp@dmin/tickets', show: hasPermission('manage:site') },
-    { name: language === 'en' ? 'Security Logs' : 'সিকিউরিটি লগস', icon: ShieldAlert, href: '/sp@dmin/security-logs', show: hasPermission('manage:audit') },
-    { name: language === 'en' ? 'Message Templates' : 'মেসেজ টেমপ্লেটস', icon: MessageSquare, href: '/sp@dmin/templates', show: hasPermission('manage:site') },
-    { name: language === 'en' ? 'AI Support Chats' : 'এআই সাপোর্ট চ্যাটস', icon: Bot, href: '/sp@dmin/support-chats', show: hasPermission('manage:site') },
+    { name: language === 'en' ? 'Tenants' : 'টেন্যান্টস', icon: Users, href: '/sp@dmin/tenants', show: hasPermission('view:tenants') },
+    { name: language === 'en' ? 'Packages & Plans' : 'প্যাকেজ ও প্ল্যান', icon: Package, href: '/sp@dmin/packages', show: hasPermission('view:packages') },
+    { name: language === 'en' ? 'Coupons' : 'কুপন', icon: Package, href: '/sp@dmin/coupons', show: hasPermission('view:coupons') },
+    { name: language === 'en' ? 'Billing' : 'বিলিং', icon: CreditCard, href: '/sp@dmin/billing', show: hasPermission('view:billing') },
+    { name: language === 'en' ? 'Pending Payments' : 'পেন্ডিং পেমেন্ট', icon: Clock, href: '/sp@dmin/payments', show: hasPermission('view:payments') },
+    { name: language === 'en' ? 'Audit Logs' : 'অডিট লগস', icon: ClipboardList, href: '/sp@dmin/audit-logs', show: hasPermission('view:audit_logs') },
+    { name: language === 'en' ? 'Inquiries' : 'ইনকোয়ারি', icon: Mail, href: '/sp@dmin/inquiries', show: hasPermission('view:inquiries') },
+    { name: language === 'en' ? 'Support Tickets' : 'সাপোর্ট টিকিট', icon: ClipboardList, href: '/sp@dmin/tickets', show: hasPermission('view:tickets') },
+    { name: language === 'en' ? 'Security Logs' : 'সিকিউরিটি লগস', icon: ShieldAlert, href: '/sp@dmin/security-logs', show: hasPermission('view:security_logs') },
+    { name: language === 'en' ? 'Message Templates' : 'মেসেজ টেমপ্লেটস', icon: MessageSquare, href: '/sp@dmin/templates', show: hasPermission('view:templates') },
+    { name: language === 'en' ? 'AI Support Chats' : 'এআই সাপোর্ট চ্যাটস', icon: Bot, href: '/sp@dmin/support-chats', show: hasPermission('view:support_chats') },
     { 
       name: language === 'en' ? 'Settings' : 'সেটিংস', 
       icon: Settings2, 
@@ -202,17 +215,17 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
       show: true,
       hasSubmenu: true,
       subItems: [
-        { name: language === 'en' ? 'Site Editor' : 'সাইট এডিটর', icon: Globe, href: '/sp@dmin/site-editor', show: hasPermission('manage:site') },
-        { name: language === 'en' ? 'Team Members' : 'টিম মেম্বারস', icon: ShieldCheck, href: '/sp@dmin/team', show: hasPermission('manage:team') },
-        { name: language === 'en' ? 'Currency' : 'কারেন্সি', icon: DollarSign, href: '/sp@dmin/currency', show: hasPermission('manage:currency') },
-        { name: language === 'en' ? 'SMTP Settings' : 'এসএমটিপি সেটিংস', icon: Mail, href: '/sp@dmin/settings/smtp', show: hasPermission('manage:site') },
-        { name: language === 'en' ? 'Business Nature' : 'বিজনেস নেচার', icon: ClipboardList, href: '/sp@dmin/settings/business-nature', show: hasPermission('manage:site') },
-        { name: language === 'en' ? 'AI Integrations' : 'এআই ইন্টিগ্রেশন', icon: Bot, href: '/sp@dmin/settings/ai', show: hasPermission('manage:site') },
-        { name: language === 'en' ? 'MFS & Bank Gateway' : 'এমএফএস ও ব্যাংক গেটওয়ে', icon: Landmark, href: '/sp@dmin/settings/mfs', show: hasPermission('manage:site') },
-        { name: language === 'en' ? 'Google Login' : 'গুগল লগইন সেটিংস', icon: Key, href: '/sp@dmin/settings/google-auth', show: hasPermission('manage:site') },
-        { name: language === 'en' ? 'Facebook Login' : 'ফেসবুক লগইন সেটিংস', icon: Globe, href: '/sp@dmin/settings/facebook-auth', show: hasPermission('manage:site') },
-        { name: language === 'en' ? 'Meta Pixel & CAPI' : 'মেটা পিক্সেল ও CAPI', icon: Activity, href: '/sp@dmin/settings/meta-pixel', show: hasPermission('manage:site') },
-        { name: language === 'en' ? 'Google Analytics' : 'গুগল অ্যানালিটিক্স', icon: BarChart3, href: '/sp@dmin/settings/google-analytics', show: hasPermission('manage:site') },
+        { name: language === 'en' ? 'Site Editor' : 'সাইট এডিটর', icon: Globe, href: '/sp@dmin/site-editor', show: hasPermission('view:site_editor') },
+        { name: language === 'en' ? 'Team Members' : 'টিম মেম্বারস', icon: ShieldCheck, href: '/sp@dmin/team', show: hasPermission('view:team') },
+        { name: language === 'en' ? 'Currency' : 'কারেন্সি', icon: DollarSign, href: '/sp@dmin/currency', show: hasPermission('manage:currency') || hasPermission('view:settings') },
+        { name: language === 'en' ? 'SMTP Settings' : 'এসএমটিপি সেটিংস', icon: Mail, href: '/sp@dmin/settings/smtp', show: hasPermission('view:settings') },
+        { name: language === 'en' ? 'Business Nature' : 'বিজনেস নেচার', icon: ClipboardList, href: '/sp@dmin/settings/business-nature', show: hasPermission('view:settings') },
+        { name: language === 'en' ? 'AI Integrations' : 'এআই ইন্টিগ্রেশন', icon: Bot, href: '/sp@dmin/settings/ai', show: hasPermission('view:settings') },
+        { name: language === 'en' ? 'MFS & Bank Gateway' : 'এমএফএস ও ব্যাংক গেটওয়ে', icon: Landmark, href: '/sp@dmin/settings/mfs', show: hasPermission('view:settings') },
+        { name: language === 'en' ? 'Google Login' : 'গুগল লগইন সেটিংস', icon: Key, href: '/sp@dmin/settings/google-auth', show: hasPermission('view:settings') },
+        { name: language === 'en' ? 'Facebook Login' : 'ফেসবুক লগইন সেটিংস', icon: Globe, href: '/sp@dmin/settings/facebook-auth', show: hasPermission('view:settings') },
+        { name: language === 'en' ? 'Meta Pixel & CAPI' : 'মেটা পিক্সেল ও CAPI', icon: Activity, href: '/sp@dmin/settings/meta-pixel', show: hasPermission('view:settings') },
+        { name: language === 'en' ? 'Google Analytics' : 'গুগল অ্যানালিটিক্স', icon: BarChart3, href: '/sp@dmin/settings/google-analytics', show: hasPermission('view:settings') },
       ].filter(sub => sub.show)
     }
   ];

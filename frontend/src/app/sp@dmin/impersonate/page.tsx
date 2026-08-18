@@ -11,16 +11,29 @@ function ImpersonateContent() {
 
   useEffect(() => {
     const token = searchParams.get('token');
+    const role = searchParams.get('role') || 'owner';
+    const tenantName = searchParams.get('tenant') || '';
+
     if (!token) {
       setError('Invalid or missing impersonation token.');
       return;
     }
 
     try {
-      // Set access token cookie for 2 hours (1/12 day)
-      Cookies.set('access_token', token, { expires: 1 / 12, path: '/' });
-      
-      // Perform full page redirect to load clean tenant state and sockets
+      // 1. Replace the superadmin's access_token with the tenant's impersonation token
+      Cookies.set('access_token', token, { expires: 1 / 12, path: '/' }); // 2 hours
+
+      // 2. Override user_role cookie so middleware doesn't block /dashboard access
+      //    (middleware checks role === 'superadmin' and redirects back to /sp@dmin)
+      Cookies.set('user_role', role, { expires: 1 / 12, path: '/' });
+
+      // 3. Store impersonation metadata so we can show an exit banner & restore session
+      Cookies.set('impersonation_active', 'true', { expires: 1 / 12, path: '/' });
+      if (tenantName) {
+        Cookies.set('impersonation_tenant_name', tenantName, { expires: 1 / 12, path: '/' });
+      }
+
+      // 4. Perform full page reload to load clean tenant state and sockets
       window.location.href = '/dashboard';
     } catch (err: any) {
       console.error('Impersonation error:', err);

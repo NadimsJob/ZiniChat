@@ -4,12 +4,16 @@ import { useEffect, useState } from 'react';
 import Cookies from 'js-cookie';
 import { Gift, Plus, Search, CheckCircle2, XCircle, Building2, Calendar } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageProvider';
+import AdminLoader from '@/components/AdminLoader';
+import AdminPagination from '@/components/AdminPagination';
 
 export default function CouponsPage() {
   const { language } = useLanguage();
   const [coupons, setCoupons] = useState<any[]>([]);
   const [tenants, setTenants] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     code: '',
@@ -95,8 +99,6 @@ export default function CouponsPage() {
     }
   };
 
-  if (loading) return <div className="p-8 text-zinc-500">Loading coupons...</div>;
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -111,81 +113,96 @@ export default function CouponsPage() {
         </div>
         <button 
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-xl text-sm font-medium transition-colors self-start sm:self-auto"
+          className="flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-xl text-sm font-medium transition-colors self-start sm:self-auto cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           {language === 'en' ? 'Create Coupon' : 'কুপন তৈরি করুন'}
         </button>
       </div>
 
-      <div className="bg-surface/70 backdrop-blur-xl border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-[13px] min-w-[650px]">
-            <thead className="bg-zinc-100/50 dark:bg-zinc-900/50 border-b border-zinc-200 dark:border-zinc-800 text-zinc-500 font-medium">
-              <tr>
-                <th className="px-4 py-3">{language === 'en' ? 'Code' : 'কোড'}</th>
-                <th className="px-4 py-3">{language === 'en' ? 'Scope / Tenant' : 'স্কোপ / টেন্যান্ট'}</th>
-                <th className="px-4 py-3">{language === 'en' ? 'Discount' : 'ডিসকাউন্ট'}</th>
-                <th className="px-4 py-3">{language === 'en' ? 'Uses' : 'ব্যবহার'}</th>
-                <th className="px-4 py-3">{language === 'en' ? 'Valid Until' : 'মেয়াদ'}</th>
-                <th className="px-4 py-3">{language === 'en' ? 'Status' : 'স্ট্যাটাস'}</th>
-                <th className="px-4 py-3 text-right">{language === 'en' ? 'Actions' : 'অ্যাকশন'}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
-              {coupons.map((coupon) => (
-                <tr key={coupon.id} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-900/50 transition-colors">
-                  <td className="px-4 py-3 font-semibold text-primary">{coupon.code}</td>
-                  <td className="px-4 py-3">
-                    {coupon.tenant ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 font-medium border border-blue-500/20">
-                        <Building2 className="w-3 h-3" />
-                        {coupon.tenant.businessName || coupon.tenant.brandName || coupon.tenant.ownerName || 'Tenant'}
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 font-medium">
-                        Global (All)
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    {coupon.discountAmount} {coupon.discountType === 'percentage' ? '%' : 'BDT'}
-                  </td>
-                  <td className="px-4 py-3">
-                    {coupon.usedCount} / {coupon.maxUses || '∞'}
-                  </td>
-                  <td className="px-4 py-3 text-zinc-500 text-[12px]">
-                    {coupon.validUntil ? new Date(coupon.validUntil).toLocaleDateString() : 'Lifetime'}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium ${
-                      coupon.isActive 
-                        ? 'bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400'
-                        : 'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400'
-                    }`}>
-                      {coupon.isActive ? 'Active' : 'Inactive'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <button 
-                      onClick={() => toggleCouponStatus(coupon.id)}
-                      className="text-primary hover:underline font-medium"
-                    >
-                      {coupon.isActive ? 'Disable' : 'Enable'}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {coupons.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-zinc-500">
-                    {language === 'en' ? 'No coupons found' : 'কোন কুপন পাওয়া যায়নি'}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+      <div className="bg-white dark:bg-surface border border-slate-200 dark:border-surface-hover rounded-2xl overflow-hidden shadow-sm dark:shadow-xl">
+        {loading ? (
+          <AdminLoader message="Loading discount coupons..." />
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-[13px] min-w-[650px]">
+                <thead className="bg-slate-100/90 dark:bg-surface-hover/50 border-b border-slate-200 dark:border-surface-hover text-slate-700 dark:text-zinc-400 font-medium">
+                  <tr>
+                    <th className="px-4 py-3">{language === 'en' ? 'Code' : 'কোড'}</th>
+                    <th className="px-4 py-3">{language === 'en' ? 'Scope / Tenant' : 'স্কোপ / টেন্যান্ট'}</th>
+                    <th className="px-4 py-3">{language === 'en' ? 'Discount' : 'ডিসকাউন্ট'}</th>
+                    <th className="px-4 py-3">{language === 'en' ? 'Uses' : 'ব্যবহার'}</th>
+                    <th className="px-4 py-3">{language === 'en' ? 'Valid Until' : 'মেয়াদ'}</th>
+                    <th className="px-4 py-3">{language === 'en' ? 'Status' : 'স্ট্যাটাস'}</th>
+                    <th className="px-4 py-3 text-right">{language === 'en' ? 'Actions' : 'অ্যাকশন'}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-surface-hover text-slate-900 dark:text-zinc-200">
+                  {coupons.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="px-4 py-8 text-center text-slate-500 dark:text-zinc-500">
+                        {language === 'en' ? 'No coupons found. Click Create Coupon above.' : 'কোনো কুপন পাওয়া যায়নি। কুপন তৈরি করতে উপরের বাটনে ক্লিক করুন।'}
+                      </td>
+                    </tr>
+                  ) : (
+                    coupons.slice((page - 1) * pageSize, page * pageSize).map((coupon) => (
+                      <tr key={coupon.id} className="hover:bg-slate-50 dark:hover:bg-surface-hover/30 transition-colors">
+                        <td className="px-4 py-3 font-semibold text-primary">{coupon.code}</td>
+                        <td className="px-4 py-3">
+                          {coupon.tenant ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 font-medium border border-blue-500/20">
+                              <Building2 className="w-3 h-3" />
+                              {coupon.tenant.businessName || coupon.tenant.brandName || coupon.tenant.ownerName || 'Tenant'}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 font-medium">
+                              Global (All)
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          {coupon.discountAmount} {coupon.discountType === 'percentage' ? '%' : 'BDT'}
+                        </td>
+                        <td className="px-4 py-3">
+                          {coupon.usedCount} / {coupon.maxUses || '∞'}
+                        </td>
+                        <td className="px-4 py-3 text-slate-500 dark:text-zinc-400 text-[12px]">
+                          {coupon.validUntil ? new Date(coupon.validUntil).toLocaleDateString() : 'Lifetime'}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium ${
+                            coupon.isActive 
+                              ? 'bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400'
+                              : 'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400'
+                          }`}>
+                            {coupon.isActive ? 'Active' : 'Inactive'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <button 
+                            onClick={() => toggleCouponStatus(coupon.id)}
+                            className="text-primary hover:underline font-medium cursor-pointer"
+                          >
+                            {coupon.isActive ? 'Disable' : 'Enable'}
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <AdminPagination
+              currentPage={page}
+              totalItems={coupons.length}
+              pageSize={pageSize}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+            />
+          </>
+        )}
       </div>
 
       {isModalOpen && (

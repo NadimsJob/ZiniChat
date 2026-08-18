@@ -84,6 +84,8 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  const [isEducationMode, setIsEducationMode] = useState(false);
  const [isManufacturingMode, setIsManufacturingMode] = useState(false);
  const [isLogisticsMode, setIsLogisticsMode] = useState(false);
+ const [isImpersonating, setIsImpersonating] = useState(false);
+ const [impersonatedTenantName, setImpersonatedTenantName] = useState('');
 
 
  const hasAgentPresence = useFeature('agent_presence');
@@ -159,9 +161,15 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  const [sidebarHovered, setSidebarHovered] = useState(false);
  const isSidebarCollapsed = isInboxPage && !sidebarPinned && !sidebarHovered;
 
- useEffect(() => {
- setMounted(true);
- const token = Cookies.get('access_token');
+  useEffect(() => {
+  setMounted(true);
+  if (typeof window !== 'undefined') {
+    if (Cookies.get('impersonation_active') === 'true') {
+      setIsImpersonating(true);
+      setImpersonatedTenantName(Cookies.get('impersonation_tenant_name') || '');
+    }
+  }
+  const token = Cookies.get('access_token');
  
  // Global fetch interceptor for Trial/Subscription expiration (402 Payment Required)
  const originalFetch = window.fetch;
@@ -696,10 +704,34 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
       </aside>
 
 
- {/* Main Content Area */}
- <main className="flex-1 flex flex-col min-w-0">
- 
- {/* Topbar */}
+  {/* Main Content Area */}
+  <main className="flex-1 flex flex-col min-w-0">
+  
+  {/* Impersonation Banner */}
+  {isImpersonating && (
+    <div className="bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 text-white px-4 py-2 text-xs font-semibold flex items-center justify-between shadow-md shrink-0 z-50">
+      <div className="flex items-center gap-2 min-w-0">
+        <ShieldCheck className="w-4 h-4 text-amber-200 animate-pulse shrink-0" />
+        <span className="truncate">
+          <strong>Superadmin Mode:</strong> Viewing <strong>{impersonatedTenantName || 'Tenant'}</strong> workspace.
+        </span>
+      </div>
+      <button
+        onClick={() => {
+          Cookies.remove('impersonation_active');
+          Cookies.remove('impersonation_tenant_name');
+          window.close();
+        }}
+        className="bg-black/30 hover:bg-black/50 text-white border border-white/20 px-2.5 py-1 rounded-lg transition-all text-[11px] font-bold flex items-center gap-1 shrink-0 cursor-pointer ml-2"
+        title="Exit tenant workspace"
+      >
+        <span>Exit Workspace</span>
+        <X className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  )}
+
+  {/* Topbar */}
  <header className="h-16 md:h-14 px-4 md:px-3 flex items-center justify-between shrink-0 bg-background/80 backdrop-blur-xl border-b border-border shadow-sm relative z-40">
  <div className="flex items-center gap-3 md:gap-2 min-w-0">
  <button 

@@ -15,6 +15,8 @@ import {
   ArrowRightLeft,
   Shield
 } from 'lucide-react';
+import AdminLoader from '@/components/AdminLoader';
+import AdminPagination from '@/components/AdminPagination';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -25,6 +27,8 @@ export default function CurrencySettingsPage() {
   const [rates, setRates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   // Form
   const [newRate, setNewRate] = useState('');
@@ -271,7 +275,9 @@ export default function CurrencySettingsPage() {
           </h3>
         </div>
 
-        {rates.length === 0 ? (
+        {loading ? (
+          <AdminLoader message="Loading exchange rates history..." />
+        ) : rates.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="w-16 h-16 rounded-xl bg-slate-100 dark:bg-zinc-800 flex items-center justify-center mb-2">
               <DollarSign className="w-4 h-4 text-slate-300 dark:text-zinc-600" />
@@ -284,65 +290,75 @@ export default function CurrencySettingsPage() {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-slate-100 dark:border-zinc-800">
-                  <th className="text-left px-3 py-3 text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">
-                    {t('Status', 'স্ট্যাটাস')}
-                  </th>
-                  <th className="text-left px-3 py-3 text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">
-                    {t('Exchange Rate', 'এক্সচেঞ্জ রেট')}
-                  </th>
-                  <th className="text-left px-3 py-3 text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">
-                    {t('Effective Date', 'কার্যকর তারিখ')}
-                  </th>
-                  <th className="text-left px-3 py-3 text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">
-                    {t('Created At', 'তৈরির তারিখ')}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {rates.map((rate) => (
-                  <tr
-                    key={rate.id}
-                    className={`border-b border-slate-50 dark:border-zinc-800/50 transition-colors ${
-                      isActiveRate(rate) ? 'bg-emerald-50/50 dark:bg-emerald-500/5' : 'hover:bg-slate-50/50 dark:hover:bg-zinc-800/30'
-                    }`}
-                  >
-                    <td className="px-3 py-2">
-                      {isActiveRate(rate) ? (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                          {t('Active', 'সক্রিয়')}
-                        </span>
-                      ) : isFutureDate(rate.effectiveDate) ? (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-full bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-500/30">
-                          <Clock className="w-3 h-3" />
-                          {t('Scheduled', 'নির্ধারিত')}
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400">
-                          {t('Expired', 'মেয়াদোত্তীর্ণ')}
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2">
-                      <span className="text-[12px] font-bold text-slate-900 dark:text-white">
-                        1 USD = ৳{Number(rate.rate).toFixed(4)}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2 text-[12px] text-slate-600 dark:text-zinc-300">
-                      {formatDate(rate.effectiveDate)}
-                    </td>
-                    <td className="px-3 py-2 text-[12px] text-slate-500 dark:text-zinc-400">
-                      {formatDate(rate.createdAt)}
-                    </td>
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-slate-100 dark:border-zinc-800">
+                    <th className="text-left px-3 py-3 text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">
+                      {t('Status', 'স্ট্যাটাস')}
+                    </th>
+                    <th className="text-left px-3 py-3 text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">
+                      {t('Exchange Rate', 'এক্সচেঞ্জ রেট')}
+                    </th>
+                    <th className="text-left px-3 py-3 text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">
+                      {t('Effective Date', 'কার্যকর তারিখ')}
+                    </th>
+                    <th className="text-left px-3 py-3 text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">
+                      {t('Created At', 'তৈরির তারিখ')}
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {rates.slice((page - 1) * pageSize, page * pageSize).map((rate) => (
+                    <tr
+                      key={rate.id}
+                      className={`border-b border-slate-50 dark:border-zinc-800/50 transition-colors ${
+                        isActiveRate(rate) ? 'bg-emerald-50/50 dark:bg-emerald-500/5' : 'hover:bg-slate-50/50 dark:hover:bg-zinc-800/30'
+                      }`}
+                    >
+                      <td className="px-3 py-2">
+                        {isActiveRate(rate) ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            {t('Active', 'সক্রিয়')}
+                          </span>
+                        ) : isFutureDate(rate.effectiveDate) ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-full bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-500/30">
+                            <Clock className="w-3 h-3" />
+                            {t('Scheduled', 'নির্ধারিত')}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400">
+                            {t('Expired', 'মেয়াদোত্তীর্ণ')}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2">
+                        <span className="text-[12px] font-bold text-slate-900 dark:text-white">
+                          1 USD = ৳{Number(rate.rate).toFixed(4)}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2 text-[12px] text-slate-600 dark:text-zinc-300">
+                        {formatDate(rate.effectiveDate)}
+                      </td>
+                      <td className="px-3 py-2 text-[12px] text-slate-500 dark:text-zinc-400">
+                        {formatDate(rate.createdAt)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <AdminPagination
+              currentPage={page}
+              totalItems={rates.length}
+              pageSize={pageSize}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+            />
+          </>
         )}
       </div>
     </div>

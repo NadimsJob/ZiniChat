@@ -22,11 +22,12 @@ describe('StatsService', () => {
       findMany: jest.fn().mockResolvedValue([]),
     },
     payment: {
-      aggregate: jest.fn().mockResolvedValue({ _sum: { amountBdt: 5000 } }),
+      aggregate: jest.fn().mockResolvedValue({ _sum: { amountBdt: 5000 }, _count: { _all: 0 } }),
       findMany: jest.fn().mockResolvedValue([]),
     },
     aiUsageLog: {
       aggregate: jest.fn().mockResolvedValue({ _sum: { tokensUsed: 1000 } }),
+      count: jest.fn().mockResolvedValue(100),
       groupBy: jest.fn().mockResolvedValue([]),
     },
     conversation: {

@@ -1,11 +1,29 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
-import { toast } from 'react-hot-toast';
-import { useLanguage } from '@/components/LanguageProvider';
+import { toast, Toaster } from 'react-hot-toast';
+import { 
+  Package, 
+  Puzzle, 
+  Plus, 
+  Trash2, 
+  Edit, 
+  Save, 
+  Check, 
+  X, 
+  RefreshCw, 
+  Star, 
+  CheckCircle,
+  AlertCircle,
+  Copy
+} from 'lucide-react';
 import { useCurrency } from '@/components/CurrencyProvider';
-import { Plus, Trash2, Edit, Save, X, Check, Package, Puzzle, CheckCircle } from 'lucide-react';
+import { useLanguage } from '@/components/LanguageProvider';
+import AdminLoader from '@/components/AdminLoader';
+import AdminPagination from '@/components/AdminPagination';
+
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function PackagesPage() {
   const { language } = useLanguage();
@@ -15,6 +33,11 @@ export default function PackagesPage() {
   const [plans, setPlans] = useState<any[]>([]);
   const [addons, setAddons] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  const [planPage, setPlanPage] = useState(1);
+  const [planPageSize, setPlanPageSize] = useState(10);
+  const [addonPage, setAddonPage] = useState(1);
+  const [addonPageSize, setAddonPageSize] = useState(10);
 
   // Form states
   const [isEditing, setIsEditing] = useState(false);
@@ -232,46 +255,114 @@ export default function PackagesPage() {
       {!isEditing && activeTab === 'plans' && (
         <div className="space-y-3">
           <div className="flex justify-end">
-            <button onClick={() => openPlanForm()} className="flex items-center gap-2 px-2.5 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium shadow-lg shadow-primary/20">
+            <button onClick={() => openPlanForm()} className="flex items-center gap-2 px-2.5 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium shadow-lg shadow-primary/20 cursor-pointer">
               <Plus className="w-4 h-4" /> Create New Plan
             </button>
           </div>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {plans.map(plan => (
-              <div key={plan.id} className="bg-surface border border-surface-hover rounded-xl p-3 relative group">
-                {!plan.isActive && <div className="absolute top-2.5 right-4 text-xs font-bold bg-red-500/10 text-red-500 px-2 py-1 rounded">Inactive</div>}
-                {plan.isPopular && <div className="absolute top-2.5 right-4 text-xs font-bold bg-primary/10 text-primary px-2 py-1 rounded">Popular</div>}
-                {plan.isDefault && <div className="absolute -top-3 -right-3 text-[10px] font-black bg-gradient-to-r from-amber-500 to-orange-500 text-white px-3 py-1 rounded-full shadow-lg border-2 border-surface animate-bounce">🌟 DEFAULT</div>}
-                
-                <h3 className="text-[15px] font-bold">{plan.name}</h3>
-                <div className="text-[13px] font-black mt-2 text-primary">{formatPrice(plan.priceMonthlyBdt)}<span className="text-[12px] text-zinc-500 font-normal"> / monthly</span></div>
-                
-                <div className="mt-2 space-y-2 text-[12px] text-zinc-400">
-                  <div className="flex justify-between"><span>Team Members:</span> <span className="font-medium text-zinc-200">{plan.seatLimit}</span></div>
-                  <div className="flex justify-between"><span>Channels (WA/FB/IG/Widget):</span> <span className="font-medium text-zinc-200">{plan.whatsappLimit ?? 1} / {plan.messengerLimit ?? 1} / {plan.instagramLimit ?? 1} / {plan.websiteWidgetLimit ?? 0}</span></div>
-                  <div className="flex justify-between"><span>Messages:</span> <span className="font-medium text-zinc-200">{plan.messageQuota}</span></div>
-                  <div className="flex justify-between"><span>AI Responses:</span> <span className="font-medium text-zinc-200">{plan.aiQuota}</span></div>
-                  <div className="flex justify-between"><span>Features:</span> <span className="font-medium text-zinc-200">{plan.featuresJson?.length || 0} items</span></div>
-                </div>
+          {loading ? (
+            <AdminLoader message="Loading subscription plans..." />
+          ) : (
+            <div className="bg-white dark:bg-surface border border-slate-200 dark:border-surface-hover rounded-2xl overflow-hidden shadow-sm dark:shadow-xl p-4 space-y-4">
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {plans.length === 0 ? (
+                  <div className="col-span-full py-12 text-center text-slate-500 dark:text-zinc-500">No plans created yet.</div>
+                ) : (
+                  plans.slice((planPage - 1) * planPageSize, planPage * planPageSize).map(plan => (
+                    <div key={plan.id} className="bg-slate-50 dark:bg-background border border-slate-200 dark:border-surface-hover rounded-xl p-3 relative group">
+                      {!plan.isActive && <div className="absolute top-2.5 right-4 text-xs font-bold bg-red-500/10 text-red-500 px-2 py-1 rounded">Inactive</div>}
+                      {plan.isPopular && <div className="absolute top-2.5 right-4 text-xs font-bold bg-primary/10 text-primary px-2 py-1 rounded">Popular</div>}
+                      {plan.isDefault && <div className="absolute -top-3 -right-3 text-[10px] font-black bg-gradient-to-r from-amber-500 to-orange-500 text-white px-3 py-1 rounded-full shadow-lg border-2 border-surface animate-bounce">🌟 DEFAULT</div>}
+                      
+                      <h3 className="text-[15px] font-bold text-slate-900 dark:text-white">{plan.name}</h3>
+                      <div className="text-[13px] font-black mt-2 text-primary">{formatPrice(plan.priceMonthlyBdt)}<span className="text-[12px] text-slate-500 dark:text-zinc-500 font-normal"> / monthly</span></div>
+                      
+                      <div className="mt-2 space-y-2 text-[12px] text-slate-600 dark:text-zinc-400">
+                        <div className="flex justify-between"><span>Team Members:</span> <span className="font-medium text-slate-900 dark:text-zinc-200">{plan.seatLimit}</span></div>
+                        <div className="flex justify-between"><span>Channels (WA/FB/IG/Widget):</span> <span className="font-medium text-slate-900 dark:text-zinc-200">{plan.whatsappLimit ?? 1} / {plan.messengerLimit ?? 1} / {plan.instagramLimit ?? 1} / {plan.websiteWidgetLimit ?? 0}</span></div>
+                        <div className="flex justify-between"><span>Messages:</span> <span className="font-medium text-slate-900 dark:text-zinc-200">{plan.messageQuota}</span></div>
+                        <div className="flex justify-between"><span>AI Responses:</span> <span className="font-medium text-slate-900 dark:text-zinc-200">{plan.aiQuota}</span></div>
+                        <div className="flex justify-between"><span>Features:</span> <span className="font-medium text-slate-900 dark:text-zinc-200">{plan.featuresJson?.length || 0} items</span></div>
+                      </div>
 
-                <div className="flex items-center gap-2 mt-3 pt-4 border-t border-surface-hover">
-                  <button onClick={() => openPlanForm(plan)} className="flex-1 flex justify-center items-center gap-2 px-3 py-2 bg-secondary/10 text-secondary rounded-lg hover:bg-secondary/20 transition-colors text-[12px] font-medium">
-                    <Edit className="w-4 h-4" /> Edit
-                  </button>
-                  <button onClick={() => handleSetDefault(plan.id)} className="flex-1 flex justify-center items-center gap-2 px-3 py-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors text-[12px] font-medium" title="Set as Default for new Signups">
-                    <CheckCircle className="w-4 h-4" /> Set Default
-                  </button>
-                  <button onClick={() => handleDelete('plans', plan.id)} className="p-2 text-zinc-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
+                      <div className="flex items-center gap-2 mt-3 pt-4 border-t border-slate-200 dark:border-surface-hover">
+                        <button onClick={() => openPlanForm(plan)} className="flex-1 flex justify-center items-center gap-2 px-3 py-2 bg-secondary/10 text-secondary rounded-lg hover:bg-secondary/20 transition-colors text-[12px] font-medium cursor-pointer">
+                          <Edit className="w-4 h-4" /> Edit
+                        </button>
+                        <button onClick={() => handleSetDefault(plan.id)} className="flex-1 flex justify-center items-center gap-2 px-3 py-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors text-[12px] font-medium cursor-pointer" title="Set as Default for new Signups">
+                          <CheckCircle className="w-4 h-4" /> Set Default
+                        </button>
+                        <button onClick={() => handleDelete('plans', plan.id)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
-            ))}
-            {plans.length === 0 && !loading && (
-              <div className="col-span-full py-12 text-center text-zinc-500">No plans created yet.</div>
-            )}
+
+              <AdminPagination
+                currentPage={planPage}
+                totalItems={plans.length}
+                pageSize={planPageSize}
+                onPageChange={setPlanPage}
+                onPageSizeChange={setPlanPageSize}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Addons View */}
+      {!isEditing && activeTab === 'addons' && (
+        <div className="space-y-3">
+          <div className="flex justify-end">
+            <button onClick={() => openAddonForm()} className="flex items-center gap-2 px-2.5 py-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/90 transition-colors font-medium shadow-lg shadow-secondary/20 cursor-pointer">
+              <Plus className="w-4 h-4" /> Create New Add-on
+            </button>
           </div>
+          
+          {loading ? (
+            <AdminLoader message="Loading package add-ons..." />
+          ) : (
+            <div className="bg-white dark:bg-surface border border-slate-200 dark:border-surface-hover rounded-2xl overflow-hidden shadow-sm dark:shadow-xl p-4 space-y-4">
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-3">
+                {addons.length === 0 ? (
+                  <div className="col-span-full py-12 text-center text-slate-500 dark:text-zinc-500">No add-ons created yet.</div>
+                ) : (
+                  addons.slice((addonPage - 1) * addonPageSize, addonPage * addonPageSize).map(addon => (
+                    <div key={addon.id} className="bg-slate-50 dark:bg-background border border-slate-200 dark:border-surface-hover rounded-xl p-3 relative group">
+                      {!addon.isActive && <div className="absolute top-2.5 right-4 text-xs font-bold bg-red-500/10 text-red-500 px-2 py-1 rounded">Inactive</div>}
+                      <div className="w-7 h-7 rounded-xl bg-secondary/10 flex items-center justify-center text-secondary mb-2">
+                        <Puzzle className="w-4 h-4" />
+                      </div>
+                      <h3 className="text-[13px] font-bold text-slate-900 dark:text-white">{addon.name}</h3>
+                      <p className="text-[12px] text-slate-600 dark:text-zinc-400 mt-1 line-clamp-2">{addon.description}</p>
+                      <div className="text-[15px] font-black mt-2 text-primary">{formatBDT(addon.priceBdt)}</div>
+                      <div className="text-xs text-slate-500 dark:text-zinc-500 mt-1 uppercase tracking-wide font-bold">{addon.value} {addon.type.replace('_', ' ')}</div>
+                      
+                      <div className="flex items-center gap-2 mt-3 pt-4 border-t border-slate-200 dark:border-surface-hover">
+                        <button onClick={() => openAddonForm(addon)} className="flex-1 flex justify-center items-center gap-2 px-3 py-2 bg-slate-200 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-lg hover:bg-slate-300 dark:hover:bg-zinc-700 transition-colors text-xs font-medium cursor-pointer">
+                          <Edit className="w-3.5 h-3.5" /> Edit
+                        </button>
+                        <button onClick={() => handleDelete('addons', addon.id)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <AdminPagination
+                currentPage={addonPage}
+                totalItems={addons.length}
+                pageSize={addonPageSize}
+                onPageChange={setAddonPage}
+                onPageSizeChange={setAddonPageSize}
+              />
+            </div>
+          )}
         </div>
       )}
 

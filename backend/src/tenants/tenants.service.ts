@@ -153,20 +153,38 @@ export class TenantsService {
           orderBy: { createdAt: 'desc' }
         },
         _count: {
-          select: { users: true, conversations: true, contacts: true, orders: true }
+          select: { 
+            users: true, 
+            conversations: true, 
+            contacts: true, 
+            orders: true,
+            channelConns: true,
+            products: true,
+            qnaItems: true,
+            knowledgeDocs: true,
+            Ticket: true,
+            supportConversations: true
+          }
         }
       }
     });
 
     if (!tenant) return null;
 
-    const aiUsage = await this.prisma.aiUsageLog.aggregate({
-      where: { 
-        tenantId: id,
-        createdAt: { gte: startOfMonth }
-      },
-      _count: { _all: true }
-    });
+    const [aiUsage, totalAiTokens] = await Promise.all([
+      this.prisma.aiUsageLog.aggregate({
+        where: { 
+          tenantId: id,
+          createdAt: { gte: startOfMonth }
+        },
+        _count: { _all: true },
+        _sum: { tokensUsed: true }
+      }),
+      this.prisma.aiUsageLog.aggregate({
+        where: { tenantId: id },
+        _sum: { tokensUsed: true }
+      })
+    ]);
 
     return {
       ...tenant,
@@ -174,6 +192,8 @@ export class TenantsService {
       usage: {
         messagesUsed: tenant.messageCount,
         aiUsed: aiUsage._count._all,
+        tokensUsed: aiUsage._sum.tokensUsed || 0,
+        totalTokensUsed: totalAiTokens._sum.tokensUsed || 0,
         storageUsedBytes: Number(tenant.storageUsedBytes)
       }
     };

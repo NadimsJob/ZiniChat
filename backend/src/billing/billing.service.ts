@@ -8,11 +8,77 @@ export class BillingService {
   async getSubscriptions() {
     return this.prisma.subscription.findMany({
       include: {
-        tenant: true,
+        tenant: {
+          include: {
+            users: {
+              where: { role: { in: ['owner', 'admin'] } },
+              select: { name: true, email: true, role: true }
+            }
+          }
+        },
         plan: true,
       },
       orderBy: { currentPeriodEnd: 'desc' },
     });
+  }
+
+  async getAdminBillingOverview() {
+    const [subscriptions, successfulPayments, pendingPayments] = await Promise.all([
+      this.getSubscriptions(),
+      this.prisma.payment.aggregate({
+        where: { status: 'success' },
+        _sum: { amountBdt: true },
+        _count: { _all: true }
+      }),
+      this.prisma.payment.aggregate({
+        where: { status: 'pending' },
+        _sum: { amountBdt: true },
+        _count: { _all: true }
+      })
+    ]);
+
+    const now = new Date();
+    const next7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+    let mrrBdt = 0;
+    let activeSubscriptionsCount = 0;
+    let trialingCount = 0;
+    let expiringSoonCount = 0;
+
+    subscriptions.forEach(sub => {
+      const price = Number(sub.plan?.priceMonthlyBdt || 0);
+      const isPaid = price > 0;
+      if (sub.status === 'active' || sub.status === 'trialing') {
+        if (!isPaid || sub.status === 'trialing') {
+          trialingCount++;
+        } else {
+          activeSubscriptionsCount++;
+          if (sub.billingCycle === 'yearly') {
+            mrrBdt += Math.round(price / 12);
+          } else {
+            mrrBdt += price;
+          }
+        }
+
+        if (sub.currentPeriodEnd >= now && sub.currentPeriodEnd <= next7Days) {
+          expiringSoonCount++;
+        }
+      }
+    });
+
+    return {
+      subscriptions,
+      stats: {
+        mrrBdt,
+        totalCollectedBdt: Number(successfulPayments._sum.amountBdt || 0),
+        pendingCollectedBdt: Number(pendingPayments._sum.amountBdt || 0),
+        activeSubscriptionsCount,
+        trialingCount,
+        expiringSoonCount,
+        successfulPaymentsCount: successfulPayments._count._all,
+        pendingPaymentsCount: pendingPayments._count._all,
+      }
+    };
   }
 
   async getPlans() {

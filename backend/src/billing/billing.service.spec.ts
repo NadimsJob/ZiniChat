@@ -12,6 +12,7 @@ const mockPrisma = {
   },
   payment: {
     findMany: jest.fn(),
+    aggregate: jest.fn().mockResolvedValue({ _sum: { amountBdt: 0 }, _count: { _all: 0 } }),
   },
   tenant: {
     findUnique: jest.fn().mockResolvedValue({ id: 'tenant-1' }),
@@ -20,6 +21,21 @@ const mockPrisma = {
     count: jest.fn().mockResolvedValue(0),
   },
   websiteWidget: {
+    count: jest.fn().mockResolvedValue(0),
+  },
+  message: {
+    count: jest.fn().mockResolvedValue(0),
+  },
+  broadcastRecipient: {
+    count: jest.fn().mockResolvedValue(0),
+  },
+  aiUsageLog: {
+    count: jest.fn().mockResolvedValue(0),
+  },
+  product: {
+    count: jest.fn().mockResolvedValue(0),
+  },
+  contact: {
     count: jest.fn().mockResolvedValue(0),
   },
 };

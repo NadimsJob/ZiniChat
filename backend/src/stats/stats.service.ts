@@ -54,7 +54,7 @@ export class StatsService {
     }));
 
     // ── REVENUE ───────────────────────────────────────────────────────────────
-    const [totalRevenueAgg, monthRevenueAgg, lastMonthRevenueAgg] =
+    const [totalRevenueAgg, monthRevenueAgg, lastMonthRevenueAgg, pendingPaymentsAgg] =
       await Promise.all([
         this.prisma.payment.aggregate({
           _sum: { amountBdt: true },
@@ -71,11 +71,19 @@ export class StatsService {
             createdAt: { gte: startOfLastMonth, lte: endOfLastMonth },
           },
         }),
+        this.prisma.payment.aggregate({
+          _sum: { amountBdt: true },
+          _count: { _all: true },
+          where: { status: 'pending' },
+        }),
       ]);
 
     const totalRevenue = Number(totalRevenueAgg._sum.amountBdt || 0);
     const monthRevenue = Number(monthRevenueAgg._sum.amountBdt || 0);
     const lastMonthRevenue = Number(lastMonthRevenueAgg._sum.amountBdt || 0);
+    const pendingPaymentsCount = pendingPaymentsAgg._count._all || 0;
+    const pendingPaymentsAmount = Number(pendingPaymentsAgg._sum.amountBdt || 0);
+
     const revenueGrowth =
       lastMonthRevenue > 0
         ? (((monthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100).toFixed(1)
@@ -100,12 +108,14 @@ export class StatsService {
     const messageTrend = await this.getMessageTrend(7);
 
     // ── AI USAGE ─────────────────────────────────────────────────────────────
-    const [totalAiAgg, monthAiAgg] = await Promise.all([
+    const [totalAiAgg, monthAiAgg, totalAiResponses, monthAiResponses] = await Promise.all([
       this.prisma.aiUsageLog.aggregate({ _sum: { tokensUsed: true } }),
       this.prisma.aiUsageLog.aggregate({
         _sum: { tokensUsed: true },
         where: { createdAt: { gte: startOfMonth } },
       }),
+      this.prisma.aiUsageLog.count(),
+      this.prisma.aiUsageLog.count({ where: { createdAt: { gte: startOfMonth } } }),
     ]);
 
     const totalAiTokens = totalAiAgg._sum.tokensUsed || 0;
@@ -228,6 +238,8 @@ export class StatsService {
       lastMonthRevenue,
       revenueGrowth,
       revenueTrend,
+      pendingPaymentsCount,
+      pendingPaymentsAmount,
 
       // Conversations & Messages
       totalConversations,
@@ -239,6 +251,8 @@ export class StatsService {
       // AI
       totalAiTokens,
       monthAiTokens,
+      totalAiResponses,
+      monthAiResponses,
       aiTrend,
       topAiTenants,
 

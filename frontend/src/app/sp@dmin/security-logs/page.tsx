@@ -9,6 +9,8 @@ import {
   Tablet, Bot, Globe2, ChevronLeft, ChevronRight,
   Clock, User, MapPin, Laptop
 } from 'lucide-react';
+import AdminLoader from '@/components/AdminLoader';
+import AdminPagination from '@/components/AdminPagination';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -341,138 +343,118 @@ export default function SecurityLogsPage() {
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <div className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-          </div>
+          <AdminLoader message="Loading security & login audit records..." />
         ) : logs.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
             <ShieldAlert className="w-10 h-10 mb-3 opacity-30" />
             <p className="text-sm">{language === 'en' ? 'No login logs found' : 'কোনো লগইন লগ পাওয়া যায়নি'}</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="border-b border-border bg-muted/40">
-                  <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground whitespace-nowrap">
-                    {language === 'en' ? 'Status' : 'স্ট্যাটাস'}
-                  </th>
-                  <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground whitespace-nowrap">
-                    {language === 'en' ? 'Email' : 'ইমেইল'}
-                  </th>
-                  <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground whitespace-nowrap">
-                    {language === 'en' ? 'IP Address' : 'আইপি ঠিকানা'}
-                  </th>
-                  <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground whitespace-nowrap">
-                    {language === 'en' ? 'Device' : 'ডিভাইস'}
-                  </th>
-                  <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground whitespace-nowrap">
-                    {language === 'en' ? 'Location' : 'লোকেশন'}
-                  </th>
-                  <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground whitespace-nowrap">
-                    {language === 'en' ? 'Method' : 'পদ্ধতি'}
-                  </th>
-                  <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground whitespace-nowrap">
-                    {language === 'en' ? 'Time' : 'সময়'}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {logs.map((log) => {
-                  const sc = STATUS_CONFIG[log.status] || STATUS_CONFIG.FAILED;
-                  const DevIcon = DEVICE_ICON[log.deviceType || 'Unknown'] || Laptop;
-                  return (
-                    <tr key={log.id} className="hover:bg-muted/30 transition-colors">
-                      <td className="px-4 py-3">
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-semibold ${sc.bg} ${sc.color}`}>
-                          <sc.Icon className="w-3 h-3" />
-                          {language === 'en' ? sc.label : sc.labelBn}
-                        </span>
-                        {log.failReason && (
-                          <div className="mt-0.5 text-[10px] text-muted-foreground">
-                            {log.failReason.replace(/_/g, ' ')}
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-border bg-muted/40">
+                    <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground whitespace-nowrap">
+                      {language === 'en' ? 'Status' : 'স্ট্যাটাস'}
+                    </th>
+                    <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground whitespace-nowrap">
+                      {language === 'en' ? 'Email' : 'ইমেইল'}
+                    </th>
+                    <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground whitespace-nowrap">
+                      {language === 'en' ? 'IP Address' : 'আইপি ঠিকানা'}
+                    </th>
+                    <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground whitespace-nowrap">
+                      {language === 'en' ? 'Device' : 'ডিভাইস'}
+                    </th>
+                    <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground whitespace-nowrap">
+                      {language === 'en' ? 'Location' : 'লোকেশন'}
+                    </th>
+                    <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground whitespace-nowrap">
+                      {language === 'en' ? 'Method' : 'পদ্ধতি'}
+                    </th>
+                    <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground whitespace-nowrap">
+                      {language === 'en' ? 'Time' : 'সময়'}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {logs.map((log) => {
+                    const sc = STATUS_CONFIG[log.status] || STATUS_CONFIG.FAILED;
+                    const DevIcon = DEVICE_ICON[log.deviceType || 'Unknown'] || Laptop;
+                    return (
+                      <tr key={log.id} className="hover:bg-muted/30 transition-colors">
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-semibold ${sc.bg} ${sc.color}`}>
+                            <sc.Icon className="w-3 h-3" />
+                            {language === 'en' ? sc.label : sc.labelBn}
+                          </span>
+                          {log.failReason && (
+                            <div className="mt-0.5 text-[10px] text-muted-foreground">
+                              {log.failReason.replace(/_/g, ' ')}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-1.5">
+                            <User className="w-3 h-3 text-muted-foreground shrink-0" />
+                            <span className="text-foreground font-medium truncate max-w-[180px]">{log.email}</span>
                           </div>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-1.5">
-                          <User className="w-3 h-3 text-muted-foreground shrink-0" />
-                          <span className="text-foreground font-medium truncate max-w-[180px]">{log.email}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="font-mono text-muted-foreground">{log.ipAddress}</span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-1.5">
-                          <DevIcon className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                          <div>
-                            <div className="text-foreground">{log.browser || 'Unknown'}</div>
-                            <div className="text-[10px] text-muted-foreground">{log.os || '—'}</div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="font-mono text-muted-foreground">{log.ipAddress}</span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-1.5">
+                            <DevIcon className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                            <div>
+                              <div className="text-foreground">{log.browser || 'Unknown'}</div>
+                              <div className="text-[10px] text-muted-foreground">{log.os || '—'}</div>
+                            </div>
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        {log.country ? (
-                          <div className="flex items-center gap-1">
-                            <MapPin className="w-3 h-3 text-muted-foreground shrink-0" />
-                            <span className="text-foreground">
-                              {[log.city, log.country].filter(Boolean).join(', ')}
+                        </td>
+                        <td className="px-4 py-3">
+                          {log.country ? (
+                            <div className="flex items-center gap-1">
+                              <MapPin className="w-3 h-3 text-muted-foreground shrink-0" />
+                              <span className="text-foreground">
+                                {[log.city, log.country].filter(Boolean).join(', ')}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted text-muted-foreground text-[10px] font-medium border border-border">
+                            {AUTH_METHOD_LABEL[log.authMethod] || log.authMethod}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-1 text-muted-foreground whitespace-nowrap">
+                            <Clock className="w-3 h-3 shrink-0" />
+                            <span title={new Date(log.createdAt).toLocaleString()}>
+                              {formatRelativeTime(log.createdAt)}
                             </span>
                           </div>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted text-muted-foreground text-[10px] font-medium border border-border">
-                          {AUTH_METHOD_LABEL[log.authMethod] || log.authMethod}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-1 text-muted-foreground whitespace-nowrap">
-                          <Clock className="w-3 h-3 shrink-0" />
-                          <span title={new Date(log.createdAt).toLocaleString()}>
-                            {formatRelativeTime(log.createdAt)}
-                          </span>
-                        </div>
-                        <div className="text-[10px] text-muted-foreground/60 mt-0.5">
-                          {new Date(log.createdAt).toLocaleDateString()}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="px-4 py-3 border-t border-border flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">
-              {language === 'en'
-                ? `Page ${page} of ${totalPages}`
-                : `পেজ ${page} / ${totalPages}`}
-            </span>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="p-1.5 rounded-lg border border-border bg-muted text-muted-foreground hover:text-foreground disabled:opacity-40 transition-colors"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                className="p-1.5 rounded-lg border border-border bg-muted text-muted-foreground hover:text-foreground disabled:opacity-40 transition-colors"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
+                          <div className="text-[10px] text-muted-foreground/60 mt-0.5">
+                            {new Date(log.createdAt).toLocaleDateString()}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-          </div>
+
+            <AdminPagination
+              currentPage={page}
+              totalItems={total}
+              pageSize={limit}
+              onPageChange={setPage}
+            />
+          </>
         )}
       </div>
 
