@@ -41,7 +41,7 @@ export class TenantsController {
   @Get(':id')
   @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
   @Roles('superadmin')
-  @RequirePermissions('manage:tenants')
+  @RequirePermissions('view:tenants', 'manage:tenants')
   findOne(@Param('id') id: string) {
     return this.tenantsService.findOne(id);
   }
