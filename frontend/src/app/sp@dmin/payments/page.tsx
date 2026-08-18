@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import { CheckCircle, Clock, AlertTriangle, X, Loader2, CreditCard } from 'lucide-react';
 import toast from 'react-hot-toast';
