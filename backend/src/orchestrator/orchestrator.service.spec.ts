@@ -598,5 +598,130 @@ describe('OrchestratorService', () => {
       );
     });
   });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // T-13 to T-17: Audio Message Orchestration
+  // ─────────────────────────────────────────────────────────────────────────
+  describe('Audio Message Orchestration', () => {
+    const baseAudioSetup = (transcript: string | null | undefined) => {
+      prismaService.message.findUnique.mockResolvedValue({
+        id: 'msg_audio', direction: 'inbound', type: 'audio',
+        content: transcript !== undefined ? { body: '🎤 [Voice Message]', localUrl: '/uploads/x.ogg', transcript } : { body: '🎤 [Voice Message]', localUrl: '/uploads/x.ogg' },
+        conversationId: 'c1',
+        conversation: {
+          tenantId: 'tenant1', id: 'c1', contactId: 'cnt1',
+          contact: { name: 'Customer', stage: { name: 'Lead' }, externalContactId: '01700000001' },
+          channelConnection: { id: 'conn1', isAiAutoReplyEnabled: true }
+        }
+      });
+      prismaService.aiAssistant.findFirst.mockResolvedValue({
+        id: 'ai1', tenantId: 'tenant1', isActive: true, routingMode: 'ai_first',
+        systemPrompt: 'You are a helpful assistant', tools: [],
+        customAiConfigId: null,
+        tenant: { customAiConfigId: null }  // required by orchestrator include
+      });
+      prismaService.aiUsageLog.aggregate.mockResolvedValue({ _count: 0 });
+      prismaService.message.count.mockResolvedValue(0);
+    };
+
+    // T-13: Valid transcript → AI processes with voice text prefix
+    it('T-13: audio with valid transcript — AI processes with [Voice Message Transcription]: prefix', async () => {
+      baseAudioSetup('আমার পণ্যের দাম কত?');
+      aiService.generateCompletionDetailed.mockResolvedValue({
+        text: JSON.stringify({ replyText: 'আমাদের পণ্যের দাম ৫০০ টাকা।', intent: 'product_inquiry', supportSignal: false }),
+      });
+
+      await service.processMessage('msg_audio');
+
+      // generateCompletionDetailed was called (orchestrator uses this, not generateCompletion)
+      expect(aiService.generateCompletionDetailed).toHaveBeenCalled();
+      const aiCallArg = aiService.generateCompletionDetailed.mock.calls[0]?.[0] as string;
+      expect(aiCallArg).toContain('[Voice Message Transcription]:');
+      expect(aiCallArg).toContain('আমার পণ্যের দাম কত?');
+      expect(inboxService.saveOutboundMessage).toHaveBeenCalled();
+    });
+
+    // T-14: No transcript field → skip AI (token saver)
+    it('T-14: audio with no transcript — skips AI call (token efficient)', async () => {
+      baseAudioSetup(undefined);
+
+      await service.processMessage('msg_audio');
+
+      expect(aiService.generateCompletionDetailed).not.toHaveBeenCalled();
+      expect(inboxService.saveOutboundMessage).not.toHaveBeenCalled();
+    });
+
+    // T-15: Failed placeholder transcript → skip AI
+    it('T-15: audio with failed placeholder transcript — skips AI call', async () => {
+      baseAudioSetup('[Audio transcription failed or unavailable]');
+
+      await service.processMessage('msg_audio');
+
+      expect(aiService.generateCompletionDetailed).not.toHaveBeenCalled();
+      expect(inboxService.saveOutboundMessage).not.toHaveBeenCalled();
+    });
+
+    // T-16: Text message — regression guard, behaves as before
+    it('T-16: text message — orchestration unaffected by audio changes (regression guard)', async () => {
+      prismaService.message.findUnique.mockResolvedValue({
+        id: 'msg_text', direction: 'inbound', type: 'text',
+        content: { text: 'কত দামে পাওয়া যাবে?' },
+        conversationId: 'c1',
+        conversation: {
+          tenantId: 'tenant1', id: 'c1', contactId: 'cnt1',
+          contact: { name: 'Customer', stage: { name: 'Lead' }, externalContactId: '01700000001' },
+          channelConnection: { id: 'conn1', isAiAutoReplyEnabled: true }
+        }
+      });
+      prismaService.aiAssistant.findFirst.mockResolvedValue({
+        id: 'ai1', tenantId: 'tenant1', isActive: true, routingMode: 'ai_first',
+        systemPrompt: 'You are helpful', tools: [], customAiConfigId: null,
+        tenant: { customAiConfigId: null }
+      });
+      prismaService.aiUsageLog.aggregate.mockResolvedValue({ _count: 0 });
+      prismaService.message.count.mockResolvedValue(0);
+      aiService.generateCompletionDetailed.mockResolvedValue({
+        text: JSON.stringify({ replyText: 'দাম হলো ৫০০ টাকা।', intent: 'general', supportSignal: false }),
+      });
+
+      await service.processMessage('msg_text');
+
+      expect(aiService.generateCompletionDetailed).toHaveBeenCalled();
+      const aiCallArg = aiService.generateCompletionDetailed.mock.calls[0]?.[0] as string;
+      expect(aiCallArg).not.toContain('[Voice Message Transcription]:');
+      expect(inboxService.saveOutboundMessage).toHaveBeenCalled();
+    });
+
+    // T-17: Image message — vision flow unchanged (regression guard)
+    it('T-17: image message — vision flow unaffected by audio changes (regression guard)', async () => {
+      prismaService.message.findUnique.mockResolvedValue({
+        id: 'msg_img', direction: 'inbound', type: 'image',
+        content: { caption: 'What is this product?' },
+        conversationId: 'c1',
+        conversation: {
+          tenantId: 'tenant1', id: 'c1', contactId: 'cnt1',
+          contact: { name: 'Customer', stage: { name: 'Lead' }, externalContactId: '01700000001' },
+          channelConnection: { id: 'conn1', isAiAutoReplyEnabled: true }
+        }
+      });
+      prismaService.aiAssistant.findFirst.mockResolvedValue({
+        id: 'ai1', tenantId: 'tenant1', isActive: true, routingMode: 'ai_first',
+        systemPrompt: 'Vision assistant', tools: [{ toolType: 'image_reading', isEnabled: false }],
+        customAiConfigId: null, tenant: { customAiConfigId: null }
+      });
+      prismaService.aiUsageLog.aggregate.mockResolvedValue({ _count: 0 });
+      prismaService.message.count.mockResolvedValue(0);
+      aiService.generateCompletionDetailed.mockResolvedValue({
+        text: JSON.stringify({ replyText: 'Image received.', intent: 'general', supportSignal: false }),
+      });
+
+      await service.processMessage('msg_img');
+
+      expect(aiService.generateCompletionDetailed).toHaveBeenCalled();
+      const aiCallArg = aiService.generateCompletionDetailed.mock.calls[0]?.[0] as string;
+      expect(aiCallArg).toContain('[Image Sent]');
+      expect(aiCallArg).not.toContain('[Voice Message Transcription]:');
+    });
+  });
 });
 

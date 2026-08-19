@@ -67,7 +67,7 @@ export class OrchestratorService {
         }
       });
 
-      if (!message || message.direction !== 'inbound' || (message.type !== 'text' && message.type !== 'image')) {
+      if (!message || message.direction !== 'inbound' || (message.type !== 'text' && message.type !== 'image' && (message.type as string) !== 'audio')) {
         return;
       }
 
@@ -244,8 +244,23 @@ export class OrchestratorService {
 
       const actualImagePaths = canRunVision && imagePathsToPass.length > 0 ? imagePathsToPass : undefined;
 
+      // --- Audio message handling ---
+      const isAudioMessage = (message.type as string) === 'audio';
+      if (isAudioMessage) {
+        const transcript = (message.content as any)?.transcript;
+        if (!transcript || transcript.includes('[Audio transcription failed')) {
+          // No usable transcript — skip AI, token saver
+          this.logger.log(`Skipping AI for audio message without usable transcript (msg ${message.id})`);
+          return;
+        }
+        // Transcript ready — pass to AI as voice text
+      }
+
       let userText = '';
-      if (!isImageMessage) {
+      if (isAudioMessage) {
+        // Use the Whisper transcript as the user's text input
+        userText = `[Voice Message Transcription]: "${(message.content as any).transcript}"`;
+      } else if (!isImageMessage) {
         if (typeof message.content === 'object' && message.content !== null) {
           userText = (message.content as any).text || JSON.stringify(message.content);
         } else {

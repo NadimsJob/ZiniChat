@@ -7,6 +7,7 @@ import { OrchestratorService } from '../orchestrator/orchestrator.service';
 import { ActivityLogService } from './activity-log.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import * as path from 'path';
+import * as fs from 'fs';
 
 import { InboxGateway } from './inbox.gateway';
 import { QuotaService } from '../tenants/quota.service';
@@ -1076,10 +1077,48 @@ export class InboxService {
 
     let contentToSave = data.content;
     try {
-      if (data.messageType === 'audio' && data.content?.localUrl) {
-        const filePath = path.join(process.cwd(), data.content.localUrl);
-        const transcript = await this.aiService.transcribeAudio(filePath, data.tenantId);
-        contentToSave = { ...contentToSave, transcript };
+      if (data.messageType === 'audio') {
+        // --- Check if AI auto-reply is enabled before running Whisper (cost saving) ---
+        // If AI is explicitly turned off on the channel connection, skip transcription entirely.
+        let isAiEnabled = true;
+        if (data.channelConnectionId) {
+          const channelConn = await this.prisma.channelConnection?.findUnique({
+            where: { id: data.channelConnectionId },
+            select: { isAiAutoReplyEnabled: true }
+          });
+          if (channelConn && channelConn.isAiAutoReplyEnabled === false) {
+            isAiEnabled = false;
+          }
+        }
+
+        if (!isAiEnabled) {
+          this.logger.debug(`AI is disabled for channel connection ${data.channelConnectionId ?? 'unknown'}, skipping audio transcription.`);
+        } else {
+          // --- Unified audio transcription for ALL channels ---
+          // Priority 1: localUrl — WhatsApp Cloud API & WhatsApp Web (file already on disk)
+          const diskPath = data.content?.localUrl || data.content?.mediaUrl;
+          // Priority 2: remote url — Messenger / Instagram (CDN URL, no local file yet)
+          const remoteUrl = !diskPath ? (data.content?.url) : null;
+
+          if (diskPath) {
+            const normalizedPath = diskPath.startsWith('/') ? diskPath.slice(1) : diskPath;
+            const filePath = path.join(process.cwd(), normalizedPath);
+            if (fs.existsSync(filePath)) {
+              this.logger.log(`Transcribing audio from disk for tenant ${data.tenantId}: ${filePath}`);
+              const transcript = await this.aiService.transcribeAudio(filePath, data.tenantId);
+              contentToSave = { ...contentToSave, transcript };
+              // Audio file kept on disk: counts toward tenant storage, agent can play it back
+            } else {
+              this.logger.warn(`Audio file not found on disk, skipping transcription: ${filePath}`);
+            }
+          } else if (remoteUrl) {
+            // Messenger / Instagram: download to OS tmpdir, transcribe, auto-delete temp file
+            this.logger.log(`Transcribing audio from CDN URL for tenant ${data.tenantId}`);
+            const transcript = await this.aiService.transcribeFromUrl(remoteUrl, data.tenantId);
+            contentToSave = { ...contentToSave, transcript };
+          }
+        }
+
       } else if (data.messageType === 'document' && data.content?.localUrl) {
         const filePath = path.join(process.cwd(), data.content.localUrl);
         if (filePath.endsWith('.pdf')) {

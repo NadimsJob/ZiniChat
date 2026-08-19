@@ -3,6 +3,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AiCacheService } from './ai-cache.service';
 import OpenAI from 'openai';
 import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 const pdf = require('pdf-parse');
 export interface AiUsageMetrics {
   promptTokenCount: number;
@@ -173,7 +175,7 @@ export class AiService {
 
     const baseUrl = apiEndpoint 
       ? apiEndpoint.replace('/chat/completions', '').replace('/v1/messages', '') 
-      : 'https://api.openai.com/v1';
+      : (actualProvider === 'groq' ? 'https://api.groq.com/openai/v1' : 'https://api.openai.com/v1');
     
     // Handle trailing slashes
     const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
@@ -445,16 +447,37 @@ export class AiService {
 
   async transcribeAudio(filePath: string, tenantId: string): Promise<string> {
     try {
-      // Find a config that has an OpenAI key, since Whisper requires OpenAI.
+      // 1. Check for Groq API Key first (Free Tier: 7,000 requests/day, 2,000 mins/month)
+      const groqConfig = await this.prisma.aiConfig.findFirst({
+        where: { provider: 'groq', isActive: true }
+      });
+      const groqApiKey = groqConfig?.apiKey || process.env.GROQ_API_KEY;
+
+      if (groqApiKey) {
+        try {
+          const groq = new OpenAI({
+            apiKey: groqApiKey,
+            baseURL: 'https://api.groq.com/openai/v1',
+          });
+          const transcription = await groq.audio.transcriptions.create({
+            file: fs.createReadStream(filePath),
+            model: 'whisper-large-v3',
+          });
+          this.logger.log(`Transcribed audio using Groq Free Whisper for tenant ${tenantId}`);
+          return transcription.text;
+        } catch (groqErr: any) {
+          this.logger.warn(`Groq Whisper failed, falling back to OpenAI: ${groqErr.message}`);
+        }
+      }
+
+      // 2. Fallback to OpenAI Whisper
       let config = await this.prisma.aiConfig.findFirst({
         where: { provider: 'openai', isActive: true }
       });
-      
-      // Fallback: If no OpenAI config, we might need a platform default key from env
       const apiKey = config?.apiKey || process.env.OPENAI_API_KEY;
       
       if (!apiKey) {
-        throw new Error('No OpenAI API key available for transcription.');
+        throw new Error('No Groq or OpenAI API key available for transcription.');
       }
 
       const openai = new OpenAI({ apiKey });
@@ -464,9 +487,34 @@ export class AiService {
       });
 
       return transcription.text;
-    } catch (err) {
+    } catch (err: any) {
       this.logger.error(`Transcription failed for ${filePath}: ${err.message}`);
       return '[Audio transcription failed or unavailable]';
+    }
+  }
+
+  /**
+   * Download an audio file from a remote CDN URL (e.g. Messenger/Instagram),
+   * save it to OS temp dir (does NOT count toward tenant storage),
+   * transcribe via Whisper, then always delete the temp file.
+   */
+  async transcribeFromUrl(url: string, tenantId: string): Promise<string> {
+    const tmpPath = path.join(os.tmpdir(), `zini_audio_${Date.now()}_${Math.round(Math.random() * 1e6)}.ogg`);
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to download audio from CDN: HTTP ${response.status}`);
+      }
+      const buffer = Buffer.from(await response.arrayBuffer());
+      fs.writeFileSync(tmpPath, buffer);
+      this.logger.log(`Downloaded audio from CDN for tenant ${tenantId}: ${buffer.length} bytes (tmp)`);
+      return await this.transcribeAudio(tmpPath, tenantId);
+    } catch (err) {
+      this.logger.error(`transcribeFromUrl failed for tenant ${tenantId}: ${err.message}`);
+      return '[Audio transcription failed or unavailable]';
+    } finally {
+      // Always delete temp file — it lives in OS tmpdir, never in tenant upload dir
+      try { if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath); } catch (_) {}
     }
   }
 

@@ -3,7 +3,16 @@
 import { useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
 import { useLanguage } from '@/components/LanguageProvider';
-import { Bot, Plus, Trash2, Edit2, Play, CheckCircle, AlertCircle, ToggleLeft, ToggleRight, Settings, RefreshCcw, Eye, EyeOff } from 'lucide-react';
+import { Bot, Plus, Trash2, Edit2, Play, CheckCircle, AlertCircle, ToggleLeft, ToggleRight, Settings, RefreshCcw, Eye, EyeOff, Mic } from 'lucide-react';
+
+function checkVoiceSupport(provider?: string, modelName?: string): boolean {
+  const p = (provider || '').toLowerCase();
+  const m = (modelName || '').toLowerCase();
+  if (p === 'groq' || p === 'openai' || m.includes('whisper')) {
+    return true;
+  }
+  return false;
+}
 
 function checkVisionSupport(provider?: string, modelName?: string): boolean {
   if (!modelName) return false;
@@ -325,7 +334,12 @@ export default function AiSettingsPage() {
               <div className="text-[12px] text-zinc-400 space-y-1">
                 <div>Model Name: <span className="font-medium text-zinc-200">{config.modelName}</span></div>
                 {config.apiEndpoint && <div className="truncate">Endpoint: <span className="font-mono text-xs text-zinc-300">{config.apiEndpoint}</span></div>}
-                <div className="pt-1 flex items-center gap-1.5">
+                <div className="pt-1 flex flex-wrap items-center gap-1.5">
+                  {checkVoiceSupport(config.provider, config.modelName) && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                      <Mic className="w-3 h-3" /> {config.provider === 'groq' ? 'Voice Transcription (Groq Whisper Free)' : 'Voice Transcription (Whisper)'}
+                    </span>
+                  )}
                   {checkVisionSupport(config.provider, config.modelName) ? (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                       <Eye className="w-3 h-3" /> Vision Supported (5 credits/image)
@@ -476,13 +490,14 @@ export default function AiSettingsPage() {
             <form onSubmit={handleSave} className="space-y-2">
               <div>
                 <label className="block text-[12px] font-medium mb-1 text-zinc-400">Configuration Name</label>
-                <input required type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none" placeholder="Primary OpenAI GPT-4" />
+                <input required type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none" placeholder="Primary OpenAI GPT-4 or Groq Whisper" />
               </div>
 
               <div>
                 <label className="block text-[12px] font-medium mb-1 text-zinc-400">AI Provider</label>
                 <select value={form.provider} onChange={e => setForm({...form, provider: e.target.value})} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none">
-                  <option value="openai">OpenAI Compatible (OpenRouter, Groq, etc.)</option>
+                  <option value="groq">Groq Cloud (Whisper Free & Llama 3)</option>
+                  <option value="openai">OpenAI Compatible (ChatGPT, OpenRouter, etc.)</option>
                   <option value="gemini">Google Gemini</option>
                   <option value="anthropic">Anthropic Claude</option>
                 </select>

@@ -8,6 +8,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { ActivityLogService } from './activity-log.service';
 import { QuotaService } from '../tenants/quota.service';
 import { getQueueToken } from '@nestjs/bullmq';
+import { InboxGateway } from './inbox.gateway';
 
 describe('InboxService', () => {
   let service: InboxService;
@@ -93,10 +94,11 @@ describe('InboxService', () => {
         { provide: getQueueToken('whatsapp-outbound'), useValue: { add: jest.fn() } },
         { provide: getQueueToken('messenger-outbound'), useValue: { add: jest.fn() } },
         { provide: StorageService, useValue: { uploadFile: jest.fn() } },
-        { provide: AiService, useValue: { transcribeAudio: jest.fn(), extractTextFromPdf: jest.fn(), generateCompletion: jest.fn().mockResolvedValue('AI Summary') } },
+        { provide: AiService, useValue: { transcribeAudio: jest.fn(), transcribeFromUrl: jest.fn(), extractTextFromPdf: jest.fn(), generateCompletion: jest.fn().mockResolvedValue('AI Summary') } },
         { provide: OrchestratorService, useValue: { processMessage: jest.fn().mockResolvedValue(true) } },
         { provide: NotificationsService, useValue: { createNotification: jest.fn().mockResolvedValue(true) } },
         { provide: QuotaService, useValue: { checkFeature: jest.fn().mockResolvedValue(true), checkAiQuota: jest.fn().mockResolvedValue(undefined), isTenantSubscriptionActive: jest.fn().mockResolvedValue({ isActive: true }) } },
+        { provide: InboxGateway, useValue: { broadcastToTenant: jest.fn(), broadcastNewMessage: jest.fn() } },
       ],
     }).compile();
 
@@ -232,6 +234,172 @@ describe('InboxService', () => {
         data: { ignoreGroupMessages: false }
       });
       expect(result.ignoreGroupMessages).toBe(false);
+    });
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // T-07 to T-12: Audio Message Processing
+  // ─────────────────────────────────────────────────────────────────────────
+  describe('Audio Message Processing', () => {
+    const baseAudioMsg = {
+      tenantId: 'tenant1',
+      channel: 'whatsapp' as const,
+      externalContactId: '01700000001',
+      messageType: 'audio' as const,
+      externalMessageId: 'msg_audio_1',
+      timestamp: new Date(),
+    };
+
+    beforeEach(() => {
+      prismaService.contact.findFirst.mockResolvedValue({ id: 'c1', name: 'Customer' });
+      prismaService.contact.update.mockResolvedValue({ id: 'c1' });
+      prismaService.conversation.findFirst.mockResolvedValue({ id: 'conv1', tenantId: 'tenant1', status: 'open' });
+      prismaService.conversation.update.mockResolvedValue({ id: 'conv1', unreadCount: 1 });
+      prismaService.message.create.mockResolvedValue({ id: 'msg1', direction: 'inbound', type: 'audio' });
+    });
+
+    // T-07: WhatsApp Cloud API — localUrl present, file exists on disk
+    it('T-07: WhatsApp Cloud API audio — transcribes via localUrl and saves transcript', async () => {
+      const aiService = service['aiService'] as any;
+      aiService.transcribeAudio.mockResolvedValue('আমার পণ্যের দাম কত?');
+
+      // Mock fs.existsSync to return true
+      const fsMod = require('fs');
+      jest.spyOn(fsMod, 'existsSync').mockReturnValue(true);
+
+      await service.handleIncomingMessage({
+        ...baseAudioMsg,
+        content: { body: '🎤 [Voice Message]', localUrl: '/uploads/tenants/tenant1/wa_audio.ogg' },
+      });
+
+      expect(aiService.transcribeAudio).toHaveBeenCalled();
+      expect(prismaService.message.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            content: expect.objectContaining({ transcript: 'আমার পণ্যের দাম কত?' }),
+          }),
+        })
+      );
+      jest.restoreAllMocks();
+    });
+
+    // T-08: WhatsApp Web — mediaUrl present (no localUrl), fallback handled
+    it('T-08: WhatsApp Web audio — transcribes via mediaUrl fallback', async () => {
+      const aiService = service['aiService'] as any;
+      aiService.transcribeAudio.mockResolvedValue('ডেলিভারি কখন আসবে?');
+
+      const fsMod = require('fs');
+      jest.spyOn(fsMod, 'existsSync').mockReturnValue(true);
+
+      await service.handleIncomingMessage({
+        ...baseAudioMsg,
+        content: { body: '🎤 [Voice Message]', mediaUrl: '/uploads/tenants/tenant1/wa_web_audio.ogg' },
+      });
+
+      expect(aiService.transcribeAudio).toHaveBeenCalled();
+      expect(prismaService.message.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            content: expect.objectContaining({ transcript: 'ডেলিভারি কখন আসবে?' }),
+          }),
+        })
+      );
+      jest.restoreAllMocks();
+    });
+
+    // T-09: Messenger/Instagram — only CDN url, transcribeFromUrl called
+    it('T-09: Messenger audio — transcribes via CDN url', async () => {
+      const aiService = service['aiService'] as any;
+      aiService.transcribeFromUrl.mockResolvedValue('আমি একটা অর্ডার দিতে চাই');
+
+      await service.handleIncomingMessage({
+        ...baseAudioMsg,
+        channel: 'messenger' as any,
+        content: { url: 'https://cdn.fbsbx.com/v/audio.mp4' },
+      });
+
+      expect(aiService.transcribeFromUrl).toHaveBeenCalledWith(
+        'https://cdn.fbsbx.com/v/audio.mp4',
+        'tenant1'
+      );
+      expect(prismaService.message.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            content: expect.objectContaining({ transcript: 'আমি একটা অর্ডার দিতে চাই' }),
+          }),
+        })
+      );
+    });
+
+    // T-10: Audio file not found on disk — message still saved without transcript
+    it('T-10: Audio file missing on disk — skips transcription, message saved', async () => {
+      const aiService = service['aiService'] as any;
+      const fsMod = require('fs');
+      jest.spyOn(fsMod, 'existsSync').mockReturnValue(false);
+
+      await service.handleIncomingMessage({
+        ...baseAudioMsg,
+        content: { body: '🎤 [Voice Message]', localUrl: '/uploads/tenants/tenant1/missing.ogg' },
+      });
+
+      expect(aiService.transcribeAudio).not.toHaveBeenCalled();
+      expect(prismaService.message.create).toHaveBeenCalled();
+      jest.restoreAllMocks();
+    });
+
+    // T-11: Whisper API throws — message still saved, exception does not propagate
+    it('T-11: Whisper failure — message saved without transcript, no crash', async () => {
+      const aiService = service['aiService'] as any;
+      aiService.transcribeAudio.mockRejectedValue(new Error('OpenAI quota exceeded'));
+
+      const fsMod = require('fs');
+      jest.spyOn(fsMod, 'existsSync').mockReturnValue(true);
+
+      await expect(
+        service.handleIncomingMessage({
+          ...baseAudioMsg,
+          content: { body: '🎤 [Voice Message]', localUrl: '/uploads/tenants/tenant1/wa_audio.ogg' },
+        })
+      ).resolves.not.toThrow();
+
+      expect(prismaService.message.create).toHaveBeenCalled();
+      jest.restoreAllMocks();
+    });
+
+    // T-12: Text message — transcribeAudio NOT called (regression guard)
+    it('T-12: Text message — transcribeAudio is never called (no regression)', async () => {
+      const aiService = service['aiService'] as any;
+
+      await service.handleIncomingMessage({
+        tenantId: 'tenant1',
+        channel: 'whatsapp' as const,
+        externalContactId: '01700000001',
+        messageType: 'text' as const,
+        content: { text: 'Hello!' },
+        externalMessageId: 'msg_text_1',
+        timestamp: new Date(),
+      });
+
+      expect(aiService.transcribeAudio).not.toHaveBeenCalled();
+      expect(aiService.transcribeFromUrl).not.toHaveBeenCalled();
+    });
+
+    // T-12B: AI Auto-Reply disabled on channel connection — skips transcription
+    it('T-12B: AI disabled on channel connection — skips transcription to save cost', async () => {
+      const aiService = service['aiService'] as any;
+      prismaService.channelConnection = {
+        findUnique: jest.fn().mockResolvedValue({ isAiAutoReplyEnabled: false })
+      };
+
+      await service.handleIncomingMessage({
+        ...baseAudioMsg,
+        channelConnectionId: 'conn_disabled',
+        content: { body: '🎤 [Voice Message]', localUrl: '/uploads/tenants/tenant1/wa_audio.ogg' },
+      });
+
+      expect(aiService.transcribeAudio).not.toHaveBeenCalled();
+      expect(aiService.transcribeFromUrl).not.toHaveBeenCalled();
+      expect(prismaService.message.create).toHaveBeenCalled();
     });
   });
 });

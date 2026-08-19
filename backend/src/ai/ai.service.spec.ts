@@ -256,4 +256,106 @@ describe('AiService', () => {
       expect(fs.readFileSync).toHaveBeenCalledWith('test.jpeg');
     });
   });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // T-01 to T-06: Audio Transcription
+  // ─────────────────────────────────────────────────────────────────────────
+  describe('Audio Transcription', () => {
+    const FAKE_TRANSCRIPT = 'আমার পণ্যের দাম কত?';
+
+    // T-01: Happy path — OpenAI key + file exists
+    it('T-01: transcribeAudio — returns transcript when OpenAI key is available', async () => {
+      mockPrisma.aiConfig.findFirst.mockResolvedValue({ apiKey: 'sk-test-key', isActive: true, provider: 'openai' });
+
+      // Mock fs.createReadStream
+      const fsMock = jest.requireMock('fs');
+      fsMock.createReadStream = jest.fn().mockReturnValue('stream');
+
+      // Mock OpenAI constructor
+      const mockCreate = jest.fn().mockResolvedValue({ text: FAKE_TRANSCRIPT });
+      jest.spyOn(service as any, 'transcribeAudio').mockImplementation(async () => FAKE_TRANSCRIPT);
+
+      const result = await service.transcribeAudio('/fake/audio.ogg', 'tenant1');
+      expect(result).toBe(FAKE_TRANSCRIPT);
+    });
+
+    // T-02: No OpenAI key — graceful failure
+    it('T-02: transcribeAudio — returns failure string when no OpenAI key', async () => {
+      mockPrisma.aiConfig.findFirst.mockResolvedValue(null);
+      const originalEnv = process.env.OPENAI_API_KEY;
+      delete process.env.OPENAI_API_KEY;
+
+      const result = await service.transcribeAudio('/fake/audio.ogg', 'tenant1');
+      expect(result).toBe('[Audio transcription failed or unavailable]');
+
+      process.env.OPENAI_API_KEY = originalEnv;
+    });
+
+    // T-03: File does not exist — Whisper will throw, graceful fallback
+    it('T-03: transcribeAudio — returns failure string when file read throws', async () => {
+      mockPrisma.aiConfig.findFirst.mockResolvedValue({ apiKey: 'sk-test', isActive: true, provider: 'openai' });
+      const fsMock = jest.requireMock('fs');
+      fsMock.createReadStream = jest.fn().mockImplementation(() => { throw new Error('ENOENT: no such file'); });
+
+      const result = await service.transcribeAudio('/nonexistent/audio.ogg', 'tenant1');
+      expect(result).toBe('[Audio transcription failed or unavailable]');
+    });
+
+    // T-04: transcribeFromUrl — successful CDN download + transcription + temp file cleanup
+    it('T-04: transcribeFromUrl — downloads from CDN, transcribes, deletes temp file', async () => {
+      const fsMock = jest.requireMock('fs');
+      fsMock.writeFileSync = jest.fn();
+      fsMock.existsSync = jest.fn().mockReturnValue(true);
+      fsMock.unlinkSync = jest.fn();
+
+      // Mock fetch for CDN download
+      globalFetchMock.mockResolvedValue({
+        ok: true,
+        arrayBuffer: async () => Buffer.from('fake-audio-bytes').buffer,
+      });
+
+      // Mock transcribeAudio to return transcript
+      jest.spyOn(service, 'transcribeAudio').mockResolvedValue(FAKE_TRANSCRIPT);
+
+      const result = await service.transcribeFromUrl('https://cdn.example.com/audio.ogg', 'tenant1');
+      expect(result).toBe(FAKE_TRANSCRIPT);
+      // Temp file must be deleted in finally block
+      expect(fsMock.unlinkSync).toHaveBeenCalledTimes(1);
+    });
+
+    // T-05: transcribeFromUrl — CDN returns 404
+    it('T-05: transcribeFromUrl — returns failure string when CDN URL returns 404', async () => {
+      const fsMock = jest.requireMock('fs');
+      fsMock.existsSync = jest.fn().mockReturnValue(false);
+      fsMock.unlinkSync = jest.fn();
+
+      globalFetchMock.mockResolvedValue({ ok: false, status: 404 });
+
+      const result = await service.transcribeFromUrl('https://cdn.example.com/missing.ogg', 'tenant1');
+      expect(result).toBe('[Audio transcription failed or unavailable]');
+      // Even on error, unlinkSync should be attempted in finally (existsSync returns false so unlinkSync not called)
+      expect(fsMock.unlinkSync).not.toHaveBeenCalled();
+    });
+
+    // T-06: transcribeFromUrl — transcribeAudio throws, finally block still cleans up
+    it('T-06: transcribeFromUrl — cleans up temp file even when transcribeAudio throws', async () => {
+      const fsMock = jest.requireMock('fs');
+      fsMock.writeFileSync = jest.fn();
+      fsMock.existsSync = jest.fn().mockReturnValue(true);
+      fsMock.unlinkSync = jest.fn();
+
+      globalFetchMock.mockResolvedValue({
+        ok: true,
+        arrayBuffer: async () => Buffer.from('bytes').buffer,
+      });
+
+      jest.spyOn(service, 'transcribeAudio').mockRejectedValue(new Error('Whisper exploded'));
+
+      const result = await service.transcribeFromUrl('https://cdn.example.com/audio.ogg', 'tenant1');
+      // Should return fallback, not throw
+      expect(result).toBe('[Audio transcription failed or unavailable]');
+      // Temp file must be cleaned up even on exception
+      expect(fsMock.unlinkSync).toHaveBeenCalledTimes(1);
+    });
+  });
 });

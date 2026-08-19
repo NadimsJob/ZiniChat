@@ -437,7 +437,10 @@ export class WhatsappWebService implements OnModuleInit {
               body: contentStr, 
               ...(thumbnail ? { thumbnail } : {}),
               ...(quotedMsg ? { quotedMsg } : {}),
-              ...(mediaUrl ? { mediaUrl } : {})
+              // Audio: use localUrl so inbox.service.ts triggers Whisper transcription
+              // Non-audio: use mediaUrl as before
+              ...(mediaUrl && messageType === 'audio' ? { localUrl: mediaUrl, mediaUrl } : {}),
+              ...(mediaUrl && messageType !== 'audio' ? { mediaUrl } : {})
             },
             externalMessageId: msg.key.id || `msg_${Date.now()}`,
             timestamp: new Date()
