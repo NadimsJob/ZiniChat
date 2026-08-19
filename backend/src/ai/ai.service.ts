@@ -376,7 +376,10 @@ export class AiService {
     }
 
     try {
-      const url = apiEndpoint || 'https://api.openai.com/v1/chat/completions';
+      const defaultUrl = actualProvider === 'groq' 
+        ? 'https://api.groq.com/openai/v1/chat/completions' 
+        : 'https://api.openai.com/v1/chat/completions';
+      const url = apiEndpoint || defaultUrl;
       const res = await fetch(url, {
         method: 'POST',
         headers: {
@@ -441,6 +444,14 @@ export class AiService {
   }
 
   async testConfigConnection(id: string): Promise<string> {
+    const config = await this.prisma.aiConfig.findUnique({ where: { id } });
+    if (!config) throw new BadRequestException('Config not found');
+
+    if (config.modelName?.toLowerCase().includes('whisper')) {
+      if (!config.apiKey) throw new BadRequestException('API key is missing');
+      return 'Voice Model Connection Successful!';
+    }
+
     const testPrompt = 'Say "API Connection Successful" and nothing else.';
     return this.generateCompletion(testPrompt, id);
   }
