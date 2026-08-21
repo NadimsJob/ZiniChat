@@ -123,7 +123,54 @@ export class AuthService {
 
     const existingUser = await this.usersService.findByEmail(email);
     if (existingUser) {
-      throw new ConflictException('Email already in use');
+      if (existingUser.isEmailVerified) {
+        throw new ConflictException('Email already in use. Please log in to your account.');
+      }
+
+      // Existing account is unverified — update details & issue fresh 6-digit OTP code
+      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+      const verifyExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+      const passwordHash = await bcrypt.hash(password, 10);
+      const hasOnboardingData = !!(businessNature || address || brandName);
+
+      await this.prisma.$transaction(async (prisma) => {
+        await prisma.user.update({
+          where: { id: existingUser.id },
+          data: {
+            passwordHash,
+            name: ownerName || businessName,
+            emailVerificationToken: otpCode,
+            emailVerificationExpires: verifyExpires,
+          }
+        });
+
+        if (existingUser.tenantId) {
+          await prisma.tenant.update({
+            where: { id: existingUser.tenantId },
+            data: {
+              businessName,
+              ...(phoneNo && { phoneNo }),
+              country: country || 'Bangladesh',
+              ...(ownerName && { ownerName }),
+              ...(brandName && { brandName }),
+              ...(address && { address }),
+              ...(employeeCount && { employeeCount }),
+              ...(businessNature && { businessNature }),
+              isOnboarded: hasOnboardingData,
+            }
+          });
+        }
+      });
+
+      this.smtpService.triggerOtpVerificationEmail(email, otpCode).catch((err) => {
+        console.error('OTP email dispatch failed for unverified user re-signup:', err);
+      });
+
+      return {
+        requiresOtp: true,
+        email: existingUser.email,
+        message: 'A fresh 6-digit verification code has been sent to your email.'
+      };
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
@@ -276,6 +323,28 @@ export class AuthService {
       requiresOtp: true,
       email: user.email,
       message: 'Signup successful! Please check your email for the 6-digit verification code.'
+    };
+  }
+
+  async handleUnverifiedLogin(user: any) {
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const verifyExpires = new Date(Date.now() + 15 * 60 * 1000);
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        emailVerificationToken: otpCode,
+        emailVerificationExpires: verifyExpires
+      }
+    });
+
+    this.smtpService.triggerOtpVerificationEmail(user.email, otpCode).catch((err) => {
+      console.error('Failed to send OTP email on unverified login:', err);
+    });
+
+    return {
+      requiresOtp: true,
+      email: user.email,
+      message: 'Your email address is not verified yet. A 6-digit code has been sent to your email.'
     };
   }
 

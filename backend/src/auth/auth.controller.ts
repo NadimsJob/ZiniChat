@@ -63,6 +63,10 @@ export class AuthController {
       throw new UnauthorizedException('Invalid email or password');
     }
 
+    if (!user.isEmailVerified && user.role !== 'superadmin') {
+      return this.authService.handleUnverifiedLogin(user);
+    }
+
     const result = await this.authService.login(user);
 
     // Log successful login — fire and forget

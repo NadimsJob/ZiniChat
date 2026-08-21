@@ -138,6 +138,19 @@ export default function SignupPage() {
 
     fetchGoogleConfig();
     fetchBusinessNatures();
+
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const urlEmail = params.get('email');
+      const urlStep = params.get('step');
+      if (urlEmail) {
+        setFormData((prev) => ({ ...prev, email: urlEmail }));
+      }
+      if (urlStep === 'otp') {
+        setStep('otp');
+        setResendTimer(60);
+      }
+    }
   }, []);
 
   const handleGoogleCallback = async (response: any) => {

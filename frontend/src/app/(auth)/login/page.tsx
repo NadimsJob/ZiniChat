@@ -127,8 +127,11 @@ export default function LoginPage() {
       }
 
       const data = await res.json();
-      
-      // We check if the user is a superadmin, and direct them accordingly.
+
+      if (data.requiresOtp) {
+        router.push(`/signup?email=${encodeURIComponent(data.email)}&step=otp`);
+        return;
+      }
       // But typically, a tenant user (owner/agent) goes to /dashboard
       const expires = rememberMe ? 30 : 1;
       Cookies.set('access_token', data.access_token, { expires, secure: true, sameSite: 'strict' });
