@@ -20,15 +20,15 @@ export default function OnboardingPage() {
   const [businessNatures, setBusinessNatures] = useState<any[]>([]);
   const [needsPassword, setNeedsPassword] = useState(false);
 
-  const [selectedCountry, setSelectedCountry] = useState<CountryInfo>(DEFAULT_COUNTRY);
+  const [selectedCountry, setSelectedCountry] = useState<CountryInfo | null>(null);
   const [countryOpen, setCountryOpen] = useState(false);
   const countryRef = useRef<HTMLDivElement>(null);
 
   const [formData, setFormData] = useState({
     brandName: '',
     address: '',
-    country: DEFAULT_COUNTRY.name,
-    phoneNo: DEFAULT_COUNTRY.dialCode,
+    country: '',
+    phoneNo: '',
     ownerName: '',
     employeeCount: '1-10',
     businessNature: '',
@@ -224,9 +224,11 @@ export default function OnboardingPage() {
                   onClick={() => setCountryOpen((v) => !v)}
                   className="w-full flex items-center gap-2 bg-muted/30 border border-border rounded-xl px-3 py-2.5 text-sm transition-all text-left text-foreground"
                 >
-                  <span className="text-base">{selectedCountry.flag}</span>
-                  <span className="flex-1 truncate">
-                    {language === 'en' ? selectedCountry.name : selectedCountry.nameBn} ({selectedCountry.dialCode})
+                  <span className="text-base">{selectedCountry ? selectedCountry.flag : '🌐'}</span>
+                  <span className={`flex-1 truncate ${selectedCountry ? 'text-foreground font-medium' : 'text-slate-500'}`}>
+                    {selectedCountry 
+                      ? `${language === 'en' ? selectedCountry.name : selectedCountry.nameBn} (${selectedCountry.dialCode})` 
+                      : (language === 'en' ? 'Select Country' : 'দেশ নির্বাচন করুন')}
                   </span>
                   <ChevronDown className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${countryOpen ? 'rotate-180' : ''}`} />
                 </button>
@@ -239,7 +241,7 @@ export default function OnboardingPage() {
                         type="button"
                         onClick={() => handleCountrySelect(c)}
                         className={`w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-primary/10 transition-colors text-left ${
-                          selectedCountry.code === c.code ? 'text-primary font-semibold' : 'text-foreground'
+                          selectedCountry?.code === c.code ? 'text-primary font-semibold' : 'text-foreground'
                         }`}
                       >
                         <span className="flex items-center gap-2">
@@ -269,7 +271,7 @@ export default function OnboardingPage() {
                   value={formData.phoneNo}
                   onChange={(e) => setFormData({ ...formData, phoneNo: e.target.value })}
                   className="w-full bg-muted/30 border border-border rounded-xl pl-9 pr-3 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 transition-all text-foreground"
-                  placeholder={`${selectedCountry.dialCode}1700000000`}
+                  placeholder={selectedCountry ? `${selectedCountry.dialCode}1700000000` : (language === 'en' ? 'Enter phone number' : 'ফোন নম্বর লিখুন')}
                 />
               </div>
             </div>

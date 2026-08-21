@@ -82,11 +82,12 @@ export default function LoginPage() {
         });
 
         const container = document.getElementById('google-signin-div');
-        const containerWidth = container?.offsetWidth ? (container.offsetWidth > 400 ? 400 : container.offsetWidth) : 320;
+        const availableWidth = container?.offsetWidth || 320;
+        const containerWidth = Math.max(200, Math.min(availableWidth, 380));
 
         (window as any).google.accounts.id.renderButton(
           container,
-          { theme: 'outline', size: 'large', width: containerWidth, text: 'signin_with' }
+          { theme: 'outline', size: 'large', width: containerWidth, text: 'signin_with', alignment: 'center' }
         );
       } catch (err) {
         console.error('Error rendering Google button:', err);
@@ -147,9 +148,13 @@ export default function LoginPage() {
     }
   };
 
+  const isBn = language === 'bn';
+
   return (
     <div>
-      <h2 className="text-xl font-bold mb-4 text-center">Welcome back</h2>
+      <h2 className="text-xl font-bold mb-4 text-center">
+        {isBn ? 'স্বাগতম' : 'Welcome back'}
+      </h2>
       
       {error && (
         <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-2.5 rounded-lg mb-4 text-sm text-center">
@@ -159,7 +164,9 @@ export default function LoginPage() {
 
       <form onSubmit={handleSubmit} className="space-y-3">
         <div>
-          <label className="block text-xs font-medium mb-1 text-zinc-400">Email Address</label>
+          <label className="block text-xs font-medium mb-1 text-zinc-400">
+            {isBn ? 'ইমেইল ঠিকানা' : 'Email Address'}
+          </label>
           <input
             type="email"
             value={email}
@@ -170,7 +177,9 @@ export default function LoginPage() {
           />
         </div>
         <div>
-          <label className="block text-xs font-medium mb-1 text-zinc-400">Password</label>
+          <label className="block text-xs font-medium mb-1 text-zinc-400">
+            {isBn ? 'পাসওয়ার্ড' : 'Password'}
+          </label>
           <div className="relative">
             <input
               type={showPassword ? 'text' : 'password'}
@@ -198,10 +207,12 @@ export default function LoginPage() {
               onChange={(e) => setRememberMe(e.target.checked)}
               className="w-3.5 h-3.5 rounded border-zinc-700 text-primary focus:ring-primary focus:ring-offset-background bg-background"
             />
-            <span className="text-xs text-zinc-400">Remember me</span>
+            <span className="text-xs text-zinc-400">
+              {isBn ? 'মনে রাখুন' : 'Remember me'}
+            </span>
           </label>
           <Link href="/forgot-password" className="text-xs text-primary hover:underline font-medium">
-            Forgot Password?
+            {isBn ? 'পাসওয়ার্ড ভুলে গেছেন?' : 'Forgot Password?'}
           </Link>
         </div>
 
@@ -210,7 +221,7 @@ export default function LoginPage() {
           disabled={loading}
           className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-2 text-sm rounded-lg transition-all hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100 mt-4 shadow-lg shadow-primary/20"
         >
-          {loading ? 'Signing in...' : 'Sign In'}
+          {loading ? (isBn ? 'সাইন ইন হচ্ছে...' : 'Signing in...') : (isBn ? 'সাইন ইন করুন' : 'Sign In')}
         </button>
       </form>
 
@@ -221,12 +232,14 @@ export default function LoginPage() {
               <div className="w-full border-t border-surface-hover"></div>
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-surface px-2 text-zinc-400">Or continue with</span>
+              <span className="bg-surface px-2 text-zinc-400">
+                {isBn ? 'অথবা কন্টিনিউ করুন' : 'Or continue with'}
+              </span>
             </div>
           </div>
 
-          <div className="w-full flex justify-center" style={{ minHeight: '40px' }}>
-            <div id="google-signin-div" className="w-full"></div>
+          <div className="w-full flex justify-center items-center text-center overflow-hidden" style={{ minHeight: '44px' }}>
+            <div id="google-signin-div" className="w-full flex justify-center items-center text-center [&>div]:mx-auto [&>iframe]:mx-auto"></div>
           </div>
           <Script 
             src="https://accounts.google.com/gsi/client" 
@@ -237,9 +250,9 @@ export default function LoginPage() {
       )}
 
       <div className="mt-4 text-center text-xs text-zinc-400">
-        Don't have an account?{' '}
+        {isBn ? 'অ্যাকাউন্ট নেই?' : "Don't have an account?"}{' '}
         <Link href="/signup" className="text-primary hover:underline font-medium">
-          Create one now
+          {isBn ? 'এখনই তৈরি করুন' : 'Create one now'}
         </Link>
       </div>
     </div>

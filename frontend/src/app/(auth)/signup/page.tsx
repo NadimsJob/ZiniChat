@@ -8,12 +8,15 @@ import Script from 'next/script';
 import { Eye, EyeOff, Building, User, Mail, Phone, Lock, Briefcase, MapPin, Users, ChevronDown, Check, KeyRound, ArrowLeft, RefreshCw, Globe } from 'lucide-react';
 import { useMetaPixel } from '@/context/MetaPixelContext';
 import { useGoogleAnalytics } from '@/context/GoogleAnalyticsContext';
+import { useLanguage } from '@/components/LanguageProvider';
 import { COUNTRIES, DEFAULT_COUNTRY, CountryInfo, findCountryByNameOrCode } from '@/lib/countryData';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function SignupPage() {
   const router = useRouter();
+  const { language } = useLanguage();
+  const isBn = language === 'bn';
   const { trackEvent } = useMetaPixel();
   const { trackEvent: trackGaEvent } = useGoogleAnalytics();
 
@@ -22,7 +25,7 @@ export default function SignupPage() {
   const [otpLoading, setOtpLoading] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
 
-  const [selectedCountry, setSelectedCountry] = useState<CountryInfo>(DEFAULT_COUNTRY);
+  const [selectedCountry, setSelectedCountry] = useState<CountryInfo | null>(null);
   const [countryOpen, setCountryOpen] = useState(false);
   const countryRef = useRef<HTMLDivElement>(null);
 
@@ -30,8 +33,8 @@ export default function SignupPage() {
     businessName: '',
     fullName: '',
     email: '',
-    country: DEFAULT_COUNTRY.name,
-    phoneNo: DEFAULT_COUNTRY.dialCode,
+    country: '',
+    phoneNo: '',
     password: '',
     confirmPassword: '',
     employeeCount: '1-10',
@@ -49,6 +52,7 @@ export default function SignupPage() {
   // Handle Country Selection & Auto Phone Prefix update
   const handleCountrySelect = (country: CountryInfo) => {
     setSelectedCountry(country);
+    setCountryOpen(false);
     setFormData((prev) => {
       let currentPhone = prev.phoneNo.trim();
       const oldCountry = COUNTRIES.find((c) => currentPhone.startsWith(c.dialCode));
@@ -61,10 +65,9 @@ export default function SignupPage() {
       return {
         ...prev,
         country: country.name,
-        phoneNo: country.dialCode + restOfPhone,
+        phoneNo: `${country.dialCode}${restOfPhone}`,
       };
     });
-    setCountryOpen(false);
   };
 
   // Resend OTP Countdown Timer
@@ -173,16 +176,16 @@ export default function SignupPage() {
           ux_mode: 'popup',
         });
         const container = document.getElementById('google-signup-div');
-        const containerWidth = container?.offsetWidth
-          ? container.offsetWidth > 400
-            ? 400
-            : container.offsetWidth
-          : 320;
+        const availableWidth = container?.offsetWidth || 320;
+        // Keep within 200px - 380px range to perfectly fit mobile & desktop without overflowing
+        const containerWidth = Math.max(200, Math.min(availableWidth, 380));
+
         (window as any).google.accounts.id.renderButton(container, {
           theme: 'outline',
           size: 'large',
           width: containerWidth,
           text: 'signup_with',
+          alignment: 'center',
         });
       } catch (err) {
         console.error('Error rendering Google button:', err);
@@ -198,15 +201,18 @@ export default function SignupPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    if (!selectedCountry || !formData.country) {
+      setError(isBn ? 'অনুগ্রহ করে দেশ নির্বাচন করুন' : 'Please select your Country');
+      return;
+    }
 
     if (!formData.businessNature) {
-      setError('Please select your Business Nature / ব্যবসার ধরন সিলেক্ট করুন');
+      setError(isBn ? 'অনুগ্রহ করে ব্যবসার ধরন নির্বাচন করুন' : 'Please select your Business Nature');
       return;
     }
 
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match / পাসওয়ার্ড মিলছে না');
+      setError(isBn ? 'পাসওয়ার্ড মিলছে না' : 'Passwords do not match');
       return;
     }
 
@@ -342,16 +348,22 @@ export default function SignupPage() {
           }}
           className="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-200 transition-colors mb-4"
         >
-          <ArrowLeft className="w-3.5 h-3.5" /> Back to Signup / পরিবর্তন করুন
+          <ArrowLeft className="w-3.5 h-3.5" /> {isBn ? 'ব্যাকে যান' : 'Back to Signup'}
         </button>
 
         <div className="text-center mb-6">
           <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-3 text-primary">
             <KeyRound className="w-6 h-6" />
           </div>
-          <h2 className="text-xl font-bold text-foreground mb-1">Verify Your Email</h2>
+          <h2 className="text-xl font-bold text-foreground mb-1">
+            {isBn ? 'ইমেইল ভেরিফিকেশন' : 'Verify Your Email'}
+          </h2>
           <p className="text-xs text-zinc-400">
-            আমরা <span className="text-primary font-semibold">{formData.email}</span> ঠিকানায় ৬-ডিজিটের ভেরিফিকেশন কোড পাঠিয়েছি।
+            {isBn ? (
+              <>আমরা <span className="text-primary font-semibold">{formData.email}</span> ঠিকানায় ৬-ডিজিটের ভেরিফিকেশন কোড পাঠিয়েছি।</>
+            ) : (
+              <>We sent a 6-digit verification code to <span className="text-primary font-semibold">{formData.email}</span>.</>
+            )}
           </p>
         </div>
 
@@ -364,7 +376,7 @@ export default function SignupPage() {
         <form onSubmit={handleVerifyOtp} className="space-y-4">
           <div>
             <label className="block text-xs font-semibold mb-1 text-center text-zinc-400">
-              6-Digit OTP Code / ৬-ডিজিটের ভেরিফিকেশন কোড<Req />
+              {isBn ? '৬-ডিজিটের ভেরিফিকেশন কোড' : '6-Digit OTP Code'}<Req />
             </label>
             <input
               type="text"
@@ -383,12 +395,12 @@ export default function SignupPage() {
             disabled={otpLoading || otp.length !== 6}
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-3 rounded-xl transition-all hover:scale-[1.01] disabled:opacity-50 disabled:hover:scale-100 shadow-lg shadow-primary/20 text-sm flex items-center justify-center gap-2"
           >
-            {otpLoading ? 'Verifying...' : 'Verify Code & Proceed / ভেরিফাই করুন'}
+            {otpLoading ? (isBn ? 'ভেরিফাই হচ্ছে...' : 'Verifying...') : (isBn ? 'ভেরিফাই ও সাবমিট' : 'Verify & Continue')}
           </button>
         </form>
 
         <div className="mt-5 text-center text-xs text-zinc-400">
-          কোড পাননি?{' '}
+          {isBn ? 'কোড পাননি?' : "Didn't receive code?"}{' '}
           <button
             type="button"
             onClick={handleResendOtp}
@@ -396,7 +408,9 @@ export default function SignupPage() {
             className="text-primary hover:underline font-semibold disabled:opacity-50 disabled:no-underline inline-flex items-center gap-1 ml-1"
           >
             <RefreshCw className={`w-3 h-3 ${otpLoading ? 'animate-spin' : ''}`} />
-            {resendTimer > 0 ? `Resend code in ${resendTimer}s` : 'Resend Code / পুনরায় কোড পাঠান'}
+            {resendTimer > 0 
+              ? (isBn ? `${resendTimer}s পর পুনরায় চেষ্টা করুন` : `Resend code in ${resendTimer}s`) 
+              : (isBn ? 'পুনরায় কোড পাঠান' : 'Resend Code')}
           </button>
         </div>
       </div>
@@ -405,7 +419,9 @@ export default function SignupPage() {
 
   return (
     <div>
-      <h2 className="text-xl font-bold mb-4 text-center">Create your account</h2>
+      <h2 className="text-xl font-bold mb-4 text-center">
+        {isBn ? 'আপনার অ্যাকাউন্ট তৈরি করুন' : 'Create your account'}
+      </h2>
 
       {error && (
         <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-3 rounded-xl mb-4 text-sm text-center">
@@ -416,7 +432,9 @@ export default function SignupPage() {
       <form onSubmit={handleSubmit} className="space-y-3">
         {/* Business Name */}
         <div>
-          <label className="block text-xs font-semibold mb-1 text-zinc-400">Business Name<Req /></label>
+          <label className="block text-xs font-semibold mb-1 text-zinc-400">
+            {isBn ? 'ব্যবসার নাম' : 'Business Name'}<Req />
+          </label>
           <div className="relative">
             <Building className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
             <input
@@ -425,7 +443,7 @@ export default function SignupPage() {
               onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
               required
               className={inputClass}
-              placeholder="Acme Corp"
+              placeholder={isBn ? 'আপনার ব্যবসার নাম' : 'Acme Corp'}
               autoComplete="off"
             />
           </div>
@@ -435,7 +453,9 @@ export default function SignupPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {/* Country Selection Dropdown */}
           <div>
-            <label className="block text-xs font-semibold mb-1 text-zinc-400">Country / দেশ<Req /></label>
+            <label className="block text-xs font-semibold mb-1 text-zinc-400">
+              {isBn ? 'দেশ' : 'Country'}<Req />
+            </label>
             <div className="relative" ref={countryRef}>
               <button
                 type="button"
@@ -444,9 +464,11 @@ export default function SignupPage() {
                   countryOpen ? 'border-primary/50 ring-2 ring-primary/30' : 'border-surface-hover'
                 } rounded-xl px-3 py-2.5 text-sm transition-all text-left`}
               >
-                <span className="text-base shrink-0">{selectedCountry.flag}</span>
-                <span className="flex-1 truncate text-foreground font-medium">
-                  {selectedCountry.name} ({selectedCountry.dialCode})
+                <span className="text-base shrink-0">{selectedCountry ? selectedCountry.flag : '🌐'}</span>
+                <span className={`flex-1 truncate ${selectedCountry ? 'text-foreground font-medium' : 'text-zinc-500'}`}>
+                  {selectedCountry 
+                    ? `${isBn ? selectedCountry.nameBn : selectedCountry.name} (${selectedCountry.dialCode})` 
+                    : (isBn ? 'দেশ নির্বাচন করুন' : 'Select Country')}
                 </span>
                 <ChevronDown className={`w-4 h-4 text-zinc-500 shrink-0 transition-transform ${countryOpen ? 'rotate-180' : ''}`} />
               </button>
@@ -459,14 +481,14 @@ export default function SignupPage() {
                       type="button"
                       onClick={() => handleCountrySelect(c)}
                       className={`w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-primary/10 transition-colors text-left ${
-                        selectedCountry.code === c.code ? 'text-primary font-semibold' : 'text-foreground'
+                        selectedCountry?.code === c.code ? 'text-primary font-semibold' : 'text-foreground'
                       }`}
                     >
-                      <span className="flex items-center gap-2">
-                        <span className="text-base">{c.flag}</span>
-                        <span>{c.name}</span>
+                      <span className="flex items-center gap-2 truncate">
+                        <span className="text-base shrink-0">{c.flag}</span>
+                        <span className="truncate">{isBn ? c.nameBn : c.name}</span>
                       </span>
-                      <span className="text-zinc-500 font-mono">{c.dialCode}</span>
+                      <span className="text-zinc-500 font-mono shrink-0 ml-1">{c.dialCode}</span>
                     </button>
                   ))}
                 </div>
@@ -476,7 +498,9 @@ export default function SignupPage() {
 
           {/* Phone No */}
           <div>
-            <label className="block text-xs font-semibold mb-1 text-zinc-400">Phone No.<Req /></label>
+            <label className="block text-xs font-semibold mb-1 text-zinc-400">
+              {isBn ? 'ফোন নম্বর' : 'Phone No.'}<Req />
+            </label>
             <div className="relative">
               <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
               <input
@@ -485,7 +509,7 @@ export default function SignupPage() {
                 onChange={(e) => setFormData({ ...formData, phoneNo: e.target.value })}
                 required
                 className={inputClass}
-                placeholder={`${selectedCountry.dialCode}1700000000`}
+                placeholder={selectedCountry ? `${selectedCountry.dialCode}1700000000` : (isBn ? 'ফোন নম্বর লিখুন' : 'Enter phone number')}
                 autoComplete="tel"
               />
             </div>
@@ -495,7 +519,9 @@ export default function SignupPage() {
         {/* Full Name + Email — side by side */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold mb-1 text-zinc-400">Your Full Name<Req /></label>
+            <label className="block text-xs font-semibold mb-1 text-zinc-400">
+              {isBn ? 'আপনার নাম' : 'Your Full Name'}<Req />
+            </label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
               <input
@@ -504,14 +530,16 @@ export default function SignupPage() {
                 onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                 required
                 className={inputClass}
-                placeholder="John Doe"
+                placeholder={isBn ? 'আপনার পুরো নাম' : 'John Doe'}
                 autoComplete="name"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold mb-1 text-zinc-400">Email Address<Req /></label>
+            <label className="block text-xs font-semibold mb-1 text-zinc-400">
+              {isBn ? 'ইমেইল ঠিকানা' : 'Email Address'}<Req />
+            </label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
               <input
@@ -531,7 +559,9 @@ export default function SignupPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {/* Employee Count */}
           <div>
-            <label className="block text-xs font-semibold mb-1 text-zinc-400">No. of Employees</label>
+            <label className="block text-xs font-semibold mb-1 text-zinc-400">
+              {isBn ? 'কর্মচারী সংখ্যা' : 'No. of Employees'}
+            </label>
             <div className="relative" ref={ecRef}>
               <button
                 type="button"
@@ -570,7 +600,9 @@ export default function SignupPage() {
 
           {/* Business Nature — custom dropdown */}
           <div>
-            <label className="block text-xs font-semibold mb-1 text-zinc-400">Business Nature<Req /></label>
+            <label className="block text-xs font-semibold mb-1 text-zinc-400">
+              {isBn ? 'ব্যবসার ধরন' : 'Business Nature'}<Req />
+            </label>
             <div className="relative" ref={bnRef}>
               <button
                 type="button"
@@ -581,7 +613,7 @@ export default function SignupPage() {
               >
                 <Briefcase className="w-4 h-4 text-zinc-500 shrink-0" />
                 <span className={`flex-1 truncate ${formData.businessNature ? 'text-foreground font-medium' : 'text-zinc-500'}`}>
-                  {formData.businessNature || 'Select type / ব্যবসার ধরন'}
+                  {formData.businessNature || (isBn ? 'ব্যবসার ধরন নির্বাচন করুন' : 'Select Business Nature')}
                 </span>
                 <ChevronDown className={`w-4 h-4 text-zinc-500 shrink-0 transition-transform ${bnOpen ? 'rotate-180' : ''}`} />
               </button>
@@ -612,7 +644,9 @@ export default function SignupPage() {
 
         {/* Business Address */}
         <div>
-          <label className="block text-xs font-semibold mb-1 text-zinc-400">Business Address <span className="text-zinc-600 font-normal">(optional)</span></label>
+          <label className="block text-xs font-semibold mb-1 text-zinc-400">
+            {isBn ? 'ব্যবসার ঠিকানা' : 'Business Address'} <span className="text-zinc-600 font-normal">({isBn ? 'ঐচ্ছিক' : 'optional'})</span>
+          </label>
           <div className="relative">
             <MapPin className="absolute left-3 top-3 w-4 h-4 text-zinc-500 pointer-events-none" />
             <textarea
@@ -620,7 +654,7 @@ export default function SignupPage() {
               value={formData.address}
               onChange={(e) => setFormData({ ...formData, address: e.target.value })}
               className="w-full bg-background border border-surface-hover rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-sm resize-none"
-              placeholder="Road 1, Block A, Dhaka"
+              placeholder={isBn ? 'রোড ১, ব্লক এ, ঢাকা' : 'Road 1, Block A, Dhaka'}
               autoComplete="off"
             />
           </div>
@@ -629,7 +663,9 @@ export default function SignupPage() {
         {/* Password + Confirm Password — side by side on sm+ */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold mb-1 text-zinc-400">Password<Req /></label>
+            <label className="block text-xs font-semibold mb-1 text-zinc-400">
+              {isBn ? 'পাসওয়ার্ড' : 'Password'}<Req />
+            </label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
               <input
@@ -655,7 +691,9 @@ export default function SignupPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold mb-1 text-zinc-400">Confirm Password<Req /></label>
+            <label className="block text-xs font-semibold mb-1 text-zinc-400">
+              {isBn ? 'পাসওয়ার্ড নিশ্চিত করুন' : 'Confirm Password'}<Req />
+            </label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
               <input
@@ -686,7 +724,7 @@ export default function SignupPage() {
           disabled={loading}
           className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-2.5 rounded-xl transition-all hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100 mt-1 shadow-lg shadow-primary/20 text-sm"
         >
-          {loading ? 'Creating account...' : 'Create Account'}
+          {loading ? (isBn ? 'অ্যাকাউন্ট তৈরি হচ্ছে...' : 'Creating account...') : (isBn ? 'অ্যাকাউন্ট তৈরি করুন' : 'Create Account')}
         </button>
       </form>
 
@@ -697,12 +735,14 @@ export default function SignupPage() {
               <div className="w-full border-t border-surface-hover"></div>
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-surface px-2 text-zinc-400">Or continue with</span>
+              <span className="bg-surface px-2 text-zinc-400">
+                {isBn ? 'অথবা কন্টিনিউ করুন' : 'Or continue with'}
+              </span>
             </div>
           </div>
 
-          <div className="w-full flex justify-center" style={{ minHeight: '40px' }}>
-            <div id="google-signup-div" className="w-full"></div>
+          <div className="w-full flex justify-center items-center text-center overflow-hidden" style={{ minHeight: '44px' }}>
+            <div id="google-signup-div" className="w-full flex justify-center items-center text-center [&>div]:mx-auto [&>iframe]:mx-auto"></div>
           </div>
           <Script
             src="https://accounts.google.com/gsi/client"
@@ -713,9 +753,9 @@ export default function SignupPage() {
       )}
 
       <div className="mt-4 text-center text-sm text-zinc-400">
-        Already have an account?{' '}
+        {isBn ? 'ইতিমধ্যে অ্যাকাউন্ট আছে?' : 'Already have an account?'}{' '}
         <Link href="/login" className="text-primary hover:underline font-medium">
-          Sign in instead
+          {isBn ? 'সাইন ইন করুন' : 'Sign in instead'}
         </Link>
       </div>
     </div>
