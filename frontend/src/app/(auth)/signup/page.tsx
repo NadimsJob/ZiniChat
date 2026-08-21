@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 import Link from 'next/link';
 import Script from 'next/script';
-import { Eye, EyeOff, Building, User, Mail, Phone, Lock, Briefcase, MapPin, Users } from 'lucide-react';
+import { Eye, EyeOff, Building, User, Mail, Phone, Lock, Briefcase, MapPin, Users, ChevronDown, Check } from 'lucide-react';
 import { useMetaPixel } from '@/context/MetaPixelContext';
 import { useGoogleAnalytics } from '@/context/GoogleAnalyticsContext';
 
@@ -23,11 +23,27 @@ export default function SignupPage() {
     phoneNo: '+880',
     password: '',
     confirmPassword: '',
-    brandName: '',
     employeeCount: '1-10',
     businessNature: '',
     address: '',
   });
+
+  const [bnOpen, setBnOpen] = useState(false);
+  const bnRef = useRef<HTMLDivElement>(null);
+  const [ecOpen, setEcOpen] = useState(false);
+  const ecRef = useRef<HTMLDivElement>(null);
+
+  const employeeOptions = ['1-10', '11-50', '51-200', '200+'];
+
+  // Close dropdowns on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (bnRef.current && !bnRef.current.contains(e.target as Node)) setBnOpen(false);
+      if (ecRef.current && !ecRef.current.contains(e.target as Node)) setEcOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -201,22 +217,26 @@ export default function SignupPage() {
   };
 
   const inputClass =
-    'w-full bg-background border border-surface-hover rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-sm';
+    'w-full bg-background border border-surface-hover rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-sm';
+
+  // Helper: required star
+  const Req = () => <span className="text-red-500 ml-0.5">*</span>;
 
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-6 text-center">Create your account</h2>
+      <h2 className="text-xl font-bold mb-4 text-center">Create your account</h2>
 
       {error && (
-        <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-3 rounded-xl mb-6 text-sm text-center">
+        <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-3 rounded-xl mb-4 text-sm text-center">
           {error}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-3">
+
         {/* Business Name */}
         <div>
-          <label className="block text-sm font-medium mb-1.5 text-zinc-400">Business Name</label>
+          <label className="block text-xs font-semibold mb-1 text-zinc-400">Business Name<Req /></label>
           <div className="relative">
             <Building className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
             <input
@@ -231,26 +251,44 @@ export default function SignupPage() {
           </div>
         </div>
 
-        {/* Full Name */}
-        <div>
-          <label className="block text-sm font-medium mb-1.5 text-zinc-400">Your Full Name</label>
-          <div className="relative">
-            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
-            <input
-              type="text"
-              value={formData.fullName}
-              onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-              required
-              className={inputClass}
-              placeholder="John Doe"
-              autoComplete="name"
-            />
+        {/* Full Name + Phone — side by side on sm+ */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-semibold mb-1 text-zinc-400">Your Full Name<Req /></label>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
+              <input
+                type="text"
+                value={formData.fullName}
+                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                required
+                className={inputClass}
+                placeholder="John Doe"
+                autoComplete="name"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold mb-1 text-zinc-400">Phone No.<Req /></label>
+            <div className="relative">
+              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
+              <input
+                type="tel"
+                value={formData.phoneNo}
+                onChange={(e) => setFormData({ ...formData, phoneNo: e.target.value })}
+                required
+                className={inputClass}
+                placeholder="+8801700000000"
+                autoComplete="tel"
+              />
+            </div>
           </div>
         </div>
 
         {/* Email */}
         <div>
-          <label className="block text-sm font-medium mb-1.5 text-zinc-400">Email Address</label>
+          <label className="block text-xs font-semibold mb-1 text-zinc-400">Email Address<Req /></label>
           <div className="relative">
             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
             <input
@@ -265,154 +303,164 @@ export default function SignupPage() {
           </div>
         </div>
 
-        {/* Phone */}
-        <div>
-          <label className="block text-sm font-medium mb-1.5 text-zinc-400">
-            Phone Number (with Country Code)
-          </label>
-          <div className="relative">
-            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
-            <input
-              type="tel"
-              value={formData.phoneNo}
-              onChange={(e) => setFormData({ ...formData, phoneNo: e.target.value })}
-              required
-              className={inputClass}
-              placeholder="+8801700000000"
-              autoComplete="tel"
-            />
-          </div>
-        </div>
-
-        {/* Brand Name */}
-        <div>
-          <label className="block text-sm font-medium mb-1.5 text-zinc-400">Brand Name</label>
-          <div className="relative">
-            <Building className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
-            <input
-              type="text"
-              value={formData.brandName}
-              onChange={(e) => setFormData({ ...formData, brandName: e.target.value })}
-              className={inputClass}
-              placeholder="Acme Clothing (optional)"
-              autoComplete="off"
-            />
-          </div>
-        </div>
-
-        {/* Employee Count + Business Nature — 2 columns on md+ */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Employee Count + Business Nature — side by side */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Employee Count — custom dropdown */}
           <div>
-            <label className="block text-sm font-medium mb-1.5 text-zinc-400">No. of Employees</label>
-            <div className="relative">
-              <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
-              <select
-                value={formData.employeeCount}
-                onChange={(e) => setFormData({ ...formData, employeeCount: e.target.value })}
-                className="w-full bg-background border border-surface-hover rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-sm appearance-none"
+            <label className="block text-xs font-semibold mb-1 text-zinc-400">No. of Employees</label>
+            <div className="relative" ref={ecRef}>
+              <button
+                type="button"
+                onClick={() => setEcOpen((v) => !v)}
+                className={`w-full flex items-center gap-2 bg-background border ${
+                  ecOpen ? 'border-primary/50 ring-2 ring-primary/30' : 'border-surface-hover'
+                } rounded-xl px-3 py-2.5 text-sm transition-all text-left`}
               >
-                <option value="1-10">1 – 10</option>
-                <option value="11-50">11 – 50</option>
-                <option value="51-200">51 – 200</option>
-                <option value="200+">200+</option>
-              </select>
+                <Users className="w-4 h-4 text-zinc-500 shrink-0" />
+                <span className="flex-1 text-foreground">{formData.employeeCount}</span>
+                <ChevronDown className={`w-4 h-4 text-zinc-500 shrink-0 transition-transform ${ecOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {ecOpen && (
+                <div className="absolute z-50 top-full mt-1 w-full bg-surface border border-surface-hover rounded-xl shadow-xl overflow-hidden">
+                  {employeeOptions.map((opt) => (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => {
+                        setFormData({ ...formData, employeeCount: opt });
+                        setEcOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-between px-4 py-2.5 text-sm hover:bg-primary/10 transition-colors text-left ${
+                        formData.employeeCount === opt ? 'text-primary font-semibold' : 'text-foreground'
+                      }`}
+                    >
+                      <span>{opt}</span>
+                      {formData.employeeCount === opt && <Check className="w-3.5 h-3.5 text-primary" />}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
+          {/* Business Nature — custom dropdown */}
           <div>
-            <label className="block text-sm font-medium mb-1.5 text-zinc-400">Business Nature</label>
-            <div className="relative">
-              <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
-              <select
-                value={formData.businessNature}
-                onChange={(e) => setFormData({ ...formData, businessNature: e.target.value })}
-                className="w-full bg-background border border-surface-hover rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-sm appearance-none"
+            <label className="block text-xs font-semibold mb-1 text-zinc-400">Business Nature<Req /></label>
+            <div className="relative" ref={bnRef}>
+              <button
+                type="button"
+                onClick={() => setBnOpen((v) => !v)}
+                className={`w-full flex items-center gap-2 bg-background border ${
+                  bnOpen ? 'border-primary/50 ring-2 ring-primary/30' : 'border-surface-hover'
+                } rounded-xl px-3 py-2.5 text-sm transition-all text-left`}
               >
-                <option value="">Select type</option>
-                {businessNatures.map((bn) => (
-                  <option key={bn.id} value={bn.name}>
-                    {bn.name}
-                  </option>
-                ))}
-              </select>
+                <Briefcase className="w-4 h-4 text-zinc-500 shrink-0" />
+                <span className={`flex-1 truncate ${formData.businessNature ? 'text-foreground' : 'text-zinc-500'}`}>
+                  {formData.businessNature || 'Select type'}
+                </span>
+                <ChevronDown className={`w-4 h-4 text-zinc-500 shrink-0 transition-transform ${bnOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {bnOpen && businessNatures.length > 0 && (
+                <div className="absolute z-50 top-full mt-1 w-full bg-surface border border-surface-hover rounded-xl shadow-xl overflow-hidden max-h-48 overflow-y-auto">
+                  {businessNatures.map((bn) => (
+                    <button
+                      key={bn.id}
+                      type="button"
+                      onClick={() => {
+                        setFormData({ ...formData, businessNature: bn.name });
+                        setBnOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-between px-4 py-2.5 text-sm hover:bg-primary/10 transition-colors text-left ${
+                        formData.businessNature === bn.name ? 'text-primary font-semibold' : 'text-foreground'
+                      }`}
+                    >
+                      <span>{bn.name}</span>
+                      {formData.businessNature === bn.name && <Check className="w-3.5 h-3.5 text-primary" />}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
 
         {/* Business Address */}
         <div>
-          <label className="block text-sm font-medium mb-1.5 text-zinc-400">Business Address</label>
+          <label className="block text-xs font-semibold mb-1 text-zinc-400">Business Address <span className="text-zinc-600 font-normal">(optional)</span></label>
           <div className="relative">
             <MapPin className="absolute left-3 top-3 w-4 h-4 text-zinc-500 pointer-events-none" />
             <textarea
               rows={2}
               value={formData.address}
               onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              className="w-full bg-background border border-surface-hover rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-sm resize-none"
-              placeholder="Road 1, Block A, Dhaka (optional)"
+              className="w-full bg-background border border-surface-hover rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-sm resize-none"
+              placeholder="Road 1, Block A, Dhaka"
               autoComplete="off"
             />
           </div>
         </div>
 
-        {/* Password */}
-        <div>
-          <label className="block text-sm font-medium mb-1.5 text-zinc-400">Password</label>
-          <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
-            <input
-              type={showPassword ? 'text' : 'password'}
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              required
-              minLength={6}
-              className="w-full bg-background border border-surface-hover rounded-xl pl-10 pr-11 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-sm"
-              placeholder="••••••••"
-              autoComplete="new-password"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword((v) => !v)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
-              tabIndex={-1}
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
-            >
-              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
+        {/* Password + Confirm Password — side by side on sm+ */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-semibold mb-1 text-zinc-400">Password<Req /></label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                required
+                minLength={6}
+                className="w-full bg-background border border-surface-hover rounded-xl pl-10 pr-10 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-sm"
+                placeholder=""
+                autoComplete="new-password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
+                tabIndex={-1}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
-        </div>
 
-        {/* Confirm Password */}
-        <div>
-          <label className="block text-sm font-medium mb-1.5 text-zinc-400">Confirm Password</label>
-          <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
-            <input
-              type={showConfirmPassword ? 'text' : 'password'}
-              value={formData.confirmPassword}
-              onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-              required
-              minLength={6}
-              className="w-full bg-background border border-surface-hover rounded-xl pl-10 pr-11 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-sm"
-              placeholder="••••••••"
-              autoComplete="new-password"
-            />
-            <button
-              type="button"
-              onClick={() => setShowConfirmPassword((v) => !v)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
-              tabIndex={-1}
-              aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
-            >
-              {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
+          <div>
+            <label className="block text-xs font-semibold mb-1 text-zinc-400">Confirm Password<Req /></label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
+              <input
+                type={showConfirmPassword ? 'text' : 'password'}
+                value={formData.confirmPassword}
+                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                required
+                minLength={6}
+                className="w-full bg-background border border-surface-hover rounded-xl pl-10 pr-10 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-sm"
+                placeholder="••••••••"
+                autoComplete="new-password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
+                tabIndex={-1}
+                aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+              >
+                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
         </div>
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-3 rounded-xl transition-all hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100 mt-2 shadow-lg shadow-primary/20"
+          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-2.5 rounded-xl transition-all hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100 mt-1 shadow-lg shadow-primary/20 text-sm"
         >
           {loading ? 'Creating account...' : 'Create Account'}
         </button>
@@ -420,7 +468,7 @@ export default function SignupPage() {
 
       {googleConfig.isEnabled && (
         <>
-          <div className="relative my-6">
+          <div className="relative my-4">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-surface-hover"></div>
             </div>
@@ -440,7 +488,7 @@ export default function SignupPage() {
         </>
       )}
 
-      <div className="mt-6 text-center text-sm text-zinc-400">
+      <div className="mt-4 text-center text-sm text-zinc-400">
         Already have an account?{' '}
         <Link href="/login" className="text-primary hover:underline font-medium">
           Sign in instead
