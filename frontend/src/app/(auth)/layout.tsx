@@ -13,7 +13,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <span>←</span> Home
       </Link>
 
-      <div className="w-full max-w-md z-10 animate-in fade-in zoom-in-95 duration-500">
+      <div className="w-full max-w-xl">
         <div className="text-center mb-4">
           <Link href="/" className="inline-flex items-center gap-2 hover:opacity-90 transition-opacity mb-2">
             <img src="/logo.png" alt="ZiniChat Logo" className="h-16 w-auto object-contain" />

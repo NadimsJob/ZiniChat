@@ -363,7 +363,7 @@ export default function SignupPage() {
               </button>
 
               {bnOpen && businessNatures.length > 0 && (
-                <div className="absolute z-50 top-full mt-1 w-full bg-surface border border-surface-hover rounded-xl shadow-xl overflow-hidden max-h-48 overflow-y-auto">
+                <div className="absolute z-50 top-full mt-1 w-full bg-surface border border-surface-hover rounded-xl shadow-xl overflow-hidden max-h-72 overflow-y-auto">
                   {businessNatures.map((bn) => (
                     <button
                       key={bn.id}
@@ -441,7 +441,7 @@ export default function SignupPage() {
                 required
                 minLength={6}
                 className="w-full bg-background border border-surface-hover rounded-xl pl-10 pr-10 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-sm"
-                placeholder="••••••••"
+                placeholder=""
                 autoComplete="new-password"
               />
               <button
