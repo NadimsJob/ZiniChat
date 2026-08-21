@@ -34,6 +34,30 @@ export class SignupDto {
   @IsOptional()
   @IsString()
   businessType?: string;
+
+  @IsOptional()
+  @IsString()
+  fullName?: string;
+
+  @IsOptional()
+  @IsString()
+  confirmPassword?: string;
+
+  @IsOptional()
+  @IsString()
+  address?: string;
+
+  @IsOptional()
+  @IsString()
+  employeeCount?: string;
+
+  @IsOptional()
+  @IsString()
+  businessNature?: string;
+
+  @IsOptional()
+  @IsString()
+  brandName?: string;
 }
 
 export class ForgotPasswordDto {

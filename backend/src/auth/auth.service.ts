@@ -101,7 +101,20 @@ export class AuthService {
   }
 
   async signupTenant(data: any) {
-    const { businessName, name, email, password, phoneNo, planId } = data;
+    const {
+      businessName,
+      fullName,
+      email,
+      password,
+      phoneNo,
+      planId,
+      brandName,
+      address,
+      employeeCount,
+      businessNature,
+    } = data;
+    // fullName is the owner's name (frontend sends `name` as `fullName` after the DTO rename)
+    const ownerName = fullName || undefined;
 
     if (!phoneNo) {
       throw new BadRequestException('Phone number is required');
@@ -152,13 +165,23 @@ export class AuthService {
         where: { isActive: true, isSupportDefault: false }
       });
 
+      // isOnboarded = true if onboarding fields were provided upfront (direct signup)
+      const hasOnboardingData = !!(businessNature || address || brandName);
+
       const tenant = await prisma.tenant.create({
         data: {
           businessName,
-          phoneNo,
+          phoneNo: phoneNo || undefined,
           trialEndsAt,
           planId: initialPlan?.id || null,
-          customAiConfigId: defaultAiConfig?.id || null
+          customAiConfigId: defaultAiConfig?.id || null,
+          // Onboarding fields collected during direct signup
+          ...(ownerName && { ownerName }),
+          ...(brandName && { brandName }),
+          ...(address && { address }),
+          ...(employeeCount && { employeeCount }),
+          ...(businessNature && { businessNature }),
+          isOnboarded: hasOnboardingData,
         }
       });
 
@@ -221,7 +244,7 @@ export class AuthService {
         data: {
           email,
           passwordHash,
-          name,
+          name: ownerName || businessName, // Use owner name or fall back to business name
           role: 'owner',
           tenantId: tenant.id,
           emailVerificationToken: verifyToken,
@@ -242,14 +265,14 @@ export class AuthService {
       ? process.env.NEXT_PUBLIC_API_URL.replace(':3001', ':3000')
       : 'https://zinichat.com';
     const verifyLink = `${frontendUrl}/verify-email?token=${user.emailVerificationToken}`;
-    this.smtpService.triggerVerifyEmail(email, name, verifyLink).catch(err => {
+    this.smtpService.triggerVerifyEmail(email, ownerName || businessName, verifyLink).catch(err => {
       console.error('Verify email dispatch failed:', err);
     });
 
     // Send superadmin notification about new signup
     this.notificationsService.createSystemNotificationForSuperadmins(
       'New Tenant Registered',
-      `${name} has registered a new workspace: ${businessName} (${email})`,
+      `${ownerName || businessName} has registered a new workspace: ${businessName} (${email})`,
       'signup'
     ).catch(err => {
       console.error('Superadmin signup notification failed:', err);
