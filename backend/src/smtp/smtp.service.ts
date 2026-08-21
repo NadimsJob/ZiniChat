@@ -813,4 +813,10 @@ export class SmtpService {
       await this.sendMail({ to: toEmail, subject, plainText: bodyText });
     }
   }
+
+  async triggerOtpVerificationEmail(toEmail: string, otpCode: string) {
+    const subject = '🔐 আপনার ZiniChat অ্যাকাউন্টের ভেরিফিকেশন কোড';
+    const plainText = `প্রিয় গ্রাহক,\n\nZiniChat-এ রেজিস্ট্রেশন করার জন্য আপনাকে ধন্যবাদ। আপনার ৬-ডিজিটের ভেরিফিকেশন কোডটি নিচে দেওয়া হলো:\n\n👉  ${otpCode}  👈\n\nএই কোডটি আগামী ১৫ মিনিটের জন্য কার্যকর থাকবে। নিরাপত্তার স্বার্থে কোডটি কারও সাথে শেয়ার করবেন না।\n\nধন্যবাদ,\nZiniChat টিম`;
+    await this.sendMail({ to: toEmail, subject, plainText });
+  }
 }

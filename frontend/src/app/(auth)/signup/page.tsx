@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 import Link from 'next/link';
 import Script from 'next/script';
-import { Eye, EyeOff, Building, User, Mail, Phone, Lock, Briefcase, MapPin, Users, ChevronDown, Check } from 'lucide-react';
+import { Eye, EyeOff, Building, User, Mail, Phone, Lock, Briefcase, MapPin, Users, ChevronDown, Check, KeyRound, ArrowLeft, RefreshCw } from 'lucide-react';
 import { useMetaPixel } from '@/context/MetaPixelContext';
 import { useGoogleAnalytics } from '@/context/GoogleAnalyticsContext';
 
@@ -16,6 +16,11 @@ export default function SignupPage() {
   const { trackEvent } = useMetaPixel();
   const { trackEvent: trackGaEvent } = useGoogleAnalytics();
 
+  const [step, setStep] = useState<'form' | 'otp'>('form');
+  const [otp, setOtp] = useState('');
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [resendTimer, setResendTimer] = useState(0);
+
   const [formData, setFormData] = useState({
     businessName: '',
     fullName: '',
@@ -24,7 +29,7 @@ export default function SignupPage() {
     password: '',
     confirmPassword: '',
     employeeCount: '1-10',
-    businessNature: '',
+    businessNature: '', // Defaults to blank so user must select
     address: '',
   });
 
@@ -34,6 +39,16 @@ export default function SignupPage() {
   const ecRef = useRef<HTMLDivElement>(null);
 
   const employeeOptions = ['1-10', '11-50', '51-200', '200+'];
+
+  // Resend OTP Countdown Timer
+  useEffect(() => {
+    if (resendTimer > 0) {
+      const interval = setInterval(() => {
+        setResendTimer((prev) => prev - 1);
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [resendTimer]);
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -78,9 +93,7 @@ export default function SignupPage() {
           const natures = await res.json();
           const active = natures.filter((n: any) => n.isActive);
           setBusinessNatures(active);
-          if (active.length > 0) {
-            setFormData((prev) => ({ ...prev, businessNature: active[0].name }));
-          }
+          // Kept blank by default as requested
         }
       } catch (err) {
         console.error('Failed to load business natures:', err);
@@ -151,14 +164,19 @@ export default function SignupPage() {
   };
 
   useEffect(() => {
-    if (googleConfig.isEnabled && googleConfig.clientId) {
+    if (googleConfig.isEnabled && googleConfig.clientId && step === 'form') {
       initGoogleSignIn();
     }
-  }, [googleConfig]);
+  }, [googleConfig, step]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (!formData.businessNature) {
+      setError('Please select your Business Nature / ব্যবসার ধরন সিলেক্ট করুন');
+      return;
+    }
 
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match / পাসওয়ার্ড মিলছে না');
@@ -198,6 +216,47 @@ export default function SignupPage() {
 
       const data = await res.json();
 
+      if (data.requiresOtp) {
+        setStep('otp');
+        setResendTimer(60);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Signup failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    if (!otp || otp.trim().length !== 6) {
+      setError('Please enter the 6-digit OTP code / ৬-ডিজিটের কোড দিন');
+      return;
+    }
+
+    setOtpLoading(true);
+
+    let planId = '';
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      planId = params.get('planId') || '';
+    }
+
+    try {
+      const res = await fetch(`${API}/auth/verify-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email, otp: otp.trim() }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Verification failed');
+      }
+
+      const data = await res.json();
+
       // Track conversion
       trackEvent('SignUp', { email: formData.email, tenantId: data?.user?.tenantId });
 
@@ -210,9 +269,33 @@ export default function SignupPage() {
         router.push('/dashboard');
       }
     } catch (err: any) {
-      setError(err.message || 'Signup failed');
+      setError(err.message || 'Verification failed');
     } finally {
-      setLoading(false);
+      setOtpLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (resendTimer > 0) return;
+    setError('');
+    setOtpLoading(true);
+    try {
+      const res = await fetch(`${API}/auth/resend-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.message || 'Failed to resend code');
+      }
+
+      setResendTimer(60);
+    } catch (err: any) {
+      setError(err.message || 'Failed to resend code');
+    } finally {
+      setOtpLoading(false);
     }
   };
 
@@ -221,6 +304,78 @@ export default function SignupPage() {
 
   // Helper: required star
   const Req = () => <span className="text-red-500 ml-0.5">*</span>;
+
+  if (step === 'otp') {
+    return (
+      <div>
+        <button
+          type="button"
+          onClick={() => {
+            setStep('form');
+            setError('');
+          }}
+          className="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-200 transition-colors mb-4"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" /> Back to Signup / পরিবর্তন করুন
+        </button>
+
+        <div className="text-center mb-6">
+          <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-3 text-primary">
+            <KeyRound className="w-6 h-6" />
+          </div>
+          <h2 className="text-xl font-bold text-foreground mb-1">Verify Your Email</h2>
+          <p className="text-xs text-zinc-400">
+            আমরা <span className="text-primary font-semibold">{formData.email}</span> ঠিকানায় ৬-ডিজিটের ভেরিফিকেশন কোড পাঠিয়েছি।
+          </p>
+        </div>
+
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-3 rounded-xl mb-4 text-sm text-center">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleVerifyOtp} className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold mb-1 text-center text-zinc-400">
+              6-Digit OTP Code / ৬-ডিজিটের ভেরিফিকেশন কোড<Req />
+            </label>
+            <input
+              type="text"
+              maxLength={6}
+              value={otp}
+              onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+              required
+              className="w-full bg-background border border-surface-hover rounded-xl text-center py-3 text-2xl font-mono tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+              placeholder="000000"
+              autoFocus
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={otpLoading || otp.length !== 6}
+            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-3 rounded-xl transition-all hover:scale-[1.01] disabled:opacity-50 disabled:hover:scale-100 shadow-lg shadow-primary/20 text-sm flex items-center justify-center gap-2"
+          >
+            {otpLoading ? 'Verifying...' : 'Verify Code & Proceed / ভেরিফাই করুন'}
+          </button>
+        </form>
+
+        <div className="mt-5 text-center text-xs text-zinc-400">
+          কোড পাননি?{' '}
+          <button
+            type="button"
+            onClick={handleResendOtp}
+            disabled={resendTimer > 0 || otpLoading}
+            className="text-primary hover:underline font-semibold disabled:opacity-50 disabled:no-underline inline-flex items-center gap-1 ml-1"
+          >
+            <RefreshCw className={`w-3 h-3 ${otpLoading ? 'animate-spin' : ''}`} />
+            {resendTimer > 0 ? `Resend code in ${resendTimer}s` : 'Resend Code / পুনরায় কোড পাঠান'}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -233,7 +388,6 @@ export default function SignupPage() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-3">
-
         {/* Business Name */}
         <div>
           <label className="block text-xs font-semibold mb-1 text-zinc-400">Business Name<Req /></label>
@@ -305,7 +459,7 @@ export default function SignupPage() {
 
         {/* Employee Count + Business Nature — side by side */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {/* Employee Count — custom dropdown */}
+          {/* Employee Count */}
           <div>
             <label className="block text-xs font-semibold mb-1 text-zinc-400">No. of Employees</label>
             <div className="relative" ref={ecRef}>
@@ -356,8 +510,8 @@ export default function SignupPage() {
                 } rounded-xl px-3 py-2.5 text-sm transition-all text-left`}
               >
                 <Briefcase className="w-4 h-4 text-zinc-500 shrink-0" />
-                <span className={`flex-1 truncate ${formData.businessNature ? 'text-foreground' : 'text-zinc-500'}`}>
-                  {formData.businessNature || 'Select type'}
+                <span className={`flex-1 truncate ${formData.businessNature ? 'text-foreground font-medium' : 'text-zinc-500'}`}>
+                  {formData.businessNature || 'Select type / ব্যবসার ধরন'}
                 </span>
                 <ChevronDown className={`w-4 h-4 text-zinc-500 shrink-0 transition-transform ${bnOpen ? 'rotate-180' : ''}`} />
               </button>

@@ -237,8 +237,8 @@ export class AuthService {
         });
       }
 
-      const verifyToken = crypto.randomBytes(32).toString('hex');
-      const verifyExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+      const verifyExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
       const newUser = await prisma.user.create({
         data: {
@@ -247,7 +247,8 @@ export class AuthService {
           name: ownerName || businessName, // Use owner name or fall back to business name
           role: 'owner',
           tenantId: tenant.id,
-          emailVerificationToken: verifyToken,
+          isEmailVerified: false,
+          emailVerificationToken: otpCode,
           emailVerificationExpires: verifyExpires
         }
       });
@@ -260,13 +261,9 @@ export class AuthService {
       console.error('Welcome email dispatch failed:', err);
     });
 
-    // Send verification email
-    const frontendUrl = process.env.NEXT_PUBLIC_API_URL 
-      ? process.env.NEXT_PUBLIC_API_URL.replace(':3001', ':3000')
-      : 'https://zinichat.com';
-    const verifyLink = `${frontendUrl}/verify-email?token=${user.emailVerificationToken}`;
-    this.smtpService.triggerVerifyEmail(email, ownerName || businessName, verifyLink).catch(err => {
-      console.error('Verify email dispatch failed:', err);
+    // Send OTP verification email
+    this.smtpService.triggerOtpVerificationEmail(email, user.emailVerificationToken!).catch(err => {
+      console.error('OTP email dispatch failed:', err);
     });
 
     // Send superadmin notification about new signup
@@ -278,7 +275,75 @@ export class AuthService {
       console.error('Superadmin signup notification failed:', err);
     });
 
-    return this.login(user);
+    return {
+      requiresOtp: true,
+      email: user.email,
+      message: 'Signup successful! Please check your email for the 6-digit verification code.'
+    };
+  }
+
+  async verifyOtp(email: string, otp: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { email }
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found / ব্যবহারকারী পাওয়া যায়নি');
+    }
+
+    if (user.isEmailVerified) {
+      return this.login(user);
+    }
+
+    if (!user.emailVerificationToken || user.emailVerificationToken !== otp.trim()) {
+      throw new BadRequestException('Invalid OTP code / সঠিক ৬-ডিজিটের কোড দিন');
+    }
+
+    if (user.emailVerificationExpires && user.emailVerificationExpires < new Date()) {
+      throw new BadRequestException('OTP code has expired. Please request a new code.');
+    }
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        isEmailVerified: true,
+        emailVerificationToken: null,
+        emailVerificationExpires: null
+      }
+    });
+
+    return this.login(updatedUser);
+  }
+
+  async resendOtp(email: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { email }
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found / ব্যবহারকারী পাওয়া যায়নি');
+    }
+
+    if (user.isEmailVerified) {
+      throw new BadRequestException('Email is already verified');
+    }
+
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const verifyExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        emailVerificationToken: otpCode,
+        emailVerificationExpires: verifyExpires
+      }
+    });
+
+    this.smtpService.triggerOtpVerificationEmail(email, otpCode).catch(err => {
+      console.error('Resend OTP email failed:', err);
+    });
+
+    return { success: true, message: 'A new verification code has been sent to your email.' };
   }
 
   async seedSuperadmin() {

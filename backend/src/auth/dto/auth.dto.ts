@@ -91,3 +91,20 @@ export class GoogleCallbackDto {
   @IsString()
   planId?: string;
 }
+
+export class VerifyOtpDto {
+  @IsEmail({}, { message: 'Must be a valid email address' })
+  @IsNotEmpty()
+  email!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(6, { message: 'OTP must be 6 digits' })
+  otp!: string;
+}
+
+export class ResendOtpDto {
+  @IsEmail({}, { message: 'Must be a valid email address' })
+  @IsNotEmpty()
+  email!: string;
+}

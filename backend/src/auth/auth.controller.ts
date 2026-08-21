@@ -11,7 +11,7 @@ import { RolesGuard } from './guards/roles.guard';
 import { PermissionsGuard } from './guards/permissions.guard';
 import { Roles } from './decorators/roles.decorator';
 import { RequirePermissions } from './decorators/permissions.decorator';
-import { LoginDto, SignupDto, ForgotPasswordDto, ResetPasswordDto, VerifyEmailDto, GoogleCallbackDto } from './dto/auth.dto';
+import { LoginDto, SignupDto, ForgotPasswordDto, ResetPasswordDto, VerifyEmailDto, ResendOtpDto, VerifyOtpDto, GoogleCallbackDto } from './dto/auth.dto';
 
 @Controller('auth')
 export class AuthController {
