@@ -354,6 +354,14 @@ export class SmtpService {
       if (!config.aiWarning80Subject) { updates.aiWarning80Subject = TEMPLATES.aiWarning80Subject; updates.aiWarning80Body = TEMPLATES.aiWarning80Body; needsUpdate = true; }
       if (!config.aiWarning100Subject) { updates.aiWarning100Subject = TEMPLATES.aiWarning100Subject; updates.aiWarning100Body = TEMPLATES.aiWarning100Body; needsUpdate = true; }
 
+      if (config.welcomeBody && (config.welcomeBody.includes('<img') || config.welcomeBody.includes('alt="ZiniChat Logo"'))) {
+        updates.welcomeBody = config.welcomeBody
+          .replace(/<img[^>]*\/?>/gi, '')
+          .replace(/alt="ZiniChat Logo"[^>]*\/?>/gi, '')
+          .trim();
+        needsUpdate = true;
+      }
+
       if (needsUpdate) {
         config = await this.prisma.smtpConfig.update({
           where: { id: config.id },
@@ -467,8 +475,15 @@ export class SmtpService {
       ? process.env.NEXT_PUBLIC_API_URL.replace(':3001', ':3000') 
       : 'https://zinichat.com';
 
+    // Strip out any legacy raw <img ...> HTML tags or leaked text from template body
+    let cleanText = (rawText || '')
+      .replace(/<img[^>]*\/?>/gi, '')
+      .replace(/alt="ZiniChat Logo"[^>]*\/?>/gi, '')
+      .replace(/style="[^"]*"/gi, '')
+      .trim();
+
     // Format paragraphs and convert URLs to styled buttons or clear links
-    let formattedText = rawText
+    let formattedText = cleanText
       .split('\n\n')
       .map(p => `<p style="margin: 0 0 16px 0;">${p.replace(/\n/g, '<br/>')}</p>`)
       .join('');
@@ -815,8 +830,67 @@ export class SmtpService {
   }
 
   async triggerOtpVerificationEmail(toEmail: string, otpCode: string) {
-    const subject = '🔐 আপনার ZiniChat অ্যাকাউন্টের ভেরিফিকেশন কোড';
-    const plainText = `প্রিয় গ্রাহক,\n\nZiniChat-এ রেজিস্ট্রেশন করার জন্য আপনাকে ধন্যবাদ। আপনার ৬-ডিজিটের ভেরিফিকেশন কোডটি নিচে দেওয়া হলো:\n\n👉  ${otpCode}  👈\n\nএই কোডটি আগামী ১৫ মিনিটের জন্য কার্যকর থাকবে। নিরাপত্তার স্বার্থে কোডটি কারও সাথে শেয়ার করবেন না।\n\nধন্যবাদ,\nZiniChat টিম`;
-    await this.sendMail({ to: toEmail, subject, plainText });
+    const subject = `🔐 [${otpCode}] - আপনার ZiniChat ইমেইল ভেরিফিকেশন কোড`;
+    const platformUrl = process.env.NEXT_PUBLIC_API_URL 
+      ? process.env.NEXT_PUBLIC_API_URL.replace(':3001', ':3000') 
+      : 'https://zinichat.com';
+
+    const html = `<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verification Code - ZiniChat</title>
+</head>
+<body style="font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f4f4f5; margin: 0; padding: 32px 16px; -webkit-font-smoothing: antialiased;">
+  <div style="max-width: 560px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e4e4e7; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);">
+    
+    <!-- Top Branded Header Banner -->
+    <div style="background: linear-gradient(135deg, #1F824A 0%, #155E34 100%); padding: 28px 32px; text-align: center;">
+      <span style="color: #ffffff; font-size: 26px; font-weight: 800; letter-spacing: -0.5px; display: inline-block;">
+        Zini<span style="color: #EE8D27;">Chat</span>
+      </span>
+      <p style="color: rgba(255,255,255,0.85); font-size: 12px; margin: 4px 0 0 0; font-weight: 500;">Omnichannel AI Business Platform</p>
+    </div>
+
+    <!-- Main Content -->
+    <div style="padding: 36px 32px; color: #27272a; font-size: 15px; line-height: 1.7;">
+      <h2 style="margin: 0 0 16px 0; color: #18181b; font-size: 20px; font-weight: 700; text-align: center;">ইমেইল ভেরিফিকেশন কোড</h2>
+      <p style="margin: 0 0 20px 0; color: #3f3f46; text-align: center;">
+        ZiniChat-এ রেজিস্ট্রেশন করার জন্য আপনাকে ধন্যবাদ। আপনার অ্যাকাউন্টটি ভেরিফাই করতে নিচের ৬-ডিজিটের কোডটি ব্যবহার করুন:
+      </p>
+
+      <!-- Prominent 6-Digit OTP Code Badge -->
+      <div style="margin: 28px 0; text-align: center;">
+        <div style="display: inline-block; background-color: #f0fdf4; border: 2px dashed #1f824a; border-radius: 12px; padding: 18px 36px;">
+          <span style="font-family: 'Courier New', Courier, monospace; font-size: 36px; font-weight: 800; letter-spacing: 10px; color: #1f824a;">
+            ${otpCode}
+          </span>
+        </div>
+        <p style="margin: 12px 0 0 0; font-size: 13px; color: #71717a;">
+          ⏱️ এই কোডটি আগামী <strong>১৫ মিনিটের</strong> জন্য কার্যকর থাকবে।
+        </p>
+      </div>
+
+      <p style="margin: 24px 0 0 0; font-size: 13px; color: #a1a1aa; text-align: center; border-top: 1px solid #f4f4f5; padding-top: 16px;">
+        ⚠️ নিরাপত্তার স্বার্থে এই ভেরিফিকেশন কোডটি কারও সাথে শেয়ার করবেন না।
+      </p>
+    </div>
+
+    <!-- Footer -->
+    <div style="padding: 24px 32px; text-align: center; background-color: #fafafa; border-top: 1px solid #f4f4f5; color: #71717a; font-size: 12px; line-height: 1.6;">
+      <p style="margin: 0 0 8px 0; font-weight: 500;">এই ইমেইলটি স্বয়ংক্রিয়ভাবে পাঠানো হয়েছে। অনুগ্রহ করে রিপ্লাই করবেন না।</p>
+      <p style="margin: 0; color: #a1a1aa;">
+        © ${new Date().getFullYear()} <strong style="color: #52525b;">ZiniChat Platform</strong> • <a href="${platformUrl}" style="color: #1F824A; text-decoration: none;">www.zinichat.com</a>
+      </p>
+    </div>
+
+  </div>
+</body>
+</html>`;
+
+    const plainText = `আপনার ZiniChat ইমেইল ভেরিফিকেশন কোড: ${otpCode}\n\n১৫ মিনিটের জন্য কার্যকর।`;
+
+    await this.sendMail({ to: toEmail, subject, html, plainText });
   }
 }

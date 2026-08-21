@@ -258,12 +258,7 @@ export class AuthService {
       return newUser;
     });
 
-    // Send welcome email (async fire-and-forget so signup doesn't block if queue is slow/failing)
-    this.smtpService.triggerWelcomeEmail(email, businessName).catch(err => {
-      console.error('Welcome email dispatch failed:', err);
-    });
-
-    // Send OTP verification email
+    // Send OTP verification email only (Welcome email will be sent after OTP is verified)
     this.smtpService.triggerOtpVerificationEmail(email, user.emailVerificationToken!).catch(err => {
       console.error('OTP email dispatch failed:', err);
     });
@@ -312,6 +307,19 @@ export class AuthService {
         emailVerificationToken: null,
         emailVerificationExpires: null
       }
+    });
+
+    // Send Welcome email now that OTP verification is complete
+    let tenantName = updatedUser.name || 'Valued Partner';
+    if (updatedUser.tenantId) {
+      const tenant = await this.prisma.tenant.findUnique({
+        where: { id: updatedUser.tenantId },
+        select: { businessName: true }
+      });
+      if (tenant?.businessName) tenantName = tenant.businessName;
+    }
+    this.smtpService.triggerWelcomeEmail(updatedUser.email, tenantName).catch(err => {
+      console.error('Welcome email dispatch failed after OTP verification:', err);
     });
 
     return this.login(updatedUser);

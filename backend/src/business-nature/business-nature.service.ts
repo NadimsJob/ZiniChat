@@ -6,9 +6,18 @@ export class BusinessNatureService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll() {
-    return this.prisma.businessNature.findMany({
-      orderBy: { createdAt: 'desc' }
+    const items = await this.prisma.businessNature.findMany({
+      orderBy: { createdAt: 'asc' }
     });
+
+    const normal = items.filter(
+      (n) => !n.name.toLowerCase().includes('other') && !n.nameBn?.toLowerCase().includes('অন্যান্য')
+    );
+    const others = items.filter(
+      (n) => n.name.toLowerCase().includes('other') || n.nameBn?.toLowerCase().includes('অন্যান্য')
+    );
+
+    return [...normal, ...others];
   }
 
   async create(data: { name: string; nameBn?: string; isActive?: boolean; isPropertyMode?: boolean; isHospitalityMode?: boolean; isTechSoftwareMode?: boolean; isFinancialServiceMode?: boolean; isHealthcareMode?: boolean; isEducationMode?: boolean; isManufacturingMode?: boolean; isLogisticsMode?: boolean }) {

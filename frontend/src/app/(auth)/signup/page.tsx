@@ -123,7 +123,13 @@ export default function SignupPage() {
         if (res.ok) {
           const natures = await res.json();
           const active = natures.filter((n: any) => n.isActive);
-          setBusinessNatures(active);
+          const normal = active.filter(
+            (n: any) => !n.name?.toLowerCase().includes('other') && !n.nameBn?.toLowerCase().includes('অন্যান্য')
+          );
+          const others = active.filter(
+            (n: any) => n.name?.toLowerCase().includes('other') || n.nameBn?.toLowerCase().includes('অন্যান্য')
+          );
+          setBusinessNatures([...normal, ...others]);
         }
       } catch (err) {
         console.error('Failed to load business natures:', err);

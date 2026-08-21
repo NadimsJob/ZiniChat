@@ -94,7 +94,13 @@ export default function OnboardingPage() {
         if (bnRes.ok) {
           const natures = await bnRes.json();
           const activeNatures = natures.filter((n: any) => n.isActive);
-          setBusinessNatures(activeNatures);
+          const normal = activeNatures.filter(
+            (n: any) => !n.name?.toLowerCase().includes('other') && !n.nameBn?.toLowerCase().includes('অন্যান্য')
+          );
+          const others = activeNatures.filter(
+            (n: any) => n.name?.toLowerCase().includes('other') || n.nameBn?.toLowerCase().includes('অন্যান্য')
+          );
+          setBusinessNatures([...normal, ...others]);
         }
       } catch (err) {
         console.error(err);
