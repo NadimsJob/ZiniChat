@@ -106,6 +106,18 @@ export class AuthController {
     return this.authService.verifyEmail(body.token);
   }
 
+  @Throttle({ default: { ttl: 60000, limit: 10 } })
+  @Post('verify-otp')
+  async verifyOtp(@Body() body: VerifyOtpDto) {
+    return this.authService.verifyOtp(body.email, body.otp);
+  }
+
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
+  @Post('resend-otp')
+  async resendOtp(@Body() body: ResendOtpDto) {
+    return this.authService.resendOtp(body.email);
+  }
+
   @Post('seed-superadmin')
   async seedSuperadmin(@Body('setupKey') setupKey: string) {
     // Guard: only allow if the correct setup key is provided

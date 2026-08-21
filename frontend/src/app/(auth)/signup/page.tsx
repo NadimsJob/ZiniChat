@@ -379,9 +379,9 @@ export default function SignupPage() {
           </h2>
           <p className="text-xs text-zinc-400">
             {isBn ? (
-              <>আমরা <span className="text-primary font-semibold">{formData.email}</span> ঠিকানায় ৬-ডিজিটের ভেরিফিকেশন কোড পাঠিয়েছি।</>
+              <>আমরা <span className="text-primary font-semibold">{formData.email}</span> ঠিকানায় ৬-ডিজিটের ভেরিফিকেশন কোড পাঠিয়েছি (মেয়াদ ১৫ মিনিট)।</>
             ) : (
-              <>We sent a 6-digit verification code to <span className="text-primary font-semibold">{formData.email}</span>.</>
+              <>We sent a 6-digit verification code to <span className="text-primary font-semibold">{formData.email}</span> (valid for 15 mins).</>
             )}
           </p>
         </div>
@@ -428,7 +428,7 @@ export default function SignupPage() {
           >
             <RefreshCw className={`w-3 h-3 ${otpLoading ? 'animate-spin' : ''}`} />
             {resendTimer > 0 
-              ? (isBn ? `${resendTimer}s পর পুনরায় চেষ্টা করুন` : `Resend code in ${resendTimer}s`) 
+              ? (isBn ? `${resendTimer}s পর পুনরায় কোড পাঠানো যাবে` : `Resend available in ${resendTimer}s`) 
               : (isBn ? 'পুনরায় কোড পাঠান' : 'Resend Code')}
           </button>
         </div>
