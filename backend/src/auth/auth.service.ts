@@ -112,6 +112,7 @@ export class AuthService {
       address,
       employeeCount,
       businessNature,
+      country,
     } = data;
     // fullName is the owner's name (frontend sends `name` as `fullName` after the DTO rename)
     const ownerName = fullName || undefined;
@@ -181,6 +182,7 @@ export class AuthService {
           ...(address && { address }),
           ...(employeeCount && { employeeCount }),
           ...(businessNature && { businessNature }),
+          country: country || 'Bangladesh',
           isOnboarded: hasOnboardingData,
         }
       });
@@ -488,6 +490,7 @@ export class AuthService {
     if (data.ownerName !== undefined) updateTenantData.ownerName = data.ownerName;
     if (data.employeeCount !== undefined) updateTenantData.employeeCount = data.employeeCount;
     if (data.businessNature !== undefined) updateTenantData.businessNature = data.businessNature;
+    if (data.country !== undefined) updateTenantData.country = data.country;
     if (data.logoUrl !== undefined) updateTenantData.logoUrl = data.logoUrl;
 
     await this.prisma.tenant.update({

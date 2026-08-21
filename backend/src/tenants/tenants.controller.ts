@@ -59,6 +59,19 @@ export class TenantsController {
     return this.tenantsService.updateStatus(id, status, actorUserId);
   }
 
+  @Patch(':id/country')
+  @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
+  @Roles('superadmin')
+  @RequirePermissions('manage:tenants')
+  updateCountry(
+    @Param('id') id: string,
+    @Body('country') country: string,
+    @Req() req: any,
+  ) {
+    const actorUserId = req.user.userId;
+    return this.tenantsService.updateCountry(id, country, actorUserId);
+  }
+
   @Patch(':id/customize')
   @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
   @Roles('superadmin')

@@ -58,6 +58,10 @@ export class SignupDto {
   @IsOptional()
   @IsString()
   brandName?: string;
+
+  @IsOptional()
+  @IsString()
+  country?: string;
 }
 
 export class ForgotPasswordDto {

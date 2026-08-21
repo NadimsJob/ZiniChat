@@ -15,15 +15,20 @@ export class PermissionsGuard implements CanActivate {
       return true;
     }
     
-    const { user } = context.switchToHttp().getRequest();
+    const req = context.switchToHttp().getRequest();
+    const user = req?.user;
+
+    if (!user) {
+      throw new ForbiddenException('No user found');
+    }
     
-    // Primary superadmin or wildcard master admin gets full access
-    if (user.email === 'admin@platform.com' || (user.permissions && user.permissions.includes('*'))) {
+    // Superadmin, tenant owner, or wildcard master admin gets full access
+    if (user.email === 'admin@platform.com' || user.role === 'superadmin' || user.role === 'owner' || (user.permissions && user.permissions.includes('*'))) {
       return true;
     }
 
-    // Tenant owner & tenant admin get full tenant access
-    if (user.tenantId && (user.role === 'owner' || user.role === 'admin')) {
+    // Tenant admin gets full tenant access
+    if (user.tenantId && user.role === 'admin') {
       return true;
     }
 

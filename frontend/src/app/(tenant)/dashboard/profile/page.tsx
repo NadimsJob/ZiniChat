@@ -19,7 +19,8 @@ import {
  Users,
  MapPin,
  Briefcase,
- Bell
+ Bell,
+  Globe
 } from 'lucide-react';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -89,6 +90,7 @@ export default function TenantProfilePage() {
  businessName: '',
  brandName: '',
  address: '',
+ country: '',
  phoneNo: '',
  employeeCount: '1-10',
  businessNature: '',
@@ -227,6 +229,7 @@ export default function TenantProfilePage() {
  businessName: data.tenant.businessName || '',
  brandName: data.tenant.brandName || '',
  address: data.tenant.address || '',
+ country: data.tenant.country || '',
  phoneNo: data.tenant.phoneNo || '',
  employeeCount: data.tenant.employeeCount || '1-10',
  businessNature: data.tenant.businessNature || '',
@@ -889,7 +892,30 @@ export default function TenantProfilePage() {
  </div>
  </div>
 
- {/* Business Nature */}
+   {/* Country (Locked for Tenant, Editable only by Superadmin) */}
+  <div>
+    <label className="block text-[13px] font-semibold mb-1.5 text-slate-700 flex items-center justify-between">
+      <span>{t('Country', 'দেশ')}</span>
+      <span className="text-[10px] text-amber-500 font-bold flex items-center gap-1">
+        <Lock className="w-3 h-3" /> {t('Superadmin Only', 'সুপার এডমিন পরিমার্জিত')}
+      </span>
+    </label>
+    <div className="relative">
+      <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
+        <Globe className="w-3.5 h-3.5 text-slate-400" />
+      </div>
+      <input
+        type="text"
+        value={businessProfile.country || 'Bangladesh'}
+        readOnly
+        disabled
+        className="w-full bg-slate-100 dark:bg-zinc-800/50 border border-border rounded-xl pl-8 pr-3 py-1.5 text-[13px] text-slate-500 dark:text-zinc-400 cursor-not-allowed focus:outline-none"
+        title={language === 'en' ? 'Country is locked and can only be modified by Superadmin' : 'কান্ট্রি শুধুমাত্র সুপার এডমিন পরিবর্তন করতে পারবেন'}
+      />
+    </div>
+  </div>
+
+{/* Business Nature */}
  <div>
  <label className="block text-[13px] font-semibold mb-1.5 text-slate-700 ">
  {t('Business Nature', 'ব্যবসার ধরন')}

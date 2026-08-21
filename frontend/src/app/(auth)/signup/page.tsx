@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 import Link from 'next/link';
 import Script from 'next/script';
-import { Eye, EyeOff, Building, User, Mail, Phone, Lock, Briefcase, MapPin, Users, ChevronDown, Check, KeyRound, ArrowLeft, RefreshCw } from 'lucide-react';
+import { Eye, EyeOff, Building, User, Mail, Phone, Lock, Briefcase, MapPin, Users, ChevronDown, Check, KeyRound, ArrowLeft, RefreshCw, Globe } from 'lucide-react';
 import { useMetaPixel } from '@/context/MetaPixelContext';
 import { useGoogleAnalytics } from '@/context/GoogleAnalyticsContext';
+import { COUNTRIES, DEFAULT_COUNTRY, CountryInfo, findCountryByNameOrCode } from '@/lib/countryData';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -21,11 +22,16 @@ export default function SignupPage() {
   const [otpLoading, setOtpLoading] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
 
+  const [selectedCountry, setSelectedCountry] = useState<CountryInfo>(DEFAULT_COUNTRY);
+  const [countryOpen, setCountryOpen] = useState(false);
+  const countryRef = useRef<HTMLDivElement>(null);
+
   const [formData, setFormData] = useState({
     businessName: '',
     fullName: '',
     email: '',
-    phoneNo: '+880',
+    country: DEFAULT_COUNTRY.name,
+    phoneNo: DEFAULT_COUNTRY.dialCode,
     password: '',
     confirmPassword: '',
     employeeCount: '1-10',
@@ -39,6 +45,27 @@ export default function SignupPage() {
   const ecRef = useRef<HTMLDivElement>(null);
 
   const employeeOptions = ['1-10', '11-50', '51-200', '200+'];
+
+  // Handle Country Selection & Auto Phone Prefix update
+  const handleCountrySelect = (country: CountryInfo) => {
+    setSelectedCountry(country);
+    setFormData((prev) => {
+      let currentPhone = prev.phoneNo.trim();
+      const oldCountry = COUNTRIES.find((c) => currentPhone.startsWith(c.dialCode));
+      let restOfPhone = '';
+      if (oldCountry) {
+        restOfPhone = currentPhone.slice(oldCountry.dialCode.length);
+      } else {
+        restOfPhone = currentPhone.replace(/^\+\d+/, '');
+      }
+      return {
+        ...prev,
+        country: country.name,
+        phoneNo: country.dialCode + restOfPhone,
+      };
+    });
+    setCountryOpen(false);
+  };
 
   // Resend OTP Countdown Timer
   useEffect(() => {
@@ -55,6 +82,7 @@ export default function SignupPage() {
     const handler = (e: MouseEvent) => {
       if (bnRef.current && !bnRef.current.contains(e.target as Node)) setBnOpen(false);
       if (ecRef.current && !ecRef.current.contains(e.target as Node)) setEcOpen(false);
+      if (countryRef.current && !countryRef.current.contains(e.target as Node)) setCountryOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -93,7 +121,6 @@ export default function SignupPage() {
           const natures = await res.json();
           const active = natures.filter((n: any) => n.isActive);
           setBusinessNatures(active);
-          // Kept blank by default as requested
         }
       } catch (err) {
         console.error('Failed to load business natures:', err);
@@ -195,7 +222,7 @@ export default function SignupPage() {
       planId = params.get('planId') || '';
     }
 
-    // Build clean payload — exclude confirmPassword (frontend-only field)
+    // Build clean payload
     const { confirmPassword, ...rest } = formData;
     const payload = { ...rest, planId };
 
@@ -302,7 +329,6 @@ export default function SignupPage() {
   const inputClass =
     'w-full bg-background border border-surface-hover rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-sm';
 
-  // Helper: required star
   const Req = () => <span className="text-red-500 ml-0.5">*</span>;
 
   if (step === 'otp') {
@@ -405,7 +431,68 @@ export default function SignupPage() {
           </div>
         </div>
 
-        {/* Full Name + Phone — side by side on sm+ */}
+        {/* Country & Phone — side by side */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Country Selection Dropdown */}
+          <div>
+            <label className="block text-xs font-semibold mb-1 text-zinc-400">Country / দেশ<Req /></label>
+            <div className="relative" ref={countryRef}>
+              <button
+                type="button"
+                onClick={() => setCountryOpen((v) => !v)}
+                className={`w-full flex items-center gap-2 bg-background border ${
+                  countryOpen ? 'border-primary/50 ring-2 ring-primary/30' : 'border-surface-hover'
+                } rounded-xl px-3 py-2.5 text-sm transition-all text-left`}
+              >
+                <span className="text-base shrink-0">{selectedCountry.flag}</span>
+                <span className="flex-1 truncate text-foreground font-medium">
+                  {selectedCountry.name} ({selectedCountry.dialCode})
+                </span>
+                <ChevronDown className={`w-4 h-4 text-zinc-500 shrink-0 transition-transform ${countryOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {countryOpen && (
+                <div className="absolute z-50 top-full mt-1 w-full bg-surface border border-surface-hover rounded-xl shadow-xl overflow-hidden max-h-64 overflow-y-auto">
+                  {COUNTRIES.map((c) => (
+                    <button
+                      key={c.code}
+                      type="button"
+                      onClick={() => handleCountrySelect(c)}
+                      className={`w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-primary/10 transition-colors text-left ${
+                        selectedCountry.code === c.code ? 'text-primary font-semibold' : 'text-foreground'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <span className="text-base">{c.flag}</span>
+                        <span>{c.name}</span>
+                      </span>
+                      <span className="text-zinc-500 font-mono">{c.dialCode}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Phone No */}
+          <div>
+            <label className="block text-xs font-semibold mb-1 text-zinc-400">Phone No.<Req /></label>
+            <div className="relative">
+              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
+              <input
+                type="tel"
+                value={formData.phoneNo}
+                onChange={(e) => setFormData({ ...formData, phoneNo: e.target.value })}
+                required
+                className={inputClass}
+                placeholder={`${selectedCountry.dialCode}1700000000`}
+                autoComplete="tel"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Full Name + Email — side by side */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-semibold mb-1 text-zinc-400">Your Full Name<Req /></label>
@@ -424,36 +511,19 @@ export default function SignupPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold mb-1 text-zinc-400">Phone No.<Req /></label>
+            <label className="block text-xs font-semibold mb-1 text-zinc-400">Email Address<Req /></label>
             <div className="relative">
-              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
               <input
-                type="tel"
-                value={formData.phoneNo}
-                onChange={(e) => setFormData({ ...formData, phoneNo: e.target.value })}
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 required
                 className={inputClass}
-                placeholder="+8801700000000"
-                autoComplete="tel"
+                placeholder="you@example.com"
+                autoComplete="email"
               />
             </div>
-          </div>
-        </div>
-
-        {/* Email */}
-        <div>
-          <label className="block text-xs font-semibold mb-1 text-zinc-400">Email Address<Req /></label>
-          <div className="relative">
-            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
-            <input
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              required
-              className={inputClass}
-              placeholder="you@example.com"
-              autoComplete="email"
-            />
           </div>
         </div>
 

@@ -43,6 +43,7 @@ describe('LandingPageService', () => {
         },
       };
       mockPrisma.landingPageConfig.findFirst.mockResolvedValue(mockConfig);
+      mockPrisma.landingPageConfig.update.mockResolvedValue(mockConfig);
 
       const result = await service.getConfig();
       expect(result).toEqual(mockConfig);

@@ -632,5 +632,25 @@ export class TenantsService {
       },
     };
   }
-}
 
+  async updateCountry(id: string, country: string, actorUserId: string) {
+    const tenant = await this.prisma.tenant.findUnique({ where: { id } });
+    if (!tenant) throw new NotFoundException('Tenant not found');
+
+    const updated = await this.prisma.tenant.update({
+      where: { id },
+      data: { country }
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        actorUserId,
+        targetTenantId: id,
+        action: 'UPDATE_TENANT_COUNTRY',
+        metadataJson: { previousCountry: tenant.country, newCountry: country }
+      }
+    });
+
+    return { success: true, country: updated.country };
+  }
+}

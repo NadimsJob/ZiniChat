@@ -8,6 +8,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { ActivityLogService } from './activity-log.service';
 import { QuotaService } from '../tenants/quota.service';
 import { getQueueToken } from '@nestjs/bullmq';
+import { InboxGateway } from './inbox.gateway';
 
 describe('BotLoopGuard (InboxService)', () => {
   let service: InboxService;
@@ -72,6 +73,7 @@ describe('BotLoopGuard (InboxService)', () => {
         { provide: AiService, useValue: { transcribeAudio: jest.fn(), extractTextFromPdf: jest.fn(), generateCompletion: jest.fn() } },
         { provide: OrchestratorService, useValue: { processMessage: jest.fn().mockResolvedValue(true) } },
         { provide: QuotaService, useValue: { checkFeature: jest.fn().mockResolvedValue(true), checkAiQuota: jest.fn().mockResolvedValue(undefined) } },
+        { provide: InboxGateway, useValue: { server: { emit: jest.fn() } } },
       ],
     }).compile();
 

@@ -38,6 +38,7 @@ describe('AuthService', () => {
   const mockSmtpService = {
     triggerWelcomeEmail: jest.fn().mockResolvedValue(true),
     triggerVerifyEmail: jest.fn().mockResolvedValue(true),
+    triggerOtpVerificationEmail: jest.fn().mockResolvedValue(true),
     triggerPasswordResetEmail: jest.fn().mockResolvedValue(true),
     triggerAgentCreatedEmail: jest.fn().mockResolvedValue(true)
   };
@@ -106,7 +107,8 @@ describe('AuthService', () => {
         password: 'pass'
       });
 
-      expect(result).toEqual({ access_token: 'mocked-token', user: mockUser });
+      expect(result.requiresOtp).toBe(true);
+      expect(result.email).toBe('john@biz.com');
       expect(mockPrismaService.plan.findFirst).toHaveBeenCalledWith({
         where: { isDefault: true, isActive: true }
       });

@@ -20,6 +20,7 @@ model Tenant {
   ownerName      String?
   employeeCount  String?
   businessNature String?
+  country        String?   @default("Bangladesh")
   logoUrl        String?
   isOnboarded    Boolean   @default(false)
 

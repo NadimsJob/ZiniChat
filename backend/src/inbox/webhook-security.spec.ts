@@ -14,6 +14,8 @@ import { getQueueToken } from '@nestjs/bullmq';
  *  1. Drops messages silently for inactive tenants (no DB writes, no AI trigger)
  *  2. Processes and saves messages for active tenants
  */
+import { InboxGateway } from './inbox.gateway';
+
 describe('InboxService — Webhook Subscription Security Guard', () => {
   let service: InboxService;
   let mockPrisma: any;
@@ -63,6 +65,7 @@ describe('InboxService — Webhook Subscription Security Guard', () => {
         { provide: OrchestratorService, useValue: mockOrchestratorService },
         { provide: NotificationsService, useValue: { createNotification: jest.fn().mockResolvedValue(true), createNotificationForTenantAdmins: jest.fn().mockResolvedValue(true) } },
         { provide: QuotaService, useValue: mockQuotaService },
+        { provide: InboxGateway, useValue: { server: { emit: jest.fn() } } },
       ],
     }).compile();
 

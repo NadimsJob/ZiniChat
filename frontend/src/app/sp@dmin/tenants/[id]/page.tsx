@@ -3,11 +3,12 @@
 import { useEffect, useState } from 'react';
 import Cookies from 'js-cookie';
 import { useCurrency } from '@/components/CurrencyProvider';
-import { ArrowLeft, Building2, Mail, User, Calendar, CreditCard, Activity, Database, CheckCircle2, AlertTriangle, MessageSquare, Zap, PackageOpen, ExternalLink, Headphones, Users, Bot, ShieldCheck, Layers } from 'lucide-react';
+import { ArrowLeft, Building2, Mail, User, Calendar, CreditCard, Activity, Database, CheckCircle2, AlertTriangle, MessageSquare, Zap, PackageOpen, ExternalLink, Headphones, Users, Bot, ShieldCheck, Layers, Globe, Edit2, Loader2, X } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import AdminLoader from '@/components/AdminLoader';
 import AdminPagination from '@/components/AdminPagination';
+import { COUNTRIES } from '@/lib/countryData';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -18,6 +19,9 @@ export default function TenantReportPage() {
   const [loading, setLoading] = useState(true);
   const [payPage, setPayPage] = useState(1);
   const [payPageSize, setPayPageSize] = useState(10);
+  const [countryModalOpen, setCountryModalOpen] = useState(false);
+  const [editCountry, setEditCountry] = useState('Bangladesh');
+  const [savingCountry, setSavingCountry] = useState(false);
 
   useEffect(() => {
     const fetchTenantData = async () => {
@@ -37,6 +41,26 @@ export default function TenantReportPage() {
     };
     if (id) fetchTenantData();
   }, [id]);
+
+  const handleSaveCountry = async () => {
+    setSavingCountry(true);
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/tenants/${id}/country`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ country: editCountry }),
+      });
+      if (res.ok) {
+        setTenant((prev: any) => ({ ...prev, country: editCountry }));
+        setCountryModalOpen(false);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSavingCountry(false);
+    }
+  };
 
   if (loading) {
     return <AdminLoader message="Loading tenant report & financial overview..." />;
@@ -98,6 +122,19 @@ export default function TenantReportPage() {
               <span className="font-medium text-slate-800 dark:text-zinc-200">{owner.email || 'N/A'}</span>
             </div>
             <div className="flex justify-between items-center py-1 border-b border-slate-100 dark:border-surface-hover/50">
+              <span className="text-slate-500 dark:text-zinc-400 flex items-center gap-1.5"><Globe className="w-3.5 h-3.5"/> Country</span>
+              <div className="flex items-center gap-1.5">
+                <span className="font-semibold text-primary">{tenant.country || 'Bangladesh'}</span>
+                <button
+                  type="button"
+                  onClick={() => { setEditCountry(tenant.country || 'Bangladesh'); setCountryModalOpen(true); }}
+                  className="px-1.5 py-0.5 bg-primary/10 hover:bg-primary/20 text-primary rounded text-[10px] font-bold transition-colors"
+                >
+                  Edit
+                </button>
+              </div>
+            </div>
+            <div className="flex justify-between items-center py-1 border-b border-slate-100 dark:border-surface-hover/50">
               <span className="text-slate-500 dark:text-zinc-400 flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5"/> Joined</span>
               <span className="font-medium text-slate-800 dark:text-zinc-200">{new Date(tenant.createdAt).toLocaleDateString()}</span>
             </div>
@@ -128,166 +165,76 @@ export default function TenantReportPage() {
               </div>
               <div className="flex justify-between items-center py-1 border-b border-slate-100 dark:border-surface-hover/50">
                 <span className="text-slate-500 dark:text-zinc-400">Status</span>
-                <span className={`font-bold ${activeSub.status === 'active' ? 'text-emerald-600 dark:text-emerald-400' : 'text-orange-600 dark:text-orange-400'}`}>
-                  {activeSub.status.toUpperCase()}
-                </span>
+                <span className="font-medium text-emerald-500 capitalize">{activeSub.status}</span>
               </div>
               <div className="flex justify-between items-center py-1">
-                <span className="text-slate-500 dark:text-zinc-400">Next Renewal</span>
+                <span className="text-slate-500 dark:text-zinc-400">Renews / Ends</span>
                 <span className="font-medium text-slate-800 dark:text-zinc-200">{new Date(activeSub.currentPeriodEnd).toLocaleDateString()}</span>
               </div>
             </div>
           ) : (
-            <div className="py-6 text-center text-slate-500 dark:text-zinc-500 text-xs">
-              <AlertTriangle className="w-6 h-6 mx-auto mb-2 text-orange-500/50" />
-              No active subscription found.
+            <div className="text-xs text-slate-500 dark:text-zinc-400 py-4 text-center">
+              No active subscription found. (Free / Trial Mode)
             </div>
           )}
         </div>
 
-        {/* Usage Card */}
+        {/* Quotas & Usage Progress Card */}
         <div className="bg-white dark:bg-surface border border-slate-200/80 dark:border-surface-hover rounded-2xl p-4 shadow-sm dark:shadow-xl">
           <div className="flex items-center gap-2 mb-4">
-            <Activity className="w-4 h-4 text-emerald-600 dark:text-emerald-500" />
-            <h2 className="text-sm font-bold text-slate-900 dark:text-white">Current Usage (Monthly)</h2>
+            <Zap className="w-4 h-4 text-amber-500" />
+            <h2 className="text-sm font-bold text-slate-900 dark:text-white">Resource Usage</h2>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-3 text-xs">
+            {/* Messages Progress */}
             <div>
-              <div className="flex justify-between text-[11px] mb-1">
-                <span className="text-slate-600 dark:text-zinc-400 flex items-center gap-1"><MessageSquare className="w-3 h-3"/> Messages</span>
-                <span className="font-medium"><span className="text-emerald-600 dark:text-emerald-400">{messagesUsed}</span> / {messageLimit}</span>
+              <div className="flex justify-between mb-1">
+                <span className="text-slate-500 dark:text-zinc-400">Messages</span>
+                <span className="font-mono text-[11px] text-slate-800 dark:text-zinc-200">{messagesUsed} / {messageLimit}</span>
               </div>
-              <div className="w-full bg-slate-100 dark:bg-zinc-800/50 rounded-full h-1.5 overflow-hidden">
-                <div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: `${messagePercent}%` }}></div>
+              <div className="w-full bg-slate-100 dark:bg-zinc-800 h-2 rounded-full overflow-hidden">
+                <div className="bg-primary h-full rounded-full transition-all" style={{ width: `${messagePercent}%` }} />
               </div>
             </div>
-            
+
+            {/* AI Calls Progress */}
             <div>
-              <div className="flex justify-between text-[11px] mb-1">
-                <span className="text-slate-600 dark:text-zinc-400 flex items-center gap-1"><Zap className="w-3 h-3"/> AI Response</span>
-                <span className="font-medium"><span className="text-secondary">{aiUsed}</span> / {aiLimit}</span>
+              <div className="flex justify-between mb-1">
+                <span className="text-slate-500 dark:text-zinc-400">AI Responses</span>
+                <span className="font-mono text-[11px] text-slate-800 dark:text-zinc-200">{aiUsed} / {aiLimit}</span>
               </div>
-              <div className="w-full bg-slate-100 dark:bg-zinc-800/50 rounded-full h-1.5 overflow-hidden">
-                <div className="bg-secondary h-1.5 rounded-full" style={{ width: `${aiPercent}%` }}></div>
+              <div className="w-full bg-slate-100 dark:bg-zinc-800 h-2 rounded-full overflow-hidden">
+                <div className="bg-secondary h-full rounded-full transition-all" style={{ width: `${aiPercent}%` }} />
               </div>
             </div>
 
+            {/* Storage Progress */}
             <div>
-              <div className="flex justify-between text-[11px] mb-1">
-                <span className="text-slate-600 dark:text-zinc-400 flex items-center gap-1"><Database className="w-3 h-3"/> Storage</span>
-                <span className="font-medium"><span className="text-primary">{storageUsedMb.toFixed(1)}</span> / {storageLimitMb} MB</span>
+              <div className="flex justify-between mb-1">
+                <span className="text-slate-500 dark:text-zinc-400">Storage</span>
+                <span className="font-mono text-[11px] text-slate-800 dark:text-zinc-200">{storageUsedMb.toFixed(1)} MB / {storageLimitMb} MB</span>
               </div>
-              <div className="w-full bg-slate-100 dark:bg-zinc-800/50 rounded-full h-1.5 overflow-hidden">
-                <div className="bg-primary h-1.5 rounded-full" style={{ width: `${storagePercent}%` }}></div>
+              <div className="w-full bg-slate-100 dark:bg-zinc-800 h-2 rounded-full overflow-hidden">
+                <div className="bg-emerald-500 h-full rounded-full transition-all" style={{ width: `${storagePercent}%` }} />
               </div>
             </div>
-
-            <div className="pt-2 border-t border-slate-100 dark:border-surface-hover/50 flex justify-between items-center text-[11px]">
-              <span className="text-slate-600 dark:text-zinc-400 flex items-center gap-1">🧠 AI Tokens Used</span>
-              <span className="font-bold text-amber-700 dark:text-amber-400">
-                {(tenant.usage?.tokensUsed || 0).toLocaleString()} <span className="text-[10px] text-slate-500 dark:text-zinc-500 font-normal">({(tenant.usage?.totalTokensUsed || 0).toLocaleString()} all-time)</span>
-              </span>
-            </div>
           </div>
-        </div>
-      </div>
-
-      {/* Ecosystem & Resource Summary Grid */}
-      <div className="mt-4">
-        <h3 className="text-xs font-bold text-slate-600 dark:text-zinc-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
-          <Layers className="w-3.5 h-3.5 text-primary" /> Workspace Resources & Support Reports
-        </h3>
-        
-        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-8 gap-3">
-          {/* 1. Support Tickets (Relevant Superadmin Page) */}
-          <Link 
-            href="/sp@dmin/tickets"
-            className="bg-white dark:bg-surface border border-slate-200/80 dark:border-surface-hover hover:border-blue-500/50 rounded-xl p-3 text-center transition-all hover:scale-[1.02] hover:shadow-lg group shadow-sm"
-            title="Open Support Tickets Management"
-          >
-            <div className="flex items-center justify-center gap-1 text-[10px] text-slate-600 dark:text-zinc-400 group-hover:text-blue-600 dark:group-hover:text-blue-400">
-              <Headphones className="w-3 h-3 text-blue-600 dark:text-blue-400" /> Tickets
-              <ExternalLink className="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 transition-opacity" />
-            </div>
-            <p className="text-base font-bold text-blue-600 dark:text-blue-400 mt-0.5">{tenant._count?.Ticket || 0}</p>
-          </Link>
-
-          {/* 2. ZiniChat AI Support Widget Chats (Relevant Superadmin Page) */}
-          <Link 
-            href="/sp@dmin/support-chats"
-            className="bg-white dark:bg-surface border border-slate-200/80 dark:border-surface-hover hover:border-emerald-500/50 rounded-xl p-3 text-center transition-all hover:scale-[1.02] hover:shadow-lg group shadow-sm"
-            title="Open Support AI Chat Logs"
-          >
-            <div className="flex items-center justify-center gap-1 text-[10px] text-slate-600 dark:text-zinc-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400">
-              <Bot className="w-3 h-3 text-emerald-600 dark:text-emerald-400" /> Support AI
-              <ExternalLink className="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 transition-opacity" />
-            </div>
-            <p className="text-base font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">{tenant._count?.supportConversations || 0}</p>
-          </Link>
-
-          {/* 3. Team Members (Stat Card) */}
-          <div className="bg-white dark:bg-surface border border-slate-200/80 dark:border-surface-hover rounded-xl p-3 text-center shadow-sm">
-            <div className="flex items-center justify-center gap-1 text-[10px] text-slate-600 dark:text-zinc-400">
-              <Users className="w-3 h-3 text-amber-600 dark:text-amber-400" /> Team Seats
-            </div>
-            <p className="text-base font-bold text-slate-900 dark:text-white mt-0.5">{tenant._count?.users || 1}</p>
-          </div>
-
-          {/* 4. Connected Channels (Stat Card) */}
-          <div className="bg-white dark:bg-surface border border-slate-200/80 dark:border-surface-hover rounded-xl p-3 text-center shadow-sm">
-            <div className="flex items-center justify-center gap-1 text-[10px] text-slate-600 dark:text-zinc-400">
-              <Zap className="w-3 h-3 text-emerald-600 dark:text-emerald-400" /> Channels
-            </div>
-            <p className="text-base font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">{tenant._count?.channelConns || 0}</p>
-          </div>
-
-          {/* 5. Products Catalog (Stat Card) */}
-          <div className="bg-white dark:bg-surface border border-slate-200/80 dark:border-surface-hover rounded-xl p-3 text-center shadow-sm">
-            <div className="flex items-center justify-center gap-1 text-[10px] text-slate-600 dark:text-zinc-400">
-              <PackageOpen className="w-3 h-3 text-purple-600 dark:text-purple-400" /> Products
-            </div>
-            <p className="text-base font-bold text-purple-600 dark:text-purple-400 mt-0.5">{tenant._count?.products || 0}</p>
-          </div>
-
-          {/* 6. CRM Leads (Stat Card) */}
-          <div className="bg-white dark:bg-surface border border-slate-200/80 dark:border-surface-hover rounded-xl p-3 text-center shadow-sm">
-            <div className="flex items-center justify-center gap-1 text-[10px] text-slate-600 dark:text-zinc-400">
-              <User className="w-3 h-3 text-orange-600 dark:text-orange-400" /> Leads
-            </div>
-            <p className="text-base font-bold text-orange-600 dark:text-orange-400 mt-0.5">{tenant._count?.contacts || 0}</p>
-          </div>
-
-          {/* 7. AI Training Assets (Stat Card) */}
-          <div className="bg-white dark:bg-surface border border-slate-200/80 dark:border-surface-hover rounded-xl p-3 text-center shadow-sm">
-            <div className="flex items-center justify-center gap-1 text-[10px] text-slate-600 dark:text-zinc-400">
-              <Bot className="w-3 h-3 text-cyan-600 dark:text-cyan-400" /> FAQs / Docs
-            </div>
-            <p className="text-base font-bold text-cyan-600 dark:text-cyan-400 mt-0.5">{(tenant._count?.qnaItems || 0)} / {(tenant._count?.knowledgeDocs || 0)}</p>
-          </div>
-
-          {/* 8. Audit & Security Logs (Relevant Superadmin Page) */}
-          <Link 
-            href="/sp@dmin/audit-logs"
-            className="bg-white dark:bg-surface border border-slate-200/80 dark:border-surface-hover hover:border-rose-500/50 rounded-xl p-3 text-center transition-all hover:scale-[1.02] hover:shadow-lg group shadow-sm"
-            title="Open Platform Audit Logs"
-          >
-            <div className="flex items-center justify-center gap-1 text-[10px] text-slate-600 dark:text-zinc-400 group-hover:text-rose-600 dark:group-hover:text-rose-400">
-              <ShieldCheck className="w-3 h-3 text-rose-600 dark:text-rose-400" /> Audit Logs
-              <ExternalLink className="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 transition-opacity" />
-            </div>
-            <p className="text-[11px] font-bold text-rose-600 dark:text-rose-400 mt-1">View Logs →</p>
-          </Link>
         </div>
       </div>
 
       {/* Payment History Table */}
-      <div className="bg-white dark:bg-surface border border-slate-200/80 dark:border-surface-hover rounded-2xl overflow-hidden shadow-sm dark:shadow-xl mt-4">
-        <div className="px-4 py-3 border-b border-slate-200 dark:border-surface-hover flex items-center gap-2">
-          <CreditCard className="w-4 h-4 text-slate-500 dark:text-zinc-400" />
-          <h2 className="text-sm font-bold text-slate-900 dark:text-white">Payment History</h2>
+      <div className="bg-white dark:bg-surface border border-slate-200/80 dark:border-surface-hover rounded-2xl p-4 shadow-sm dark:shadow-xl mt-4">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <CreditCard className="w-4 h-4 text-emerald-500" /> Payment & Transaction History
+          </h2>
+          <span className="text-xs text-slate-500 dark:text-zinc-400 font-medium">
+            Total {tenant.payments?.length || 0} Transactions
+          </span>
         </div>
+
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs min-w-[600px]">
+          <table className="w-full text-left text-xs">
             <thead className="bg-slate-100/90 dark:bg-surface-hover/30 text-slate-700 dark:text-zinc-400">
               <tr>
                 <th className="px-4 py-2.5 font-medium">Date</th>
@@ -333,6 +280,55 @@ export default function TenantReportPage() {
           />
         )}
       </div>
+
+      {/* Edit Country Modal */}
+      {countryModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-surface border border-slate-200 dark:border-surface-hover rounded-2xl p-5 max-w-sm w-full shadow-2xl animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Globe className="w-4 h-4 text-primary" /> Update Tenant Country
+              </h3>
+              <button onClick={() => setCountryModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-600 dark:text-zinc-400 mb-1">Select Country</label>
+                <select
+                  value={editCountry}
+                  onChange={(e) => setEditCountry(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-surface-hover rounded-xl p-2.5 text-xs text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-primary/50"
+                >
+                  {COUNTRIES.map((c) => (
+                    <option key={c.code} value={c.name}>
+                      {c.flag} {c.name} ({c.dialCode})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setCountryModalOpen(false)}
+                  className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-surface-hover text-xs font-semibold text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-surface-hover"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveCountry}
+                  disabled={savingCountry}
+                  className="px-4 py-1.5 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary/90 disabled:opacity-50 flex items-center gap-1.5 shadow-md shadow-primary/20"
+                >
+                  {savingCountry ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null} Save Changes
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

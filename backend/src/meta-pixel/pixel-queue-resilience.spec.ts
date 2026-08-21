@@ -77,7 +77,7 @@ describe('PixelQueueResilience (CAPI Queue Error Isolation)', () => {
         { provide: PrismaService, useValue: prismaService },
         { provide: MetaPixelService, useValue: metaPixelService },
         { provide: UsersService, useValue: { findByEmail: jest.fn().mockResolvedValue(null) } },
-        { provide: SmtpService, useValue: { triggerWelcomeEmail: jest.fn().mockResolvedValue(true), triggerVerifyEmail: jest.fn().mockResolvedValue(true) } },
+        { provide: SmtpService, useValue: { triggerWelcomeEmail: jest.fn().mockResolvedValue(true), triggerVerifyEmail: jest.fn().mockResolvedValue(true), triggerOtpVerificationEmail: jest.fn().mockResolvedValue(true) } },
         { provide: NotificationsService, useValue: { createSystemNotificationForSuperadmins: jest.fn().mockResolvedValue(true) } },
         { provide: JwtService, useValue: { sign: jest.fn().mockReturnValue('mock_jwt_token') } },
         { provide: getQueueToken('meta-pixel'), useValue: mockMetaPixelQueue },
@@ -124,7 +124,7 @@ describe('PixelQueueResilience (CAPI Queue Error Isolation)', () => {
     const result = await authService.signupTenant(signupDto);
 
     expect(result).toBeDefined();
-    expect(result.access_token).toBe('mock_jwt_token');
+    expect(result.requiresOtp).toBe(true);
     expect(prismaService.tenant.create).toHaveBeenCalled();
     expect(prismaService.user.create).toHaveBeenCalled();
   });
