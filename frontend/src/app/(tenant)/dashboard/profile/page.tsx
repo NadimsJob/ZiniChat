@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Cookies from 'js-cookie';
+import toast from 'react-hot-toast';
 import { useLanguage } from '@/components/LanguageProvider';
 import { 
  Camera, 
@@ -244,67 +245,82 @@ export default function TenantProfilePage() {
  }
  };
 
- const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
- const file = e.target.files?.[0];
- if (!file) return;
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
- const reader = new FileReader();
- reader.onload = () => setLogoPreview(reader.result as string);
- reader.readAsDataURL(file);
+    const reader = new FileReader();
+    reader.onload = () => setLogoPreview(reader.result as string);
+    reader.readAsDataURL(file);
 
- setUploadingLogo(true);
- try {
- const formData = new FormData();
- formData.append('logo', file);
+    setUploadingLogo(true);
+    try {
+      const formData = new FormData();
+      formData.append('logo', file);
 
- const res = await fetch(`${API}/auth/tenant-logo`, {
- method: 'PATCH',
- headers: { 'Authorization': `Bearer ${Cookies.get('access_token')}` },
- body: formData,
- });
+      const res = await fetch(`${API}/auth/tenant-logo`, {
+        method: 'PATCH',
+        headers: { 'Authorization': `Bearer ${Cookies.get('access_token')}` },
+        body: formData,
+      });
 
- if (res.ok) {
- const data = await res.json();
- setBusinessProfile(prev => ({ ...prev, logoUrl: data.logoUrl }));
- setSuccess(t('Business logo uploaded successfully!', 'বিজনেস লোগো সফলভাবে আপলোড হয়েছে!'));
- } else {
- setError(t('Logo upload failed', 'লোগো আপলোড ব্যর্থ'));
- }
- } catch (err) {
- setError(t('Logo upload failed', 'লোগো আপলোড ব্যর্থ'));
- } finally {
- setUploadingLogo(false);
- }
- };
+      if (res.ok) {
+        const data = await res.json();
+        setBusinessProfile(prev => ({ ...prev, logoUrl: data.logoUrl }));
+        const msg = t('Business logo uploaded successfully!', 'বিজনেস লোগো সফলভাবে আপলোড হয়েছে!');
+        setSuccess(msg);
+        toast.success(msg);
+      } else {
+        const msg = t('Logo upload failed', 'লোগো আপলোড ব্যর্থ');
+        setError(msg);
+        toast.error(msg);
+      }
+    } catch (err) {
+      const msg = t('Logo upload failed', 'লোগো আপলোড ব্যর্থ');
+      setError(msg);
+      toast.error(msg);
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
 
- const handleSaveBusiness = async (e: React.FormEvent) => {
- e.preventDefault();
- setSavingBusiness(true);
- setError('');
- setSuccess('');
+  const handleSaveBusiness = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingBusiness(true);
+    setError('');
+    setSuccess('');
 
- try {
- const res = await fetch(`${API}/auth/onboarding`, {
- method: 'POST',
- headers: {
- 'Content-Type': 'application/json',
- 'Authorization': `Bearer ${Cookies.get('access_token')}`,
- },
- body: JSON.stringify(businessProfile),
- });
+    try {
+      const res = await fetch(`${API}/auth/onboarding`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${Cookies.get('access_token')}`,
+        },
+        body: JSON.stringify(businessProfile),
+      });
 
- if (res.ok) {
- setSuccess(t('Business profile updated successfully!', 'বিজনেস প্রোফাইল সফলভাবে আপডেট হয়েছে!'));
- } else {
- const data = await res.json();
- setError(data.message || t('Failed to update business profile', 'বিজনেস প্রোফাইল আপডেট ব্যর্থ'));
- }
- } catch {
- setError(t('An error occurred', 'একটি ত্রুটি ঘটেছে'));
- } finally {
- setSavingBusiness(false);
- }
- };
+      if (res.ok) {
+        const msg = t('Business profile updated successfully! Reloading...', 'বিজনেস প্রোফাইল সফলভাবে আপডেট করা হয়েছে! পৃষ্ঠাটি রিফ্রেশ হচ্ছে...');
+        setSuccess(msg);
+        toast.success(msg);
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      } else {
+        const data = await res.json();
+        const errMsg = data.message || t('Failed to update business profile', 'বিজনেস প্রোফাইল আপডেট ব্যর্থ');
+        setError(errMsg);
+        toast.error(errMsg);
+      }
+    } catch {
+      const errMsg = t('An error occurred', 'একটি ত্রুটি ঘটেছে');
+      setError(errMsg);
+      toast.error(errMsg);
+    } finally {
+      setSavingBusiness(false);
+    }
+  };
 
  const handleAvatarClick = () => {
  fileInputRef.current?.click();
