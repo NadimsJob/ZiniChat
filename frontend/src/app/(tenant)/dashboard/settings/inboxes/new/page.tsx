@@ -1051,11 +1051,11 @@ export default function NewInboxStepper() {
                         </p>
                       </div>
                       <div className="bg-background/40 p-2.5 rounded-lg border border-surface-hover/50">
-                        <p className="font-bold text-zinc-200">Step 2: Get Page Access Token</p>
+                        <p className="font-bold text-zinc-200">Step 2: Create App & Get Access Token</p>
                         <p className="mt-0.5 leading-relaxed whitespace-pre-line">
                           {language === 'en' 
-                            ? '1. Go to developers.facebook.com → My Apps → Messenger → Access Tokens.\n2. Select your Facebook Page and click "Generate Token".\n3. Copy the generated Page Access Token and paste it in the form on the left.' 
-                            : '১. developers.facebook.com এ গিয়ে My Apps → Messenger → Access Tokens সেকশনে যান।\n২. আপনার পেজটি সিলেক্ট করে "Generate Token" এ ক্লিক করুন।\n৩. জেনারেট হওয়া টোকেনটি কপি করে বাম পাশের ফর্মে বসিয়ে কানেক্ট করুন।'}
+                            ? '1. Go to developers.facebook.com, create a new App (or select an existing App), and add the "Messenger" product.\n2. Go to Messenger → Access Tokens, select your Facebook Page, and click "Generate Token".\n3. Copy the generated Page Access Token and paste it in the form on the left.' 
+                            : '১. developers.facebook.com এ গিয়ে একটি নতুন App তৈরি করুন (বা পূর্বের তৈরি App সিলেক্ট করুন) এবং "Messenger" প্রোডাক্ট যুক্ত করুন।\n২. Messenger → Access Tokens সেকশনে গিয়ে আপনার পেজটি সিলেক্ট করে "Generate Token" এ ক্লিক করুন।\n৩. জেনারেট হওয়া টোকেনটি কপি করে বাম পাশের ফর্মে বসিয়ে কানেক্ট করুন।'}
                         </p>
                       </div>
 
