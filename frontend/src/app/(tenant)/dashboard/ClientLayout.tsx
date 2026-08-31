@@ -589,24 +589,24 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
         onMouseLeave={() => isInboxPage && setSidebarHovered(false)}
         className={`
           fixed md:relative z-50 h-full 
-          ${isSidebarCollapsed ? 'w-[56px]' : 'w-[178px]'} 
+          ${isSidebarCollapsed ? 'w-[56px]' : 'w-[188px]'} 
           border-r border-border bg-card
           flex flex-col shrink-0 transition-all duration-300 ease-in-out
           ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
         `}
       >
         {/* Logo Area */}
-        <div className="h-14 px-1 flex items-center justify-between gap-1 border-b border-border/50 shrink-0 relative">
+        <div className="h-14 px-1.5 flex items-center justify-between gap-1 border-b border-border/50 shrink-0 relative overflow-hidden">
           <Link href="/dashboard" className="flex-1 flex items-center h-full hover:opacity-90 w-full relative">
             <img 
               src="/icon.png" 
               alt="ZiniChat" 
-              className={`absolute left-1 top-1/2 -translate-y-1/2 w-[46px] h-[46px] object-contain transition-all duration-200 ${isSidebarCollapsed ? 'opacity-100 scale-100' : 'opacity-0 scale-75 pointer-events-none'}`} 
+              className={`absolute left-0.5 top-1/2 -translate-y-1/2 w-[46px] h-[46px] object-contain transition-all duration-200 ${isSidebarCollapsed ? 'opacity-100 scale-100' : 'opacity-0 scale-75 pointer-events-none'}`} 
             />
             <img 
               src="/logo.png" 
               alt="ZiniChat Logo" 
-              className={`absolute left-1 top-1/2 -translate-y-1/2 h-[46px] w-[150px] object-contain object-left transition-all duration-200 ${isSidebarCollapsed ? 'opacity-0 scale-75 pointer-events-none' : 'opacity-100 scale-100'}`} 
+              className={`absolute left-0.5 top-1/2 -translate-y-1/2 h-[50px] w-[165px] object-contain object-left transition-all duration-200 ${isSidebarCollapsed ? 'opacity-0 scale-75 pointer-events-none' : 'opacity-100 scale-100'}`} 
             />
           </Link>
           {isInboxPage && !isSidebarCollapsed && (
