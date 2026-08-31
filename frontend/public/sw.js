@@ -40,17 +40,21 @@ self.addEventListener('push', function(event) {
 self.addEventListener('notificationclick', function(event) {
   event.notification.close();
 
+  const targetUrl = (event.notification.data && event.notification.data.url)
+    ? event.notification.data.url
+    : '/dashboard';
+
   // Focus existing dashboard window or open a new one
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
       for (let i = 0; i < clientList.length; i++) {
         let client = clientList[i];
-        if (client.url.includes('/dashboard') && 'focus' in client) {
+        if ((client.url.includes('/dashboard') || client.url.includes('/sp@dmin')) && 'focus' in client) {
           return client.focus();
         }
       }
       if (clients.openWindow) {
-        return clients.openWindow('/dashboard');
+        return clients.openWindow(targetUrl);
       }
     })
   );

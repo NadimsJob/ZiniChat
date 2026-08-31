@@ -21,15 +21,13 @@ export class PushNotificationService implements OnModuleInit {
       this.isConfigured = true;
       this.logger.log('VAPID keys loaded from environment variables.');
     } else {
-      // Dynamic generation for zero-config out-of-the-box local development
-      const generated = webpush.generateVAPIDKeys();
-      this.vapidKeys = generated;
+      // Static fallback VAPID keys so server restarts never invalidate push subscriptions
+      this.vapidKeys = {
+        publicKey: 'BEwReojyIlp5EQGGwWR9eCoSkwa1CriM6rgukJZmx6mIK9uFbNDhckO4L9mimltYPJib2snsDzCVyMJiZ5xiz14',
+        privateKey: 'pmcsckjf-jnirfFr8qEh_JZ-0rw8Tpa2L8QBHxNCjVQ'
+      };
       this.isConfigured = true;
-      this.logger.warn(
-        'VAPID keys not configured in .env. Generated temporary keys for local runtime.'
-      );
-      this.logger.warn(`Generated VAPID_PUBLIC_KEY: ${generated.publicKey}`);
-      this.logger.warn(`Generated VAPID_PRIVATE_KEY: ${generated.privateKey}`);
+      this.logger.log('Using permanent fallback VAPID keys for Web Push Notifications.');
     }
 
     if (this.isConfigured && this.vapidKeys) {

@@ -929,7 +929,9 @@ export class TenantStatsService {
       return sum;
     }, 0);
 
-    const conversionPct = totalContacts > 0 ? Math.min(100, Math.round(((qualifiedOrIntakeContacts || totalOrders || 1) / totalContacts) * 100)) : 85;
+    const conversionPct = totalContacts > 0 
+      ? Math.min(100, Math.round(((qualifiedOrIntakeContacts || totalOrders || 0) / totalContacts) * 100)) 
+      : 0;
 
     return {
       modeName,
