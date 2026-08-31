@@ -526,11 +526,20 @@ export class AuthService {
           }
         });
         if (tenant) {
-          if (tenant.customFeatures !== null && Array.isArray(tenant.customFeatures)) {
-            features = tenant.customFeatures as string[];
-          } else if (tenant.subscriptions?.[0]?.plan?.features && Array.isArray(tenant.subscriptions[0].plan.features)) {
-            features = tenant.subscriptions[0].plan.features as string[];
-          }
+          const parseRawFeatures = (val: any): string[] => {
+            if (Array.isArray(val)) return val as string[];
+            if (typeof val === 'string') {
+              try {
+                const parsed = JSON.parse(val);
+                if (Array.isArray(parsed)) return parsed as string[];
+              } catch (e) {}
+            }
+            return [];
+          };
+
+          const customFeats = parseRawFeatures(tenant.customFeatures);
+          const planFeats = parseRawFeatures(tenant.subscriptions?.[0]?.plan?.features);
+          features = customFeats.length > 0 ? customFeats : planFeats;
         }
       }
       (user as any).features = features;

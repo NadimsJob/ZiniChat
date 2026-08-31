@@ -272,7 +272,16 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
         const quotas = await quotasRes.json();
         setQuotasData(quotas);
         if (quotas.features) {
-          setAllowedFeatures(quotas.features);
+          let featArray: string[] = ['*'];
+          if (Array.isArray(quotas.features)) {
+            featArray = quotas.features;
+          } else if (typeof quotas.features === 'string') {
+            try {
+              const p = JSON.parse(quotas.features);
+              if (Array.isArray(p)) featArray = p;
+            } catch (e) {}
+          }
+          setAllowedFeatures(featArray);
         }
       }
       if (unreadRes.ok) {
@@ -457,34 +466,34 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
 
  // Prevent direct URL access to locked features
  useEffect(() => {
- if (!allowedFeatures.includes('*') && !hasAccess(pathname)) {
- setShowFeatureLockedModal(true);
- router.push('/dashboard');
- }
+   const featuresList = Array.isArray(allowedFeatures) ? allowedFeatures : ['*'];
+   if (!featuresList.includes('*') && !hasAccess(pathname)) {
+     setShowFeatureLockedModal(true);
+     router.push('/dashboard');
+   }
  }, [pathname, allowedFeatures]);
 
  const handleLogout = () => {
- Cookies.remove('access_token');
- Cookies.remove('user_role');
- router.push('/login');
+   Cookies.remove('access_token');
+   Cookies.remove('user_role');
+   router.push('/login');
  };
-
-
 
  // Map required features for each module
  const featureMap: Record<string, string[]> = {
- '/dashboard/leads': ['lead_manage'],
- '/dashboard/products': ['commerce'],
- '/dashboard/orders': ['commerce'],
- '/dashboard/broadcasts': ['broadcast'],
- '/dashboard/team': ['team_management'],
+   '/dashboard/leads': ['lead_manage'],
+   '/dashboard/products': ['commerce'],
+   '/dashboard/orders': ['commerce'],
+   '/dashboard/broadcasts': ['broadcast'],
+   '/dashboard/team': ['team_management'],
  };
 
  const hasAccess = (href: string) => {
- if (allowedFeatures.includes('*')) return true; // still loading
- const requiredFeature = featureMap[href];
- if (!requiredFeature) return true; // no restriction
- return requiredFeature.some(f => allowedFeatures.includes(f));
+   const featuresList = Array.isArray(allowedFeatures) ? allowedFeatures : ['*'];
+   if (featuresList.includes('*')) return true; // still loading
+   const requiredFeature = featureMap[href];
+   if (!requiredFeature) return true; // no restriction
+   return requiredFeature.some(f => featuresList.includes(f));
  };
 
   const menuGroups = [
