@@ -222,7 +222,7 @@ export class InstagramAuthService {
       if (!selectedIgAccountId) {
         return {
           requiresSelection: true,
-          accounts: igAccounts.map(a => ({ id: a.igId, username: a.username, pageName: a.pageName })),
+          accounts: igAccounts.map(a => ({ id: a.igId, username: a.username, pageName: a.pageName, pageId: a.pageId })),
           token: finalToken, // Pass token back to use in step 2
         };
       }

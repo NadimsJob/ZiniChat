@@ -263,8 +263,22 @@ export default function InboxesPage() {
                 return (
                   <div key={conn.id} className="p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-muted/30 transition-colors group">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center shrink-0 border border-border">
-                        {getChannelIcon(conn.channelType)}
+                      <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center shrink-0 border border-border overflow-hidden relative">
+                        {(conn.channelType?.toLowerCase() === 'messenger' || conn.channelType?.toLowerCase() === 'instagram') ? (
+                          <>
+                            <img 
+                              src={`https://graph.facebook.com/${conn.channelType?.toLowerCase() === 'instagram' ? conn.verifyToken : conn.externalAccountId}/picture?type=normal`} 
+                              alt="Profile" 
+                              className="w-full h-full object-cover"
+                              onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} 
+                            />
+                            <div className="hidden absolute inset-0 flex items-center justify-center bg-muted w-full h-full">
+                              {getChannelIcon(conn.channelType)}
+                            </div>
+                          </>
+                        ) : (
+                          getChannelIcon(conn.channelType)
+                        )}
                       </div>
                       <div className="min-w-0 flex-1">
                         <h3 className="font-bold text-foreground flex items-center gap-2 text-xs truncate">

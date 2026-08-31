@@ -128,25 +128,32 @@ export default function ConnectFacebookPageButton({ onConnected }: { onConnected
         </button>
       ) : (
         <div className="flex flex-col gap-3 w-full">
-          <label htmlFor="facebook-page-select" className="text-xs font-semibold text-slate-500 dark:text-zinc-400">
+          <label className="text-xs font-semibold text-slate-500 dark:text-zinc-400">
             Select Facebook Page
           </label>
-          <select
-            id="facebook-page-select"
-            value={selectedPageId}
-            onChange={(e) => setSelectedPageId(e.target.value)}
-            className="w-full p-2.5 rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
+          <div className="flex flex-col gap-3 w-full max-h-[300px] overflow-y-auto pr-2">
             {pages.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
+              <div 
+                key={p.id}
+                onClick={() => setSelectedPageId(p.id)}
+                className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${selectedPageId === p.id ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-sm' : 'border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 hover:border-blue-300'}`}
+              >
+                <img 
+                  src={`https://graph.facebook.com/${p.id}/picture?type=normal`} 
+                  alt={p.name} 
+                  className="w-10 h-10 rounded-full bg-slate-100 object-cover shrink-0 border border-slate-200" 
+                />
+                <span className="font-semibold text-sm text-slate-900 dark:text-white flex-1 truncate">{p.name}</span>
+                <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${selectedPageId === p.id ? 'border-blue-500 bg-blue-500' : 'border-slate-300'}`}>
+                  {selectedPageId === p.id && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+                </div>
+              </div>
             ))}
-          </select>
+          </div>
           <button
             onClick={handlePageSelectSubmit}
             disabled={isLoading}
-            className="px-6 py-2.5 bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+            className="px-6 py-2.5 bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2 mt-2"
           >
             {isLoading ? 'Connecting Page...' : 'Connect Selected Page'}
           </button>

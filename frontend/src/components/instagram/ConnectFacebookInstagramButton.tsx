@@ -136,25 +136,37 @@ export default function ConnectFacebookInstagramButton({ onConnected }: { onConn
         </button>
       ) : (
         <div className="flex flex-col gap-3 w-full">
-          <label htmlFor="ig-account-select" className="text-xs font-semibold text-slate-500 dark:text-zinc-400">
+          <label className="text-xs font-semibold text-slate-500 dark:text-zinc-400">
             Select Instagram Account
           </label>
-          <select
-            id="ig-account-select"
-            value={selectedAccountId}
-            onChange={(e) => setSelectedAccountId(e.target.value)}
-            className="w-full p-2.5 rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-          >
+          <div className="flex flex-col gap-3 w-full max-h-[300px] overflow-y-auto pr-2">
             {accounts.map((a) => (
-              <option key={a.id} value={a.id}>
-                @{a.username} — {a.pageName}
-              </option>
+              <div 
+                key={a.id}
+                onClick={() => setSelectedAccountId(a.id)}
+                className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${selectedAccountId === a.id ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 shadow-sm' : 'border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 hover:border-purple-300'}`}
+              >
+                {a.pageId && (
+                  <img 
+                    src={`https://graph.facebook.com/${a.pageId}/picture?type=normal`} 
+                    alt={a.pageName} 
+                    className="w-10 h-10 rounded-full bg-slate-100 object-cover shrink-0 border border-slate-200" 
+                  />
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-sm text-slate-900 dark:text-white truncate">@{a.username}</div>
+                  <div className="text-[11px] text-slate-500 truncate">Linked Page: {a.pageName}</div>
+                </div>
+                <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${selectedAccountId === a.id ? 'border-purple-500 bg-purple-500' : 'border-slate-300'}`}>
+                  {selectedAccountId === a.id && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+                </div>
+              </div>
             ))}
-          </select>
+          </div>
           <button
             onClick={handleAccountSelectSubmit}
             disabled={isLoading}
-            className="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-all flex items-center justify-center gap-2"
+            className="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-all flex items-center justify-center gap-2 mt-2"
           >
             {isLoading ? 'Connecting...' : 'Connect Selected Account'}
           </button>
