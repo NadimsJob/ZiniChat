@@ -610,18 +610,18 @@ export default function NewInboxStepper() {
             <h1 className="text-2xl font-black text-foreground mb-1">
               {language === 'en' ? 'Choose Provider' : 'প্রোভাইডার বেছে নিন'}
             </h1>
-            <p className="text-[13px] text-zinc-400 mb-8">
+            <p className="text-[13px] text-slate-600 dark:text-zinc-400 mb-8">
               {language === 'en' ? 'How do you want to connect WhatsApp?' : 'কিভাবে WhatsApp কানেক্ট করবেন?'}
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl">
               <button
                 onClick={() => { setProvider('cloud'); setStep(3); }}
-                className="bg-surface/70 backdrop-blur-sm p-6 rounded-2xl border border-surface-hover hover:border-emerald-500/50 hover:shadow-lg transition-all text-left group">
+                className="bg-white dark:bg-surface/70 backdrop-blur-sm p-6 rounded-2xl border border-slate-200 dark:border-surface-hover hover:border-emerald-500/50 hover:shadow-lg transition-all text-left group">
                 <div className="w-11 h-11 rounded-xl bg-emerald-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
                   <PhoneCall className="w-5 h-5 text-emerald-500" />
                 </div>
                 <h3 className="font-bold text-[14px] text-foreground mb-1">WhatsApp Cloud API</h3>
-                <p className="text-[12px] text-zinc-400 leading-relaxed">
+                <p className="text-[12px] text-slate-600 dark:text-zinc-400 leading-relaxed">
                   {language === 'en' ? 'Official Meta API. Best for high-volume messaging.' : 'অফিশিয়াল মেটা API। বেশি মেসেজের জন্য সর্বোত্তম।'}
                 </p>
                 <div className="mt-3 flex items-center gap-1 text-emerald-500 text-[11px] font-bold">
@@ -631,15 +631,15 @@ export default function NewInboxStepper() {
 
               <button
                 onClick={() => { setProvider('web'); setStep(3); }}
-                className="bg-surface/70 backdrop-blur-sm p-6 rounded-2xl border border-surface-hover hover:border-amber-500/50 hover:shadow-lg transition-all text-left group relative">
-                <div className="absolute top-3 right-3 px-2 py-0.5 bg-amber-500/15 text-amber-400 rounded-full text-[10px] font-bold border border-amber-500/20">
+                className="bg-white dark:bg-surface/70 backdrop-blur-sm p-6 rounded-2xl border border-slate-200 dark:border-surface-hover hover:border-amber-500/50 hover:shadow-lg transition-all text-left group relative">
+                <div className="absolute top-3 right-3 px-2 py-0.5 bg-amber-500/15 text-amber-500 dark:text-amber-400 rounded-full text-[10px] font-bold border border-amber-500/20">
                   {language === 'en' ? 'Unofficial (QR)' : 'আনঅফিশিয়াল (QR)'}
                 </div>
                 <div className="w-11 h-11 rounded-xl bg-amber-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                  <PhoneCall className="w-5 h-5 text-amber-400" />
+                  <PhoneCall className="w-5 h-5 text-amber-500 dark:text-amber-400" />
                 </div>
                 <h3 className="font-bold text-[14px] text-foreground mb-1">WhatsApp Web</h3>
-                <p className="text-[12px] text-zinc-400 leading-relaxed mb-3">
+                <p className="text-[12px] text-slate-600 dark:text-zinc-400 leading-relaxed mb-3">
                   {language === 'en' ? 'Connect via QR scan or Pairing Code. Rate limited (10 msgs/min) for account protection.' : 'QR স্ক্যান বা পেয়ারিং কোড দিয়ে কানেক্ট করুন। নাম্বার সুরক্ষায় রেট লিমিটেড (১০ মেসেজ/মিনিট)।'}
                 </p>
                 <div className="flex items-center gap-1.5 text-amber-400 text-[11px] font-bold">
@@ -672,23 +672,23 @@ export default function NewInboxStepper() {
                       <ShieldCheck className="w-4 h-4" />
                       <span>{language === 'en' ? 'Official Meta API (100% Safe & Zero Ban Risk)' : 'অফিশিয়াল Meta API (১০০% নিরাপদ ও অ্যাকাউন্ট সুরক্ষার নিশ্চয়তা)'}</span>
                     </div>
-                    <ul className="text-[11px] text-zinc-300 space-y-1 pl-5 list-disc leading-relaxed">
+                    <ul className="text-[11px] text-slate-700 dark:text-zinc-300 space-y-1 pl-5 list-disc leading-relaxed">
                       <li>{language === 'en' ? 'Supports unlimited high-volume messaging and Broadcast Campaigns.' : 'আনলিমিটেড হাই-ভলিউম মেসেজিং ও ব্রডকাস্ট ক্যাম্পেইন সাপোর্ট করে।'}</li>
                       <li>{language === 'en' ? 'Get credentials from developers.facebook.com → WhatsApp → API Setup.' : 'মেটা ডেভেলপার ড্যাশবোর্ড থেকে Phone Number ID & Permanent Token সংগ্রহ করুন।'}</li>
                       <li>{language === 'en' ? 'Or use "Connect WhatsApp" button below to log in directly via Meta.' : 'অথবা নিচে "Connect WhatsApp" বাটনে ক্লিক করে সরাসরি মেটা লগইন সম্পন্ন করুন।'}</li>
                     </ul>
                   </div>
 
-                  <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-6">
+                  <div className="bg-white dark:bg-surface/70 backdrop-blur-xl border border-slate-200 dark:border-surface-hover rounded-2xl p-6">
                     <div className="mb-6">
                       <ConnectWhatsAppButton onConnected={handleConnectedSuccess} />
                     </div>
                     <div className="relative flex items-center py-4">
-                      <div className="flex-grow border-t border-surface-hover" />
-                      <span className="flex-shrink-0 mx-4 text-zinc-500 text-[11px] font-medium uppercase tracking-wider">
+                      <div className="flex-grow border-t border-slate-200 dark:border-surface-hover" />
+                      <span className="flex-shrink-0 mx-4 text-slate-500 dark:text-zinc-400 text-[11px] font-medium uppercase tracking-wider">
                         {language === 'en' ? 'Or Manual Setup' : 'অথবা ম্যানুয়াল সেটআপ'}
                       </span>
-                      <div className="flex-grow border-t border-surface-hover" />
+                      <div className="flex-grow border-t border-slate-200 dark:border-surface-hover" />
                     </div>
 
                     <form onSubmit={handleConnectWhatsApp} className="space-y-4" autoComplete="off">
@@ -700,7 +700,7 @@ export default function NewInboxStepper() {
                         { label: 'Permanent Access Token', value: waData.accessToken, key: 'accessToken', placeholder: 'EAA...', type: 'password' },
                       ].map(field => (
                         <div key={field.key}>
-                          <label className="block text-[12px] font-bold text-zinc-400 mb-1">{field.label}</label>
+                          <label className="block text-[12px] font-bold text-slate-700 dark:text-zinc-300 mb-1">{field.label}</label>
                           <input
                             required={field.key !== 'wabaId'}
                             type={field.type}
@@ -721,19 +721,19 @@ export default function NewInboxStepper() {
 
                 {/* Right Column: Permanent Right-Side Onboarding Guide */}
                 <div className="lg:col-span-5 space-y-4">
-                  <div className="bg-surface/90 backdrop-blur-xl border border-surface-hover rounded-2xl p-5 space-y-4 text-[12px] text-zinc-300 leading-relaxed sticky top-6">
-                    <div className="flex items-center gap-2 text-foreground font-bold border-b border-surface-hover pb-3">
-                      <HelpCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <div className="bg-white dark:bg-surface/90 backdrop-blur-xl border border-slate-200 dark:border-surface-hover rounded-2xl p-5 space-y-4 text-[12px] text-slate-700 dark:text-zinc-300 leading-relaxed sticky top-6">
+                    <div className="flex items-center gap-2 text-slate-900 dark:text-foreground font-bold border-b border-slate-200 dark:border-surface-hover pb-3">
+                      <HelpCircle className="w-4 h-4 text-emerald-500 dark:text-emerald-400 shrink-0" />
                       <span>{language === 'en' ? 'WhatsApp Setup Instructions' : 'হোয়াটসঅ্যাপ সেটআপ নির্দেশিকা'}</span>
                     </div>
 
                     {/* Section 1: Automatic Embedded Signup */}
                     <div className="space-y-2">
-                      <div className="text-[11.5px] font-bold text-emerald-400 flex items-center gap-1.5">
+                      <div className="text-[11.5px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
                         <Zap className="w-3.5 h-3.5" />
                         <span>{language === 'en' ? '1. Automatic Signup (Recommended)' : '১. অটোমেটিক মেটা সাইনআপ (প্রস্তাবিত)'}</span>
                       </div>
-                      <ol className="text-[11px] text-zinc-400 space-y-1.5 pl-4 list-decimal">
+                      <ol className="text-[11px] text-slate-600 dark:text-zinc-400 space-y-1.5 pl-4 list-decimal">
                         <li>{language === 'en' ? 'Click "Connect with Meta" button on the left.' : 'বাম পাশের "Connect with Meta" বাটনে ক্লিক করুন।'}</li>
                         <li>{language === 'en' ? 'Log in with Facebook account managing your Business Manager.' : 'বিজনেস ম্যানেজার যুক্ত ফেসবুক একাউন্টে লগইন করুন।'}</li>
                         <li>{language === 'en' ? 'Select or create Meta Business Account & WhatsApp Profile.' : 'মেটা বিজনেস একাউন্ট ও হোয়াটসঅ্যাপ প্রোফাইল সিলেক্ট করুন।'}</li>
@@ -743,10 +743,10 @@ export default function NewInboxStepper() {
 
                     {/* Critical Unregister Warning */}
                     <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl space-y-1">
-                      <p className="font-bold text-emerald-400 text-[11.5px] flex items-center gap-1">
+                      <p className="font-bold text-emerald-600 dark:text-emerald-400 text-[11.5px] flex items-center gap-1">
                         🛑 {language === 'en' ? 'Important Requirement' : 'জরুরি শর্ত (কি না করলে হবে না)'}
                       </p>
-                      <p className="text-[11px] text-zinc-300">
+                      <p className="text-[11px] text-slate-700 dark:text-zinc-300">
                         {language === 'en'
                           ? 'The phone number MUST NOT be active on mobile WhatsApp. If active, open WhatsApp App on phone → Settings → Account → Delete My Account first.'
                           : 'নম্বরটি ফোনে হোয়াটসঅ্যাপ অ্যাপে সক্রিয় থাকলে মেটা API কানেক্ট হবে না। প্রথমে ফোনের WhatsApp App → Settings → Account → Delete My Account করতে হবে।'}
@@ -754,18 +754,18 @@ export default function NewInboxStepper() {
                     </div>
 
                     {/* Section 2: Manual Setup */}
-                    <div className="space-y-2 pt-2 border-t border-surface-hover">
-                      <div className="text-[11.5px] font-bold text-foreground flex items-center gap-1.5">
-                        <Globe className="w-3.5 h-3.5 text-blue-400" />
+                    <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-surface-hover">
+                      <div className="text-[11.5px] font-bold text-slate-900 dark:text-foreground flex items-center gap-1.5">
+                        <Globe className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400" />
                         <span>{language === 'en' ? '2. Manual Setup via Developer Portal' : '২. মেটা ডেভেলপার পোর্টাল থেকে ম্যানুয়াল সেটআপ'}</span>
                       </div>
-                      <div className="space-y-2 text-[11px] text-zinc-400">
-                        <div className="bg-background/40 p-2.5 rounded-lg border border-surface-hover/50">
-                          <p className="font-bold text-zinc-200">Step 1: Get Phone Number ID & WABA ID</p>
+                      <div className="space-y-2 text-[11px] text-slate-600 dark:text-zinc-400">
+                        <div className="bg-slate-100 dark:bg-background/40 p-2.5 rounded-lg border border-slate-200 dark:border-surface-hover/50">
+                          <p className="font-bold text-slate-900 dark:text-zinc-200">Step 1: Get Phone Number ID & WABA ID</p>
                           <p className="mt-0.5">{language === 'en' ? 'Go to developers.facebook.com → My Apps → Select Business App → WhatsApp → API Setup to copy IDs.' : 'developers.facebook.com → My Apps → Business App → WhatsApp → API Setup থেকে Phone Number ID এবং WABA ID কপি করুন।'}</p>
                         </div>
-                        <div className="bg-background/40 p-2.5 rounded-lg border border-surface-hover/50">
-                          <p className="font-bold text-zinc-200">Step 2: Generate Permanent Token</p>
+                        <div className="bg-slate-100 dark:bg-background/40 p-2.5 rounded-lg border border-slate-200 dark:border-surface-hover/50">
+                          <p className="font-bold text-slate-900 dark:text-zinc-200">Step 2: Generate Permanent Token</p>
                           <p className="mt-0.5">{language === 'en' ? 'Go to business.facebook.com/settings → System Users → Create Admin System User → Generate Token with whatsapp_business_messaging permission.' : 'business.facebook.com/settings → System Users → Admin System User তৈরি করে whatsapp_business_messaging পারমিশন দিয়ে Permanent Token জেনারেট করুন।'}</p>
                         </div>
                       </div>
@@ -1004,19 +1004,19 @@ export default function NewInboxStepper() {
 
               {/* Right Column: Permanent Messenger Setup Guide */}
               <div className="lg:col-span-5 space-y-4">
-                <div className="bg-surface/90 backdrop-blur-xl border border-surface-hover rounded-2xl p-5 space-y-4 text-[12px] text-zinc-300 leading-relaxed sticky top-6">
-                  <div className="flex items-center gap-2 text-foreground font-bold border-b border-surface-hover pb-3">
-                    <HelpCircle className="w-4 h-4 text-blue-400 shrink-0" />
+                <div className="bg-white dark:bg-surface/90 backdrop-blur-xl border border-slate-200 dark:border-surface-hover rounded-2xl p-5 space-y-4 text-[12px] text-slate-700 dark:text-zinc-300 leading-relaxed sticky top-6">
+                  <div className="flex items-center gap-2 text-slate-900 dark:text-foreground font-bold border-b border-slate-200 dark:border-surface-hover pb-3">
+                    <HelpCircle className="w-4 h-4 text-blue-500 dark:text-blue-400 shrink-0" />
                     <span>{language === 'en' ? 'Messenger Setup Instructions' : 'মেসেঞ্জার সেটআপ নির্দেশিকা'}</span>
                   </div>
 
                   {/* Section 1: Automatic Facebook OAuth */}
                   <div className="space-y-2">
-                    <div className="text-[11.5px] font-bold text-blue-400 flex items-center gap-1.5">
+                    <div className="text-[11.5px] font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
                       <Zap className="w-3.5 h-3.5" />
                       <span>{language === 'en' ? '1. Automatic Facebook Login' : '১. অটোমেটিক ফেসবুক লগইন'}</span>
                     </div>
-                    <ol className="text-[11px] text-zinc-400 space-y-1.5 pl-4 list-decimal">
+                    <ol className="text-[11px] text-slate-600 dark:text-zinc-400 space-y-1.5 pl-4 list-decimal">
                       <li>{language === 'en' ? 'Click "Connect Facebook Page" button on the left.' : 'বাম পাশের "Connect Facebook Page" বাটনে ক্লিক করুন।'}</li>
                       <li>{language === 'en' ? 'Log in with Facebook account that has Admin access to your Page.' : 'পেজের এডমিন এক্সেস আছে এমন ফেসবুক একাউন্টে লগইন করুন।'}</li>
                       <li>{language === 'en' ? 'Select your Facebook Page(s) and confirm permissions.' : 'আপনার ফেসবুক পেজ সিলেক্ট করুন এবং পারমিশন নিশ্চিত করুন।'}</li>
@@ -1025,10 +1025,10 @@ export default function NewInboxStepper() {
 
                   {/* Requirement Banner */}
                   <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl space-y-1">
-                    <p className="font-bold text-blue-400 text-[11.5px] flex items-center gap-1">
+                    <p className="font-bold text-blue-600 dark:text-blue-400 text-[11.5px] flex items-center gap-1">
                       🛑 {language === 'en' ? 'Requirement' : 'আবশ্যিক শর্ত'}
                     </p>
-                    <p className="text-[11px] text-zinc-300">
+                    <p className="text-[11px] text-slate-700 dark:text-zinc-300">
                       {language === 'en'
                         ? 'Personal Facebook profiles cannot receive API webhooks. You MUST connect an active Facebook Page.'
                         : 'পার্সোনাল ফেসবুক আইডি দিয়ে মেসেজিং এপিআই কাজ করে না। অবশ্যই একটি সক্রিয় ফেসবুক পেজ কানেক্ট করতে হবে।'}
@@ -1036,22 +1036,22 @@ export default function NewInboxStepper() {
                   </div>
 
                   {/* Section 2: Manual Setup */}
-                  <div className="space-y-2 pt-2 border-t border-surface-hover">
-                    <div className="text-[11.5px] font-bold text-foreground flex items-center gap-1.5">
-                      <Globe className="w-3.5 h-3.5 text-blue-400" />
+                  <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-surface-hover">
+                    <div className="text-[11.5px] font-bold text-slate-900 dark:text-foreground flex items-center gap-1.5">
+                      <Globe className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400" />
                       <span>{language === 'en' ? '2. Manual Token Setup' : '২. ম্যানুয়াল টোকেন সেটআপ'}</span>
                     </div>
-                    <div className="space-y-2 text-[11px] text-zinc-400">
-                      <div className="bg-background/40 p-2.5 rounded-lg border border-surface-hover/50">
-                        <p className="font-bold text-zinc-200">Step 1: Get Facebook Page ID</p>
+                    <div className="space-y-2 text-[11px] text-slate-600 dark:text-zinc-400">
+                      <div className="bg-slate-100 dark:bg-background/40 p-2.5 rounded-lg border border-slate-200 dark:border-surface-hover/50">
+                        <p className="font-bold text-slate-900 dark:text-zinc-200">Step 1: Get Facebook Page ID</p>
                         <p className="mt-0.5 leading-relaxed whitespace-pre-line">
                           {language === 'en' 
                             ? 'Open Facebook and go to your Page. Click on the "About" tab, then select "Page Transparency". Here you will find your numeric "Page ID". Copy this ID.' 
                             : 'ফেসবুকে আপনার পেজে প্রবেশ করুন। "About" ট্যাবে ক্লিক করে "Page Transparency" অপশনে যান। সেখানে আপনার পেজের একটি সংখ্যাযুক্ত "Page ID" দেখতে পাবেন, সেটি কপি করুন।'}
                         </p>
                       </div>
-                      <div className="bg-background/40 p-2.5 rounded-lg border border-surface-hover/50">
-                        <p className="font-bold text-zinc-200">Step 2: Create App & Get Access Token</p>
+                      <div className="bg-slate-100 dark:bg-background/40 p-2.5 rounded-lg border border-slate-200 dark:border-surface-hover/50">
+                        <p className="font-bold text-slate-900 dark:text-zinc-200">Step 2: Create App & Get Access Token</p>
                         <p className="mt-0.5 leading-relaxed whitespace-pre-line">
                           {language === 'en' 
                             ? '1. Go to developers.facebook.com, create a new App (or select an existing App), and add the "Messenger" product.\n2. Go to Messenger → Access Tokens, select your Facebook Page, and click "Generate Token".\n3. Copy the generated Page Access Token and paste it in the form on the left.' 
@@ -1061,18 +1061,18 @@ export default function NewInboxStepper() {
 
                       {/* Custom Meta App Webhook Box */}
                       <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl space-y-2 text-[11px]">
-                        <div className="font-bold text-blue-400">
+                        <div className="font-bold text-blue-600 dark:text-blue-400">
                           {language === 'en' ? '🔗 Custom Meta App Webhook Credentials' : '🔗 কাস্টম মেটা অ্যাপ ওয়েবহুক তথ্য'}
                         </div>
                         <div>
-                          <span className="text-zinc-400 block">{language === 'en' ? 'Callback URL:' : 'কলব্যাক ইউআরএল:'}</span>
-                          <code className="text-zinc-200 bg-background/80 px-2 py-1 rounded block font-mono text-[10.5px] mt-0.5 border border-surface-hover select-all">
+                          <span className="text-slate-600 dark:text-zinc-400 block">{language === 'en' ? 'Callback URL:' : 'কলব্যাক ইউআরএল:'}</span>
+                          <code className="text-slate-900 dark:text-zinc-200 bg-white dark:bg-background/80 px-2 py-1 rounded block font-mono text-[10.5px] mt-0.5 border border-slate-200 dark:border-surface-hover select-all">
                             {`${API}/channels/messenger`}
                           </code>
                         </div>
                         <div>
-                          <span className="text-zinc-400 block">{language === 'en' ? 'Verify Token:' : 'ভেরিফাই টোকেন:'}</span>
-                          <code className="text-zinc-200 bg-background/80 px-2 py-1 rounded block font-mono text-[10.5px] mt-0.5 border border-surface-hover select-all">
+                          <span className="text-slate-600 dark:text-zinc-400 block">{language === 'en' ? 'Verify Token:' : 'ভেরিফাই টোকেন:'}</span>
+                          <code className="text-slate-900 dark:text-zinc-200 bg-white dark:bg-background/80 px-2 py-1 rounded block font-mono text-[10.5px] mt-0.5 border border-slate-200 dark:border-surface-hover select-all">
                             zinichat_webhook_verify_token
                           </code>
                         </div>
@@ -1145,19 +1145,19 @@ export default function NewInboxStepper() {
 
               {/* Right Column: Permanent Instagram Setup Guide */}
               <div className="lg:col-span-5 space-y-4">
-                <div className="bg-surface/90 backdrop-blur-xl border border-surface-hover rounded-2xl p-5 space-y-4 text-[12px] text-zinc-300 leading-relaxed sticky top-6">
-                  <div className="flex items-center gap-2 text-foreground font-bold border-b border-surface-hover pb-3">
-                    <HelpCircle className="w-4 h-4 text-pink-400 shrink-0" />
+                <div className="bg-white dark:bg-surface/90 backdrop-blur-xl border border-slate-200 dark:border-surface-hover rounded-2xl p-5 space-y-4 text-[12px] text-slate-700 dark:text-zinc-300 leading-relaxed sticky top-6">
+                  <div className="flex items-center gap-2 text-slate-900 dark:text-foreground font-bold border-b border-slate-200 dark:border-surface-hover pb-3">
+                    <HelpCircle className="w-4 h-4 text-pink-500 dark:text-pink-400 shrink-0" />
                     <span>{language === 'en' ? 'Instagram Setup Instructions' : 'ইনস্টাগ্রাম সেটআপ নির্দেশিকা'}</span>
                   </div>
 
                   {/* Section 1: Automatic Signup */}
                   <div className="space-y-2">
-                    <div className="text-[11.5px] font-bold text-pink-400 flex items-center gap-1.5">
+                    <div className="text-[11.5px] font-bold text-pink-600 dark:text-pink-400 flex items-center gap-1.5">
                       <Zap className="w-3.5 h-3.5" />
                       <span>{language === 'en' ? '1. Automatic Meta OAuth' : '১. অটোমেটিক মেটা এক্সেস'}</span>
                     </div>
-                    <ol className="text-[11px] text-zinc-400 space-y-1.5 pl-4 list-decimal">
+                    <ol className="text-[11px] text-slate-600 dark:text-zinc-400 space-y-1.5 pl-4 list-decimal">
                       <li>{language === 'en' ? 'Click "Connect Instagram" button on the left.' : 'বাম পাশের "Connect Instagram" বাটনে ক্লিক করুন।'}</li>
                       <li>{language === 'en' ? 'Log in with Facebook account linked to your Instagram Business profile.' : 'ইনস্টাগ্রামের সাথে যুক্ত ফেসবুক একাউন্টে লগইন করুন।'}</li>
                       <li>{language === 'en' ? 'Select Instagram Professional Account and linked Facebook Page.' : 'ইনস্টাগ্রাম বিজনেস একাউন্ট এবং সাথে লিংক থাকা ফেসবুক পেজটি সিলেক্ট করুন।'}</li>
@@ -1166,10 +1166,10 @@ export default function NewInboxStepper() {
 
                   {/* Critical Professional Account Banner */}
                   <div className="p-3 bg-pink-500/10 border border-pink-500/20 rounded-xl space-y-1">
-                    <p className="font-bold text-pink-400 text-[11.5px] flex items-center gap-1">
+                    <p className="font-bold text-pink-600 dark:text-pink-400 text-[11.5px] flex items-center gap-1">
                       📸 {language === 'en' ? 'Business/Creator Profile Required' : 'বিজনেস বা ক্রিয়েটর একাউন্ট আবশ্যক'}
                     </p>
-                    <p className="text-[11px] text-zinc-300">
+                    <p className="text-[11px] text-slate-700 dark:text-zinc-300">
                       {language === 'en'
                         ? 'Personal Instagram accounts cannot receive API webhooks. Switch account in Instagram Mobile App → Settings → Account → Switch to Professional Account.'
                         : 'পার্সোনাল ইনস্টাগ্রাম একাউন্টে মেটা এপিআই কাজ করে না। ইনস্টাগ্রাম মোবাইল অ্যাপের Settings → Account → Switch to Professional Account দিয়ে বিজনেস বা ক্রিয়েটর একাউন্টে রূপান্তর করুন।'}
@@ -1177,18 +1177,18 @@ export default function NewInboxStepper() {
                   </div>
 
                   {/* Section 2: Manual Setup */}
-                  <div className="space-y-2 pt-2 border-t border-surface-hover">
-                    <div className="text-[11.5px] font-bold text-foreground flex items-center gap-1.5">
-                      <Globe className="w-3.5 h-3.5 text-pink-400" />
+                  <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-surface-hover">
+                    <div className="text-[11.5px] font-bold text-slate-900 dark:text-foreground flex items-center gap-1.5">
+                      <Globe className="w-3.5 h-3.5 text-pink-500 dark:text-pink-400" />
                       <span>{language === 'en' ? '2. Manual Token Setup' : '২. ম্যানুয়াল টোকেন সেটআপ'}</span>
                     </div>
-                    <div className="space-y-2 text-[11px] text-zinc-400">
-                      <div className="bg-background/40 p-2.5 rounded-lg border border-surface-hover/50">
-                        <p className="font-bold text-zinc-200">Step 1: Get Instagram Business ID</p>
+                    <div className="space-y-2 text-[11px] text-slate-600 dark:text-zinc-400">
+                      <div className="bg-slate-100 dark:bg-background/40 p-2.5 rounded-lg border border-slate-200 dark:border-surface-hover/50">
+                        <p className="font-bold text-slate-900 dark:text-zinc-200">Step 1: Get Instagram Business ID</p>
                         <p className="mt-0.5">{language === 'en' ? 'Go to developers.facebook.com → My Apps → Business App → Instagram → API Setup to copy Account ID.' : 'developers.facebook.com → My Apps → Business App → Instagram → API Setup থেকে Account ID দিন।'}</p>
                       </div>
-                      <div className="bg-background/40 p-2.5 rounded-lg border border-surface-hover/50">
-                        <p className="font-bold text-zinc-200">Step 2: Get Page Access Token</p>
+                      <div className="bg-slate-100 dark:bg-background/40 p-2.5 rounded-lg border border-slate-200 dark:border-surface-hover/50">
+                        <p className="font-bold text-slate-900 dark:text-zinc-200">Step 2: Get Page Access Token</p>
                         <p className="mt-0.5">{language === 'en' ? 'Generate Page Access Token for the Facebook Page linked to your Instagram Account with instagram_manage_messages permission.' : 'ইনস্টাগ্রাম একাউন্টের সাথে লিংক করা ফেসবুক পেজের জন্য instagram_manage_messages পারমিশনসহ Page Access Token তৈরি করুন।'}</p>
                       </div>
                     </div>
