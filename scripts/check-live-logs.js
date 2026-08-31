@@ -21,10 +21,15 @@ async function checkLiveLogs() {
     console.log('=== RUNNING CONTAINERS ===');
     console.log(containers.stdout || containers.stderr);
 
-    // Check backend logs (last 50 lines)
-    const logs = await ssh.execCommand('docker compose --env-file .env.live logs --tail=50 backend 2>&1', { cwd: process.env.LIVE_PROJECT_PATH });
-    console.log('\n=== BACKEND LOGS (last 50 lines) ===');
+    // Check backend logs (last 30 lines)
+    const logs = await ssh.execCommand('docker compose --env-file .env.live logs --tail=30 backend 2>&1', { cwd: process.env.LIVE_PROJECT_PATH });
+    console.log('\n=== BACKEND LOGS (last 30 lines) ===');
     console.log(logs.stdout || logs.stderr);
+
+    // Check frontend logs (last 30 lines)
+    const frontendLogs = await ssh.execCommand('docker compose --env-file .env.live logs --tail=30 frontend 2>&1', { cwd: process.env.LIVE_PROJECT_PATH });
+    console.log('\n=== FRONTEND LOGS (last 30 lines) ===');
+    console.log(frontendLogs.stdout || frontendLogs.stderr);
 
     ssh.dispose();
   } catch (err) {

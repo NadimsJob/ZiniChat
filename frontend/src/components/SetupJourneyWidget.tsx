@@ -117,12 +117,23 @@ export default function SetupJourneyWidget({
 
   // Clear dismissal if workspace is NOT completed so banner shows on every login
   if (!isAllCompleted && typeof window !== 'undefined') {
-    localStorage.removeItem('zinichat_setup_banner_dismissed');
+    try {
+      localStorage.removeItem('zinichat_setup_banner_dismissed');
+    } catch (e) {
+      // Ignore storage errors in restricted contexts
+    }
   }
 
   // If 100% completed and user explicitly dismissed the congratulations banner, hide it
   if (isAllCompleted) {
-    const isDismissed = typeof window !== 'undefined' && localStorage.getItem('zinichat_setup_banner_dismissed') === 'true';
+    let isDismissed = false;
+    if (typeof window !== 'undefined') {
+      try {
+        isDismissed = localStorage.getItem('zinichat_setup_banner_dismissed') === 'true';
+      } catch (e) {
+        // Ignore storage errors
+      }
+    }
     if (isDismissed || dismissed) return null;
 
     return (

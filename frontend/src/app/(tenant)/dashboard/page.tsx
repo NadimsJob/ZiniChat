@@ -155,9 +155,9 @@ export default function ExecutiveDashboardPage() {
   }, [recentOrders, orderSearch]);
 
   const userName = user?.name || Cookies.get('user_name') || (language === 'en' ? 'User' : 'ব্যবহারকারী');
-  const compName = companyName || Cookies.get('company_name') || 'ZiniChat Business';
+  const compNameStr = String(companyName || Cookies.get('company_name') || 'ZiniChat Business');
 
-  const hasAnyChannel = data?.features?.some((f: string) => ['whatsapp', 'messenger', 'instagram_dm', 'whatsapp_qr'].includes(f));
+  const hasAnyChannel = Array.isArray(data?.features) ? data.features.some((f: string) => ['whatsapp', 'messenger', 'instagram_dm', 'whatsapp_qr'].includes(f)) : false;
   const isSetupPending = setupStatus && (!setupStatus.hasBusinessProfile || (hasAnyChannel && !setupStatus.hasConnectedChannel));
 
   if (loading && !data) {
@@ -183,7 +183,7 @@ export default function ExecutiveDashboardPage() {
 
 
   // Construct Bilingual AI Executive Summary (Strictly for TODAY, independent of date filter)
-  const aiSummaryText = language === 'bn'
+  const rawAiSummary = language === 'bn'
     ? (data?.todaySummaryBn || [
         `আজ এআই ${formatNumber(kpis.ai?.today ? Math.round((kpis.ai.today / Math.max(1, kpis.messages?.today || 1)) * 100) : 0)}% মেসেজ স্বয়ংক্রিয়ভাবে উত্তর দিয়েছে।`,
         `আজ মোট ${formatNumber(kpis.messages?.today || 0)}টি মেসেজ আদান-প্রদান হয়েছে।`,
@@ -198,6 +198,11 @@ export default function ExecutiveDashboardPage() {
           : 'All inbox messages are resolved 🟢'
       ].filter(Boolean).join(' '));
 
+  const aiSummaryText = typeof rawAiSummary === 'string' 
+    ? rawAiSummary 
+    : Array.isArray(rawAiSummary) 
+    ? rawAiSummary.join(' ') 
+    : String(rawAiSummary || '');
 
   return (
     <div className="max-w-[1600px] mx-auto space-y-6 p-2 sm:p-4 pb-16 animate-in fade-in duration-500 text-foreground">
@@ -211,7 +216,7 @@ export default function ExecutiveDashboardPage() {
         {/* Left Welcome Info (Fully Dynamic Name) */}
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-primary to-secondary flex items-center justify-center text-primary-foreground font-black text-xl shadow-lg shadow-primary/20 shrink-0">
-            {compName.substring(0, 2).toUpperCase()}
+            {compNameStr.substring(0, 2).toUpperCase()}
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
@@ -224,7 +229,7 @@ export default function ExecutiveDashboardPage() {
               </span>
             </div>
             <p className="text-[12px] text-muted-foreground mt-0.5 flex items-center gap-2 flex-wrap">
-              <span>{compName}</span>
+              <span>{compNameStr}</span>
               <span>•</span>
               <span className="text-muted-foreground font-medium">
                 {new Date().toLocaleDateString(language === 'bn' ? 'bn-BD' : 'en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
@@ -493,7 +498,7 @@ export default function ExecutiveDashboardPage() {
                 <Link href="/dashboard/leads" className="text-primary font-bold hover:underline normal-case text-xs">{language === 'en' ? 'View CRM Board →' : 'সিআরএম বোর্ড দেখুন →'}</Link>
               </div>
               <div className="flex flex-wrap gap-2">
-                {(verticalStats.stages || []).slice(0, 5).map((s: any) => (
+                {(Array.isArray(verticalStats?.stages) ? verticalStats.stages : []).slice(0, 5).map((s: any) => (
                   <div key={s.id} className="px-3 py-1.5 bg-background border border-primary/30 dark:border-primary/20 rounded-xl flex items-center gap-2 text-[12px]">
                     <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: s.color || '#3b82f6' }} />
                     <span className="font-semibold text-foreground">{s.name}:</span>
@@ -558,10 +563,10 @@ export default function ExecutiveDashboardPage() {
           </div>
 
           <div className="space-y-2.5 flex-1 overflow-y-auto max-h-[220px] pr-1">
-            {(data?.channels || []).length === 0 ? (
+            {(Array.isArray(data?.channels) ? data.channels : []).length === 0 ? (
               <div className="text-center py-8 text-slate-500 dark:text-zinc-400 text-xs">{language === 'en' ? 'No active channels connected' : 'কোনো চ্যানেল কানেক্ট করা নেই'}</div>
             ) : (
-              (data?.channels || []).map((ch: any) => {
+              (Array.isArray(data?.channels) ? data.channels : []).map((ch: any) => {
                 const isWebsite = ch.channelType === 'website' || ch.channelType === 'web_widget';
                 return (
                   <div key={ch.id} className="flex items-center justify-between p-2.5 bg-slate-50 dark:bg-surface-hover/40 border-2 border-emerald-500/25 dark:border-emerald-500/20 rounded-xl">
@@ -681,7 +686,7 @@ export default function ExecutiveDashboardPage() {
           <h3 className="text-[15px] font-bold text-foreground mb-2">{language === 'en' ? 'Channel Distribution' : 'চ্যানেল ডিস্ট্রিবিউশন'}</h3>
           
           <div className="h-52 w-full">
-            {chartData?.channelDistribution?.length > 0 ? (
+            {Array.isArray(chartData?.channelDistribution) && chartData.channelDistribution.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -707,7 +712,7 @@ export default function ExecutiveDashboardPage() {
           </div>
 
           <div className="space-y-1.5 mt-2">
-            {(chartData?.channelDistribution || []).map((item: any, idx: number) => (
+            {(Array.isArray(chartData?.channelDistribution) ? chartData.channelDistribution : []).map((item: any, idx: number) => (
               <div key={item.channel} className="flex items-center justify-between text-[11px]">
                 <div className="flex items-center gap-2 capitalize">
                   <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: DONUT_COLORS[idx % DONUT_COLORS.length] }} />
@@ -967,7 +972,11 @@ export default function ExecutiveDashboardPage() {
                             </span>
                           </td>
                           <td className="py-3 px-3 text-right text-slate-500 dark:text-zinc-400 text-[11px]">
-                            {new Date(c.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            {(() => {
+                              if (!c.createdAt) return '—';
+                              const d = new Date(c.createdAt);
+                              return isNaN(d.getTime()) ? '—' : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                            })()}
                           </td>
                         </tr>
                       ))
