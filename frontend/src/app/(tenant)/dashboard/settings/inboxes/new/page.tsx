@@ -1044,11 +1044,19 @@ export default function NewInboxStepper() {
                     <div className="space-y-2 text-[11px] text-zinc-400">
                       <div className="bg-background/40 p-2.5 rounded-lg border border-surface-hover/50">
                         <p className="font-bold text-zinc-200">Step 1: Get Facebook Page ID</p>
-                        <p className="mt-0.5">{language === 'en' ? 'Go to your Facebook Page → About → Page Transparency to copy Page ID.' : 'আপনার ফেসবুক পেজ → About → Page Transparency থেকে পেজ আইডি কপি করুন।'}</p>
+                        <p className="mt-0.5 leading-relaxed whitespace-pre-line">
+                          {language === 'en' 
+                            ? 'Open Facebook and go to your Page. Click on the "About" tab, then select "Page Transparency". Here you will find your numeric "Page ID". Copy this ID.' 
+                            : 'ফেসবুকে আপনার পেজে প্রবেশ করুন। "About" ট্যাবে ক্লিক করে "Page Transparency" অপশনে যান। সেখানে আপনার পেজের একটি সংখ্যাযুক্ত "Page ID" দেখতে পাবেন, সেটি কপি করুন।'}
+                        </p>
                       </div>
                       <div className="bg-background/40 p-2.5 rounded-lg border border-surface-hover/50">
-                        <p className="font-bold text-zinc-200">Step 2: Get Page Access Token</p>
-                        <p className="mt-0.5">{language === 'en' ? 'Go to developers.facebook.com → My Apps → Messenger → Access Tokens → Add Page & Generate Token.' : 'developers.facebook.com → My Apps → Messenger → Access Tokens সেকশন থেকে পেজ যুক্ত করে টোকেন তৈরি করুন।'}</p>
+                        <p className="font-bold text-zinc-200">Step 2: Meta App & Token (Advanced)</p>
+                        <p className="mt-0.5 leading-relaxed whitespace-pre-line">
+                          {language === 'en' 
+                            ? '1. Create an app at developers.facebook.com and add the "Messenger" product.\n2. Configure Webhooks to point to ZiniChat\'s URL with the correct verify token.\n3. Under Messenger "Access Tokens", add your page and click "Generate Token".' 
+                            : '১. developers.facebook.com এ একটি App তৈরি করে "Messenger" যুক্ত করুন।\n২. Webhooks সেটিংসে ZiniChat এর Webhook URL এবং Verify Token বসান।\n৩. "Access Tokens" সেকশন থেকে আপনার পেজটি যুক্ত করে "Generate Token" এ ক্লিক করে টোকেনটি কপি করুন।'}
+                        </p>
                       </div>
                     </div>
                   </div>

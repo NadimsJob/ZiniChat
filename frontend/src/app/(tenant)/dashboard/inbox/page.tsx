@@ -984,7 +984,7 @@ export default function InboxPage() {
         </div>
 
         {/* Channel Filter Row */}
-        <div className="flex items-center gap-1.5 pl-3 border-l border-border/40 text-xs shrink-0 h-8 ml-3">
+        <div className="flex items-center gap-1.5 pl-3 border-l border-border/40 text-xs shrink-0 h-8 ml-3 overflow-x-auto max-w-[500px]">
           <button
             onClick={() => setChannelFilter('all')}
             className={`px-3 py-1 rounded-md text-[11px] transition-colors cursor-pointer border border-transparent ${
@@ -993,17 +993,42 @@ export default function InboxPage() {
           >
             {language === 'en' ? 'All channels' : 'সব চ্যানেল'}
           </button>
-          {activeChannels.map(ch => (
-            <button
-              key={ch.id}
-              onClick={() => setChannelFilter(ch.channelType)}
-              className={`px-3 py-1 rounded-md text-[11px] capitalize transition-colors cursor-pointer border border-transparent ${
-                channelFilter === ch.channelType ? 'bg-secondary text-secondary-foreground font-bold shadow-sm' : 'text-muted-foreground hover:bg-muted/50 border-border/40'
-              }`}
-            >
-              {ch.channelType}
-            </button>
-          ))}
+          {activeChannels.map(ch => {
+            const pageId = ch.channelType?.toLowerCase() === 'messenger'
+              ? ch.externalAccountId
+              : ch.channelType?.toLowerCase() === 'instagram'
+                ? ch.verifyToken
+                : null;
+            const profilePicUrl = pageId ? `https://graph.facebook.com/${pageId}/picture?type=normal` : null;
+
+            return (
+              <button
+                key={ch.id}
+                onClick={() => setChannelFilter(ch.channelType)}
+                className={`px-2.5 py-1 rounded-md text-[11px] transition-colors cursor-pointer border border-transparent flex items-center gap-1.5 shrink-0 ${
+                  channelFilter === ch.channelType ? 'bg-secondary text-secondary-foreground font-bold shadow-sm' : 'text-muted-foreground hover:bg-muted/50 border-border/40'
+                }`}
+              >
+                {profilePicUrl ? (
+                  <img
+                    src={profilePicUrl}
+                    alt={ch.displayName || ch.channelType}
+                    className="w-4 h-4 rounded-full object-cover shrink-0 border border-border/40"
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                  />
+                ) : (
+                  ch.channelType === 'whatsapp' ? (
+                    <Phone className="w-3.5 h-3.5 text-emerald-500" />
+                  ) : ch.channelType === 'messenger' ? (
+                    <MessageCircle className="w-3.5 h-3.5 text-blue-500" />
+                  ) : (
+                    <MessageSquare className="w-3.5 h-3.5 text-purple-500" />
+                  )
+                )}
+                <span>{ch.displayName || ch.channelType}</span>
+              </button>
+            );
+          })}
           {(hasCommentAutomation || activeChannels.some((c: any) => ['messenger', 'instagram'].includes(c.channelType))) && (
             (() => {
               const unreadCommentsCount = commentLogs.filter(c => !readCommentIds.includes(c.commentId) && !c.isRead).length;

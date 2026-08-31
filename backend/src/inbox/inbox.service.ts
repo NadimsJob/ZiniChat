@@ -45,6 +45,8 @@ export class InboxService {
         ignoreGroupMessages: true,
         connectionMethod: true,
         createdAt: true,
+        externalAccountId: true,
+        verifyToken: true,
       }
     });
 
