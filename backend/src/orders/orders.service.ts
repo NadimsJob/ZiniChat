@@ -46,8 +46,10 @@ export class OrdersService {
         }
 
         const quantity = Number(item.quantity) || 1;
-        // Server-side price calculation ignoring client-passed priceAtTime
-        const priceAtTime = Number(product.price);
+        // Allow custom manual unit price if provided by merchant, otherwise fallback to DB product price
+        const priceAtTime = (item.priceAtTime !== undefined && item.priceAtTime !== null && !isNaN(Number(item.priceAtTime)))
+          ? Number(item.priceAtTime)
+          : Number(product.price);
         totalAmount += priceAtTime * quantity;
 
         validatedItems.push({

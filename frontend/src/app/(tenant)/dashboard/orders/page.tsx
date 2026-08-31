@@ -134,17 +134,17 @@ export default function OrdersPage() {
  setOrderItems([...orderItems, { productId: '', quantity: 1, priceAtTime: '0' }]);
  };
 
- const handleUpdateOrderItem = (index: number, field: string, value: string | number) => {
- const newItems = [...orderItems];
- if (field === 'productId') {
- const prod = products.find(p => p.id === value);
- newItems[index].productId = value as string;
- if (prod) newItems[index].priceAtTime = prod.price;
- } else {
- (newItems[index] as any)[field] = value;
- }
- setOrderItems(newItems);
- };
+  const handleUpdateOrderItem = (index: number, field: string, value: string | number) => {
+    const newItems = [...orderItems];
+    if (field === 'productId') {
+      const prod = products.find(p => p.id === value);
+      newItems[index].productId = value as string;
+      if (prod) newItems[index].priceAtTime = String(prod.price ?? 0);
+    } else {
+      (newItems[index] as any)[field] = value;
+    }
+    setOrderItems(newItems);
+  };
 
  const handleRemoveOrderItem = (index: number) => {
  setOrderItems(orderItems.filter((_, i) => i !== index));
@@ -153,7 +153,11 @@ export default function OrdersPage() {
  const handleCreateOrder = async (e: React.FormEvent) => {
  e.preventDefault();
  if (!selectedContactId || orderItems.length === 0) return;
- const validItems = orderItems.filter(i => i.productId && i.quantity > 0);
+  const validItems = orderItems.filter(i => i.productId && i.quantity > 0).map(i => ({
+    productId: i.productId,
+    quantity: i.quantity,
+    priceAtTime: parseFloat(i.priceAtTime || '0')
+  }));
  if (validItems.length === 0) return;
 
  setIsSubmitting(true);
@@ -481,6 +485,18 @@ export default function OrdersPage() {
                      <option value="">{language === 'en' ? `Select ${productLabel}...` : `${productLabel} বেছে নিন...`}</option>
                      {products.map(p => <option key={p.id} value={p.id}>{p.name} (BDT {p.price})</option>)}
                    </select>
+                    <div className="w-28 flex items-center gap-1 bg-surface border border-border rounded-md px-1.5 py-1.5 text-[13px] shrink-0">
+                      <span className="text-[11px] text-muted-foreground font-semibold shrink-0">BDT</span>
+                      <input 
+                        type="number" 
+                        step="any"
+                        min="0" 
+                        value={item.priceAtTime ?? '0'} 
+                        onChange={(e) => handleUpdateOrderItem(index, 'priceAtTime', e.target.value)}
+                        className="w-full bg-transparent focus:outline-none text-foreground font-semibold text-[13px]" 
+                        placeholder="0" 
+                      />
+                    </div>
                    {!isTechSoftwareMode && !isHealthcareMode && !isEducationMode && !isFinancialServiceMode && (
                      <div className="w-24">
                        <input type="number" required min="1" value={item.quantity}

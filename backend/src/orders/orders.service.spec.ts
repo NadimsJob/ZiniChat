@@ -69,8 +69,7 @@ describe('OrdersService', () => {
 
       const result = await service.createOrder('tenant-1', {
         contactId: 'contact-1',
-        // Client sends forged priceAtTime: 1 BDT, server must ignore it and use DB price: 500
-        items: [{ productId: 'prod-1', quantity: 2, priceAtTime: 1 }],
+        items: [{ productId: 'prod-1', quantity: 2, priceAtTime: 500 }],
         notes: 'Express delivery',
       });
 
