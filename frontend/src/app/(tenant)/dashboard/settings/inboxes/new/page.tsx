@@ -768,6 +768,25 @@ export default function NewInboxStepper() {
                           <p className="font-bold text-slate-900 dark:text-zinc-200">Step 2: Generate Permanent Token</p>
                           <p className="mt-0.5">{language === 'en' ? 'Go to business.facebook.com/settings → System Users → Create Admin System User → Generate Token with whatsapp_business_messaging permission.' : 'business.facebook.com/settings → System Users → Admin System User তৈরি করে whatsapp_business_messaging পারমিশন দিয়ে Permanent Token জেনারেট করুন।'}</p>
                         </div>
+
+                        {/* Custom Meta App Webhook Box for WhatsApp */}
+                        <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl space-y-2 text-[11px]">
+                          <div className="font-bold text-emerald-600 dark:text-emerald-400">
+                            {language === 'en' ? '🔗 Custom Meta App Webhook Credentials' : '🔗 কাস্টম মেটা অ্যাপ ওয়েবহুক তথ্য'}
+                          </div>
+                          <div>
+                            <span className="text-slate-600 dark:text-zinc-400 block">{language === 'en' ? 'Callback URL:' : 'কলব্যাক ইউআরএল:'}</span>
+                            <code className="text-slate-900 dark:text-zinc-200 bg-white dark:bg-background/80 px-2 py-1 rounded block font-mono text-[10.5px] mt-0.5 border border-slate-200 dark:border-surface-hover select-all">
+                              {`${API}/channels/whatsapp`}
+                            </code>
+                          </div>
+                          <div>
+                            <span className="text-slate-600 dark:text-zinc-400 block">{language === 'en' ? 'Verify Token:' : 'ভেরিফাই টোকেন:'}</span>
+                            <code className="text-slate-900 dark:text-zinc-200 bg-white dark:bg-background/80 px-2 py-1 rounded block font-mono text-[10.5px] mt-0.5 border border-slate-200 dark:border-surface-hover select-all">
+                              zinichat_webhook_verify_token
+                            </code>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
