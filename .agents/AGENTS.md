@@ -5,7 +5,7 @@ All AI agents MUST adhere to these workspace-specific behavioral and technical g
 ## 1. CRITICAL: Git & Deployment Rules
 * **No Auto-Push**: NEVER run `git push` or deploy via MCP (`invoke-mcp.js`) without explicit user approval ("deploy", "push it"). Local `git commit` is allowed to save progress.
 * **Deployment Workflow (PC -> Git -> Server)**: PC pushes to GitHub; Server pulls from Git. Direct file transfers or SFTP uploads to the server are strictly prohibited.
-* **MCP Deployment Protocol**: Use `invoke-mcp.js` (target: "test"/"live", branch: "main") to deploy. Do not edit code on remote servers; fix bugs locally, push to Git, then re-deploy. Read-only server investigation is allowed. SSH Keys require `fs.readFileSync` (node-ssh Windows bug).
+* **MCP Deployment Protocol**: Use `invoke-mcp.js` with **positional arguments** (`node scripts/invoke-mcp.js live main` or `node scripts/invoke-mcp.js test staging`). NEVER pass CLI flags like `--target=live`. Do not edit code on remote servers; fix bugs locally, push to Git, then re-deploy. Read-only server investigation is allowed. SSH Keys require `fs.readFileSync` (node-ssh Windows bug).
 * **Live Server Env Vars & Migrations**: `docker compose restart` doesn't reload `.env`. Use `docker compose --env-file .env.live up -d backend`. Migrations (`prisma db push`) use `DIRECT_URL` (points to `supabase-live-supavisor-1:5432`, not pooler).
 * **Hotfix Workflow**: Stash -> Pull Main -> Branch `hotfix/name` -> Fix & Test Local -> Push -> Deploy Test -> Merge Main -> Deploy Live -> Return to Feature Branch.
 
@@ -52,7 +52,7 @@ All AI agents MUST adhere to these workspace-specific behavioral and technical g
 ## 6. Guards, Testing & Notifications
 * **Guards & Roles**: Ensure JWT payloads return arrays (e.g., `permissions`) for Guards. Isolate routes in `middleware.ts` (Superadmin vs Tenant).
 * **Multi-Recipient Notifications**: Always fetch and notify ALL owners/admins (`role: { in: ['owner', 'admin'] }`) via `NotificationsService` and `SmtpService` for key events. Never leak to `users[0]`.
-* **TypeScript & Jest**: Include `.spec.ts` in root `tsconfig.json` so IDE loads types. `tsconfig.build.json` excludes tests. Provide `@nestjs/bullmq` mock tokens. Return full nested Prisma mock objects for services. Avoid hardcoded HTML strings in email assertions. Every NestJS service MUST have a `.spec.ts` file.
+* **TypeScript & Jest**: Include `.spec.ts` in root `tsconfig.json` so IDE loads types. `tsconfig.build.json` excludes tests. Provide `@nestjs/bullmq` mock tokens. Return full nested Prisma mock objects for services. Avoid hardcoded HTML strings in email assertions. Every NestJS service MUST have a `.spec.ts` file. Always align frontend TypeScript interfaces (e.g. `IgAccount`) when extending backend response payloads to prevent Next.js production build typecheck failures.
 
 ## 7. Strict UI/UX & Design Alteration Rules
 * **No Unauthorized Design Changes**: Do NOT change any design-related code, styles (Tailwind classes, layouts, components, theme settings) or UI structure unless explicitly instructed by the user.
