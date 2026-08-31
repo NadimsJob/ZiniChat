@@ -497,9 +497,9 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
     {
       title: language === 'en' ? 'AUTOMATION' : 'অটোমেশন',
       items: [
-        { name: language === 'en' ? 'Live Inbox' : 'লাইভ ইনবক্স', icon: Inbox, href: '/dashboard/inbox', id: 'sidebar-inbox', isCore: true },
-        { name: language === 'en' ? 'Channel Integration' : 'চ্যানেল ইন্টিগ্রেশন', icon: Webhook, href: '/dashboard/settings/inboxes', id: 'sidebar-inboxes', isCore: true },
-        { name: language === 'en' ? 'AI Training' : 'এআই ট্রেইনিং', icon: Zap, href: '/dashboard/settings/ai-training', id: 'sidebar-ai-training', isCore: true },
+        { name: language === 'en' ? 'Live Inbox' : 'লাইভ ইনবক্স', icon: Inbox, href: '/dashboard/inbox', id: 'sidebar-inbox', coreColor: 'emerald' },
+        { name: language === 'en' ? 'Channel Integration' : 'চ্যানেল ইন্টিগ্রেশন', icon: Webhook, href: '/dashboard/settings/inboxes', id: 'sidebar-inboxes', coreColor: 'sky' },
+        { name: language === 'en' ? 'AI Training' : 'এআই ট্রেইনিং', icon: Zap, href: '/dashboard/settings/ai-training', id: 'sidebar-ai-training', coreColor: 'purple' },
         { 
           name: isPropertyMode 
             ? (language === 'en' ? 'Properties' : 'প্রপার্টি লিস্ট') 
@@ -520,7 +520,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
             : (language === 'en' ? 'Product List' : 'প্রোডাক্ট লিস্ট'), 
           icon: isPropertyMode ? Building2 : isHospitalityMode ? Hotel : isTechSoftwareMode ? Cpu : isFinancialServiceMode ? Briefcase : isHealthcareMode ? Stethoscope : isEducationMode ? GraduationCap : isManufacturingMode ? Factory : isLogisticsMode ? Truck : ShoppingCart, 
           href: '/dashboard/products',
-          isCore: true 
+          coreColor: 'amber' 
         },
       ]
     },
@@ -646,7 +646,43 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
                 {group.items.map((item) => {
                   const isActive = pathname === item.href;
                   const isLocked = !hasAccess(item.href);
-                  const isCoreFeature = (item as any).isCore;
+                  const coreColor = (item as any).coreColor;
+
+                  let itemStyle = 'text-muted-foreground hover:bg-muted hover:text-foreground';
+                  let iconStyle = 'text-muted-foreground group-hover:text-foreground';
+                  let textStyle = '';
+
+                  if (coreColor) {
+                    if (coreColor === 'emerald') {
+                      itemStyle = isActive
+                        ? 'bg-emerald-600 dark:bg-emerald-500 text-white font-bold border border-emerald-400 dark:border-emerald-300 shadow-[0_0_14px_rgba(16,185,129,0.4)]'
+                        : 'bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40 dark:border-emerald-400/50 font-bold shadow-[0_0_10px_rgba(16,185,129,0.18)] dark:shadow-[0_0_12px_rgba(16,185,129,0.25)] hover:bg-emerald-500/20 hover:border-emerald-500/70 hover:shadow-[0_0_14px_rgba(16,185,129,0.35)]';
+                      iconStyle = isActive ? 'text-white' : 'text-emerald-600 dark:text-emerald-400';
+                      textStyle = isActive ? 'text-white font-bold' : 'text-emerald-700 dark:text-emerald-300 font-bold';
+                    } else if (coreColor === 'sky') {
+                      itemStyle = isActive
+                        ? 'bg-sky-600 dark:bg-sky-500 text-white font-bold border border-sky-400 dark:border-sky-300 shadow-[0_0_14px_rgba(14,165,233,0.4)]'
+                        : 'bg-sky-500/10 dark:bg-sky-500/20 text-sky-700 dark:text-sky-300 border border-sky-500/40 dark:border-sky-400/50 font-bold shadow-[0_0_10px_rgba(14,165,233,0.18)] dark:shadow-[0_0_12px_rgba(14,165,233,0.25)] hover:bg-sky-500/20 hover:border-sky-500/70 hover:shadow-[0_0_14px_rgba(14,165,233,0.35)]';
+                      iconStyle = isActive ? 'text-white' : 'text-sky-600 dark:text-sky-400';
+                      textStyle = isActive ? 'text-white font-bold' : 'text-sky-700 dark:text-sky-300 font-bold';
+                    } else if (coreColor === 'purple') {
+                      itemStyle = isActive
+                        ? 'bg-purple-600 dark:bg-purple-500 text-white font-bold border border-purple-400 dark:border-purple-300 shadow-[0_0_14px_rgba(168,85,247,0.4)]'
+                        : 'bg-purple-500/10 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300 border border-purple-500/40 dark:border-purple-400/50 font-bold shadow-[0_0_10px_rgba(168,85,247,0.18)] dark:shadow-[0_0_12px_rgba(168,85,247,0.25)] hover:bg-purple-500/20 hover:border-purple-500/70 hover:shadow-[0_0_14px_rgba(168,85,247,0.35)]';
+                      iconStyle = isActive ? 'text-white' : 'text-purple-600 dark:text-purple-400';
+                      textStyle = isActive ? 'text-white font-bold' : 'text-purple-700 dark:text-purple-300 font-bold';
+                    } else if (coreColor === 'amber') {
+                      itemStyle = isActive
+                        ? 'bg-amber-600 dark:bg-amber-500 text-white font-bold border border-amber-400 dark:border-amber-300 shadow-[0_0_14px_rgba(245,158,11,0.4)]'
+                        : 'bg-amber-500/10 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/40 dark:border-amber-400/50 font-bold shadow-[0_0_10px_rgba(245,158,11,0.18)] dark:shadow-[0_0_12px_rgba(245,158,11,0.25)] hover:bg-amber-500/20 hover:border-amber-500/70 hover:shadow-[0_0_14px_rgba(245,158,11,0.35)]';
+                      iconStyle = isActive ? 'text-white' : 'text-amber-600 dark:text-amber-400';
+                      textStyle = isActive ? 'text-white font-bold' : 'text-amber-700 dark:text-amber-300 font-bold';
+                    }
+                  } else if (isActive) {
+                    itemStyle = 'bg-primary text-primary-foreground font-bold shadow-sm';
+                    iconStyle = 'text-primary-foreground';
+                    textStyle = 'text-primary-foreground font-bold';
+                  }
 
                   return (
                     <div key={item.name} className="flex flex-col relative">
@@ -662,25 +698,13 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
                             setIsMobileMenuOpen(false);
                           }
                         }}
-                        className={`group flex items-center ${isSidebarCollapsed ? 'justify-center px-1 py-2' : 'justify-between px-2.5 py-1.5'} rounded-xl text-[12px] font-medium transition-all ${
-                          isActive
-                            ? 'bg-primary text-primary-foreground font-bold shadow-sm'
-                            : isCoreFeature
-                            ? 'bg-primary/10 dark:bg-emerald-500/15 text-primary dark:text-emerald-400 border border-primary/20 dark:border-emerald-500/30 font-bold hover:bg-primary/20 hover:border-primary/40'
-                            : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                        } ${isLocked ? 'opacity-80' : ''}`}
+                        className={`group flex items-center ${isSidebarCollapsed ? 'justify-center px-1 py-2' : 'justify-between px-2.5 py-1.5'} rounded-xl text-[12px] font-medium transition-all ${itemStyle} ${isLocked ? 'opacity-80' : ''}`}
                       >
                         <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-2.5'} min-w-0 flex-1`}>
-                          <item.icon className={`w-4 h-4 shrink-0 transition-colors ${
-                            isActive 
-                              ? 'text-primary-foreground' 
-                              : isCoreFeature 
-                              ? 'text-primary dark:text-emerald-400' 
-                              : 'text-muted-foreground group-hover:text-foreground'
-                          }`} />
+                          <item.icon className={`w-4 h-4 shrink-0 transition-colors ${iconStyle}`} />
                           {!isSidebarCollapsed && (
                             <>
-                              <span className={`truncate whitespace-nowrap ${isActive ? 'text-primary-foreground font-bold' : isCoreFeature ? 'text-primary dark:text-emerald-400 font-bold' : ''}`}>
+                              <span className={`truncate whitespace-nowrap ${textStyle}`}>
                                 {item.name}
                               </span>
                               {isLocked && <Lock className="w-3 h-3 text-amber-500 ml-1 shrink-0" />}
