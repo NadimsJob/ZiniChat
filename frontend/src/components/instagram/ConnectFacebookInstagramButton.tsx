@@ -69,6 +69,8 @@ export default function ConnectFacebookInstagramButton({ onConnected }: { onConn
       {
         scope: 'instagram_basic,instagram_manage_messages,pages_show_list,pages_manage_metadata',
         auth_type: 'rerequest',
+        return_scopes: true,
+        enable_profile_selector: true,
       }
     );
   };
