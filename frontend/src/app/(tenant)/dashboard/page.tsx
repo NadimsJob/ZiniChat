@@ -164,7 +164,7 @@ export default function ExecutiveDashboardPage() {
     return (
       <div className="max-w-[1600px] mx-auto p-4 space-y-6 animate-pulse">
         <div className="h-16 bg-surface-hover/50 rounded-2xl" />
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 ${hasCommentAutomation ? 'xl:grid-cols-6' : 'lg:grid-cols-5'} gap-4`}>
           {[1, 2, 3, 4, 5, 6].map(i => (
             <div key={i} className="h-36 bg-surface-hover/40 rounded-2xl" />
           ))}
@@ -310,8 +310,8 @@ export default function ExecutiveDashboardPage() {
         </div>
       </div>
 
-      {/* ROW 1: 6 EXECUTIVE KPI CARDS (RICH TINTED BACKGROUNDS) */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+      {/* ROW 1: EXECUTIVE KPI CARDS (RICH TINTED BACKGROUNDS) */}
+      <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 ${hasCommentAutomation ? 'xl:grid-cols-6' : 'lg:grid-cols-5'} gap-3 sm:gap-4`}>
         
         {/* KPI 1: Messages */}
         <div className="bg-emerald-500/5 backdrop-blur-xl border border-emerald-500/20 rounded-2xl p-4 flex flex-col justify-between hover:border-emerald-500/40 hover:bg-emerald-500/10 transition-all shadow-md shadow-black/5 hover:shadow-lg">
