@@ -14,6 +14,7 @@ interface IgAccount {
   id: string;
   username: string;
   pageName: string;
+  pageId?: string;
 }
 
 export default function ConnectFacebookInstagramButton({ onConnected }: { onConnected: () => void }) {
