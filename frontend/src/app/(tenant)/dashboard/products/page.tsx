@@ -1034,198 +1034,199 @@ export default function ProductsPage() {
                       </div>
                     </div>
 
-                    {/* Custom Attributes Builder */}
-                    <div className="bg-surface p-2.5 border border-border shadow-md rounded-2xl space-y-3">
-                      <div className="flex items-center justify-between">
-                        <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-                          {language === 'en' ? 'Custom Attributes & Dynamic Fields' : 'কাস্টম এট্রিবিউট ও ডাইনামিক ফিল্ডস'}
-                        </label>
-                        <span className="px-2 py-0.5 bg-primary/10 text-primary text-[9px] font-bold rounded-full uppercase tracking-widest">AI Readable</span>
-                      </div>
-                      <p className="text-[11px] text-muted-foreground">
-                        {language === 'en'
-                          ? 'Add custom fields (Dropdown, Text, Textarea, Date, Number, Checkbox). AI will automatically read these fields to answer customer inquiries.'
-                          : 'যেকোনো কাস্টম ফিল্ড (ড্রপডাউন, টেক্সট, টেক্সট-এরিয়া, ডেট, নম্বর, চেকপয়েন্ট) যুক্ত করুন। এআই অটোমেটিক ডাটা রিড করে উত্তর দেবে।'}
-                      </p>
-
-                      {/* Quick Presets */}
-                      <div className="flex flex-wrap gap-1">
-                        {(isPropertyMode ? ['area', 'bedrooms', 'bathrooms', 'floor', 'facing']
-                          : isHospitalityMode ? ['maxGuests', 'bedType', 'amenities', 'view', 'roomSize']
-                          : isTechSoftwareMode ? ['warranty', 'licenseType', 'demoUrl', 'sla', 'maxUsers']
-                          : isFinancialServiceMode ? ['duration', 'deliverables', 'consultant', 'pricingTier']
-                          : isHealthcareMode ? ['doctorName', 'specialty', 'visitingHours', 'clinicRoom']
-                          : isEducationMode ? ['duration', 'batchSchedule', 'instructor', 'certificate']
-                          : isManufacturingMode ? ['moq', 'material', 'specifications', 'leadTime']
-                          : isLogisticsMode ? ['route', 'capacity', 'freightRate', 'transitTime']
-                          : ['Size', 'Color', 'Brand', 'Weight', 'Warranty', 'Expiry Date']
-                        ).map(key => (
-                          <button
-                            key={key}
-                            type="button"
-                            onClick={() => { setAttrKey(key); }}
-                            className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-all cursor-pointer ${
-                              attrKey === key
-                                ? 'bg-primary text-white border-primary'
-                                : 'bg-background text-muted-foreground border-border hover:border-primary/50'
-                            }`}
-                          >
-                            + {key}
-                          </button>
-                        ))}
-                      </div>
-
-                      {/* Attribute Builder Form Box */}
-                      <div className="bg-background p-3 border border-border rounded-xl space-y-2.5 shadow-sm">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          <div>
-                            <label className="block text-[11px] font-medium text-muted-foreground mb-1">
-                              {language === 'en' ? 'Field Name / Title *' : 'ফিল্ডের নাম / টাইটেল *'}
-                            </label>
-                            <input 
-                              type="text" 
-                              placeholder="e.g. Color, Expiry Date, Warranty" 
-                              value={attrKey} 
-                              onChange={e => setAttrKey(e.target.value)} 
-                              className="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-[12px] focus:border-primary focus:outline-none text-foreground" 
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-[11px] font-medium text-muted-foreground mb-1">
-                              {language === 'en' ? 'Field Type' : 'ফিল্ডের ধরন'}
-                            </label>
-                            <select 
-                              value={attrType} 
-                              onChange={(e: any) => {
-                                const t = e.target.value;
-                                setAttrType(t);
-                                if (t === 'checkbox') setAttrValue('Yes');
-                                else setAttrValue('');
-                              }} 
-                              className="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-[12px] focus:border-primary focus:outline-none text-foreground"
-                            >
-                              <option value="text">📝 Text Box (Short)</option>
-                              <option value="textarea">📄 Text Area (Long)</option>
-                              <option value="dropdown">🔽 Dropdown (Options)</option>
-                              <option value="date">📅 Date Picker</option>
-                              <option value="number">🔢 Number</option>
-                              <option value="checkbox">☑️ Checkbox (Yes/No)</option>
-                            </select>
-                          </div>
-                        </div>
-
-                        {/* Dropdown Options Input */}
-                        {attrType === 'dropdown' && (
-                          <div>
-                            <label className="block text-[11px] font-medium text-muted-foreground mb-1">
-                              {language === 'en' ? 'Dropdown Options (comma separated)' : 'ড্রপডাউন অপশনসমূহ (কমা দিয়ে লিখুন)'}
-                            </label>
-                            <input 
-                              type="text" 
-                              placeholder="e.g. Red, Blue, Green, Yellow" 
-                              value={attrDropdownOptions} 
-                              onChange={e => {
-                                setAttrDropdownOptions(e.target.value);
-                                const opts = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
-                                if (opts.length > 0 && !opts.includes(attrValue)) {
-                                  setAttrValue(opts[0]);
-                                }
-                              }} 
-                              className="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-[12px] focus:border-primary focus:outline-none text-foreground mb-1.5" 
-                            />
-                          </div>
-                        )}
-
-                        {/* Value Input depending on attrType */}
-                        <div>
-                          <label className="block text-[11px] font-medium text-muted-foreground mb-1">
-                            {language === 'en' ? 'Selected / Entered Value' : 'ইনপুট ভ্যালু'}
-                          </label>
-                          {attrType === 'dropdown' ? (
-                            <select 
-                              value={attrValue} 
-                              onChange={e => setAttrValue(e.target.value)} 
-                              className="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-[12px] focus:border-primary focus:outline-none text-foreground"
-                            >
-                              <option value="">Select Value...</option>
-                              {attrDropdownOptions.split(',').map(s => s.trim()).filter(Boolean).map(opt => (
-                                <option key={opt} value={opt}>{opt}</option>
-                              ))}
-                            </select>
-                          ) : attrType === 'textarea' ? (
-                            <textarea 
-                              rows={2} 
-                              placeholder="Enter details..." 
-                              value={attrValue} 
-                              onChange={e => setAttrValue(e.target.value)} 
-                              className="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-[12px] focus:border-primary focus:outline-none resize-none text-foreground" 
-                            />
-                          ) : attrType === 'date' ? (
-                            <input 
-                              type="date" 
-                              value={attrValue} 
-                              onChange={e => setAttrValue(e.target.value)} 
-                              className="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-[12px] focus:border-primary focus:outline-none text-foreground" 
-                            />
-                          ) : attrType === 'number' ? (
-                            <input 
-                              type="number" 
-                              placeholder="0" 
-                              value={attrValue} 
-                              onChange={e => setAttrValue(e.target.value)} 
-                              className="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-[12px] focus:border-primary focus:outline-none text-foreground" 
-                            />
-                          ) : attrType === 'checkbox' ? (
-                            <label className="flex items-center gap-2 cursor-pointer">
-                              <input 
-                                type="checkbox" 
-                                checked={attrValue === 'Yes'} 
-                                onChange={e => setAttrValue(e.target.checked ? 'Yes' : 'No')} 
-                                className="w-4 h-4 text-primary rounded border-border" 
-                              />
-                              <span className="text-[12px] font-semibold text-foreground">{attrValue === 'Yes' ? 'Yes (Active)' : 'No (Inactive)'}</span>
-                            </label>
-                          ) : (
-                            <input 
-                              type="text" 
-                              placeholder="Enter value..." 
-                              value={attrValue} 
-                              onChange={e => setAttrValue(e.target.value)} 
-                              className="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-[12px] focus:border-primary focus:outline-none text-foreground" 
-                              onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAddAttribute())} 
-                            />
-                          )}
-                        </div>
-
-                        <button 
-                          type="button" 
-                          onClick={handleAddAttribute} 
-                          className="w-full py-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer mt-2"
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                          {language === 'en' ? 'Add Custom Attribute' : 'এট্রিবিউট যুক্ত করুন'}
-                        </button>
-                      </div>
-
-                      {/* Display Saved Custom Attributes */}
-                      {Object.keys(formData.attributes || {}).length > 0 && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">
-                          {Object.entries(formData.attributes).map(([k, v]: any) => (
-                            <div key={k} className="flex items-center justify-between p-2.5 bg-background border border-border rounded-lg text-[12px] group shadow-sm">
-                              <div className="truncate pr-2">
-                                <span className="text-muted-foreground font-semibold">{k}:</span> <span className="font-bold text-foreground">{String(v)}</span>
-                              </div>
-                              <button type="button" onClick={() => handleRemoveAttribute(k)} className="text-muted-foreground hover:text-red-500 p-1 rounded transition-colors shrink-0 cursor-pointer">
-                                <X className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
                   </>
                 )}
+
+                {/* Custom Attributes Builder (Rendered for ALL business categories) */}
+                <div className="bg-surface p-2.5 border border-border shadow-md rounded-2xl space-y-3 mt-3">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                      {language === 'en' ? 'Custom Attributes & Dynamic Fields' : 'কাস্টম এট্রিবিউট ও ডাইনামিক ফিল্ডস'}
+                    </label>
+                    <span className="px-2 py-0.5 bg-primary/10 text-primary text-[9px] font-bold rounded-full uppercase tracking-widest">AI Readable</span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    {language === 'en'
+                      ? 'Add custom fields (Dropdown, Text, Textarea, Date, Number, Checkbox). AI will automatically read these fields to answer customer inquiries.'
+                      : 'যেকোনো কাস্টম ফিল্ড (ড্রপডাউন, টেক্সট, টেক্সট-এরিয়া, ডেট, নম্বর, চেকপয়েন্ট) যুক্ত করুন। এআই অটোমেটিক ডাটা রিড করে উত্তর দেবে।'}
+                  </p>
+
+                  {/* Quick Presets */}
+                  <div className="flex flex-wrap gap-1">
+                    {(isPropertyMode ? ['area', 'bedrooms', 'bathrooms', 'floor', 'facing']
+                      : isHospitalityMode ? ['maxGuests', 'bedType', 'amenities', 'view', 'roomSize']
+                      : isTechSoftwareMode ? ['warranty', 'licenseType', 'demoUrl', 'sla', 'maxUsers']
+                      : isFinancialServiceMode ? ['duration', 'deliverables', 'consultant', 'pricingTier']
+                      : isHealthcareMode ? ['doctorName', 'specialty', 'visitingHours', 'clinicRoom']
+                      : isEducationMode ? ['duration', 'batchSchedule', 'instructor', 'certificate']
+                      : isManufacturingMode ? ['moq', 'material', 'specifications', 'leadTime']
+                      : isLogisticsMode ? ['route', 'capacity', 'freightRate', 'transitTime']
+                      : ['Size', 'Color', 'Brand', 'Weight', 'Warranty', 'Expiry Date']
+                    ).map(key => (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => { setAttrKey(key); }}
+                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-all cursor-pointer ${
+                          attrKey === key
+                            ? 'bg-primary text-white border-primary'
+                            : 'bg-background text-muted-foreground border-border hover:border-primary/50'
+                        }`}
+                      >
+                        + {key}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Attribute Builder Form Box */}
+                  <div className="bg-background p-3 border border-border rounded-xl space-y-2.5 shadow-sm">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[11px] font-medium text-muted-foreground mb-1">
+                          {language === 'en' ? 'Field Name / Title *' : 'ফিল্ডের নাম / টাইটেল *'}
+                        </label>
+                        <input 
+                          type="text" 
+                          placeholder="e.g. Color, Expiry Date, Warranty" 
+                          value={attrKey} 
+                          onChange={e => setAttrKey(e.target.value)} 
+                          className="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-[12px] focus:border-primary focus:outline-none text-foreground" 
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-medium text-muted-foreground mb-1">
+                          {language === 'en' ? 'Field Type' : 'ফিল্ডের ধরন'}
+                        </label>
+                        <select 
+                          value={attrType} 
+                          onChange={(e: any) => {
+                            const t = e.target.value;
+                            setAttrType(t);
+                            if (t === 'checkbox') setAttrValue('Yes');
+                            else setAttrValue('');
+                          }} 
+                          className="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-[12px] focus:border-primary focus:outline-none text-foreground"
+                        >
+                          <option value="text">📝 Text Box (Short)</option>
+                          <option value="textarea">📄 Text Area (Long)</option>
+                          <option value="dropdown">🔽 Dropdown (Options)</option>
+                          <option value="date">📅 Date Picker</option>
+                          <option value="number">🔢 Number</option>
+                          <option value="checkbox">☑️ Checkbox (Yes/No)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Dropdown Options Input */}
+                    {attrType === 'dropdown' && (
+                      <div>
+                        <label className="block text-[11px] font-medium text-muted-foreground mb-1">
+                          {language === 'en' ? 'Dropdown Options (comma separated)' : 'ড্রপডাউন অপশনসমূহ (কমা দিয়ে লিখুন)'}
+                        </label>
+                        <input 
+                          type="text" 
+                          placeholder="e.g. Red, Blue, Green, Yellow" 
+                          value={attrDropdownOptions} 
+                          onChange={e => {
+                            setAttrDropdownOptions(e.target.value);
+                            const opts = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
+                            if (opts.length > 0 && !opts.includes(attrValue)) {
+                              setAttrValue(opts[0]);
+                            }
+                          }} 
+                          className="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-[12px] focus:border-primary focus:outline-none text-foreground mb-1.5" 
+                        />
+                      </div>
+                    )}
+
+                    {/* Value Input depending on attrType */}
+                    <div>
+                      <label className="block text-[11px] font-medium text-muted-foreground mb-1">
+                        {language === 'en' ? 'Selected / Entered Value' : 'ইনপুট ভ্যালু'}
+                      </label>
+                      {attrType === 'dropdown' ? (
+                        <select 
+                          value={attrValue} 
+                          onChange={e => setAttrValue(e.target.value)} 
+                          className="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-[12px] focus:border-primary focus:outline-none text-foreground"
+                        >
+                          <option value="">Select Value...</option>
+                          {attrDropdownOptions.split(',').map(s => s.trim()).filter(Boolean).map(opt => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      ) : attrType === 'textarea' ? (
+                        <textarea 
+                          rows={2} 
+                          placeholder="Enter details..." 
+                          value={attrValue} 
+                          onChange={e => setAttrValue(e.target.value)} 
+                          className="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-[12px] focus:border-primary focus:outline-none resize-none text-foreground" 
+                        />
+                      ) : attrType === 'date' ? (
+                        <input 
+                          type="date" 
+                          value={attrValue} 
+                          onChange={e => setAttrValue(e.target.value)} 
+                          className="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-[12px] focus:border-primary focus:outline-none text-foreground" 
+                        />
+                      ) : attrType === 'number' ? (
+                        <input 
+                          type="number" 
+                          placeholder="0" 
+                          value={attrValue} 
+                          onChange={e => setAttrValue(e.target.value)} 
+                          className="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-[12px] focus:border-primary focus:outline-none text-foreground" 
+                        />
+                      ) : attrType === 'checkbox' ? (
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            checked={attrValue === 'Yes'} 
+                            onChange={e => setAttrValue(e.target.checked ? 'Yes' : 'No')} 
+                            className="w-4 h-4 text-primary rounded border-border" 
+                          />
+                          <span className="text-[12px] font-semibold text-foreground">{attrValue === 'Yes' ? 'Yes (Active)' : 'No (Inactive)'}</span>
+                        </label>
+                      ) : (
+                        <input 
+                          type="text" 
+                          placeholder="Enter value..." 
+                          value={attrValue} 
+                          onChange={e => setAttrValue(e.target.value)} 
+                          className="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-[12px] focus:border-primary focus:outline-none text-foreground" 
+                          onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAddAttribute())} 
+                        />
+                      )}
+                    </div>
+
+                    <button 
+                      type="button" 
+                      onClick={handleAddAttribute} 
+                      className="w-full py-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer mt-2"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      {language === 'en' ? 'Add Custom Attribute' : 'এট্রিবিউট যুক্ত করুন'}
+                    </button>
+                  </div>
+
+                  {/* Display Saved Custom Attributes */}
+                  {Object.keys(formData.attributes || {}).length > 0 && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">
+                      {Object.entries(formData.attributes).map(([k, v]: any) => (
+                        <div key={k} className="flex items-center justify-between p-2.5 bg-background border border-border rounded-lg text-[12px] group shadow-sm">
+                          <div className="truncate pr-2">
+                            <span className="text-muted-foreground font-semibold">{k}:</span> <span className="font-bold text-foreground">{String(v)}</span>
+                          </div>
+                          <button type="button" onClick={() => handleRemoveAttribute(k)} className="text-muted-foreground hover:text-red-500 p-1 rounded transition-colors shrink-0 cursor-pointer">
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </form>
             </div>
 
