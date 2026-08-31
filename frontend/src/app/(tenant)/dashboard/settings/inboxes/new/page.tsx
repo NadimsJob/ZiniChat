@@ -961,18 +961,18 @@ export default function NewInboxStepper() {
               <div className="lg:col-span-7 space-y-4">
                 {/* Instruction banner for Messenger */}
                 <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-2xl space-y-2">
-                  <div className="flex items-center gap-2 text-blue-400 font-bold text-xs">
+                  <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-bold text-xs">
                     <ShieldCheck className="w-4 h-4" />
                     <span>{language === 'en' ? 'Meta Official Messenger Integration Setup' : 'মেটা অফিশিয়াল মেসেঞ্জার ইন্টিগ্রেশন নির্দেশনা'}</span>
                   </div>
-                  <ul className="text-[11px] text-zinc-300 space-y-1 pl-5 list-disc leading-relaxed">
+                  <ul className="text-[11px] text-slate-700 dark:text-zinc-300 space-y-1 pl-5 list-disc leading-relaxed">
                     <li>{language === 'en' ? 'Click "Connect Facebook Page" to authorize using your Facebook account with Page Management permissions.' : '"Connect Facebook Page" বাটনে ক্লিক করে ফেসবুক পেজের পারমিশন দিন।'}</li>
                     <li>{language === 'en' ? 'Supports Meta Page messaging, automated AI responses, and Meta Broadcast Campaigns.' : 'মেটা মেসেজিং, অটোমেটেড এআই রেসপন্স এবং ব্রডকাস্ট ক্যাম্পেইন সাপোর্ট করে।'}</li>
                     <li>{language === 'en' ? 'For manual setup, paste your Facebook Page ID and Page Access Token from Facebook Business Manager.' : 'ম্যানুয়াল সেটআপের ক্ষেত্রে ফেসবুক পেজ আইডি এবং পেজ এক্সেস টোকেন দিন।'}</li>
                   </ul>
                 </div>
 
-                <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-6 space-y-5">
+                <div className="bg-white dark:bg-surface/70 backdrop-blur-xl border border-slate-200 dark:border-surface-hover rounded-2xl p-6 space-y-5">
                   <div>
                     <ConnectFacebookPageButton onConnected={handleConnectedSuccess} />
                   </div>
@@ -1102,18 +1102,18 @@ export default function NewInboxStepper() {
               <div className="lg:col-span-7 space-y-4">
                 {/* Instruction banner for Instagram */}
                 <div className="bg-pink-500/10 border border-pink-500/20 p-4 rounded-2xl space-y-2">
-                  <div className="flex items-center gap-2 text-pink-400 font-bold text-xs">
+                  <div className="flex items-center gap-2 text-pink-600 dark:text-pink-400 font-bold text-xs">
                     <ShieldCheck className="w-4 h-4" />
                     <span>{language === 'en' ? 'Instagram Professional Account Setup Guidelines' : 'ইন্সটাগ্রাম বিজনেস অ্যাকাউন্ট ইন্সট্রাকশন'}</span>
                   </div>
-                  <ul className="text-[11px] text-zinc-300 space-y-1 pl-5 list-disc leading-relaxed">
+                  <ul className="text-[11px] text-slate-700 dark:text-zinc-300 space-y-1 pl-5 list-disc leading-relaxed">
                     <li>{language === 'en' ? 'Your Instagram Account MUST be converted to a Business or Creator Account.' : 'আপনার ইন্সটাগ্রাম অ্যাকাউন্টটি অবশ্যই Business বা Creator অ্যাকাউন্ট হতে হবে।'}</li>
                     <li>{language === 'en' ? 'The Instagram Account MUST be linked to an active Facebook Page.' : 'ইন্সটাগ্রাম অ্যাকাউন্টটি অবশ্যই আপনার ফেসবুক পেজের সাথে কানেক্টেড থাকতে হবে।'}</li>
                     <li>{language === 'en' ? 'Click "Connect Instagram" button below to log in via Facebook and authorize Instagram DM access.' : 'নিচে "Connect Instagram" বাটনে ক্লিক করে মেটা ড্যাশবোর্ডের মাধ্যমে অনুমোদন সম্পন্ন করুন।'}</li>
                   </ul>
                 </div>
 
-                <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-6 space-y-5">
+                <div className="bg-white dark:bg-surface/70 backdrop-blur-xl border border-slate-200 dark:border-surface-hover rounded-2xl p-6 space-y-5">
                   <div>
                     <ConnectFacebookInstagramButton onConnected={handleConnectedSuccess} />
                   </div>
