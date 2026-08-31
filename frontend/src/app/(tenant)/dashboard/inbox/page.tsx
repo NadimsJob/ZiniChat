@@ -1055,7 +1055,7 @@ export default function InboxPage() {
 
       <div className="flex flex-1 overflow-hidden gap-3 p-0 md:p-3 bg-background">
         {/* LEFT COLUMN: Conversation List */}
-        <div className={`w-full md:w-80 lg:w-96 md:border border-border/80 md:shadow-sm dark:shadow-[0_0_15px_rgba(0,0,0,0.2)] md:rounded-2xl flex-col bg-card shrink-0 overflow-hidden ${
+        <div className={`w-full md:w-80 lg:w-96 md:border border-zinc-300 dark:border-zinc-700/80 md:shadow-sm dark:shadow-[0_0_15px_rgba(0,0,0,0.2)] md:rounded-2xl flex-col bg-card shrink-0 overflow-hidden ${
           // On mobile: show only when mobilePanelView === 'list'
           // On desktop: always show
           mobilePanelView === 'list' ? 'flex md:flex' : 'hidden md:flex'
@@ -1502,7 +1502,7 @@ export default function InboxPage() {
           );
         })()
       ) : selectedConvId && activeConv ? (
-        <div className={`flex-1 flex-col min-w-0 bg-card md:border border-border/80 md:shadow-sm dark:shadow-[0_0_15px_rgba(0,0,0,0.2)] md:rounded-2xl overflow-hidden ${
+        <div className={`flex-1 flex-col min-w-0 bg-card md:border border-zinc-300 dark:border-zinc-700/80 md:shadow-sm dark:shadow-[0_0_15px_rgba(0,0,0,0.2)] md:rounded-2xl overflow-hidden ${
           // On mobile: show only when mobilePanelView === 'chat'
           // On desktop: always show when conversation selected
           mobilePanelView === 'chat' ? 'flex' : 'hidden md:flex'

@@ -206,7 +206,7 @@ export default function ExecutiveDashboardPage() {
       <SetupJourneyWidget initialStatus={setupStatus} />
 
       {/* TOP HEADER: EXECUTIVE CONTROL BAR */}
-      <div className="bg-surface/90 backdrop-blur-xl border border-surface-hover rounded-2xl p-4 sm:p-5 shadow-lg shadow-black/5 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+      <div className="relative z-30 bg-surface/90 backdrop-blur-xl border border-surface-hover rounded-2xl p-4 sm:p-5 shadow-lg shadow-black/5 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
         
         {/* Left Welcome Info (Fully Dynamic Name) */}
         <div className="flex items-center gap-3">
@@ -257,19 +257,19 @@ export default function ExecutiveDashboardPage() {
 
             {/* Custom Date Dropdown */}
             {customOpen && (
-              <div className="absolute right-0 top-12 z-50 bg-surface/90 backdrop-blur-xl border border-surface-hover rounded-2xl p-4 shadow-2xl space-y-3 w-72">
+              <div className="absolute right-0 top-12 z-50 bg-card border border-zinc-300 dark:border-zinc-700/80 rounded-2xl p-4 shadow-2xl space-y-3 w-72">
                 <div className="text-[12px] font-bold text-foreground">{language === 'en' ? 'Select Custom Date Range' : 'তারিখ সীমানা সিলেক্ট করুন'}</div>
                 <div>
                   <label className="text-[10px] font-bold text-muted-foreground block mb-1">Start Date</label>
-                  <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-1.5 text-xs text-foreground" />
+                  <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full bg-background border border-zinc-300 dark:border-zinc-700/80 rounded-lg px-2.5 py-1.5 text-xs text-foreground" />
                 </div>
                 <div>
                   <label className="text-[10px] font-bold text-muted-foreground block mb-1">End Date</label>
-                  <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-1.5 text-xs text-foreground" />
+                  <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-full bg-background border border-zinc-300 dark:border-zinc-700/80 rounded-lg px-2.5 py-1.5 text-xs text-foreground" />
                 </div>
                 <div className="flex justify-end gap-2 pt-2">
-                  <button onClick={() => setCustomOpen(false)} className="px-3 py-1 rounded-lg text-xs text-muted-foreground hover:text-foreground">Cancel</button>
-                  <button onClick={handleCustomApply} className="px-4 py-1 bg-primary text-primary-foreground text-xs font-bold rounded-lg shadow-sm">Apply</button>
+                  <button onClick={() => setCustomOpen(false)} className="px-3 py-1 rounded-lg text-xs text-muted-foreground hover:text-foreground cursor-pointer">Cancel</button>
+                  <button onClick={handleCustomApply} className="px-4 py-1 bg-primary text-primary-foreground text-xs font-bold rounded-lg shadow-sm cursor-pointer">Apply</button>
                 </div>
               </div>
             )}

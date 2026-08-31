@@ -199,7 +199,7 @@ export default function InboxesPage() {
       <div className="max-w-5xl mx-auto space-y-4">
         
         {/* Header Section */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-card p-4 rounded-2xl border border-border shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-card p-4 rounded-2xl border border-zinc-300 dark:border-zinc-700/80 shadow-sm">
           <div>
             <h1 className="text-xl font-bold text-foreground mb-0.5 font-sans">
               {language === 'en' ? 'Connected Inboxes' : 'সংযুক্ত ইনবক্সসমূহ'}
@@ -229,8 +229,8 @@ export default function InboxesPage() {
         />
 
         {/* List Section */}
-        <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
-          <div className="p-3.5 border-b border-border flex items-center justify-between bg-muted/50">
+        <div className="bg-card rounded-2xl border border-zinc-300 dark:border-zinc-700/80 shadow-sm overflow-hidden">
+          <div className="p-3.5 border-b border-zinc-300 dark:border-zinc-800 flex items-center justify-between bg-muted/50">
             <h2 className="text-xs font-bold text-muted-foreground">
               {connections.length} {connections.length === 1 ? 'inbox' : 'inboxes'}
             </h2>

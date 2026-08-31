@@ -520,8 +520,8 @@ export default function NewInboxStepper() {
                       onClick={() => handleChannelSelect(ch)}
                       className={`relative text-left p-5 rounded-2xl border transition-all group ${
                         isLocked
-                          ? 'bg-surface/30 border-surface-hover cursor-not-allowed opacity-70'
-                          : 'bg-surface/70 backdrop-blur-sm border-surface-hover hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-0.5 active:scale-[0.98]'
+                          ? 'bg-surface/30 border-zinc-300 dark:border-zinc-700/80 cursor-not-allowed opacity-70'
+                          : 'bg-surface/70 backdrop-blur-sm border-zinc-300 dark:border-zinc-700/80 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-0.5 active:scale-[0.98]'
                       }`}>
 
                       {/* Lock badge */}

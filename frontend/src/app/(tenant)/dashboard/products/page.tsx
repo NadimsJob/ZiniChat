@@ -343,11 +343,11 @@ export default function ProductsPage() {
     : (formData.id ? (language === 'en' ? 'Edit Product' : 'প্রডাক্ট এডিট') : (language === 'en' ? 'Add Product' : 'নতুন প্রডাক্ট'));
 
   return (
-    <div className="flex h-[calc(100vh-130px)] bg-surface/70 backdrop-blur-xl border border-border rounded-2xl overflow-hidden shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.2)] relative text-[13px]">
+    <div className="flex h-[calc(100vh-130px)] bg-surface/70 backdrop-blur-xl border border-zinc-300 dark:border-zinc-700/80 rounded-2xl overflow-hidden shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.2)] relative text-[13px]">
 
       {/* Left Pane: List */}
-      <div className={`w-full ${isEditing ? 'hidden md:flex md:w-1/2 lg:w-[45%]' : 'flex'} flex-col border-r border-border bg-muted/20 shrink-0`}>
-        <div className="p-1.5 border-b border-border shrink-0 flex items-center justify-between bg-background z-10">
+      <div className={`w-full ${isEditing ? 'hidden md:flex md:w-1/2 lg:w-[45%]' : 'flex'} flex-col border-r border-zinc-300 dark:border-zinc-700/80 bg-muted/20 shrink-0`}>
+        <div className="p-1.5 border-b border-zinc-300 dark:border-zinc-700/80 shrink-0 flex items-center justify-between bg-background z-10">
           <div>
             <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
               {isPropertyMode ? <Building2 className="w-6 h-6 text-primary" /> : isHospitalityMode ? <Hotel className="w-6 h-6 text-amber-500" /> : isTechSoftwareMode ? <Cpu className="w-6 h-6 text-indigo-500" /> : isFinancialServiceMode ? <Briefcase className="w-6 h-6 text-emerald-500" /> : isHealthcareMode ? <Stethoscope className="w-6 h-6 text-teal-500" /> : isEducationMode ? <GraduationCap className="w-6 h-6 text-purple-500" /> : isManufacturingMode ? <Factory className="w-6 h-6 text-amber-500" /> : isLogisticsMode ? <Truck className="w-6 h-6 text-sky-500" /> : <ShoppingCart className="w-6 h-6 text-primary" />}
