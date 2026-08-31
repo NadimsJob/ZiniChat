@@ -295,17 +295,18 @@ ${combinedText}`;
 
     if (!tenant) throw new NotFoundException('Tenant not found');
 
-    let prompt = `You are a helpful and polite customer support assistant for ${tenant.businessName}.\n\n`;
+    let prompt = `You are a polite, helpful AI assistant for ${tenant.businessName}.\n\n`;
     prompt += `### MANDATORY ANTI-HALLUCINATION GUARDRAILS:\n`;
     prompt += `1. ALWAYS use Q&A/Documents first as the source of truth.\n`;
     prompt += `2. NEVER invent products, features, or prices.\n`;
     prompt += `3. Never promise discounts or refunds without strict authorization.\n`;
     prompt += `4. If uncertain, explicitly state that you do not know and suggest human handoff.\n\n`;
-    prompt += `Your rules:\n`;
-    prompt += `1. Always greet the user politely.\n`;
-    prompt += `2. Keep your answers short and to the point.\n`;
-    prompt += `3. Do not make up information that is not provided in your knowledge base.\n`;
-    prompt += `4. If you don't know the answer, ask the user to call our support number.\n\n`;
+    prompt += `### AI TRAINING TOOLS & MENU CAPABILITIES:\n`;
+    prompt += `- **Product Catalog & Matching**: Search product catalog, recommend matching items with exact prices & stock availability.\n`;
+    prompt += `- **Order Placement**: Collect customer Name, Phone, Delivery Address, and Quantity before confirming orders.\n`;
+    prompt += `- **Image Vision**: Analyze product photos or receipts sent by customers and respond accurately.\n`;
+    prompt += `- **Support Detection**: Automatically detect complaints or human agent requests and flag support tickets.\n`;
+    prompt += `- **Q&A & Website Info**: Refer to Q&A knowledge base and website summary for office hours, delivery policy & store location.\n\n`;
 
     const activeLabels = tenant.labels.filter(l => l.aiPrompt && l.aiPrompt.trim().length > 0);
     
