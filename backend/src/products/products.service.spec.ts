@@ -17,6 +17,10 @@ describe('ProductsService', () => {
       update: jest.fn(),
       delete: jest.fn(),
     },
+    tenant: {
+      findUnique: jest.fn(),
+      update: jest.fn(),
+    },
   };
 
   const mockQuotaService = {
@@ -101,6 +105,44 @@ describe('ProductsService', () => {
       const result = await service.deleteProduct('tenant-1', 'prod-1');
       expect(mockPrisma.product.delete).toHaveBeenCalledWith({ where: { id: 'prod-1' } });
       expect(result).toEqual({ success: true });
+    });
+  });
+
+  describe('customFieldDefs', () => {
+    it('should get custom field definitions for tenant', async () => {
+      mockPrisma.tenant.findUnique.mockResolvedValue({
+        id: 't-1',
+        customFeatures: { customFieldDefs: [{ name: 'Color', type: 'dropdown', options: ['Red', 'Blue'] }] }
+      });
+
+      const res = await service.getCustomFieldDefs('t-1');
+      expect(res).toEqual([{ name: 'Color', type: 'dropdown', options: ['Red', 'Blue'] }]);
+    });
+
+    it('should save a new custom field definition', async () => {
+      mockPrisma.tenant.findUnique.mockResolvedValue({
+        id: 't-1',
+        customFeatures: { customFieldDefs: [] }
+      });
+      mockPrisma.tenant.update.mockResolvedValue({});
+
+      const res = await service.saveCustomFieldDef('t-1', { name: 'Expiry Date', type: 'date' });
+      expect(res).toEqual([{ name: 'Expiry Date', type: 'date', options: [] }]);
+      expect(mockPrisma.tenant.update).toHaveBeenCalledWith({
+        where: { id: 't-1' },
+        data: { customFeatures: { customFieldDefs: [{ name: 'Expiry Date', type: 'date', options: [] }] } }
+      });
+    });
+
+    it('should delete a custom field definition', async () => {
+      mockPrisma.tenant.findUnique.mockResolvedValue({
+        id: 't-1',
+        customFeatures: { customFieldDefs: [{ name: 'Color', type: 'text' }, { name: 'Expiry Date', type: 'date' }] }
+      });
+      mockPrisma.tenant.update.mockResolvedValue({});
+
+      const res = await service.deleteCustomFieldDef('t-1', 'Color');
+      expect(res).toEqual([{ name: 'Expiry Date', type: 'date' }]);
     });
   });
 });
