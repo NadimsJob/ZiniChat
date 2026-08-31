@@ -293,7 +293,7 @@ export default function ExecutiveDashboardPage() {
       </div>
 
       {/* AI EXECUTIVE SUMMARY BANNER (BILINGUAL SUPPORT) */}
-      <div className="bg-gradient-to-r from-primary/15 via-purple-500/10 to-secondary/15 border border-primary/40 dark:border-primary/30 backdrop-blur-xl rounded-2xl p-4 sm:p-5 flex items-start gap-4 relative overflow-hidden shadow-sm">
+      <div className="bg-gradient-to-r from-primary/15 via-purple-500/10 to-secondary/15 border-2 border-primary/50 dark:border-primary/40 backdrop-blur-xl rounded-2xl p-4 sm:p-5 flex items-start gap-4 relative overflow-hidden shadow-sm">
         <div className="w-10 h-10 rounded-2xl bg-primary/20 text-primary flex items-center justify-center shrink-0 shadow-md">
           <Sparkles className="w-5 h-5 text-primary" />
         </div>
@@ -314,15 +314,15 @@ export default function ExecutiveDashboardPage() {
       <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 ${hasCommentAutomation ? 'xl:grid-cols-6' : 'lg:grid-cols-5'} gap-3 sm:gap-4`}>
         
         {/* KPI 1: Messages */}
-        <div className="bg-emerald-500/5 backdrop-blur-xl border border-emerald-500/35 dark:border-emerald-500/20 rounded-2xl p-4 flex flex-col justify-between hover:border-emerald-500/50 hover:bg-emerald-500/10 transition-all shadow-sm">
+        <div className="bg-emerald-500/5 backdrop-blur-xl border-2 border-emerald-500/45 dark:border-emerald-500/30 rounded-2xl p-4 flex flex-col justify-between hover:border-emerald-500/60 hover:bg-emerald-500/10 transition-all shadow-sm">
           <div>
             <div className="flex items-center justify-between text-muted-foreground mb-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-500 dark:text-emerald-400">{language === 'en' ? 'Messages Sent' : 'মেসেজ সেন্ড'}</span>
-              <MessageSquare className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
+              <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">{language === 'en' ? 'Messages Sent' : 'মেসেজ সেন্ড'}</span>
+              <MessageSquare className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             </div>
             <div className="text-2xl sm:text-3xl font-black text-foreground">{formatNumber(kpis.messages?.month || 0)}</div>
             <div className="flex items-center gap-1.5 mt-1">
-              <span className={`text-[11px] font-bold flex items-center ${kpis.messages?.growth >= 0 ? 'text-emerald-500 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}`}>
+              <span className={`text-[11px] font-bold flex items-center ${kpis.messages?.growth >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
                 {kpis.messages?.growth >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
                 {formatNumber(Math.abs(kpis.messages?.growth || 0))}%
               </span>
@@ -331,12 +331,12 @@ export default function ExecutiveDashboardPage() {
           </div>
           <div className="mt-3 pt-2 border-t border-emerald-500/30 dark:border-emerald-500/20 flex justify-between text-[11px] text-muted-foreground">
             <span>{language === 'en' ? 'Today:' : 'আজ:'} <strong className="text-foreground">{formatNumber(kpis.messages?.today || 0)}</strong></span>
-            <span>{language === 'en' ? 'Used:' : 'ব্যবহৃত:'} <strong className="text-emerald-500 dark:text-emerald-400">{formatNumber(kpis.messages?.pct || 0)}%</strong></span>
+            <span>{language === 'en' ? 'Used:' : 'ব্যবহৃত:'} <strong className="text-emerald-600 dark:text-emerald-400">{formatNumber(kpis.messages?.pct || 0)}%</strong></span>
           </div>
         </div>
 
         {/* KPI 2: AI Responses */}
-        <div className="bg-purple-500/5 backdrop-blur-xl border border-purple-500/35 dark:border-purple-500/20 rounded-2xl p-4 flex flex-col justify-between hover:border-purple-500/50 hover:bg-purple-500/10 transition-all shadow-sm">
+        <div className="bg-purple-500/5 backdrop-blur-xl border-2 border-purple-500/45 dark:border-purple-500/30 rounded-2xl p-4 flex flex-col justify-between hover:border-purple-500/60 hover:bg-purple-500/10 transition-all shadow-sm">
           <div>
             <div className="flex items-center justify-between text-muted-foreground mb-2">
               <span className="text-[11px] font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400">{language === 'en' ? 'AI Replies' : 'এআই রিপ্লাই'}</span>
@@ -356,7 +356,7 @@ export default function ExecutiveDashboardPage() {
         </div>
 
         {/* KPI 3: Human Responses */}
-        <div className="bg-blue-500/5 backdrop-blur-xl border border-blue-500/35 dark:border-blue-500/20 rounded-2xl p-4 flex flex-col justify-between hover:border-blue-500/50 hover:bg-blue-500/10 transition-all shadow-sm">
+        <div className="bg-blue-500/5 backdrop-blur-xl border-2 border-blue-500/45 dark:border-blue-500/30 rounded-2xl p-4 flex flex-col justify-between hover:border-blue-500/60 hover:bg-blue-500/10 transition-all shadow-sm">
           <div>
             <div className="flex items-center justify-between text-muted-foreground mb-2">
               <span className="text-[11px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">{language === 'en' ? 'Human Replies' : 'হিউম্যান রিপ্লাই'}</span>
@@ -375,15 +375,15 @@ export default function ExecutiveDashboardPage() {
 
         {/* KPI 4: FB Comments (If feature enabled) */}
         {hasCommentAutomation && (
-          <div className="bg-orange-500/5 backdrop-blur-xl border border-orange-500/35 dark:border-orange-500/20 rounded-2xl p-4 flex flex-col justify-between hover:border-orange-500/50 hover:bg-orange-500/10 transition-all shadow-sm">
+          <div className="bg-orange-500/5 backdrop-blur-xl border-2 border-orange-500/45 dark:border-orange-500/30 rounded-2xl p-4 flex flex-col justify-between hover:border-orange-500/60 hover:bg-orange-500/10 transition-all shadow-sm">
             <div>
               <div className="flex items-center justify-between text-muted-foreground mb-2">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-orange-500 dark:text-orange-400">{language === 'en' ? 'FB Comments' : 'FB কমেন্ট'}</span>
-                <MessageSquare className="w-4 h-4 text-orange-500 dark:text-orange-400" />
+                <span className="text-[11px] font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400">{language === 'en' ? 'FB Comments' : 'FB কমেন্ট'}</span>
+                <MessageSquare className="w-4 h-4 text-orange-600 dark:text-orange-400" />
               </div>
-              <div className="text-2xl sm:text-3xl font-black text-orange-500 dark:text-orange-400">{formatNumber(data?.facebookComments?.total || 0)}</div>
+              <div className="text-2xl sm:text-3xl font-black text-orange-600 dark:text-orange-400">{formatNumber(data?.facebookComments?.total || 0)}</div>
               <div className="flex items-center gap-1.5 mt-1">
-                <span className={`text-[11px] font-bold flex items-center ${(data?.facebookComments?.growth || 0) >= 0 ? 'text-emerald-500 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}`}>
+                <span className={`text-[11px] font-bold flex items-center ${(data?.facebookComments?.growth || 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
                   {(data?.facebookComments?.growth || 0) >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
                   {formatNumber(Math.abs(data?.facebookComments?.growth || 0))}%
                 </span>
@@ -392,14 +392,14 @@ export default function ExecutiveDashboardPage() {
             </div>
             <div className="mt-3 pt-2 border-t border-orange-500/30 dark:border-orange-500/20 flex justify-between text-[11px] text-muted-foreground">
               <span>{language === 'en' ? 'Today:' : 'আজ:'} <strong className="text-foreground">{formatNumber(data?.facebookComments?.today || 0)}</strong></span>
-              <span>{language === 'en' ? 'Replied:' : 'উত্তর:'} <strong className="text-emerald-500 dark:text-emerald-400">{formatNumber(data?.facebookComments?.replied || 0)}</strong></span>
+              <span>{language === 'en' ? 'Replied:' : 'উত্তর:'} <strong className="text-emerald-600 dark:text-emerald-400">{formatNumber(data?.facebookComments?.replied || 0)}</strong></span>
             </div>
           </div>
         )}
 
 
         {/* KPI 5: Open Conversations */}
-        <div className="bg-amber-500/5 backdrop-blur-xl border border-amber-500/35 dark:border-amber-500/20 rounded-2xl p-4 flex flex-col justify-between hover:border-amber-500/50 hover:bg-amber-500/10 transition-all shadow-sm">
+        <div className="bg-amber-500/5 backdrop-blur-xl border-2 border-amber-500/45 dark:border-amber-500/30 rounded-2xl p-4 flex flex-col justify-between hover:border-amber-500/60 hover:bg-amber-500/10 transition-all shadow-sm">
           <div>
             <div className="flex items-center justify-between text-muted-foreground mb-2">
               <span className="text-[11px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">{language === 'en' ? 'Open Inbox' : 'ওপেন ইনবক্স'}</span>
@@ -410,7 +410,7 @@ export default function ExecutiveDashboardPage() {
             </div>
             <div className="text-[11px] mt-1 flex items-center gap-1.5">
               {unreadConvs > 0 ? (
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-500/15 text-red-500 dark:text-red-400 border border-red-500/30 dark:border-red-500/20 flex items-center gap-1">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-500/15 text-red-600 dark:text-red-400 border border-red-500/30 dark:border-red-500/20 flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-red-500 dark:bg-red-400 animate-pulse" />
                   {formatNumber(unreadConvs)} {language === 'en' ? 'Unread' : 'অপঠিত'}
                 </span>
@@ -428,7 +428,7 @@ export default function ExecutiveDashboardPage() {
         </div>
 
         {/* KPI 6: Subscription Usage */}
-        <div className="bg-primary/5 backdrop-blur-xl border border-primary/35 dark:border-primary/20 rounded-2xl p-4 flex flex-col justify-between hover:border-primary/50 hover:bg-primary/10 transition-all shadow-sm">
+        <div className="bg-primary/5 backdrop-blur-xl border-2 border-primary/45 dark:border-primary/30 rounded-2xl p-4 flex flex-col justify-between hover:border-primary/60 hover:bg-primary/10 transition-all shadow-sm">
           <div>
             <div className="flex items-center justify-between text-muted-foreground mb-2">
               <span className="text-[11px] font-bold uppercase tracking-wider text-primary">{language === 'en' ? 'Plan Quota' : 'প্ল্যান কোটা'}</span>
@@ -454,7 +454,7 @@ export default function ExecutiveDashboardPage() {
 
       {/* VERTICAL CONVERSION ANALYTICS WIDGET */}
       {verticalStats && (
-        <div className="bg-gradient-to-r from-primary/10 via-surface/90 to-secondary/10 backdrop-blur-xl border border-primary/20 rounded-2xl p-5 shadow-lg shadow-black/5">
+        <div className="bg-gradient-to-r from-primary/10 via-surface/90 to-secondary/10 backdrop-blur-xl border-2 border-primary/45 dark:border-primary/30 rounded-2xl p-5 shadow-sm">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
             <div className="flex items-center gap-2">
               <span className="px-2.5 py-1 rounded-xl text-xs font-bold bg-primary text-white flex items-center gap-1 shadow-sm">
@@ -474,7 +474,7 @@ export default function ExecutiveDashboardPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
             {/* Conversion Pct Ring / Meter */}
-            <div className="bg-surface/80 border border-surface-hover p-4 rounded-xl flex items-center gap-4">
+            <div className="bg-surface/80 border-2 border-primary/30 dark:border-primary/20 p-4 rounded-xl flex items-center gap-4">
               <div className="relative w-14 h-14 rounded-full bg-primary/20 flex items-center justify-center font-black text-primary text-lg border-2 border-primary/40 shrink-0">
                 {verticalStats.conversionPct}%
               </div>
@@ -487,14 +487,14 @@ export default function ExecutiveDashboardPage() {
             </div>
 
             {/* Stages Distribution */}
-            <div className="md:col-span-2 bg-surface/80 border border-surface-hover p-4 rounded-xl space-y-2">
+            <div className="md:col-span-2 bg-surface/80 border-2 border-primary/30 dark:border-primary/20 p-4 rounded-xl space-y-2">
               <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1 flex items-center justify-between">
                 <span>{language === 'en' ? 'Kanban Funnel Stages' : 'কানবান ফানেল স্টেজসমূহ'}</span>
                 <Link href="/dashboard/leads" className="text-primary font-bold hover:underline normal-case text-xs">{language === 'en' ? 'View CRM Board →' : 'সিআরএম বোর্ড দেখুন →'}</Link>
               </div>
               <div className="flex flex-wrap gap-2">
                 {(verticalStats.stages || []).slice(0, 5).map((s: any) => (
-                  <div key={s.id} className="px-3 py-1.5 bg-background border border-border rounded-xl flex items-center gap-2 text-[12px]">
+                  <div key={s.id} className="px-3 py-1.5 bg-background border border-primary/30 dark:border-primary/20 rounded-xl flex items-center gap-2 text-[12px]">
                     <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: s.color || '#3b82f6' }} />
                     <span className="font-semibold text-foreground">{s.name}:</span>
                     <span className="font-bold text-primary">{s.count}</span>
@@ -510,13 +510,13 @@ export default function ExecutiveDashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         
         {/* Subscription Health Card */}
-        <div className="bg-surface/90 backdrop-blur-xl border border-slate-200 dark:border-surface-hover/80 rounded-2xl p-5 flex flex-col justify-between shadow-sm hover:shadow-md transition-all">
+        <div className="bg-surface/90 backdrop-blur-xl border-2 border-purple-500/40 dark:border-purple-500/30 rounded-2xl p-5 flex flex-col justify-between shadow-sm hover:border-purple-500/60 transition-all">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-[14px] font-bold flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-primary" />
+              <ShieldCheck className="w-4 h-4 text-purple-600 dark:text-purple-400" />
               {language === 'en' ? 'Subscription Quota Breakdown' : 'সাবস্ক্রিপশন কোটা হেলথ'}
             </h3>
-            <span className="text-[11px] font-bold text-slate-500 dark:text-zinc-400">{sub.planName}</span>
+            <span className="text-[11px] font-bold text-purple-600 dark:text-purple-400">{sub.planName}</span>
           </div>
 
           <div className="space-y-3">
@@ -530,31 +530,31 @@ export default function ExecutiveDashboardPage() {
               <div key={item.label} className="space-y-1">
                 <div className="flex justify-between text-[11px]">
                   <span className="text-slate-600 dark:text-zinc-400 flex items-center gap-1.5">
-                    <item.icon className="w-3.5 h-3.5 text-slate-500 dark:text-zinc-400" />
+                    <item.icon className="w-3.5 h-3.5 text-purple-500 dark:text-purple-400" />
                     {item.label}
                   </span>
                   <span className="font-bold text-foreground">{formatNumber(item.used || 0)} / {formatNumber(item.limit || 0)} ({formatNumber(item.pct || 0)}%)</span>
                 </div>
-                <div className="w-full bg-slate-100 dark:bg-surface-hover rounded-full h-1.5 overflow-hidden border border-slate-200/60 dark:border-transparent">
-                  <div className={`h-full rounded-full transition-all ${item.pct > 90 ? 'bg-red-500' : 'bg-primary'}`} style={{ width: `${item.pct || 0}%` }} />
+                <div className="w-full bg-slate-100 dark:bg-surface-hover rounded-full h-1.5 overflow-hidden border border-purple-500/20">
+                  <div className={`h-full rounded-full transition-all ${item.pct > 90 ? 'bg-red-500' : 'bg-purple-500'}`} style={{ width: `${item.pct || 0}%` }} />
                 </div>
               </div>
             ))}
           </div>
 
-          <Link href="/dashboard/settings/subscription" className="mt-4 w-full py-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-xl text-[12px] font-bold text-center transition-all">
+          <Link href="/dashboard/settings/subscription" className="mt-4 w-full py-2 bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 dark:text-purple-400 border border-purple-500/30 rounded-xl text-[12px] font-bold text-center transition-all">
             {language === 'en' ? 'Manage Subscription →' : 'সাবস্ক্রিপশন ম্যানেজ করুন →'}
           </Link>
         </div>
 
         {/* Connected Channels Card */}
-        <div className="bg-surface/90 backdrop-blur-xl border border-slate-200 dark:border-surface-hover/80 rounded-2xl p-5 flex flex-col justify-between shadow-sm hover:shadow-md transition-all">
+        <div className="bg-surface/90 backdrop-blur-xl border-2 border-emerald-500/40 dark:border-emerald-500/30 rounded-2xl p-5 flex flex-col justify-between shadow-sm hover:border-emerald-500/60 transition-all">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-[14px] font-bold flex items-center gap-2">
-              <PhoneCall className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
+              <PhoneCall className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               {language === 'en' ? 'Connected Channels' : 'সংযুক্ত চ্যানেলসমূহ'}
             </h3>
-            <Link href="/dashboard/settings/inboxes" className="text-[11px] font-bold text-primary hover:underline">{language === 'en' ? 'View All' : 'সব দেখুন'}</Link>
+            <Link href="/dashboard/settings/inboxes" className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline">{language === 'en' ? 'View All' : 'সব দেখুন'}</Link>
           </div>
 
           <div className="space-y-2.5 flex-1 overflow-y-auto max-h-[220px] pr-1">
@@ -564,17 +564,17 @@ export default function ExecutiveDashboardPage() {
               (data?.channels || []).map((ch: any) => {
                 const isWebsite = ch.channelType === 'website' || ch.channelType === 'web_widget';
                 return (
-                  <div key={ch.id} className="flex items-center justify-between p-2.5 bg-slate-50 dark:bg-surface-hover/40 border border-slate-200 dark:border-surface-hover rounded-xl">
+                  <div key={ch.id} className="flex items-center justify-between p-2.5 bg-slate-50 dark:bg-surface-hover/40 border-2 border-emerald-500/25 dark:border-emerald-500/20 rounded-xl">
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="shrink-0 flex items-center justify-center w-7 h-7 rounded-lg bg-slate-200/60 dark:bg-surface-hover">
+                      <div className="shrink-0 flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
                         {isWebsite ? (
-                          <Globe className="w-4 h-4 text-cyan-500 dark:text-cyan-400" />
+                          <Globe className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
                         ) : ch.channelType?.includes('whatsapp') ? (
-                          <PhoneCall className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
+                          <PhoneCall className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                         ) : ch.channelType?.includes('messenger') ? (
-                          <MessageSquare className="w-4 h-4 text-blue-500 dark:text-blue-400" />
+                          <MessageSquare className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                         ) : (
-                          <Sparkles className="w-4 h-4 text-purple-500 dark:text-purple-400" />
+                          <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                         )}
                       </div>
                       <div className="truncate">
@@ -592,28 +592,28 @@ export default function ExecutiveDashboardPage() {
             )}
           </div>
 
-          <Link href="/dashboard/settings/inboxes/new" className="mt-3 w-full py-2 bg-slate-100 dark:bg-surface-hover hover:bg-slate-200 dark:hover:bg-surface-hover/80 text-foreground border border-slate-200 dark:border-surface-hover rounded-xl text-[12px] font-bold text-center transition-all">
+          <Link href="/dashboard/settings/inboxes/new" className="mt-3 w-full py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 rounded-xl text-[12px] font-bold text-center transition-all">
             + {language === 'en' ? 'Add New Channel' : 'নতুন চ্যানেল যোগ করুন'}
           </Link>
         </div>
 
         {/* Team Overview Card */}
-        <div className="bg-surface/90 backdrop-blur-xl border border-slate-200 dark:border-surface-hover/80 rounded-2xl p-5 flex flex-col justify-between shadow-sm hover:shadow-md transition-all">
+        <div className="bg-surface/90 backdrop-blur-xl border-2 border-blue-500/40 dark:border-blue-500/30 rounded-2xl p-5 flex flex-col justify-between shadow-sm hover:border-blue-500/60 transition-all">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-[14px] font-bold flex items-center gap-2">
-              <Users className="w-4 h-4 text-blue-500 dark:text-blue-400" />
+              <Users className="w-4 h-4 text-blue-600 dark:text-blue-400" />
               {language === 'en' ? 'Team Performance' : 'টিম পারফরম্যান্স'}
             </h3>
-            <Link href="/dashboard/team" className="text-[11px] font-bold text-blue-500 dark:text-blue-400 hover:underline">{language === 'en' ? 'Manage Team' : 'টিম ম্যানেজ'}</Link>
+            <Link href="/dashboard/team" className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline">{language === 'en' ? 'Manage Team' : 'টিম ম্যানেজ'}</Link>
           </div>
 
           <div className="grid grid-cols-2 gap-3 mb-4">
-            <div className="bg-slate-50 dark:bg-surface-hover/40 border border-slate-200 dark:border-surface-hover p-3 rounded-xl text-center">
+            <div className="bg-blue-500/10 border border-blue-500/30 p-3 rounded-xl text-center">
               <div className="text-2xl font-black text-foreground">{formatNumber(data?.team?.total || 0)}</div>
               <div className="text-[10px] text-slate-500 dark:text-zinc-400 uppercase font-bold">{language === 'en' ? 'Total Members' : 'মোট মেম্বার'}</div>
             </div>
-            <div className="bg-slate-50 dark:bg-surface-hover/40 border border-slate-200 dark:border-surface-hover p-3 rounded-xl text-center">
-              <div className="text-2xl font-black text-blue-500 dark:text-blue-400">{formatNumber(data?.team?.agents || 0)}</div>
+            <div className="bg-blue-500/10 border border-blue-500/30 p-3 rounded-xl text-center">
+              <div className="text-2xl font-black text-blue-600 dark:text-blue-400">{formatNumber(data?.team?.agents || 0)}</div>
               <div className="text-[10px] text-slate-500 dark:text-zinc-400 uppercase font-bold">{language === 'en' ? 'Active Agents' : 'সক্রিয় এজেন্ট'}</div>
             </div>
           </div>
@@ -625,11 +625,11 @@ export default function ExecutiveDashboardPage() {
             </div>
             <div className="flex justify-between text-xs text-slate-500 dark:text-zinc-400">
               <span>{language === 'en' ? 'Avg Response Time:' : 'গড় রেসপন্স টাইম:'}</span>
-              <strong className="text-emerald-500 dark:text-emerald-400">&lt; 2 {language === 'en' ? 'mins' : 'মিনিট'}</strong>
+              <strong className="text-emerald-600 dark:text-emerald-400">&lt; 2 {language === 'en' ? 'mins' : 'মিনিট'}</strong>
             </div>
           </div>
 
-          <Link href="/dashboard/team" className="mt-4 w-full py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 dark:text-blue-400 border border-blue-500/20 rounded-xl text-[12px] font-bold text-center transition-all">
+          <Link href="/dashboard/team" className="mt-4 w-full py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30 rounded-xl text-[12px] font-bold text-center transition-all">
             {language === 'en' ? 'Invite Team Member →' : 'টিম মেম্বার আমন্ত্রণ জানান →'}
           </Link>
         </div>
@@ -639,13 +639,13 @@ export default function ExecutiveDashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         
         {/* Large Time-series Area Chart */}
-        <div className="lg:col-span-2 bg-surface/90 backdrop-blur-xl border border-slate-200 dark:border-surface-hover/80 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
+        <div className="lg:col-span-2 bg-surface/90 backdrop-blur-xl border-2 border-emerald-500/40 dark:border-emerald-500/30 rounded-2xl p-5 shadow-sm hover:border-emerald-500/60 transition-all">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-[15px] font-bold text-foreground">{language === 'en' ? 'Conversation Volume Trend' : 'মেসেজিং ভলিউম ট্রেন্ড'}</h3>
               <p className="text-[11px] text-slate-500 dark:text-zinc-400">{language === 'en' ? 'Messages vs AI Replies over selected time range' : 'মেসেজ বনাম এআই রিপ্লাই এর তুলনামূলক চিত্র'}</p>
             </div>
-            <span className="px-2.5 py-1 bg-slate-100 dark:bg-surface-hover text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-surface-hover rounded-lg text-xs font-bold capitalize">{range}</span>
+            <span className="px-2.5 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-bold capitalize">{range}</span>
           </div>
 
           <div className="h-64 sm:h-72 w-full">
@@ -677,7 +677,7 @@ export default function ExecutiveDashboardPage() {
         </div>
 
         {/* Conversation Channel / Label Distribution */}
-        <div className="bg-surface/90 backdrop-blur-xl border border-slate-200 dark:border-surface-hover/80 rounded-2xl p-5 flex flex-col justify-between shadow-sm hover:shadow-md transition-all">
+        <div className="bg-surface/90 backdrop-blur-xl border-2 border-purple-500/40 dark:border-purple-500/30 rounded-2xl p-5 flex flex-col justify-between shadow-sm hover:border-purple-500/60 transition-all">
           <h3 className="text-[15px] font-bold text-foreground mb-2">{language === 'en' ? 'Channel Distribution' : 'চ্যানেল ডিস্ট্রিবিউশন'}</h3>
           
           <div className="h-52 w-full">
@@ -724,21 +724,21 @@ export default function ExecutiveDashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         
         {/* CRM Overview */}
-        <div className="bg-surface/90 backdrop-blur-xl border border-slate-200 dark:border-surface-hover/80 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
+        <div className="bg-surface/90 backdrop-blur-xl border-2 border-amber-500/40 dark:border-amber-500/30 rounded-2xl p-5 shadow-sm hover:border-amber-500/60 transition-all">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-[15px] font-bold flex items-center gap-2">
-              <Target className="w-4 h-4 text-secondary" />
+              <Target className="w-4 h-4 text-amber-600 dark:text-amber-400" />
               {language === 'en' ? 'CRM Leads & Pipeline' : 'সিআরএম লিডস ও পাইপলাইন'}
             </h3>
-            <Link href="/dashboard/leads" className="text-[11px] font-bold text-secondary hover:underline">{language === 'en' ? 'Manage Leads' : 'লিডস ম্যানেজ'}</Link>
+            <Link href="/dashboard/leads" className="text-[11px] font-bold text-amber-600 dark:text-amber-400 hover:underline">{language === 'en' ? 'Manage Leads' : 'লিডস ম্যানেজ'}</Link>
           </div>
 
           <div className="grid grid-cols-2 gap-3 mb-4">
-            <div className="bg-secondary/10 border border-secondary/20 p-3 rounded-xl">
+            <div className="bg-amber-500/10 border border-amber-500/30 p-3 rounded-xl">
               <div className="text-xs text-slate-500 dark:text-zinc-400 font-bold uppercase">{language === 'en' ? 'Total Contacts' : 'মোট কন্টাক্টস'}</div>
               <div className="text-2xl font-black text-foreground mt-1">{formatNumber(crm.total || 0)}</div>
             </div>
-            <div className="bg-primary/10 border border-primary/20 p-3 rounded-xl">
+            <div className="bg-primary/10 border border-primary/30 p-3 rounded-xl">
               <div className="text-xs text-slate-500 dark:text-zinc-400 font-bold uppercase">{language === 'en' ? 'New Leads' : 'নতুন লিডস'}</div>
               <div className="text-2xl font-black text-primary mt-1">{formatNumber(crm.new || 0)}</div>
             </div>
@@ -746,11 +746,11 @@ export default function ExecutiveDashboardPage() {
 
           <div className="space-y-2">
             {[
-              { label: language === 'en' ? 'Follow-ups Due Today' : 'আজকের ফলো-আপ', val: crm.followUpDue, color: 'text-amber-500 dark:text-amber-400' },
-              { label: language === 'en' ? 'Overdue Follow-ups' : 'বকেয়া ফলো-আপ', val: crm.overdue, color: 'text-red-500 dark:text-red-400' },
-              { label: language === 'en' ? 'Conversion Rate' : 'কনভার্সন রেট', val: `${formatNumber(crm.conversionRate || 0)}%`, color: 'text-emerald-500 dark:text-emerald-400' },
+              { label: language === 'en' ? 'Follow-ups Due Today' : 'আজকের ফলো-আপ', val: crm.followUpDue, color: 'text-amber-600 dark:text-amber-400' },
+              { label: language === 'en' ? 'Overdue Follow-ups' : 'বকেয়া ফলো-আপ', val: crm.overdue, color: 'text-red-600 dark:text-red-400' },
+              { label: language === 'en' ? 'Conversion Rate' : 'কনভার্সন রেট', val: `${formatNumber(crm.conversionRate || 0)}%`, color: 'text-emerald-600 dark:text-emerald-400' },
             ].map(item => (
-              <div key={item.label} className="flex justify-between text-xs py-1 border-b border-slate-200/60 dark:border-surface-hover/40">
+              <div key={item.label} className="flex justify-between text-xs py-1 border-b border-amber-500/20 dark:border-amber-500/10">
                 <span className="text-slate-600 dark:text-zinc-400">{item.label}</span>
                 <strong className={item.color}>{formatNumber(item.val || 0)}</strong>
               </div>
@@ -759,14 +759,14 @@ export default function ExecutiveDashboardPage() {
         </div>
 
         {/* Revenue Analytics Chart */}
-        <div className="lg:col-span-2 bg-surface/90 backdrop-blur-xl border border-slate-200 dark:border-surface-hover/80 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
+        <div className="lg:col-span-2 bg-surface/90 backdrop-blur-xl border-2 border-emerald-500/40 dark:border-emerald-500/30 rounded-2xl p-5 shadow-sm hover:border-emerald-500/60 transition-all">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-[15px] font-bold text-foreground">{language === 'en' ? 'E-Commerce & Orders Revenue' : 'ই-কমার্স রেভিনিউ'}</h3>
               <p className="text-[11px] text-slate-500 dark:text-zinc-400">{language === 'en' ? 'Total delivered revenue:' : 'মোট ডেলিভার্ড আয়:'} ৳{formatNumber(orders.revenue || 0)}</p>
             </div>
             <div className="text-right">
-              <div className="text-lg font-black text-emerald-500 dark:text-emerald-400">৳{formatNumber(orders.revenue || 0)}</div>
+              <div className="text-lg font-black text-emerald-600 dark:text-emerald-400">৳{formatNumber(orders.revenue || 0)}</div>
               <div className="text-[10px] text-slate-500 dark:text-zinc-400">AOV: ৳{formatNumber(Math.round(orders.avgOrderValue || 0))}</div>
             </div>
           </div>
@@ -796,10 +796,10 @@ export default function ExecutiveDashboardPage() {
         <div className="xl:col-span-2 space-y-6">
 
           {/* Recent Conversations Table */}
-          <div className="bg-surface/90 backdrop-blur-xl border border-slate-200 dark:border-surface-hover/80 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
+          <div className="bg-surface/90 backdrop-blur-xl border-2 border-cyan-500/40 dark:border-cyan-500/30 rounded-2xl p-5 shadow-sm hover:border-cyan-500/60 transition-all">
             <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
               <h3 className="text-[15px] font-bold text-foreground flex items-center gap-2">
-                <MessageSquare className="w-4 h-4 text-primary" />
+                <MessageSquare className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
                 {language === 'en' ? 'Recent Conversations' : 'সাম্প্রতিক কনভারসেশন'}
               </h3>
               <div className="flex items-center gap-2">
@@ -810,17 +810,17 @@ export default function ExecutiveDashboardPage() {
                     placeholder={language === 'en' ? 'Search convs...' : 'খুঁজুন...'}
                     value={convSearch}
                     onChange={e => setConvSearch(e.target.value)}
-                    className="bg-background border border-slate-200 dark:border-surface-hover rounded-xl pl-8 pr-3 py-1 text-xs outline-none focus:border-primary"
+                    className="bg-background border border-cyan-500/30 rounded-xl pl-8 pr-3 py-1 text-xs outline-none focus:border-cyan-500"
                   />
                 </div>
-                <Link href="/dashboard/inbox" className="text-xs font-bold text-primary hover:underline">{language === 'en' ? 'Inbox →' : 'ইনবক্স →'}</Link>
+                <Link href="/dashboard/inbox" className="text-xs font-bold text-cyan-600 dark:text-cyan-400 hover:underline">{language === 'en' ? 'Inbox →' : 'ইনবক্স →'}</Link>
               </div>
             </div>
 
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-slate-200 dark:border-surface-hover text-slate-500 dark:text-zinc-400 uppercase text-[10px] tracking-wider">
+                  <tr className="border-b border-cyan-500/20 text-slate-500 dark:text-zinc-400 uppercase text-[10px] tracking-wider">
                     <th className="py-2 px-3">{language === 'en' ? 'Customer' : 'কাস্টমার'}</th>
                     <th className="py-2 px-3">{language === 'en' ? 'Channel' : 'চ্যানেল'}</th>
                     <th className="py-2 px-3">{language === 'en' ? 'Mode' : 'মোড'}</th>
@@ -828,7 +828,7 @@ export default function ExecutiveDashboardPage() {
                     <th className="py-2 px-3 text-right">{language === 'en' ? 'Action' : 'অ্যাকশন'}</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200/60 dark:divide-surface-hover/50">
+                <tbody className="divide-y divide-cyan-500/10">
                   {filteredConvs.length === 0 ? (
                     <tr><td colSpan={5} className="py-6 text-center text-slate-500 dark:text-zinc-400">{language === 'en' ? 'No recent conversations' : 'কোনো মেসেজ নেই'}</td></tr>
                   ) : (
@@ -837,14 +837,14 @@ export default function ExecutiveDashboardPage() {
                       const isWa = c.channel?.includes('whatsapp');
                       const isMs = c.channel?.includes('messenger');
                       return (
-                        <tr key={c.id} className="hover:bg-slate-50 dark:hover:bg-surface-hover/30 transition-colors">
+                        <tr key={c.id} className="hover:bg-cyan-500/5 transition-colors">
                           <td className="py-2.5 px-3 font-bold text-foreground truncate max-w-[130px]">{c.contactName}</td>
                           <td className="py-2.5 px-3">
                             <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                              isWebsite ? 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30 dark:border-cyan-500/20' :
-                              isWa ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 dark:border-emerald-500/20' :
-                              isMs ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30 dark:border-blue-500/20' :
-                              'bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30 dark:border-purple-500/20'
+                              isWebsite ? 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30' :
+                              isWa ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30' :
+                              isMs ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30' :
+                              'bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30'
                             }`}>
                               {isWebsite ? <Globe className="w-3 h-3" /> : isWa ? <PhoneCall className="w-3 h-3" /> : isMs ? <MessageSquare className="w-3 h-3" /> : <Sparkles className="w-3 h-3" />}
                               {isWebsite ? 'Widget' : c.channel}
@@ -872,7 +872,7 @@ export default function ExecutiveDashboardPage() {
                             {c.lastMessage}
                           </td>
                           <td className="py-2.5 px-3 text-right">
-                            <Link href={`/dashboard/inbox?id=${c.id}`} className="text-primary hover:underline font-bold text-[11px]">{language === 'en' ? 'Reply' : 'উত্তর দিন'}</Link>
+                            <Link href={`/dashboard/inbox?id=${c.id}`} className="text-cyan-600 dark:text-cyan-400 hover:underline font-bold text-[11px]">{language === 'en' ? 'Reply' : 'উত্তর দিন'}</Link>
                           </td>
                         </tr>
                       );
@@ -884,34 +884,34 @@ export default function ExecutiveDashboardPage() {
           </div>
 
           {/* Recent Orders Table */}
-          <div className="bg-surface/90 backdrop-blur-xl border border-slate-200 dark:border-surface-hover/80 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
+          <div className="bg-surface/90 backdrop-blur-xl border-2 border-amber-500/40 dark:border-amber-500/30 rounded-2xl p-5 shadow-sm hover:border-amber-500/60 transition-all">
             <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
               <h3 className="text-[15px] font-bold text-foreground flex items-center gap-2">
-                <ShoppingCart className="w-4 h-4 text-amber-500 dark:text-amber-400" />
+                <ShoppingCart className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                 {language === 'en' ? 'Recent Orders' : 'সাম্প্রতিক অর্ডারসমূহ'}
               </h3>
-              <Link href="/dashboard/orders" className="text-xs font-bold text-amber-500 dark:text-amber-400 hover:underline">{language === 'en' ? 'Manage Orders →' : 'অর্ডার ম্যানেজ →'}</Link>
+              <Link href="/dashboard/orders" className="text-xs font-bold text-amber-600 dark:text-amber-400 hover:underline">{language === 'en' ? 'Manage Orders →' : 'অর্ডার ম্যানেজ →'}</Link>
             </div>
 
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-slate-200 dark:border-surface-hover text-slate-500 dark:text-zinc-400 uppercase text-[10px] tracking-wider">
+                  <tr className="border-b border-amber-500/20 text-slate-500 dark:text-zinc-400 uppercase text-[10px] tracking-wider">
                     <th className="py-2 px-3">{language === 'en' ? 'Customer' : 'কাস্টমার'}</th>
                     <th className="py-2 px-3">{language === 'en' ? 'Product' : 'প্রোডাক্ট'}</th>
                     <th className="py-2 px-3">{language === 'en' ? 'Amount' : 'পরিমাণ'}</th>
                     <th className="py-2 px-3">{language === 'en' ? 'Status' : 'স্ট্যাটাস'}</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200/60 dark:divide-surface-hover/50">
+                <tbody className="divide-y divide-amber-500/10">
                   {filteredOrders.length === 0 ? (
                     <tr><td colSpan={4} className="py-6 text-center text-slate-500 dark:text-zinc-400">{language === 'en' ? 'No recent orders' : 'কোনো অর্ডার পাওয়া যায়নি'}</td></tr>
                   ) : (
                     filteredOrders.map(o => (
-                      <tr key={o.id} className="hover:bg-slate-50 dark:hover:bg-surface-hover/30 transition-colors">
+                      <tr key={o.id} className="hover:bg-amber-500/5 transition-colors">
                         <td className="py-2.5 px-3 font-bold text-foreground">{o.customerName}</td>
                         <td className="py-2.5 px-3 text-slate-600 dark:text-zinc-400 truncate max-w-[150px]">{o.productName}</td>
-                        <td className="py-2.5 px-3 font-bold text-emerald-500 dark:text-emerald-400">৳{formatNumber(o.amount)}</td>
+                        <td className="py-2.5 px-3 font-bold text-emerald-600 dark:text-emerald-400">৳{formatNumber(o.amount)}</td>
                         <td className="py-2.5 px-3">
                           <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold capitalize ${
                             o.status === 'delivered' ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30' :
@@ -930,13 +930,13 @@ export default function ExecutiveDashboardPage() {
 
           {/* Recent FB Comments Table */}
           {hasCommentAutomation && (
-            <div className="bg-surface/90 backdrop-blur-xl border border-slate-200 dark:border-surface-hover/80 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
+            <div className="bg-surface/90 backdrop-blur-xl border-2 border-orange-500/40 dark:border-orange-500/30 rounded-2xl p-5 shadow-sm hover:border-orange-500/60 transition-all">
               <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
                 <h3 className="text-[15px] font-bold text-foreground flex items-center gap-2">
-                  <MessageSquare className="w-4 h-4 text-orange-500 dark:text-orange-400" />
+                  <MessageSquare className="w-4 h-4 text-orange-600 dark:text-orange-400" />
                   {language === 'en' ? 'Recent Facebook Comments' : 'সাম্প্রতিক ফেসবুক কমেন্ট'}
                 </h3>
-                <Link href="/dashboard/inbox" className="text-xs font-bold text-orange-500 dark:text-orange-400 hover:underline">
+                <Link href="/dashboard/inbox" className="text-xs font-bold text-orange-600 dark:text-orange-400 hover:underline">
                   {language === 'en' ? 'View in Inbox →' : 'ইনবক্সে দেখুন →'}
                 </Link>
               </div>
@@ -944,19 +944,19 @@ export default function ExecutiveDashboardPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
                   <thead>
-                    <tr className="border-b border-slate-200 dark:border-surface-hover text-slate-500 dark:text-zinc-400 uppercase text-[10px] tracking-wider">
+                    <tr className="border-b border-orange-500/20 text-slate-500 dark:text-zinc-400 uppercase text-[10px] tracking-wider">
                       <th className="py-2 px-3">{language === 'en' ? 'Commenter' : 'কমেন্টকারী'}</th>
                       <th className="py-2 px-3">{language === 'en' ? 'Comment Text' : 'কমেন্ট'}</th>
                       <th className="py-2 px-3">{language === 'en' ? 'Reply Status' : 'রিপ্লাই স্ট্যাটাস'}</th>
                       <th className="py-2 px-3 text-right">{language === 'en' ? 'Time' : 'সময়'}</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-200/60 dark:divide-surface-hover/50">
+                  <tbody className="divide-y divide-orange-500/10">
                     {recentComments.length === 0 ? (
                       <tr><td colSpan={4} className="py-6 text-center text-slate-500 dark:text-zinc-400">{language === 'en' ? 'No recent Facebook comments' : 'কোনো ফেসবুক কমেন্ট নেই'}</td></tr>
                     ) : (
                       recentComments.map((c: any) => (
-                        <tr key={c.id} className="hover:bg-slate-50 dark:hover:bg-surface-hover/30 transition-colors">
+                        <tr key={c.id} className="hover:bg-orange-500/5 transition-colors">
                           <td className="py-3 px-3 font-bold text-foreground">{c.userName || 'Facebook User'}</td>
                           <td className="py-3 px-3 text-slate-700 dark:text-zinc-300 max-w-xs truncate">"{c.commentText}"</td>
                           <td className="py-3 px-3">
@@ -984,7 +984,7 @@ export default function ExecutiveDashboardPage() {
         <div className="space-y-6">
 
           {/* Business Health Card */}
-          <div className="bg-surface/90 backdrop-blur-xl border border-slate-200 dark:border-surface-hover/80 rounded-2xl p-5 text-center shadow-sm hover:shadow-md transition-all">
+          <div className="bg-surface/90 backdrop-blur-xl border-2 border-primary/45 dark:border-primary/30 rounded-2xl p-5 text-center shadow-sm hover:border-primary/60 transition-all">
             <h3 className="text-[14px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-4">{language === 'en' ? 'Business Health Score' : 'বিজনেস হেলথ স্কোর'}</h3>
             
             <div className="relative w-36 h-36 mx-auto flex items-center justify-center my-2">
