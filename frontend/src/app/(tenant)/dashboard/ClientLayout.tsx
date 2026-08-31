@@ -495,17 +495,11 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
       ]
     },
     {
-      title: language === 'en' ? 'MAIN FEATURES' : 'মূল ফিচারসমূহ',
+      title: language === 'en' ? 'AUTOMATION' : 'অটোমেশন',
       items: [
         { name: language === 'en' ? 'Live Inbox' : 'লাইভ ইনবক্স', icon: Inbox, href: '/dashboard/inbox', id: 'sidebar-inbox', isCore: true },
         { name: language === 'en' ? 'Channel Integration' : 'চ্যানেল ইন্টিগ্রেশন', icon: Webhook, href: '/dashboard/settings/inboxes', id: 'sidebar-inboxes', isCore: true },
         { name: language === 'en' ? 'AI Training' : 'এআই ট্রেইনিং', icon: Zap, href: '/dashboard/settings/ai-training', id: 'sidebar-ai-training', isCore: true },
-      ]
-    },
-    {
-      title: language === 'en' ? 'OTHERS' : 'অন্যান্য',
-      items: [
-        { name: language === 'en' ? 'Leads' : 'লিডস', icon: UserCircle, href: '/dashboard/leads' },
         { 
           name: isPropertyMode 
             ? (language === 'en' ? 'Properties' : 'প্রপার্টি লিস্ট') 
@@ -525,8 +519,15 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
             ? (language === 'en' ? 'Freight Catalog' : 'ফ্রেট ক্যাটালগ')
             : (language === 'en' ? 'Product List' : 'প্রোডাক্ট লিস্ট'), 
           icon: isPropertyMode ? Building2 : isHospitalityMode ? Hotel : isTechSoftwareMode ? Cpu : isFinancialServiceMode ? Briefcase : isHealthcareMode ? Stethoscope : isEducationMode ? GraduationCap : isManufacturingMode ? Factory : isLogisticsMode ? Truck : ShoppingCart, 
-          href: '/dashboard/products' 
+          href: '/dashboard/products',
+          isCore: true 
         },
+      ]
+    },
+    {
+      title: language === 'en' ? 'OTHERS' : 'অন্যান্য',
+      items: [
+        { name: language === 'en' ? 'Leads' : 'লিডস', icon: UserCircle, href: '/dashboard/leads' },
         { 
           name: isPropertyMode 
             ? (language === 'en' ? 'Inquiries' : 'ইনকোয়ারি') 
@@ -588,7 +589,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
         onMouseLeave={() => isInboxPage && setSidebarHovered(false)}
         className={`
           fixed md:relative z-50 h-full 
-          ${isSidebarCollapsed ? 'w-[56px]' : 'w-[165px]'} 
+          ${isSidebarCollapsed ? 'w-[56px]' : 'w-[178px]'} 
           border-r border-border bg-card
           flex flex-col shrink-0 transition-all duration-300 ease-in-out
           ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
@@ -631,12 +632,12 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
             <div key={groupIdx} className="flex flex-col">
               {!isSidebarCollapsed && (
                 <div className={`px-3 mb-1.5 mt-2 text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1.5 ${
-                  group.title.includes('MAIN') || group.title.includes('মূল')
+                  group.title.includes('AUTOMATION') || group.title.includes('অটোমেশন')
                     ? 'text-primary dark:text-emerald-400'
                     : 'text-muted-foreground'
                 }`}>
                   <span>{group.title}</span>
-                  {(group.title.includes('MAIN') || group.title.includes('মূল')) && (
+                  {(group.title.includes('AUTOMATION') || group.title.includes('অটোমেশন')) && (
                     <span className="w-1.5 h-1.5 rounded-full bg-primary dark:bg-emerald-400 animate-pulse" />
                   )}
                 </div>
@@ -669,8 +670,8 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
                             : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                         } ${isLocked ? 'opacity-80' : ''}`}
                       >
-                        <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-2.5'}`}>
-                          <item.icon className={`w-4 h-4 transition-colors ${
+                        <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-2.5'} min-w-0 flex-1`}>
+                          <item.icon className={`w-4 h-4 shrink-0 transition-colors ${
                             isActive 
                               ? 'text-primary-foreground' 
                               : isCoreFeature 
@@ -679,10 +680,10 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
                           }`} />
                           {!isSidebarCollapsed && (
                             <>
-                              <span className={isActive ? 'text-primary-foreground font-bold' : isCoreFeature ? 'text-primary dark:text-emerald-400 font-bold' : ''}>
+                              <span className={`truncate whitespace-nowrap ${isActive ? 'text-primary-foreground font-bold' : isCoreFeature ? 'text-primary dark:text-emerald-400 font-bold' : ''}`}>
                                 {item.name}
                               </span>
-                              {isLocked && <Lock className="w-3 h-3 text-amber-500 ml-1" />}
+                              {isLocked && <Lock className="w-3 h-3 text-amber-500 ml-1 shrink-0" />}
                             </>
                           )}
                         </div>
