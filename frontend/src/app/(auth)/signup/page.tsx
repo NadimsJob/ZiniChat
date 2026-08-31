@@ -50,6 +50,13 @@ export default function SignupPage() {
 
   const employeeOptions = ['1-10', '11-50', '51-200', '200+'];
 
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const [businessNatures, setBusinessNatures] = useState<any[]>([]);
+
   // Check if selected business nature is "Other"
   const isOtherCategory = businessNatures.some(
     (bn: any) => bn.name === formData.businessNature &&
@@ -97,13 +104,6 @@ export default function SignupPage() {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
-
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  const [businessNatures, setBusinessNatures] = useState<any[]>([]);
 
   const [googleConfig, setGoogleConfig] = useState<{ isEnabled: boolean; clientId: string }>({
     isEnabled: false,

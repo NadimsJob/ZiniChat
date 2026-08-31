@@ -668,7 +668,7 @@ export default function AiTrainingPage() {
   return (
     <div className="space-y-4 max-w-[1600px] mx-auto pb-10 text-foreground">
       {/* Top Header with Spotlight Tour Button */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-card border border-border rounded-2xl p-4 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-card border border-zinc-300 dark:border-zinc-700/80 rounded-2xl p-4 shadow-sm">
         <div>
           <h1 className="text-xl font-bold flex items-center gap-2 text-foreground">
             <Bot className="w-6 h-6 text-primary" />
@@ -706,7 +706,7 @@ export default function AiTrainingPage() {
         <div className="lg:col-span-7 space-y-6">
 
           {/* Section 1: Master Toggle & Persona (#tour-persona) */}
-          <div id="tour-persona" className="bg-card border border-border shadow-md rounded-2xl p-4 space-y-4 transition-all">
+          <div id="tour-persona" className="bg-card border border-zinc-300 dark:border-zinc-700/80 shadow-md rounded-2xl p-4 space-y-4 transition-all">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className={`p-2 rounded-xl ${config.isActive ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}`}>
@@ -747,7 +747,7 @@ export default function AiTrainingPage() {
                   placeholder={language === 'en' ? 'e.g., Zini, Sarah, SupportBot' : 'যেমন: জিনী, সারা, সাপোর্টবট'}
                   value={config.agentName || ''}
                   onChange={(e) => setConfig({ ...config, agentName: e.target.value })}
-                  className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-[13px] text-foreground focus:outline-none focus:border-primary"
+                  className="w-full bg-background border border-zinc-300 dark:border-zinc-700/80 rounded-xl px-3 py-1.5 text-[13px] text-foreground focus:outline-none focus:border-primary"
                 />
                 <button 
                   onClick={() => handleQuickSave({ agentName: config.agentName })}
@@ -785,7 +785,7 @@ export default function AiTrainingPage() {
                 maxLength={MAX_PROMPT_LENGTH}
                 value={config.systemPrompt || ''}
                 onChange={(e) => setConfig({ ...config, systemPrompt: e.target.value })}
-                className="w-full bg-background border border-border rounded-xl p-3 text-[13px] text-foreground focus:outline-none font-mono focus:border-primary"
+                className="w-full bg-background border border-zinc-300 dark:border-zinc-700/80 rounded-xl p-3 text-[13px] text-foreground focus:outline-none font-mono focus:border-primary"
                 placeholder={language === 'en' ? 'You are a polite sales assistant for my store. Always greet politely...' : 'আপনি আমার শোরুমের একজন বিনয়ী সাপোর্ট এজেন্ট। কাস্টমারদের সাথে সর্বদা সুন্দরভাবে কথা বলুন...'}
               />
               <div className="flex justify-between items-center pt-1">
@@ -807,7 +807,7 @@ export default function AiTrainingPage() {
           </div>
 
           {/* Section 2: Knowledge Base Q&As & Documents (#tour-faq) */}
-          <div id="tour-faq" className="bg-card border border-border shadow-md rounded-2xl p-4 space-y-4">
+          <div id="tour-faq" className="bg-card border border-zinc-300 dark:border-zinc-700/80 shadow-md rounded-2xl p-4 space-y-4">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-sm font-bold flex items-center gap-2 text-foreground">
@@ -850,7 +850,7 @@ export default function AiTrainingPage() {
             {/* Q&A List */}
             <div className="space-y-2.5 max-h-72 overflow-y-auto custom-scrollbar pr-1">
               {qnas.map((qna) => (
-                <div key={qna.id} className="bg-background border border-border rounded-xl p-3 space-y-1.5">
+                <div key={qna.id} className="bg-background border border-zinc-300 dark:border-zinc-700/70 rounded-xl p-3 space-y-1.5">
                   <div className="flex items-start justify-between gap-2">
                     <div className="font-bold text-[13px] text-foreground flex items-center gap-1.5">
                       <span>{qna.question}</span>
@@ -877,7 +877,7 @@ export default function AiTrainingPage() {
                     </div>
                   </div>
 
-                  <div className="text-[12px] text-foreground bg-card p-2 rounded-lg border border-border/50">
+                  <div className="text-[12px] text-foreground bg-card p-2 rounded-lg border border-zinc-300 dark:border-zinc-700/50">
                     {qna.answer ? qna.answer : <span className="text-muted-foreground italic font-sans">{language === 'en' ? 'No answer provided.' : 'উত্তর লেখা হয়নি।'}</span>}
                   </div>
                 </div>
@@ -903,7 +903,7 @@ export default function AiTrainingPage() {
 
                 <div className="space-y-1.5">
                   {documents.map((doc) => (
-                    <div key={doc.id} className="bg-background border border-border rounded-xl p-2.5 flex items-center justify-between text-[12px]">
+                    <div key={doc.id} className="bg-background border border-zinc-300 dark:border-zinc-700/70 rounded-xl p-2.5 flex items-center justify-between text-[12px]">
                       <div className="flex items-center gap-2 truncate">
                         <FileText className="w-4 h-4 text-primary shrink-0" />
                         <span className="truncate font-semibold">{doc.filename}</span>
@@ -922,7 +922,7 @@ export default function AiTrainingPage() {
           </div>
 
           {/* Section 2B: Website Knowledge Crawling & AI Training (#tour-website) */}
-          <div id="tour-website" className="bg-card border border-border shadow-md rounded-2xl p-4 space-y-3">
+          <div id="tour-website" className="bg-card border border-zinc-300 dark:border-zinc-700/80 shadow-md rounded-2xl p-4 space-y-3">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-sm font-bold flex items-center gap-2 text-foreground">
@@ -945,7 +945,7 @@ export default function AiTrainingPage() {
                   value={websiteInput}
                   onChange={(e) => setWebsiteInput(e.target.value)}
                   placeholder="https://example.com"
-                  className="w-full bg-background border border-border rounded-xl pl-9 pr-3 py-2 text-xs focus:ring-1 focus:ring-primary outline-none"
+                  className="w-full bg-background border border-zinc-300 dark:border-zinc-700/80 rounded-xl pl-9 pr-3 py-2 text-xs focus:ring-1 focus:ring-primary outline-none"
                 />
               </div>
               <button
@@ -965,7 +965,7 @@ export default function AiTrainingPage() {
             </div>
 
             {config.websiteSummary && (
-              <div className="bg-background border border-border rounded-xl p-3 space-y-2 mt-2">
+              <div className="bg-background border border-zinc-300 dark:border-zinc-700/70 rounded-xl p-3 space-y-2 mt-2">
                 <div className="flex items-center justify-between text-[11px]">
                   <span className="font-bold text-foreground flex items-center gap-1">
                     <Check className="w-3.5 h-3.5 text-emerald-500" />
@@ -975,7 +975,7 @@ export default function AiTrainingPage() {
                     {config.websiteSummary.charCount || 0}/3000 {language === 'en' ? 'chars' : 'অক্ষর'} • {config.websiteSummary.pageCount || 1} {language === 'en' ? 'pages scanned' : 'পেজ স্ক্যানড'}
                   </span>
                 </div>
-                <div className="text-[12px] text-foreground bg-card p-2.5 rounded-lg border border-border/50 max-h-40 overflow-y-auto custom-scrollbar font-sans whitespace-pre-line leading-relaxed">
+                <div className="text-[12px] text-foreground bg-card p-2.5 rounded-lg border border-zinc-300 dark:border-zinc-700/50 max-h-40 overflow-y-auto custom-scrollbar font-sans whitespace-pre-line leading-relaxed">
                   {config.websiteSummary.summary}
                 </div>
               </div>
@@ -983,7 +983,7 @@ export default function AiTrainingPage() {
           </div>
 
           {/* Section 3: Event-Wise AI Behavior & Smart Tags (#tour-tags) */}
-          <div id="tour-tags" className="bg-card border border-border shadow-md rounded-2xl p-4 space-y-3">
+          <div id="tour-tags" className="bg-card border border-zinc-300 dark:border-zinc-700/80 shadow-md rounded-2xl p-4 space-y-3">
             <div className="flex items-center gap-2 mb-1">
               <Sliders className="w-5 h-5 text-primary" />
               <div>
@@ -1006,10 +1006,10 @@ export default function AiTrainingPage() {
                     key={tool.type} 
                     className={`border rounded-xl p-3 flex flex-col justify-between transition-colors ${
                       !isAllowed 
-                        ? 'bg-muted/40 border-border opacity-75' 
+                        ? 'bg-muted/40 border-zinc-300 dark:border-zinc-800 opacity-75' 
                         : toolState.isEnabled 
-                        ? 'bg-primary/5 border-primary/30' 
-                        : 'bg-background border-border'
+                        ? 'bg-primary/5 border-primary/40 ring-1 ring-primary/20' 
+                        : 'bg-background border-zinc-300 dark:border-zinc-700/70'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2 mb-1">
@@ -1046,7 +1046,7 @@ export default function AiTrainingPage() {
           </div>
 
           {/* Section 4: AI Response Tags / Conversation Tags (#tour-tags-section) */}
-          <div id="tour-tags-section" className="bg-card border border-border shadow-md rounded-2xl p-4 space-y-4">
+          <div id="tour-tags-section" className="bg-card border border-zinc-300 dark:border-zinc-700/80 shadow-md rounded-2xl p-4 space-y-4">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-sm font-bold flex items-center gap-2 text-foreground">
@@ -1078,7 +1078,7 @@ export default function AiTrainingPage() {
             </div>
 
             {isLabelFormOpen && (
-              <div className="bg-card border border-border rounded-2xl p-1.5 shadow-sm animate-in zoom-in-95 duration-200">
+              <div className="bg-card border border-zinc-300 dark:border-zinc-700/80 rounded-2xl p-1.5 shadow-sm animate-in zoom-in-95 duration-200">
                 <LabelForm 
                   initialData={editingLabel} 
                   onSave={handleSaveLabel} 
@@ -1089,7 +1089,7 @@ export default function AiTrainingPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {labels.length === 0 ? (
-                <div className="col-span-full py-8 text-center bg-background/50 border border-border rounded-xl">
+                <div className="col-span-full py-8 text-center bg-background/50 border border-zinc-300 dark:border-zinc-700/70 rounded-xl">
                   <Tag className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
                   <p className="text-muted-foreground text-xs font-semibold">
                     {language === 'en' ? 'No tags created yet.' : 'এখনো কোনো ট্যাগ তৈরি করা হয়নি।'}
@@ -1097,7 +1097,7 @@ export default function AiTrainingPage() {
                 </div>
               ) : (
                 labels.map((label: any) => (
-                  <div key={label.id} className="bg-background border border-border p-3.5 rounded-xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden flex flex-col justify-between">
+                  <div key={label.id} className="bg-background border border-zinc-300 dark:border-zinc-700/70 p-3.5 rounded-xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden flex flex-col justify-between">
                     <div className="absolute top-0 left-0 w-1.5 h-full" style={{ backgroundColor: label.color }} />
                     <div className="pl-2 space-y-2">
                       <div className="flex items-center gap-2 min-w-0">
@@ -1137,7 +1137,7 @@ export default function AiTrainingPage() {
                       )}
 
                       {label.aiPrompt && (
-                        <div className="bg-card p-2 rounded-lg border border-border/50 flex items-start gap-1.5 text-[11px] text-muted-foreground">
+                        <div className="bg-card p-2 rounded-lg border border-zinc-300 dark:border-zinc-700/50 flex items-start gap-1.5 text-[11px] text-muted-foreground">
                           <Wand2 className="w-3.5 h-3.5 text-purple-400 shrink-0 mt-0.5" />
                           <p className="line-clamp-2" title={label.aiPrompt}>{label.aiPrompt}</p>
                         </div>
@@ -1153,10 +1153,10 @@ export default function AiTrainingPage() {
 
         {/* RIGHT COLUMN: Live Simulator (#tour-simulator) (5 Cols on desktop, Sticky) */}
         <div className="lg:col-span-5 lg:sticky lg:top-6 space-y-4">
-          <div id="tour-simulator" className="bg-card border border-border shadow-xl rounded-2xl overflow-hidden flex flex-col h-[460px] max-h-[75vh]">
+          <div id="tour-simulator" className="bg-card border border-zinc-300 dark:border-zinc-700/80 shadow-xl rounded-2xl overflow-hidden flex flex-col h-[460px] max-h-[75vh]">
             
             {/* Simulator Header */}
-            <div className="p-3.5 border-b border-border bg-surface/80 backdrop-blur-xl flex items-center justify-between">
+            <div className="p-3.5 border-b border-zinc-300 dark:border-zinc-800 bg-surface/80 backdrop-blur-xl flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <div className="relative">
                   <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-xs border border-primary/30">
@@ -1250,7 +1250,7 @@ export default function AiTrainingPage() {
             </div>
 
             {/* Input Box */}
-            <div className="p-3 border-t border-border bg-card">
+            <div className="p-3 border-t border-zinc-300 dark:border-zinc-800 bg-card">
               <form 
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -1263,7 +1263,7 @@ export default function AiTrainingPage() {
                   value={simulatorInput}
                   onChange={(e) => setSimulatorInput(e.target.value)}
                   placeholder={language === 'en' ? 'Type a test query (e.g. Delivery Charge)...' : 'টেস্ট প্রশ্ন লিখুন (যেমন: ডেলিভারি চার্জ কত)...'}
-                  className="flex-1 bg-background border border-border rounded-xl px-3 py-2 text-[12.5px] text-foreground focus:outline-none focus:border-primary font-sans"
+                  className="flex-1 bg-background border border-zinc-300 dark:border-zinc-700/80 rounded-xl px-3 py-2 text-[12.5px] text-foreground focus:outline-none focus:border-primary font-sans"
                 />
                 <button
                   type="submit"
@@ -1283,7 +1283,7 @@ export default function AiTrainingPage() {
       {/* Q&A Modal */}
       {isQnaModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
-          <div className="bg-card border border-border rounded-2xl max-w-lg w-full max-h-[90vh] flex flex-col shadow-2xl animate-in zoom-in-95 overflow-hidden">
+          <div className="bg-card border border-zinc-300 dark:border-zinc-700 rounded-2xl max-w-lg w-full max-h-[90vh] flex flex-col shadow-2xl animate-in zoom-in-95 overflow-hidden">
             <div className="flex items-center justify-between border-b border-border p-4 shrink-0">
               <h3 className="font-bold text-foreground text-base">
                 {qnaForm.id 

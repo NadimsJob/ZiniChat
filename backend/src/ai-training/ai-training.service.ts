@@ -382,6 +382,13 @@ ${combinedText}`;
   }
 
   async getQnaList(tenantId: string) {
+    const assistant = await this.ensureAiAssistantExists(tenantId);
+
+    // Check if initial Q&A seeding marker exists for this tenant
+    const seedMarker = await this.prisma.aiAssistantTool.findFirst({
+      where: { assistantId: assistant.id, toolType: 'qna_initial_seeded' }
+    });
+
     let qnas = await this.prisma.qnAKnowledgeBase.findMany({
       where: { tenantId },
       orderBy: [
@@ -390,37 +397,49 @@ ${combinedText}`;
       ]
     });
 
-    // Inject default questions if they don't exist
-    if (qnas.filter(q => q.isDefault).length === 0) {
-      const defaultQuestions = [
-        "What are your business opening hours?",
-        "What is your delivery policy and charge?",
-        "Do you have a physical store location?",
-        "What is your return or refund policy?",
-        "What is your customer support contact number?",
-        "What payment methods do you accept?",
-        "Do you offer international shipping?",
-        "How can a customer track their order?"
-      ];
-
-      for (const q of defaultQuestions) {
-        await this.prisma.qnAKnowledgeBase.create({
-          data: {
-            tenantId,
-            question: q,
-            answer: '',
-            isDefault: true
+    // Seed ONLY on first time initialization (max 2 concise questions)
+    if (!seedMarker) {
+      if (qnas.length === 0) {
+        const defaultQuestions = [
+          {
+            question: "What are your business opening hours?",
+            answer: "We are open Monday to Saturday from 9:00 AM to 8:00 PM."
+          },
+          {
+            question: "What is your delivery policy and charge?",
+            answer: "We deliver nationwide. Standard delivery takes 24-48 hours inside capital city and 3-5 days outside."
           }
+        ];
+
+        for (const item of defaultQuestions) {
+          await this.prisma.qnAKnowledgeBase.create({
+            data: {
+              tenantId,
+              question: item.question,
+              answer: item.answer,
+              isDefault: true
+            }
+          });
+        }
+
+        // Refetch after seeding
+        qnas = await this.prisma.qnAKnowledgeBase.findMany({
+          where: { tenantId },
+          orderBy: [
+            { isDefault: 'desc' },
+            { createdAt: 'asc' }
+          ]
         });
       }
 
-      // Refetch
-      qnas = await this.prisma.qnAKnowledgeBase.findMany({
-        where: { tenantId },
-        orderBy: [
-          { isDefault: 'desc' },
-          { createdAt: 'asc' }
-        ]
+      // Mark seeding as completed so future deletions persist forever
+      await this.prisma.aiAssistantTool.create({
+        data: {
+          assistantId: assistant.id,
+          toolType: 'qna_initial_seeded',
+          isEnabled: true,
+          configJson: { seededAt: new Date().toISOString() }
+        }
       });
     }
 
@@ -783,10 +802,7 @@ ${combinedText}`;
     // 2. Build prompt context — MUST MIRROR OrchestratorService.buildPrompt() exactly
     const assistant = await this.ensureAiAssistantExists(tenantId);
     const tenant = await this.prisma.tenant.findUnique({
-      where: { id: tenantId },
-      include: {
-        businessNature: false // businessNature is a string field on Tenant
-      }
+      where: { id: tenantId }
     });
 
     // Fetch all knowledge sources
