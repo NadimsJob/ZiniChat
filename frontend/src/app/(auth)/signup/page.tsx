@@ -40,6 +40,7 @@ export default function SignupPage() {
     employeeCount: '1-10',
     businessNature: '', // Defaults to blank so user must select
     address: '',
+    customCategoryName: '', // Only sent when businessNature is "Other"
   });
 
   const [bnOpen, setBnOpen] = useState(false);
@@ -48,6 +49,12 @@ export default function SignupPage() {
   const ecRef = useRef<HTMLDivElement>(null);
 
   const employeeOptions = ['1-10', '11-50', '51-200', '200+'];
+
+  // Check if selected business nature is "Other"
+  const isOtherCategory = businessNatures.some(
+    (bn: any) => bn.name === formData.businessNature &&
+      (bn.name.toLowerCase().includes('other') || bn.nameBn?.toLowerCase().includes('অন্যান্য'))
+  );
 
   // Handle Country Selection & Auto Phone Prefix update
   const handleCountrySelect = (country: CountryInfo) => {
@@ -249,7 +256,9 @@ export default function SignupPage() {
 
     // Build clean payload
     const { confirmPassword, ...rest } = formData;
-    const payload = { ...rest, planId };
+    // Only include customCategoryName if "Other" category is selected and user typed something
+    const payload: any = { ...rest, planId };
+    if (!isOtherCategory) delete payload.customCategoryName;
 
     try {
       const res = await fetch(`${API}/auth/signup`, {
@@ -644,20 +653,38 @@ export default function SignupPage() {
                       key={bn.id}
                       type="button"
                       onClick={() => {
-                        setFormData({ ...formData, businessNature: bn.name });
+                        setFormData({ ...formData, businessNature: bn.name, customCategoryName: '' });
                         setBnOpen(false);
                       }}
                       className={`w-full flex items-center justify-between px-4 py-2.5 text-sm hover:bg-primary/10 transition-colors text-left ${
                         formData.businessNature === bn.name ? 'text-primary font-semibold' : 'text-foreground'
                       }`}
                     >
-                      <span>{bn.name}</span>
+                      <span>{isBn && bn.nameBn ? bn.nameBn : bn.name}</span>
                       {formData.businessNature === bn.name && <Check className="w-3.5 h-3.5 text-primary" />}
                     </button>
                   ))}
                 </div>
               )}
             </div>
+
+            {/* Custom Category Name — shown only when "Other" is selected */}
+            {isOtherCategory && (
+              <div className="mt-2 relative">
+                <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
+                <input
+                  type="text"
+                  value={formData.customCategoryName}
+                  onChange={(e) => setFormData({ ...formData, customCategoryName: e.target.value })}
+                  className={inputClass}
+                  placeholder={isBn ? 'e.g. ফটোগ্রাফি স্টুডিও, ইভেন্ট ম্যানেজমেন্ট' : 'e.g. Photography Studio, Event Management'}
+                  autoComplete="off"
+                />
+                <p className="text-[10px] text-zinc-500 mt-1">
+                  {isBn ? '📝 আপনার ব্যবসার ধরন লিখুন — AI এটি পড়ে উত্তর দেবে।' : '📝 Describe your business type — AI will use this to answer customers.'}
+                </p>
+              </div>
+            )}
           </div>
         </div>
 

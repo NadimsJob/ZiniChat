@@ -780,9 +780,16 @@ ${combinedText}`;
     // 1. Check AI Quota (deducts 1 credit or throws if depleted)
     await this.quotaService.checkAiQuota(tenantId);
 
-    // 2. Build prompt context from persona, QnAs, website knowledge, and processed documents
+    // 2. Build prompt context — MUST MIRROR OrchestratorService.buildPrompt() exactly
     const assistant = await this.ensureAiAssistantExists(tenantId);
-    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      include: {
+        businessNature: false // businessNature is a string field on Tenant
+      }
+    });
+
+    // Fetch all knowledge sources
     const qnas = await this.prisma.qnAKnowledgeBase.findMany({ where: { tenantId, isActive: true } });
     const freshDocs = await this.prisma.knowledgeDocument.findMany({
       where: { tenantId, status: 'completed' },
@@ -791,60 +798,192 @@ ${combinedText}`;
     });
     const products = await this.aiService.searchRelevantProducts(tenantId, message, 5);
 
-    let prompt = `You are a helpful customer support AI assistant named "${assistant.agentName || 'Support AI'}" for ${tenant?.businessName || 'this business'}.\n\n`;
-    prompt += `### System Persona & Rules:\n${assistant.systemPrompt || 'Always reply politely to customer inquiries.'}\n\n`;
+    // Fetch Active Labels/Tag Rules (PARITY WITH ORCHESTRATOR — was missing!)
+    const activeLabels = await this.prisma.label.findMany({
+      where: { tenantId, isActive: true }
+    });
 
-    // Extract websiteSummary text robustly
+    // Resolve vertical mode from businessNature string
+    let bn: any = null;
+    if ((tenant as any)?.businessNature) {
+      bn = await this.prisma.businessNature.findFirst({
+        where: { name: (tenant as any).businessNature }
+      });
+    }
+    const isPropertyMode        = bn?.isPropertyMode        ?? false;
+    const isHospitalityMode     = bn?.isHospitalityMode     ?? false;
+    const isTechSoftwareMode    = bn?.isTechSoftwareMode    ?? false;
+    const isFinancialServiceMode= bn?.isFinancialServiceMode?? false;
+    const isHealthcareMode      = bn?.isHealthcareMode      ?? false;
+    const isEducationMode       = bn?.isEducationMode       ?? false;
+    const isManufacturingMode   = bn?.isManufacturingMode   ?? false;
+    const isLogisticsMode       = bn?.isLogisticsMode       ?? false;
+
+    // ── STATIC HEADER (mirrors OrchestratorService Section 1) ──────────────
+    let prompt = `You are a helpful AI assistant for ${tenant?.businessName || 'this business'}.\n`;
+    prompt += `\n=== MANDATORY ANTI-HALLUCINATION GUARDRAILS ===\n`;
+    prompt += `1. ALWAYS use Q&A/Documents first as the source of truth.\n`;
+    prompt += `2. NEVER invent products, features, or prices.\n`;
+    prompt += `3. Never promise discounts or refunds without strict authorization.\n`;
+    prompt += `4. If uncertain, explicitly state that you do not know and suggest human handoff.\n`;
+
+    const systemPrompt = assistant.agentName
+      ? `Your name is ${assistant.agentName}. ${assistant.systemPrompt || ''}`
+      : (assistant.systemPrompt || '');
+    if (systemPrompt) {
+      prompt += `\nYour Core Instructions:\n${systemPrompt}\n`;
+    }
+
+    // ── Labels / Tag Rules (was MISSING — now added for parity) ─────────────
+    const tagsWithPrompts = activeLabels.filter(t => t.aiPrompt);
+    if (tagsWithPrompts.length > 0) {
+      prompt += `\n--- CONVERSATION TAGS RULES ---\n`;
+      prompt += `The following tags are active. If the customer's query matches any of these tag rules, you MUST apply its instruction/prompt to compose your response and return the matched tag name inside the "matchedTags" JSON array:\n`;
+      tagsWithPrompts.forEach(tag => {
+        prompt += `- Tag: "${tag.name}"\n  Rule/Instruction: "${tag.aiPrompt}"\n`;
+      });
+    }
+
+    // ── DYNAMIC FOOTER ──────────────────────────────────────────────────────
+    // Website Summary
     let websiteSummaryText = '';
     if (tenant?.websiteSummary) {
       const ws: any = tenant.websiteSummary;
       if (typeof ws === 'string') {
-        try {
-          const parsed = JSON.parse(ws);
-          websiteSummaryText = parsed.summary || parsed.text || ws;
-        } catch {
-          websiteSummaryText = ws;
-        }
+        try { websiteSummaryText = JSON.parse(ws).summary || ws; } catch { websiteSummaryText = ws; }
       } else if (typeof ws === 'object' && ws !== null) {
         websiteSummaryText = ws.summary || ws.text || JSON.stringify(ws);
       }
     }
-
-    if (websiteSummaryText && websiteSummaryText.trim()) {
-      prompt += `### Verified Website Knowledge Summary (${tenant?.websiteUrl || ''}):\n`;
-      prompt += `${websiteSummaryText.trim()}\n\n`;
+    if (websiteSummaryText.trim()) {
+      prompt += `\n--- VERIFIED WEBSITE KNOWLEDGE SUMMARY ---\n${websiteSummaryText.trim()}\n`;
     }
 
+    // Q&A
     if (qnas.length > 0) {
-      prompt += `### Q&A Knowledge Base:\n`;
+      prompt += `\n--- Q&A KNOWLEDGE BASE ---\n`;
       qnas.forEach((q: any) => {
-        if (q.answer && q.answer.trim()) {
-          prompt += `- Q: ${q.question}\n  A: ${q.answer}\n`;
-        }
+        if (q.answer?.trim()) prompt += `Q: ${q.question}\nA: ${q.answer}\n`;
       });
-      prompt += `\n`;
     }
 
+    // Documents
     if (freshDocs.length > 0) {
-      prompt += `### Uploaded Knowledge Documents:\n`;
+      prompt += `\n--- KNOWLEDGE DOCUMENTS ---\n`;
       freshDocs.forEach((d: any) => {
         prompt += `[Doc: ${d.filename}]\n`;
-        (d.chunks || []).forEach((c: any) => {
-          prompt += `Content: ${c.content}\n`;
-        });
+        (d.chunks || []).forEach((c: any) => { prompt += `Content: ${c.content}\n`; });
       });
-      prompt += `\n`;
     }
 
+    // ── Product Catalog — Vertical-Aware (mirrors Orchestrator exactly) ─────
     if (products.length > 0) {
-      prompt += `### Product Catalog:\n`;
-      products.forEach((p: any) => {
-        prompt += `- ${p.name}: BDT ${p.price} (SKU: ${p.sku || 'N/A'})\n`;
-      });
-      prompt += `\n`;
+      if (isPropertyMode) {
+        prompt += `\n--- PROPERTY LISTINGS ---\n`;
+        products.forEach((p: any) => {
+          const attrs = (p.attributes as any) || {};
+          const priceStr = (!p.price || Number(p.price) <= 0) ? 'Price on Request' : `BDT ${p.price}`;
+          prompt += `- [${(p.listingType || '').toUpperCase()}] ${p.name}`;
+          if (p.location) prompt += ` | 📍 ${p.location}`;
+          if (attrs.area) prompt += ` | 📐 ${attrs.area} sqft`;
+          if (attrs.bedrooms) prompt += ` | 🛏 ${attrs.bedrooms} BR`;
+          if (attrs.bathrooms) prompt += ` | 🚿 ${attrs.bathrooms} Bath`;
+          prompt += ` | 🔖 Status: ${attrs.propertyStatus || 'available'} | 💰 ${priceStr}\n`;
+        });
+      } else if (isHospitalityMode) {
+        prompt += `\n--- HOTEL ROOMS & SUITES ---\n`;
+        products.forEach((p: any) => {
+          const attrs = (p.attributes as any) || {};
+          const priceStr = (!p.price || Number(p.price) <= 0) ? 'Rate on Request' : `BDT ${p.price}/night`;
+          prompt += `- [${(attrs.roomType || '').toUpperCase()}] ${p.name}`;
+          if (attrs.capacity || attrs.maxGuests) prompt += ` | 👥 Max ${attrs.capacity || attrs.maxGuests}`;
+          if (attrs.bedType) prompt += ` | 🛏 ${attrs.bedType}`;
+          if (attrs.amenities) prompt += ` | ✨ ${Array.isArray(attrs.amenities) ? attrs.amenities.join(', ') : attrs.amenities}`;
+          prompt += ` | 💰 ${priceStr}\n`;
+        });
+      } else if (isTechSoftwareMode) {
+        prompt += `\n--- SOFTWARE & TECH PACKAGES ---\n`;
+        products.forEach((p: any) => {
+          const attrs = (p.attributes as any) || {};
+          const priceStr = (!p.price || Number(p.price) <= 0) ? 'Price on Request' : `BDT ${p.price}/mo`;
+          prompt += `- [${(attrs.tier || '').toUpperCase()}] ${p.name}`;
+          if (attrs.features) prompt += ` | ⚡ ${Array.isArray(attrs.features) ? attrs.features.join(', ') : attrs.features}`;
+          if (attrs.maxUsers) prompt += ` | 👥 Max Users: ${attrs.maxUsers}`;
+          if (attrs.demoUrl) prompt += ` | 🔗 Demo: ${attrs.demoUrl}`;
+          prompt += ` | 💰 ${priceStr}\n`;
+        });
+      } else if (isHealthcareMode) {
+        prompt += `\n--- DOCTORS & CLINIC SERVICES ---\n`;
+        products.forEach((p: any) => {
+          const attrs = (p.attributes as any) || {};
+          const priceStr = (!p.price || Number(p.price) <= 0) ? 'Fee on Request' : `BDT ${p.price}`;
+          prompt += `- Dr. ${p.name}`;
+          if (attrs.specialization || attrs.specialty) prompt += ` | 🩺 ${attrs.specialization || attrs.specialty}`;
+          if (attrs.visitingHours) prompt += ` | 🕒 ${attrs.visitingHours}`;
+          prompt += ` | 💰 ${priceStr}\n`;
+        });
+      } else if (isEducationMode) {
+        prompt += `\n--- COURSES & ACADEMIC PROGRAMS ---\n`;
+        products.forEach((p: any) => {
+          const attrs = (p.attributes as any) || {};
+          const priceStr = (!p.price || Number(p.price) <= 0) ? 'Fee on Request' : `BDT ${p.price}`;
+          prompt += `- ${p.name}`;
+          if (attrs.duration || attrs.courseDuration) prompt += ` | ⏳ ${attrs.duration || attrs.courseDuration}`;
+          if (attrs.batchSchedule) prompt += ` | 📅 ${attrs.batchSchedule}`;
+          if (attrs.instructor) prompt += ` | 👨‍🏫 ${attrs.instructor}`;
+          prompt += ` | 💰 ${priceStr}\n`;
+        });
+      } else if (isManufacturingMode) {
+        prompt += `\n--- B2B WHOLESALE & FACTORY PRODUCTS ---\n`;
+        products.forEach((p: any) => {
+          const attrs = (p.attributes as any) || {};
+          const priceStr = (!p.price || Number(p.price) <= 0) ? 'Price on Request (RFQ)' : `BDT ${p.price}/unit`;
+          prompt += `- ${p.name}`;
+          if (attrs.moq || attrs.minimumOrderQty) prompt += ` | 📦 MOQ: ${attrs.moq || attrs.minimumOrderQty}`;
+          if (attrs.material) prompt += ` | 🧵 Material: ${attrs.material}`;
+          if (attrs.leadTime) prompt += ` | ⏱ Lead Time: ${attrs.leadTime}`;
+          prompt += ` | 💰 ${priceStr}\n`;
+        });
+      } else if (isLogisticsMode) {
+        prompt += `\n--- LOGISTICS & SHIPMENT SERVICES ---\n`;
+        products.forEach((p: any) => {
+          const attrs = (p.attributes as any) || {};
+          const priceStr = (!p.price || Number(p.price) <= 0) ? 'Rate on Request' : `BDT ${p.price}`;
+          prompt += `- ${p.name}`;
+          if (attrs.route || attrs.originDestination) prompt += ` | 🛣 ${attrs.route || attrs.originDestination}`;
+          if (attrs.vehicleType) prompt += ` | 🚛 ${attrs.vehicleType}`;
+          if (attrs.capacity) prompt += ` | ⚖ ${attrs.capacity}`;
+          prompt += ` | 💰 ${priceStr}\n`;
+        });
+      } else if (isFinancialServiceMode) {
+        prompt += `\n--- SERVICE PACKAGES & CONSULTANCY ---\n`;
+        products.forEach((p: any) => {
+          const attrs = (p.attributes as any) || {};
+          const priceStr = (!p.price || Number(p.price) <= 0) ? 'Fee on Request' : `BDT ${p.price}`;
+          prompt += `- ${p.name}`;
+          if (attrs.scope) prompt += ` | 💼 ${attrs.scope}`;
+          if (attrs.duration) prompt += ` | ⏳ ${attrs.duration}`;
+          prompt += ` | 💰 ${priceStr}\n`;
+        });
+      } else {
+        // Default retail / Other — inject ALL attributes (zero missed)
+        prompt += `\n--- PRODUCT CATALOG ---\n`;
+        products.forEach((p: any) => {
+          const attrs = (p.attributes as any) || {};
+          const priceStr = (!p.price || Number(p.price) <= 0) ? 'Price on Request' : `BDT ${p.price}`;
+          prompt += `- ${p.name} | 💰 ${priceStr}`;
+          if (p.sku) prompt += ` | SKU: ${p.sku}`;
+          if (p.description) prompt += ` | 📝 ${p.description}`;
+          if (p.trackInventory) prompt += ` | 📦 Stock: ${p.stockCount ?? 0}`;
+          Object.entries(attrs)
+            .filter(([, v]) => v !== undefined && v !== null && v !== '')
+            .forEach(([k, v]) => { prompt += ` | ${k}: ${Array.isArray(v) ? (v as any[]).join(', ') : String(v)}`; });
+          prompt += `\n`;
+        });
+      }
     }
 
-    prompt += `### Customer Test Query:\n${message}\n\nPlease reply directly to the customer as the trained AI assistant.`;
+    prompt += `\n--- CUSTOMER TEST QUERY ---\n${message}\n\nPlease reply directly to the customer as the trained AI assistant.`;
 
     let reply = '';
     try {
@@ -865,6 +1004,7 @@ ${combinedText}`;
 
     return { reply };
   }
+
 
   async searchRelevantChunks(tenantId: string, queryVector: number[] | string, limit = 5) {
     if (!tenantId || tenantId.trim() === '') {

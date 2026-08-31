@@ -1037,12 +1037,16 @@ export class OrchestratorService {
           const area = attrs.area || attrs['Area (sqft)'] || '';
           const bedrooms = attrs.bedrooms || attrs['Bedrooms'] || '';
           const bathrooms = attrs.bathrooms || attrs['Bathrooms'] || '';
+          const propertyStatus = attrs.propertyStatus || attrs.status || 'available';
+          const floor = attrs.floor || attrs.floorNo || '';
+          const priceStr = (!p.price || Number(p.price) <= 0) ? 'Price on Request (negotiable)' : `BDT ${p.price.toString()}`;
           prompt += `- ${listingType} ${p.name}`;
           if (location) prompt += ` | 📍 ${location}`;
           if (area) prompt += ` | 📐 ${area} sqft`;
           if (bedrooms) prompt += ` | 🛏 ${bedrooms} BR`;
           if (bathrooms) prompt += ` | 🚿 ${bathrooms} Bath`;
-          prompt += ` | 💰 BDT ${p.price.toString()}\n`;
+          if (floor) prompt += ` | 🏢 Floor: ${floor}`;
+          prompt += ` | 🔖 Status: ${propertyStatus} | 💰 ${priceStr}\n`;
         });
       }
     } else if (options?.isHospitalityMode) {
@@ -1052,14 +1056,17 @@ export class OrchestratorService {
         products.forEach(p => {
           const attrs = (p.attributes as any) || {};
           const roomType = attrs.roomType ? `[${String(attrs.roomType).toUpperCase()}]` : '';
-          const capacity = attrs.capacity || attrs.guests || '';
+          const capacity = attrs.capacity || attrs.maxGuests || attrs.guests || '';
           const bedType = attrs.bedType || '';
+          const view = attrs.view || attrs.roomView || '';
           const amenities = Array.isArray(attrs.amenities) ? attrs.amenities.join(', ') : (attrs.amenities || '');
+          const priceStr = (!p.price || Number(p.price) <= 0) ? 'Rate on Request' : `BDT ${p.price.toString()}/night`;
           prompt += `- ${roomType} ${p.name}`;
           if (capacity) prompt += ` | 👥 Max ${capacity} Guests`;
           if (bedType) prompt += ` | 🛏 ${bedType}`;
-          if (amenities) prompt += ` | ✨ ${amenities}`;
-          prompt += ` | 💰 BDT ${p.price.toString()}/night\n`;
+          if (view) prompt += ` | 🌅 View: ${view}`;
+          if (amenities) prompt += ` | ✨ Amenities: ${amenities}`;
+          prompt += ` | 💰 ${priceStr}\n`;
         });
       }
     } else if (options?.isTechSoftwareMode) {
@@ -1071,10 +1078,17 @@ export class OrchestratorService {
           const tier = attrs.tier ? `[${String(attrs.tier).toUpperCase()}]` : '';
           const features = Array.isArray(attrs.features) ? attrs.features.join(', ') : (attrs.features || '');
           const demoUrl = attrs.demoUrl || attrs.demoLink || '';
+          const maxUsers = attrs.maxUsers || attrs.userLimit || '';
+          const sla = attrs.sla || attrs.uptime || '';
+          const licenseType = attrs.licenseType || '';
+          const priceStr = (!p.price || Number(p.price) <= 0) ? 'Price on Request (contact for quote)' : `BDT ${p.price.toString()}/mo`;
           prompt += `- ${tier} ${p.name}`;
           if (features) prompt += ` | ⚡ Features: ${features}`;
+          if (maxUsers) prompt += ` | 👥 Max Users: ${maxUsers}`;
+          if (sla) prompt += ` | ⏱ SLA/Uptime: ${sla}`;
+          if (licenseType) prompt += ` | 📄 License: ${licenseType}`;
           if (demoUrl) prompt += ` | 🔗 Demo: ${demoUrl}`;
-          prompt += ` | 💰 BDT ${p.price.toString()}/mo\n`;
+          prompt += ` | 💰 ${priceStr}\n`;
         });
       }
     } else if (options?.isFinancialServiceMode) {
@@ -1085,10 +1099,15 @@ export class OrchestratorService {
           const attrs = (p.attributes as any) || {};
           const scope = attrs.scope || attrs.description || '';
           const docs = Array.isArray(attrs.requiredDocs) ? attrs.requiredDocs.join(', ') : (attrs.requiredDocs || '');
+          const duration = attrs.duration || attrs.engagementDuration || '';
+          const consultant = attrs.consultant || attrs.leadConsultant || '';
+          const priceStr = (!p.price || Number(p.price) <= 0) ? 'Fee on Request' : `BDT ${p.price.toString()}`;
           prompt += `- ${p.name}`;
           if (scope) prompt += ` | 💼 Scope: ${scope}`;
+          if (duration) prompt += ` | ⏳ Duration: ${duration}`;
+          if (consultant) prompt += ` | 👤 Consultant: ${consultant}`;
           if (docs) prompt += ` | 📋 Required Documents: ${docs}`;
-          prompt += ` | 💰 Consultation Fee: BDT ${p.price.toString()}\n`;
+          prompt += ` | 💰 Consultation Fee: ${priceStr}\n`;
         });
       }
     } else if (options?.isHealthcareMode) {
@@ -1099,10 +1118,13 @@ export class OrchestratorService {
           const attrs = (p.attributes as any) || {};
           const spec = attrs.specialization || attrs.specialty || '';
           const hours = attrs.visitingHours || attrs.schedule || '';
+          const clinicRoom = attrs.clinicRoom || attrs.chamberRoom || attrs.room || '';
+          const priceStr = (!p.price || Number(p.price) <= 0) ? 'Fee on Request' : `BDT ${p.price.toString()}`;
           prompt += `- Dr. ${p.name}`;
           if (spec) prompt += ` | 🩺 Specialty: ${spec}`;
           if (hours) prompt += ` | 🕒 Visiting Hours: ${hours}`;
-          prompt += ` | 💰 Consultation Fee: BDT ${p.price.toString()}\n`;
+          if (clinicRoom) prompt += ` | 🏥 Chamber/Room: ${clinicRoom}`;
+          prompt += ` | 💰 Consultation Fee: ${priceStr}\n`;
         });
       }
     } else if (options?.isEducationMode) {
@@ -1114,11 +1136,14 @@ export class OrchestratorService {
           const duration = attrs.duration || attrs.courseDuration || '';
           const schedule = attrs.classSchedule || attrs.batchSchedule || '';
           const syllabus = attrs.syllabusUrl || attrs.syllabusLink || '';
+          const instructor = attrs.instructor || attrs.teacher || '';
+          const priceStr = (!p.price || Number(p.price) <= 0) ? 'Fee on Request' : `BDT ${p.price.toString()}`;
           prompt += `- ${p.name}`;
           if (duration) prompt += ` | ⏳ Duration: ${duration}`;
           if (schedule) prompt += ` | 📅 Batch Schedule: ${schedule}`;
+          if (instructor) prompt += ` | 👨‍🏫 Instructor: ${instructor}`;
           if (syllabus) prompt += ` | 📚 Syllabus: ${syllabus}`;
-          prompt += ` | 💰 Course Fee: BDT ${p.price.toString()}\n`;
+          prompt += ` | 💰 Course Fee: ${priceStr}\n`;
         });
       }
     } else if (options?.isManufacturingMode) {
@@ -1128,11 +1153,16 @@ export class OrchestratorService {
         products.forEach(p => {
           const attrs = (p.attributes as any) || {};
           const moq = attrs.moq || attrs.minimumOrderQty || attrs.minimumOrderQuantity || '';
-          const spec = attrs.specifications || attrs.specSheet || attrs.material || '';
+          const material = attrs.material || attrs.grade || '';
+          const spec = attrs.specifications || attrs.specSheet || '';
+          const leadTime = attrs.leadTime || attrs.productionTime || '';
+          const priceStr = (!p.price || Number(p.price) <= 0) ? 'Price on Request (RFQ)' : `BDT ${p.price.toString()}/unit`;
           prompt += `- ${p.name}`;
           if (moq) prompt += ` | 📦 MOQ: ${moq}`;
+          if (material) prompt += ` | 🧵 Material/Grade: ${material}`;
+          if (leadTime) prompt += ` | ⏱ Lead Time: ${leadTime}`;
           if (spec) prompt += ` | 🏭 Specs: ${spec}`;
-          prompt += ` | 💰 Wholesale Unit Price: BDT ${p.price.toString()}\n`;
+          prompt += ` | 💰 Wholesale Unit Price: ${priceStr}\n`;
         });
       }
     } else if (options?.isLogisticsMode) {
@@ -1142,20 +1172,38 @@ export class OrchestratorService {
         products.forEach(p => {
           const attrs = (p.attributes as any) || {};
           const route = attrs.route || attrs.originDestination || '';
-          const capacity = attrs.capacity || attrs.vehicleType || attrs.weightLimit || '';
-          const rate = attrs.rate || attrs.freightRate || '';
+          const vehicleType = attrs.vehicleType || '';
+          const capacity = attrs.capacity || attrs.weightLimit || '';
+          const transitTime = attrs.transitTime || attrs.deliveryTime || '';
+          const priceStr = (!p.price || Number(p.price) <= 0) ? 'Rate on Request' : `BDT ${p.price.toString()}`;
           prompt += `- ${p.name}`;
           if (route) prompt += ` | 🛣 Route: ${route}`;
-          if (capacity) prompt += ` | 🚛 Fleet/Capacity: ${capacity}`;
-          if (rate) prompt += ` | 💰 Freight Rate: BDT ${p.price.toString()}`;
-          prompt += `\n`;
+          if (vehicleType) prompt += ` | 🚛 Vehicle: ${vehicleType}`;
+          if (capacity) prompt += ` | ⚖ Capacity: ${capacity}`;
+          if (transitTime) prompt += ` | ⏱ Transit Time: ${transitTime}`;
+          prompt += ` | 💰 Freight Rate: ${priceStr}\n`;
         });
       }
     } else {
+      // Default: Retail / E-commerce OR unrecognized vertical
+      // Inject ALL product fields including every custom attribute so AI misses nothing
       if (products.length > 0) {
-        prompt += `\n--- DYNAMICALLY INDEXED PRODUCT CATALOG ---\n`;
+        prompt += `\n--- PRODUCT CATALOG (Source of Truth for Available Items) ---\n`;
+        prompt += `IMPORTANT: Read ALL product attributes carefully. Answer customer questions about any product field precisely.\n`;
         products.forEach(p => {
-          prompt += `- ${p.name}: BDT ${p.price.toString()} (SKU: ${p.sku || 'N/A'})\n`;
+          const attrs = (p.attributes as any) || {};
+          const priceStr = (!p.price || Number(p.price) <= 0) ? 'Price on Request' : `BDT ${p.price.toString()}`;
+          prompt += `- ${p.name} | 💰 ${priceStr}`;
+          if (p.sku) prompt += ` | SKU: ${p.sku}`;
+          if (p.description) prompt += ` | 📝 ${p.description}`;
+          if (p.trackInventory) prompt += ` | 📦 Stock: ${p.stockCount ?? 0}`;
+          // Inject every custom attribute key-value — zero fields missed
+          const attrEntries = Object.entries(attrs).filter(([, v]) => v !== undefined && v !== null && v !== '');
+          attrEntries.forEach(([k, v]) => {
+            const display = Array.isArray(v) ? v.join(', ') : String(v);
+            prompt += ` | ${k}: ${display}`;
+          });
+          prompt += `\n`;
         });
       }
     }
