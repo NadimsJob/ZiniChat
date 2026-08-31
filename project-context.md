@@ -25,6 +25,11 @@ A multi-tenant SaaS platform enabling businesses (tenants) to manage customer co
 - **Current Status**: **100% PRODUCTION READY & CERTIFIED — Complete Code & Security Audit Remediation Applied**
 - **Active Focus**: Ready for live deployment via MCP server deployment pipeline (`scripts/invoke-mcp.js`).
 - **Recent Implementations**:
+  - **Internal 3 AI Agent Tagging & Dynamic Fields Data Reading (100% Certified)**:
+    1. **Inbox Agent** (`OrchestratorService` & `AiService`): Live customer AI across WhatsApp, Messenger, Instagram, Web Chat.
+    2. **Simulator Agent** (`AiTrainingService.testSimulate`): AI Training Live Test Simulator inside merchant dashboard.
+    3. **ZiniChat Support Agent** (`SupportChatService`): Platform-wide customer support & onboarding AI assistant.
+    - *Full Product Data Parity*: All 3 Agents access tenant-scoped product catalog including standard fields and 100% of custom attributes (`Product.attributes` JSON) across all 8 business verticals + retail.
   - **Complete 8-Vertical Ecosystem & Cross-Vertical System Enhancements (100% Certified)**: Complete multi-vertical industry adaptation pattern (`isPropertyMode`, `isHospitalityMode`, `isTechSoftwareMode`, `isFinancialServiceMode`, `isHealthcareMode`, `isEducationMode`, `isManufacturingMode`, `isLogisticsMode`). Included 4 enterprise cross-vertical enhancements:
     1. **Vertical Q&A Starter Presets**: 1-click industry FAQ importer in `AiTrainingService`.
     2. **Team Role Specialization Tagging**: `User.specializationTags` and `NotificationsService.createNotificationForSpecializedTeam()` for targeted AI lead routing.

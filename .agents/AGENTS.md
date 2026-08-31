@@ -42,6 +42,11 @@ All AI agents MUST adhere to these workspace-specific behavioral and technical g
 * **AI Prompt Caching Layering & Token Optimization**:
   - Always structure LLM prompts into 2 distinct sections: **Static Header** at the top (System persona, Anti-hallucination rules, Tag rules, Event rules, JSON Output Format schema) for 100% prompt cache hits across calls, and **Dynamic Footer** at the bottom (Customer info, RAG search results, Chat history).
   - Implement Stage 0 Dynamic Indexing (`searchRelevantProducts`, `searchRelevantQnas`) to retrieve max 5 matching items based on user query intent. Generic greetings ("hi", "salam", etc.) MUST skip product catalog & vector DB queries to reduce input tokens from 5,000+ to ~300-500.
+* **Internal 3 AI Agent Classifications & Context Parity**:
+  - **Inbox Agent** (`OrchestratorService` & `AiService`): Live customer-facing AI handling incoming messaging channels (WhatsApp, Messenger, Instagram, Web Chat).
+  - **Simulator Agent** (`AiTrainingService.testSimulate`): AI Training Live Test Simulator inside merchant dashboard.
+  - **ZiniChat Support Agent** (`SupportChatService`): Platform-wide customer support & onboarding AI assistant.
+  - *Data Access Verification*: All 3 Agents read tenant-scoped product catalog, including all standard fields (`name`, `price`, `sku`, `description`, `location`, `listingType`) AND 100% of custom attributes (`Product.attributes` JSON populated via Dynamic Fields) across all 8 business verticals + retail.
 * **Prisma JSON Field Safety & AI Simulator Parity**:
   - Never dereference raw properties directly on Prisma `Json` columns (e.g. `(tenant.websiteSummary as any).summary`). Always wrap in a robust JSON deserialization guard handling objects, parsed JSON strings, and raw strings.
   - Any knowledge source added to live inbox AI (`OrchestratorService`) MUST be mirrored in the AI Training Live Simulator (`AiTrainingService.testSimulate`).
