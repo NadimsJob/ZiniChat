@@ -23,6 +23,23 @@ export class ProductsController {
     return this.productsService.getProducts(req.user.tenantId);
   }
 
+  // ── Permanent Dynamic Field Definitions ────────────────────
+  @Get('custom-fields')
+  async getCustomFieldDefs(@Request() req: any) {
+    return this.productsService.getCustomFieldDefs(req.user.tenantId);
+  }
+
+  @Post('custom-fields')
+  async saveCustomFieldDef(@Request() req: any, @Body() body: any) {
+    if (!body.name || !body.name.trim()) throw new BadRequestException('Field name is required');
+    return this.productsService.saveCustomFieldDef(req.user.tenantId, body);
+  }
+
+  @Delete('custom-fields/:name')
+  async deleteCustomFieldDef(@Request() req: any, @Param('name') name: string) {
+    return this.productsService.deleteCustomFieldDef(req.user.tenantId, name);
+  }
+
   @Post()
   async createProduct(@Request() req: any, @Body() body: any) {
     return this.productsService.createProduct(req.user.tenantId, body);

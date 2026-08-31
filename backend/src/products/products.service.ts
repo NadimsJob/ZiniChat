@@ -97,4 +97,56 @@ export class ProductsService {
       data: { images: updated }
     });
   }
+
+  // ── Permanent Dynamic Field Definitions (Tenant Scope) ──────
+
+  async getCustomFieldDefs(tenantId: string) {
+    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+    if (!tenant) return [];
+    const customFeatures: any = tenant.customFeatures || {};
+    return Array.isArray(customFeatures.customFieldDefs) ? customFeatures.customFieldDefs : [];
+  }
+
+  async saveCustomFieldDef(tenantId: string, fieldDef: { name: string; type: string; options?: string[] }) {
+    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+    if (!tenant) throw new NotFoundException('Tenant not found');
+
+    const customFeatures: any = tenant.customFeatures && typeof tenant.customFeatures === 'object' ? { ...tenant.customFeatures } : {};
+    const existingDefs: any[] = Array.isArray(customFeatures.customFieldDefs) ? [...customFeatures.customFieldDefs] : [];
+
+    // Filter out if existing key with same name
+    const updatedDefs = existingDefs.filter((f: any) => f.name.toLowerCase() !== fieldDef.name.toLowerCase());
+    updatedDefs.push({
+      name: fieldDef.name,
+      type: fieldDef.type || 'text',
+      options: Array.isArray(fieldDef.options) ? fieldDef.options : []
+    });
+
+    customFeatures.customFieldDefs = updatedDefs;
+
+    await this.prisma.tenant.update({
+      where: { id: tenantId },
+      data: { customFeatures }
+    });
+
+    return updatedDefs;
+  }
+
+  async deleteCustomFieldDef(tenantId: string, name: string) {
+    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+    if (!tenant) throw new NotFoundException('Tenant not found');
+
+    const customFeatures: any = tenant.customFeatures && typeof tenant.customFeatures === 'object' ? { ...tenant.customFeatures } : {};
+    const existingDefs: any[] = Array.isArray(customFeatures.customFieldDefs) ? [...customFeatures.customFieldDefs] : [];
+
+    const updatedDefs = existingDefs.filter((f: any) => f.name.toLowerCase() !== name.toLowerCase());
+    customFeatures.customFieldDefs = updatedDefs;
+
+    await this.prisma.tenant.update({
+      where: { id: tenantId },
+      data: { customFeatures }
+    });
+
+    return updatedDefs;
+  }
 }

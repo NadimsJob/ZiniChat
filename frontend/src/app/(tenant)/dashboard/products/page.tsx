@@ -72,9 +72,78 @@ export default function ProductsPage() {
   const [attrDropdownOptions, setAttrDropdownOptions] = useState('');
   const [attrValue, setAttrValue] = useState('');
 
+  // Permanent tenant custom field definitions
+  const [customFieldDefs, setCustomFieldDefs] = useState<any[]>([]);
+  const [isCustomFieldsModalOpen, setIsCustomFieldsModalOpen] = useState(false);
+  const [newDefName, setNewDefName] = useState('');
+  const [newDefType, setNewDefType] = useState<'text' | 'textarea' | 'dropdown' | 'date' | 'number' | 'checkbox'>('text');
+  const [newDefOptions, setNewDefOptions] = useState('');
+  const [savingDef, setSavingDef] = useState(false);
+
   useEffect(() => {
     fetchModeAndProducts();
+    fetchCustomFieldDefs();
   }, []);
+
+  const fetchCustomFieldDefs = async () => {
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/products/custom-fields`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const defs = await res.json();
+        setCustomFieldDefs(Array.isArray(defs) ? defs : []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch custom field defs', err);
+    }
+  };
+
+  const handleSaveCustomFieldDef = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newDefName.trim()) return;
+    setSavingDef(true);
+    try {
+      const token = Cookies.get('access_token');
+      const options = newDefType === 'dropdown'
+        ? newDefOptions.split(',').map(s => s.trim()).filter(Boolean)
+        : [];
+      const res = await fetch(`${API}/products/custom-fields`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newDefName.trim(), type: newDefType, options })
+      });
+      if (res.ok) {
+        const updatedDefs = await res.json();
+        setCustomFieldDefs(updatedDefs);
+        setNewDefName('');
+        setNewDefOptions('');
+        setNewDefType('text');
+      }
+    } catch (err) {
+      console.error('Error saving field def', err);
+    } finally {
+      setSavingDef(false);
+    }
+  };
+
+  const handleDeleteCustomFieldDef = async (name: string) => {
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/products/custom-fields/${encodeURIComponent(name)}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const updatedDefs = await res.json();
+        setCustomFieldDefs(updatedDefs);
+        handleRemoveAttribute(name);
+      }
+    } catch (err) {
+      console.error('Error deleting field def', err);
+    }
+  };
 
   const fetchModeAndProducts = async () => {
     try {
@@ -350,7 +419,8 @@ export default function ProductsPage() {
     : (formData.id ? (language === 'en' ? 'Edit Product' : 'প্রডাক্ট এডিট') : (language === 'en' ? 'Add Product' : 'নতুন প্রডাক্ট'));
 
   return (
-    <div className="flex h-[calc(100vh-130px)] bg-surface/70 backdrop-blur-xl border border-zinc-300 dark:border-zinc-700/80 rounded-2xl overflow-hidden shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.2)] relative text-[13px]">
+    <div className="w-full h-full">
+      <div className="flex h-[calc(100vh-130px)] bg-surface/70 backdrop-blur-xl border border-zinc-300 dark:border-zinc-700/80 rounded-2xl overflow-hidden shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.2)] relative text-[13px]">
 
       {/* Left Pane: List */}
       <div className={`w-full ${isEditing ? 'hidden md:flex md:w-1/2 lg:w-[45%]' : 'flex'} flex-col border-r border-zinc-300 dark:border-zinc-700/80 bg-muted/20 shrink-0`}>
@@ -364,13 +434,44 @@ export default function ProductsPage() {
               {products.length} {isPropertyMode ? (language === 'en' ? 'listings' : 'টি লিস্টিং') : isHospitalityMode ? (language === 'en' ? 'rooms & suites' : 'টি রুম আছে') : isTechSoftwareMode ? (language === 'en' ? 'software plans' : 'টি প্ল্যান আছে') : isFinancialServiceMode ? (language === 'en' ? 'service packages' : 'টি সার্ভিস প্যাকেজ আছে') : isHealthcareMode ? (language === 'en' ? 'doctors & services' : 'টি ডাক্তার ও সার্ভিস আছে') : isEducationMode ? (language === 'en' ? 'courses & academic programs' : 'টি কোর্স ও ব্যাচ আছে') : isManufacturingMode ? (language === 'en' ? 'wholesale & factory products' : 'টি হোলসেল প্রডাক্ট আছে') : (language === 'en' ? 'items found' : 'টি প্রডাক্ট আছে')}
             </p>
           </div>
-          <button
-            onClick={() => openEditor()}
-            className="bg-primary text-primary-foreground px-1.5 py-2 text-[13px] rounded-xl flex items-center gap-2 font-bold hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">{addBtnLabel}</span>
-          </button>
+
+          <div className="flex items-center gap-2">
+            {/* Permanent Dynamic Fields Management Button */}
+            <div className="relative group">
+              <button
+                type="button"
+                onClick={() => setIsCustomFieldsModalOpen(true)}
+                className="px-3 py-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-xl text-[12px] font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+              >
+                <Sparkles className="w-4 h-4 text-primary" />
+                <span>Dynamic Fields</span>
+                {customFieldDefs.length > 0 && (
+                  <span className="px-1.5 py-0.2 bg-primary text-white text-[10px] font-extrabold rounded-full">
+                    {customFieldDefs.length}
+                  </span>
+                )}
+              </button>
+
+              {/* Hover Tooltip */}
+              <div className="absolute right-0 top-full mt-2 w-72 p-2.5 bg-popover text-popover-foreground border border-border shadow-xl rounded-xl text-[11px] font-normal leading-relaxed opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                <p className="font-bold text-primary mb-1 flex items-center gap-1">
+                  <Sparkles className="w-3 h-3" />
+                  {language === 'en' ? 'Permanent Workspace Fields' : 'ওয়ার্কস্পেস কাস্টম ফিল্ড ম্যানেজমেন্ট'}
+                </p>
+                {language === 'en'
+                  ? 'Click to create permanent custom fields for your workspace. Fields added here will automatically appear on all product forms and be read by Inbox AI.'
+                  : 'এই বাটন দিয়ে আপনার ব্যবসার প্রয়োজনীয় কাস্টম ফিল্ড স্থায়ীভাবে যুক্ত ও সাজাতে পারবেন যা সব প্রডাক্ট ফর্মে স্বয়ংক্রিয়ভাবে দেখাবে এবং AI ডাটা রিড করবে।'}
+              </div>
+            </div>
+
+            <button
+              onClick={() => openEditor()}
+              className="bg-primary text-primary-foreground px-1.5 py-2 text-[13px] rounded-xl flex items-center gap-2 font-bold hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{addBtnLabel}</span>
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar p-1.5 bg-muted/10">
@@ -599,7 +700,6 @@ export default function ProductsPage() {
           )}
         </div>
       </div>
-
 
       {/* Right Pane: Editor */}
       <div className={`w-full ${!isEditing ? 'hidden md:flex items-center justify-center' : 'flex'} flex-col bg-background relative md:w-1/2 lg:w-[55%] h-full`}>
@@ -1037,6 +1137,86 @@ export default function ProductsPage() {
                   </>
                 )}
 
+                {/* Permanent Workspace Dynamic Fields (Saved for this Tenant) */}
+                {customFieldDefs.length > 0 && (
+                  <div className="bg-surface p-2.5 border border-primary/30 bg-primary/5 shadow-md rounded-2xl space-y-3 mt-3">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-[11px] font-bold text-primary uppercase tracking-wider flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5" />
+                        {language === 'en' ? 'Workspace Permanent Dynamic Fields' : 'ওয়ার্কস্পেস কাস্টম ফিল্ডসমূহ (স্থায়ী)'}
+                      </label>
+                      <span className="px-2 py-0.5 bg-primary/10 text-primary text-[9px] font-extrabold rounded-full">
+                        {customFieldDefs.length} {language === 'en' ? 'Fields' : 'টি ফিল্ড'}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 bg-background p-3 border border-border rounded-xl shadow-sm">
+                      {customFieldDefs.map((def: any) => (
+                        <div key={def.name} className="space-y-1">
+                          <label className="block text-[11px] font-semibold text-foreground">
+                            {def.name}
+                          </label>
+                          {def.type === 'dropdown' ? (
+                            <select
+                              value={formData.attributes?.[def.name] || ''}
+                              onChange={e => setFormData((prev: any) => ({ ...prev, attributes: { ...prev.attributes, [def.name]: e.target.value } }))}
+                              className="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-[12px] focus:border-primary focus:outline-none text-foreground font-medium"
+                            >
+                              <option value="">Select {def.name}...</option>
+                              {(def.options || []).map((opt: string) => (
+                                <option key={opt} value={opt}>{opt}</option>
+                              ))}
+                            </select>
+                          ) : def.type === 'textarea' ? (
+                            <textarea
+                              rows={2}
+                              value={formData.attributes?.[def.name] || ''}
+                              onChange={e => setFormData((prev: any) => ({ ...prev, attributes: { ...prev.attributes, [def.name]: e.target.value } }))}
+                              className="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-[12px] focus:border-primary focus:outline-none resize-none text-foreground font-medium"
+                              placeholder={`Enter ${def.name}...`}
+                            />
+                          ) : def.type === 'date' ? (
+                            <input
+                              type="date"
+                              value={formData.attributes?.[def.name] || ''}
+                              onChange={e => setFormData((prev: any) => ({ ...prev, attributes: { ...prev.attributes, [def.name]: e.target.value } }))}
+                              className="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-[12px] focus:border-primary focus:outline-none text-foreground font-medium"
+                            />
+                          ) : def.type === 'number' ? (
+                            <input
+                              type="number"
+                              value={formData.attributes?.[def.name] || ''}
+                              onChange={e => setFormData((prev: any) => ({ ...prev, attributes: { ...prev.attributes, [def.name]: e.target.value } }))}
+                              className="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-[12px] focus:border-primary focus:outline-none text-foreground font-medium"
+                              placeholder="0"
+                            />
+                          ) : def.type === 'checkbox' ? (
+                            <label className="flex items-center gap-2 p-1.5 bg-surface border border-border rounded-lg cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={formData.attributes?.[def.name] === 'Yes'}
+                                onChange={e => setFormData((prev: any) => ({ ...prev, attributes: { ...prev.attributes, [def.name]: e.target.checked ? 'Yes' : 'No' } }))}
+                                className="w-4 h-4 text-primary rounded border-border"
+                              />
+                              <span className="text-[12px] font-semibold text-foreground">
+                                {formData.attributes?.[def.name] === 'Yes' ? 'Yes (Active)' : 'No (Inactive)'}
+                              </span>
+                            </label>
+                          ) : (
+                            <input
+                              type="text"
+                              value={formData.attributes?.[def.name] || ''}
+                              onChange={e => setFormData((prev: any) => ({ ...prev, attributes: { ...prev.attributes, [def.name]: e.target.value } }))}
+                              className="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-[12px] focus:border-primary focus:outline-none text-foreground font-medium"
+                              placeholder={`Enter ${def.name}...`}
+                            />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Custom Attributes Builder (Rendered for ALL business categories) */}
                 <div className="bg-surface p-2.5 border border-border shadow-md rounded-2xl space-y-3 mt-3">
                   <div className="flex items-center justify-between">
@@ -1243,6 +1423,150 @@ export default function ProductsPage() {
           </>
         )}
       </div>
+    </div>
+
+      {/* ── PERMANENT DYNAMIC FIELDS MANAGEMENT MODAL ───────────── */}
+      {isCustomFieldsModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+          <div className="bg-surface border border-border rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            {/* Modal Header */}
+            <div className="p-4 border-b border-border flex items-center justify-between bg-muted/30">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-primary" />
+                <h3 className="font-bold text-base text-foreground">
+                  {language === 'en' ? 'Manage Dynamic Fields' : 'কাস্টম ফিল্ড ম্যানেজমেন্ট'}
+                </h3>
+              </div>
+              <button onClick={() => setIsCustomFieldsModalOpen(false)} className="p-1 text-muted-foreground hover:text-foreground rounded-lg transition-colors cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-4 space-y-4 overflow-y-auto custom-scrollbar">
+              <p className="text-[12px] text-muted-foreground leading-relaxed">
+                {language === 'en'
+                  ? 'Create permanent custom fields for your workspace. Saved fields will automatically appear on all product & service forms. Value is not required here.'
+                  : 'আপনার ব্যবসার প্রয়োজনীয় কাস্টম ইনপুট ফিল্ড স্থায়ীভাবে যুক্ত করে রাখুন। এখানে ফিল্ডের নাম ও ধরন সিলেক্ট করে সেভ করলে তা সব প্রডাক্ট ফর্মে স্বয়ংক্রিয়ভাবে দেখাবে। এখানে ভ্যালু দেয়া লাগবে না।'}
+              </p>
+
+              {/* Add New Dynamic Field Form */}
+              <form onSubmit={handleSaveCustomFieldDef} className="bg-background p-3 border border-border rounded-xl space-y-3 shadow-sm">
+                <h4 className="text-[12px] font-bold text-foreground uppercase tracking-wider">
+                  {language === 'en' ? 'Add New Permanent Field' : 'নতুন কাস্টম ফিল্ড যুক্ত করুন'}
+                </h4>
+                <div className="space-y-2">
+                  <div>
+                    <label className="block text-[11px] font-medium text-muted-foreground mb-1">
+                      {language === 'en' ? 'Field Name / Title *' : 'ফিল্ডের নাম / টাইটেল *'}
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Color, Expiry Date, Class Mentor, Warranty"
+                      value={newDefName}
+                      onChange={e => setNewDefName(e.target.value)}
+                      className="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-[12px] focus:border-primary focus:outline-none text-foreground"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-medium text-muted-foreground mb-1">
+                      {language === 'en' ? 'Field Type' : 'ফিল্ডের ধরন'}
+                    </label>
+                    <select
+                      value={newDefType}
+                      onChange={(e: any) => setNewDefType(e.target.value)}
+                      className="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-[12px] focus:border-primary focus:outline-none text-foreground"
+                    >
+                      <option value="text">📝 Text Box (Short)</option>
+                      <option value="textarea">📄 Text Area (Long)</option>
+                      <option value="dropdown">🔽 Dropdown (Options)</option>
+                      <option value="date">📅 Date Picker</option>
+                      <option value="number">🔢 Number Input</option>
+                      <option value="checkbox">☑️ Checkbox (Yes/No)</option>
+                    </select>
+                  </div>
+
+                  {newDefType === 'dropdown' && (
+                    <div>
+                      <label className="block text-[11px] font-medium text-muted-foreground mb-1">
+                        {language === 'en' ? 'Dropdown Options (comma separated)' : 'ড্রপডাউন অপশনসমূহ (কমা দিয়ে লিখুন)'}
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Red, Blue, Green, Yellow"
+                        value={newDefOptions}
+                        onChange={e => setNewDefOptions(e.target.value)}
+                        className="w-full bg-surface border border-border rounded-lg px-2.5 py-1.5 text-[12px] focus:border-primary focus:outline-none text-foreground"
+                      />
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={savingDef}
+                    className="w-full py-2 bg-primary text-primary-foreground font-bold rounded-lg text-xs hover:bg-primary/90 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 mt-1 shadow-md shadow-primary/20"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    {language === 'en' ? 'Save Dynamic Field' : 'কাস্টম ফিল্ড সেভ করুন'}
+                  </button>
+                </div>
+              </form>
+
+              {/* Saved Fields List */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-[12px] font-bold text-foreground uppercase tracking-wider">
+                    {language === 'en' ? 'Saved Dynamic Fields' : 'সেভ হওয়া ফিল্ড সমূহের তালিকা'}
+                  </h4>
+                  <span className="px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-extrabold rounded-full">
+                    {customFieldDefs.length} {language === 'en' ? 'Fields' : 'টি ফিল্ড'}
+                  </span>
+                </div>
+
+                {customFieldDefs.length === 0 ? (
+                  <p className="text-[11px] text-muted-foreground text-center py-4 bg-background border border-dashed border-border rounded-xl">
+                    {language === 'en' ? 'No permanent fields created yet.' : 'এখনো কোনো স্থায়ী কাস্টম ফিল্ড যুক্ত করা হয়নি।'}
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {customFieldDefs.map((def: any) => (
+                      <div key={def.name} className="flex items-center justify-between p-2.5 bg-background border border-border rounded-xl text-[12px] shadow-sm">
+                        <div>
+                          <span className="font-bold text-foreground">{def.name}</span>
+                          <span className="ml-2 px-1.5 py-0.5 bg-muted text-muted-foreground text-[10px] rounded font-medium uppercase">
+                            {def.type}
+                          </span>
+                          {def.type === 'dropdown' && (def.options || []).length > 0 && (
+                            <div className="text-[10px] text-muted-foreground mt-0.5">
+                              Options: {(def.options || []).join(', ')}
+                            </div>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteCustomFieldDef(def.name)}
+                          className="p-1.5 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
+                          title="Delete Field"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-3 border-t border-border bg-muted/20 flex justify-end">
+              <button onClick={() => setIsCustomFieldsModalOpen(false)} className="px-4 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors cursor-pointer">
+                {language === 'en' ? 'Done' : 'সম্পন্ন'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

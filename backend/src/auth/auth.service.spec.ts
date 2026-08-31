@@ -71,7 +71,7 @@ describe('AuthService', () => {
 
   describe('signupTenant', () => {
     it('should throw ConflictException if email exists', async () => {
-      mockUsersService.findByEmail.mockResolvedValue({ id: '1' });
+      mockUsersService.findByEmail.mockResolvedValue({ id: '1', isEmailVerified: true });
       await expect(service.signupTenant({ email: 'test@test.com', phoneNo: '+123456' })).rejects.toThrow(ConflictException);
     });
 
