@@ -919,7 +919,14 @@ ${combinedText}`;
           if (attrs.area) prompt += ` | 📐 ${attrs.area} sqft`;
           if (attrs.bedrooms) prompt += ` | 🛏 ${attrs.bedrooms} BR`;
           if (attrs.bathrooms) prompt += ` | 🚿 ${attrs.bathrooms} Bath`;
-          prompt += ` | 🔖 Status: ${attrs.propertyStatus || 'available'} | 💰 ${priceStr}\n`;
+          prompt += ` | 🔖 Status: ${attrs.propertyStatus || 'available'} | 💰 ${priceStr}`;
+          const propEx = ['area', 'bedrooms', 'bathrooms', 'propertyStatus', 'listingType', 'location'];
+          Object.entries(attrs).forEach(([k, v]) => {
+            if (!propEx.includes(k) && v !== undefined && v !== null && v !== '') {
+              prompt += ` | ${k}: ${Array.isArray(v) ? v.join(', ') : String(v)}`;
+            }
+          });
+          prompt += `\n`;
         });
       } else if (isHospitalityMode) {
         prompt += `\n--- HOTEL ROOMS & SUITES ---\n`;
@@ -930,7 +937,14 @@ ${combinedText}`;
           if (attrs.capacity || attrs.maxGuests) prompt += ` | 👥 Max ${attrs.capacity || attrs.maxGuests}`;
           if (attrs.bedType) prompt += ` | 🛏 ${attrs.bedType}`;
           if (attrs.amenities) prompt += ` | ✨ ${Array.isArray(attrs.amenities) ? attrs.amenities.join(', ') : attrs.amenities}`;
-          prompt += ` | 💰 ${priceStr}\n`;
+          prompt += ` | 💰 ${priceStr}`;
+          const hospEx = ['roomType', 'capacity', 'maxGuests', 'bedType', 'amenities'];
+          Object.entries(attrs).forEach(([k, v]) => {
+            if (!hospEx.includes(k) && v !== undefined && v !== null && v !== '') {
+              prompt += ` | ${k}: ${Array.isArray(v) ? v.join(', ') : String(v)}`;
+            }
+          });
+          prompt += `\n`;
         });
       } else if (isTechSoftwareMode) {
         prompt += `\n--- SOFTWARE & TECH PACKAGES ---\n`;
@@ -941,7 +955,14 @@ ${combinedText}`;
           if (attrs.features) prompt += ` | ⚡ ${Array.isArray(attrs.features) ? attrs.features.join(', ') : attrs.features}`;
           if (attrs.maxUsers) prompt += ` | 👥 Max Users: ${attrs.maxUsers}`;
           if (attrs.demoUrl) prompt += ` | 🔗 Demo: ${attrs.demoUrl}`;
-          prompt += ` | 💰 ${priceStr}\n`;
+          prompt += ` | 💰 ${priceStr}`;
+          const techEx = ['tier', 'features', 'maxUsers', 'demoUrl'];
+          Object.entries(attrs).forEach(([k, v]) => {
+            if (!techEx.includes(k) && v !== undefined && v !== null && v !== '') {
+              prompt += ` | ${k}: ${Array.isArray(v) ? v.join(', ') : String(v)}`;
+            }
+          });
+          prompt += `\n`;
         });
       } else if (isHealthcareMode) {
         prompt += `\n--- DOCTORS & CLINIC SERVICES ---\n`;
@@ -951,7 +972,14 @@ ${combinedText}`;
           prompt += `- Dr. ${p.name}`;
           if (attrs.specialization || attrs.specialty) prompt += ` | 🩺 ${attrs.specialization || attrs.specialty}`;
           if (attrs.visitingHours) prompt += ` | 🕒 ${attrs.visitingHours}`;
-          prompt += ` | 💰 ${priceStr}\n`;
+          prompt += ` | 💰 ${priceStr}`;
+          const healthEx = ['specialization', 'specialty', 'visitingHours'];
+          Object.entries(attrs).forEach(([k, v]) => {
+            if (!healthEx.includes(k) && v !== undefined && v !== null && v !== '') {
+              prompt += ` | ${k}: ${Array.isArray(v) ? v.join(', ') : String(v)}`;
+            }
+          });
+          prompt += `\n`;
         });
       } else if (isEducationMode) {
         prompt += `\n--- COURSES & ACADEMIC PROGRAMS ---\n`;
@@ -962,7 +990,14 @@ ${combinedText}`;
           if (attrs.duration || attrs.courseDuration) prompt += ` | ⏳ ${attrs.duration || attrs.courseDuration}`;
           if (attrs.batchSchedule) prompt += ` | 📅 ${attrs.batchSchedule}`;
           if (attrs.instructor) prompt += ` | 👨‍🏫 ${attrs.instructor}`;
-          prompt += ` | 💰 ${priceStr}\n`;
+          prompt += ` | 💰 ${priceStr}`;
+          const eduEx = ['duration', 'courseDuration', 'batchSchedule', 'instructor'];
+          Object.entries(attrs).forEach(([k, v]) => {
+            if (!eduEx.includes(k) && v !== undefined && v !== null && v !== '') {
+              prompt += ` | ${k}: ${Array.isArray(v) ? v.join(', ') : String(v)}`;
+            }
+          });
+          prompt += `\n`;
         });
       } else if (isManufacturingMode) {
         prompt += `\n--- B2B WHOLESALE & FACTORY PRODUCTS ---\n`;
@@ -973,7 +1008,14 @@ ${combinedText}`;
           if (attrs.moq || attrs.minimumOrderQty) prompt += ` | 📦 MOQ: ${attrs.moq || attrs.minimumOrderQty}`;
           if (attrs.material) prompt += ` | 🧵 Material: ${attrs.material}`;
           if (attrs.leadTime) prompt += ` | ⏱ Lead Time: ${attrs.leadTime}`;
-          prompt += ` | 💰 ${priceStr}\n`;
+          prompt += ` | 💰 ${priceStr}`;
+          const mfgEx = ['moq', 'minimumOrderQty', 'material', 'leadTime'];
+          Object.entries(attrs).forEach(([k, v]) => {
+            if (!mfgEx.includes(k) && v !== undefined && v !== null && v !== '') {
+              prompt += ` | ${k}: ${Array.isArray(v) ? v.join(', ') : String(v)}`;
+            }
+          });
+          prompt += `\n`;
         });
       } else if (isLogisticsMode) {
         prompt += `\n--- LOGISTICS & SHIPMENT SERVICES ---\n`;
@@ -984,7 +1026,14 @@ ${combinedText}`;
           if (attrs.route || attrs.originDestination) prompt += ` | 🛣 ${attrs.route || attrs.originDestination}`;
           if (attrs.vehicleType) prompt += ` | 🚛 ${attrs.vehicleType}`;
           if (attrs.capacity) prompt += ` | ⚖ ${attrs.capacity}`;
-          prompt += ` | 💰 ${priceStr}\n`;
+          prompt += ` | 💰 ${priceStr}`;
+          const logEx = ['route', 'originDestination', 'vehicleType', 'capacity'];
+          Object.entries(attrs).forEach(([k, v]) => {
+            if (!logEx.includes(k) && v !== undefined && v !== null && v !== '') {
+              prompt += ` | ${k}: ${Array.isArray(v) ? v.join(', ') : String(v)}`;
+            }
+          });
+          prompt += `\n`;
         });
       } else if (isFinancialServiceMode) {
         prompt += `\n--- SERVICE PACKAGES & CONSULTANCY ---\n`;
@@ -994,7 +1043,14 @@ ${combinedText}`;
           prompt += `- ${p.name}`;
           if (attrs.scope) prompt += ` | 💼 ${attrs.scope}`;
           if (attrs.duration) prompt += ` | ⏳ ${attrs.duration}`;
-          prompt += ` | 💰 ${priceStr}\n`;
+          prompt += ` | 💰 ${priceStr}`;
+          const finEx = ['scope', 'duration'];
+          Object.entries(attrs).forEach(([k, v]) => {
+            if (!finEx.includes(k) && v !== undefined && v !== null && v !== '') {
+              prompt += ` | ${k}: ${Array.isArray(v) ? v.join(', ') : String(v)}`;
+            }
+          });
+          prompt += `\n`;
         });
       } else {
         // Default retail / Other — inject ALL attributes (zero missed)

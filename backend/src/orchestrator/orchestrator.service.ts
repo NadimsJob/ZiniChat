@@ -1046,7 +1046,14 @@ export class OrchestratorService {
           if (bedrooms) prompt += ` | 🛏 ${bedrooms} BR`;
           if (bathrooms) prompt += ` | 🚿 ${bathrooms} Bath`;
           if (floor) prompt += ` | 🏢 Floor: ${floor}`;
-          prompt += ` | 🔖 Status: ${propertyStatus} | 💰 ${priceStr}\n`;
+          prompt += ` | 🔖 Status: ${propertyStatus} | 💰 ${priceStr}`;
+          const propExclude = ['area', 'Area (sqft)', 'bedrooms', 'Bedrooms', 'bathrooms', 'Bathrooms', 'propertyStatus', 'status', 'floor', 'floorNo', 'facing', 'furnished', 'listingType', 'location'];
+          Object.entries(attrs).forEach(([k, v]) => {
+            if (!propExclude.includes(k) && v !== undefined && v !== null && v !== '') {
+              prompt += ` | ${k}: ${Array.isArray(v) ? v.join(', ') : String(v)}`;
+            }
+          });
+          prompt += `\n`;
         });
       }
     } else if (options?.isHospitalityMode) {
@@ -1066,7 +1073,14 @@ export class OrchestratorService {
           if (bedType) prompt += ` | 🛏 ${bedType}`;
           if (view) prompt += ` | 🌅 View: ${view}`;
           if (amenities) prompt += ` | ✨ Amenities: ${amenities}`;
-          prompt += ` | 💰 ${priceStr}\n`;
+          prompt += ` | 💰 ${priceStr}`;
+          const hospExclude = ['roomType', 'capacity', 'maxGuests', 'guests', 'bedType', 'view', 'roomView', 'amenities'];
+          Object.entries(attrs).forEach(([k, v]) => {
+            if (!hospExclude.includes(k) && v !== undefined && v !== null && v !== '') {
+              prompt += ` | ${k}: ${Array.isArray(v) ? v.join(', ') : String(v)}`;
+            }
+          });
+          prompt += `\n`;
         });
       }
     } else if (options?.isTechSoftwareMode) {
@@ -1088,7 +1102,14 @@ export class OrchestratorService {
           if (sla) prompt += ` | ⏱ SLA/Uptime: ${sla}`;
           if (licenseType) prompt += ` | 📄 License: ${licenseType}`;
           if (demoUrl) prompt += ` | 🔗 Demo: ${demoUrl}`;
-          prompt += ` | 💰 ${priceStr}\n`;
+          prompt += ` | 💰 ${priceStr}`;
+          const techExclude = ['tier', 'features', 'demoUrl', 'demoLink', 'maxUsers', 'userLimit', 'sla', 'uptime', 'licenseType'];
+          Object.entries(attrs).forEach(([k, v]) => {
+            if (!techExclude.includes(k) && v !== undefined && v !== null && v !== '') {
+              prompt += ` | ${k}: ${Array.isArray(v) ? v.join(', ') : String(v)}`;
+            }
+          });
+          prompt += `\n`;
         });
       }
     } else if (options?.isFinancialServiceMode) {
@@ -1107,7 +1128,14 @@ export class OrchestratorService {
           if (duration) prompt += ` | ⏳ Duration: ${duration}`;
           if (consultant) prompt += ` | 👤 Consultant: ${consultant}`;
           if (docs) prompt += ` | 📋 Required Documents: ${docs}`;
-          prompt += ` | 💰 Consultation Fee: ${priceStr}\n`;
+          prompt += ` | 💰 Consultation Fee: ${priceStr}`;
+          const finExclude = ['scope', 'description', 'requiredDocs', 'duration', 'engagementDuration', 'consultant', 'leadConsultant'];
+          Object.entries(attrs).forEach(([k, v]) => {
+            if (!finExclude.includes(k) && v !== undefined && v !== null && v !== '') {
+              prompt += ` | ${k}: ${Array.isArray(v) ? v.join(', ') : String(v)}`;
+            }
+          });
+          prompt += `\n`;
         });
       }
     } else if (options?.isHealthcareMode) {
@@ -1124,7 +1152,14 @@ export class OrchestratorService {
           if (spec) prompt += ` | 🩺 Specialty: ${spec}`;
           if (hours) prompt += ` | 🕒 Visiting Hours: ${hours}`;
           if (clinicRoom) prompt += ` | 🏥 Chamber/Room: ${clinicRoom}`;
-          prompt += ` | 💰 Consultation Fee: ${priceStr}\n`;
+          prompt += ` | 💰 Consultation Fee: ${priceStr}`;
+          const healthExclude = ['specialization', 'specialty', 'visitingHours', 'schedule', 'clinicRoom', 'chamberRoom', 'room'];
+          Object.entries(attrs).forEach(([k, v]) => {
+            if (!healthExclude.includes(k) && v !== undefined && v !== null && v !== '') {
+              prompt += ` | ${k}: ${Array.isArray(v) ? v.join(', ') : String(v)}`;
+            }
+          });
+          prompt += `\n`;
         });
       }
     } else if (options?.isEducationMode) {
@@ -1143,7 +1178,14 @@ export class OrchestratorService {
           if (schedule) prompt += ` | 📅 Batch Schedule: ${schedule}`;
           if (instructor) prompt += ` | 👨‍🏫 Instructor: ${instructor}`;
           if (syllabus) prompt += ` | 📚 Syllabus: ${syllabus}`;
-          prompt += ` | 💰 Course Fee: ${priceStr}\n`;
+          prompt += ` | 💰 Course Fee: ${priceStr}`;
+          const eduExclude = ['duration', 'courseDuration', 'classSchedule', 'batchSchedule', 'syllabusUrl', 'syllabusLink', 'instructor', 'teacher'];
+          Object.entries(attrs).forEach(([k, v]) => {
+            if (!eduExclude.includes(k) && v !== undefined && v !== null && v !== '') {
+              prompt += ` | ${k}: ${Array.isArray(v) ? v.join(', ') : String(v)}`;
+            }
+          });
+          prompt += `\n`;
         });
       }
     } else if (options?.isManufacturingMode) {
@@ -1162,7 +1204,14 @@ export class OrchestratorService {
           if (material) prompt += ` | 🧵 Material/Grade: ${material}`;
           if (leadTime) prompt += ` | ⏱ Lead Time: ${leadTime}`;
           if (spec) prompt += ` | 🏭 Specs: ${spec}`;
-          prompt += ` | 💰 Wholesale Unit Price: ${priceStr}\n`;
+          prompt += ` | 💰 Wholesale Unit Price: ${priceStr}`;
+          const mfgExclude = ['moq', 'minimumOrderQty', 'minimumOrderQuantity', 'material', 'grade', 'specifications', 'specSheet', 'leadTime', 'productionTime'];
+          Object.entries(attrs).forEach(([k, v]) => {
+            if (!mfgExclude.includes(k) && v !== undefined && v !== null && v !== '') {
+              prompt += ` | ${k}: ${Array.isArray(v) ? v.join(', ') : String(v)}`;
+            }
+          });
+          prompt += `\n`;
         });
       }
     } else if (options?.isLogisticsMode) {
@@ -1181,7 +1230,14 @@ export class OrchestratorService {
           if (vehicleType) prompt += ` | 🚛 Vehicle: ${vehicleType}`;
           if (capacity) prompt += ` | ⚖ Capacity: ${capacity}`;
           if (transitTime) prompt += ` | ⏱ Transit Time: ${transitTime}`;
-          prompt += ` | 💰 Freight Rate: ${priceStr}\n`;
+          prompt += ` | 💰 Freight Rate: ${priceStr}`;
+          const logExclude = ['route', 'originDestination', 'vehicleType', 'capacity', 'weightLimit', 'transitTime', 'deliveryTime'];
+          Object.entries(attrs).forEach(([k, v]) => {
+            if (!logExclude.includes(k) && v !== undefined && v !== null && v !== '') {
+              prompt += ` | ${k}: ${Array.isArray(v) ? v.join(', ') : String(v)}`;
+            }
+          });
+          prompt += `\n`;
         });
       }
     } else {

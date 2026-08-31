@@ -750,11 +750,30 @@ export class AiService {
             isActive: true,
             OR: orConditions
           },
-          take: limit
+          take: limit * 2
         });
 
-        if (matched.length > 0) {
-          return matched;
+        // Also search within custom attributes JSON string for any keyword matches
+        const allActiveProducts = await this.prisma.product.findMany({
+          where: { tenantId, isActive: true },
+          take: 30
+        });
+
+        const attrMatched = allActiveProducts.filter(p => {
+          if (!p.attributes) return false;
+          const attrStr = JSON.stringify(p.attributes).toLowerCase();
+          return keywords.some(kw => attrStr.includes(kw));
+        });
+
+        const combined = [...matched];
+        attrMatched.forEach(p => {
+          if (!combined.some(c => c.id === p.id)) {
+            combined.push(p);
+          }
+        });
+
+        if (combined.length > 0) {
+          return combined.slice(0, limit);
         }
       }
 
