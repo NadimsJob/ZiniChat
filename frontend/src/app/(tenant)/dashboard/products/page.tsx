@@ -367,6 +367,36 @@ export default function ProductsPage() {
         </div>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar p-1.5 bg-muted/10">
+          {/* Dynamic List Column Header Bar */}
+          {!loading && products.length > 0 && (
+            <div className="px-3 py-2 bg-muted/70 dark:bg-zinc-800/80 border border-zinc-300 dark:border-zinc-700/80 rounded-xl text-[11px] font-bold text-muted-foreground flex items-center justify-between uppercase tracking-wider mb-2 shadow-xs">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <span>
+                  {isPropertyMode ? (language === 'en' ? 'Property Name & Location' : 'প্রপার্টি নাম ও লোকেশন') :
+                   isHospitalityMode ? (language === 'en' ? 'Room / Suite Name' : 'রুম / স্যুট নাম') :
+                   isTechSoftwareMode ? (language === 'en' ? 'Plan / Software Name' : 'সফটওয়্যার ও প্রাইসিং প্ল্যান') :
+                   isFinancialServiceMode ? (language === 'en' ? 'Service Package' : 'সার্ভিস প্যাকেজ') :
+                   isHealthcareMode ? (language === 'en' ? 'Doctor / Specialty' : 'ডাক্তার ও সার্ভিস') :
+                   isEducationMode ? (language === 'en' ? 'Course / Batch' : 'কোর্স ও ব্যাচ') :
+                   isManufacturingMode ? (language === 'en' ? 'Wholesale Product' : 'পাইকারি প্রডাক্ট নাম') :
+                   isLogisticsMode ? (language === 'en' ? 'Route / Vehicle' : 'ফ্রেট রুট ও যানবাহন') :
+                   (language === 'en' ? 'Product Name & SKU' : 'প্রডাক্ট নাম ও আইডি')}
+                </span>
+              </div>
+              <div className="text-right shrink-0 pr-6">
+                {isPropertyMode ? (language === 'en' ? 'Price / Rent' : 'মূল্য / ভাড়া') :
+                 isHospitalityMode ? (language === 'en' ? 'Rate / Night' : 'ভাড়া / রাত') :
+                 isTechSoftwareMode ? (language === 'en' ? 'Monthly Price' : 'মাসিক মূল্য') :
+                 isFinancialServiceMode ? (language === 'en' ? 'Service Fee' : 'সার্ভিস ফি') :
+                 isHealthcareMode ? (language === 'en' ? 'Visit Fee' : 'ভিজিট ফি') :
+                 isEducationMode ? (language === 'en' ? 'Course Fee' : 'কোর্স ফি') :
+                 isManufacturingMode ? (language === 'en' ? 'Unit Price' : 'একক মূল্য') :
+                 isLogisticsMode ? (language === 'en' ? 'Freight Rate' : 'ভাড়া / রেট') :
+                 (language === 'en' ? 'Price' : 'মূল্য')}
+              </div>
+            </div>
+          )}
+
           {loading ? (
             <div className="flex justify-center p-6 text-muted-foreground">
               <RefreshCw className="w-6 h-6 animate-spin" />
