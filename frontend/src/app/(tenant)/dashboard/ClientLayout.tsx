@@ -495,11 +495,11 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
       ]
     },
     {
-      title: language === 'en' ? 'AUTOMATION' : 'অটোমেশন',
+      title: language === 'en' ? 'MAIN FEATURES' : 'মূল ফিচারসমূহ',
       items: [
-        { name: language === 'en' ? 'Live Inbox' : 'লাইভ ইনবক্স', icon: Inbox, href: '/dashboard/inbox', id: 'sidebar-inbox' },
-        { name: language === 'en' ? 'Channel Integration' : 'চ্যানেল ইন্টিগ্রেশন', icon: Webhook, href: '/dashboard/settings/inboxes', id: 'sidebar-inboxes' },
-        { name: language === 'en' ? 'AI Training' : 'এআই ট্রেইনিং', icon: Zap, href: '/dashboard/settings/ai-training', id: 'sidebar-ai-training' },
+        { name: language === 'en' ? 'Live Inbox' : 'লাইভ ইনবক্স', icon: Inbox, href: '/dashboard/inbox', id: 'sidebar-inbox', isCore: true },
+        { name: language === 'en' ? 'Channel Integration' : 'চ্যানেল ইন্টিগ্রেশন', icon: Webhook, href: '/dashboard/settings/inboxes', id: 'sidebar-inboxes', isCore: true },
+        { name: language === 'en' ? 'AI Training' : 'এআই ট্রেইনিং', icon: Zap, href: '/dashboard/settings/ai-training', id: 'sidebar-ai-training', isCore: true },
       ]
     },
     {
@@ -630,14 +630,22 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
           {menuGroups.map((group, groupIdx) => (
             <div key={groupIdx} className="flex flex-col">
               {!isSidebarCollapsed && (
-                <div className="px-3 mb-1.5 mt-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                  {group.title}
+                <div className={`px-3 mb-1.5 mt-2 text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1.5 ${
+                  group.title.includes('MAIN') || group.title.includes('মূল')
+                    ? 'text-primary dark:text-emerald-400'
+                    : 'text-muted-foreground'
+                }`}>
+                  <span>{group.title}</span>
+                  {(group.title.includes('MAIN') || group.title.includes('মূল')) && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary dark:bg-emerald-400 animate-pulse" />
+                  )}
                 </div>
               )}
-              <div className="space-y-0.5">
+              <div className="space-y-1">
                 {group.items.map((item) => {
                   const isActive = pathname === item.href;
                   const isLocked = !hasAccess(item.href);
+                  const isCoreFeature = (item as any).isCore;
 
                   return (
                     <div key={item.name} className="flex flex-col relative">
@@ -653,17 +661,27 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
                             setIsMobileMenuOpen(false);
                           }
                         }}
-                        className={`group flex items-center ${isSidebarCollapsed ? 'justify-center px-1 py-2' : 'justify-between px-2 py-1.5'} rounded-lg text-[12px] font-medium transition-all ${
+                        className={`group flex items-center ${isSidebarCollapsed ? 'justify-center px-1 py-2' : 'justify-between px-2.5 py-1.5'} rounded-xl text-[12px] font-medium transition-all ${
                           isActive
-                            ? 'bg-primary/10 text-primary font-bold'
+                            ? 'bg-primary text-primary-foreground font-bold shadow-sm'
+                            : isCoreFeature
+                            ? 'bg-primary/10 dark:bg-emerald-500/15 text-primary dark:text-emerald-400 border border-primary/20 dark:border-emerald-500/30 font-bold hover:bg-primary/20 hover:border-primary/40'
                             : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                         } ${isLocked ? 'opacity-80' : ''}`}
                       >
                         <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-2.5'}`}>
-                          <item.icon className={`w-4 h-4 transition-colors ${isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`} />
+                          <item.icon className={`w-4 h-4 transition-colors ${
+                            isActive 
+                              ? 'text-primary-foreground' 
+                              : isCoreFeature 
+                              ? 'text-primary dark:text-emerald-400' 
+                              : 'text-muted-foreground group-hover:text-foreground'
+                          }`} />
                           {!isSidebarCollapsed && (
                             <>
-                              <span className={isActive ? 'text-primary font-bold' : ''}>{item.name}</span>
+                              <span className={isActive ? 'text-primary-foreground font-bold' : isCoreFeature ? 'text-primary dark:text-emerald-400 font-bold' : ''}>
+                                {item.name}
+                              </span>
                               {isLocked && <Lock className="w-3 h-3 text-amber-500 ml-1" />}
                             </>
                           )}
