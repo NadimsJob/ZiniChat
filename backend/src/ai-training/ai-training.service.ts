@@ -384,6 +384,20 @@ ${combinedText}`;
   async getQnaList(tenantId: string) {
     const assistant = await this.ensureAiAssistantExists(tenantId);
 
+    // Clean up any legacy default Q&As beyond the standard 2 concise defaults
+    await this.prisma.qnAKnowledgeBase.deleteMany({
+      where: {
+        tenantId,
+        isDefault: true,
+        question: {
+          notIn: [
+            "What are your business opening hours?",
+            "What is your delivery policy and charge?"
+          ]
+        }
+      }
+    });
+
     // Check if initial Q&A seeding marker exists for this tenant
     const seedMarker = await this.prisma.aiAssistantTool.findFirst({
       where: { assistantId: assistant.id, toolType: 'qna_initial_seeded' }

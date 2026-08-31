@@ -35,6 +35,7 @@ describe('AiTrainingService', () => {
       create: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
+      deleteMany: jest.fn(),
     },
     knowledgeDocument: {
       findMany: jest.fn(),
