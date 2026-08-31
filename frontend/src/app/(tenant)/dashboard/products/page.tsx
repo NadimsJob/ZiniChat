@@ -377,189 +377,183 @@ export default function ProductsPage() {
               <p>{isPropertyMode ? (language === 'en' ? 'No properties yet. Add one!' : 'কোনো প্রপার্টি নেই।') : isHospitalityMode ? (language === 'en' ? 'No rooms or suites added yet.' : 'কোনো রুম বা স্যুট যোগ করা হয়নি।') : (language === 'en' ? 'No products found.' : 'কোনো প্রডাক্ট নেই।')}</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="flex flex-col gap-1">
               {products.map(product => {
                 const imgs: string[] = Array.isArray(product.images) ? product.images : [];
                 const attrs = (product.attributes as any) || {};
                 const propertyStatus = attrs.propertyStatus || 'available';
+                const isSelected = formData.id === product.id && isEditing;
+
+                const priceDisplay = (!product.price || parseFloat(product.price) <= 0)
+                  ? <span className="italic text-muted-foreground text-[11px]">{language === 'en' ? 'Price on Call' : 'আলোচনা সাপেক্ষে'}</span>
+                  : <span className="font-bold text-[12px]">
+                      {isHospitalityMode ? `৳${parseFloat(product.price).toLocaleString()}/n` :
+                       isTechSoftwareMode ? `৳${parseFloat(product.price).toLocaleString()}/mo` :
+                       isHealthcareMode ? `৳${parseFloat(product.price).toLocaleString()}/visit` :
+                       isEducationMode ? `৳${parseFloat(product.price).toLocaleString()}` :
+                       isManufacturingMode ? `৳${parseFloat(product.price).toLocaleString()}/u` :
+                       isLogisticsMode ? `৳${parseFloat(product.price).toLocaleString()}` :
+                       isFinancialServiceMode ? `৳${parseFloat(product.price).toLocaleString()}` :
+                       `৳${parseFloat(product.price).toLocaleString()}`}
+                    </span>;
 
                 return (
                   <div
                     key={product.id}
                     onClick={() => openEditor(product)}
-                    className={`bg-card border rounded-2xl overflow-hidden hover:shadow-md transition-all cursor-pointer group flex flex-col ${formData.id === product.id && isEditing ? 'border-primary ring-1 ring-primary/20' : 'border-border'}`}
+                    className={`group flex items-center gap-2 px-2.5 py-2 rounded-xl border cursor-pointer transition-all hover:shadow-sm
+                      ${isSelected ? 'border-primary bg-primary/5 ring-1 ring-primary/20' : 'border-border bg-card hover:border-border/80 hover:bg-muted/30'}`}
                   >
-                    {/* Image / Gallery */}
-                    <div className="aspect-[4/3] bg-muted relative shrink-0">
-                      {(isPropertyMode || isHospitalityMode) && imgs.length > 0 ? (
-                        <img src={`${API}${imgs[0]}`} alt={product.name} className="w-full h-full object-cover" />
-                      ) : product.imageUrl ? (
-                        <img src={`${API}${product.imageUrl}`} alt={product.name} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground">
-                          {isPropertyMode ? <Building2 className="w-8 h-8 mb-1 opacity-30" /> : isHospitalityMode ? <Hotel className="w-8 h-8 mb-1 text-amber-500 opacity-40" /> : <ImageIcon className="w-8 h-8 mb-1 opacity-50" />}
-                        </div>
-                      )}
+                    {/* Thumbnail — only Property & Hospitality if image exists */}
+                    {(isPropertyMode || isHospitalityMode) && (imgs.length > 0 || product.imageUrl) ? (
+                      <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 border border-border">
+                        <img
+                          src={`${API}${imgs[0] || product.imageUrl}`}
+                          alt={product.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      /* Icon avatar instead of image for non-image categories */
+                      <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center text-white text-[10px] font-bold
+                        ${isHospitalityMode ? 'bg-amber-500/20 border border-amber-500/30' :
+                          isTechSoftwareMode ? 'bg-indigo-500/15 border border-indigo-500/30' :
+                          isFinancialServiceMode ? 'bg-emerald-500/15 border border-emerald-500/30' :
+                          isHealthcareMode ? 'bg-teal-500/15 border border-teal-500/30' :
+                          isEducationMode ? 'bg-purple-500/15 border border-purple-500/30' :
+                          isManufacturingMode ? 'bg-amber-500/15 border border-amber-500/30' :
+                          isLogisticsMode ? 'bg-sky-500/15 border border-sky-500/30' :
+                          isPropertyMode ? 'bg-primary/15 border border-primary/30' :
+                          'bg-primary/10 border border-primary/20'}`}
+                      >
+                        {isHospitalityMode ? <Hotel className="w-4 h-4 text-amber-500" /> :
+                         isTechSoftwareMode ? <Cpu className="w-4 h-4 text-indigo-500" /> :
+                         isFinancialServiceMode ? <Briefcase className="w-4 h-4 text-emerald-500" /> :
+                         isHealthcareMode ? <Stethoscope className="w-4 h-4 text-teal-500" /> :
+                         isEducationMode ? <GraduationCap className="w-4 h-4 text-purple-500" /> :
+                         isManufacturingMode ? <Factory className="w-4 h-4 text-amber-500" /> :
+                         isLogisticsMode ? <Truck className="w-4 h-4 text-sky-500" /> :
+                         isPropertyMode ? <Building2 className="w-4 h-4 text-primary" /> :
+                         <ShoppingCart className="w-4 h-4 text-primary" />}
+                      </div>
+                    )}
+
+                    {/* Name + Key Attributes */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-semibold text-[13px] text-foreground truncate max-w-[160px]">{product.name}</span>
+
+                        {/* Category-specific badge/tag */}
+                        {isPropertyMode && product.listingType && (
+                          <span className={`px-1.5 py-0.5 text-[9px] font-bold rounded border ${getListingBadge(product.listingType)}`}>
+                            {product.listingType.toUpperCase()}
+                          </span>
+                        )}
+                        {isHospitalityMode && attrs.roomType && (
+                          <span className="px-1.5 py-0.5 text-[9px] font-bold rounded border bg-amber-500/10 text-amber-500 border-amber-500/20">
+                            {String(attrs.roomType).toUpperCase()}
+                          </span>
+                        )}
+                        {isTechSoftwareMode && attrs.tier && (
+                          <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-indigo-500/10 text-indigo-500">
+                            {String(attrs.tier).toUpperCase()}
+                          </span>
+                        )}
+                        {!product.isActive && !isPropertyMode && (
+                          <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-muted text-muted-foreground">INACTIVE</span>
+                        )}
+                      </div>
+
+                      {/* Key fields row */}
+                      <div className="flex items-center gap-2 flex-wrap mt-0.5 text-[10px] text-muted-foreground">
+                        {isPropertyMode && (
+                          <>
+                            {product.location && <span className="flex items-center gap-0.5"><MapPin className="w-2.5 h-2.5" />{product.location}</span>}
+                            {attrs.area && <span className="flex items-center gap-0.5"><Layers className="w-2.5 h-2.5" />{attrs.area} sqft</span>}
+                            {attrs.bedrooms && <span className="flex items-center gap-0.5"><BedDouble className="w-2.5 h-2.5" />{attrs.bedrooms} BR</span>}
+                            {attrs.bathrooms && <span>{attrs.bathrooms} Ba</span>}
+                            <span className={`font-medium ${getStatusColor(propertyStatus)}`}>● {propertyStatus}</span>
+                          </>
+                        )}
+                        {isHospitalityMode && (
+                          <>
+                            {attrs.capacity && <span className="flex items-center gap-0.5"><Users className="w-2.5 h-2.5 text-amber-500" />Max {attrs.capacity}</span>}
+                            {attrs.bedType && <span className="flex items-center gap-0.5"><BedDouble className="w-2.5 h-2.5 text-amber-500" />{attrs.bedType}</span>}
+                            {attrs.amenities && <span className="truncate max-w-[100px]">{typeof attrs.amenities === 'string' ? attrs.amenities.split(',').slice(0,2).join(', ') : ''}</span>}
+                          </>
+                        )}
+                        {isTechSoftwareMode && (
+                          <>
+                            {attrs.features && <span className="truncate max-w-[140px]">{Array.isArray(attrs.features) ? attrs.features.slice(0,2).join(', ') : String(attrs.features).substring(0, 40)}</span>}
+                            {attrs.maxUsers && <span className="flex items-center gap-0.5"><Users className="w-2.5 h-2.5" />Max {attrs.maxUsers}</span>}
+                          </>
+                        )}
+                        {isFinancialServiceMode && (
+                          <>
+                            {attrs.scope && <span className="truncate max-w-[140px] flex items-center gap-0.5"><Briefcase className="w-2.5 h-2.5 text-emerald-500 shrink-0" />{String(attrs.scope)}</span>}
+                            {attrs.duration && <span className="flex items-center gap-0.5"><Clock className="w-2.5 h-2.5" />{attrs.duration}</span>}
+                          </>
+                        )}
+                        {isHealthcareMode && (
+                          <>
+                            {(attrs.specialty || attrs.specialization) && <span className="flex items-center gap-0.5"><Stethoscope className="w-2.5 h-2.5 text-teal-500" />{String(attrs.specialty || attrs.specialization)}</span>}
+                            {attrs.visitingHours && <span className="flex items-center gap-0.5"><Clock className="w-2.5 h-2.5" />{attrs.visitingHours}</span>}
+                          </>
+                        )}
+                        {isEducationMode && (
+                          <>
+                            {(attrs.duration || attrs.courseDuration) && <span className="flex items-center gap-0.5"><Clock className="w-2.5 h-2.5 text-purple-500" />{String(attrs.duration || attrs.courseDuration)}</span>}
+                            {attrs.batchSchedule && <span className="flex items-center gap-0.5"><Calendar className="w-2.5 h-2.5" />{attrs.batchSchedule}</span>}
+                            {attrs.instructor && <span>{attrs.instructor}</span>}
+                          </>
+                        )}
+                        {isManufacturingMode && (
+                          <>
+                            {(attrs.moq || attrs.minimumOrderQty) && <span className="flex items-center gap-0.5"><PackageCheck className="w-2.5 h-2.5 text-amber-500" />MOQ: {String(attrs.moq || attrs.minimumOrderQty)}</span>}
+                            {attrs.material && <span>{attrs.material}</span>}
+                            {attrs.leadTime && <span className="flex items-center gap-0.5"><Clock className="w-2.5 h-2.5" />{attrs.leadTime}</span>}
+                          </>
+                        )}
+                        {isLogisticsMode && (
+                          <>
+                            {(attrs.route || attrs.originDestination) && <span className="flex items-center gap-0.5"><Navigation className="w-2.5 h-2.5 text-sky-500 shrink-0" />{String(attrs.route || attrs.originDestination)}</span>}
+                            {(attrs.capacity || attrs.vehicleType) && <span className="flex items-center gap-0.5"><Truck className="w-2.5 h-2.5 text-sky-500 shrink-0" />{String(attrs.capacity || attrs.vehicleType)}</span>}
+                          </>
+                        )}
+                        {/* Default retail */}
+                        {!isPropertyMode && !isHospitalityMode && !isTechSoftwareMode && !isFinancialServiceMode && !isHealthcareMode && !isEducationMode && !isManufacturingMode && !isLogisticsMode && (
+                          <>
+                            {product.sku && <span>SKU: {product.sku}</span>}
+                            {product.trackInventory && (
+                              <span className={`font-medium ${product.stockCount > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                                Stock: {product.stockCount}
+                              </span>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Price + Delete */}
+                    <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+                      <div className={`text-right
+                        ${isHospitalityMode ? 'text-amber-500' :
+                          isTechSoftwareMode ? 'text-indigo-500' :
+                          isFinancialServiceMode ? 'text-emerald-500' :
+                          isHealthcareMode ? 'text-teal-500' :
+                          isEducationMode ? 'text-purple-500' :
+                          isManufacturingMode ? 'text-amber-500' :
+                          isLogisticsMode ? 'text-sky-500' :
+                          'text-primary'}`}
+                      >
+                        {priceDisplay}
+                      </div>
                       <button
                         onClick={(e) => handleDelete(product.id, e)}
-                        className="absolute top-2 right-2 p-1.5 bg-background/90 text-red-500 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-500/10 transition-all shadow-sm"
+                        className="p-1.5 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
-                      {isPropertyMode && product.listingType && (
-                        <div className={`absolute top-2 left-2 px-2 py-0.5 text-[9px] font-bold rounded border backdrop-blur ${getListingBadge(product.listingType)}`}>
-                          {product.listingType.toUpperCase()}
-                        </div>
-                      )}
-                      {isHospitalityMode && attrs.roomType && (
-                        <div className="absolute top-2 left-2 px-2 py-0.5 text-[9px] font-bold rounded border backdrop-blur bg-amber-500/20 text-amber-400 border-amber-500/30">
-                          {String(attrs.roomType).toUpperCase()}
-                        </div>
-                      )}
-                      {!isPropertyMode && !isHospitalityMode && !product.isActive && (
-                        <div className="absolute top-2 left-2 px-1.5 py-0.5 bg-black/80 text-white text-[9px] font-bold rounded backdrop-blur">INACTIVE</div>
-                      )}
-                    </div>
-
-                    {/* Info */}
-                    <div className="p-1.5 flex-1 flex flex-col">
-                      <h3 className="font-bold text-[13px] text-foreground line-clamp-1 mb-0.5">{product.name}</h3>
-
-                      {isPropertyMode ? (
-                        <>
-                          {product.location && (
-                            <div className="flex items-center gap-1 text-[10px] text-muted-foreground mb-1">
-                              <MapPin className="w-3 h-3" />{product.location}
-                            </div>
-                          )}
-                          <div className="flex flex-wrap gap-2 text-[10px] text-muted-foreground mb-1">
-                            {attrs.area && <span className="flex items-center gap-0.5"><Layers className="w-3 h-3" />{attrs.area} sqft</span>}
-                            {attrs.bedrooms && <span className="flex items-center gap-0.5"><BedDouble className="w-3 h-3" />{attrs.bedrooms} BR</span>}
-                            {attrs.bathrooms && <span className="flex items-center gap-0.5"><Bath className="w-3 h-3" />{attrs.bathrooms} Ba</span>}
-                          </div>
-                          {/* PRICE DISPLAY WITH OPTIONAL ZERO / PRICE ON CALL HANDLING */}
-                          <div className="font-bold text-primary text-[13px]">
-                            {(!product.price || parseFloat(product.price) <= 0) ? (
-                              <span className="text-muted-foreground italic text-[12px]">{language === 'en' ? 'Price on Call' : 'আলোচনা সাপেক্ষে'}</span>
-                            ) : (
-                              `৳ ${parseFloat(product.price).toLocaleString()}`
-                            )}
-                          </div>
-                          <div className={`text-[10px] font-medium mt-0.5 ${getStatusColor(propertyStatus)}`}>
-                            ● {propertyStatus.charAt(0).toUpperCase() + propertyStatus.slice(1)}
-                          </div>
-                        </>
-                      ) : isHospitalityMode ? (
-                        <>
-                          <div className="flex flex-wrap gap-2 text-[10px] text-muted-foreground mb-1">
-                            {attrs.capacity && <span className="flex items-center gap-0.5"><Users className="w-3 h-3 text-amber-500" />Max {attrs.capacity} Guests</span>}
-                            {attrs.bedType && <span className="flex items-center gap-0.5"><BedDouble className="w-3 h-3 text-amber-500" />{attrs.bedType}</span>}
-                          </div>
-                          <div className="font-bold text-amber-500 text-[13px]">
-                            {(!product.price || parseFloat(product.price) <= 0) ? (
-                              <span className="text-muted-foreground italic text-[12px]">{language === 'en' ? 'Price on Call' : 'আলোচনা সাপেক্ষে'}</span>
-                            ) : (
-                              <>৳ {parseFloat(product.price).toLocaleString()} <span className="text-[10px] font-normal text-muted-foreground">/ night</span></>
-                            )}
-                          </div>
-                        </>
-                      ) : isTechSoftwareMode ? (
-                        <>
-                          <div className="flex flex-wrap gap-2 text-[10px] text-muted-foreground mb-1">
-                            {attrs.tier && <span className="px-1.5 py-0.5 bg-indigo-500/10 text-indigo-500 rounded font-semibold text-[9px]">{String(attrs.tier).toUpperCase()}</span>}
-                            {attrs.features && <span className="line-clamp-1">{Array.isArray(attrs.features) ? attrs.features.join(', ') : String(attrs.features)}</span>}
-                          </div>
-                          <div className="font-bold text-indigo-500 text-[13px]">
-                            {(!product.price || parseFloat(product.price) <= 0) ? (
-                              <span className="text-muted-foreground italic text-[12px]">{language === 'en' ? 'Price on Call' : 'আলোচনা সাপেক্ষে'}</span>
-                            ) : (
-                              <>৳ {parseFloat(product.price).toLocaleString()} <span className="text-[10px] font-normal text-muted-foreground">/ mo</span></>
-                            )}
-                          </div>
-                        </>
-                      ) : isFinancialServiceMode ? (
-                        <>
-                          <div className="flex flex-wrap gap-2 text-[10px] text-muted-foreground mb-1">
-                            {attrs.scope && <span className="line-clamp-1 flex items-center gap-0.5"><Briefcase className="w-3 h-3 text-emerald-500 shrink-0" />{String(attrs.scope)}</span>}
-                          </div>
-                          <div className="font-bold text-emerald-500 text-[13px]">
-                            {(!product.price || parseFloat(product.price) <= 0) ? (
-                              <span className="text-muted-foreground italic text-[12px]">{language === 'en' ? 'Price on Call' : 'আলোচনা সাপেক্ষে'}</span>
-                            ) : (
-                              <>৳ {parseFloat(product.price).toLocaleString()} <span className="text-[10px] font-normal text-muted-foreground">/ fee</span></>
-                            )}
-                          </div>
-                        </>
-                      ) : isHealthcareMode ? (
-                        <>
-                          <div className="flex flex-wrap gap-2 text-[10px] text-muted-foreground mb-1">
-                            {(attrs.specialization || attrs.specialty) && <span className="line-clamp-1 flex items-center gap-0.5"><Stethoscope className="w-3 h-3 text-teal-500 shrink-0" />{String(attrs.specialization || attrs.specialty)}</span>}
-                          </div>
-                          <div className="font-bold text-teal-500 text-[13px]">
-                            {(!product.price || parseFloat(product.price) <= 0) ? (
-                              <span className="text-muted-foreground italic text-[12px]">{language === 'en' ? 'Price on Call' : 'আলোচনা সাপেক্ষে'}</span>
-                            ) : (
-                              <>৳ {parseFloat(product.price).toLocaleString()} <span className="text-[10px] font-normal text-muted-foreground">/ visit</span></>
-                            )}
-                          </div>
-                        </>
-                      ) : isEducationMode ? (
-                        <>
-                          <div className="flex flex-wrap gap-2 text-[10px] text-muted-foreground mb-1">
-                            {(attrs.duration || attrs.courseDuration) && <span className="line-clamp-1 flex items-center gap-0.5"><Clock className="w-3 h-3 text-purple-500 shrink-0" />{String(attrs.duration || attrs.courseDuration)}</span>}
-                          </div>
-                          <div className="font-bold text-purple-500 text-[13px]">
-                            {(!product.price || parseFloat(product.price) <= 0) ? (
-                              <span className="text-muted-foreground italic text-[12px]">{language === 'en' ? 'Price on Call' : 'আলোচনা সাপেক্ষে'}</span>
-                            ) : (
-                              <>৳ {parseFloat(product.price).toLocaleString()} <span className="text-[10px] font-normal text-muted-foreground">/ course fee</span></>
-                            )}
-                          </div>
-                        </>
-                      ) : isManufacturingMode ? (
-                        <>
-                          <div className="flex flex-wrap gap-2 text-[10px] text-muted-foreground mb-1">
-                            {(attrs.moq || attrs.minimumOrderQty) && <span className="line-clamp-1 flex items-center gap-0.5"><PackageCheck className="w-3 h-3 text-amber-500 shrink-0" />MOQ: {String(attrs.moq || attrs.minimumOrderQty)}</span>}
-                          </div>
-                          <div className="font-bold text-amber-500 text-[13px]">
-                            {(!product.price || parseFloat(product.price) <= 0) ? (
-                              <span className="text-muted-foreground italic text-[12px]">{language === 'en' ? 'Price on Call' : 'আলোচনা সাপেক্ষে'}</span>
-                            ) : (
-                              <>৳ {parseFloat(product.price).toLocaleString()} <span className="text-[10px] font-normal text-muted-foreground">/ unit</span></>
-                            )}
-                          </div>
-                        </>
-                      ) : isLogisticsMode ? (
-                        <>
-                          <div className="flex flex-wrap gap-2 text-[10px] text-muted-foreground mb-1">
-                            {(attrs.route || attrs.originDestination) && <span className="line-clamp-1 flex items-center gap-0.5"><Navigation className="w-3 h-3 text-sky-500 shrink-0" />{String(attrs.route || attrs.originDestination)}</span>}
-                            {(attrs.capacity || attrs.vehicleType || attrs.weightLimit) && <span className="line-clamp-1 flex items-center gap-0.5"><Weight className="w-3 h-3 text-sky-500 shrink-0" />{String(attrs.capacity || attrs.vehicleType || attrs.weightLimit)}</span>}
-                          </div>
-                          <div className="font-bold text-sky-500 text-[13px]">
-                            {(!product.price || parseFloat(product.price) <= 0) ? (
-                              <span className="text-muted-foreground italic text-[12px]">{language === 'en' ? 'Price on Call' : 'আলোচনা সাপেক্ষে'}</span>
-                            ) : (
-                              <>৳ {parseFloat(product.price).toLocaleString()} <span className="text-[10px] font-normal text-muted-foreground">/ freight rate</span></>
-                            )}
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <div className="font-bold text-primary text-[13px] mb-2">
-                            {(!product.price || parseFloat(product.price) <= 0) ? (
-                              <span className="text-muted-foreground italic text-[12px]">{language === 'en' ? 'Price on Call' : 'আলোচনা সাপেক্ষে'}</span>
-                            ) : (
-                              `${product.currency || 'BDT'} ${parseFloat(product.price).toLocaleString()}`
-                            )}
-                          </div>
-                          {product.trackInventory && (
-                            <div className="mt-auto text-[10px] text-muted-foreground flex justify-between">
-                              <span>Stock:</span>
-                              <span className={`font-bold ${product.stockCount > 0 ? 'text-emerald-600' : 'text-red-500'}`}>{product.stockCount}</span>
-                            </div>
-                          )}
-                        </>
-                      )}
                     </div>
                   </div>
                 );
@@ -568,6 +562,7 @@ export default function ProductsPage() {
           )}
         </div>
       </div>
+
 
       {/* Right Pane: Editor */}
       <div className={`w-full ${!isEditing ? 'hidden md:flex items-center justify-center' : 'flex'} flex-col bg-background relative md:w-1/2 lg:w-[55%] h-full`}>
