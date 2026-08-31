@@ -194,7 +194,7 @@ export default function ProductsPage() {
       const body: any = {
         name: formData.name,
         description: formData.description,
-        price: parseFloat(formData.price),
+        price: (formData.price !== '' && formData.price !== null && formData.price !== undefined && !isNaN(parseFloat(formData.price))) ? parseFloat(formData.price) : 0,
         attributes: attributesWithStatus,
         isActive: formData.isActive,
       };
@@ -437,7 +437,14 @@ export default function ProductsPage() {
                             {attrs.bedrooms && <span className="flex items-center gap-0.5"><BedDouble className="w-3 h-3" />{attrs.bedrooms} BR</span>}
                             {attrs.bathrooms && <span className="flex items-center gap-0.5"><Bath className="w-3 h-3" />{attrs.bathrooms} Ba</span>}
                           </div>
-                          <div className="font-bold text-primary text-[13px]">৳ {parseFloat(product.price).toLocaleString()}</div>
+                          {/* PRICE DISPLAY WITH OPTIONAL ZERO / PRICE ON CALL HANDLING */}
+                          <div className="font-bold text-primary text-[13px]">
+                            {(!product.price || parseFloat(product.price) <= 0) ? (
+                              <span className="text-muted-foreground italic text-[12px]">{language === 'en' ? 'Price on Call' : 'আলোচনা সাপেক্ষে'}</span>
+                            ) : (
+                              `৳ ${parseFloat(product.price).toLocaleString()}`
+                            )}
+                          </div>
                           <div className={`text-[10px] font-medium mt-0.5 ${getStatusColor(propertyStatus)}`}>
                             ● {propertyStatus.charAt(0).toUpperCase() + propertyStatus.slice(1)}
                           </div>
@@ -448,7 +455,13 @@ export default function ProductsPage() {
                             {attrs.capacity && <span className="flex items-center gap-0.5"><Users className="w-3 h-3 text-amber-500" />Max {attrs.capacity} Guests</span>}
                             {attrs.bedType && <span className="flex items-center gap-0.5"><BedDouble className="w-3 h-3 text-amber-500" />{attrs.bedType}</span>}
                           </div>
-                          <div className="font-bold text-amber-500 text-[13px]">৳ {parseFloat(product.price).toLocaleString()} <span className="text-[10px] font-normal text-muted-foreground">/ night</span></div>
+                          <div className="font-bold text-amber-500 text-[13px]">
+                            {(!product.price || parseFloat(product.price) <= 0) ? (
+                              <span className="text-muted-foreground italic text-[12px]">{language === 'en' ? 'Price on Call' : 'আলোচনা সাপেক্ষে'}</span>
+                            ) : (
+                              <>৳ {parseFloat(product.price).toLocaleString()} <span className="text-[10px] font-normal text-muted-foreground">/ night</span></>
+                            )}
+                          </div>
                         </>
                       ) : isTechSoftwareMode ? (
                         <>
@@ -456,35 +469,65 @@ export default function ProductsPage() {
                             {attrs.tier && <span className="px-1.5 py-0.5 bg-indigo-500/10 text-indigo-500 rounded font-semibold text-[9px]">{String(attrs.tier).toUpperCase()}</span>}
                             {attrs.features && <span className="line-clamp-1">{Array.isArray(attrs.features) ? attrs.features.join(', ') : String(attrs.features)}</span>}
                           </div>
-                          <div className="font-bold text-indigo-500 text-[13px]">৳ {parseFloat(product.price).toLocaleString()} <span className="text-[10px] font-normal text-muted-foreground">/ mo</span></div>
+                          <div className="font-bold text-indigo-500 text-[13px]">
+                            {(!product.price || parseFloat(product.price) <= 0) ? (
+                              <span className="text-muted-foreground italic text-[12px]">{language === 'en' ? 'Price on Call' : 'আলোচনা সাপেক্ষে'}</span>
+                            ) : (
+                              <>৳ {parseFloat(product.price).toLocaleString()} <span className="text-[10px] font-normal text-muted-foreground">/ mo</span></>
+                            )}
+                          </div>
                         </>
                       ) : isFinancialServiceMode ? (
                         <>
                           <div className="flex flex-wrap gap-2 text-[10px] text-muted-foreground mb-1">
                             {attrs.scope && <span className="line-clamp-1 flex items-center gap-0.5"><Briefcase className="w-3 h-3 text-emerald-500 shrink-0" />{String(attrs.scope)}</span>}
                           </div>
-                          <div className="font-bold text-emerald-500 text-[13px]">৳ {parseFloat(product.price).toLocaleString()} <span className="text-[10px] font-normal text-muted-foreground">/ fee</span></div>
+                          <div className="font-bold text-emerald-500 text-[13px]">
+                            {(!product.price || parseFloat(product.price) <= 0) ? (
+                              <span className="text-muted-foreground italic text-[12px]">{language === 'en' ? 'Price on Call' : 'আলোচনা সাপেক্ষে'}</span>
+                            ) : (
+                              <>৳ {parseFloat(product.price).toLocaleString()} <span className="text-[10px] font-normal text-muted-foreground">/ fee</span></>
+                            )}
+                          </div>
                         </>
                       ) : isHealthcareMode ? (
                         <>
                           <div className="flex flex-wrap gap-2 text-[10px] text-muted-foreground mb-1">
                             {(attrs.specialization || attrs.specialty) && <span className="line-clamp-1 flex items-center gap-0.5"><Stethoscope className="w-3 h-3 text-teal-500 shrink-0" />{String(attrs.specialization || attrs.specialty)}</span>}
                           </div>
-                          <div className="font-bold text-teal-500 text-[13px]">৳ {parseFloat(product.price).toLocaleString()} <span className="text-[10px] font-normal text-muted-foreground">/ visit</span></div>
+                          <div className="font-bold text-teal-500 text-[13px]">
+                            {(!product.price || parseFloat(product.price) <= 0) ? (
+                              <span className="text-muted-foreground italic text-[12px]">{language === 'en' ? 'Price on Call' : 'আলোচনা সাপেক্ষে'}</span>
+                            ) : (
+                              <>৳ {parseFloat(product.price).toLocaleString()} <span className="text-[10px] font-normal text-muted-foreground">/ visit</span></>
+                            )}
+                          </div>
                         </>
                       ) : isEducationMode ? (
                         <>
                           <div className="flex flex-wrap gap-2 text-[10px] text-muted-foreground mb-1">
                             {(attrs.duration || attrs.courseDuration) && <span className="line-clamp-1 flex items-center gap-0.5"><Clock className="w-3 h-3 text-purple-500 shrink-0" />{String(attrs.duration || attrs.courseDuration)}</span>}
                           </div>
-                          <div className="font-bold text-purple-500 text-[13px]">৳ {parseFloat(product.price).toLocaleString()} <span className="text-[10px] font-normal text-muted-foreground">/ course fee</span></div>
+                          <div className="font-bold text-purple-500 text-[13px]">
+                            {(!product.price || parseFloat(product.price) <= 0) ? (
+                              <span className="text-muted-foreground italic text-[12px]">{language === 'en' ? 'Price on Call' : 'আলোচনা সাপেক্ষে'}</span>
+                            ) : (
+                              <>৳ {parseFloat(product.price).toLocaleString()} <span className="text-[10px] font-normal text-muted-foreground">/ course fee</span></>
+                            )}
+                          </div>
                         </>
                       ) : isManufacturingMode ? (
                         <>
                           <div className="flex flex-wrap gap-2 text-[10px] text-muted-foreground mb-1">
                             {(attrs.moq || attrs.minimumOrderQty) && <span className="line-clamp-1 flex items-center gap-0.5"><PackageCheck className="w-3 h-3 text-amber-500 shrink-0" />MOQ: {String(attrs.moq || attrs.minimumOrderQty)}</span>}
                           </div>
-                          <div className="font-bold text-amber-500 text-[13px]">৳ {parseFloat(product.price).toLocaleString()} <span className="text-[10px] font-normal text-muted-foreground">/ unit</span></div>
+                          <div className="font-bold text-amber-500 text-[13px]">
+                            {(!product.price || parseFloat(product.price) <= 0) ? (
+                              <span className="text-muted-foreground italic text-[12px]">{language === 'en' ? 'Price on Call' : 'আলোচনা সাপেক্ষে'}</span>
+                            ) : (
+                              <>৳ {parseFloat(product.price).toLocaleString()} <span className="text-[10px] font-normal text-muted-foreground">/ unit</span></>
+                            )}
+                          </div>
                         </>
                       ) : isLogisticsMode ? (
                         <>
@@ -492,12 +535,22 @@ export default function ProductsPage() {
                             {(attrs.route || attrs.originDestination) && <span className="line-clamp-1 flex items-center gap-0.5"><Navigation className="w-3 h-3 text-sky-500 shrink-0" />{String(attrs.route || attrs.originDestination)}</span>}
                             {(attrs.capacity || attrs.vehicleType || attrs.weightLimit) && <span className="line-clamp-1 flex items-center gap-0.5"><Weight className="w-3 h-3 text-sky-500 shrink-0" />{String(attrs.capacity || attrs.vehicleType || attrs.weightLimit)}</span>}
                           </div>
-                          <div className="font-bold text-sky-500 text-[13px]">৳ {parseFloat(product.price).toLocaleString()} <span className="text-[10px] font-normal text-muted-foreground">/ freight rate</span></div>
+                          <div className="font-bold text-sky-500 text-[13px]">
+                            {(!product.price || parseFloat(product.price) <= 0) ? (
+                              <span className="text-muted-foreground italic text-[12px]">{language === 'en' ? 'Price on Call' : 'আলোচনা সাপেক্ষে'}</span>
+                            ) : (
+                              <>৳ {parseFloat(product.price).toLocaleString()} <span className="text-[10px] font-normal text-muted-foreground">/ freight rate</span></>
+                            )}
+                          </div>
                         </>
                       ) : (
                         <>
                           <div className="font-bold text-primary text-[13px] mb-2">
-                            {product.currency} {parseFloat(product.price).toLocaleString()}
+                            {(!product.price || parseFloat(product.price) <= 0) ? (
+                              <span className="text-muted-foreground italic text-[12px]">{language === 'en' ? 'Price on Call' : 'আলোচনা সাপেক্ষে'}</span>
+                            ) : (
+                              `${product.currency || 'BDT'} ${parseFloat(product.price).toLocaleString()}`
+                            )}
                           </div>
                           {product.trackInventory && (
                             <div className="mt-auto text-[10px] text-muted-foreground flex justify-between">
@@ -629,10 +682,10 @@ export default function ProductsPage() {
                         <input type="text" value={formData.location} onChange={e => setFormData({ ...formData, location: e.target.value })} className="w-full bg-background border border-border rounded-lg px-1.5 py-2 text-[13px] focus:border-primary focus:outline-none transition-colors text-foreground" placeholder="e.g. Gulshan-2, Dhaka" />
                       </div>
                       <div>
-                        <label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Price / Rent Amount *' : 'মূল্য / ভাড়া *'}</label>
+                        <label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Price / Rent Amount (Optional)' : 'মূল্য / ভাড়া (ঐচ্ছিক)'}</label>
                         <div className="relative">
                           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-[13px]">৳</span>
-                          <input type="number" step="0.01" required value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} className="w-full bg-background border border-border rounded-lg pl-7 pr-3 py-2 text-[13px] focus:border-primary focus:outline-none transition-colors text-foreground" placeholder="0.00" />
+                          <input type="number" step="0.01" value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} className="w-full bg-background border border-border rounded-lg pl-7 pr-3 py-2 text-[13px] focus:border-primary focus:outline-none transition-colors text-foreground" placeholder="0.00" />
                         </div>
                       </div>
                       <div>
@@ -716,8 +769,8 @@ export default function ProductsPage() {
                       </div>
                       <div className="grid grid-cols-2 gap-1.5">
                         <div>
-                          <label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Price / Night *' : 'প্রতি রাত মূল্য *'}</label>
-                          <div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-[13px]">৳</span><input type="number" step="0.01" required value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} className="w-full bg-background border border-border rounded-lg pl-7 pr-3 py-2 text-[13px] focus:border-amber-500 focus:outline-none transition-colors text-foreground" placeholder="0.00" /></div>
+                          <label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Price / Night (Optional)' : 'প্রতি রাত মূল্য (ঐচ্ছিক)'}</label>
+                          <div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-[13px]">৳</span><input type="number" step="0.01" value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} className="w-full bg-background border border-border rounded-lg pl-7 pr-3 py-2 text-[13px] focus:border-amber-500 focus:outline-none transition-colors text-foreground" placeholder="0.00" /></div>
                         </div>
                         <div>
                           <label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Room Type' : 'রুমের ধরন'}</label>
@@ -758,8 +811,8 @@ export default function ProductsPage() {
                       </div>
                       <div className="grid grid-cols-2 gap-1.5">
                         <div>
-                          <label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Monthly Price *' : 'মাসিক মূল্য *'}</label>
-                          <div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-[13px]">৳</span><input type="number" step="0.01" required value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} className="w-full bg-background border border-border rounded-lg pl-7 pr-3 py-2 text-[13px] focus:border-indigo-500 focus:outline-none transition-colors text-foreground" placeholder="0.00" /></div>
+                          <label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Monthly Price (Optional)' : 'মাসিক মূল্য (ঐচ্ছিক)'}</label>
+                          <div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-[13px]">৳</span><input type="number" step="0.01" value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} className="w-full bg-background border border-border rounded-lg pl-7 pr-3 py-2 text-[13px] focus:border-indigo-500 focus:outline-none transition-colors text-foreground" placeholder="0.00" /></div>
                         </div>
                         <div>
                           <label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'License Type' : 'লাইসেন্স ধরন'}</label>
@@ -783,7 +836,7 @@ export default function ProductsPage() {
                       <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2"><Briefcase className="w-3.5 h-3.5 inline mr-1 text-emerald-400" />{language === 'en' ? 'Service Package Details' : 'সার্ভিস প্যাকেজ বিবরণ'}</label>
                       <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Service / Package Name *' : 'সার্ভিসের নাম *'}</label><input type="text" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full bg-background border border-border rounded-lg px-1.5 py-2 text-[13px] focus:border-emerald-500 focus:outline-none transition-colors text-foreground" placeholder={language === 'en' ? 'e.g. Tax Filing & Audit Package' : 'যেমন: ট্যাক্স ফাইলিং প্যাকেজ'} /></div>
                       <div className="grid grid-cols-2 gap-1.5">
-                        <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Service Fee *' : 'সার্ভিস ফি *'}</label><div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-[13px]">৳</span><input type="number" step="0.01" required value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} className="w-full bg-background border border-border rounded-lg pl-7 pr-3 py-2 text-[13px] focus:border-emerald-500 focus:outline-none transition-colors text-foreground" placeholder="0.00" /></div></div>
+                        <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Service Fee (Optional)' : 'সার্ভিস ফি (ঐচ্ছিক)'}</label><div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-[13px]">৳</span><input type="number" step="0.01" value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} className="w-full bg-background border border-border rounded-lg pl-7 pr-3 py-2 text-[13px] focus:border-emerald-500 focus:outline-none transition-colors text-foreground" placeholder="0.00" /></div></div>
                         <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Engagement Duration' : 'সার্ভিস মেয়াদ'}</label><input type="text" value={formData.attributes?.duration || ''} onChange={e => setFormData((prev: any) => ({ ...prev, attributes: { ...prev.attributes, duration: e.target.value } }))} className="w-full bg-background border border-border rounded-lg px-1.5 py-2 text-[13px] focus:border-emerald-500 focus:outline-none transition-colors text-foreground" placeholder="e.g. 1 Month, 3 Sessions" /></div>
                       </div>
                       <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Lead Consultant' : 'প্রধান কনসালটেন্ট'}</label><input type="text" value={formData.attributes?.consultant || ''} onChange={e => setFormData((prev: any) => ({ ...prev, attributes: { ...prev.attributes, consultant: e.target.value } }))} className="w-full bg-background border border-border rounded-lg px-1.5 py-2 text-[13px] focus:border-emerald-500 focus:outline-none transition-colors text-foreground" placeholder="e.g. Mr. Karim (CA, ACCA)" /></div>
@@ -799,7 +852,7 @@ export default function ProductsPage() {
                       <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2"><Stethoscope className="w-3.5 h-3.5 inline mr-1 text-teal-400" />{language === 'en' ? 'Doctor / Service Details' : 'ডাক্তার / সার্ভিস বিবরণ'}</label>
                       <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Doctor Name / Service Title *' : 'ডাক্তারের নাম / সার্ভিস *'}</label><input type="text" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full bg-background border border-border rounded-lg px-1.5 py-2 text-[13px] focus:border-teal-500 focus:outline-none transition-colors text-foreground" placeholder={language === 'en' ? 'e.g. Dr. Rahman (Cardiologist)' : 'যেমন: ডা. রহমান (হৃদরোগ বিশেষজ্ঞ)'} /></div>
                       <div className="grid grid-cols-2 gap-1.5">
-                        <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Consultation Fee *' : 'পরামর্শ ফি *'}</label><div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-[13px]">৳</span><input type="number" step="0.01" required value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} className="w-full bg-background border border-border rounded-lg pl-7 pr-3 py-2 text-[13px] focus:border-teal-500 focus:outline-none transition-colors text-foreground" placeholder="0.00" /></div></div>
+                        <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Consultation Fee (Optional)' : 'পরামর্শ ফি (ঐচ্ছিক)'}</label><div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-[13px]">৳</span><input type="number" step="0.01" value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} className="w-full bg-background border border-border rounded-lg pl-7 pr-3 py-2 text-[13px] focus:border-teal-500 focus:outline-none transition-colors text-foreground" placeholder="0.00" /></div></div>
                         <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Specialty' : 'বিশেষত্ব'}</label><input type="text" value={formData.attributes?.specialty || ''} onChange={e => setFormData((prev: any) => ({ ...prev, attributes: { ...prev.attributes, specialty: e.target.value } }))} className="w-full bg-background border border-border rounded-lg px-1.5 py-2 text-[13px] focus:border-teal-500 focus:outline-none transition-colors text-foreground" placeholder="Cardiologist, GP" /></div>
                       </div>
                       <div className="grid grid-cols-2 gap-1.5">
@@ -817,7 +870,7 @@ export default function ProductsPage() {
                       <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2"><GraduationCap className="w-3.5 h-3.5 inline mr-1 text-purple-400" />{language === 'en' ? 'Course / Batch Details' : 'কোর্স / ব্যাচ বিবরণ'}</label>
                       <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Course / Batch Name *' : 'কোর্সের নাম *'}</label><input type="text" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full bg-background border border-border rounded-lg px-1.5 py-2 text-[13px] focus:border-purple-500 focus:outline-none transition-colors text-foreground" placeholder={language === 'en' ? 'e.g. Full-Stack Web Dev Batch 12' : 'যেমন: ফুল-স্ট্যাক ওয়েব ডেভ ব্যাচ ১২'} /></div>
                       <div className="grid grid-cols-2 gap-1.5">
-                        <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Course Fee *' : 'কোর্স ফি *'}</label><div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-[13px]">৳</span><input type="number" step="0.01" required value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} className="w-full bg-background border border-border rounded-lg pl-7 pr-3 py-2 text-[13px] focus:border-purple-500 focus:outline-none transition-colors text-foreground" placeholder="0.00" /></div></div>
+                        <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Course Fee (Optional)' : 'কোর্স ফি (ঐচ্ছিক)'}</label><div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-[13px]">৳</span><input type="number" step="0.01" value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} className="w-full bg-background border border-border rounded-lg pl-7 pr-3 py-2 text-[13px] focus:border-purple-500 focus:outline-none transition-colors text-foreground" placeholder="0.00" /></div></div>
                         <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Duration' : 'মেয়াদ'}</label><input type="text" value={formData.attributes?.duration || ''} onChange={e => setFormData((prev: any) => ({ ...prev, attributes: { ...prev.attributes, duration: e.target.value } }))} className="w-full bg-background border border-border rounded-lg px-1.5 py-2 text-[13px] focus:border-purple-500 focus:outline-none transition-colors text-foreground" placeholder="3 Months" /></div>
                       </div>
                       <div className="grid grid-cols-2 gap-1.5">
@@ -835,7 +888,7 @@ export default function ProductsPage() {
                       <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2"><Factory className="w-3.5 h-3.5 inline mr-1 text-amber-400" />{language === 'en' ? 'Wholesale Product Details' : 'হোলসেল প্রডাক্ট বিবরণ'}</label>
                       <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Product / Item Name *' : 'পণ্যের নাম *'}</label><input type="text" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full bg-background border border-border rounded-lg px-1.5 py-2 text-[13px] focus:border-amber-500 focus:outline-none transition-colors text-foreground" placeholder={language === 'en' ? 'e.g. Industrial Cotton Fabric Roll (100m)' : 'যেমন: ইন্ডাস্ট্রিয়াল কটন ফেব্রিক রোল'} /></div>
                       <div className="grid grid-cols-2 gap-1.5">
-                        <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Unit Price *' : 'একক মূল্য *'}</label><div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-[13px]">৳</span><input type="number" step="0.01" required value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} className="w-full bg-background border border-border rounded-lg pl-7 pr-3 py-2 text-[13px] focus:border-amber-500 focus:outline-none transition-colors text-foreground" placeholder="0.00" /></div></div>
+                        <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Unit Price (Optional)' : 'একক মূল্য (ঐচ্ছিক)'}</label><div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-[13px]">৳</span><input type="number" step="0.01" value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} className="w-full bg-background border border-border rounded-lg pl-7 pr-3 py-2 text-[13px] focus:border-amber-500 focus:outline-none transition-colors text-foreground" placeholder="0.00" /></div></div>
                         <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Minimum Order Qty (MOQ)' : 'সর্বনিম্ন অর্ডার (MOQ)'}</label><input type="text" value={formData.attributes?.moq || ''} onChange={e => setFormData((prev: any) => ({ ...prev, attributes: { ...prev.attributes, moq: e.target.value } }))} className="w-full bg-background border border-border rounded-lg px-1.5 py-2 text-[13px] focus:border-amber-500 focus:outline-none transition-colors text-foreground" placeholder="500 pcs" /></div>
                       </div>
                       <div className="grid grid-cols-2 gap-1.5">
@@ -857,7 +910,7 @@ export default function ProductsPage() {
                       <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2"><Truck className="w-3.5 h-3.5 inline mr-1 text-sky-400" />{language === 'en' ? 'Freight Route / Fleet Details' : 'ফ্রেট রুট / যানবাহন বিবরণ'}</label>
                       <div><label className="block text-[11px] font-medium text-muted-foreground mb-1"><Navigation className="w-3 h-3 inline mr-1" />{language === 'en' ? 'Route / Vehicle Name *' : 'রুট / যানবাহন নাম *'}</label><input type="text" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full bg-background border border-border rounded-lg px-1.5 py-2 text-[13px] focus:border-sky-500 focus:outline-none transition-colors text-foreground" placeholder={language === 'en' ? 'e.g. Dhaka → Chittagong (Covered Van)' : 'যেমন: ঢাকা → চট্টগ্রাম (কভার্ড ভ্যান)'} /></div>
                       <div className="grid grid-cols-2 gap-1.5">
-                        <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Base Freight Rate *' : 'বেস ভাড়া *'}</label><div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-[13px]">৳</span><input type="number" step="0.01" required value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} className="w-full bg-background border border-border rounded-lg pl-7 pr-3 py-2 text-[13px] focus:border-sky-500 focus:outline-none transition-colors text-foreground" placeholder="0.00" /></div></div>
+                        <div><label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Base Freight Rate (Optional)' : 'বেস ভাড়া (ঐচ্ছিক)'}</label><div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-[13px]">৳</span><input type="number" step="0.01" value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} className="w-full bg-background border border-border rounded-lg pl-7 pr-3 py-2 text-[13px] focus:border-sky-500 focus:outline-none transition-colors text-foreground" placeholder="0.00" /></div></div>
                         <div><label className="block text-[11px] font-medium text-muted-foreground mb-1"><Weight className="w-3 h-3 inline mr-1" />{language === 'en' ? 'Max Capacity (Ton)' : 'সর্বোচ্চ ধারণক্ষমতা'}</label><input type="text" value={formData.attributes?.capacity || ''} onChange={e => setFormData((prev: any) => ({ ...prev, attributes: { ...prev.attributes, capacity: e.target.value } }))} className="w-full bg-background border border-border rounded-lg px-1.5 py-2 text-[13px] focus:border-sky-500 focus:outline-none transition-colors text-foreground" placeholder="5 Ton" /></div>
                       </div>
                       <div className="grid grid-cols-2 gap-1.5">
@@ -906,10 +959,10 @@ export default function ProductsPage() {
                       </div>
                       <div className="grid grid-cols-2 gap-1.5">
                         <div>
-                          <label className="block text-[11px] font-medium text-muted-foreground mb-1">Price *</label>
+                          <label className="block text-[11px] font-medium text-muted-foreground mb-1">{language === 'en' ? 'Price (Optional)' : 'মূল্য (ঐচ্ছিক)'}</label>
                           <div className="relative">
                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-[13px]">৳</span>
-                            <input type="number" step="0.01" required value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} className="w-full bg-background border border-border rounded-lg pl-7 pr-3 py-2 text-[13px] focus:border-primary focus:outline-none transition-colors text-foreground" placeholder="0.00" />
+                            <input type="number" step="0.01" value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} className="w-full bg-background border border-border rounded-lg pl-7 pr-3 py-2 text-[13px] focus:border-primary focus:outline-none transition-colors text-foreground" placeholder="0.00" />
                           </div>
                         </div>
                         <div>
