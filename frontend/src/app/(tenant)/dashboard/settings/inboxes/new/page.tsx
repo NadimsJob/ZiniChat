@@ -1058,6 +1058,25 @@ export default function NewInboxStepper() {
                             : '১. developers.facebook.com এ গিয়ে My Apps → Messenger → Access Tokens সেকশনে যান।\n২. আপনার পেজটি সিলেক্ট করে "Generate Token" এ ক্লিক করুন।\n৩. জেনারেট হওয়া টোকেনটি কপি করে বাম পাশের ফর্মে বসিয়ে কানেক্ট করুন।'}
                         </p>
                       </div>
+
+                      {/* Custom Meta App Webhook Box */}
+                      <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl space-y-2 text-[11px]">
+                        <div className="font-bold text-blue-400">
+                          {language === 'en' ? '🔗 Custom Meta App Webhook Credentials' : '🔗 কাস্টম মেটা অ্যাপ ওয়েবহুক তথ্য'}
+                        </div>
+                        <div>
+                          <span className="text-zinc-400 block">{language === 'en' ? 'Callback URL:' : 'কলব্যাক ইউআরএল:'}</span>
+                          <code className="text-zinc-200 bg-background/80 px-2 py-1 rounded block font-mono text-[10.5px] mt-0.5 border border-surface-hover select-all">
+                            {`${API}/channels/messenger`}
+                          </code>
+                        </div>
+                        <div>
+                          <span className="text-zinc-400 block">{language === 'en' ? 'Verify Token:' : 'ভেরিফাই টোকেন:'}</span>
+                          <code className="text-zinc-200 bg-background/80 px-2 py-1 rounded block font-mono text-[10.5px] mt-0.5 border border-surface-hover select-all">
+                            zinichat_webhook_verify_token
+                          </code>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>

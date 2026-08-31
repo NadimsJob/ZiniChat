@@ -24,7 +24,7 @@ export class MessengerController {
     @Query('hub.challenge') challenge: string,
     @Res() res: Response,
   ) {
-    const verifyToken = process.env.MESSENGER_VERIFY_TOKEN || process.env.WHATSAPP_VERIFY_TOKEN;
+    const verifyToken = process.env.MESSENGER_VERIFY_TOKEN || process.env.WHATSAPP_VERIFY_TOKEN || 'zinichat_webhook_verify_token';
     if (mode === 'subscribe' && verifyToken && token === verifyToken) {
       console.log('MESSENGER_WEBHOOK_VERIFIED');
       res.status(HttpStatus.OK).send(challenge);
