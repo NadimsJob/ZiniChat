@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { LoginLogsService } from './login-logs.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { getScheduleToken } from '@nestjs/schedule';
+import { SchedulerRegistry } from '@nestjs/schedule';
 
 const mockPrisma = {
   loginLog: {
