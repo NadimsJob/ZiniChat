@@ -1217,26 +1217,7 @@ export default function ProductsPage() {
                   </div>
                 )}
 
-                {/* Saved Custom Attributes Display */}
-                {Object.keys(formData.attributes || {}).length > 0 && (
-                  <div className="bg-surface p-2.5 border border-border shadow-md rounded-2xl space-y-2 mt-3">
-                    <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-                      {language === 'en' ? 'Custom Attribute Values' : 'ইনপুটকৃত কাস্টম ফিল্ড ভ্যালুসমূহ'}
-                    </label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {Object.entries(formData.attributes).map(([k, v]: any) => (
-                        <div key={k} className="flex items-center justify-between p-2.5 bg-background border border-border rounded-lg text-[12px] group shadow-sm">
-                          <div className="truncate pr-2">
-                            <span className="text-muted-foreground font-semibold">{k}:</span> <span className="font-bold text-foreground">{String(v)}</span>
-                          </div>
-                          <button type="button" onClick={() => handleRemoveAttribute(k)} className="text-muted-foreground hover:text-red-500 p-1 rounded transition-colors shrink-0 cursor-pointer" title="Remove value">
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+
               </form>
             </div>
 
