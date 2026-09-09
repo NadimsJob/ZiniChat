@@ -13,7 +13,7 @@ export default function PricingPage() {
   const [addons, setAddons] = useState<any[]>([]);
   const [config, setConfig] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [isYearly, setIsYearly] = useState(false);
+  const [billingCycle, setBillingCycle] = useState<'weekly' | 'monthly' | 'yearly'>('monthly');
 
   useEffect(() => {
     Promise.all([
@@ -158,48 +158,65 @@ export default function PricingPage() {
               : 'কোনো লুকানো চার্জ নেই। আপনার ব্যবসার জন্য মানানসই প্ল্যান বেছে নিন।'}
           </p>
 
-          {/* Currency Toggle */}
-          <div className="flex justify-center mb-6">
-            <div className="inline-flex bg-card border border-primary/20 rounded-full p-1 shadow-inner relative z-20">
+          {/* Currency & Billing Cycle Controls */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
+            {/* Currency Switcher */}
+            <div className="inline-flex bg-card border border-primary/20 rounded-2xl p-1 shadow-inner relative z-20">
               <button
                 onClick={() => setDisplayCurrency('BDT')}
-                className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${displayCurrency === 'BDT' ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:text-foreground'}`}
+                className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${displayCurrency === 'BDT' ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:text-foreground'}`}
               >
                 BDT
               </button>
               <button
                 onClick={() => setDisplayCurrency('USD')}
-                className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${displayCurrency === 'USD' ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:text-foreground'}`}
+                className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${displayCurrency === 'USD' ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:text-foreground'}`}
               >
                 USD
               </button>
             </div>
-          </div>
 
-          {/* Monthly/Yearly Toggle */}
-          <div className="flex items-center justify-center gap-4 mb-8">
-            <span className={`text-sm font-bold transition-colors ${!isYearly ? 'text-foreground' : 'text-muted-foreground'}`}>
-              {language === 'en' ? 'Monthly' : 'মাসিক'}
-            </span>
-            
-            <button 
-              onClick={() => setIsYearly(!isYearly)}
-              className="relative w-16 h-8 rounded-full bg-card border border-border transition-colors p-1 flex items-center shadow-inner"
-            >
-              <div className={`w-6 h-6 rounded-full bg-primary shadow-md transition-transform duration-300 ${isYearly ? 'translate-x-8' : 'translate-x-0'}`} />
-            </button>
-            
-            <div className="flex items-center gap-2">
-              <span className={`text-sm font-bold transition-colors ${isYearly ? 'text-foreground' : 'text-muted-foreground'}`}>
-                {language === 'en' ? 'Yearly' : 'বার্ষিক'}
-              </span>
-              {maxDiscountPercent > 0 && (
-                <span className="bg-emerald-500/10 text-emerald-600 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider animate-pulse">
-                  {language === 'en' 
-                    ? `Save up to ${maxDiscountPercent}%` 
-                    : `সর্বোচ্চ ${formatNumber(maxDiscountPercent)}% সাশ্রয়`}
-                </span>
-              )}
+            {/* Billing Cycle Switcher: Weekly / Monthly / Yearly */}
+            <div className="inline-flex bg-card border border-primary/20 rounded-2xl p-1 shadow-inner relative z-20 items-center gap-1">
+              <button
+                onClick={() => setBillingCycle('weekly')}
+                className={`px-5 py-2 rounded-xl text-sm font-bold transition-all ${
+                  billingCycle === 'weekly' 
+                    ? 'bg-primary text-primary-foreground shadow-md' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {language === 'en' ? 'Weekly' : 'সাপ্তাহিক'}
+              </button>
+
+              <button
+                onClick={() => setBillingCycle('monthly')}
+                className={`px-5 py-2 rounded-xl text-sm font-bold transition-all ${
+                  billingCycle === 'monthly' 
+                    ? 'bg-primary text-primary-foreground shadow-md' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {language === 'en' ? 'Monthly' : 'মাসিক'}
+              </button>
+
+              <button
+                onClick={() => setBillingCycle('yearly')}
+                className={`px-5 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-1.5 ${
+                  billingCycle === 'yearly' 
+                    ? 'bg-primary text-primary-foreground shadow-md' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <span>{language === 'en' ? 'Yearly' : 'বার্ষিক'}</span>
+                {maxDiscountPercent > 0 && (
+                  <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-full ${
+                    billingCycle === 'yearly' ? 'bg-white/20 text-white' : 'bg-emerald-500/15 text-emerald-600'
+                  }`}>
+                    -{Math.round(maxDiscountPercent)}%
+                  </span>
+                )}
+              </button>
             </div>
           </div>
         </div>
@@ -215,16 +232,30 @@ export default function PricingPage() {
             const yBdt = Number(plan.priceYearlyBdt) > 0 ? Number(plan.priceYearlyBdt) : Math.round(mBdt * 12 * 0.8334);
             const yUsd = Number(plan.priceYearlyUsd) > 0 ? Number(plan.priceYearlyUsd) : Math.round(mUsd * 12 * 0.8334);
 
+            const wBdt = Number(plan.priceWeeklyBdt) > 0 ? Number(plan.priceWeeklyBdt) : Math.round(mBdt / 4);
+            const wUsd = Number(plan.priceWeeklyUsd) > 0 ? Number(plan.priceWeeklyUsd) : Math.round(mUsd / 4);
+
             const promoBdt = Number(plan.promoPriceMonthlyBdt) || 0;
             const promoUsd = Number(plan.promoPriceMonthlyUsd) > 0 ? Number(plan.promoPriceMonthlyUsd) : Math.round(promoBdt / (rate || 121));
 
+            const baseWeekly = displayCurrency === 'USD' ? wUsd : wBdt;
             const baseMonthly = displayCurrency === 'USD' ? mUsd : mBdt;
             const baseYearly = displayCurrency === 'USD' ? yUsd : yBdt;
             const promoPrice = displayCurrency === 'USD' ? promoUsd : promoBdt;
 
-            const displayPrice = isYearly && baseYearly > 0 
-              ? (displayCurrency === 'USD' ? Math.round((baseYearly / 12) * 100) / 100 : Math.round(baseYearly / 12)) 
-              : baseMonthly;
+            let displayPrice = baseMonthly;
+            let intervalText = language === 'en' ? 'per month' : 'প্রতি মাসে';
+
+            if (billingCycle === 'weekly') {
+              displayPrice = baseWeekly;
+              intervalText = language === 'en' ? 'per week' : 'প্রতি সপ্তাহে';
+            } else if (billingCycle === 'yearly') {
+              displayPrice = baseYearly > 0 ? (displayCurrency === 'USD' ? Math.round((baseYearly / 12) * 100) / 100 : Math.round(baseYearly / 12)) : baseMonthly;
+              intervalText = language === 'en' ? 'per month (billed yearly)' : 'প্রতি মাসে (বার্ষিক বিলিং)';
+            } else {
+              displayPrice = (billingCycle === 'monthly' && Number(plan.promoMonths) > 0) ? promoPrice : baseMonthly;
+              intervalText = language === 'en' ? 'per month' : 'প্রতি মাসে';
+            }
             
             let planDiscount = Number(plan.yearlyDiscountPercent) || 0;
             if (!planDiscount && baseMonthly > 0 && baseYearly > 0) {
@@ -262,21 +293,27 @@ export default function PricingPage() {
                   <div className={`flex items-start gap-1 ${textColor}`}>
                     <span className="text-2xl font-bold mt-2">{displayCurrency === 'BDT' ? '৳' : '$'}</span>
                     <span className="text-6xl font-black tracking-tighter">
-                      {formatNumber(!isYearly && Number(plan.promoMonths) > 0 ? promoPrice : displayPrice)}
+                      {formatNumber(displayPrice)}
                     </span>
                   </div>
                   
                   <div className={`text-sm mt-2 font-medium ${mutedColor}`}>
-                     {language === 'en' ? 'per month' : 'প্রতি মাসে'}
+                     {intervalText}
                   </div>
                   
-                  {!isYearly && Number(plan.promoMonths) > 0 ? (
+                  {billingCycle === 'monthly' && Number(plan.promoMonths) > 0 ? (
                     <div className={`text-sm font-bold mt-3 inline-block self-start px-2 py-1 rounded ${isPop ? 'bg-black/10 text-zinc-900' : 'bg-primary/10 text-primary'}`}>
-                      {language === 'en' ? `For the first ${plan.promoMonths} months, then ${displayCurrency === 'BDT' ? '৳' : '$'}${formatNumber(displayPrice)}/mo` : `প্রথম ${plan.promoMonths} মাসের জন্য, তারপর ${displayCurrency === 'BDT' ? '৳' : '$'}${formatNumber(displayPrice)}/মাস`}
+                      {language === 'en' ? `For the first ${plan.promoMonths} months, then ${displayCurrency === 'BDT' ? '৳' : '$'}${formatNumber(baseMonthly)}/mo` : `প্রথম ${plan.promoMonths} মাসের জন্য, তারপর ${displayCurrency === 'BDT' ? '৳' : '$'}${formatNumber(baseMonthly)}/মাস`}
                     </div>
                   ) : null}
 
-                  {isYearly && baseYearly > 0 ? (
+                  {billingCycle === 'weekly' ? (
+                    <div className={`mt-3 p-2.5 rounded-2xl border text-xs font-bold transition-all ${isPop ? 'bg-black/10 border-black/20 text-zinc-900' : 'bg-primary/10 border-primary/20 text-primary'}`}>
+                      {language === 'en' ? 'Billed weekly • Cancel anytime' : 'সাপ্তাহিক বিলিং • যেকোনো সময় পরিবর্তনযোগ্য'}
+                    </div>
+                  ) : null}
+
+                  {billingCycle === 'yearly' && baseYearly > 0 ? (
                     <div className={`mt-3 p-3 rounded-2xl border transition-all ${isPop ? 'bg-black/10 border-black/20 text-zinc-900 font-bold' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 font-bold'}`}>
                       <div className="text-xs">
                         {language === 'en' 
@@ -321,7 +358,7 @@ export default function PricingPage() {
 
                 <div className="mt-auto">
                   <Link 
-                    href="/signup" 
+                    href={`/signup?planId=${plan.id}&cycle=${billingCycle}`} 
                     className={`block w-full py-4 rounded-[16px] font-extrabold text-[16px] text-center transition-all ${
                       isPop 
                         ? 'bg-white text-zinc-900 hover:bg-zinc-50 shadow-md border-2 border-white' 
@@ -365,16 +402,19 @@ export default function PricingPage() {
                   const mUsd = Number(plan.priceMonthlyUsd) > 0 ? Number(plan.priceMonthlyUsd) : Math.round(mBdt / (rate || 121));
                   const yBdt = Number(plan.priceYearlyBdt) > 0 ? Number(plan.priceYearlyBdt) : Math.round(mBdt * 12 * 0.8334);
                   const yUsd = Number(plan.priceYearlyUsd) > 0 ? Number(plan.priceYearlyUsd) : Math.round(mUsd * 12 * 0.8334);
+                  const wBdt = Number(plan.priceWeeklyBdt) > 0 ? Number(plan.priceWeeklyBdt) : Math.round(mBdt / 4);
+                  const wUsd = Number(plan.priceWeeklyUsd) > 0 ? Number(plan.priceWeeklyUsd) : Math.round(mUsd / 4);
 
+                  const baseWeekly = displayCurrency === 'USD' ? wUsd : wBdt;
                   const baseMonthly = displayCurrency === 'USD' ? mUsd : mBdt;
                   const baseYearly = displayCurrency === 'USD' ? yUsd : yBdt;
-                  const headerDisplayPrice = isYearly && baseYearly > 0 ? Math.round(baseYearly / 12) : baseMonthly;
+                  const headerDisplayPrice = billingCycle === 'weekly' ? baseWeekly : billingCycle === 'yearly' && baseYearly > 0 ? Math.round(baseYearly / 12) : baseMonthly;
 
                   return (
                     <th key={plan.id} className="p-5 border-b border-border text-center w-1/4">
                       <div className="text-lg font-bold mb-1 text-foreground">{language === 'en' ? plan.name : (plan.nameBn || plan.name)}</div>
                       <div className="text-sm text-muted-foreground font-medium">
-                        {displayCurrency === 'BDT' ? '৳' : '$'}{formatNumber(headerDisplayPrice)}/mo
+                        {displayCurrency === 'BDT' ? '৳' : '$'}{formatNumber(headerDisplayPrice)}/{billingCycle === 'weekly' ? 'wk' : 'mo'}
                       </div>
                     </th>
                   );
