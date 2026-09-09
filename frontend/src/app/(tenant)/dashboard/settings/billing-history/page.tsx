@@ -341,13 +341,17 @@ export default function BillingHistoryPage() {
                         })}
                       </td>
                       <td className="px-5 py-4 font-semibold text-foreground">
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <span>{itemName}</span>
-                          {isAddon && (
+                          {isAddon ? (
                             <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary text-[9px] font-bold">
                               ADDON
                             </span>
-                          )}
+                          ) : p.subscription?.billingCycle ? (
+                            <span className="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[9px] font-bold uppercase">
+                              {p.subscription.billingCycle}
+                            </span>
+                          ) : null}
                         </div>
                       </td>
                       <td className="px-5 py-4 uppercase font-semibold text-muted-foreground">

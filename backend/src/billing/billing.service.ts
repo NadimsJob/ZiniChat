@@ -182,15 +182,45 @@ export class BillingService {
       currentMessenger,
       currentInstagram,
       currentWebsiteWidget,
+      quotaResetInfo: {
+        subPeriodStart: activePeriod.periodStart,
+        subPeriodEnd: activePeriod.periodEnd,
+        isYearlySubPeriod: activePeriod.isYearlySubPeriod ?? false,
+        billingCycle: activeSubscription?.billingCycle || 'monthly',
+        fullPeriodStart: activePeriod.fullPeriodStart,
+        fullPeriodEnd: activePeriod.fullPeriodEnd,
+      },
     };
   }
 
+  /**
+   * Helper to compute the current 30-day sub-period slice for long-term (yearly) subscriptions.
+   */
+  getCurrentSubPeriod(subStart: Date, subEnd: Date, intervalDays: number = 30): { subPeriodStart: Date; subPeriodEnd: Date } {
+    const now = new Date();
+    let cursor = new Date(subStart);
+    const msPerDay = 86400000;
+
+    while (true) {
+      const next = new Date(cursor.getTime() + intervalDays * msPerDay);
+      const clampedEnd = next > subEnd ? subEnd : next;
+
+      if (now < clampedEnd || next >= subEnd) {
+        return {
+          subPeriodStart: cursor,
+          subPeriodEnd: clampedEnd
+        };
+      }
+      cursor = next;
+    }
+  }
 
   /**
    * Returns the current billing period start/end for quota usage calculations.
-   * - For active subscriptions: uses the subscription's currentPeriodStart → currentPeriodEnd
-   * - For Free plan (no active subscription): falls back to the calendar month start → end
-   * This ensures that renewing a subscription always resets the usage window.
+   * - For active subscriptions: uses currentPeriodStart → currentPeriodEnd.
+   *   For yearly subscriptions, dynamically calculates the current 30-day sub-period slice.
+   * - For Free plan (no active subscription): falls back to calendar month start → end
+   * This ensures that yearly subscribers receive automatic monthly quota resets every 30 days.
    */
   async getActivePeriod(tenantId: string): Promise<{
     periodStart: Date;
@@ -198,6 +228,9 @@ export class BillingService {
     messageQuota: number;
     aiQuota: number;
     subscription: any;
+    isYearlySubPeriod?: boolean;
+    fullPeriodStart?: Date;
+    fullPeriodEnd?: Date;
   }> {
     const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
     const activeSubscription = await this.prisma.subscription.findFirst({
@@ -215,10 +248,25 @@ export class BillingService {
     // Determine period boundaries
     let periodStart: Date;
     let periodEnd: Date;
+    let isYearlySubPeriod = false;
+    let fullPeriodStart: Date | undefined;
+    let fullPeriodEnd: Date | undefined;
 
     if (activeSubscription?.currentPeriodStart) {
-      periodStart = new Date(activeSubscription.currentPeriodStart);
-      periodEnd = new Date(activeSubscription.currentPeriodEnd);
+      const fullStart = new Date(activeSubscription.currentPeriodStart);
+      const fullEnd = new Date(activeSubscription.currentPeriodEnd);
+
+      if (activeSubscription.billingCycle === 'yearly') {
+        const subPeriod = this.getCurrentSubPeriod(fullStart, fullEnd, 30);
+        periodStart = subPeriod.subPeriodStart;
+        periodEnd = subPeriod.subPeriodEnd;
+        isYearlySubPeriod = true;
+        fullPeriodStart = fullStart;
+        fullPeriodEnd = fullEnd;
+      } else {
+        periodStart = fullStart;
+        periodEnd = fullEnd;
+      }
     } else {
       // Free plan fallback: use current calendar month
       const now = new Date();
@@ -234,7 +282,10 @@ export class BillingService {
       periodEnd,
       messageQuota: baseMessageQuota + (activeSubscription?.carriedForwardMessageQuota ?? 0),
       aiQuota: baseAiQuota + (activeSubscription?.carriedForwardAiQuota ?? 0),
-      subscription: activeSubscription
+      subscription: activeSubscription,
+      isYearlySubPeriod,
+      fullPeriodStart,
+      fullPeriodEnd,
     };
   }
 

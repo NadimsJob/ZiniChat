@@ -7,7 +7,7 @@ import { useCurrency } from '@/components/CurrencyProvider';
 import {
   Crown, Package, Puzzle, Check, Zap, RefreshCw, AlertCircle,
   MessageSquare, Bot, Users, HardDrive, Wifi, Globe, Tag, ShieldCheck,
-  BarChart2, Megaphone, Headphones, Star
+  BarChart2, Megaphone, Headphones, Star, Sparkles
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -198,37 +198,86 @@ export default function SubscriptionSettingsPage() {
                 {[
                   { 
                     label: language === 'en' ? 'Messages' : 'মেসেজ', 
-                    value: formatNumber(quotaData.messageQuota), 
+                    value: formatNumber(quotaData.messageQuota),
+                    used: quotaData.messagesUsed ?? 0,
+                    limit: quotaData.messageQuota,
+                    showProgress: true,
+                    unit: currentSubscription?.billingCycle === 'weekly' ? (language === 'en' ? '/wk' : '/সপ্তাহ') : (language === 'en' ? '/mo' : '/মাস'),
                     icon: MessageSquare,
                     carried: quotaData.carriedForwardMessageQuota || 0
                   },
                   { 
                     label: language === 'en' ? 'AI Responses' : 'এআই রেসপন্স', 
                     value: formatNumber(quotaData.aiQuota), 
+                    used: quotaData.aiUsed ?? 0,
+                    limit: quotaData.aiQuota,
+                    showProgress: true,
+                    unit: currentSubscription?.billingCycle === 'weekly' ? (language === 'en' ? '/wk' : '/সপ্তাহ') : (language === 'en' ? '/mo' : '/মাস'),
                     icon: Bot,
                     carried: quotaData.carriedForwardAiQuota || 0
                   },
                   { 
                     label: language === 'en' ? 'Seats' : 'সিট', 
                     value: formatNumber(quotaData.seatLimit), 
+                    used: 0,
+                    limit: quotaData.seatLimit,
+                    showProgress: false,
+                    unit: '',
                     icon: Users,
                     carried: 0
                   },
-                ].map(({ label, value, icon: Icon, carried }) => (
-                  <div key={label} className="bg-surface/60 backdrop-blur-sm border border-surface-hover rounded-xl px-3 py-2 relative">
-                    <Icon className="w-3.5 h-3.5 text-primary mx-auto mb-0.5" />
-                    <div className="text-lg font-black text-foreground">{value}</div>
-                    <div className="text-[10px] text-muted-foreground">{label}/mo</div>
-                    {carried > 0 && (
-                      <div className="mt-1 inline-block px-1.5 py-0.5 bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded text-[9px] font-bold">
-                        +{formatNumber(carried)} {language === 'en' ? 'carried over' : 'ক্যারি ফরওয়ার্ড'}
+                ].map(({ label, value, used, limit, showProgress, unit, icon: Icon, carried }) => {
+                  const percent = showProgress && limit ? Math.min(100, Math.round((used / limit) * 100)) : 0;
+                  return (
+                    <div key={label} className="bg-surface/60 backdrop-blur-sm border border-surface-hover rounded-xl p-2.5 relative flex flex-col justify-between text-left">
+                      <div className="flex items-center justify-between gap-1 mb-1">
+                        <span className="text-[10px] text-muted-foreground font-medium">{label}</span>
+                        <Icon className="w-3.5 h-3.5 text-primary shrink-0" />
                       </div>
-                    )}
-                  </div>
-                ))}
+                      <div className="text-base font-black text-foreground">
+                        {value} <span className="text-[10px] text-muted-foreground font-normal">{unit}</span>
+                      </div>
+
+                      {showProgress && (
+                        <div className="mt-1.5 w-full">
+                          <div className="flex justify-between items-center text-[9px] text-muted-foreground mb-0.5 font-mono">
+                            <span>{formatNumber(used)} {language === 'en' ? 'used' : 'ব্যবহৃত'}</span>
+                            <span>{percent}%</span>
+                          </div>
+                          <div className="w-full bg-surface-hover rounded-full h-1.5 overflow-hidden">
+                            <div
+                              className={`h-full transition-all duration-300 ${percent > 90 ? 'bg-red-500' : percent > 75 ? 'bg-amber-500' : 'bg-primary'}`}
+                              style={{ width: `${percent}%` }}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {carried > 0 && (
+                        <div className="mt-1 inline-block px-1.5 py-0.5 bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded text-[9px] font-bold">
+                          +{formatNumber(carried)} {language === 'en' ? 'carried' : 'ক্যারি'}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
+
+          {quotaData?.quotaResetInfo?.subPeriodEnd && currentSubscription?.billingCycle === 'yearly' && (
+            <div className="mt-3 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center gap-2.5 text-xs text-emerald-300">
+              <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
+              <div>
+                <span className="font-bold">
+                  {language === 'en' ? 'Automatic Monthly Quota Reset:' : 'স্বয়ংক্রিয় মাসিক কোটা রিসেট:'}
+                </span>{' '}
+                {language === 'en'
+                  ? `Your 30-day message & AI response limits will auto-reset on ${new Date(quotaData.quotaResetInfo.subPeriodEnd).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })} (included free with your yearly subscription).`
+                  : `আপনার প্রতি মাসের মেসেজ ও এআই রেসপন্স কোটা আগামী ${new Date(quotaData.quotaResetInfo.subPeriodEnd).toLocaleDateString('bn-BD', { day: '2-digit', month: 'short', year: 'numeric' })} তারিখে স্বয়ংক্রিয়ভাবে রিসেট হবে (আপনার ইয়ারলি সাবস্ক্রিপশনে অন্তর্ভুক্ত)।`}
+              </div>
+            </div>
+          )}
 
           {(quotaData?.customPlanName || (quotaData?.basePlan && (
             quotaData.messageQuota !== quotaData.basePlan.messageQuota ||
@@ -422,7 +471,7 @@ export default function SubscriptionSettingsPage() {
                     </li>
                     <li className="flex items-center gap-2 text-[12px] text-foreground/90">
                       <Bot className="w-3.5 h-3.5 text-secondary shrink-0" />
-                      {formatNumber(plan.aiQuota)} {language === 'en' ? 'AI Credits/mo' : 'এআই ক্রেডিট/মাস'}
+                      {formatNumber(plan.aiQuota)} {language === 'en' ? 'AI Responses/mo' : 'এআই রেসপন্স/মাস'}
                     </li>
                     {plan.storageLimitMb && (
                       <li className="flex items-center gap-2 text-[12px] text-foreground/90">
@@ -505,7 +554,7 @@ export default function SubscriptionSettingsPage() {
                   )}
                   {addon.type === 'ai_response' && (
                     <div className="flex items-center gap-1.5 text-[12px] text-foreground/90">
-                      <Bot className="w-3.5 h-3.5 text-secondary" /> +{formatNumber(addon.limit)} {language === 'en' ? 'AI Credits' : 'এআই ক্রেডিট'}
+                      <Bot className="w-3.5 h-3.5 text-secondary" /> +{formatNumber(addon.limit)} {language === 'en' ? 'AI Responses' : 'এআই রেসপন্স'}
                     </div>
                   )}
                   {addon.type === 'storage' && (

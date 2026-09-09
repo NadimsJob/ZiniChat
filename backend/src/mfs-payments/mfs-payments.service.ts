@@ -408,7 +408,8 @@ export class MfsPaymentsService {
           await tx.tenant.update({ where: { id: tenantId }, data: { customStorageLimitMb: newLimit } });
         }
       } else if (payment.subscriptionId) {
-        const periodDays = payment.subscription?.billingCycle === 'yearly' ? 365 : 30;
+        const cycle = payment.subscription?.billingCycle;
+        const periodDays = cycle === 'yearly' ? 365 : cycle === 'weekly' ? 7 : 30;
         await tx.subscription.update({
           where: { id: payment.subscriptionId },
           data: {
@@ -551,7 +552,8 @@ export class MfsPaymentsService {
         await this.prisma.tenant.update({ where: { id: payment.tenantId }, data: { customStorageLimitMb: newLimit } });
       }
     } else if (payment.subscriptionId) {
-      const periodDays = payment.subscription?.billingCycle === 'yearly' ? 365 : 30;
+      const cycle = payment.subscription?.billingCycle;
+      const periodDays = cycle === 'yearly' ? 365 : cycle === 'weekly' ? 7 : 30;
       await this.prisma.subscription.update({
         where: { id: payment.subscriptionId },
         data: { status: 'active', currentPeriodStart: new Date(), currentPeriodEnd: new Date(Date.now() + periodDays * 24 * 60 * 60 * 1000) },

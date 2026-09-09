@@ -493,12 +493,18 @@ export class PaymentsService {
       }
 
       // Subscription Payment
+      const existingSub = await this.prisma.subscription.findUnique({
+        where: { id: payment.subscriptionId }
+      });
+      const cycle = existingSub?.billingCycle || 'monthly';
+      const periodDaysForApproval = cycle === 'yearly' ? 365 : (cycle === 'weekly' ? 7 : 30);
+
       const subscription = await this.prisma.subscription.update({
         where: { id: payment.subscriptionId },
         data: {
           status: 'active',
           currentPeriodStart: new Date(),
-          currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          currentPeriodEnd: new Date(Date.now() + periodDaysForApproval * 24 * 60 * 60 * 1000),
           carriedForwardAiQuota: carriedForwardAi,
           carriedForwardMessageQuota: carriedForwardMessage,
         },

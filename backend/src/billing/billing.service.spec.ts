@@ -248,4 +248,33 @@ describe('BillingService', () => {
       });
     });
   });
+
+  describe('getCurrentSubPeriod & getActivePeriod', () => {
+    it('should correctly calculate current 30-day sub-period for a yearly subscription', () => {
+      const subStart = new Date('2026-01-01T00:00:00Z');
+      const subEnd = new Date('2027-01-01T00:00:00Z');
+      const subPeriod = service.getCurrentSubPeriod(subStart, subEnd, 30);
+      expect(subPeriod.subPeriodStart).toBeDefined();
+      expect(subPeriod.subPeriodEnd).toBeDefined();
+      expect(subPeriod.subPeriodEnd.getTime() - subPeriod.subPeriodStart.getTime()).toBeLessThanOrEqual(30 * 86400000);
+    });
+
+    it('should return 30-day sub-period slice when tenant has active yearly subscription', async () => {
+      const subStart = new Date(Date.now() - 65 * 86400000); // 65 days ago
+      const subEnd = new Date(Date.now() + 300 * 86400000); // ~300 days in future
+      (prismaService.subscription.findFirst as jest.Mock).mockResolvedValue({
+        id: 'sub-yearly',
+        billingCycle: 'yearly',
+        status: 'active',
+        currentPeriodStart: subStart,
+        currentPeriodEnd: subEnd,
+        plan: { messageQuota: 300, aiQuota: 100 }
+      });
+
+      const activePeriod = await service.getActivePeriod('tenant-1');
+      expect(activePeriod.isYearlySubPeriod).toBe(true);
+      expect(activePeriod.periodStart.getTime()).toBeGreaterThan(subStart.getTime());
+      expect(activePeriod.periodEnd.getTime()).toBeLessThan(subEnd.getTime());
+    });
+  });
 });
