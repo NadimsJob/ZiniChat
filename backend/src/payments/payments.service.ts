@@ -51,8 +51,12 @@ export class PaymentsService {
       throw new BadRequestException('এই প্ল্যানটিতে সাপ্তাহিক সাবস্ক্রিপশন প্রযোজ্য নয়।');
     }
 
+    const discountPct = Number(plan.yearlyDiscountPercent) || 0;
+    const mBdt = Number(plan.priceMonthlyBdt) || 0;
+    const rawYBdt = Number(plan.priceYearlyBdt) || 0;
+
     let amount = billingCycle === 'yearly'
-      ? Number(plan.priceYearlyBdt)
+      ? (discountPct > 0 && mBdt > 0 ? Math.round(mBdt * 12 * (1 - discountPct / 100)) : (rawYBdt > 0 ? rawYBdt : mBdt * 12))
       : billingCycle === 'weekly'
       ? Number((plan as any).priceWeeklyBdt || 0)
       : Number(plan.priceMonthlyBdt);
@@ -172,8 +176,12 @@ export class PaymentsService {
       throw new BadRequestException('এই প্ল্যানটিতে সাপ্তাহিক সাবস্ক্রিপশন প্রযোজ্য নয়।');
     }
 
+    const discountPct = Number(plan.yearlyDiscountPercent) || 0;
+    const mBdt = Number(plan.priceMonthlyBdt) || 0;
+    const rawYBdt = Number(plan.priceYearlyBdt) || 0;
+
     let amount = billingCycle === 'yearly'
-      ? Number(plan.priceYearlyBdt)
+      ? (discountPct > 0 && mBdt > 0 ? Math.round(mBdt * 12 * (1 - discountPct / 100)) : (rawYBdt > 0 ? rawYBdt : mBdt * 12))
       : billingCycle === 'weekly'
       ? Number((plan as any).priceWeeklyBdt || 0)
       : Number(plan.priceMonthlyBdt);
@@ -604,8 +612,11 @@ export class PaymentsService {
 
     let amountBdt = 0;
     if (plan) {
+      const discountPct = Number(plan.yearlyDiscountPercent) || 0;
+      const mBdt = Number(plan.priceMonthlyBdt) || 0;
+      const rawYBdt = Number(plan.priceYearlyBdt) || 0;
       amountBdt = cycle === 'yearly'
-        ? Number(plan.priceYearlyBdt || Number(plan.priceMonthlyBdt) * 12)
+        ? (discountPct > 0 && mBdt > 0 ? Math.round(mBdt * 12 * (1 - discountPct / 100)) : (rawYBdt > 0 ? rawYBdt : mBdt * 12))
         : Number(plan.priceMonthlyBdt);
     } else if (tenant?.customPriceUsd) {
       const customPrice = Number(tenant.customPriceUsd);

@@ -252,8 +252,21 @@ export default function PricingPageContent() {
             const mBdt = Number(plan.priceMonthlyBdt) || 0;
             const mUsd = Number(plan.priceMonthlyUsd) > 0 ? Number(plan.priceMonthlyUsd) : Math.round(mBdt / (rate || 121));
 
-            const yBdt = Number(plan.priceYearlyBdt) > 0 ? Number(plan.priceYearlyBdt) : Math.round(mBdt * 12 * 0.8334);
-            const yUsd = Number(plan.priceYearlyUsd) > 0 ? Number(plan.priceYearlyUsd) : Math.round(mUsd * 12 * 0.8334);
+            const rawYBdt = Number(plan.priceYearlyBdt) || 0;
+            const rawYUsd = Number(plan.priceYearlyUsd) || 0;
+            const discountPct = Number(plan.yearlyDiscountPercent) || 0;
+
+            const computeDiscountedYearly = (rawY: number, monthly: number) => {
+              if (rawY <= 0) return Math.round(monthly * 12 * (1 - discountPct / 100));
+              const fullYear = monthly * 12;
+              const isUndiscounted = fullYear > 0 && Math.abs(rawY - fullYear) < 1;
+              return isUndiscounted && discountPct > 0
+                ? Math.round(fullYear * (1 - discountPct / 100))
+                : rawY;
+            };
+
+            const yBdt = mBdt > 0 ? computeDiscountedYearly(rawYBdt, mBdt) : rawYBdt;
+            const yUsd = mUsd > 0 ? computeDiscountedYearly(rawYUsd, mUsd) : rawYUsd || Math.round(yBdt / (rate || 121));
 
             const wBdt = (plan.allowWeekly && Number(plan.priceWeeklyBdt) > 0) ? Number(plan.priceWeeklyBdt) : (plan.allowWeekly ? Math.round(mBdt / 4) : 0);
             const wUsd = (plan.allowWeekly && Number(plan.priceWeeklyUsd) > 0) ? Number(plan.priceWeeklyUsd) : (plan.allowWeekly ? Math.round(mUsd / 4) : 0);
@@ -283,10 +296,13 @@ export default function PricingPageContent() {
               intervalText = language === 'en' ? 'per month' : 'প্রতি মাসে';
             }
             
-            let planDiscount = Number(plan.yearlyDiscountPercent) || 0;
+            let planDiscount = discountPct;
             if (!planDiscount && baseMonthly > 0 && baseYearly > 0) {
               planDiscount = Math.round(((baseMonthly * 12 - baseYearly) / (baseMonthly * 12)) * 100 * 100) / 100;
             }
+            const yearlySavingsAmount = baseMonthly > 0 && planDiscount > 0
+              ? Math.round(baseMonthly * 12 * planDiscount / 100)
+              : 0;
 
             const isPop = plan.isPopular;
             const textColor = isPop ? 'text-zinc-900' : 'text-foreground';
@@ -354,7 +370,11 @@ export default function PricingPageContent() {
                       </div>
                       {planDiscount > 0 ? (
                         <div className="text-[11px] font-extrabold uppercase tracking-wider mt-1">
-                          {language === 'en' ? `Save ${planDiscount}%` : `${formatNumber(planDiscount)}% সাশ্রয়`}
+                          {yearlySavingsAmount > 0
+                            ? (language === 'en'
+                              ? `Save ${currSymbol}${formatNumber(yearlySavingsAmount)}/yr (${Math.round(planDiscount)}% off)`
+                              : `${currSymbol}${formatNumber(yearlySavingsAmount)} সাশ্রয় (${Math.round(planDiscount)}% ছাড়)`)
+                            : (language === 'en' ? `Save ${Math.round(planDiscount)}%` : `${Math.round(planDiscount)}% সাশ্রয়`)}
                         </div>
                       ) : null}
                     </div>
