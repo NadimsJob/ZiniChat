@@ -22,7 +22,21 @@ export default function PricingPage() {
       fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/landing-page/config`).then(res => res.json())
     ])
     .then(([plansData, addonsData, configData]) => {
-      const sortedPlans = (plansData || []).sort((a: any, b: any) => a.priceMonthlyBdt - b.priceMonthlyBdt);
+      const getPlanWeight = (plan: any) => {
+        const name = (plan.name || '').toLowerCase();
+        if (name.includes('free') || name.includes('ফ্রী') || Number(plan.priceMonthlyBdt) === 0) return 0;
+        if (name.includes('starter') || name.includes('স্টার্টার')) return 1;
+        if (name.includes('growth') || name.includes('গ্রোথ')) return 2;
+        if (name.includes('scale') || name.includes('স্কেল') || name.includes('enterprise')) return 3;
+        return 4;
+      };
+
+      const sortedPlans = (plansData || []).sort((a: any, b: any) => {
+        const priceDiff = Number(a.priceMonthlyBdt) - Number(b.priceMonthlyBdt);
+        if (priceDiff !== 0) return priceDiff;
+        return getPlanWeight(a) - getPlanWeight(b);
+      });
+
       setPlans(sortedPlans);
       setAddons(addonsData || []);
       setConfig(configData);
@@ -237,7 +251,7 @@ export default function PricingPage() {
 
       {/* Pricing Cards */}
       <section className="relative w-full -mt-10 px-4 sm:px-6 lg:px-8 pb-20">
-        <div className="max-w-6xl mx-auto relative z-10 grid md:grid-cols-3 gap-6 lg:gap-8">
+        <div className="max-w-7xl mx-auto relative z-10 grid md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
           {plans.map((plan: any) => {
             const mBdt = Number(plan.priceMonthlyBdt) || 0;
             const mUsd = Number(plan.priceMonthlyUsd) > 0 ? Number(plan.priceMonthlyUsd) : Math.round(mBdt / (rate || 121));
@@ -251,10 +265,13 @@ export default function PricingPage() {
             const promoBdt = Number(plan.promoPriceMonthlyBdt) || 0;
             const promoUsd = Number(plan.promoPriceMonthlyUsd) > 0 ? Number(plan.promoPriceMonthlyUsd) : Math.round(promoBdt / (rate || 121));
 
-            const baseWeekly = displayCurrency === 'USD' ? wUsd : wBdt;
-            const baseMonthly = displayCurrency === 'USD' ? mUsd : mBdt;
-            const baseYearly = displayCurrency === 'USD' ? yUsd : yBdt;
-            const promoPrice = displayCurrency === 'USD' ? promoUsd : promoBdt;
+            const isBdt = language === 'bn' || displayCurrency === 'BDT';
+            const currSymbol = isBdt ? '৳' : '$';
+
+            const baseWeekly = isBdt ? wBdt : wUsd;
+            const baseMonthly = isBdt ? mBdt : mUsd;
+            const baseYearly = isBdt ? yBdt : yUsd;
+            const promoPrice = isBdt ? promoBdt : promoUsd;
 
             let displayPrice = baseMonthly;
             let intervalText = language === 'en' ? 'per month' : 'প্রতি মাসে';
@@ -263,7 +280,7 @@ export default function PricingPage() {
               displayPrice = baseWeekly;
               intervalText = language === 'en' ? 'per week' : 'প্রতি সপ্তাহে';
             } else if (billingCycle === 'yearly') {
-              displayPrice = baseYearly > 0 ? (displayCurrency === 'USD' ? Math.round((baseYearly / 12) * 100) / 100 : Math.round(baseYearly / 12)) : baseMonthly;
+              displayPrice = baseYearly > 0 ? (!isBdt ? Math.round((baseYearly / 12) * 100) / 100 : Math.round(baseYearly / 12)) : baseMonthly;
               intervalText = language === 'en' ? 'per month (billed yearly)' : 'প্রতি মাসে (বার্ষিক বিলিং)';
             } else {
               displayPrice = (billingCycle === 'monthly' && Number(plan.promoMonths) > 0) ? promoPrice : baseMonthly;
@@ -304,7 +321,7 @@ export default function PricingPage() {
                 
                 <div className="mb-6 flex flex-col">
                   <div className={`flex items-start gap-1 ${textColor}`}>
-                    <span className="text-2xl font-bold mt-2">{displayCurrency === 'BDT' ? '৳' : '$'}</span>
+                    <span className="text-2xl font-bold mt-2">{currSymbol}</span>
                     <span className="text-6xl font-black tracking-tighter">
                       {formatNumber(displayPrice)}
                     </span>
@@ -316,7 +333,7 @@ export default function PricingPage() {
                   
                   {billingCycle === 'monthly' && Number(plan.promoMonths) > 0 ? (
                     <div className={`text-sm font-bold mt-3 inline-block self-start px-2 py-1 rounded ${isPop ? 'bg-black/10 text-zinc-900' : 'bg-primary/10 text-primary'}`}>
-                      {language === 'en' ? `For the first ${plan.promoMonths} months, then ${displayCurrency === 'BDT' ? '৳' : '$'}${formatNumber(baseMonthly)}/mo` : `প্রথম ${plan.promoMonths} মাসের জন্য, তারপর ${displayCurrency === 'BDT' ? '৳' : '$'}${formatNumber(baseMonthly)}/মাস`}
+                      {language === 'en' ? `For the first ${plan.promoMonths} months, then ${currSymbol}${formatNumber(baseMonthly)}/mo` : `প্রথম ${plan.promoMonths} মাসের জন্য, তারপর ${currSymbol}${formatNumber(baseMonthly)}/মাস`}
                     </div>
                   ) : null}
 
@@ -336,8 +353,8 @@ export default function PricingPage() {
                     <div className={`mt-3 p-3 rounded-2xl border transition-all ${isPop ? 'bg-black/10 border-black/20 text-zinc-900 font-bold' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 font-bold'}`}>
                       <div className="text-xs">
                         {language === 'en' 
-                          ? `Billed ${displayCurrency === 'BDT' ? '৳' : '$'}${formatNumber(baseYearly)} yearly` 
-                          : `বছরে ${displayCurrency === 'BDT' ? '৳' : '$'}${formatNumber(baseYearly)} বিল করা হবে`}
+                          ? `Billed ${currSymbol}${formatNumber(baseYearly)} yearly` 
+                          : `বছরে ${currSymbol}${formatNumber(baseYearly)} বিল করা হবে`}
                       </div>
                       {planDiscount > 0 ? (
                         <div className="text-[11px] font-extrabold uppercase tracking-wider mt-1">
@@ -470,7 +487,7 @@ export default function PricingPage() {
       </section>
 
       {/* Feature Comparison Table */}
-      <section className="relative w-full max-w-6xl mx-auto px-4 py-16 border-t border-border/40">
+      <section className="relative w-full max-w-7xl mx-auto px-4 py-16 border-t border-border/40">
         <div className="pointer-events-none absolute left-0 bottom-0 w-[40rem] h-[40rem] bg-secondary/10 rounded-full blur-[120px]" />
         
         <div className="text-center mb-12 relative z-10">
@@ -496,16 +513,19 @@ export default function PricingPage() {
                   const wBdt = (plan.allowWeekly && Number(plan.priceWeeklyBdt) > 0) ? Number(plan.priceWeeklyBdt) : (plan.allowWeekly ? Math.round(mBdt / 4) : 0);
                   const wUsd = (plan.allowWeekly && Number(plan.priceWeeklyUsd) > 0) ? Number(plan.priceWeeklyUsd) : (plan.allowWeekly ? Math.round(mUsd / 4) : 0);
 
-                  const baseWeekly = displayCurrency === 'USD' ? wUsd : wBdt;
-                  const baseMonthly = displayCurrency === 'USD' ? mUsd : mBdt;
-                  const baseYearly = displayCurrency === 'USD' ? yUsd : yBdt;
+                  const isBdt = language === 'bn' || displayCurrency === 'BDT';
+                  const currSymbol = isBdt ? '৳' : '$';
+
+                  const baseWeekly = isBdt ? wBdt : wUsd;
+                  const baseMonthly = isBdt ? mBdt : mUsd;
+                  const baseYearly = isBdt ? yBdt : yUsd;
                   const headerDisplayPrice = billingCycle === 'weekly' && plan.allowWeekly ? baseWeekly : billingCycle === 'yearly' && baseYearly > 0 ? Math.round(baseYearly / 12) : baseMonthly;
 
                   return (
                     <th key={plan.id} className="p-5 border-b border-border text-center w-1/4">
                       <div className="text-lg font-bold mb-1 text-foreground">{language === 'en' ? plan.name : (plan.nameBn || plan.name)}</div>
                       <div className="text-sm text-muted-foreground font-medium">
-                        {displayCurrency === 'BDT' ? '৳' : '$'}{formatNumber(headerDisplayPrice)}/{billingCycle === 'weekly' ? 'wk' : 'mo'}
+                        {currSymbol}{formatNumber(headerDisplayPrice)}/{billingCycle === 'weekly' ? 'wk' : 'mo'}
                       </div>
                     </th>
                   );

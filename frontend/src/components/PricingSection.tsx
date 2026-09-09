@@ -17,7 +17,21 @@ export function PricingSection({ isHomepage = false }: { isHomepage?: boolean })
     fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/packages/plans`)
       .then(res => res.json())
       .then(plansData => {
-        const sortedPlans = (plansData || []).sort((a: any, b: any) => a.priceMonthlyBdt - b.priceMonthlyBdt);
+        const getPlanWeight = (plan: any) => {
+          const name = (plan.name || '').toLowerCase();
+          if (name.includes('free') || name.includes('ফ্রী') || Number(plan.priceMonthlyBdt) === 0) return 0;
+          if (name.includes('starter') || name.includes('স্টার্টার')) return 1;
+          if (name.includes('growth') || name.includes('গ্রোথ')) return 2;
+          if (name.includes('scale') || name.includes('স্কেল') || name.includes('enterprise')) return 3;
+          return 4;
+        };
+
+        const sortedPlans = (plansData || []).sort((a: any, b: any) => {
+          const priceDiff = Number(a.priceMonthlyBdt) - Number(b.priceMonthlyBdt);
+          if (priceDiff !== 0) return priceDiff;
+          return getPlanWeight(a) - getPlanWeight(b);
+        });
+
         setPlans(sortedPlans);
       })
       .catch(console.error)
@@ -144,10 +158,13 @@ export function PricingSection({ isHomepage = false }: { isHomepage?: boolean })
           const promoBdt = Number(plan.promoPriceMonthlyBdt) || 0;
           const promoUsd = Number(plan.promoPriceMonthlyUsd) > 0 ? Number(plan.promoPriceMonthlyUsd) : Math.round(promoBdt / (rate || 121));
 
-          const baseWeekly = displayCurrency === 'USD' ? wUsd : wBdt;
-          const baseMonthly = displayCurrency === 'USD' ? mUsd : mBdt;
-          const baseYearly = displayCurrency === 'USD' ? yUsd : yBdt;
-          const promoPrice = displayCurrency === 'USD' ? promoUsd : promoBdt;
+          const isBdt = language === 'bn' || displayCurrency === 'BDT';
+          const currSymbol = isBdt ? '৳' : '$';
+
+          const baseWeekly = isBdt ? wBdt : wUsd;
+          const baseMonthly = isBdt ? mBdt : mUsd;
+          const baseYearly = isBdt ? yBdt : yUsd;
+          const promoPrice = isBdt ? promoBdt : promoUsd;
 
           let displayPrice = baseMonthly;
           let intervalText = language === 'en' ? 'per month' : 'প্রতি মাসে';
@@ -156,7 +173,7 @@ export function PricingSection({ isHomepage = false }: { isHomepage?: boolean })
             displayPrice = baseWeekly;
             intervalText = language === 'en' ? 'per week' : 'প্রতি সপ্তাহে';
           } else if (billingCycle === 'yearly') {
-            displayPrice = baseYearly > 0 ? (displayCurrency === 'USD' ? Math.round((baseYearly / 12) * 100) / 100 : Math.round(baseYearly / 12)) : baseMonthly;
+            displayPrice = baseYearly > 0 ? (!isBdt ? Math.round((baseYearly / 12) * 100) / 100 : Math.round(baseYearly / 12)) : baseMonthly;
             intervalText = language === 'en' ? 'per month (billed yearly)' : 'প্রতি মাসে (বার্ষিক বিলিং)';
           } else {
             displayPrice = (billingCycle === 'monthly' && Number(plan.promoMonths) > 0) ? promoPrice : baseMonthly;
@@ -197,7 +214,7 @@ export function PricingSection({ isHomepage = false }: { isHomepage?: boolean })
               
               <div className="mb-6 flex flex-col">
                 <div className={`flex items-start gap-1 ${textColor}`}>
-                  <span className="text-2xl font-bold mt-2">{displayCurrency === 'BDT' ? '৳' : '$'}</span>
+                  <span className="text-2xl font-bold mt-2">{currSymbol}</span>
                   <span className="text-6xl font-black tracking-tighter">
                     {formatNumber(displayPrice)}
                   </span>
@@ -209,7 +226,7 @@ export function PricingSection({ isHomepage = false }: { isHomepage?: boolean })
                 
                 {billingCycle === 'monthly' && Number(plan.promoMonths) > 0 ? (
                   <div className={`text-sm font-bold mt-3 inline-block self-start px-2 py-1 rounded ${isPop ? 'bg-black/10 text-zinc-900' : 'bg-primary/10 text-primary'}`}>
-                    {language === 'en' ? `For the first ${plan.promoMonths} months, then ${displayCurrency === 'BDT' ? '৳' : '$'}${formatNumber(baseMonthly)}/mo` : `প্রথম ${plan.promoMonths} মাসের জন্য, তারপর ${displayCurrency === 'BDT' ? '৳' : '$'}${formatNumber(baseMonthly)}/মাস`}
+                    {language === 'en' ? `For the first ${plan.promoMonths} months, then ${currSymbol}${formatNumber(baseMonthly)}/mo` : `প্রথম ${plan.promoMonths} মাসের জন্য, তারপর ${currSymbol}${formatNumber(baseMonthly)}/মাস`}
                   </div>
                 ) : null}
 
@@ -229,8 +246,8 @@ export function PricingSection({ isHomepage = false }: { isHomepage?: boolean })
                   <div className={`mt-3 p-3 rounded-2xl border transition-all ${isPop ? 'bg-black/10 border-black/20 text-zinc-900 font-bold' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 font-bold'}`}>
                     <div className="text-xs">
                       {language === 'en' 
-                        ? `Billed ${displayCurrency === 'BDT' ? '৳' : '$'}${formatNumber(baseYearly)} yearly` 
-                        : `বছরে ${displayCurrency === 'BDT' ? '৳' : '$'}${formatNumber(baseYearly)} বিল করা হবে`}
+                        ? `Billed ${currSymbol}${formatNumber(baseYearly)} yearly` 
+                        : `বছরে ${currSymbol}${formatNumber(baseYearly)} বিল করা হবে`}
                     </div>
                     {planDiscount > 0 ? (
                       <div className="text-[11px] font-extrabold uppercase tracking-wider mt-1">
