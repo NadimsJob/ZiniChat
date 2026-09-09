@@ -20,30 +20,36 @@ const notoBengali = Noto_Sans_Bengali({
 });
 
 export const metadata: Metadata = {
-  title: "ZiniChat | Best AI Chat, AI Chatbot & Chat Assistant Platform",
-  description: "ZiniChat is the ultimate AI Chatbot and Chat Assistant for your business. Automate customer support with WhatsApp Official API, Meta API, and a 5 min setup. Start your free trial today!",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://zinichat.com'),
+  title: {
+    default: "ZiniChat | AI Chatbot & WhatsApp Automation Platform",
+    template: "%s | ZiniChat"
+  },
+  description: "ZiniChat is the leading AI chatbot and WhatsApp automation platform for businesses worldwide. Automate customer support 24/7, manage omnichannel conversations on WhatsApp, Messenger, and Instagram, and close sales on autopilot. Set up in 5 minutes.",
   manifest: "/manifest.json",
-
+  applicationName: "ZiniChat",
+  authors: [{ name: "ZiniChat Team", url: "https://zinichat.com/about" }],
+  generator: "Next.js",
   keywords: [
-    "chat", "ai chat", "ai chatbot", "chat assistent", "chat assistant", 
-    "business chat", "customer support bot", "WhatsApp chatbot", 
-    "ZiniChat", "omnichannel ai", "whatsapp official api", "meta api", 
-    "5 min setup", "auto reply", "selling agent", "ai sales agent", 
-    "automated customer support", "free trial", "try for free", "free ai chatbot",
-    "ai chatbot bangladesh", "whatsapp auto reply bd", "facebook auto reply bd", "business automation bd",
-    "এআই চ্যাটবট", "অটো রিপ্লাই", "চ্যাট এসিস্ট্যান্ট", "কাস্টমার সাপোর্ট", "বিজনেস চ্যাট"
+    "ai chatbot", "whatsapp chatbot", "whatsapp business api", "omnichannel inbox",
+    "ai customer support", "business automation", "ai sales agent", "auto reply bot",
+    "facebook messenger bot", "instagram dm automation", "chat assistant", "zinichat",
+    "conversational ai", "whatsapp auto reply", "live chat widget", "customer service ai"
   ],
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
-    title: "ZiniChat | AI Chatbot & Chat Assistant",
-    description: "Automate your business with the ultimate AI Chatbot and Chat Assistant. Fast replies 24/7 on WhatsApp, Messenger, and Instagram. 5 Min Setup. Try it for free!",
+    title: "ZiniChat | AI Chatbot & WhatsApp Automation Platform",
+    description: "Automate customer support 24/7 on WhatsApp, Messenger & Instagram. Omnichannel AI assistant built for modern businesses worldwide. 5-minute setup.",
     url: "https://zinichat.com",
     siteName: "ZiniChat",
     images: [
       {
         url: "/logo.png",
-        width: 800,
-        height: 600,
-        alt: "ZiniChat AI Chatbot",
+        width: 1200,
+        height: 630,
+        alt: "ZiniChat AI Chatbot & WhatsApp Automation Platform",
       },
     ],
     locale: "en_US",
@@ -51,13 +57,25 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "ZiniChat | AI Chatbot & Chat Assistant",
-    description: "Automate your business with the ultimate AI Chatbot and Chat Assistant.",
+    title: "ZiniChat | AI Chatbot & WhatsApp Automation Platform",
+    description: "Automate customer support 24/7 on WhatsApp, Messenger & Instagram with AI.",
     images: ["/logo.png"],
+    creator: "@zinichat",
   },
   icons: {
     icon: "/icon.png",
     apple: "/icon.png",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
   },
 };
 

@@ -1,0 +1,20 @@
+# ZiniChat
+
+> AI Chatbot & WhatsApp Automation Platform for Businesses Worldwide
+
+ZiniChat is an omnichannel AI business assistant that helps companies automate customer communication via WhatsApp Business API, Meta Messenger, Instagram DM, Facebook Comments, and Website Live Chat — all powered by AI, with zero coding required.
+
+## Key Pages
+- [Home](https://zinichat.com/): Platform overview, features, and pricing summary
+- [Pricing](https://zinichat.com/pricing): Flexible plans from Free to Enterprise (BDT & USD supported)
+- [Features](https://zinichat.com/features): Full feature list, integrations, and capabilities
+- [FAQ](https://zinichat.com/faq): Frequently asked questions about setup, pricing, and AI features
+- [About Us](https://zinichat.com/about): Company mission, story, and vision
+- [Contact](https://zinichat.com/contact): Support, sales, and partnership inquiry contact
+
+## Key Capabilities & Specifications
+- Supported Messaging Channels: WhatsApp Official API, Meta Messenger, Instagram DM, Facebook Comment Auto-Reply, Website Live Chat Widget
+- Supported AI Models: OpenAI GPT-4o, Anthropic Claude 3.5, Google Gemini Pro (BYOK & Platform-key supported)
+- Setup Time: Under 5 minutes with zero coding knowledge
+- Pricing: Free trial available; monthly and annual plans in USD ($) and BDT (৳)
+- Multi-Vertical AI Modes: E-commerce Retail, Property/Real Estate, Hospitality, Software/Tech, Financial Services, Healthcare, Education, Logistics, Manufacturing
