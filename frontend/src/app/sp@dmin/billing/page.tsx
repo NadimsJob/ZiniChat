@@ -48,6 +48,51 @@ export default function SuperadminBillingPage() {
   const [payPage, setPayPage] = useState(1);
   const [payPageSize, setPayPageSize] = useState(10);
 
+  const [extendModalSub, setExtendModalSub] = useState<any>(null);
+  const [extendDays, setExtendDays] = useState<number>(30);
+  const [customDays, setCustomDays] = useState<string>('');
+  const [extending, setExtending] = useState<boolean>(false);
+
+  const handleExtendSubscription = async () => {
+    if (!extendModalSub) return;
+    const daysToExtend = customDays ? parseInt(customDays, 10) : extendDays;
+    if (isNaN(daysToExtend) || daysToExtend <= 0) {
+      toast.error('মেয়াদ বাড়ানোর দিন সঠিকভাবে প্রবেশ করান');
+      return;
+    }
+
+    try {
+      setExtending(true);
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/billing/admin/extend-subscription`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          tenantId: extendModalSub.tenantId,
+          days: daysToExtend,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Failed to extend subscription');
+      }
+
+      toast.success(`সফলভাবে ${daysToExtend} দিন মেয়াদ বাড়ানো হয়েছে!`);
+      setExtendModalSub(null);
+      setCustomDays('');
+      fetchOverview();
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'মেয়াদ বাড়াতে সমস্যা হয়েছে');
+    } finally {
+      setExtending(false);
+    }
+  };
+
   const fetchOverview = async () => {
     try {
       const token = Cookies.get('access_token');
@@ -397,6 +442,17 @@ export default function SuperadminBillingPage() {
                           </td>
                           <td className="px-4 py-3 text-right">
                             <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                onClick={() => {
+                                  setExtendModalSub(sub);
+                                  setExtendDays(30);
+                                  setCustomDays('');
+                                }}
+                                className="p-1.5 hover:bg-purple-50 dark:hover:bg-purple-950/30 text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 rounded-lg transition-colors cursor-pointer"
+                                title="মেয়াদ বাড়ান (Extend Validity)"
+                              >
+                                <Clock className="w-3.5 h-3.5" />
+                              </button>
                               <Link
                                 href={`/sp@dmin/tenants/${sub.tenantId}`}
                                 className="p-1.5 hover:bg-slate-100 dark:hover:bg-surface-hover text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white rounded-lg transition-colors"
@@ -513,6 +569,104 @@ export default function SuperadminBillingPage() {
             onPageChange={setPayPage}
             onPageSizeChange={setPayPageSize}
           />
+        </div>
+      )}
+
+      {/* Extend Validity Modal */}
+      {extendModalSub && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-surface border border-slate-200 dark:border-surface-hover rounded-2xl max-w-md w-full p-6 space-y-5 shadow-2xl animate-in fade-in zoom-in duration-150">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-surface-hover pb-3">
+              <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400">
+                <Clock className="w-5 h-5" />
+                <h3 className="font-bold text-sm text-slate-900 dark:text-white">মেয়াদ বাড়ান (Extend Validity)</h3>
+              </div>
+              <button
+                onClick={() => setExtendModalSub(null)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 rounded-lg transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div className="bg-slate-50 dark:bg-background/50 p-3 rounded-xl border border-slate-100 dark:border-surface-hover/50">
+                <p className="text-xs font-semibold text-slate-900 dark:text-white">
+                  {extendModalSub.tenant?.businessName || 'Tenant'}
+                </p>
+                <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">
+                  বর্তমান প্ল্যান: <span className="font-semibold text-purple-600 dark:text-purple-400">{extendModalSub.plan?.name || 'Custom'}</span>
+                </p>
+                <p className="text-[11px] text-slate-500 dark:text-zinc-400">
+                  বর্তমান মেয়াদ: <span className="font-mono text-slate-700 dark:text-zinc-300">{new Date(extendModalSub.currentPeriodEnd).toLocaleDateString()}</span>
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-700 dark:text-zinc-300 mb-2">
+                  কতদিন বাড়াতে চান?
+                </label>
+                <div className="grid grid-cols-4 gap-2 mb-3">
+                  {[7, 14, 30, 90].map((d) => (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => {
+                        setExtendDays(d);
+                        setCustomDays('');
+                      }}
+                      className={`py-2 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
+                        extendDays === d && !customDays
+                          ? 'bg-purple-600 text-white border-purple-600 shadow-md shadow-purple-600/20'
+                          : 'bg-slate-50 dark:bg-background border-slate-200 dark:border-surface-hover text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-surface-hover'
+                      }`}
+                    >
+                      +{d} দিন
+                    </button>
+                  ))}
+                </div>
+
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="1"
+                    value={customDays}
+                    onChange={(e) => setCustomDays(e.target.value)}
+                    placeholder="অথবা কাস্টম দিন লিখুন (e.g. 45)..."
+                    className="w-full bg-slate-50 dark:bg-background border border-slate-200 dark:border-surface-hover rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:border-purple-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-surface-hover">
+              <button
+                type="button"
+                onClick={() => setExtendModalSub(null)}
+                className="px-4 py-2 text-xs font-medium text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-surface-hover rounded-xl transition-colors cursor-pointer"
+              >
+                বাতিল
+              </button>
+              <button
+                type="button"
+                onClick={handleExtendSubscription}
+                disabled={extending}
+                className="px-4 py-2 text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-xl shadow-md shadow-purple-600/20 flex items-center gap-1.5 transition-all disabled:opacity-50 cursor-pointer"
+              >
+                {extending ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    মেয়াদ বাড়ানো হচ্ছে...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="w-3.5 h-3.5" />
+                    মেয়াদ বাড়ান
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

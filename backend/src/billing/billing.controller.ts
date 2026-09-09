@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards, Request, BadRequestException } from '@nestjs/common';
 import { BillingService } from './billing.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -30,6 +30,19 @@ export class BillingController {
   @RequirePermissions('manage:billing')
   getPayments() {
     return this.billingService.getPayments();
+  }
+
+  @Post('admin/extend-subscription')
+  @Roles('superadmin')
+  @RequirePermissions('manage:billing')
+  extendSubscription(
+    @Body() body: { tenantId: string; days: number },
+    @Request() req: any
+  ) {
+    if (!body.tenantId || !body.days || Number(body.days) <= 0) {
+      throw new BadRequestException('Valid tenantId and days (> 0) are required');
+    }
+    return this.billingService.extendSubscription(body.tenantId, Number(body.days), req.user?.id);
   }
 
   @Get('quotas')

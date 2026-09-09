@@ -185,7 +185,7 @@ export default function BillingHistoryPage() {
                   {upcomingBill.planName}
                 </span>
                 <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-                  ({upcomingBill.billingCycle === 'yearly' ? (language === 'en' ? 'Yearly' : 'বার্ষিক') : (language === 'en' ? 'Monthly' : 'মাসিক')})
+                  ({upcomingBill.billingCycle === 'yearly' ? (language === 'en' ? 'Yearly' : 'বার্ষিক') : upcomingBill.billingCycle === 'weekly' ? (language === 'en' ? 'Weekly' : 'সাপ্তাহিক') : (language === 'en' ? 'Monthly' : 'মাসিক')})
                 </span>
               </div>
 

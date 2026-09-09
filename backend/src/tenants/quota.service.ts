@@ -295,7 +295,7 @@ export class QuotaService {
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },
       include: {
-        subscriptions: { where: { status: 'active' }, include: { plan: true }, take: 1 }
+        subscriptions: { where: { status: { in: ['active', 'trialing'] } }, include: { plan: true }, take: 1 }
       }
     });
 
@@ -440,7 +440,7 @@ export class QuotaService {
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },
       include: {
-        subscriptions: { where: { status: 'active' }, include: { plan: true }, take: 1 }
+        subscriptions: { where: { status: { in: ['active', 'trialing'] } }, include: { plan: true }, take: 1 }
       }
     });
 

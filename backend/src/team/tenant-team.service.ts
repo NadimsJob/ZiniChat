@@ -36,12 +36,23 @@ export class TenantTeamService {
   async getEffectiveSeatLimit(tenantId: string): Promise<{ limit: number; used: number }> {
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },
-      include: { plan: { select: { seatLimit: true } } }
+      include: {
+        plan: { select: { seatLimit: true } },
+        subscriptions: {
+          where: {
+            status: { in: ['active', 'trialing'] },
+            currentPeriodEnd: { gt: new Date() }
+          },
+          include: { plan: true },
+          take: 1
+        }
+      }
     });
     if (!tenant) throw new NotFoundException('Tenant not found');
 
-    // customSeatLimit overrides plan seatLimit
-    const limit = tenant.customSeatLimit ?? tenant.plan?.seatLimit ?? 1;
+    const activePlan = tenant.subscriptions?.[0]?.plan;
+    // customSeatLimit overrides active plan seatLimit, fallback to tenant.plan seatLimit
+    const limit = tenant.customSeatLimit ?? activePlan?.seatLimit ?? tenant.plan?.seatLimit ?? 1;
     const used = await this.prisma.user.count({ where: { tenantId } });
     return { limit, used };
   }

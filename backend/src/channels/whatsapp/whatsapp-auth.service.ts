@@ -53,7 +53,7 @@ export class WhatsappAuthService {
     const quotas = await this.billingService.getTenantQuotas(tenantId);
     
     const currentConnections = await this.prisma.channelConnection.count({
-      where: { tenantId, channelType: 'whatsapp' }
+      where: { tenantId, channelType: 'whatsapp', status: { in: ['active', 'connected'] } }
     });
 
     if (currentConnections >= quotas.whatsappLimit) {

@@ -6,9 +6,12 @@ const mockPrisma = {
   subscription: {
     findMany: jest.fn(),
     findFirst: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
   },
   plan: {
     findMany: jest.fn(),
+    findFirst: jest.fn(),
   },
   payment: {
     findMany: jest.fn(),
@@ -16,6 +19,10 @@ const mockPrisma = {
   },
   tenant: {
     findUnique: jest.fn().mockResolvedValue({ id: 'tenant-1' }),
+    update: jest.fn(),
+  },
+  auditLog: {
+    create: jest.fn().mockResolvedValue({}),
   },
   channelConnection: {
     count: jest.fn().mockResolvedValue(0),
@@ -174,6 +181,71 @@ describe('BillingService', () => {
       expect(result.messageQuota).toBe(99999);
       expect(result.customPlanName).toBe('Enterprise Custom');
       expect(result.features).toContain('own_api');
+    });
+  });
+
+  describe('extendSubscription', () => {
+    it('should throw BadRequestException if days <= 0', async () => {
+      await expect(service.extendSubscription('tenant-1', 0)).rejects.toThrow('Days must be greater than 0');
+    });
+
+    it('should throw NotFoundException if tenant does not exist', async () => {
+      (prismaService.tenant.findUnique as jest.Mock).mockResolvedValue(null);
+      await expect(service.extendSubscription('non-existent', 30)).rejects.toThrow('Tenant not found');
+    });
+
+    it('should extend an active subscription from current end date', async () => {
+      const futureEnd = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000);
+      (prismaService.tenant.findUnique as jest.Mock).mockResolvedValue({
+        id: 't1',
+        status: 'active',
+        subscriptions: [
+          {
+            id: 'sub-1',
+            status: 'active',
+            currentPeriodStart: new Date(),
+            currentPeriodEnd: futureEnd,
+          }
+        ]
+      });
+
+      (prismaService.subscription.update as jest.Mock).mockResolvedValue({});
+
+      const result = await service.extendSubscription('t1', 30, 'actor-user-id');
+      expect(result.success).toBe(true);
+      expect(prismaService.subscription.update).toHaveBeenCalledWith({
+        where: { id: 'sub-1' },
+        data: expect.objectContaining({
+          status: 'active',
+        })
+      });
+      expect(prismaService.auditLog.create).toHaveBeenCalled();
+    });
+
+    it('should extend an expired subscription from NOW', async () => {
+      const pastEnd = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000);
+      (prismaService.tenant.findUnique as jest.Mock).mockResolvedValue({
+        id: 't2',
+        status: 'suspended',
+        subscriptions: [
+          {
+            id: 'sub-2',
+            status: 'expired',
+            currentPeriodStart: pastEnd,
+            currentPeriodEnd: pastEnd,
+          }
+        ]
+      });
+
+      (prismaService.subscription.update as jest.Mock).mockResolvedValue({});
+      (prismaService.tenant.update as jest.Mock).mockResolvedValue({});
+
+      const result = await service.extendSubscription('t2', 7);
+      expect(result.success).toBe(true);
+      expect(prismaService.tenant.update).toHaveBeenCalledWith({
+        where: { id: 't2' },
+        data: { status: 'active' }
+      });
     });
   });
 });

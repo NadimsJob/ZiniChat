@@ -56,6 +56,7 @@ model Tenant {
   customAiConfigId          String?   @db.Uuid
   customPlanUpdatedAt       DateTime?
   customPlanUpdatedBy       String?   @db.Uuid
+  hasUsedFreePlan           Boolean   @default(false)
 
   createdAt DateTime @default(now())
 
@@ -711,6 +712,8 @@ model Plan {
   isActive     Boolean  @default(true)
   isPopular    Boolean  @default(false)
   isDefault    Boolean  @default(false)
+  allowWeekly  Boolean  @default(false)
+  priceWeeklyBdt Decimal? @db.Decimal(10, 2)
   createdAt    DateTime @default(now())
 
   subscriptions Subscription[]
@@ -835,6 +838,17 @@ model LandingPageConfig {
   updatedAt           DateTime @updatedAt
 
   @@map("landing_page_config")
+}
+
+model ClientBrand {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String
+  logoUrl   String?
+  order     Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@map("client_brands")
 }
 
 // Currency Exchange Rates (Platform-wide, immutable)

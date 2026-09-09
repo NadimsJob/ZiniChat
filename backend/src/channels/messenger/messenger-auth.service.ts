@@ -34,7 +34,7 @@ export class MessengerAuthService {
     const quotas = await this.billingService.getTenantQuotas(tenantId);
     
     const currentConnections = await this.prisma.channelConnection.count({
-      where: { tenantId, channelType: 'messenger' }
+      where: { tenantId, channelType: 'messenger', status: { in: ['active', 'connected'] } }
     });
 
     if (currentConnections >= quotas.messengerLimit) {

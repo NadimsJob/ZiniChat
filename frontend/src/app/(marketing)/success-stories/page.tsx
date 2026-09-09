@@ -2,8 +2,9 @@
 
 import { useLanguage } from '@/components/LanguageProvider';
 import Link from 'next/link';
-import { ArrowRight, TrendingUp, Users, Zap, Clock } from 'lucide-react';
+import { ArrowRight, TrendingUp, Users, Zap, Clock, ShieldCheck } from 'lucide-react';
 import ResultsSection from '@/components/ResultsSection';
+import { MetaIntegrationSection } from '@/components/MetaIntegrationSection';
 
 export default function SuccessStoriesPage() {
   const { language } = useLanguage();
@@ -20,13 +21,19 @@ export default function SuccessStoriesPage() {
         </div>
 
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center z-10">
-          {/* eyebrow */}
-          <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-semibold text-primary sm:text-sm mb-6">
-            <span className="relative flex w-2 h-2">
-              <span className="absolute inline-flex w-full h-full animate-ping rounded-full bg-primary opacity-75" />
-              <span className="inline-flex w-2 h-2 rounded-full bg-primary" />
-            </span>
-            {language === 'en' ? 'Real Business Impact' : 'বাস্তব ব্যবসায়িক প্রভাব'}
+          {/* eyebrow pills */}
+          <div className="flex flex-wrap items-center justify-center gap-2 mb-6">
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-semibold text-primary sm:text-sm">
+              <span className="relative flex w-2 h-2">
+                <span className="absolute inline-flex w-full h-full animate-ping rounded-full bg-primary opacity-75" />
+                <span className="inline-flex w-2 h-2 rounded-full bg-primary" />
+              </span>
+              {language === 'en' ? 'Real Business Impact' : 'বাস্তব ব্যবসায়িক প্রভাব'}
+            </div>
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1 text-xs font-bold text-blue-500 dark:text-blue-400 sm:text-sm shadow-sm backdrop-blur-md">
+              <ShieldCheck className="w-4 h-4 text-blue-500" />
+              {language === 'en' ? 'Officially Meta Integrated Platform' : 'মেটা অফিশিয়ালি ইন্টিগ্রেটেড প্ল্যাটফর্ম'}
+            </div>
           </div>
 
           <h1 className="mx-auto mb-6 max-w-4xl text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl text-foreground">
@@ -64,6 +71,9 @@ export default function SuccessStoriesPage() {
           </div>
         </div>
       </section>
+
+      {/* ── Official Meta Integration Section ────────────────────────── */}
+      <MetaIntegrationSection />
 
       {/* ── Results Section (the main component) ──────────────────────── */}
       <ResultsSection />

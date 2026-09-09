@@ -31,7 +31,9 @@ import {
   MessageSquare,
   Activity,
   BarChart3,
-  X
+  X,
+  Award,
+  Layers
 } from 'lucide-react';
 import NotificationBell from '@/components/NotificationBell';
 import { toast } from 'react-hot-toast';
@@ -84,8 +86,12 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
       }).then(res => res.json()).then(data => {
         setTicketUnreadCount(data.unreadCount || 0);
       }).catch(err => console.error(err));
+    } else {
+      setPermissions([]);
+      setUserRole('');
+      setUserEmail('');
     }
-  }, []);
+  }, [pathname]);
 
   useEffect(() => {
     const token = Cookies.get('access_token');
@@ -216,6 +222,7 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
       hasSubmenu: true,
       subItems: [
         { name: language === 'en' ? 'Site Editor' : 'সাইট এডিটর', icon: Globe, href: '/sp@dmin/site-editor', show: hasPermission('view:site_editor') },
+        { name: language === 'en' ? 'Client Logos & Brands' : 'ক্লায়েন্ট লোগো ও ব্র্যান্ডস', icon: Award, href: '/sp@dmin/settings/client-brands', show: hasPermission('view:settings') },
         { name: language === 'en' ? 'Team Members' : 'টিম মেম্বারস', icon: ShieldCheck, href: '/sp@dmin/team', show: hasPermission('view:team') },
         { name: language === 'en' ? 'Currency' : 'কারেন্সি', icon: DollarSign, href: '/sp@dmin/currency', show: hasPermission('manage:currency') || hasPermission('view:settings') },
         { name: language === 'en' ? 'SMTP Settings' : 'এসএমটিপি সেটিংস', icon: Mail, href: '/sp@dmin/settings/smtp', show: hasPermission('view:settings') },

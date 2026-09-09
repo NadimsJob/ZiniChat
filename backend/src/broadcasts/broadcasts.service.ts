@@ -21,7 +21,7 @@ export class BroadcastsService {
       where: { id: tenantId },
       include: {
         subscriptions: {
-          where: { status: 'active' },
+          where: { status: { in: ['active', 'trialing'] } },
           include: { plan: true },
           orderBy: { currentPeriodEnd: 'desc' },
           take: 1

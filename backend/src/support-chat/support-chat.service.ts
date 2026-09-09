@@ -280,7 +280,7 @@ export class SupportChatService {
       where: { id: tenantId },
       include: {
         plan: true,
-        subscriptions: { where: { status: 'active' }, orderBy: { currentPeriodStart: 'desc' }, take: 1 },
+        subscriptions: { where: { status: { in: ['active', 'trialing'] } }, orderBy: { currentPeriodStart: 'desc' }, take: 1 },
         channelConns: { select: { channelType: true, status: true } },
         customAiConfig: { select: { provider: true, modelName: true } }
       }

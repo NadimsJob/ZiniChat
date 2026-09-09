@@ -46,7 +46,7 @@ export default function PackagesPage() {
   // Plan form
   const [planForm, setPlanForm] = useState({
     name: '', nameBn: '', description: '', descriptionBn: '',
-    priceMonthlyBdt: 0, priceYearlyBdt: 0,
+    priceMonthlyBdt: 0, priceYearlyBdt: 0, allowWeekly: false, priceWeeklyBdt: 0,
     promoPriceMonthlyBdt: 0, promoMonths: 0, yearlyDiscountPercent: 0,
     messageQuota: 1000, aiQuota: 500, seatLimit: 1, storageLimitMb: 500,
     whatsappLimit: 1, messengerLimit: 1, instagramLimit: 1, websiteWidgetLimit: 0, productCatalogLimit: 50, contactsLimit: null as number | null,
@@ -178,6 +178,8 @@ export default function PackagesPage() {
         name: plan.name, nameBn: plan.nameBn || '', description: plan.description || '', descriptionBn: plan.descriptionBn || '',
         priceMonthlyBdt: Number(plan.priceMonthlyBdt) || 0, 
         priceYearlyBdt: Number(plan.priceYearlyBdt) || 0,
+        allowWeekly: plan.allowWeekly || false,
+        priceWeeklyBdt: Number(plan.priceWeeklyBdt) || 0,
         promoPriceMonthlyBdt: Number(plan.promoPriceMonthlyBdt) || 0, 
         promoMonths: Number(plan.promoMonths) || 0, 
         yearlyDiscountPercent: Number(plan.yearlyDiscountPercent) || 0,
@@ -191,7 +193,7 @@ export default function PackagesPage() {
     } else {
       setPlanForm({
         name: '', nameBn: '', description: '', descriptionBn: '', 
-        priceMonthlyBdt: 0, priceYearlyBdt: 0,
+        priceMonthlyBdt: 0, priceYearlyBdt: 0, allowWeekly: false, priceWeeklyBdt: 0,
         promoPriceMonthlyBdt: 0, promoMonths: 0, yearlyDiscountPercent: 0,
         messageQuota: 1000, aiQuota: 500, seatLimit: 1, storageLimitMb: 500, whatsappLimit: 1, messengerLimit: 1, instagramLimit: 1, websiteWidgetLimit: 0, productCatalogLimit: 50, contactsLimit: null, trialDays: 0, allowByok: false,
         features: [],
@@ -274,7 +276,10 @@ export default function PackagesPage() {
                       {plan.isPopular && <div className="absolute top-2.5 right-4 text-xs font-bold bg-primary/10 text-primary px-2 py-1 rounded">Popular</div>}
                       {plan.isDefault && <div className="absolute -top-3 -right-3 text-[10px] font-black bg-gradient-to-r from-amber-500 to-orange-500 text-white px-3 py-1 rounded-full shadow-lg border-2 border-surface animate-bounce">🌟 DEFAULT</div>}
                       
-                      <h3 className="text-[15px] font-bold text-slate-900 dark:text-white">{plan.name}</h3>
+                      <h3 className="text-[15px] font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                        {plan.name}
+                        {plan.allowWeekly && <span className="text-[10px] font-medium bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 px-1.5 py-0.5 rounded">Weekly</span>}
+                      </h3>
                       <div className="text-[13px] font-black mt-2 text-primary">{formatPrice(plan.priceMonthlyBdt)}<span className="text-[12px] text-slate-500 dark:text-zinc-500 font-normal"> / monthly</span></div>
                       
                       <div className="mt-2 space-y-2 text-[12px] text-slate-600 dark:text-zinc-400">
@@ -414,6 +419,19 @@ export default function PackagesPage() {
                   <label className="block text-[12px] font-medium mb-1 text-zinc-400">Yearly Price (BDT)</label>
                   <input type="number" step="1" value={planForm.priceYearlyBdt} onChange={e => setPlanForm({...planForm, priceYearlyBdt: Number(e.target.value)})} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-primary focus:outline-none" />
                 </div>
+              </div>
+
+              <div className="p-3 bg-surface/50 border border-surface-hover rounded-xl space-y-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={planForm.allowWeekly} onChange={e => setPlanForm({...planForm, allowWeekly: e.target.checked})} className="w-4 h-4 rounded border-zinc-700 text-primary focus:ring-primary focus:ring-offset-background bg-background" />
+                  <span className="text-[12px] font-semibold text-emerald-400">Allow Weekly Billing Cycle (সাপ্তাহিক প্ল্যান সক্রিয় করুন)</span>
+                </label>
+                {planForm.allowWeekly && (
+                  <div>
+                    <label className="block text-[12px] font-medium mb-1 text-zinc-400">Weekly Price (BDT) — Set 0 for 1-Week Free Trial Plan</label>
+                    <input type="number" step="1" value={planForm.priceWeeklyBdt} onChange={e => setPlanForm({...planForm, priceWeeklyBdt: Number(e.target.value)})} className="w-full bg-background border border-emerald-500/30 rounded-lg px-2.5 py-2 focus:border-emerald-500 focus:outline-none text-xs" />
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 bg-primary/5 p-3 rounded-xl border border-primary/20 mt-3">

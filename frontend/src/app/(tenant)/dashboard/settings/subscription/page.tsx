@@ -56,7 +56,7 @@ export default function SubscriptionSettingsPage() {
   const [addons, setAddons] = useState<any[]>([]);
   const [quotaData, setQuotaData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+  const [billingCycle, setBillingCycle] = useState<'weekly' | 'monthly' | 'yearly'>('monthly');
 
   const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -72,6 +72,14 @@ export default function SubscriptionSettingsPage() {
 
   const currentSubscription = quotaData?.subscription;
   const activePlanId = currentSubscription?.planId;
+
+  const visiblePlans = plans.filter((p: any) => {
+    if (quotaData?.hasUsedFreePlan && Number(p.priceMonthlyBdt) === 0) {
+      return false;
+    }
+    return true;
+  });
+  const hasWeeklyPlans = visiblePlans.some((p: any) => p.allowWeekly);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -277,6 +285,12 @@ export default function SubscriptionSettingsPage() {
 
             {/* Billing Cycle Toggle */}
             <div className="bg-surface-hover/50 border border-surface-hover rounded-xl p-1 flex">
+              {hasWeeklyPlans && (
+                <button onClick={() => setBillingCycle('weekly')}
+                  className={`px-3 py-1 rounded-lg text-[11px] font-bold transition-all ${billingCycle === 'weekly' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
+                  {language === 'en' ? 'Weekly' : 'সাপ্তাহিক'}
+                </button>
+              )}
               <button onClick={() => setBillingCycle('monthly')}
                 className={`px-3 py-1 rounded-lg text-[11px] font-bold transition-all ${billingCycle === 'monthly' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
                 {language === 'en' ? 'Monthly' : 'মাসিক'}
@@ -294,21 +308,28 @@ export default function SubscriptionSettingsPage() {
           </div>
         </div>
 
-        {plans.length === 0 ? (
+        {visiblePlans.length === 0 ? (
           <p className="text-center py-8 text-[13px] text-muted-foreground">
             {language === 'en' ? 'No plans available.' : 'কোনো প্ল্যান পাওয়া যায়নি।'}
           </p>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {plans.map(plan => {
+            {visiblePlans.map(plan => {
+              const isWeekly = billingCycle === 'weekly';
               const isYearly = billingCycle === 'yearly';
+              const wBdt = Number(plan.priceWeeklyBdt) || 0;
+              const wUsd = Math.round((wBdt / (rate || 121)) * 100) / 100;
               const mBdt = Number(plan.priceMonthlyBdt) || 0;
               const mUsd = Number(plan.priceMonthlyUsd) > 0 ? Number(plan.priceMonthlyUsd) : Math.round((mBdt / (rate || 121)) * 100) / 100;
               const yBdt = Number(plan.priceYearlyBdt) > 0 ? Number(plan.priceYearlyBdt) : Math.round(mBdt * 12 * 0.8334);
               const yUsd = Number(plan.priceYearlyUsd) > 0 ? Number(plan.priceYearlyUsd) : Math.round(mUsd * 12 * 0.8334);
               const baseMonthly = displayCurrency === 'USD' ? mUsd : mBdt;
               const baseYearly = displayCurrency === 'USD' ? yUsd : yBdt;
-              const displayPrice = isYearly && baseYearly > 0
+              const baseWeekly = displayCurrency === 'USD' ? wUsd : wBdt;
+
+              const displayPrice = isWeekly
+                ? baseWeekly
+                : isYearly && baseYearly > 0
                 ? (displayCurrency === 'USD' ? Math.round((baseYearly / 12) * 100) / 100 : Math.round(baseYearly / 12))
                 : baseMonthly;
 
@@ -345,12 +366,30 @@ export default function SubscriptionSettingsPage() {
                   <div className="mt-2 flex items-end gap-1">
                     <span className="text-lg font-bold text-primary mt-1">{displayCurrency === 'BDT' ? '৳' : '$'}</span>
                     <span className="text-4xl font-black text-primary leading-none">{formatNumber(displayPrice)}</span>
-                    <span className="text-[12px] text-muted-foreground mb-1">/{language === 'en' ? 'mo' : 'মাস'}</span>
+                    <span className="text-[12px] text-muted-foreground mb-1">/{isWeekly ? (language === 'en' ? 'wk' : 'সপ্তাহ') : (language === 'en' ? 'mo' : 'মাস')}</span>
                   </div>
 
                   {promoMonthly && (
                     <div className="text-[11px] text-muted-foreground line-through">
                       ৳{formatNumber(mBdt)}
+                    </div>
+                  )}
+
+                  {isWeekly && plan.allowWeekly && (
+                    <div className="mt-2 p-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+                      <div className="text-[11px] font-bold text-emerald-400">
+                        {language === 'en'
+                          ? `Billed ${displayCurrency === 'BDT' ? '৳' : '$'}${formatNumber(displayPrice)}/week`
+                          : `প্রতি সপ্তাহে ${displayCurrency === 'BDT' ? '৳' : '$'}${formatNumber(displayPrice)} বিল`}
+                      </div>
+                    </div>
+                  )}
+
+                  {isWeekly && !plan.allowWeekly && (
+                    <div className="mt-2 p-2 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+                      <div className="text-[11px] font-medium text-amber-400">
+                        {language === 'en' ? 'Weekly cycle not available for this plan' : 'এই প্ল্যানে সাপ্তাহিক অপশন প্রযোজ্য নয়'}
+                      </div>
                     </div>
                   )}
 
@@ -409,14 +448,16 @@ export default function SubscriptionSettingsPage() {
 
                   <button
                     onClick={() => handleSubscribe(plan.id)}
-                    disabled={isActive}
+                    disabled={isActive || (isWeekly && !plan.allowWeekly)}
                     className={`mt-4 w-full py-2 rounded-xl text-[13px] font-bold transition-all ${
-                      isActive
-                        ? 'bg-primary/10 text-primary cursor-not-allowed'
+                      isActive || (isWeekly && !plan.allowWeekly)
+                        ? 'bg-primary/10 text-primary cursor-not-allowed opacity-60'
                         : 'bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 active:scale-[0.98]'
                     }`}>
                     {isActive
                       ? (language === 'en' ? '✓ Current Plan' : '✓ বর্তমান প্ল্যান')
+                      : isWeekly && !plan.allowWeekly
+                      ? (language === 'en' ? 'N/A' : 'প্রযোজ্য নয়')
                       : (language === 'en' ? 'Subscribe Now' : 'সাবস্ক্রাইব করুন')}
                   </button>
                 </div>

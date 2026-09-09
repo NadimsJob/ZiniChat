@@ -48,6 +48,8 @@ import { MetaPixelModule } from './meta-pixel/meta-pixel.module';
 import { GoogleAnalyticsModule } from './google-analytics/google-analytics.module';
 import { LoginLogsModule } from './login-logs/login-logs.module';
 
+import { ClientBrandsModule } from './client-brands/client-brands.module';
+
 @Module({
   imports: [
     ThrottlerModule.forRoot([
@@ -112,7 +114,8 @@ import { LoginLogsModule } from './login-logs/login-logs.module';
     BroadcastsModule,
     InstagramAuthModule,
     MfsPaymentsModule,
-    LoginLogsModule
+    LoginLogsModule,
+    ClientBrandsModule
   ],
   controllers: [AppController],
   providers: [

@@ -18,7 +18,7 @@ export class InstagramAuthService {
       where: { id: tenantId },
       include: {
         subscriptions: {
-          where: { status: 'active' },
+          where: { status: { in: ['active', 'trialing'] } },
           include: { plan: true },
           orderBy: { currentPeriodEnd: 'desc' },
           take: 1
@@ -43,7 +43,7 @@ export class InstagramAuthService {
 
     const quotas = await this.billingService.getTenantQuotas(tenantId);
     const currentConnections = await this.prisma.channelConnection.count({
-      where: { tenantId, channelType: 'instagram' }
+      where: { tenantId, channelType: 'instagram', status: { in: ['active', 'connected'] } }
     });
 
     if (currentConnections >= quotas.instagramLimit) {

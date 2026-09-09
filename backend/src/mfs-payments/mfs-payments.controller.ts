@@ -1,7 +1,8 @@
 import { Controller, Get, Post, Patch, Delete, Body, Param, Query, Headers, UseGuards, Req, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { extname, join } from 'path';
+import * as fs from 'fs';
 import { MfsPaymentsService } from './mfs-payments.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
@@ -69,15 +70,33 @@ export class MfsPaymentsController {
     return this.mfsPaymentsService.removeAccount(id);
   }
 
-  // 2. Incoming Transactions logs (Superadmin Only)
-  @Get('transactions')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @RequirePermissions('manage:tenants')
-  async getTransactions() {
-    return this.mfsPaymentsService.getTransactions();
+  // 2. SMS Gateway Webhook
+  @Post('sms-webhook')
+  async syncSmsTransaction(
+    @Headers('x-sms-gateway-api-key') apiKey: string,
+    @Body() body: {
+      trxId: string;
+      provider: string;
+      accountType?: string;
+      amount: number;
+      senderNumber?: string;
+      smsBody: string;
+    },
+  ) {
+    return this.mfsPaymentsService.syncSmsTransaction(apiKey, body);
   }
 
-  // Get QR payload for checkout page
+  // 3. User Payment Verification
+  @Post('verify')
+  @UseGuards(JwtAuthGuard)
+  async verifyUserPayment(
+    @Req() req: any,
+    @Body() body: { paymentId: string; trxId?: string },
+  ) {
+    return this.mfsPaymentsService.verifyPayment(req.user.id, req.user.tenantId, body.paymentId, body.trxId);
+  }
+
+  // 4. Payment Checkout QR Payload
   @Get('qr-payload/:paymentId')
   @UseGuards(JwtAuthGuard)
   async getPaymentQrPayload(
@@ -87,50 +106,12 @@ export class MfsPaymentsController {
     return this.mfsPaymentsService.getPaymentQrPayload(paymentId, provider);
   }
 
-  // 3. SMS Webhook Endpoint (Public, secured by header token)
-  @Post('sms-webhook')
-  async syncSmsTransaction(
-    @Headers('X-SMS-GATEWAY-API-KEY') apiKey: string,
-    @Body() data: {
-      trxId: string;
-      provider: string;
-      accountType?: string;
-      amount: number;
-      senderNumber?: string;
-      smsBody: string;
-    },
-  ) {
-    return this.mfsPaymentsService.syncSmsTransaction(apiKey, data);
-  }
-
-  // 4. User Verification (Authenticated Tenants)
-  @Post('verify')
-  @UseGuards(JwtAuthGuard)
-  async verifyPayment(
-    @Req() req: any,
-    @Body() data: {
-      paymentId: string;
-      trxId: string;
-    },
-  ) {
-    const userId = req.user.id;
-    const tenantId = req.user.tenantId;
-    return this.mfsPaymentsService.verifyPayment(userId, tenantId, data.paymentId, data.trxId);
-  }
-
-  // 5. Superadmin Manual Claim (Superadmin Only)
-  @Post('manual-claim')
+  // 5. Admin Transactions Log
+  @Get('transactions')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions('manage:tenants')
-  async manualClaimTransaction(
-    @Req() req: any,
-    @Body() data: {
-      trxId: string;
-      paymentId: string;
-    },
-  ) {
-    const userId = req.user.id;
-    return this.mfsPaymentsService.manualClaimTransaction(userId, data.trxId, data.paymentId);
+  async getTransactions() {
+    return this.mfsPaymentsService.getTransactions();
   }
 
   // 6. Upload QR Code Image (Superadmin Only)
@@ -139,7 +120,13 @@ export class MfsPaymentsController {
   @RequirePermissions('manage:tenants')
   @UseInterceptors(FileInterceptor('file', {
     storage: diskStorage({
-      destination: './public/uploads/mfs',
+      destination: (req, file, cb) => {
+        const uploadDir = join(process.cwd(), 'uploads', 'mfs');
+        if (!fs.existsSync(uploadDir)) {
+          fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
+      },
       filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
         cb(null, uniqueSuffix + extname(file.originalname));

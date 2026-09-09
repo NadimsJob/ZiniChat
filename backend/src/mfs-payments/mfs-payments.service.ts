@@ -73,9 +73,21 @@ export class MfsPaymentsService {
       providerKey = 'BKASH';
     }
 
-    const account = await this.prisma.mfsAccount.findFirst({
+    let account = await this.prisma.mfsAccount.findFirst({
       where: { provider: providerKey, isActive: true },
     });
+
+    if (!account && (providerKey === 'BANGLA_QR' || providerKey === 'MERCHANT')) {
+      account = await this.prisma.mfsAccount.findFirst({
+        where: {
+          OR: [
+            { provider: 'BANGLA_QR' },
+            { accountType: 'MERCHANT' }
+          ],
+          isActive: true
+        },
+      });
+    }
 
     if (!account) {
       throw new NotFoundException(`No active payment configuration found for ${providerKey}`);
@@ -99,6 +111,18 @@ export class MfsPaymentsService {
       },
     });
 
+    let qrCodeUrl = account.qrCodeUrl;
+    let qrString: string | null = null;
+
+    if (account.provider === 'BANGLA_QR' || account.accountType === 'MERCHANT' || providerKey === 'BANGLA_QR') {
+      const pan = account.merchantId || account.number;
+      qrString = this.generateBanglaQr(account.provider, account.number, totalAmount, pan);
+      
+      if (!qrCodeUrl) {
+        qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrString)}`;
+      }
+    }
+
     return {
       paymentId: payment.id,
       amount: totalAmount,
@@ -108,10 +132,12 @@ export class MfsPaymentsService {
       fraction: 0,
       provider: providerKey,
       number: account.number,
+      merchantId: account.merchantId,
       accountType: account.accountType,
       bankName: account.bankName,
       routingNumber: account.routingNumber,
-      qrCodeUrl: account.qrCodeUrl,
+      qrCodeUrl,
+      qrString,
     };
   }
 

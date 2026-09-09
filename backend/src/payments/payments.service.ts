@@ -41,7 +41,21 @@ export class PaymentsService {
 
     const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
 
-    let amount = billingCycle === 'yearly' ? Number(plan.priceYearlyBdt) : Number(plan.priceMonthlyBdt);
+    // Free plan enforcement
+    const isFreePlan = Number(plan.priceMonthlyBdt) === 0 && !tenant?.customPriceUsd;
+    if (isFreePlan && (tenant as any)?.hasUsedFreePlan) {
+      throw new BadRequestException('আপনি ইতিমধ্যে ফ্রি ট্রায়াল বা ফ্রি প্ল্যান ব্যবহার করেছেন। রিনিউ করতে প্রিমিয়াম প্ল্যান নির্বাচন করুন।');
+    }
+
+    if (billingCycle === 'weekly' && !(plan as any).allowWeekly) {
+      throw new BadRequestException('এই প্ল্যানটিতে সাপ্তাহিক সাবস্ক্রিপশন প্রযোজ্য নয়।');
+    }
+
+    let amount = billingCycle === 'yearly'
+      ? Number(plan.priceYearlyBdt)
+      : billingCycle === 'weekly'
+      ? Number((plan as any).priceWeeklyBdt || 0)
+      : Number(plan.priceMonthlyBdt);
     
     // Only use tenant.customPriceUsd if plan price is zero (custom quote plan)
     if (amount === 0 && tenant?.customPriceUsd) {
@@ -51,7 +65,7 @@ export class PaymentsService {
       });
       const rate = currencyRateInfo ? Number(currencyRateInfo.rate) : 121.0;
       const customMonthlyBdt = Number(tenant.customPriceUsd) * rate;
-      amount = billingCycle === 'yearly' ? customMonthlyBdt * 12 : customMonthlyBdt;
+      amount = billingCycle === 'yearly' ? customMonthlyBdt * 12 : billingCycle === 'weekly' ? Math.round(customMonthlyBdt / 4) : customMonthlyBdt;
     } else {
       if (billingCycle === 'monthly' && plan.promoPriceMonthlyBdt && plan.promoMonths) {
         if (successfulPaymentsCount < plan.promoMonths) {
@@ -78,7 +92,7 @@ export class PaymentsService {
 
     // 2. Create or update subscription
     let subscription = await this.prisma.subscription.findFirst({ where: { tenantId, planId } });
-    const periodDays = billingCycle === 'yearly' ? 365 : 30;
+    const periodDays = billingCycle === 'yearly' ? 365 : billingCycle === 'weekly' ? 7 : 30;
     if (!subscription) {
       subscription = await this.prisma.subscription.create({
         data: { tenantId, planId, billingCycle, couponId, status: 'pending', currentPeriodStart: new Date(), currentPeriodEnd: new Date(Date.now() + periodDays * 24 * 60 * 60 * 1000) }
@@ -148,7 +162,21 @@ export class PaymentsService {
 
     const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
 
-    let amount = billingCycle === 'yearly' ? Number(plan.priceYearlyBdt) : Number(plan.priceMonthlyBdt);
+    // Free plan enforcement
+    const isFreePlan = Number(plan.priceMonthlyBdt) === 0 && !tenant?.customPriceUsd;
+    if (isFreePlan && (tenant as any)?.hasUsedFreePlan) {
+      throw new BadRequestException('আপনি ইতিমধ্যে ফ্রি ট্রায়াল বা ফ্রি প্ল্যান ব্যবহার করেছেন। রিনিউ করতে প্রিমিয়াম প্ল্যান নির্বাচন করুন।');
+    }
+
+    if (billingCycle === 'weekly' && !(plan as any).allowWeekly) {
+      throw new BadRequestException('এই প্ল্যানটিতে সাপ্তাহিক সাবস্ক্রিপশন প্রযোজ্য নয়।');
+    }
+
+    let amount = billingCycle === 'yearly'
+      ? Number(plan.priceYearlyBdt)
+      : billingCycle === 'weekly'
+      ? Number((plan as any).priceWeeklyBdt || 0)
+      : Number(plan.priceMonthlyBdt);
     
     // Only use tenant.customPriceUsd if plan price is zero (custom quote plan)
     if (amount === 0 && tenant?.customPriceUsd) {
@@ -158,7 +186,7 @@ export class PaymentsService {
       });
       const rate = currencyRateInfo ? Number(currencyRateInfo.rate) : 121.0;
       const customMonthlyBdt = Number(tenant.customPriceUsd) * rate;
-      amount = billingCycle === 'yearly' ? customMonthlyBdt * 12 : customMonthlyBdt;
+      amount = billingCycle === 'yearly' ? customMonthlyBdt * 12 : billingCycle === 'weekly' ? Math.round(customMonthlyBdt / 4) : customMonthlyBdt;
     } else {
       if (billingCycle === 'monthly' && plan.promoPriceMonthlyBdt && plan.promoMonths) {
         if (successfulPaymentsCount < plan.promoMonths) {
@@ -219,7 +247,7 @@ export class PaymentsService {
     }
 
     let subscription = await this.prisma.subscription.findFirst({ where: { tenantId, planId } });
-    const periodDays = billingCycle === 'yearly' ? 365 : 30;
+    const periodDays = billingCycle === 'yearly' ? 365 : billingCycle === 'weekly' ? 7 : 30;
     if (!subscription) {
       subscription = await this.prisma.subscription.create({
         data: {

@@ -12,6 +12,7 @@ import { PricingSection } from '@/components/PricingSection';
 import SetupWidgetMockup from '@/components/SetupWidgetMockup';
 import PwaInstallBanner from '@/components/PwaInstallBanner';
 import { IndustryShowcaseSection } from '@/components/IndustryShowcaseSection';
+import { MetaIntegrationSection } from '@/components/MetaIntegrationSection';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -106,7 +107,7 @@ export default function HomePage() {
       page_location: typeof window !== 'undefined' ? window.location.href : '',
     });
 
-    fetch(`${API}/tenants/public/client-logos`)
+    fetch(`${API}/client-brands/public`)
       .then(res => res.ok ? res.json() : [])
       .then(data => setClientLogos(data))
       .catch(() => {});
@@ -171,13 +172,17 @@ export default function HomePage() {
 
         <div className="relative mx-auto grid max-w-7xl gap-12 px-4 sm:px-6 lg:grid-cols-12 lg:gap-8 lg:px-8">
           <div className="flex flex-col justify-center lg:col-span-6 z-10">
-            <div className="mb-6 flex flex-col items-start gap-2 sm:flex-row sm:items-center">
+            <div className="mb-6 flex flex-wrap items-center gap-2">
               <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs text-primary sm:text-sm">
                 <span className="relative flex w-2 h-2">
                   <span className="absolute inline-flex w-full h-full animate-ping rounded-full bg-primary opacity-75"></span>
                   <span className="inline-flex w-2 h-2 rounded-full bg-primary"></span>
                 </span>
                 {language === 'en' ? 'AI Powered • 24/7 Active' : 'AI দিয়ে চালিত • ২৪/৭ চালু'}
+              </div>
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1 text-xs font-bold text-blue-500 dark:text-blue-400 sm:text-sm shadow-sm backdrop-blur-md">
+                <ShieldCheck className="w-4 h-4 text-blue-500" />
+                {language === 'en' ? 'Officially Meta Integrated Platform' : 'মেটা অফিশিয়ালি ইন্টিগ্রেটেড প্ল্যাটফর্ম'}
               </div>
             </div>
             
@@ -285,6 +290,9 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Official Meta Integration & API Approval Showcase */}
+      <MetaIntegrationSection />
 
       {/* Tenant Dashboard UI Snapshot Showcase */}
       <section className="relative w-full bg-muted/50 py-16 lg:py-24 border-b border-border/40 overflow-hidden">

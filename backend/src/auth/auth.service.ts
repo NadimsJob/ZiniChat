@@ -273,13 +273,15 @@ export class AuthService {
       });
 
       if (initialPlan) {
-        const currentPeriodEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 1 month
+        const isWeeklyFree = (initialPlan as any).allowWeekly && Number(initialPlan.priceMonthlyBdt) === 0;
+        const periodDays = isWeeklyFree ? 7 : 30;
+        const currentPeriodEnd = new Date(Date.now() + periodDays * 24 * 60 * 60 * 1000);
         await prisma.subscription.create({
           data: {
             tenantId: tenant.id,
             planId: initialPlan.id,
             status,
-            billingCycle: 'monthly',
+            billingCycle: isWeeklyFree ? 'weekly' : 'monthly',
             currentPeriodStart: new Date(),
             currentPeriodEnd
           }

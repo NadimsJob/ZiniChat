@@ -24,7 +24,7 @@ export class SubscriptionGuard implements CanActivate {
       where: { id: user.tenantId },
       include: {
         subscriptions: {
-          where: { status: 'active', currentPeriodEnd: { gt: new Date() } },
+          where: { status: { in: ['active', 'trialing'] }, currentPeriodEnd: { gt: new Date() } },
           take: 1
         }
       }

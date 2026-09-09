@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -175,6 +175,7 @@ export class BillingService {
       features: (tenant?.customFeatures as any) ?? plan?.features ?? [],
       customPlanName: tenant?.customPlanName,
       customPriceUsd: tenant?.customPriceUsd,
+      hasUsedFreePlan: (tenant as any)?.hasUsedFreePlan ?? false,
       basePlan: plan,
       // Current usage counts for channel connections
       currentWhatsapp,
@@ -202,7 +203,7 @@ export class BillingService {
     const activeSubscription = await this.prisma.subscription.findFirst({
       where: {
         tenantId,
-        status: 'active',
+        status: { in: ['active', 'trialing'] },
         currentPeriodEnd: { gt: new Date() }
       },
       include: { plan: true },
@@ -234,6 +235,94 @@ export class BillingService {
       messageQuota: baseMessageQuota + (activeSubscription?.carriedForwardMessageQuota ?? 0),
       aiQuota: baseAiQuota + (activeSubscription?.carriedForwardAiQuota ?? 0),
       subscription: activeSubscription
+    };
+  }
+
+  async extendSubscription(tenantId: string, days: number, actorUserId?: string) {
+    if (!days || days <= 0) {
+      throw new BadRequestException('Days must be greater than 0');
+    }
+
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      include: {
+        subscriptions: {
+          orderBy: { currentPeriodEnd: 'desc' },
+          take: 1
+        }
+      }
+    });
+
+    if (!tenant) {
+      throw new NotFoundException('Tenant not found');
+    }
+
+    const latestSub = tenant.subscriptions[0];
+    const now = new Date();
+
+    let baseDate = now;
+    if (latestSub && new Date(latestSub.currentPeriodEnd) > now) {
+      baseDate = new Date(latestSub.currentPeriodEnd);
+    }
+
+    const newPeriodEnd = new Date(baseDate.getTime() + days * 24 * 60 * 60 * 1000);
+
+    if (latestSub) {
+      await this.prisma.subscription.update({
+        where: { id: latestSub.id },
+        data: {
+          status: 'active',
+          currentPeriodStart: new Date(latestSub.currentPeriodEnd) < now ? now : latestSub.currentPeriodStart,
+          currentPeriodEnd: newPeriodEnd
+        }
+      });
+    } else {
+      let planId = tenant.planId;
+      if (!planId) {
+        const defaultPlan = await this.prisma.plan.findFirst({ where: { isDefault: true } });
+        if (defaultPlan) planId = defaultPlan.id;
+      }
+      if (!planId) {
+        const anyPlan = await this.prisma.plan.findFirst();
+        if (anyPlan) planId = anyPlan.id;
+      }
+
+      if (planId) {
+        await this.prisma.subscription.create({
+          data: {
+            tenantId,
+            planId,
+            status: 'active',
+            billingCycle: 'monthly',
+            currentPeriodStart: now,
+            currentPeriodEnd: newPeriodEnd
+          }
+        });
+      }
+    }
+
+    if (tenant.status !== 'active') {
+      await this.prisma.tenant.update({
+        where: { id: tenantId },
+        data: { status: 'active' }
+      });
+    }
+
+    if (actorUserId) {
+      await this.prisma.auditLog.create({
+        data: {
+          actorUserId,
+          targetTenantId: tenantId,
+          action: 'SUPERADMIN_EXTEND_SUBSCRIPTION',
+          metadataJson: { extendedDays: days, newPeriodEnd: newPeriodEnd.toISOString() }
+        }
+      }).catch(() => {});
+    }
+
+    return {
+      success: true,
+      message: `Tenant subscription extended by ${days} days`,
+      newPeriodEnd
     };
   }
 }

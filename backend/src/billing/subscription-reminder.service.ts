@@ -130,6 +130,14 @@ export class SubscriptionReminderService {
         data: { status: 'expired' }
       });
 
+      // If expired plan was a free plan (priceMonthlyBdt === 0), mark tenant as having used free plan
+      if (sub.plan && Number(sub.plan.priceMonthlyBdt) === 0) {
+        await this.prisma.tenant.update({
+          where: { id: sub.tenantId },
+          data: { hasUsedFreePlan: true } as any
+        }).catch(err => this.logger.error(`Failed to set hasUsedFreePlan for tenant ${sub.tenantId}`, err));
+      }
+
       const admins = sub.tenant?.users || [];
       const expiryDateFormatted = new Date(sub.currentPeriodEnd).toLocaleDateString('bn-BD', {
         timeZone: 'Asia/Dhaka',
