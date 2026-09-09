@@ -275,20 +275,20 @@ export default function HomePage() {
             {[...displayLogos, ...displayLogos].map((client, idx) => (
               <div
                 key={idx}
-                className="flex items-center gap-3 shrink-0 rounded-2xl border border-border/80 bg-card px-5 py-3 shadow-sm hover:border-primary/40 hover:shadow-md transition-all cursor-default"
+                className="flex items-center gap-3.5 shrink-0 rounded-2xl border border-border/80 bg-card px-6 py-4 shadow-sm hover:border-primary/50 hover:shadow-lg transition-all cursor-default"
               >
                 {client.logoUrl ? (
                   <img
                     src={client.logoUrl.startsWith('http') ? client.logoUrl : `${API}${client.logoUrl}`}
                     alt={client.name}
-                    className="h-8 w-auto max-w-[120px] object-contain"
+                    className="h-11 sm:h-12 w-auto max-w-[160px] object-contain shrink-0"
                   />
                 ) : (
-                  <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">
+                  <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-tr from-primary/20 via-emerald-500/15 to-primary/10 text-primary border border-primary/30 flex items-center justify-center font-black text-lg sm:text-xl shrink-0 shadow-xs">
                     {client.name.charAt(0)}
                   </div>
                 )}
-                <span className="text-sm font-bold text-foreground/80 whitespace-nowrap">{client.name}</span>
+                <span className="text-sm sm:text-base font-extrabold text-foreground whitespace-nowrap">{client.name}</span>
               </div>
             ))}
           </div>
