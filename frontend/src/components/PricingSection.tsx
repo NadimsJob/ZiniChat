@@ -24,6 +24,16 @@ export function PricingSection({ isHomepage = false }: { isHomepage?: boolean })
       .finally(() => setLoading(false));
   }, []);
 
+  const hasAnyPaidWeeklyPlan = plans.some(
+    (p: any) => p.allowWeekly === true && Number(p.priceMonthlyBdt) > 0
+  );
+
+  useEffect(() => {
+    if (!hasAnyPaidWeeklyPlan && billingCycle === 'weekly') {
+      setBillingCycle('monthly');
+    }
+  }, [hasAnyPaidWeeklyPlan, billingCycle]);
+
   const maxDiscountPercent = plans.reduce((max: number, p: any) => {
     let disc = Number(p.yearlyDiscountPercent) || 0;
     if (!disc) {
@@ -75,16 +85,18 @@ export function PricingSection({ isHomepage = false }: { isHomepage?: boolean })
 
           {/* Billing Cycle Switcher: Weekly / Monthly / Yearly */}
           <div className="inline-flex bg-card border border-primary/20 rounded-2xl p-1 shadow-sm items-center gap-1">
-            <button
-              onClick={() => setBillingCycle('weekly')}
-              className={`px-4 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${
-                billingCycle === 'weekly' 
-                  ? 'bg-primary text-primary-foreground shadow-md' 
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {language === 'en' ? 'Weekly' : 'সাপ্তাহিক'}
-            </button>
+            {hasAnyPaidWeeklyPlan && (
+              <button
+                onClick={() => setBillingCycle('weekly')}
+                className={`px-4 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+                  billingCycle === 'weekly' 
+                    ? 'bg-primary text-primary-foreground shadow-md' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {language === 'en' ? 'Weekly' : 'সাপ্তাহিক'}
+              </button>
+            )}
 
             <button
               onClick={() => setBillingCycle('monthly')}
@@ -126,8 +138,8 @@ export function PricingSection({ isHomepage = false }: { isHomepage?: boolean })
           const yBdt = Number(plan.priceYearlyBdt) > 0 ? Number(plan.priceYearlyBdt) : Math.round(mBdt * 12 * 0.8334);
           const yUsd = Number(plan.priceYearlyUsd) > 0 ? Number(plan.priceYearlyUsd) : Math.round(mUsd * 12 * 0.8334);
 
-          const wBdt = Number(plan.priceWeeklyBdt) > 0 ? Number(plan.priceWeeklyBdt) : Math.round(mBdt / 4);
-          const wUsd = Number(plan.priceWeeklyUsd) > 0 ? Number(plan.priceWeeklyUsd) : Math.round(mUsd / 4);
+          const wBdt = (plan.allowWeekly && Number(plan.priceWeeklyBdt) > 0) ? Number(plan.priceWeeklyBdt) : (plan.allowWeekly ? Math.round(mBdt / 4) : 0);
+          const wUsd = (plan.allowWeekly && Number(plan.priceWeeklyUsd) > 0) ? Number(plan.priceWeeklyUsd) : (plan.allowWeekly ? Math.round(mUsd / 4) : 0);
 
           const promoBdt = Number(plan.promoPriceMonthlyBdt) || 0;
           const promoUsd = Number(plan.promoPriceMonthlyUsd) > 0 ? Number(plan.promoPriceMonthlyUsd) : Math.round(promoBdt / (rate || 121));
@@ -201,7 +213,13 @@ export function PricingSection({ isHomepage = false }: { isHomepage?: boolean })
                   </div>
                 ) : null}
 
-                {billingCycle === 'weekly' ? (
+                {Number(plan.priceMonthlyBdt) === 0 && plan.allowWeekly ? (
+                  <div className={`mt-3 p-2.5 rounded-2xl border text-xs font-bold transition-all ${isPop ? 'bg-black/10 border-black/20 text-zinc-900' : 'bg-primary/10 border-primary/20 text-primary'}`}>
+                    🗓️ {language === 'en' ? '1-Week Free Trial — No credit card needed' : '১ সপ্তাহের ফ্রি ট্রায়াল — কোনো কার্ড লাগবে না'}
+                  </div>
+                ) : null}
+
+                {billingCycle === 'weekly' && Number(plan.priceMonthlyBdt) > 0 && plan.allowWeekly ? (
                   <div className={`mt-3 p-2.5 rounded-2xl border text-xs font-bold transition-all ${isPop ? 'bg-black/10 border-black/20 text-zinc-900' : 'bg-primary/10 border-primary/20 text-primary'}`}>
                     {language === 'en' ? 'Billed weekly • Cancel anytime' : 'সাপ্তাহিক বিলিং • যেকোনো সময় পরিবর্তনযোগ্য'}
                   </div>
