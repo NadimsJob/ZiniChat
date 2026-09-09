@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useLanguage } from '@/components/LanguageProvider';
 import { useCurrency } from '@/components/CurrencyProvider';
-import { Check } from 'lucide-react';
+import { Check, Info } from 'lucide-react';
 import Link from 'next/link';
 
 export function PricingSection({ isHomepage = false }: { isHomepage?: boolean }) {
@@ -230,17 +230,89 @@ export function PricingSection({ isHomepage = false }: { isHomepage?: boolean })
               </div>
               
               <ul className={`space-y-4 mb-8 flex-1 ${mutedColor}`}>
-                <li className="flex items-start gap-3 text-[15px] font-medium">
-                  <div className="mt-0.5 bg-green-500 rounded-full p-0.5"><Check className="w-4 h-4 shrink-0 text-white" strokeWidth={3} /></div>
-                  <span><strong className={`font-extrabold ${textColor}`}>{plan.seatLimit === -1 ? 'Unlimited' : formatNumber(plan.seatLimit)}</strong> {language === 'en' ? 'Team Members' : 'টিম মেম্বার'}</span>
+                <li className="flex items-center justify-between text-[15px] font-medium">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-green-500 rounded-full p-0.5"><Check className="w-4 h-4 shrink-0 text-white" strokeWidth={3} /></div>
+                    <span>
+                      <strong className={`font-extrabold ${textColor}`}>
+                        {plan.seatLimit === -1 ? (language === 'en' ? 'Unlimited' : 'আনলিমিটেড') : formatNumber(plan.seatLimit)}
+                      </strong>{' '}
+                      {language === 'en' ? 'Team Members' : 'টিম মেম্বার'}
+                    </span>
+                  </div>
+                  <div className="relative group/info cursor-pointer inline-flex items-center">
+                    <Info className={`w-4 h-4 transition-colors ${isPop ? 'text-zinc-800 hover:text-black' : 'text-muted-foreground hover:text-foreground'}`} />
+                    <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 opacity-0 invisible group-hover/info:opacity-100 group-hover/info:visible transition-all duration-200 z-50 w-64 p-3 bg-zinc-900 text-zinc-100 text-xs rounded-xl shadow-2xl border border-zinc-800 pointer-events-none text-left font-normal leading-relaxed">
+                      {language === 'en' ? (
+                        <>
+                          <strong className="block text-white mb-1 font-semibold">👥 Team Members ({plan.seatLimit === -1 ? 'Unlimited' : formatNumber(plan.seatLimit)})</strong>
+                          Staff/Agent accounts: Up to {plan.seatLimit === -1 ? 'unlimited' : formatNumber(plan.seatLimit)} members can log in simultaneously to handle customer chats & support.
+                        </>
+                      ) : (
+                        <>
+                          <strong className="block text-white mb-1 font-semibold">👥 টিম মেম্বার ({plan.seatLimit === -1 ? 'আনলিমিটেড' : formatNumber(plan.seatLimit)})</strong>
+                          স্টাফ/এজেন্ট এক্সেস: আপনার টিমের মোট {plan.seatLimit === -1 ? 'আনলিমিটেড' : formatNumber(plan.seatLimit)} জন সদস্য একসাথে লগইন করে কাস্টমার চ্যাট ও ইনবক্স সাপোর্ট দিতে পারবেন।
+                        </>
+                      )}
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-zinc-900" />
+                    </div>
+                  </div>
                 </li>
-                <li className="flex items-start gap-3 text-[15px] font-medium">
-                  <div className="mt-0.5 bg-green-500 rounded-full p-0.5"><Check className="w-4 h-4 shrink-0 text-white" strokeWidth={3} /></div>
-                  <span><strong className={`font-extrabold ${textColor}`}>{plan.messageQuota === -1 ? 'Unlimited' : formatNumber(plan.messageQuota)}</strong> {language === 'en' ? 'Messages/mo' : 'মেসেজ/মাস'}</span>
+                <li className="flex items-center justify-between text-[15px] font-medium">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-green-500 rounded-full p-0.5"><Check className="w-4 h-4 shrink-0 text-white" strokeWidth={3} /></div>
+                    <span>
+                      <strong className={`font-extrabold ${textColor}`}>
+                        {plan.messageQuota === -1 ? (language === 'en' ? 'Unlimited' : 'আনলিমিটেড') : formatNumber(plan.messageQuota)}
+                      </strong>{' '}
+                      {language === 'en' ? 'Messages/mo' : 'মেসেজ/মাস'}
+                    </span>
+                  </div>
+                  <div className="relative group/info cursor-pointer inline-flex items-center">
+                    <Info className={`w-4 h-4 transition-colors ${isPop ? 'text-zinc-800 hover:text-black' : 'text-muted-foreground hover:text-foreground'}`} />
+                    <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 opacity-0 invisible group-hover/info:opacity-100 group-hover/info:visible transition-all duration-200 z-50 w-64 p-3 bg-zinc-900 text-zinc-100 text-xs rounded-xl shadow-2xl border border-zinc-800 pointer-events-none text-left font-normal leading-relaxed">
+                      {language === 'en' ? (
+                        <>
+                          <strong className="block text-white mb-1 font-semibold">💬 Monthly Messages ({plan.messageQuota === -1 ? 'Unlimited' : formatNumber(plan.messageQuota)})</strong>
+                          Messaging Quota: Total incoming & outgoing customer messages allowed per month across WhatsApp, Messenger & Instagram.
+                        </>
+                      ) : (
+                        <>
+                          <strong className="block text-white mb-1 font-semibold">💬 মাসিক মেসেজ ({plan.messageQuota === -1 ? 'আনলিমিটেড' : formatNumber(plan.messageQuota)})</strong>
+                          মেসেজ কোটা: হোয়াটসঅ্যাপ, মেসেঞ্জার ও ইনস্টাগ্রাম মিলিয়ে প্রতি মাসে মোট {plan.messageQuota === -1 ? 'আনলিমিটেড' : formatNumber(plan.messageQuota)}টি মেসেজ আদান-প্রদান করা যাবে।
+                        </>
+                      )}
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-zinc-900" />
+                    </div>
+                  </div>
                 </li>
-                <li className="flex items-start gap-3 text-[15px] font-medium">
-                  <div className="mt-0.5 bg-green-500 rounded-full p-0.5"><Check className="w-4 h-4 shrink-0 text-white" strokeWidth={3} /></div>
-                  <span><strong className={`font-extrabold ${textColor}`}>{plan.aiQuota === -1 ? 'Unlimited' : formatNumber(plan.aiQuota)}</strong> {language === 'en' ? 'AI Responses/mo' : 'এআই রেসপন্স/মাস'}</span>
+                <li className="flex items-center justify-between text-[15px] font-medium">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-green-500 rounded-full p-0.5"><Check className="w-4 h-4 shrink-0 text-white" strokeWidth={3} /></div>
+                    <span>
+                      <strong className={`font-extrabold ${textColor}`}>
+                        {plan.aiQuota === -1 ? (language === 'en' ? 'Unlimited' : 'আনলিমিটেড') : formatNumber(plan.aiQuota)}
+                      </strong>{' '}
+                      {language === 'en' ? 'AI Responses/mo' : 'এআই রেসপন্স/মাস'}
+                    </span>
+                  </div>
+                  <div className="relative group/info cursor-pointer inline-flex items-center">
+                    <Info className={`w-4 h-4 transition-colors ${isPop ? 'text-zinc-800 hover:text-black' : 'text-muted-foreground hover:text-foreground'}`} />
+                    <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 opacity-0 invisible group-hover/info:opacity-100 group-hover/info:visible transition-all duration-200 z-50 w-64 p-3 bg-zinc-900 text-zinc-100 text-xs rounded-xl shadow-2xl border border-zinc-800 pointer-events-none text-left font-normal leading-relaxed">
+                      {language === 'en' ? (
+                        <>
+                          <strong className="block text-white mb-1 font-semibold">🤖 AI Auto-Responses ({plan.aiQuota === -1 ? 'Unlimited' : formatNumber(plan.aiQuota)})</strong>
+                          AI Automation: Number of automated customer replies & product recommendations generated by AI per month.
+                        </>
+                      ) : (
+                        <>
+                          <strong className="block text-white mb-1 font-semibold">🤖 এআই রেসপন্স ({plan.aiQuota === -1 ? 'আনলিমিটেড' : formatNumber(plan.aiQuota)})</strong>
+                          এআই অটোমেশন: প্রতি মাসে কাস্টমারের প্রশ্নের উত্তর ও সেলস হ্যান্ডেল করতে এআই মোট {plan.aiQuota === -1 ? 'আনলিমিটেড' : formatNumber(plan.aiQuota)}টি স্বয়ংক্রিয় রিপ্লাই দিতে পারবে।
+                        </>
+                      )}
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-zinc-900" />
+                    </div>
+                  </div>
                 </li>
                 {plan.featuresJson?.map((f: any, i: number) => (
                   <li key={i} className="flex items-start gap-3 text-[15px] font-medium">
