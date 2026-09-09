@@ -159,32 +159,73 @@ export class InstagramAuthService {
         throw new BadRequestException('Platform Facebook Auth not configured');
       }
 
-      const longLivedRes = await fetch(
-        `https://graph.facebook.com/v21.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${fbConfig.appId}&client_secret=${fbConfig.appSecret}&fb_exchange_token=${accessToken}`
-      );
-      
-      const longLivedData = await longLivedRes.json();
-      if (longLivedData.error) {
-        this.logger.error(`Meta long-lived token exchange failed for Instagram: ${JSON.stringify(longLivedData.error)}`);
-        throw new Error(longLivedData.error.message || 'Failed to exchange Facebook token for Instagram');
-      }
-      
-      const finalToken = longLivedData.access_token || accessToken;
-
-      // Step 2: Get all Facebook Pages of the user with explicit fields
-      const pagesRes = await fetch(`https://graph.facebook.com/v21.0/me/accounts?fields=id,name,access_token,tasks,category&access_token=${finalToken}`);
-      const pagesData = await pagesRes.json();
-      
-      if (pagesData.error) {
-        this.logger.error(`Meta /me/accounts fetch failed for Instagram: ${JSON.stringify(pagesData.error)}`);
-        throw new Error(pagesData.error.message || 'Failed to fetch Facebook pages from Meta');
+      // Diagnostic: Check token scopes using Meta debug_token API
+      try {
+        const debugRes = await fetch(
+          `https://graph.facebook.com/v21.0/debug_token?input_token=${accessToken}&access_token=${fbConfig.appId}|${fbConfig.appSecret}`
+        );
+        const debugData = await debugRes.json();
+        if (debugData.data) {
+          this.logger.log(`Meta debug_token for Instagram connection tenant ${tenantId}: is_valid=${debugData.data.is_valid}, scopes=${JSON.stringify(debugData.data.scopes)}, granular_scopes=${JSON.stringify(debugData.data.granular_scopes)}`);
+        }
+      } catch (err) {
+        this.logger.warn(`Failed to inspect debug_token: ${err.message}`);
       }
 
-      this.logger.log(`Meta /me/accounts returned ${pagesData.data?.length || 0} pages for Instagram connection on tenant ${tenantId}`);
+      // Step 1: Exchange short-lived token for long-lived token
+      let finalToken = accessToken;
+      try {
+        const longLivedRes = await fetch(
+          `https://graph.facebook.com/v21.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${fbConfig.appId}&client_secret=${fbConfig.appSecret}&fb_exchange_token=${accessToken}`
+        );
+        const longLivedData = await longLivedRes.json();
+        if (longLivedData.access_token) {
+          finalToken = longLivedData.access_token;
+        } else if (longLivedData.error) {
+          this.logger.warn(`Meta long-lived exchange warning for IG: ${longLivedData.error.message}`);
+        }
+      } catch (err) {
+        this.logger.warn(`Failed long-lived token exchange for IG: ${err.message}`);
+      }
 
-      if (!pagesData.data || pagesData.data.length === 0) {
+      // Step 2: Retrieve user's pages trying multiple Meta Graph API paths & tokens
+      let rawPagesList: any[] = [];
+
+      // Path A: /me/accounts with short-lived access token directly
+      const pagesResA = await fetch(`https://graph.facebook.com/v21.0/me/accounts?fields=id,name,access_token,tasks,category&access_token=${accessToken}`);
+      const pagesDataA = await pagesResA.json();
+      if (pagesDataA.data && Array.isArray(pagesDataA.data) && pagesDataA.data.length > 0) {
+        rawPagesList = pagesDataA.data;
+        this.logger.log(`Path A (/me/accounts short-lived for IG) returned ${rawPagesList.length} pages`);
+      }
+
+      // Path B: /me/accounts with final/long-lived access token
+      if (rawPagesList.length === 0 && finalToken !== accessToken) {
+        const pagesResB = await fetch(`https://graph.facebook.com/v21.0/me/accounts?fields=id,name,access_token,tasks,category&access_token=${finalToken}`);
+        const pagesDataB = await pagesResB.json();
+        if (pagesDataB.data && Array.isArray(pagesDataB.data) && pagesDataB.data.length > 0) {
+          rawPagesList = pagesDataB.data;
+          this.logger.log(`Path B (/me/accounts long-lived for IG) returned ${rawPagesList.length} pages`);
+        }
+      }
+
+      // Path C: /me?fields=accounts{id,name,access_token,tasks,category} (Nested Graph API query)
+      if (rawPagesList.length === 0) {
+        const meRes = await fetch(`https://graph.facebook.com/v21.0/me?fields=id,name,accounts{id,name,access_token,tasks,category}&access_token=${accessToken}`);
+        const meData = await meRes.json();
+        if (meData.accounts?.data && Array.isArray(meData.accounts.data) && meData.accounts.data.length > 0) {
+          rawPagesList = meData.accounts.data;
+          this.logger.log(`Path C (/me nested accounts for IG) returned ${rawPagesList.length} pages`);
+        }
+      }
+
+      this.logger.log(`Meta total pages found for Instagram: ${rawPagesList.length} for tenant ${tenantId}`);
+
+      if (rawPagesList.length === 0) {
         throw new BadRequestException('No Facebook Pages found for this account. Make sure you are an admin/editor of the page and opted in during Facebook login.');
       }
+
+      const pagesData = { data: rawPagesList };
 
       // Step 3: Collect all Instagram Business Accounts linked to those pages
       const igAccounts: Array<{ igId: string; username: string; pageId: string; pageToken: string; pageName: string }> = [];
