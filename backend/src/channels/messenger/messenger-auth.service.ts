@@ -141,6 +141,7 @@ export class MessengerAuthService {
     this.logger.log(`Exchanging OAuth token for tenant ${tenantId} using App ID: ${fbConfig.appId}`);
     
     try {
+      let granularTargetIds: string[] = [];
       // Diagnostic: Check token scopes using Meta debug_token API
       try {
         const debugRes = await fetch(
@@ -149,6 +150,17 @@ export class MessengerAuthService {
         const debugData = await debugRes.json();
         if (debugData.data) {
           this.logger.log(`Meta debug_token for tenant ${tenantId}: is_valid=${debugData.data.is_valid}, scopes=${JSON.stringify(debugData.data.scopes)}, granular_scopes=${JSON.stringify(debugData.data.granular_scopes)}`);
+          if (Array.isArray(debugData.data.granular_scopes)) {
+            for (const gs of debugData.data.granular_scopes) {
+              if (Array.isArray(gs.target_ids)) {
+                for (const tid of gs.target_ids) {
+                  if (tid && typeof tid === 'string' && !granularTargetIds.includes(tid)) {
+                    granularTargetIds.push(tid);
+                  }
+                }
+              }
+            }
+          }
         }
       } catch (err) {
         this.logger.warn(`Failed to inspect debug_token: ${err.message}`);
@@ -211,6 +223,37 @@ export class MessengerAuthService {
         }
       } catch (bizErr: any) {
         this.logger.warn(`Path D /me/businesses failed: ${bizErr.message}`);
+      }
+
+      // Path E: Direct Page lookup using granular_scopes target_ids from debug_token
+      if (granularTargetIds.length > 0) {
+        this.logger.log(`Path E (Granular Target IDs): inspecting ${granularTargetIds.length} target IDs: ${JSON.stringify(granularTargetIds)}`);
+        for (const targetId of granularTargetIds) {
+          if (rawPagesList.some(existing => existing.id === targetId)) {
+            continue;
+          }
+          try {
+            let pageRes = await fetch(`https://graph.facebook.com/v21.0/${targetId}?fields=id,name,access_token,category&access_token=${finalToken}`);
+            let pageData = await pageRes.json();
+            
+            if (!pageData.id || !pageData.name) {
+              pageRes = await fetch(`https://graph.facebook.com/v21.0/${targetId}?fields=id,name,access_token,category&access_token=${accessToken}`);
+              pageData = await pageRes.json();
+            }
+
+            if (pageData.id && pageData.name) {
+              if (!pageData.access_token) {
+                pageData.access_token = finalToken || accessToken;
+              }
+              rawPagesList.push(pageData);
+              this.logger.log(`Path E successfully fetched Granular Page: "${pageData.name}" (${pageData.id})`);
+            } else {
+              this.logger.warn(`Path E direct lookup for targetId ${targetId} returned: ${JSON.stringify(pageData)}`);
+            }
+          } catch (err: any) {
+            this.logger.warn(`Path E error fetching targetId ${targetId}: ${err.message}`);
+          }
+        }
       }
 
       this.logger.log(`Meta total pages found: ${rawPagesList.length} for tenant ${tenantId}`);
