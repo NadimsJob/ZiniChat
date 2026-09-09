@@ -273,13 +273,13 @@ export function PricingSection({ isHomepage = false }: { isHomepage?: boolean })
                     <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 opacity-0 invisible group-hover/info:opacity-100 group-hover/info:visible transition-all duration-200 z-50 w-64 p-3 bg-zinc-900 text-zinc-100 text-xs rounded-xl shadow-2xl border border-zinc-800 pointer-events-none text-left font-normal leading-relaxed">
                       {language === 'en' ? (
                         <>
-                          <strong className="block text-white mb-1 font-semibold">💬 Monthly Messages ({plan.messageQuota === -1 ? 'Unlimited' : formatNumber(plan.messageQuota)})</strong>
-                          Messaging Quota: Total incoming & outgoing customer messages allowed per month across WhatsApp, Messenger & Instagram.
+                          <strong className="block text-white mb-1 font-semibold">💬 Monthly Outbound Messages ({plan.messageQuota === -1 ? 'Unlimited' : formatNumber(plan.messageQuota)})</strong>
+                          Only your <strong className="text-emerald-400">outbound replies</strong> count (agent + AI). Customers can message you freely — unlimited inbound. This quota covers replies sent via WhatsApp, Messenger, Instagram & Broadcasts.
                         </>
                       ) : (
                         <>
-                          <strong className="block text-white mb-1 font-semibold">💬 মাসিক মেসেজ ({plan.messageQuota === -1 ? 'আনলিমিটেড' : formatNumber(plan.messageQuota)})</strong>
-                          মেসেজ কোটা: হোয়াটসঅ্যাপ, মেসেঞ্জার ও ইনস্টাগ্রাম মিলিয়ে প্রতি মাসে মোট {plan.messageQuota === -1 ? 'আনলিমিটেড' : formatNumber(plan.messageQuota)}টি মেসেজ আদান-প্রদান করা যাবে।
+                          <strong className="block text-white mb-1 font-semibold">💬 মাসিক আউটবাউন্ড মেসেজ ({plan.messageQuota === -1 ? 'আনলিমিটেড' : formatNumber(plan.messageQuota)})</strong>
+                          শুধু আপনার <strong className="text-emerald-400">পাঠানো (Outbound)</strong> রিপ্লাই গণনা হয় — এজেন্ট ও AI উত্তর মিলিয়ে। কাস্টমার যত ইচ্ছা মেসেজ করতে পারবে, তাতে কোটা খরচ হয় না। WhatsApp, Messenger, Instagram ও Broadcast মিলে মোট {plan.messageQuota === -1 ? 'আনলিমিটেড' : formatNumber(plan.messageQuota)}টি উত্তর পাঠানো যাবে।
                         </>
                       )}
                       <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-zinc-900" />
