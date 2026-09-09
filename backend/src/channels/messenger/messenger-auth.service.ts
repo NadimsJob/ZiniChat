@@ -148,21 +148,25 @@ export class MessengerAuthService {
       
       const longLivedData = await longLivedRes.json();
       if (longLivedData.error) {
-        throw new Error(longLivedData.error.message);
+        this.logger.error(`Meta long-lived token exchange failed: ${JSON.stringify(longLivedData.error)}`);
+        throw new Error(longLivedData.error.message || 'Failed to exchange Facebook token');
       }
       
       const finalToken = longLivedData.access_token || accessToken;
 
-      // Step 2: Get user's pages
-      const pagesRes = await fetch(`https://graph.facebook.com/v21.0/me/accounts?access_token=${finalToken}`);
+      // Step 2: Get user's pages with explicit fields
+      const pagesRes = await fetch(`https://graph.facebook.com/v21.0/me/accounts?fields=id,name,access_token,tasks,category&access_token=${finalToken}`);
       const pagesData = await pagesRes.json();
       
       if (pagesData.error) {
-        throw new Error(pagesData.error.message);
+        this.logger.error(`Meta /me/accounts fetch failed: ${JSON.stringify(pagesData.error)}`);
+        throw new Error(pagesData.error.message || 'Failed to fetch Facebook pages from Meta');
       }
 
+      this.logger.log(`Meta /me/accounts returned ${pagesData.data?.length || 0} pages for tenant ${tenantId}`);
+
       if (!pagesData.data || pagesData.data.length === 0) {
-        throw new BadRequestException('No Facebook Pages found for this account.');
+        throw new BadRequestException('No Facebook Pages found for this account. Make sure you are an admin/editor of the page and opted in during Facebook login.');
       }
 
       // If multiple pages exist and no targetPageId is provided, return the pages list for selection

@@ -61,7 +61,7 @@ export default function ConnectFacebookPageButton({ onConnected }: { onConnected
         }
       },
       {
-        scope: 'pages_messaging,pages_show_list,pages_manage_metadata,pages_read_engagement,pages_manage_engagement', // Required scopes for Messenger & Comment Automation
+        scope: 'public_profile,pages_messaging,pages_show_list,pages_manage_metadata,pages_read_engagement,pages_manage_engagement,business_management', // Required scopes for Messenger, Business Suite Pages & Comment Automation
         auth_type: 'rerequest',
         return_scopes: true,
         enable_profile_selector: true,
@@ -96,11 +96,11 @@ export default function ConnectFacebookPageButton({ onConnected }: { onConnected
           onConnected();
         }
       } else {
-        setMessage(`Failed to connect: ${data.message}`);
+        setMessage(`Failed to connect: ${data.message || 'Unknown error'}`);
       }
-    } catch (error) {
-      console.error(error);
-      setMessage('Network error occurred.');
+    } catch (error: any) {
+      console.error('FB Connect error:', error);
+      setMessage(`Connection error: ${error.message || 'Server communication failed'}`);
     } finally {
       setIsLoading(false);
     }

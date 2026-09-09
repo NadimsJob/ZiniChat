@@ -67,7 +67,7 @@ export default function ConnectFacebookInstagramButton({ onConnected }: { onConn
         }
       },
       {
-        scope: 'instagram_basic,instagram_manage_messages,pages_show_list,pages_manage_metadata',
+        scope: 'public_profile,instagram_basic,instagram_manage_messages,pages_show_list,pages_manage_metadata,pages_read_engagement,business_management',
         auth_type: 'rerequest',
         return_scopes: true,
         enable_profile_selector: true,
@@ -105,11 +105,11 @@ export default function ConnectFacebookInstagramButton({ onConnected }: { onConn
           onConnected();
         }
       } else {
-        setMessage(`Failed to connect: ${data.message}`);
+        setMessage(`Failed to connect: ${data.message || 'Unknown error'}`);
       }
-    } catch (error) {
-      console.error(error);
-      setMessage('Network error occurred.');
+    } catch (error: any) {
+      console.error('IG Connect error:', error);
+      setMessage(`Connection error: ${error.message || 'Server communication failed'}`);
     } finally {
       setIsLoading(false);
     }
