@@ -20,17 +20,15 @@ export class ClientBrandsController {
   }
 
   @Get('admin')
-  @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('superadmin')
-  @RequirePermissions('manage:tenants')
   getAllBrands() {
     return this.clientBrandsService.getAllClientBrands();
   }
 
   @Post('admin')
-  @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('superadmin')
-  @RequirePermissions('manage:tenants')
   createBrand(@Body() data: { name: string; logoUrl?: string; order?: number; isActive?: boolean }) {
     if (!data.name) {
       throw new BadRequestException('Brand name is required');
@@ -39,9 +37,8 @@ export class ClientBrandsController {
   }
 
   @Patch('admin/:id')
-  @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('superadmin')
-  @RequirePermissions('manage:tenants')
   updateBrand(
     @Param('id') id: string,
     @Body() data: { name?: string; logoUrl?: string; order?: number; isActive?: boolean }
@@ -50,17 +47,15 @@ export class ClientBrandsController {
   }
 
   @Delete('admin/:id')
-  @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('superadmin')
-  @RequirePermissions('manage:tenants')
   deleteBrand(@Param('id') id: string) {
     return this.clientBrandsService.deleteClientBrand(id);
   }
 
   @Post('admin/upload-logo')
-  @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('superadmin')
-  @RequirePermissions('manage:tenants')
   @UseInterceptors(FileInterceptor('file', {
     storage: diskStorage({
       destination: (req, file, cb) => {
