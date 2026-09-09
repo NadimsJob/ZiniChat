@@ -265,7 +265,7 @@ export default function PricingPage() {
             const promoBdt = Number(plan.promoPriceMonthlyBdt) || 0;
             const promoUsd = Number(plan.promoPriceMonthlyUsd) > 0 ? Number(plan.promoPriceMonthlyUsd) : Math.round(promoBdt / (rate || 121));
 
-            const isBdt = language === 'bn' || displayCurrency === 'BDT';
+            const isBdt = displayCurrency === 'BDT';
             const currSymbol = isBdt ? '৳' : '$';
 
             const baseWeekly = isBdt ? wBdt : wUsd;
@@ -513,7 +513,7 @@ export default function PricingPage() {
                   const wBdt = (plan.allowWeekly && Number(plan.priceWeeklyBdt) > 0) ? Number(plan.priceWeeklyBdt) : (plan.allowWeekly ? Math.round(mBdt / 4) : 0);
                   const wUsd = (plan.allowWeekly && Number(plan.priceWeeklyUsd) > 0) ? Number(plan.priceWeeklyUsd) : (plan.allowWeekly ? Math.round(mUsd / 4) : 0);
 
-                  const isBdt = language === 'bn' || displayCurrency === 'BDT';
+                  const isBdt = displayCurrency === 'BDT';
                   const currSymbol = isBdt ? '৳' : '$';
 
                   const baseWeekly = isBdt ? wBdt : wUsd;

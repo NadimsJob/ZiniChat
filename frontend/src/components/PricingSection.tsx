@@ -158,7 +158,7 @@ export function PricingSection({ isHomepage = false }: { isHomepage?: boolean })
           const promoBdt = Number(plan.promoPriceMonthlyBdt) || 0;
           const promoUsd = Number(plan.promoPriceMonthlyUsd) > 0 ? Number(plan.promoPriceMonthlyUsd) : Math.round(promoBdt / (rate || 121));
 
-          const isBdt = language === 'bn' || displayCurrency === 'BDT';
+          const isBdt = displayCurrency === 'BDT';
           const currSymbol = isBdt ? '৳' : '$';
 
           const baseWeekly = isBdt ? wBdt : wUsd;
