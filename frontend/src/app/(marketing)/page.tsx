@@ -13,6 +13,10 @@ import SetupWidgetMockup from '@/components/SetupWidgetMockup';
 import PwaInstallBanner from '@/components/PwaInstallBanner';
 import { IndustryShowcaseSection } from '@/components/IndustryShowcaseSection';
 import { MetaIntegrationSection } from '@/components/MetaIntegrationSection';
+import { 
+  WhatsAppBadgeIcon, MessengerBadgeIcon, InstagramBadgeIcon, 
+  FacebookCommentBadgeIcon, WebChatBadgeIcon 
+} from '@/components/BrandIcons';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -225,14 +229,14 @@ export default function HomePage() {
 
           <div className="relative flex items-center justify-center lg:col-span-6 mt-10 lg:mt-0">
             {/* Floating Platform Icons */}
-            <div className="absolute -left-2 top-8 sm:left-0 lg:-left-4 animate-float rounded-xl bg-card p-2.5 shadow-lg shadow-border/80 transition-transform sm:p-3" style={{ animationDelay: '0s' }}>
-              <MessageSquare className="w-6 h-6 sm:w-7 sm:h-7 text-[#25D366] fill-[#25D366]" />
+            <div className="absolute -left-2 top-8 sm:left-0 lg:-left-4 animate-float rounded-xl bg-card p-2 shadow-lg shadow-border/80 transition-transform" style={{ animationDelay: '0s' }}>
+              <WhatsAppBadgeIcon className="w-7 h-7 sm:w-8 sm:h-8" />
             </div>
-            <div className="absolute -right-2 top-16 sm:right-0 lg:-right-4 animate-float rounded-xl bg-card p-2.5 shadow-lg shadow-border/80 transition-transform sm:p-3" style={{ animationDelay: '0.5s' }}>
-              <Send className="w-6 h-6 sm:w-7 sm:h-7 text-[#0088CC] fill-[#0088CC]" />
+            <div className="absolute -right-2 top-16 sm:right-0 lg:-right-4 animate-float rounded-xl bg-card p-2 shadow-lg shadow-border/80 transition-transform" style={{ animationDelay: '0.5s' }}>
+              <MessengerBadgeIcon className="w-7 h-7 sm:w-8 sm:h-8" />
             </div>
-            <div className="absolute -left-2 bottom-20 sm:left-2 lg:-left-2 animate-float rounded-xl bg-card p-2.5 shadow-lg shadow-border/80 transition-transform sm:p-3" style={{ animationDelay: '1s' }}>
-              <MessageSquare className="w-6 h-6 sm:w-7 sm:h-7 text-[#E4405F]" />
+            <div className="absolute -left-2 bottom-20 sm:left-2 lg:-left-2 animate-float rounded-xl bg-card p-2 shadow-lg shadow-border/80 transition-transform" style={{ animationDelay: '1s' }}>
+              <InstagramBadgeIcon className="w-7 h-7 sm:w-8 sm:h-8" />
             </div>
             
             <WhatsAppBotMockup language={language} />
@@ -413,8 +417,12 @@ export default function HomePage() {
                       <span className="text-emerald-500 font-bold">🟢 Online</span>
                     </div>
                     <div className="flex items-center gap-1.5 pt-1">
-                      <span className="px-2 py-1 bg-[#25D366]/10 text-[#25D366] rounded font-bold text-[10px]">WhatsApp Web</span>
-                      <span className="px-2 py-1 bg-[#0088CC]/10 text-[#0088CC] rounded font-bold text-[10px]">Messenger</span>
+                      <span className="px-2 py-1 bg-[#25D366]/10 text-[#25D366] rounded font-bold text-[10px] flex items-center gap-1">
+                        <WhatsAppBadgeIcon className="w-3.5 h-3.5" /> WhatsApp Web
+                      </span>
+                      <span className="px-2 py-1 bg-[#0084FF]/10 text-[#0084FF] rounded font-bold text-[10px] flex items-center gap-1">
+                        <MessengerBadgeIcon className="w-3.5 h-3.5" /> Messenger
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -503,10 +511,10 @@ export default function HomePage() {
             <div className="group rounded-3xl border border-border bg-card p-6 shadow-sm hover:border-primary/50 hover:shadow-xl hover:shadow-primary/10 transition-all duration-300 flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-black text-xl">
-                    API
+                  <div className="w-12 h-12 rounded-2xl bg-[#25D366]/10 flex items-center justify-center border border-[#25D366]/20 shadow-xs">
+                    <WhatsAppBadgeIcon className="w-8 h-8" />
                   </div>
-                  <span className="px-2.5 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-extrabold border border-primary/20">
+                  <span className="px-2.5 py-1 rounded-full bg-[#25D366]/10 text-[#25D366] text-[10px] font-extrabold border border-[#25D366]/20">
                     Official Meta
                   </span>
                 </div>
@@ -528,8 +536,8 @@ export default function HomePage() {
             <div className="group rounded-3xl border border-border bg-card p-6 shadow-sm hover:border-[#0084FF]/50 hover:shadow-xl hover:shadow-[#0084FF]/10 transition-all duration-300 flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 rounded-2xl bg-[#0084FF]/10 text-[#0084FF] flex items-center justify-center font-black text-xl">
-                    FB
+                  <div className="w-12 h-12 rounded-2xl bg-[#0084FF]/10 flex items-center justify-center border border-[#0084FF]/20 shadow-xs">
+                    <MessengerBadgeIcon className="w-8 h-8" />
                   </div>
                   <span className="px-2.5 py-1 rounded-full bg-[#0084FF]/10 text-[#0084FF] text-[10px] font-extrabold border border-[#0084FF]/20">
                     1-Click OAuth
@@ -553,8 +561,8 @@ export default function HomePage() {
             <div className="group rounded-3xl border border-border bg-card p-6 shadow-sm hover:border-[#E4405F]/50 hover:shadow-xl hover:shadow-[#E4405F]/10 transition-all duration-300 flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 rounded-2xl bg-[#E4405F]/10 text-[#E4405F] flex items-center justify-center font-black text-xl">
-                    IG
+                  <div className="w-12 h-12 rounded-2xl bg-[#E4405F]/10 flex items-center justify-center border border-[#E4405F]/20 shadow-xs">
+                    <InstagramBadgeIcon className="w-8 h-8" />
                   </div>
                   <span className="px-2.5 py-1 rounded-full bg-[#E4405F]/10 text-[#E4405F] text-[10px] font-extrabold border border-[#E4405F]/20">
                     E-Commerce DM
@@ -578,8 +586,8 @@ export default function HomePage() {
             <div className="group rounded-3xl border border-border bg-card p-6 shadow-sm hover:border-orange-500/50 hover:shadow-xl hover:shadow-orange-500/10 transition-all duration-300 flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 rounded-2xl bg-orange-500/10 text-orange-500 flex items-center justify-center font-black text-xl">
-                    CMT
+                  <div className="w-12 h-12 rounded-2xl bg-orange-500/10 flex items-center justify-center border border-orange-500/20 shadow-xs">
+                    <FacebookCommentBadgeIcon className="w-8 h-8" />
                   </div>
                   <span className="px-2.5 py-1 rounded-full bg-orange-500/10 text-orange-500 text-[10px] font-extrabold border border-orange-500/20">
                     Auto-Engagement
@@ -603,8 +611,8 @@ export default function HomePage() {
             <div className="group rounded-3xl border border-border bg-card p-6 shadow-sm hover:border-teal-500/50 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300 flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 rounded-2xl bg-teal-500/10 text-teal-500 flex items-center justify-center font-black text-xl">
-                    WEB
+                  <div className="w-12 h-12 rounded-2xl bg-teal-500/10 flex items-center justify-center border border-teal-500/20 shadow-xs">
+                    <WebChatBadgeIcon className="w-8 h-8" />
                   </div>
                   <span className="px-2.5 py-1 rounded-full bg-teal-500/10 text-teal-500 text-[10px] font-extrabold border border-teal-500/20">
                     Live Chat
