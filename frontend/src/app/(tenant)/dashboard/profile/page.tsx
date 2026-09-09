@@ -931,29 +931,37 @@ export default function TenantProfilePage() {
     </div>
   </div>
 
-{/* Business Nature */}
- <div>
- <label className="block text-[13px] font-semibold mb-1.5 text-slate-700 ">
- {t('Business Nature', 'ব্যবসার ধরন')}
- </label>
- <div className="relative">
- <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
- <Briefcase className="w-3.5 h-3.5 text-slate-400" />
- </div>
- <select
- value={businessProfile.businessNature}
- onChange={e => setBusinessProfile({ ...businessProfile, businessNature: e.target.value })}
- className="w-full bg-muted/30 border border-border rounded-xl pl-8 pr-3 py-1.5 text-[13px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 text-foreground appearance-none"
- >
- <option value="" disabled>Select</option>
- {businessNatures.map((bn) => (
- <option key={bn.id} value={bn.name}>
- {language === 'en' ? bn.name : (bn.nameBn || bn.name)}
- </option>
- ))}
- </select>
- </div>
- </div>
+          {/* Business Nature (Locked for Tenants) */}
+          <div>
+            <label className="block text-[13px] font-semibold mb-1.5 text-slate-700 dark:text-zinc-300">
+              {t('Business Nature', 'ব্যবসার ধরন')}
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
+                <Briefcase className="w-3.5 h-3.5 text-slate-400" />
+              </div>
+              <select
+                disabled={true}
+                value={businessProfile.businessNature}
+                onChange={e => setBusinessProfile({ ...businessProfile, businessNature: e.target.value })}
+                className="w-full bg-slate-100 dark:bg-zinc-800 border border-border rounded-xl pl-8 pr-8 py-1.5 text-[13px] text-slate-500 dark:text-zinc-400 cursor-not-allowed opacity-80 appearance-none"
+              >
+                <option value="" disabled>Select</option>
+                {businessNatures.map((bn) => (
+                  <option key={bn.id} value={bn.name}>
+                    {language === 'en' ? bn.name : (bn.nameBn || bn.name)}
+                  </option>
+                ))}
+              </select>
+              <div className="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none">
+                <Lock className="w-3.5 h-3.5 text-amber-500" />
+              </div>
+            </div>
+            <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-1 font-medium flex items-center gap-1">
+              <Lock className="w-3 h-3 shrink-0" />
+              {t('Business Nature is locked after signup. Contact Superadmin to change.', 'ব্যবসার ধরন সাইন আপের পর লক করা থাকে। পরিবর্তন করতে সুপার অ্যাডমিনের সাথে যোগাযোগ করুন।')}
+            </p>
+          </div>
  
  {/* Address */}
  <div className="md:col-span-2">

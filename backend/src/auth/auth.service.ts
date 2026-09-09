@@ -567,6 +567,8 @@ export class AuthService {
       });
     }
 
+    const currentTenant = await this.prisma.tenant.findUnique({ where: { id: user.tenantId } });
+
     const updateTenantData: any = {
       isOnboarded: true
     };
@@ -577,7 +579,9 @@ export class AuthService {
     if (data.phoneNo !== undefined) updateTenantData.phoneNo = data.phoneNo;
     if (data.ownerName !== undefined) updateTenantData.ownerName = data.ownerName;
     if (data.employeeCount !== undefined) updateTenantData.employeeCount = data.employeeCount;
-    if (data.businessNature !== undefined) updateTenantData.businessNature = data.businessNature;
+    if (data.businessNature !== undefined && (!currentTenant?.businessNature || user.role === 'superadmin')) {
+      updateTenantData.businessNature = data.businessNature;
+    }
     if (data.country !== undefined) updateTenantData.country = data.country;
     if (data.logoUrl !== undefined) updateTenantData.logoUrl = data.logoUrl;
 
