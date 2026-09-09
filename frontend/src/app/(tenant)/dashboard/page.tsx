@@ -5,6 +5,7 @@ import Cookies from 'js-cookie';
 import Link from 'next/link';
 import { useLanguage } from '@/components/LanguageProvider';
 import { useCurrency } from '@/components/CurrencyProvider';
+import { ChannelBrandIcon } from '@/components/BrandIcons';
 import SetupJourneyWidget from '@/components/SetupJourneyWidget';
 import toast from 'react-hot-toast';
 import { useFeature } from '@/hooks/useFeature';
@@ -572,15 +573,7 @@ export default function ExecutiveDashboardPage() {
                   <div key={ch.id} className="flex items-center justify-between p-2.5 bg-slate-50 dark:bg-surface-hover/40 border-2 border-emerald-500/25 dark:border-emerald-500/20 rounded-xl">
                     <div className="flex items-center gap-2.5 min-w-0">
                       <div className="shrink-0 flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
-                        {isWebsite ? (
-                          <Globe className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-                        ) : ch.channelType?.includes('whatsapp') ? (
-                          <PhoneCall className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                        ) : ch.channelType?.includes('messenger') ? (
-                          <MessageSquare className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                        ) : (
-                          <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                        )}
+                        <ChannelBrandIcon channelType={ch.channelType} className="w-5 h-5" />
                       </div>
                       <div className="truncate">
                         <div className="text-[12px] font-bold truncate text-foreground">{ch.displayName || ch.phoneNumber || ch.channelType}</div>

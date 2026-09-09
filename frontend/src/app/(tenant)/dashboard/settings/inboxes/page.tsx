@@ -11,6 +11,7 @@ import {
   Globe, Code, Zap, Copy, X, Sparkles, Save, Eye, Send, MessageSquare
 } from 'lucide-react';
 import CommentConfigModal from './CommentConfigModal';
+import { ChannelBrandIcon } from '@/components/BrandIcons';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -173,15 +174,8 @@ export default function InboxesPage() {
       toast.error('Test ping error');
     }
   };
-
   const getChannelIcon = (type: string) => {
-    switch(type?.toLowerCase()) {
-      case 'whatsapp': return <PhoneCall className="w-5 h-5 text-emerald-500" />;
-      case 'messenger': return <MessageCircle className="w-5 h-5 text-blue-500" />;
-      case 'instagram': return <Camera className="w-5 h-5 text-pink-500" />;
-      case 'website': return <Globe className="w-5 h-5 text-indigo-500" />;
-      default: return <Webhook className="w-5 h-5 text-primary" />;
-    }
+    return <ChannelBrandIcon channelType={type} className="w-6 h-6" />;
   };
 
   const getChannelName = (type: string) => {

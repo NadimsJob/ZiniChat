@@ -1,8 +1,8 @@
 'use client';
 
 import { useLanguage } from '@/components/LanguageProvider';
-import { ShieldCheck, CheckCircle2, Zap, Lock, Sparkles, MessageSquare, Send, Globe, Award } from 'lucide-react';
-import Link from 'next/link';
+import { ShieldCheck, CheckCircle2, Award } from 'lucide-react';
+import { WhatsAppBadgeIcon, MessengerBadgeIcon, InstagramBadgeIcon } from '@/components/BrandIcons';
 
 export function MetaIntegrationSection({ variant = 'full' }: { variant?: 'full' | 'compact' }) {
   const { language } = useLanguage();
@@ -21,7 +21,7 @@ export function MetaIntegrationSection({ variant = 'full' }: { variant?: 'full' 
         <div className="mx-auto max-w-3xl text-center mb-12 sm:mb-16">
           <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-1.5 text-xs sm:text-sm font-bold uppercase tracking-wider text-blue-500 dark:text-blue-400 shadow-sm backdrop-blur-md">
             <ShieldCheck className="w-4 h-4 text-blue-500 animate-pulse" />
-            {language === 'en' ? 'Officially Meta Integrated Platform' : 'অফিশিয়ালি মেটা ইন্টিগ্রেটেড প্ল্যাটফর্ম'}
+            {language === 'en' ? 'Officially Meta Integrated Platform' : 'অফিশিয়ালি মেটা ইন্টিগ্রেশন প্ল্যাটফর্ম'}
           </div>
 
           <h2 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl lg:text-5xl text-foreground">
@@ -35,7 +35,7 @@ export function MetaIntegrationSection({ variant = 'full' }: { variant?: 'full' 
           <p className="mt-4 text-base leading-relaxed text-muted-foreground sm:text-lg lg:text-xl font-medium max-w-2xl mx-auto">
             {language === 'en'
               ? 'ZiniChat is officially approved and integrated with Meta Cloud APIs. Power your business with 100% compliant, ban-free WhatsApp, Messenger & Instagram automation.'
-              : 'ZiniChat সরাসরি মেটা ক্লাউড এপিআই অনুমোদিত ও ইন্টিগ্রেটেড। কোনো ব্যান ঝুঁকি ছাড়া ১০০% সেইফ হোয়াটসঅ্যাপ, ফেসবুক মেসেঞ্জার ও ইনস্টাগ্রাম এআই অটোমেশন চালান।'}
+              : 'ZiniChat সরাসরি মেটা ক্লাউড এপিআই অনুমোদিত ও ইন্টিগ্রেশন। কোনো ব্যান ঝুঁকি ছাড়া ১০০% সেইফ হোয়াটসঅ্যাপ, ফেসবুক মেসেঞ্জার ও ইনস্টাগ্রাম এআই অটোমেশন চালান।'}
           </p>
         </div>
 
@@ -47,8 +47,8 @@ export function MetaIntegrationSection({ variant = 'full' }: { variant?: 'full' 
             <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-bl-full pointer-events-none transition-all group-hover:bg-emerald-500/10" />
             <div>
               <div className="flex items-center justify-between mb-6">
-                <div className="w-14 h-14 rounded-2xl bg-[#25D366]/10 text-[#25D366] flex items-center justify-center border border-[#25D366]/30 shadow-inner">
-                  <MessageSquare className="w-7 h-7 fill-[#25D366]" />
+                <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/30 shadow-inner">
+                  <WhatsAppBadgeIcon className="w-10 h-10" />
                 </div>
                 <span className="px-3 py-1 text-[11px] font-extrabold uppercase tracking-wider rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
                   <CheckCircle2 className="w-3 h-3" /> Official API
@@ -86,8 +86,8 @@ export function MetaIntegrationSection({ variant = 'full' }: { variant?: 'full' 
             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-bl-full pointer-events-none transition-all group-hover:bg-blue-500/10" />
             <div>
               <div className="flex items-center justify-between mb-6">
-                <div className="w-14 h-14 rounded-2xl bg-[#0088CC]/10 text-[#0088CC] flex items-center justify-center border border-[#0088CC]/30 shadow-inner">
-                  <Send className="w-7 h-7 fill-[#0088CC]" />
+                <div className="w-14 h-14 rounded-2xl bg-blue-500/10 flex items-center justify-center border border-blue-500/30 shadow-inner">
+                  <MessengerBadgeIcon className="w-10 h-10" />
                 </div>
                 <span className="px-3 py-1 text-[11px] font-extrabold uppercase tracking-wider rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 flex items-center gap-1">
                   <CheckCircle2 className="w-3 h-3" /> Meta Approved
@@ -125,8 +125,8 @@ export function MetaIntegrationSection({ variant = 'full' }: { variant?: 'full' 
             <div className="absolute top-0 right-0 w-32 h-32 bg-pink-500/5 rounded-bl-full pointer-events-none transition-all group-hover:bg-pink-500/10" />
             <div>
               <div className="flex items-center justify-between mb-6">
-                <div className="w-14 h-14 rounded-2xl bg-[#E4405F]/10 text-[#E4405F] flex items-center justify-center border border-[#E4405F]/30 shadow-inner">
-                  <MessageSquare className="w-7 h-7" />
+                <div className="w-14 h-14 rounded-2xl bg-pink-500/10 flex items-center justify-center border border-pink-500/30 shadow-inner">
+                  <InstagramBadgeIcon className="w-10 h-10" />
                 </div>
                 <span className="px-3 py-1 text-[11px] font-extrabold uppercase tracking-wider rounded-full bg-pink-500/10 text-pink-600 dark:text-pink-400 border border-pink-500/20 flex items-center gap-1">
                   <CheckCircle2 className="w-3 h-3" /> Meta Certified

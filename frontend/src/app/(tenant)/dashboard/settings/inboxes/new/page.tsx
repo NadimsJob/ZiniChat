@@ -15,6 +15,7 @@ import { io, Socket } from 'socket.io-client';
 import ConnectFacebookPageButton from '@/components/messenger/ConnectFacebookPageButton';
 import ConnectFacebookInstagramButton from '@/components/instagram/ConnectFacebookInstagramButton';
 import ConnectWhatsAppButton from '@/components/whatsapp/ConnectWhatsAppButton';
+import { WhatsAppBadgeIcon, MessengerBadgeIcon, InstagramBadgeIcon, WebChatBadgeIcon } from '@/components/BrandIcons';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -144,7 +145,9 @@ export default function NewInboxStepper() {
             handleConnectedSuccess();
           }
         }
-      } catch (e) {}
+      } catch (err) {
+        // ignore polling error
+      }
     }, 2500);
 
     return () => clearInterval(interval);
@@ -154,7 +157,7 @@ export default function NewInboxStepper() {
     {
       id: 'whatsapp',
       name: 'WhatsApp',
-      icon: PhoneCall,
+      icon: WhatsAppBadgeIcon,
       color: 'text-emerald-500',
       bgColor: 'bg-emerald-500/10',
       borderActive: 'border-emerald-500',
@@ -165,7 +168,7 @@ export default function NewInboxStepper() {
     {
       id: 'messenger',
       name: 'Messenger',
-      icon: MessageCircle,
+      icon: MessengerBadgeIcon,
       color: 'text-blue-500',
       bgColor: 'bg-blue-500/10',
       borderActive: 'border-blue-500',
@@ -176,7 +179,7 @@ export default function NewInboxStepper() {
     {
       id: 'instagram',
       name: 'Instagram',
-      icon: Camera,
+      icon: InstagramBadgeIcon,
       color: 'text-pink-500',
       bgColor: 'bg-pink-500/10',
       borderActive: 'border-pink-500',
@@ -187,7 +190,7 @@ export default function NewInboxStepper() {
     {
       id: 'website',
       name: language === 'en' ? 'Website' : 'ওয়েবসাইট',
-      icon: Globe,
+      icon: WebChatBadgeIcon,
       color: 'text-purple-500',
       bgColor: 'bg-purple-500/10',
       borderActive: 'border-purple-500',

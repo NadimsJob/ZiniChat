@@ -16,6 +16,7 @@ import {
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
 import LabelForm from '@/components/labels/LabelForm';
+import { ChannelBrandIcon, FacebookCommentBadgeIcon } from '@/components/BrandIcons';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -1017,13 +1018,7 @@ export default function InboxPage() {
                     onError={(e) => { e.currentTarget.style.display = 'none'; }}
                   />
                 ) : (
-                  ch.channelType === 'whatsapp' ? (
-                    <Phone className="w-3.5 h-3.5 text-emerald-500" />
-                  ) : ch.channelType === 'messenger' ? (
-                    <MessageCircle className="w-3.5 h-3.5 text-blue-500" />
-                  ) : (
-                    <MessageSquare className="w-3.5 h-3.5 text-purple-500" />
-                  )
+                  <ChannelBrandIcon channelType={ch.channelType} className="w-3.5 h-3.5" />
                 )}
                 <span>{ch.displayName || ch.channelType}</span>
               </button>
@@ -1039,7 +1034,7 @@ export default function InboxPage() {
                     channelFilter === 'facebook_comments' ? 'bg-orange-500 text-white font-bold shadow-sm' : 'text-muted-foreground hover:bg-muted/50 border-border/40'
                   }`}
                 >
-                  <MessageSquare className="w-3.5 h-3.5" />
+                  <FacebookCommentBadgeIcon className="w-3.5 h-3.5" />
                   <span>{language === 'en' ? 'FB Comments' : 'FB কমেন্ট'}</span>
                   {unreadCommentsCount > 0 && (
                     <span className="bg-red-500 text-white text-[10px] md:text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-xs">
@@ -1277,10 +1272,8 @@ export default function InboxPage() {
                         <div className="w-10 h-10 md:w-8 md:h-8 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-sm md:text-xs border border-primary/20">
                           {conv.contact?.name ? conv.contact.name[0].toUpperCase() : 'C'}
                         </div>
-                        <span className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 md:w-3 md:h-3 rounded-full border-2 border-background text-[8px] font-bold text-white flex items-center justify-center uppercase ${
-                          conv.channel === 'whatsapp' ? 'bg-emerald-600' : conv.channel === 'messenger' ? 'bg-blue-600' : 'bg-pink-600'
-                        }`}>
-                          {conv.channel[0]}
+                        <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 md:w-3 md:h-3 shrink-0">
+                          <ChannelBrandIcon channelType={conv.channel} className="w-full h-full" />
                         </span>
                       </div>
                       <div className="min-w-0 flex-1">

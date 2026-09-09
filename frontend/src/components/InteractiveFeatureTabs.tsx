@@ -2,6 +2,7 @@
 
 import { useLanguage } from '@/components/LanguageProvider';
 import * as LucideIcons from 'lucide-react';
+import { WhatsAppBadgeIcon, MessengerBadgeIcon, InstagramBadgeIcon, FacebookCommentBadgeIcon, WebChatBadgeIcon } from '@/components/BrandIcons';
 
 const colorThemeMap: Record<string, any> = {
   green: { color: 'from-green-500/20 to-emerald-500/20', iconColor: 'text-green-500', borderHover: 'hover:border-green-500/40', glowColor: 'shadow-green-500/10' },
@@ -16,10 +17,26 @@ export function processFeatures(rawFeatures: any[]) {
   if (!rawFeatures || !Array.isArray(rawFeatures)) return [];
   return rawFeatures.map(f => {
     const theme = colorThemeMap[f.colorTheme || 'blue'] || colorThemeMap['blue'];
-    const IconComponent = (LucideIcons as any)[f.iconName || 'Star'] || LucideIcons.Star;
+    let iconNode: React.ReactNode = null;
+    
+    if (f.id === 'whatsapp_api') {
+      iconNode = <WhatsAppBadgeIcon className="w-8 h-8" />;
+    } else if (f.id === 'messenger_api') {
+      iconNode = <MessengerBadgeIcon className="w-8 h-8" />;
+    } else if (f.id === 'instagram_api') {
+      iconNode = <InstagramBadgeIcon className="w-8 h-8" />;
+    } else if (f.id === 'facebook_comment_automation') {
+      iconNode = <FacebookCommentBadgeIcon className="w-8 h-8" />;
+    } else if (f.id === 'website_widget') {
+      iconNode = <WebChatBadgeIcon className="w-8 h-8" />;
+    } else {
+      const IconComponent = (LucideIcons as any)[f.iconName || 'Star'] || LucideIcons.Star;
+      iconNode = <IconComponent className="w-8 h-8" strokeWidth={1.5} />;
+    }
+
     return {
       id: f.id || 'feature',
-      icon: <IconComponent className="w-8 h-8" strokeWidth={1.5} />,
+      icon: iconNode,
       title: f.title || { en: '', bn: '' },
       description: f.description || { en: '', bn: '' },
       bullets: f.bullets || { en: [], bn: [] },
@@ -72,7 +89,7 @@ export function FeatureMockup({ featureId, language, iconColor, color }: { featu
   if (featureId === 'whatsapp_api') return (
     <div className="space-y-2 text-xs">
       <div className="flex items-center gap-2 p-2 bg-[#075E54]/10 border border-[#075E54]/20 rounded-lg">
-        <span className="text-[#25D366] font-bold text-[14px]">💬</span>
+        <WhatsAppBadgeIcon className="w-6 h-6" />
         <div className="flex-1">
           <div className="font-bold text-[#25D366]">WhatsApp Cloud API</div>
           <div className="text-[10px] text-zinc-400">{language === 'en' ? 'Official Meta Integration' : 'অফিসিয়াল মেটা ইন্টিগ্রেশন'}</div>
@@ -95,7 +112,7 @@ export function FeatureMockup({ featureId, language, iconColor, color }: { featu
   if (featureId === 'messenger_api') return (
     <div className="space-y-2 text-xs">
       <div className="flex items-center gap-2 p-2 bg-[#0084FF]/10 border border-[#0084FF]/20 rounded-lg">
-        <span className="text-[#0084FF] font-bold text-[14px]">🔵</span>
+        <MessengerBadgeIcon className="w-6 h-6" />
         <div className="flex-1">
           <div className="font-bold text-[#0084FF]">Meta Messenger</div>
           <div className="text-[10px] text-zinc-400">{language === 'en' ? 'Direct Page Connection' : 'সরাসরি পেজ কানেকশন'}</div>
@@ -103,7 +120,7 @@ export function FeatureMockup({ featureId, language, iconColor, color }: { featu
       </div>
       <div className="p-2.5 bg-surface rounded-lg border border-surface-hover space-y-1">
         <div className="flex items-center gap-2">
-          <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-[10px] text-white">M</div>
+          <MessengerBadgeIcon className="w-5 h-5" />
           <span className="font-medium text-zinc-300">StyleHub Page</span>
         </div>
         <p className="text-[10px] text-zinc-500 mt-1">
@@ -116,7 +133,7 @@ export function FeatureMockup({ featureId, language, iconColor, color }: { featu
   if (featureId === 'instagram_api') return (
     <div className="space-y-2 text-xs">
       <div className="flex items-center gap-2 p-2 bg-gradient-to-tr from-yellow-500/10 via-pink-500/10 to-purple-500/10 border border-pink-500/20 rounded-lg">
-        <span className="text-pink-500 font-bold text-[14px]">📸</span>
+        <InstagramBadgeIcon className="w-6 h-6" />
         <div className="flex-1">
           <div className="font-bold text-pink-500">Instagram DM</div>
           <div className="text-[10px] text-zinc-400">{language === 'en' ? 'Direct Messages & Story Replies' : 'ডাইরেক্ট মেসেজ ও স্টোরি রিপ্লাই'}</div>
@@ -124,7 +141,7 @@ export function FeatureMockup({ featureId, language, iconColor, color }: { featu
       </div>
       <div className="p-2.5 bg-surface rounded-lg border border-surface-hover space-y-1">
         <div className="flex items-center gap-2">
-          <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-yellow-500 to-purple-500 flex items-center justify-center text-[9px] text-white">IG</div>
+          <InstagramBadgeIcon className="w-5 h-5" />
           <span className="font-medium text-zinc-300">@stylehub.official</span>
         </div>
         <p className="text-[10px] text-zinc-500 mt-1">
@@ -137,7 +154,7 @@ export function FeatureMockup({ featureId, language, iconColor, color }: { featu
   if (featureId === 'website_widget') return (
     <div className="space-y-2 text-xs">
       <div className="flex items-center gap-2 p-2 bg-primary/10 border border-primary/20 rounded-lg">
-        <span className="text-primary font-bold text-[14px]">🌐</span>
+        <WebChatBadgeIcon className="w-6 h-6" />
         <div className="flex-1">
           <div className="font-bold text-primary">Website Chat Widget</div>
           <div className="text-[10px] text-zinc-400">{language === 'en' ? 'Live Chat on Your Website' : 'আপনার ওয়েবসাইটে লাইভ চ্যাট'}</div>
