@@ -29,10 +29,10 @@ const FEATURE_MAP: Record<string, { en: string; bn: string; icon: any }> = {
   'inbox_smart_tabs':                { en: 'Smart Inbox Tabs',                     bn: 'স্মার্ট ইনবক্স ট্যাবস',           icon: BarChart2 },
   'inbox_notes':                     { en: 'Inbox Contact Notes',                  bn: 'ইনবক্স কন্টাক্ট নোটস',           icon: Tag },
   'inbox_ai_summary':                { en: 'AI Conversation Summary',              bn: 'এআই কথোপকথন সামারি',            icon: Bot },
-  'inbox_activity_timeline':         { en: 'Activity Timeline',                    bn: 'অ্যাক্টিভিটি টাইমলাইন',          icon: BarChart2 },
+
   'inbox_shared_files':              { en: 'Shared Files Gallery',                 bn: 'শেয়ার্ড ফাইলস গ্যালারি',         icon: HardDrive },
   'inbox_multi_agent_collaborators': { en: 'Multi-Agent Collaborators',            bn: 'মাল্টি-এজেন্ট কোলাবোরেটরস',       icon: Users },
-  'inbox_multi_ai_assistant_picker': { en: 'Multiple AI Assistant Picker',          bn: 'মাল্টিপল এআই অ্যাসিস্ট্যান্ট পিকার', icon: Bot },
+
   'agent_presence':                  { en: 'Agent Presence Status',                bn: 'এজেন্ট প্র্রেজেন্স স্ট্যাটাস',     icon: Users },
   'ai_tool_order_placement':         { en: 'AI Tool: Auto Order Placement',        bn: 'এআই টুল: অটো অর্ডার প্লেসমেন্ট',   icon: Zap },
   'ai_tool_image_reading':           { en: 'AI Tool: Image Reading',               bn: 'এআই টুল: ইমেজ রিডিং',             icon: Zap },

@@ -700,10 +700,10 @@ export default function TenantsPage() {
                       { id: 'inbox_smart_tabs', label: 'Smart Inbox Tabs' },
                       { id: 'inbox_notes', label: 'Inbox Contact Notes' },
                       { id: 'inbox_ai_summary', label: 'AI Conversation Summary' },
-                      { id: 'inbox_activity_timeline', label: 'Activity Timeline' },
+
                       { id: 'inbox_shared_files', label: 'Shared Files Gallery' },
                       { id: 'inbox_multi_agent_collaborators', label: 'Multi-Agent Collaborators' },
-                      { id: 'inbox_multi_ai_assistant_picker', label: 'Multiple AI Assistant Picker' },
+
                       { id: 'agent_presence', label: 'Agent Presence Status' },
                       { id: 'facebook_comment_automation', label: 'Facebook Comment Automation' },
                       { id: 'ai_tool_order_placement', label: 'AI Tool: Auto Order Placement' },

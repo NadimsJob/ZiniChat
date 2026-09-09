@@ -581,10 +581,10 @@ export default function PackagesPage() {
                     { id: 'inbox_smart_tabs', label: 'Smart Inbox Tabs', labelBn: 'স্মার্ট ইনবক্স ট্যাব' },
                     { id: 'inbox_notes', label: 'Inbox Contact Notes', labelBn: 'ইনবক্স কন্টাক্ট নোটস' },
                     { id: 'inbox_ai_summary', label: 'AI Conversation Summary', labelBn: 'এআই কনভারসেশন সামারি' },
-                    { id: 'inbox_activity_timeline', label: 'Activity Timeline', labelBn: 'অ্যাক্টিভিটি টাইমলাইন' },
+
                     { id: 'inbox_shared_files', label: 'Shared Files Gallery', labelBn: 'শেয়ারড ফাইল গ্যালারি' },
                     { id: 'inbox_multi_agent_collaborators', label: 'Multi-Agent Collaborators', labelBn: 'মাল্টি-এজেন্ট কোলাবরেটর' },
-                    { id: 'inbox_multi_ai_assistant_picker', label: 'Multiple AI Assistant Picker', labelBn: 'মাল্টিপল এআই অ্যাসিস্ট্যান্ট পিকার' },
+
                     { id: 'agent_presence', label: 'Agent Presence Status', labelBn: 'এজেন্ট প্রেজেন্স স্ট্যাটাস' },
                     { id: 'facebook_comment_automation', label: 'Facebook Comment Automation', labelBn: 'ফেসবুক কমেন্ট অটোমেশন' },
                     { id: 'ai_tool_order_placement', label: 'AI Tool: Auto Order Placement', labelBn: 'এআই টুল: অটো অর্ডার প্লেসমেন্ট' },
