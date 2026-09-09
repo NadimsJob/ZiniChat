@@ -191,14 +191,26 @@ export class MessengerAuthService {
         }
       }
 
-      // Path C: /me?fields=accounts{id,name,access_token,tasks,category} (Nested Graph API query)
-      if (rawPagesList.length === 0) {
-        const meRes = await fetch(`https://graph.facebook.com/v21.0/me?fields=id,name,accounts{id,name,access_token,tasks,category}&access_token=${accessToken}`);
-        const meData = await meRes.json();
-        if (meData.accounts?.data && Array.isArray(meData.accounts.data) && meData.accounts.data.length > 0) {
-          rawPagesList = meData.accounts.data;
-          this.logger.log(`Path C (/me nested accounts) returned ${rawPagesList.length} pages`);
+      // Path D: /me/businesses (Fetch pages linked via Meta Business Manager / Portfolios)
+      try {
+        const bizRes = await fetch(`https://graph.facebook.com/v21.0/me/businesses?fields=id,name,owned_pages{id,name,access_token,tasks,category},client_pages{id,name,access_token,tasks,category}&access_token=${accessToken}`);
+        const bizData = await bizRes.json();
+        if (bizData.data && Array.isArray(bizData.data)) {
+          for (const biz of bizData.data) {
+            const pagesInBiz = [
+              ...(biz.owned_pages?.data || []),
+              ...(biz.client_pages?.data || [])
+            ];
+            for (const p of pagesInBiz) {
+              if (p.id && !rawPagesList.some(existing => existing.id === p.id)) {
+                rawPagesList.push(p);
+              }
+            }
+          }
+          this.logger.log(`Path D (/me/businesses) merged pages total: ${rawPagesList.length}`);
         }
+      } catch (bizErr: any) {
+        this.logger.warn(`Path D /me/businesses failed: ${bizErr.message}`);
       }
 
       this.logger.log(`Meta total pages found: ${rawPagesList.length} for tenant ${tenantId}`);
