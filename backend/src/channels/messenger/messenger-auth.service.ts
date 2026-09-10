@@ -236,9 +236,18 @@ export class MessengerAuthService {
             let pageRes = await fetch(`https://graph.facebook.com/v21.0/${targetId}?fields=id,name,access_token,category&access_token=${finalToken}`);
             let pageData = await pageRes.json();
             
-            if (!pageData.id || !pageData.name) {
+            if (pageData.error || !pageData.id) {
               pageRes = await fetch(`https://graph.facebook.com/v21.0/${targetId}?fields=id,name,access_token,category&access_token=${accessToken}`);
               pageData = await pageRes.json();
+            }
+
+            if (pageData.error || !pageData.id) {
+              // Minimal field fallback (id, name) if access_token field is blocked by Meta missing scope
+              pageRes = await fetch(`https://graph.facebook.com/v21.0/${targetId}?fields=id,name&access_token=${finalToken || accessToken}`);
+              const minData = await pageRes.json();
+              if (minData.id && minData.name) {
+                pageData = { id: minData.id, name: minData.name, access_token: finalToken || accessToken };
+              }
             }
 
             if (pageData.id && pageData.name) {
