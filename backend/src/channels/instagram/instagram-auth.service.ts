@@ -296,28 +296,67 @@ export class InstagramAuthService {
 
       for (const page of pagesData.data) {
         const pageToken = page.access_token;
-        const igRes = await fetch(`https://graph.facebook.com/v21.0/${page.id}?fields=instagram_business_account&access_token=${pageToken}`);
-        const igData = await igRes.json();
+        this.logger.log(`Inspecting Facebook Page "${page.name}" (${page.id}) for linked Instagram Business Account...`);
 
-        if (igData.instagram_business_account) {
+        let igData: any = null;
+
+        // Check if page object already has instagram_business_account
+        if (page.instagram_business_account) {
+          igData = { instagram_business_account: page.instagram_business_account };
+        }
+
+        // Try 1: Fetch using pageToken
+        if (!igData?.instagram_business_account && pageToken) {
+          try {
+            const igRes = await fetch(`https://graph.facebook.com/v21.0/${page.id}?fields=instagram_business_account{id,username,name}&access_token=${pageToken}`);
+            igData = await igRes.json();
+            this.logger.log(`Page ${page.id} IG lookup with pageToken result: ${JSON.stringify(igData)}`);
+          } catch (err: any) {
+            this.logger.warn(`Page ${page.id} IG lookup with pageToken failed: ${err.message}`);
+          }
+        }
+
+        // Try 2: Fetch using userToken (accessToken / finalToken) if pageToken lookup failed or returned no IG account
+        if (!igData?.instagram_business_account && (accessToken || finalToken)) {
+          const userTok = finalToken || accessToken;
+          try {
+            const igRes = await fetch(`https://graph.facebook.com/v21.0/${page.id}?fields=instagram_business_account{id,username,name}&access_token=${userTok}`);
+            igData = await igRes.json();
+            this.logger.log(`Page ${page.id} IG lookup with userToken result: ${JSON.stringify(igData)}`);
+          } catch (err: any) {
+            this.logger.warn(`Page ${page.id} IG lookup with userToken failed: ${err.message}`);
+          }
+        }
+
+        if (igData?.instagram_business_account?.id) {
           const igId = igData.instagram_business_account.id;
+          let username = igData.instagram_business_account.username || igData.instagram_business_account.name;
 
-          // Get the IG account username
-          const igUserRes = await fetch(`https://graph.facebook.com/v21.0/${igId}?fields=username,name&access_token=${pageToken}`);
-          const igUserData = await igUserRes.json();
-          const username = igUserData.username || igUserData.name || `ig_${igId}`;
+          if (!username) {
+            try {
+              const igUserRes = await fetch(`https://graph.facebook.com/v21.0/${igId}?fields=username,name&access_token=${pageToken || finalToken || accessToken}`);
+              const igUserData = await igUserRes.json();
+              username = igUserData.username || igUserData.name;
+            } catch (uErr: any) {
+              this.logger.warn(`Failed to fetch IG username for ${igId}: ${uErr.message}`);
+            }
+          }
+          username = username || `ig_${igId}`;
 
           // Skip already-connected accounts
           const alreadyConnected = await this.prisma.channelConnection.findFirst({
             where: { tenantId, channelType: 'instagram', externalAccountId: igId }
           });
-          if (alreadyConnected) continue;
+          if (alreadyConnected) {
+            this.logger.log(`IG account @${username} (${igId}) is already connected for tenant ${tenantId}`);
+            continue;
+          }
 
           igAccounts.push({
             igId,
             username,
             pageId: page.id,
-            pageToken,
+            pageToken: pageToken || finalToken || accessToken,
             pageName: page.name,
           });
         }
