@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 import { useLanguage } from '@/components/LanguageProvider';
-import { Loader2, Building, User, MapPin, Phone, Users, Briefcase, Lock, ChevronDown, Globe } from 'lucide-react';
+import { Loader2, Building, User, MapPin, Phone, Users, Briefcase, Lock, ChevronDown, Globe, Eye, EyeOff } from 'lucide-react';
 import { COUNTRIES, DEFAULT_COUNTRY, CountryInfo } from '@/lib/countryData';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -19,6 +19,7 @@ export default function OnboardingPage() {
 
   const [businessNatures, setBusinessNatures] = useState<any[]>([]);
   const [needsPassword, setNeedsPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const [selectedCountry, setSelectedCountry] = useState<CountryInfo | null>(null);
   const [countryOpen, setCountryOpen] = useState(false);
@@ -362,14 +363,21 @@ export default function OnboardingPage() {
                     <Lock className="w-4 h-4 text-slate-400" />
                   </div>
                   <input
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     required={needsPassword}
                     minLength={6}
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="w-full bg-muted/30 border border-border rounded-xl pl-9 pr-3 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 transition-all text-foreground"
+                    className="w-full bg-muted/30 border border-border rounded-xl pl-9 pr-10 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 transition-all text-foreground"
                     placeholder="••••••••"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
                 <p className="text-[11px] text-slate-500 mt-1">
                   {language === 'en'
