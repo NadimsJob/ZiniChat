@@ -39,6 +39,7 @@ A multi-tenant SaaS platform enabling businesses (tenants) to manage customer co
 
 | Date | Feature / Task Summary | Key Files Modified | Details & Outcome |
 | :--- | :--- | :--- | :--- |
+| **2026-09-11** | **Meta Access Verification Approved (Tech Provider Verified) & Facebook Login Operational** | Meta Portal (`165766951997356`), `project-context.md` | Meta Access Verification form officially approved and status marked as **Verified** for Tech Provider under Business Portfolio `3833563216908598`. Facebook Login & Meta OAuth (WhatsApp / Messenger / Instagram DM) confirmed 100% operational live without restrictions. |
 | **2026-09-10** | **Meta Developer Console Setup & Tech Provider Access Verification Matrix** | Meta Portal (`165766951997356`), `project-context.md` | Configured Valid OAuth Redirect URIs (`whatsapp`, `instagram`), Allowed JS SDK Domains (`https://zinichat.com/`), and submitted Access Verification (Tech Provider) form under Business Portfolio `3833563216908598`. Fully documented in context. |
 | **2026-09-10** | **Deprecated Meta `instagram_basic` Scope Cleanup & Live Deployment** | `ConnectFacebookInstagramButton.tsx`, `project-context.md` | Removed deprecated `instagram_basic` parameter from frontend Facebook Login OAuth scope string in `ConnectFacebookInstagramButton.tsx` (Graph API v19+ merged it into approved `instagram_manage_messages`). Tested, committed (`3a67a64`), and deployed live to production. |
 | **2026-09-10** | **Meta OAuth Granular Scope Minimal Fields Fallback & Live Deployment** | `messenger-auth.service.ts`, `instagram-auth.service.ts`, `project-context.md` | Added minimal field fallback (`fields=id,name`) in Path E of Messenger & Instagram auth services to recover granular target pages/accounts when Meta restricts `pages_read_engagement` scope. Tested, committed (`d028689`), and deployed live to production. |
@@ -156,9 +157,9 @@ This section documents the exact state of Meta Developer Apps, Business Portfoli
   * *Note*: Deprecated `instagram_basic` scope removed from frontend (`ConnectFacebookInstagramButton.tsx`) as Graph API v19+ merged it into `instagram_manage_messages`.
 
 * **Access Verification (Tech Provider)**:
-  * **Status**: Form Submitted & **In Review** (Submission deadline: 11/9/2026).
-  * **Business Role**: Tech Provider / SaaS Platform providing automated omnichannel messaging & AI live inbox service for client businesses.
-  * **Scope & Impact**: App Admins, Developers, and Testers connect immediately with 100% permissions. Non-tester public accounts will get un-restricted data access upon Meta approval (1-3 days SLA).
+  * **Status**: **VERIFIED / APPROVED** (Verified on Sep 11, 2026).
+  * **Business Role**: Verified Tech Provider / SaaS Platform providing automated omnichannel messaging & AI live inbox service for client businesses.
+  * **Scope & Impact**: All public accounts (non-testers included) can connect Facebook Pages, Instagram Accounts, and WhatsApp Cloud API seamlessly with 100% un-restricted access via Facebook Login.
 
 * **Backend Resiliency Guard (Path E Fallback)**:
   * Catch Meta `#100 missing pages_read_engagement` error when tokens are restricted, execute minimal query (`fields=id,name`), and assign `access_token = userToken` to recover target pages/accounts (`messenger-auth.service.ts` & `instagram-auth.service.ts`).
