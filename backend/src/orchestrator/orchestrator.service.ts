@@ -1548,6 +1548,36 @@ export class OrchestratorService {
         'inbox'
       ).catch(() => {});
 
+      // 6. Create Order record for /dashboard/orders (Demo Requests)
+      const proposalItems: any[] = [];
+      if (interestedSoftwareName) {
+        const matchedProduct = await this.prisma.product.findFirst({
+          where: {
+            tenantId,
+            isActive: true,
+            OR: [
+              { name: { contains: interestedSoftwareName, mode: 'insensitive' } },
+              { description: { contains: interestedSoftwareName, mode: 'insensitive' } }
+            ]
+          }
+        });
+        if (matchedProduct) {
+          proposalItems.push({
+            productId: matchedProduct.id,
+            quantity: 1,
+            priceAtTime: Number(matchedProduct.price)
+          });
+        }
+      }
+
+      await this.ordersService.createOrder(tenantId, {
+        contactId,
+        conversationId,
+        items: proposalItems,
+        notes: `[AI Demo Request] ${interestedSoftwareName ? 'Software/Plan: ' + interestedSoftwareName + ' | ' : ''}Customer message: "${userText.slice(0, 300)}"`,
+        createdBy: 'ai'
+      }).catch((e: any) => this.logger.error(`Failed to create order for demo request: ${e.message}`));
+
       this.logger.log(`Software demo request recorded for contact ${contactId}, software: ${interestedSoftwareName || 'N/A'}`);
     } catch (err: any) {
       this.logger.error(`handleDemoRequest failed: ${err.message}`);

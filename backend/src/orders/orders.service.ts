@@ -25,47 +25,45 @@ export class OrdersService {
   }
 
   async createOrder(tenantId: string, data: any) {
-    const { contactId, conversationId, items, notes } = data;
+    const { contactId, conversationId, items, notes, createdBy } = data;
 
-    if (!Array.isArray(items) || items.length === 0) {
-      throw new BadRequestException('Order items must be a non-empty array');
-    }
+    const validatedItems: any[] = [];
+    let totalAmount = 0;
 
     const order = await this.prisma.$transaction(async (tx) => {
-      let totalAmount = 0;
-      const validatedItems = [];
-
-      for (const item of items) {
-        // Enforce tenant scoping and active product check
-        const product = await tx.product.findFirst({
-          where: { id: item.productId, tenantId, isActive: true }
-        });
-
-        if (!product) {
-          throw new NotFoundException(`Product ${item.productId} not found or inactive for this workspace`);
-        }
-
-        const quantity = Number(item.quantity) || 1;
-        // Allow custom manual unit price if provided by merchant, otherwise fallback to DB product price
-        const priceAtTime = (item.priceAtTime !== undefined && item.priceAtTime !== null && !isNaN(Number(item.priceAtTime)))
-          ? Number(item.priceAtTime)
-          : Number(product.price);
-        totalAmount += priceAtTime * quantity;
-
-        validatedItems.push({
-          productId: product.id,
-          quantity,
-          priceAtTime
-        });
-
-        if (product.trackInventory) {
-          if (product.stockCount < quantity) {
-            throw new BadRequestException(`Insufficient stock for product: ${product.name}`);
-          }
-          await tx.product.update({
-            where: { id: product.id },
-            data: { stockCount: { decrement: quantity } }
+      if (Array.isArray(items) && items.length > 0) {
+        for (const item of items) {
+          // Enforce tenant scoping and active product check
+          const product = await tx.product.findFirst({
+            where: { id: item.productId, tenantId, isActive: true }
           });
+
+          if (!product) {
+            throw new NotFoundException(`Product ${item.productId} not found or inactive for this workspace`);
+          }
+
+          const quantity = Number(item.quantity) || 1;
+          // Allow custom manual unit price if provided by merchant, otherwise fallback to DB product price
+          const priceAtTime = (item.priceAtTime !== undefined && item.priceAtTime !== null && !isNaN(Number(item.priceAtTime)))
+            ? Number(item.priceAtTime)
+            : Number(product.price);
+          totalAmount += priceAtTime * quantity;
+
+          validatedItems.push({
+            productId: product.id,
+            quantity,
+            priceAtTime
+          });
+
+          if (product.trackInventory) {
+            if (product.stockCount < quantity) {
+              throw new BadRequestException(`Insufficient stock for product: ${product.name}`);
+            }
+            await tx.product.update({
+              where: { id: product.id },
+              data: { stockCount: { decrement: quantity } }
+            });
+          }
         }
       }
 
@@ -76,6 +74,7 @@ export class OrdersService {
           conversationId,
           totalAmount,
           notes,
+          createdBy: createdBy || 'agent',
           status: 'pending',
           items: {
             create: validatedItems
