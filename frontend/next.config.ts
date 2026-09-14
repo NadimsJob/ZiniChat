@@ -1,5 +1,7 @@
 import type { NextConfig } from "next";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
 const nextConfig: NextConfig = {
   output: 'standalone',
   compress: true,
@@ -7,6 +9,17 @@ const nextConfig: NextConfig = {
   images: {
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 86400,
+  },
+  async rewrites() {
+    return [
+      {
+        // Proxy all /api/uploads/* requests to the NestJS backend static file server
+        // This allows uploaded files (QR images, avatars, logos, etc.) to be served
+        // via the frontend domain without CORS issues
+        source: '/api/uploads/:path*',
+        destination: `${API_URL}/uploads/:path*`,
+      },
+    ];
   },
   async headers() {
     return [

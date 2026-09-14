@@ -30,11 +30,14 @@ const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 const getQrImageUrl = (url?: string | null) => {
   if (!url) return '';
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  // Already proxied through Next.js /api/uploads/ route (next.config.ts rewrite)
   if (url.startsWith('/api/uploads/')) return url;
-  if (url.startsWith('/uploads/')) return `/api${url}`;
+  // Backend-relative path like /uploads/mfs/... → serve directly from backend API domain
+  if (url.startsWith('/uploads/')) return `${API}/uploads/${url.replace(/^\/uploads\//, '')}`;
   const clean = url.startsWith('/') ? url : `/${url}`;
-  return `/api/uploads${clean.replace(/^\/uploads\/?/, '/')}`;
+  return `${API}/uploads${clean.replace(/^\/uploads\/?/, '/')}`;
 };
+
 
 function PayMfsContent() {
  const searchParams = useSearchParams();
