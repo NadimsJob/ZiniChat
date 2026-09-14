@@ -92,7 +92,7 @@ export function FeatureMockup({ featureId, language, iconColor, color }: { featu
         <WhatsAppBadgeIcon className="w-6 h-6" />
         <div className="flex-1">
           <div className="font-bold text-[#25D366]">WhatsApp Cloud API</div>
-          <div className="text-[10px] text-zinc-400">{language === 'en' ? 'Official Meta Integration' : 'অফিসিয়াল মেটা ইন্টিগ্রেশন'}</div>
+          <div className="text-[10px] text-zinc-400">{language === 'en' ? 'Official Meta Tech Provider' : 'মেটা অফিশিয়াল টেক প্রোভাইডার'}</div>
         </div>
       </div>
       <div className="p-2.5 bg-surface rounded-lg border border-surface-hover space-y-1.5">

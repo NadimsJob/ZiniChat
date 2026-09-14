@@ -32,7 +32,7 @@ export default function SuccessStoriesContent() {
             </div>
             <div className="inline-flex items-center gap-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1 text-xs font-bold text-blue-500 dark:text-blue-400 sm:text-sm shadow-sm backdrop-blur-md">
               <ShieldCheck className="w-4 h-4 text-blue-500" />
-              {language === 'en' ? 'Officially Meta Integrated Platform' : 'মেটা অফিশিয়ালি ইন্টিগ্রেটেড প্ল্যাটফর্ম'}
+              {language === 'en' ? 'Official Meta Tech Provider' : 'মেটা অফিশিয়াল টেক প্রোভাইডার'}
             </div>
           </div>
 
