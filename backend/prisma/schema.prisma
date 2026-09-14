@@ -735,6 +735,12 @@ model WebsiteWidget {
   tagline         String   @default("We are here to help you.")
   greetingEnabled Boolean  @default(false)
   whatsappInboxId String?  @db.Uuid // for WHATSAPP type only
+  whatsappNumber  String?  // WhatsApp phone number for direct wa.me link
+  prefilledText   String?  // prefilled text message for WhatsApp
+  customIconUrl   String?  // custom icon uploaded by tenant
+  position        String   @default("bottom-right") // bottom-right | bottom-left
+  tooltipTextEn   String?  @default("Chat with us on WhatsApp")
+  tooltipTextBn   String?  @default("হোয়াটসঅ্যাপে চ্যাট করুন")
   isActive             Boolean  @default(true)
   isAiAutoReplyEnabled Boolean  @default(true)
   createdAt            DateTime @default(now())
@@ -835,7 +841,6 @@ model LandingPageConfig {
   termsConditionsJson Json? // Terms and Conditions contents {en, bn}
   dataDeletionJson    Json? // Data Deletion instructions {en, bn}
   socialLinksJson     Json? // Social media links and toggles
-  whatsappWidgetJson  Json? // WhatsApp floating widget config
   updatedAt           DateTime @updatedAt
 
   @@map("landing_page_config")

@@ -15,6 +15,12 @@ export interface CreateWidgetDto {
   tagline?: string;
   greetingEnabled?: boolean;
   whatsappInboxId?: string;
+  whatsappNumber?: string;
+  prefilledText?: string;
+  customIconUrl?: string | null;
+  position?: 'bottom-right' | 'bottom-left';
+  tooltipTextEn?: string;
+  tooltipTextBn?: string;
 }
 
 @Injectable()
@@ -67,26 +73,33 @@ export class WebsiteWidgetService {
       );
     }
 
-    // Validate WHATSAPP type requires a connected inbox
+    let resolvedPhoneNumber = dto.whatsappNumber;
+
+    // Validate WHATSAPP type requires a connected inbox or explicit phone number
     if (dto.type === 'WHATSAPP') {
-      if (!dto.whatsappInboxId) {
+      if (!dto.whatsappInboxId && !dto.whatsappNumber) {
         throw new BadRequestException(
-          'A connected WhatsApp inbox ID is required for WhatsApp website widget.',
+          'A connected WhatsApp inbox ID or phone number is required. WhatsApp inbox ID is required for WhatsApp website widget.',
         );
       }
-      // Verify the inbox belongs to this tenant and is active
-      const inbox = await this.prisma.channelConnection.findFirst({
-        where: {
-          id: dto.whatsappInboxId,
-          tenantId,
-          channelType: 'whatsapp',
-          status: { in: ['active', 'connected'] },
-        },
-      });
-      if (!inbox) {
-        throw new NotFoundException(
-          'No active WhatsApp inbox found with that ID for this tenant.',
-        );
+
+      if (dto.whatsappInboxId) {
+        const inbox = await this.prisma.channelConnection.findFirst({
+          where: {
+            id: dto.whatsappInboxId,
+            tenantId,
+            channelType: 'whatsapp',
+            status: { in: ['active', 'connected'] },
+          },
+        });
+        if (!inbox) {
+          throw new NotFoundException(
+            'No active WhatsApp inbox found with that ID for this tenant.',
+          );
+        }
+        if (inbox.phoneNumber) {
+          resolvedPhoneNumber = resolvedPhoneNumber || inbox.phoneNumber;
+        }
       }
     }
 
@@ -101,6 +114,12 @@ export class WebsiteWidgetService {
         tagline: dto.tagline ?? 'We are here to help you.',
         greetingEnabled: dto.greetingEnabled ?? false,
         whatsappInboxId: dto.whatsappInboxId ?? null,
+        whatsappNumber: resolvedPhoneNumber ?? null,
+        prefilledText: dto.prefilledText ?? null,
+        customIconUrl: dto.customIconUrl ?? null,
+        position: dto.position ?? 'bottom-right',
+        tooltipTextEn: dto.tooltipTextEn ?? 'Chat with us on WhatsApp',
+        tooltipTextBn: dto.tooltipTextBn ?? 'হোয়াটসঅ্যাপে চ্যাট করুন',
       },
     });
   }
@@ -127,6 +146,12 @@ export class WebsiteWidgetService {
         tagline: true,
         greetingEnabled: true,
         whatsappInboxId: true,
+        whatsappNumber: true,
+        prefilledText: true,
+        customIconUrl: true,
+        position: true,
+        tooltipTextEn: true,
+        tooltipTextBn: true,
         isActive: true,
         tenant: {
           select: {
@@ -142,7 +167,22 @@ export class WebsiteWidgetService {
       throw new NotFoundException('Widget not found or inactive.');
     }
 
-    return widget;
+    // If WHATSAPP type and whatsappNumber missing on widget, resolve from linked inbox
+    let phoneNumber = widget.whatsappNumber;
+    if (widget.type === 'WHATSAPP' && !phoneNumber && widget.whatsappInboxId) {
+      const inbox = await this.prisma.channelConnection.findUnique({
+        where: { id: widget.whatsappInboxId },
+        select: { phoneNumber: true },
+      });
+      if (inbox?.phoneNumber) {
+        phoneNumber = inbox.phoneNumber;
+      }
+    }
+
+    return {
+      ...widget,
+      whatsappNumber: phoneNumber,
+    };
   }
 
   // ─── Delete Widget ───────────────────────────────────────────────────────────
@@ -171,6 +211,21 @@ export class WebsiteWidgetService {
       throw new NotFoundException('Widget not found or inactive.');
     }
 
+    let resolvedPhoneNumber = dto.whatsappNumber !== undefined ? dto.whatsappNumber : widget.whatsappNumber;
+
+    if (dto.whatsappInboxId && dto.whatsappInboxId !== widget.whatsappInboxId) {
+      const inbox = await this.prisma.channelConnection.findFirst({
+        where: {
+          id: dto.whatsappInboxId,
+          tenantId,
+          channelType: 'whatsapp',
+        },
+      });
+      if (inbox?.phoneNumber) {
+        resolvedPhoneNumber = resolvedPhoneNumber || inbox.phoneNumber;
+      }
+    }
+
     return this.prisma.websiteWidget.update({
       where: { id: widgetId },
       data: {
@@ -180,6 +235,13 @@ export class WebsiteWidgetService {
         heading: dto.heading ?? widget.heading,
         tagline: dto.tagline ?? widget.tagline,
         greetingEnabled: dto.greetingEnabled !== undefined ? dto.greetingEnabled : widget.greetingEnabled,
+        whatsappInboxId: dto.whatsappInboxId !== undefined ? dto.whatsappInboxId : widget.whatsappInboxId,
+        whatsappNumber: resolvedPhoneNumber,
+        prefilledText: dto.prefilledText !== undefined ? dto.prefilledText : widget.prefilledText,
+        customIconUrl: dto.customIconUrl !== undefined ? dto.customIconUrl : widget.customIconUrl,
+        position: dto.position ?? widget.position,
+        tooltipTextEn: dto.tooltipTextEn ?? widget.tooltipTextEn,
+        tooltipTextBn: dto.tooltipTextBn ?? widget.tooltipTextBn,
       },
     });
   }

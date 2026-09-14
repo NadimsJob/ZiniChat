@@ -233,7 +233,6 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
         { name: language === 'en' ? 'Facebook Login' : 'ফেসবুক লগইন সেটিংস', icon: Globe, href: '/sp@dmin/settings/facebook-auth', show: hasPermission('view:settings') },
         { name: language === 'en' ? 'Meta Pixel & CAPI' : 'মেটা পিক্সেল ও CAPI', icon: Activity, href: '/sp@dmin/settings/meta-pixel', show: hasPermission('view:settings') },
         { name: language === 'en' ? 'Google Analytics' : 'গুগল অ্যানালিটিক্স', icon: BarChart3, href: '/sp@dmin/settings/google-analytics', show: hasPermission('view:settings') },
-        { name: language === 'en' ? 'WhatsApp Widget' : 'হোয়াটসঅ্যাপ উইজেট', icon: MessageSquare, href: '/sp@dmin/settings/whatsapp-widget', show: hasPermission('view:settings') },
       ].filter(sub => sub.show)
     }
   ];

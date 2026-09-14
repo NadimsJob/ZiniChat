@@ -86,7 +86,6 @@ import { MetaPixelProvider } from '@/context/MetaPixelContext';
 import { GoogleAnalyticsProvider } from '@/context/GoogleAnalyticsContext';
 import { ToastProvider } from '@/components/ToastProvider';
 import ServiceWorkerRegister from '@/components/ServiceWorkerRegister';
-import WhatsAppFloatButton from '@/components/WhatsAppFloatButton';
 
 
 export default function RootLayout({
@@ -105,7 +104,6 @@ export default function RootLayout({
                   <ToastProvider />
                   <ServiceWorkerRegister />
                   {children}
-                  <WhatsAppFloatButton />
                 </GoogleAnalyticsProvider>
               </MetaPixelProvider>
             </CurrencyProvider>

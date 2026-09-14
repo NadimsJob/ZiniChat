@@ -455,24 +455,7 @@ export class LandingPageService {
         });
       }
     }
-
-    const defaultWhatsappWidget = {
-      enabled: true,
-      phoneNumber: '8801533894967',
-      buttonColor: '#1F824A',
-      customIconUrl: null,
-      prefilledText: '',
-      position: 'bottom-right',
-      tooltipTextEn: 'Chat with us on WhatsApp',
-      tooltipTextBn: 'হোয়াটসঅ্যাপে চ্যাট করুন'
-    };
-
-    const whatsappWidgetJson = (config as any).whatsappWidgetJson || defaultWhatsappWidget;
-
-    return {
-      ...config,
-      whatsappWidgetJson
-    };
+    return config;
   }
 
   async updateConfig(data: any) {
