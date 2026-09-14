@@ -86,7 +86,7 @@ import { MetaPixelProvider } from '@/context/MetaPixelContext';
 import { GoogleAnalyticsProvider } from '@/context/GoogleAnalyticsContext';
 import { ToastProvider } from '@/components/ToastProvider';
 import ServiceWorkerRegister from '@/components/ServiceWorkerRegister';
-import Script from 'next/script';
+import WhatsAppFloatButton from '@/components/WhatsAppFloatButton';
 
 
 export default function RootLayout({
@@ -105,15 +105,7 @@ export default function RootLayout({
                   <ToastProvider />
                   <ServiceWorkerRegister />
                   {children}
-                  {/* ZiniChat WhatsApp Widget */}
-                  <div id="zc-wa-widget" />
-                  <Script
-                    src="https://api.zinichat.com/widget.js"
-                    data-token="4f2104d6-cfcc-4355-9a88-1e0d82c9e7ec"
-                    data-phone="8801533894967"
-                    data-color="#1F824A"
-                    strategy="afterInteractive"
-                  />
+                  <WhatsAppFloatButton />
                 </GoogleAnalyticsProvider>
               </MetaPixelProvider>
             </CurrencyProvider>

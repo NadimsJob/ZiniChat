@@ -46,7 +46,10 @@ describe('LandingPageService', () => {
       mockPrisma.landingPageConfig.update.mockResolvedValue(mockConfig);
 
       const result = await service.getConfig();
-      expect(result).toEqual(mockConfig);
+      expect(result).toEqual({
+        ...mockConfig,
+        whatsappWidgetJson: expect.any(Object),
+      });
     });
 
     it('should create and return default config if none exists', async () => {

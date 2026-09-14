@@ -835,6 +835,7 @@ model LandingPageConfig {
   termsConditionsJson Json? // Terms and Conditions contents {en, bn}
   dataDeletionJson    Json? // Data Deletion instructions {en, bn}
   socialLinksJson     Json? // Social media links and toggles
+  whatsappWidgetJson  Json? // WhatsApp floating widget config
   updatedAt           DateTime @updatedAt
 
   @@map("landing_page_config")
