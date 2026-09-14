@@ -611,16 +611,36 @@ export class PaymentsService {
     const cycle = activeSub?.billingCycle || 'monthly';
 
     let amountBdt = 0;
+    let isPromoActive = false;
+    let promoMonthsRemaining = 0;
+    let regularPriceBdt = 0;
+
     if (plan) {
       const discountPct = Number(plan.yearlyDiscountPercent) || 0;
       const mBdt = Number(plan.priceMonthlyBdt) || 0;
       const rawYBdt = Number(plan.priceYearlyBdt) || 0;
-      amountBdt = cycle === 'yearly'
+      regularPriceBdt = cycle === 'yearly'
         ? (discountPct > 0 && mBdt > 0 ? Math.round(mBdt * 12 * (1 - discountPct / 100)) : (rawYBdt > 0 ? rawYBdt : mBdt * 12))
-        : Number(plan.priceMonthlyBdt);
+        : cycle === 'weekly'
+        ? Number((plan as any).priceWeeklyBdt || 0)
+        : mBdt;
+
+      amountBdt = regularPriceBdt;
+
+      if (cycle === 'monthly' && plan.promoPriceMonthlyBdt && plan.promoMonths && plan.promoMonths > 0) {
+        const successfulPaymentsCount = await this.prisma.payment.count({
+          where: { tenantId, subscription: { planId: plan.id }, status: 'success' }
+        });
+        if (successfulPaymentsCount < plan.promoMonths) {
+          isPromoActive = true;
+          promoMonthsRemaining = plan.promoMonths - successfulPaymentsCount;
+          amountBdt = Number(plan.promoPriceMonthlyBdt);
+        }
+      }
     } else if (tenant?.customPriceUsd) {
       const customPrice = Number(tenant.customPriceUsd);
       amountBdt = customPrice > 200 ? Math.round(customPrice) : Math.round(customPrice * 120);
+      regularPriceBdt = amountBdt;
     }
 
 
@@ -642,6 +662,11 @@ export class PaymentsService {
       planId: plan?.id || null,
       billingCycle: cycle,
       amountBdt,
+      regularPriceBdt,
+      isPromoActive,
+      promoMonthsRemaining,
+      promoMonthsTotal: plan?.promoMonths || 0,
+      promoPriceMonthlyBdt: plan?.promoPriceMonthlyBdt ? Number(plan.promoPriceMonthlyBdt) : null,
       nextBillDate,
       daysRemaining,
       hasPendingPayment: !!pendingPayment,

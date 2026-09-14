@@ -221,12 +221,31 @@ export default function BillingHistoryPage() {
             {/* Right Upcoming Amount & ALWAYS-ENABLE PAY BUTTON */}
             <div className="bg-surface/80 border border-surface-hover p-5 rounded-2xl text-center md:text-right shrink-0 min-w-[260px] space-y-3">
               <div>
-                <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                  {language === 'en' ? 'Upcoming Bill Amount' : 'আগামী বিলের পরিমাণ'}
+                <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-center md:justify-end gap-1">
+                  <span>{language === 'en' ? 'Upcoming Bill Amount' : 'আগামী বিলের পরিমাণ'}</span>
+                  {upcomingBill.isPromoActive && (
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-primary/20 text-primary border border-primary/30">
+                      {language === 'en' ? 'PROMO' : 'প্রোমো'}
+                    </span>
+                  )}
                 </div>
-                <div className="text-2xl font-black text-emerald-400 mt-0.5">
-                  {formatBdtDirect(upcomingBill.amountBdt)}
+                <div className="flex items-baseline justify-center md:justify-end gap-2 mt-0.5">
+                  <span className="text-2xl font-black text-emerald-400">
+                    {formatBdtDirect(upcomingBill.amountBdt)}
+                  </span>
+                  {upcomingBill.isPromoActive && upcomingBill.regularPriceBdt > upcomingBill.amountBdt && (
+                    <span className="text-xs text-muted-foreground line-through">
+                      {formatBdtDirect(upcomingBill.regularPriceBdt)}
+                    </span>
+                  )}
                 </div>
+                {upcomingBill.isPromoActive && (
+                  <div className="text-[11px] text-primary font-semibold mt-1">
+                    {language === 'en'
+                      ? `Promo active (${upcomingBill.promoMonthsRemaining} mo left)`
+                      : `প্রোমো ডিসকাউন্ট কার্যকর (${upcomingBill.promoMonthsRemaining} মাস বাকি)`}
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">

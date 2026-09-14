@@ -375,11 +375,17 @@ export default function SubscriptionSettingsPage() {
               const baseMonthly = displayCurrency === 'USD' ? mUsd : mBdt;
               const baseYearly = displayCurrency === 'USD' ? yUsd : yBdt;
               const baseWeekly = displayCurrency === 'USD' ? wUsd : wBdt;
+              const promoMonthlyBdt = Number(plan.promoPriceMonthlyBdt) || 0;
+              const promoMonthlyUsd = Math.round((promoMonthlyBdt / (rate || 121)) * 100) / 100;
+              const promoPrice = displayCurrency === 'USD' ? promoMonthlyUsd : promoMonthlyBdt;
+              const hasPromo = billingCycle === 'monthly' && Number(plan.promoMonths) > 0 && promoPrice > 0;
 
               const displayPrice = isWeekly
                 ? baseWeekly
                 : isYearly && baseYearly > 0
                 ? (displayCurrency === 'USD' ? Math.round((baseYearly / 12) * 100) / 100 : Math.round(baseYearly / 12))
+                : hasPromo
+                ? promoPrice
                 : baseMonthly;
 
               let planDiscount = Number(plan.yearlyDiscountPercent) || 0;
@@ -389,10 +395,6 @@ export default function SubscriptionSettingsPage() {
 
               const isActive = activePlanId === plan.id;
               const features = parseFeaturesArray(plan.features);
-
-              // Promo pricing
-              const promoMonthly = billingCycle === 'monthly' && plan.promoPriceMonthlyBdt
-                ? Number(plan.promoPriceMonthlyBdt) : null;
 
               return (
                 <div key={plan.id}
@@ -416,11 +418,20 @@ export default function SubscriptionSettingsPage() {
                     <span className="text-lg font-bold text-primary mt-1">{displayCurrency === 'BDT' ? '৳' : '$'}</span>
                     <span className="text-4xl font-black text-primary leading-none">{formatNumber(displayPrice)}</span>
                     <span className="text-[12px] text-muted-foreground mb-1">/{isWeekly ? (language === 'en' ? 'wk' : 'সপ্তাহ') : (language === 'en' ? 'mo' : 'মাস')}</span>
+                    {hasPromo && (
+                      <span className="text-[12px] text-muted-foreground line-through mb-1 ml-1">
+                        {displayCurrency === 'BDT' ? '৳' : '$'}{formatNumber(baseMonthly)}
+                      </span>
+                    )}
                   </div>
 
-                  {promoMonthly && (
-                    <div className="text-[11px] text-muted-foreground line-through">
-                      ৳{formatNumber(mBdt)}
+                  {hasPromo && (
+                    <div className="mt-2 p-2 bg-primary/10 border border-primary/20 rounded-xl">
+                      <div className="text-[11px] font-bold text-primary">
+                        {language === 'en'
+                          ? `For the first ${plan.promoMonths} months, then ${displayCurrency === 'BDT' ? '৳' : '$'}${formatNumber(baseMonthly)}/mo`
+                          : `প্রথম ${plan.promoMonths} মাসের জন্য, তারপর ${displayCurrency === 'BDT' ? '৳' : '$'}${formatNumber(baseMonthly)}/মাস`}
+                      </div>
                     </div>
                   )}
 
