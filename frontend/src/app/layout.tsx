@@ -88,6 +88,8 @@ import { ToastProvider } from '@/components/ToastProvider';
 import ServiceWorkerRegister from '@/components/ServiceWorkerRegister';
 
 
+import Script from "next/script";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -104,6 +106,11 @@ export default function RootLayout({
                   <ToastProvider />
                   <ServiceWorkerRegister />
                   {children}
+                  <Script
+                    src="https://zinichat.com/wa-widget.js"
+                    data-token="ff0c5def-9c1d-410b-9a5b-a15cb8f90a0c"
+                    strategy="afterInteractive"
+                  />
                 </GoogleAnalyticsProvider>
               </MetaPixelProvider>
             </CurrencyProvider>
