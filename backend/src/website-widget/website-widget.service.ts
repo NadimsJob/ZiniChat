@@ -195,9 +195,8 @@ export class WebsiteWidgetService {
       throw new NotFoundException('Widget not found.');
     }
 
-    return this.prisma.websiteWidget.update({
+    return this.prisma.websiteWidget.delete({
       where: { id: widgetId },
-      data: { isActive: false },
     });
   }
 

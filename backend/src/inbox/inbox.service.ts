@@ -51,7 +51,7 @@ export class InboxService {
     });
 
     const websiteWidgets = await this.prisma.websiteWidget.findMany({
-      where: { tenantId },
+      where: { tenantId, isActive: true },
       select: {
         id: true,
         name: true,
@@ -190,9 +190,8 @@ export class InboxService {
     });
 
     if (widget) {
-      return this.prisma.websiteWidget.update({
-        where: { id },
-        data: { isActive: false }
+      return this.prisma.websiteWidget.delete({
+        where: { id }
       });
     }
 

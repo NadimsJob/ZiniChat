@@ -67,6 +67,7 @@ const mockPrisma = {
     findUnique: jest.fn(),
     findFirst: jest.fn(),
     update: jest.fn(),
+    delete: jest.fn(),
   },
   channelConnection: {
     findFirst: jest.fn(),
@@ -301,16 +302,15 @@ describe('WebsiteWidgetService', () => {
   // ─── deleteWidget ────────────────────────────────────────────────────────────
 
   describe('deleteWidget()', () => {
-    it('should soft-delete (set isActive=false) a widget belonging to tenant', async () => {
+    it('should hard-delete a widget belonging to tenant', async () => {
       mockPrisma.websiteWidget.findFirst.mockResolvedValue(mockWidget);
-      mockPrisma.websiteWidget.update.mockResolvedValue({ ...mockWidget, isActive: false });
+      mockPrisma.websiteWidget.delete.mockResolvedValue(mockWidget);
 
       const result = await service.deleteWidget(TENANT_ID, WIDGET_ID);
 
-      expect(result.isActive).toBe(false);
-      expect(mockPrisma.websiteWidget.update).toHaveBeenCalledWith({
+      expect(result).toEqual(mockWidget);
+      expect(mockPrisma.websiteWidget.delete).toHaveBeenCalledWith({
         where: { id: WIDGET_ID },
-        data: { isActive: false },
       });
     });
 

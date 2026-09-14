@@ -35,7 +35,7 @@ export default function InboxesPage() {
       }
     } catch (error) {
       console.error(error);
-      toast.error(language === 'en' ? 'Failed to fetch channels' : 'চ্যানেল লোড করতে ব্যর্থ হয়েছে');
+      toast.error(language === 'en' ? 'Failed to fetch channels' : 'à¦šà§�à¦¯à¦¾à¦¨à§‡à¦² à¦²à§‹à¦¡ à¦•à¦°à¦¤à§‡ à¦¬à§�à¦¯à¦°à§�à¦¥ à¦¹à¦¯à¦¼à§‡à¦›à§‡');
     } finally {
       setLoading(false);
     }
@@ -46,7 +46,7 @@ export default function InboxesPage() {
   }, []);
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm(language === 'en' ? 'Are you sure you want to delete this inbox?' : 'আপনি কি নিশ্চিত যে আপনি এই ইনবক্সটি মুছতে চান?')) return;
+    if (!window.confirm(language === 'en' ? 'Are you sure you want to delete this inbox?' : 'à¦†à¦ªà¦¨à¦¿ à¦•à¦¿ à¦¨à¦¿à¦¶à§�à¦šà¦¿à¦¤ à¦¯à§‡ à¦†à¦ªà¦¨à¦¿ à¦�à¦‡ à¦‡à¦¨à¦¬à¦•à§�à¦¸à¦Ÿà¦¿ à¦®à§�à¦›à¦¤à§‡ à¦šà¦¾à¦¨?')) return;
     try {
       const token = Cookies.get('access_token');
       const res = await fetch(`${API}/inbox/channels/${id}`, {
@@ -54,13 +54,13 @@ export default function InboxesPage() {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
-        toast.success(language === 'en' ? 'Inbox deleted successfully' : 'ইনবক্স মুছে ফেলা হয়েছে');
+        toast.success(language === 'en' ? 'Inbox deleted successfully' : 'à¦‡à¦¨à¦¬à¦•à§�à¦¸ à¦®à§�à¦›à§‡ à¦«à§‡à¦²à¦¾ à¦¹à¦¯à¦¼à§‡à¦›à§‡');
         fetchConnections();
       } else {
-        toast.error(language === 'en' ? 'Failed to delete inbox' : 'ইনবক্স মুছতে ব্যর্থ হয়েছে');
+        toast.error(language === 'en' ? 'Failed to delete inbox' : 'à¦‡à¦¨à¦¬à¦•à§�à¦¸ à¦®à§�à¦›à¦¤à§‡ à¦¬à§�à¦¯à¦°à§�à¦¥ à¦¹à¦¯à¦¼à§‡à¦›à§‡');
       }
     } catch (err) {
-      toast.error(language === 'en' ? 'Error deleting inbox' : 'ইনবক্স মুছতে ত্রুটি হয়েছে');
+      toast.error(language === 'en' ? 'Error deleting inbox' : 'à¦‡à¦¨à¦¬à¦•à§�à¦¸ à¦®à§�à¦›à¦¤à§‡ à¦¤à§�à¦°à§�à¦Ÿà¦¿ à¦¹à¦¯à¦¼à§‡à¦›à§‡');
     }
   };
 
@@ -81,13 +81,13 @@ export default function InboxesPage() {
       });
 
       if (res.ok) {
-        toast.success(language === 'en' ? `AI Auto-Reply ${nextStatus ? 'Enabled' : 'Disabled'}` : `এআই অটো-রিপ্লাই ${nextStatus ? 'চালু' : 'বন্ধ'} হয়েছে`);
+        toast.success(language === 'en' ? `AI Auto-Reply ${nextStatus ? 'Enabled' : 'Disabled'}` : `à¦�à¦†à¦‡ à¦…à¦Ÿà§‹-à¦°à¦¿à¦ªà§�à¦²à¦¾à¦‡ ${nextStatus ? 'à¦šà¦¾à¦²à§�' : 'à¦¬à¦¨à§�à¦§'} à¦¹à¦¯à¦¼à§‡à¦›à§‡`);
       } else {
-        toast.error(language === 'en' ? 'Failed to update AI setting' : 'এআই সেটিং আপডেট করতে ব্যর্থ হয়েছে');
+        toast.error(language === 'en' ? 'Failed to update AI setting' : 'à¦�à¦†à¦‡ à¦¸à§‡à¦Ÿà¦¿à¦‚ à¦†à¦ªà¦¡à§‡à¦Ÿ à¦•à¦°à¦¤à§‡ à¦¬à§�à¦¯à¦°à§�à¦¥ à¦¹à¦¯à¦¼à§‡à¦›à§‡');
         fetchConnections();
       }
     } catch (err) {
-      toast.error(language === 'en' ? 'Error updating AI setting' : 'এআই সেটিং আপডেট করতে সমস্যা হয়েছে');
+      toast.error(language === 'en' ? 'Error updating AI setting' : 'à¦�à¦†à¦‡ à¦¸à§‡à¦Ÿà¦¿à¦‚ à¦†à¦ªà¦¡à§‡à¦Ÿ à¦•à¦°à¦¤à§‡ à¦¸à¦®à¦¸à§�à¦¯à¦¾ à¦¹à¦¯à¦¼à§‡à¦›à§‡');
       fetchConnections();
     }
   };
@@ -116,14 +116,14 @@ export default function InboxesPage() {
         toast.success(
           language === 'en' 
             ? `Channel ${nextIsActive ? 'Activated' : 'Deactivated (Hidden from Live Inbox)'}` 
-            : `চ্যানেল ${nextIsActive ? 'সক্রিয়' : 'নিষ্ক্রিয় (ইনবক্সে আর দেখা যাবে না)'} হয়েছে`
+            : `à¦šà§�à¦¯à¦¾à¦¨à§‡à¦² ${nextIsActive ? 'à¦¸à¦•à§�à¦°à¦¿à¦¯à¦¼' : 'à¦¨à¦¿à¦·à§�à¦•à§�à¦°à¦¿à¦¯à¦¼ (à¦‡à¦¨à¦¬à¦•à§�à¦¸à§‡ à¦†à¦° à¦¦à§‡à¦–à¦¾ à¦¯à¦¾à¦¬à§‡ à¦¨à¦¾)'} à¦¹à¦¯à¦¼à§‡à¦›à§‡`
         );
       } else {
-        toast.error(language === 'en' ? 'Failed to update channel status' : 'চ্যানেল স্ট্যাটাস আপডেট করতে ব্যর্থ হয়েছে');
+        toast.error(language === 'en' ? 'Failed to update channel status' : 'à¦šà§�à¦¯à¦¾à¦¨à§‡à¦² à¦¸à§�à¦Ÿà§�à¦¯à¦¾à¦Ÿà¦¾à¦¸ à¦†à¦ªà¦¡à§‡à¦Ÿ à¦•à¦°à¦¤à§‡ à¦¬à§�à¦¯à¦°à§�à¦¥ à¦¹à¦¯à¦¼à§‡à¦›à§‡');
         fetchConnections();
       }
     } catch (err) {
-      toast.error(language === 'en' ? 'Error updating channel status' : 'চ্যানেল স্ট্যাটাস আপডেট করতে সমস্যা হয়েছে');
+      toast.error(language === 'en' ? 'Error updating channel status' : 'à¦šà§�à¦¯à¦¾à¦¨à§‡à¦² à¦¸à§�à¦Ÿà§�à¦¯à¦¾à¦Ÿà¦¾à¦¸ à¦†à¦ªà¦¡à§‡à¦Ÿ à¦•à¦°à¦¤à§‡ à¦¸à¦®à¦¸à§�à¦¯à¦¾ à¦¹à¦¯à¦¼à§‡à¦›à§‡');
       fetchConnections();
     }
   };
@@ -147,13 +147,13 @@ export default function InboxesPage() {
       if (res.ok) {
         toast.success(language === 'en' 
           ? `Ignore Group Messages ${nextStatus ? 'Enabled' : 'Disabled'}` 
-          : `গ্রুপ মেসেজ ইগনোর ${nextStatus ? 'চালু' : 'বন্ধ'} হয়েছে`);
+          : `à¦—à§�à¦°à§�à¦ª à¦®à§‡à¦¸à§‡à¦œ à¦‡à¦—à¦¨à§‹à¦° ${nextStatus ? 'à¦šà¦¾à¦²à§�' : 'à¦¬à¦¨à§�à¦§'} à¦¹à¦¯à¦¼à§‡à¦›à§‡`);
       } else {
-        toast.error(language === 'en' ? 'Failed to update Group setting' : 'গ্রুপ সেটিং আপডেট করতে ব্যর্থ হয়েছে');
+        toast.error(language === 'en' ? 'Failed to update Group setting' : 'à¦—à§�à¦°à§�à¦ª à¦¸à§‡à¦Ÿà¦¿à¦‚ à¦†à¦ªà¦¡à§‡à¦Ÿ à¦•à¦°à¦¤à§‡ à¦¬à§�à¦¯à¦°à§�à¦¥ à¦¹à¦¯à¦¼à§‡à¦›à§‡');
         fetchConnections();
       }
     } catch (err) {
-      toast.error(language === 'en' ? 'Error updating Group setting' : 'গ্রুপ সেটিং আপডেট করতে সমস্যা হয়েছে');
+      toast.error(language === 'en' ? 'Error updating Group setting' : 'à¦—à§�à¦°à§�à¦ª à¦¸à§‡à¦Ÿà¦¿à¦‚ à¦†à¦ªà¦¡à§‡à¦Ÿ à¦•à¦°à¦¤à§‡ à¦¸à¦®à¦¸à§�à¦¯à¦¾ à¦¹à¦¯à¦¼à§‡à¦›à§‡');
       fetchConnections();
     }
   };
@@ -166,9 +166,9 @@ export default function InboxesPage() {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
-        toast.success(language === 'en' ? 'Connection Established 🟢! Test message sent to Inbox.' : 'কানেকশন এস্টাবলিশড 🟢! টেস্ট মেসেজ ইনবক্সে পাঠানো হয়েছে।');
+        toast.success(language === 'en' ? 'Connection Established ðŸŸ¢! Test message sent to Inbox.' : 'à¦•à¦¾à¦¨à§‡à¦•à¦¶à¦¨ à¦�à¦¸à§�à¦Ÿà¦¾à¦¬à¦²à¦¿à¦¶à¦¡ ðŸŸ¢! à¦Ÿà§‡à¦¸à§�à¦Ÿ à¦®à§‡à¦¸à§‡à¦œ à¦‡à¦¨à¦¬à¦•à§�à¦¸à§‡ à¦ªà¦¾à¦ à¦¾à¦¨à§‹ à¦¹à¦¯à¦¼à§‡à¦›à§‡à¥¤');
       } else {
-        toast.error(language === 'en' ? 'Failed to send test ping' : 'টেস্ট পিং পাঠাতে ব্যর্থ হয়েছে');
+        toast.error(language === 'en' ? 'Failed to send test ping' : 'à¦Ÿà§‡à¦¸à§�à¦Ÿ à¦ªà¦¿à¦‚ à¦ªà¦¾à¦ à¦¾à¦¤à§‡ à¦¬à§�à¦¯à¦°à§�à¦¥ à¦¹à¦¯à¦¼à§‡à¦›à§‡');
       }
     } catch (err) {
       toast.error('Test ping error');
@@ -196,12 +196,12 @@ export default function InboxesPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-card p-4 rounded-2xl border border-zinc-300 dark:border-zinc-700/80 shadow-sm">
           <div>
             <h1 className="text-xl font-bold text-foreground mb-0.5 font-sans">
-              {language === 'en' ? 'Connected Inboxes' : 'সংযুক্ত ইনবক্সসমূহ'}
+              {language === 'en' ? 'Connected Inboxes' : 'à¦¸à¦‚à¦¯à§�à¦•à§�à¦¤ à¦‡à¦¨à¦¬à¦•à§�à¦¸à¦¸à¦®à§‚à¦¹'}
             </h1>
             <p className="text-xs text-muted-foreground max-w-2xl font-sans">
               {language === 'en' 
                 ? 'Manage active channels (WhatsApp, Messenger, Instagram, Website Widgets) and check connection health.' 
-                : 'আপনার হোয়াটসঅ্যাপ, মেসেঞ্জার বা ওয়েবসাইট উইজেট চ্যানেলের কানেকশন স্ট্যাটাস এবং AI রিপ্লাই সেটিংস ম্যানেজ করুন।'}
+                : 'à¦†à¦ªà¦¨à¦¾à¦° à¦¹à§‹à¦¯à¦¼à¦¾à¦Ÿà¦¸à¦…à§�à¦¯à¦¾à¦ª, à¦®à§‡à¦¸à§‡à¦žà§�à¦œà¦¾à¦° à¦¬à¦¾ à¦“à§Ÿà§‡à¦¬à¦¸à¦¾à¦‡à¦Ÿ à¦‰à¦‡à¦œà§‡à¦Ÿ à¦šà§�à¦¯à¦¾à¦¨à§‡à¦²à§‡à¦° à¦•à¦¾à¦¨à§‡à¦•à¦¶à¦¨ à¦¸à§�à¦Ÿà§�à¦¯à¦¾à¦Ÿà¦¾à¦¸ à¦�à¦¬à¦‚ AI à¦°à¦¿à¦ªà§�à¦²à¦¾à¦‡ à¦¸à§‡à¦Ÿà¦¿à¦‚à¦¸ à¦®à§�à¦¯à¦¾à¦¨à§‡à¦œ à¦•à¦°à§�à¦¨à¥¤'}
             </p>
           </div>
           
@@ -210,14 +210,14 @@ export default function InboxesPage() {
             className="px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary/90 transition-all shadow-sm flex items-center justify-center gap-2 whitespace-nowrap shrink-0 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            {language === 'en' ? 'Add Inbox' : 'ইনবক্স যুক্ত করুন'}
+            {language === 'en' ? 'Add Inbox' : 'à¦‡à¦¨à¦¬à¦•à§�à¦¸ à¦¯à§�à¦•à§�à¦¤ à¦•à¦°à§�à¦¨'}
           </Link>
         </div>
 
         {/* Instruction Banner */}
         <InstructionBanner 
-          title={language === 'en' ? 'Inbox Connection Status Instructions' : 'ইনবক্স কানেকশন স্ট্যাটাস নির্দেশিকা'}
-          description={language === 'en' ? 'Check if your connected channels are active. A green badge indicates the channel is connected and ready to receive messages. Toggle AI Auto-Reply per inbox to automate customer replies.' : 'এখানে আপনার হোয়াটসঅ্যাপ, মেসেঞ্জার বা ওয়েবসাইট চ্যাটের আসল কানেকশন স্ট্যাটাস দেখা যাবে। সবুজ "Active 🟢" দেখানোর অর্থ হলো চ্যানেলটি মেসেজ আদান-প্রদানের জন্য সম্পূর্ণ প্রস্তুত।'}
+          title={language === 'en' ? 'Inbox Connection Status Instructions' : 'à¦‡à¦¨à¦¬à¦•à§�à¦¸ à¦•à¦¾à¦¨à§‡à¦•à¦¶à¦¨ à¦¸à§�à¦Ÿà§�à¦¯à¦¾à¦Ÿà¦¾à¦¸ à¦¨à¦¿à¦°à§�à¦¦à§‡à¦¶à¦¿à¦•à¦¾'}
+          description={language === 'en' ? 'Check if your connected channels are active. A green badge indicates the channel is connected and ready to receive messages. Toggle AI Auto-Reply per inbox to automate customer replies.' : 'à¦�à¦–à¦¾à¦¨à§‡ à¦†à¦ªà¦¨à¦¾à¦° à¦¹à§‹à¦¯à¦¼à¦¾à¦Ÿà¦¸à¦…à§�à¦¯à¦¾à¦ª, à¦®à§‡à¦¸à§‡à¦žà§�à¦œà¦¾à¦° à¦¬à¦¾ à¦“à§Ÿà§‡à¦¬à¦¸à¦¾à¦‡à¦Ÿ à¦šà§�à¦¯à¦¾à¦Ÿà§‡à¦° à¦†à¦¸à¦² à¦•à¦¾à¦¨à§‡à¦•à¦¶à¦¨ à¦¸à§�à¦Ÿà§�à¦¯à¦¾à¦Ÿà¦¾à¦¸ à¦¦à§‡à¦–à¦¾ à¦¯à¦¾à¦¬à§‡à¥¤ à¦¸à¦¬à§�à¦œ "Active ðŸŸ¢" à¦¦à§‡à¦–à¦¾à¦¨à§‹à¦° à¦…à¦°à§�à¦¥ à¦¹à¦²à§‹ à¦šà§�à¦¯à¦¾à¦¨à§‡à¦²à¦Ÿà¦¿ à¦®à§‡à¦¸à§‡à¦œ à¦†à¦¦à¦¾à¦¨-à¦ªà§�à¦°à¦¦à¦¾à¦¨à§‡à¦° à¦œà¦¨à§�à¦¯ à¦¸à¦®à§�à¦ªà§‚à¦°à§�à¦£ à¦ªà§�à¦°à¦¸à§�à¦¤à§�à¦¤à¥¤'}
           icon={Webhook}
           variant="emerald"
         />
@@ -242,10 +242,10 @@ export default function InboxesPage() {
               <div className="p-12 text-center text-muted-foreground">
                 <Webhook className="w-12 h-12 mx-auto mb-4 opacity-20 text-muted-foreground" />
                 <p className="text-sm font-medium text-foreground mb-1">
-                  {language === 'en' ? 'No inboxes found' : 'কোনো ইনবক্স পাওয়া যায়নি'}
+                  {language === 'en' ? 'No inboxes found' : 'à¦•à§‹à¦¨à§‹ à¦‡à¦¨à¦¬à¦•à§�à¦¸ à¦ªà¦¾à¦“à§Ÿà¦¾ à¦¯à¦¾à§Ÿà¦¨à¦¿'}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {language === 'en' ? 'Click "Add Inbox" to connect a channel.' : 'চ্যানেল কানেক্ট করতে "ইনবক্স যুক্ত করুন" এ ক্লিক করুন।'}
+                  {language === 'en' ? 'Click "Add Inbox" to connect a channel.' : 'à¦šà§�à¦¯à¦¾à¦¨à§‡à¦² à¦•à¦¾à¦¨à§‡à¦•à§�à¦Ÿ à¦•à¦°à¦¤à§‡ "à¦‡à¦¨à¦¬à¦•à§�à¦¸ à¦¯à§�à¦•à§�à¦¤ à¦•à¦°à§�à¦¨" à¦� à¦•à§�à¦²à¦¿à¦• à¦•à¦°à§�à¦¨à¥¤'}
                 </p>
               </div>
             ) : (
@@ -288,10 +288,10 @@ export default function InboxesPage() {
                               isChannelInactive ? 'bg-muted-foreground' : isActive ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'
                             }`} />
                             {isChannelInactive 
-                              ? (language === 'en' ? 'Inactive ⚪' : 'নিষ্ক্রিয় ⚪')
+                              ? (language === 'en' ? 'Inactive âšª' : 'à¦¨à¦¿à¦·à§�à¦•à§�à¦°à¦¿à¦¯à¦¼ âšª')
                               : isActive 
-                              ? (language === 'en' ? 'Active 🟢' : 'সক্রিয় 🟢') 
-                              : (language === 'en' ? 'Disconnected 🔴' : 'ডিসকানেক্টেড 🔴')
+                              ? (language === 'en' ? 'Active ðŸŸ¢' : 'à¦¸à¦•à§�à¦°à¦¿à¦¯à¦¼ ðŸŸ¢') 
+                              : (language === 'en' ? 'Disconnected ðŸ”´' : 'à¦¡à¦¿à¦¸à¦•à¦¾à¦¨à§‡à¦•à§�à¦Ÿà§‡à¦¡ ðŸ”´')
                             }
                           </span>
                         </h3>
@@ -308,7 +308,7 @@ export default function InboxesPage() {
                           className="px-2.5 py-1 bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border border-amber-500/20 rounded-lg text-[11px] font-bold flex items-center gap-1 transition-all shrink-0 cursor-pointer font-sans"
                         >
                           <RotateCcw className="w-3 h-3" />
-                          <span>{language === 'en' ? 'Reconnect / Scan QR' : 'পুনরায় কানেক্ট করুন'}</span>
+                          <span>{language === 'en' ? 'Reconnect / Scan QR' : 'à¦ªà§�à¦¨à¦°à¦¾à¦¯à¦¼ à¦•à¦¾à¦¨à§‡à¦•à§�à¦Ÿ à¦•à¦°à§�à¦¨'}</span>
                         </Link>
                       )}
 
@@ -320,7 +320,7 @@ export default function InboxesPage() {
                             title="Customize Widget & View Code"
                           >
                             <Code className="w-3.5 h-3.5" />
-                            <span>{language === 'en' ? 'Settings & Code' : 'সেটিংস ও কোড'}</span>
+                            <span>{language === 'en' ? 'Settings & Code' : 'à¦¸à§‡à¦Ÿà¦¿à¦‚à¦¸ à¦“ à¦•à§‹à¦¡'}</span>
                           </button>
                           <button
                             onClick={() => handleTestPing(conn.id)}
@@ -328,7 +328,7 @@ export default function InboxesPage() {
                             title="Test Connection Ping"
                           >
                             <Zap className="w-3.5 h-3.5" />
-                            <span>{language === 'en' ? 'Test Ping' : 'টেস্ট মোটিক'}</span>
+                            <span>{language === 'en' ? 'Test Ping' : 'à¦Ÿà§‡à¦¸à§�à¦Ÿ à¦®à§‡à¦¾à¦Ÿà¦¿à¦•'}</span>
                           </button>
                         </div>
                       )}
@@ -340,13 +340,13 @@ export default function InboxesPage() {
                           title="Configure Facebook Comment Auto-Reply"
                         >
                           <MessageSquare className="w-3.5 h-3.5 text-blue-400" />
-                          <span>{language === 'en' ? 'Comment Auto-Reply' : 'কমেন্ট অটো-রিপ্লাই'}</span>
+                          <span>{language === 'en' ? 'Comment Auto-Reply' : 'à¦•à¦®à§‡à¦¨à§�à¦Ÿ à¦…à¦Ÿà§‹-à¦°à¦¿à¦ªà§�à¦²à¦¾à¦‡'}</span>
                         </button>
                       )}
 
                       <div className="flex items-center gap-2 mr-2">
                         <span className="text-[11px] text-muted-foreground font-semibold font-sans">
-                          {language === 'en' ? 'Channel Status' : 'চ্যানেল স্ট্যাটাস'}
+                          {language === 'en' ? 'Channel Status' : 'à¦šà§�à¦¯à¦¾à¦¨à§‡à¦² à¦¸à§�à¦Ÿà§�à¦¯à¦¾à¦Ÿà¦¾à¦¸'}
                         </span>
                         <button
                           type="button"
@@ -354,7 +354,7 @@ export default function InboxesPage() {
                           className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none cursor-pointer ${
                             !isChannelInactive ? 'bg-emerald-600' : 'bg-muted'
                           }`}
-                          title={language === 'en' ? 'Toggle Channel Active/Inactive (Inactive channels are hidden from Inbox)' : 'চ্যানেল সক্রিয়/নিষ্ক্রিয় করুন'}
+                          title={language === 'en' ? 'Toggle Channel Active/Inactive (Inactive channels are hidden from Inbox)' : 'à¦šà§�à¦¯à¦¾à¦¨à§‡à¦² à¦¸à¦•à§�à¦°à¦¿à¦¯à¦¼/à¦¨à¦¿à¦·à§�à¦•à§�à¦°à¦¿à¦¯à¦¼ à¦•à¦°à§�à¦¨'}
                         >
                           <span
                             className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform shadow-sm ${
@@ -392,7 +392,7 @@ export default function InboxesPage() {
                             className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none cursor-pointer ${
                               (conn.ignoreGroupMessages ?? true) ? 'bg-emerald-600' : 'bg-muted'
                             }`}
-                            title={language === 'en' ? 'Ignore WhatsApp Group Messages' : 'হোয়াটসঅ্যাপ গ্রুপ মেসেজ ইগনোর করুন'}
+                            title={language === 'en' ? 'Ignore WhatsApp Group Messages' : 'হোয়াটসঅ্যাপ গ্রুপ মেসেজ ইগনোর করুন'}
                           >
                             <span
                               className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform shadow-sm ${
@@ -424,6 +424,7 @@ export default function InboxesPage() {
       {codeModalWidget && (
         <WidgetConfigModal
           widget={codeModalWidget}
+          allConnections={connections}
           onClose={() => setCodeModalWidget(null)}
           onRefresh={fetchConnections}
           language={language}
@@ -445,25 +446,44 @@ export default function InboxesPage() {
   );
 }
 
-function WidgetConfigModal({ widget, onClose, onRefresh, language, API }: any) {
-  const [widgetType, setWidgetType] = useState<'LIVE_CHAT' | 'WHATSAPP'>(widget.type || 'LIVE_CHAT');
+function WidgetConfigModal({ widget, allConnections = [], onClose, onRefresh, language, API }: any) {
+  const widgetType: 'LIVE_CHAT' | 'WHATSAPP' = (widget.type === 'WHATSAPP' || widget.type === 'whatsapp') ? 'WHATSAPP' : 'LIVE_CHAT';
+  
+  // Common states
   const [primaryColor, setPrimaryColor] = useState(widget.primaryColor || '#1F824A');
-  const [name, setName] = useState(widget.displayName || widget.name || 'Website Widget');
+  const [name, setName] = useState(widget.displayName || widget.name || (widgetType === 'WHATSAPP' ? 'WhatsApp Widget' : 'Website Live Chat'));
+  const [saving, setSaving] = useState(false);
+  const [uploadingIcon, setUploadingIcon] = useState(false);
+
+  // Live Chat specific states
   const [heading, setHeading] = useState(widget.heading || 'Chat with us');
   const [tagline, setTagline] = useState(widget.tagline || 'We are here to help you.');
   const [greetingEnabled, setGreetingEnabled] = useState(widget.greetingEnabled ?? true);
-  
-  // WhatsApp specific states
-  const [whatsappNumber, setWhatsappNumber] = useState(widget.whatsappNumber || '');
+  const [isPreviewOpen, setIsPreviewOpen] = useState(true);
+
+  // WhatsApp specific states & connected channel auto-detection
+  const whatsappChannels = (allConnections || []).filter(
+    (c: any) => c.channelType?.toLowerCase() === 'whatsapp'
+  );
+
+  const [selectedInboxId, setSelectedInboxId] = useState<string>(() => {
+    if (widget.whatsappInboxId) {
+      const match = whatsappChannels.find((c: any) => c.id === widget.whatsappInboxId);
+      if (match) return match.id;
+    }
+    return whatsappChannels[0]?.id || '';
+  });
+
+  const activeInbox = whatsappChannels.find((c: any) => c.id === selectedInboxId) || whatsappChannels[0];
+  const rawPhone = activeInbox?.phoneNumber || activeInbox?.displayName || activeInbox?.verifyToken || widget.whatsappNumber || '';
+  const cleanPhone = rawPhone.replace(/[\s\-\+\(\)]/g, '').split('@')[0];
+  const autoWhatsappNumber = cleanPhone ? (cleanPhone.startsWith('0') ? '88' + cleanPhone : cleanPhone) : '';
+
   const [prefilledText, setPrefilledText] = useState(widget.prefilledText || '');
   const [customIconUrl, setCustomIconUrl] = useState<string | null>(widget.customIconUrl || null);
   const [position, setPosition] = useState<'bottom-right' | 'bottom-left'>(widget.position || 'bottom-right');
   const [tooltipTextEn, setTooltipTextEn] = useState(widget.tooltipTextEn || 'Chat with us on WhatsApp');
   const [tooltipTextBn, setTooltipTextBn] = useState(widget.tooltipTextBn || 'হোয়াটসঅ্যাপে চ্যাট করুন');
-
-  const [isPreviewOpen, setIsPreviewOpen] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [uploadingIcon, setUploadingIcon] = useState(false);
 
   const presetColors = [
     '#1F824A', // Zini Green
@@ -512,8 +532,25 @@ function WidgetConfigModal({ widget, onClose, onRefresh, language, API }: any) {
     try {
       const token = Cookies.get('access_token');
 
-      let cleanPhone = whatsappNumber.replace(/[\s\-\+\(\)]/g, '');
-      if (cleanPhone.startsWith('0')) cleanPhone = '88' + cleanPhone;
+      const bodyPayload = widgetType === 'WHATSAPP' ? {
+        type: 'WHATSAPP',
+        name,
+        primaryColor,
+        whatsappInboxId: selectedInboxId || widget.whatsappInboxId || null,
+        whatsappNumber: autoWhatsappNumber,
+        prefilledText,
+        customIconUrl,
+        position,
+        tooltipTextEn,
+        tooltipTextBn,
+      } : {
+        type: 'LIVE_CHAT',
+        name,
+        primaryColor,
+        heading,
+        tagline,
+        greetingEnabled,
+      };
 
       const res = await fetch(`${API}/website-widget/${widget.id}`, {
         method: 'PATCH',
@@ -521,20 +558,7 @@ function WidgetConfigModal({ widget, onClose, onRefresh, language, API }: any) {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          type: widgetType,
-          name,
-          primaryColor,
-          heading,
-          tagline,
-          greetingEnabled,
-          whatsappNumber: cleanPhone,
-          prefilledText,
-          customIconUrl,
-          position,
-          tooltipTextEn,
-          tooltipTextBn,
-        }),
+        body: JSON.stringify(bodyPayload),
       });
 
       if (res.ok) {
@@ -571,8 +595,7 @@ function WidgetConfigModal({ widget, onClose, onRefresh, language, API }: any) {
     ? `<script src="https://zinichat.com/wa-widget.js" data-token="${widget.widgetToken}" async></script>`
     : `<script src="https://zinichat.com/widget.js" data-widget-token="${widget.widgetToken}" async></script>`;
 
-  const cleanPhoneFormatted = whatsappNumber.replace(/[\s\-\+\(\)]/g, '');
-  const waUrl = `https://wa.me/${cleanPhoneFormatted.startsWith('0') ? '88' + cleanPhoneFormatted : cleanPhoneFormatted}${prefilledText ? `?text=${encodeURIComponent(prefilledText)}` : ''}`;
+  const waUrl = autoWhatsappNumber ? `https://wa.me/${autoWhatsappNumber}${prefilledText ? `?text=${encodeURIComponent(prefilledText)}` : ''}` : 'https://wa.me/';
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto" onClick={onClose}>
@@ -587,16 +610,23 @@ function WidgetConfigModal({ widget, onClose, onRefresh, language, API }: any) {
             <div>
               <h3 className="font-bold text-foreground text-base flex items-center gap-2">
                 <span>{name}</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-mono">
-                  {widgetType}
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono ${
+                  widgetType === 'WHATSAPP' 
+                    ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
+                    : 'bg-primary/10 text-primary border border-primary/20'
+                }`}>
+                  {widgetType === 'WHATSAPP' ? 'WHATSAPP WIDGET' : 'LIVE CHAT WIDGET'}
                 </span>
               </h3>
               <p className="text-xs text-muted-foreground">
-                {language === 'en' ? 'Customize colors, WhatsApp redirection link, and embed code for your website' : 'আপনার ওয়েবসাইটের হোয়াটসঅ্যাপ উইজেট কালার, ফোন নম্বর ও ডাইরেক্ট রিডাইরেকশন স্ক্রিপ্ট কাস্টমাইজ করুন'}
+                {widgetType === 'WHATSAPP' 
+                  ? (language === 'en' ? 'Customize colors, WhatsApp redirection link, and embed code for your website' : 'আপনার ওয়েবসাইটের হোয়াটসঅ্যাপ উইজেট কালার, ফোন নম্বর ও ডাইরেক্ট রিডাইরেকশন স্ক্রিপ্ট কাস্টমাইজ করুন')
+                  : (language === 'en' ? 'Customize colors, header title, tagline, and embed code for your website live chat' : 'আপনার ওয়েবসাইটের লাইভ চ্যাট উইজেটের নাম, কালার ও স্ক্রিপ্ট কোড কাস্টমাইজ করুন')
+                }
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted">
+          <button onClick={onClose} className="p-1 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted cursor-pointer">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -606,45 +636,12 @@ function WidgetConfigModal({ widget, onClose, onRefresh, language, API }: any) {
           
           {/* Left Column: Settings & Controls (7 cols) */}
           <div className="lg:col-span-7 space-y-4">
-            
-            {/* Widget Mode Selector */}
-            <div className="bg-muted/30 border border-border p-3.5 rounded-xl space-y-2">
-              <label className="text-xs font-bold text-foreground uppercase tracking-wider block">
-                {language === 'en' ? 'Widget Type' : 'উইজেটের ধরণ'}
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setWidgetType('WHATSAPP')}
-                  className={`p-2.5 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
-                    widgetType === 'WHATSAPP'
-                      ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400'
-                      : 'bg-background border-border text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  <MessageCircle className="w-4 h-4 text-emerald-500" />
-                  <span>{language === 'en' ? 'WhatsApp Redirect Button' : 'হোয়াটসঅ্যাপ রিডাইরেক্ট বাটন'}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setWidgetType('LIVE_CHAT')}
-                  className={`p-2.5 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
-                    widgetType === 'LIVE_CHAT'
-                      ? 'bg-primary/20 border-primary text-primary'
-                      : 'bg-background border-border text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  <Globe className="w-4 h-4 text-primary" />
-                  <span>{language === 'en' ? 'Omnichannel Live Chat' : 'অমনিচ্যানেল লাইভ চ্যাট'}</span>
-                </button>
-              </div>
-            </div>
 
             {/* Design & Color Card */}
             <div className="bg-muted/30 border border-border p-4 rounded-xl space-y-3">
               <h4 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                {language === 'en' ? 'Widget Colors & Custom Icon' : 'উইজেট কালার ও আইকন সেটিংস'}
+                {language === 'en' ? 'Widget Design & Configuration' : 'উইজেট ডিজাইন ও কনফিগারেশন'}
               </h4>
 
               {/* Primary Color Selector */}
@@ -676,149 +673,207 @@ function WidgetConfigModal({ widget, onClose, onRefresh, language, API }: any) {
                 </div>
               </div>
 
-              {/* Custom Uploaded Icon Option (for WHATSAPP widget mode) */}
+              {/* WHATSAPP Specific Controls */}
               {widgetType === 'WHATSAPP' && (
-                <div className="border-t border-border pt-3 space-y-2">
-                  <label className="text-[11px] font-semibold text-muted-foreground block">
-                    {language === 'en' ? 'Widget Icon' : 'উইজেট আইকন'}
-                  </label>
-                  <div className="flex items-center gap-3 p-2.5 bg-background border border-border rounded-xl">
-                    <div
-                      className="w-10 h-10 rounded-full flex items-center justify-center text-white shrink-0 shadow-sm"
-                      style={{ backgroundColor: primaryColor }}
-                    >
-                      {customIconUrl ? (
-                        <img src={`${API}${customIconUrl}`} alt="Icon" className="w-6 h-6 object-contain rounded-full" />
-                      ) : (
-                        <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
-                          <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
-                        </svg>
-                      )}
-                    </div>
+                <>
+                  {/* Custom Uploaded Icon Option */}
+                  <div className="border-t border-border pt-3 space-y-2">
+                    <label className="text-[11px] font-semibold text-muted-foreground block">
+                      {language === 'en' ? 'Widget Icon' : 'উইজেট আইকন'}
+                    </label>
+                    <div className="flex items-center gap-3 p-2.5 bg-background border border-border rounded-xl">
+                      <div
+                        className="w-10 h-10 rounded-full flex items-center justify-center text-white shrink-0 shadow-sm"
+                        style={{ backgroundColor: primaryColor }}
+                      >
+                        {customIconUrl ? (
+                          <img src={`${API}${customIconUrl}`} alt="Icon" className="w-6 h-6 object-contain rounded-full" />
+                        ) : (
+                          <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
+                            <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+                          </svg>
+                        )}
+                      </div>
 
-                    <div className="flex-1">
-                      <p className="text-xs font-semibold text-foreground">
-                        {customIconUrl ? 'Custom Icon Image' : 'Dynamic Vector WhatsApp Icon'}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground">
-                        {language === 'en' ? 'Use official WhatsApp logo or upload custom image' : 'ডিফল্ট আইকন অথবা আপনার লোগো আপলোড করুন'}
-                      </p>
-                    </div>
+                      <div className="flex-1">
+                        <p className="text-xs font-semibold text-foreground">
+                          {customIconUrl ? 'Custom Icon Image' : 'Dynamic Vector WhatsApp Icon'}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {language === 'en' ? 'Use official WhatsApp logo or upload custom image' : 'ডিফল্ট আইকন অথবা আপনার লোগো আপলোড করুন'}
+                        </p>
+                      </div>
 
-                    <div className="flex items-center gap-1.5">
-                      <label className="px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-xs font-bold cursor-pointer transition">
-                        {uploadingIcon ? '...' : (language === 'en' ? 'Upload' : 'আপলোড')}
-                        <input type="file" accept="image/*" onChange={handleUploadIcon} className="hidden" disabled={uploadingIcon} />
-                      </label>
-                      {customIconUrl && (
-                        <button
-                          type="button"
-                          onClick={() => setCustomIconUrl(null)}
-                          className="p-1.5 text-red-500 hover:bg-red-500/10 rounded-lg transition"
-                          title="Reset to default vector icon"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
+                      <div className="flex items-center gap-1.5">
+                        <label className="px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-xs font-bold cursor-pointer transition">
+                          {uploadingIcon ? '...' : (language === 'en' ? 'Upload' : 'আপলোড')}
+                          <input type="file" accept="image/*" onChange={handleUploadIcon} className="hidden" disabled={uploadingIcon} />
+                        </label>
+                        {customIconUrl && (
+                          <button
+                            type="button"
+                            onClick={() => setCustomIconUrl(null)}
+                            className="p-1.5 text-red-500 hover:bg-red-500/10 rounded-lg transition cursor-pointer"
+                            title="Reset to default vector icon"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
+
+                  {/* Connected WhatsApp Phone Number Card */}
+                  <div className="border-t border-border pt-3 space-y-3">
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="text-[11px] font-semibold text-muted-foreground block">
+                          {language === 'en' ? 'Connected WhatsApp Number' : 'কানেক্টেড হোয়াটসঅ্যাপ নম্বর'}
+                        </label>
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 font-bold flex items-center gap-1">
+                          <span>🔒</span> {language === 'en' ? 'Auto-Synced (Read-Only)' : 'অটো কানেক্টেড (পরিবর্তন অযোগ্য)'}
+                        </span>
+                      </div>
+
+                      {whatsappChannels.length === 0 ? (
+                        <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-500 text-xs flex items-center gap-2">
+                          <span className="text-base">⚠️</span>
+                          <span>
+                            {language === 'en' 
+                              ? 'No WhatsApp channel connected yet. Please connect a WhatsApp channel from Inbox Settings first.' 
+                              : 'কোনো হোয়াটসঅ্যাপ চ্যানেল কানেক্ট করা নেই। ইনবক্স সেটিংস থেকে প্রথমে হোয়াটসঅ্যাপ কানেক্ট করুন।'}
+                          </span>
+                        </div>
+                      ) : whatsappChannels.length === 1 ? (
+                        <div className="p-3 bg-background border border-emerald-500/30 rounded-xl flex items-center justify-between">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20">
+                              <PhoneCall className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold text-foreground font-mono">
+                                +{autoWhatsappNumber || 'No Number Detected'}
+                              </p>
+                              <p className="text-[10px] text-muted-foreground">
+                                {activeInbox?.displayName || (language === 'en' ? 'Active WhatsApp Channel' : 'সক্রিয় হোয়াটসঅ্যাপ চ্যানেল')}
+                              </p>
+                            </div>
+                          </div>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                            Connected 🟢
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="space-y-1.5">
+                          <select
+                            value={selectedInboxId}
+                            onChange={e => setSelectedInboxId(e.target.value)}
+                            className="w-full bg-background border border-border rounded-lg px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary font-mono cursor-pointer"
+                          >
+                            {whatsappChannels.map((c: any) => {
+                              const p = (c.phoneNumber || c.displayName || '').replace(/[\s\-\+\(\)]/g, '').split('@')[0];
+                              const cleanP = p.startsWith('0') ? '88' + p : p;
+                              return (
+                                <option key={c.id} value={c.id}>
+                                  {c.displayName || c.phoneNumber} (+{cleanP})
+                                </option>
+                              );
+                            })}
+                          </select>
+                        </div>
+                      )}
+
+                      <p className="text-[10px] text-muted-foreground mt-1.5 flex items-center gap-1">
+                        <span>Target Redirection Link:</span>
+                        <span className="font-mono text-emerald-400 font-bold">{waUrl}</span>
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-semibold text-muted-foreground mb-1 block">
+                        {language === 'en' ? 'Prefilled Text Message (Optional)' : 'পূর্বনির্ধারিত মেসেজ (ঐচ্ছিক)'}
+                      </label>
+                      <textarea
+                        value={prefilledText}
+                        onChange={e => setPrefilledText(e.target.value)}
+                        rows={2}
+                        placeholder="e.g. Hello! I came from your website."
+                        className="w-full bg-background border border-border rounded-lg px-3 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-[11px] font-semibold text-muted-foreground mb-1 block">
+                          {language === 'en' ? 'Position' : 'পজিশন'}
+                        </label>
+                        <select
+                          value={position}
+                          onChange={e => setPosition(e.target.value as any)}
+                          className="w-full bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary cursor-pointer"
+                        >
+                          <option value="bottom-right">{language === 'en' ? 'Bottom Right' : 'নিচে ডানদিকে'}</option>
+                          <option value="bottom-left">{language === 'en' ? 'Bottom Left' : 'নিচে বামদিকে'}</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="text-[11px] font-semibold text-muted-foreground mb-1 block">
+                          {language === 'en' ? 'Tooltip Text (Bangla)' : 'টুলটিপ টেক্সট (বাংলা)'}
+                        </label>
+                        <input
+                          type="text"
+                          value={tooltipTextBn}
+                          onChange={e => setTooltipTextBn(e.target.value)}
+                          className="w-full bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </>
               )}
 
-              {/* WhatsApp Specific Controls */}
-              {widgetType === 'WHATSAPP' && (
+              {/* LIVE CHAT Specific Controls */}
+              {widgetType === 'LIVE_CHAT' && (
                 <div className="border-t border-border pt-3 space-y-3">
-                  <div>
-                    <label className="text-[11px] font-semibold text-muted-foreground mb-1 block">
-                      {language === 'en' ? 'WhatsApp Phone Number' : 'হোয়াটসঅ্যাপ ফোন নম্বর'}
-                    </label>
-                    <input
-                      type="text"
-                      value={whatsappNumber}
-                      onChange={e => setWhatsappNumber(e.target.value)}
-                      placeholder="e.g. 8801533894967"
-                      className="w-full bg-background border border-border rounded-lg px-3 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary"
-                    />
-                    <p className="text-[10px] text-muted-foreground mt-1">
-                      Target Link: <span className="font-mono text-emerald-400">{waUrl}</span>
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="text-[11px] font-semibold text-muted-foreground mb-1 block">
-                      {language === 'en' ? 'Prefilled Text Message (Optional)' : 'পূর্বনির্ধারিত মেসেজ (ঐচ্ছিক)'}
-                    </label>
-                    <textarea
-                      value={prefilledText}
-                      onChange={e => setPrefilledText(e.target.value)}
-                      rows={2}
-                      placeholder="e.g. Hello! I came from your website."
-                      className="w-full bg-background border border-border rounded-lg px-3 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="text-[11px] font-semibold text-muted-foreground mb-1 block">
-                        {language === 'en' ? 'Position' : 'পজিশন'}
-                      </label>
-                      <select
-                        value={position}
-                        onChange={e => setPosition(e.target.value as any)}
-                        className="w-full bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary"
-                      >
-                        <option value="bottom-right">{language === 'en' ? 'Bottom Right' : 'নিচে ডানদিকে'}</option>
-                        <option value="bottom-left">{language === 'en' ? 'Bottom Left' : 'নিচে বামদিকে'}</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="text-[11px] font-semibold text-muted-foreground mb-1 block">
-                        {language === 'en' ? 'Tooltip Text (Bangla)' : 'টুলটিপ টেক্সট (বাংলা)'}
+                        {language === 'en' ? 'Widget Name' : 'উইজেটের নাম'}
                       </label>
                       <input
                         type="text"
-                        value={tooltipTextBn}
-                        onChange={e => setTooltipTextBn(e.target.value)}
-                        className="w-full bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary"
+                        value={name}
+                        onChange={e => setName(e.target.value)}
+                        className="w-full bg-background border border-border rounded-lg px-3 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-semibold text-muted-foreground mb-1 block">
+                        {language === 'en' ? 'Header Title' : 'হেডিং শিরোনাম'}
+                      </label>
+                      <input
+                        type="text"
+                        value={heading}
+                        onChange={e => setHeading(e.target.value)}
+                        className="w-full bg-background border border-border rounded-lg px-3 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary"
                       />
                     </div>
                   </div>
-                </div>
-              )}
 
-              {/* Name & Heading inputs for Live Chat */}
-              {widgetType === 'LIVE_CHAT' && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                   <div>
                     <label className="text-[11px] font-semibold text-muted-foreground mb-1 block">
-                      {language === 'en' ? 'Widget Name' : 'উইজেটের নাম'}
+                      {language === 'en' ? 'Tagline' : 'ট্যাগলাইন'}
                     </label>
                     <input
                       type="text"
-                      value={name}
-                      onChange={e => setName(e.target.value)}
-                      className="w-full bg-background border border-border rounded-lg px-3 py-2 md:py-1.5 text-[16px] md:text-xs text-foreground focus:outline-none focus:border-primary"
+                      value={tagline}
+                      onChange={e => setTagline(e.target.value)}
+                      className="w-full bg-background border border-border rounded-lg px-3 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary"
                     />
                   </div>
-                  <div>
-                    <label className="text-[11px] font-semibold text-muted-foreground mb-1 block">
-                      {language === 'en' ? 'Header Title' : 'হেডিং শিরোনাম'}
-                    </label>
-                    <input
-                      type="text"
-                      value={heading}
-                      onChange={e => setHeading(e.target.value)}
-                      className="w-full bg-background border border-border rounded-lg px-3 py-2 md:py-1.5 text-[16px] md:text-xs text-foreground focus:outline-none focus:border-primary"
-                    />
-                  </div>
-                </div>
-              )}
 
-              {/* Save Settings Button */}
-              <div className="flex items-center justify-between pt-2 border-t border-border">
-                {widgetType === 'LIVE_CHAT' && (
-                  <label className="flex items-center gap-2 cursor-pointer select-none text-xs font-semibold text-foreground">
+                  <label className="flex items-center gap-2 cursor-pointer select-none text-xs font-semibold text-foreground pt-1">
                     <input
                       type="checkbox"
                       checked={greetingEnabled}
@@ -827,8 +882,11 @@ function WidgetConfigModal({ widget, onClose, onRefresh, language, API }: any) {
                     />
                     <span>{language === 'en' ? 'Enable Greeting Message' : 'ওয়েলকাম মেসেজ সক্রিয় রাখুন'}</span>
                   </label>
-                )}
+                </div>
+              )}
 
+              {/* Save Settings Button */}
+              <div className="flex items-center justify-between pt-2 border-t border-border">
                 <button
                   onClick={handleSaveSettings}
                   disabled={saving}
@@ -865,12 +923,12 @@ function WidgetConfigModal({ widget, onClose, onRefresh, language, API }: any) {
                 <button
                   onClick={() => {
                     navigator.clipboard.writeText(scriptCode);
-                    toast.success(language === 'en' ? 'Script code copied!' : 'কোড কপি হয়েছে!');
+                    toast.success(language === 'en' ? 'Script code copied!' : 'à¦•à§‹à¦¡ à¦•à¦ªà¦¿ à¦¹à§Ÿà§‡à¦›à§‡!');
                   }}
                   className="px-4 py-1.5 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary/90 transition-all flex items-center gap-1.5 shadow-sm cursor-pointer"
                 >
                   <Copy className="w-3.5 h-3.5" />
-                  <span>{language === 'en' ? 'Copy Script Code' : 'কোড কপি করুন'}</span>
+                  <span>{language === 'en' ? 'Copy Script Code' : 'à¦•à§‹à¦¡ à¦•à¦ªà¦¿ à¦•à¦°à§�à¦¨'}</span>
                 </button>
               </div>
             </div>
@@ -896,51 +954,46 @@ function WidgetConfigModal({ widget, onClose, onRefresh, language, API }: any) {
               {/* Simulated Website Background Content */}
               <div className="flex-1 flex flex-col items-center justify-center p-4 text-center my-4">
                 <div className="w-12 h-12 rounded-2xl bg-slate-800/80 border border-slate-700/50 flex items-center justify-center mb-2">
-                  {widgetType === 'WHATSAPP' ? <MessageCircle className="w-6 h-6 text-emerald-400" /> : <Globe className="w-6 h-6 text-slate-400" />}
+                  <MessageCircle className="w-6 h-6 text-emerald-400" />
                 </div>
                 <p className="text-xs font-bold text-slate-300">
-                  {widgetType === 'WHATSAPP' ? 'WhatsApp Button Preview' : 'Live Chat Preview'}
+                  WhatsApp Button Preview
                 </p>
                 <p className="text-[10px] text-slate-500 mt-1 max-w-[200px]">
-                  {widgetType === 'WHATSAPP'
-                    ? 'Preview how the direct WhatsApp button renders on your site'
-                    : 'See how your live chat widget bubble looks on your website'}
+                  Preview how the direct WhatsApp button renders on your site
                 </p>
               </div>
 
-              {/* WHATSAPP WIDGET MODE PREVIEW */}
-              {widgetType === 'WHATSAPP' && (
+              {/* WIDGET PREVIEW ACCORDING TO TYPE */}
+              {widgetType === 'WHATSAPP' ? (
                 <div className={`w-full flex items-center ${position === 'bottom-left' ? 'justify-start' : 'justify-end'} p-2`}>
-                  <div className="flex items-center gap-2">
-                    <div className="bg-slate-800 text-white text-[10px] font-medium px-2.5 py-1.5 rounded-lg shadow-xl border border-slate-700 whitespace-nowrap animate-bounce">
-                      {tooltipTextBn || 'হোয়াটসঅ্যাপে চ্যাট করুন'}
-                    </div>
-
-                    <a
-                      href={waUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="group relative flex items-center justify-center w-12 h-12 rounded-full text-white shadow-2xl transition transform hover:scale-110"
-                      style={{ backgroundColor: primaryColor }}
-                    >
-                      <span className="absolute -inset-1 rounded-full opacity-35 animate-ping pointer-events-none" style={{ backgroundColor: primaryColor }} />
-                      {customIconUrl ? (
-                        <img src={`${API}${customIconUrl}`} alt="Icon" className="w-6 h-6 object-contain rounded-full relative z-10" />
-                      ) : (
-                        <svg className="w-6 h-6 fill-current relative z-10" viewBox="0 0 24 24">
-                          <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
-                        </svg>
-                      )}
-                    </a>
+                <div className="flex items-center gap-2">
+                  <div className="bg-slate-800 text-white text-[10px] font-medium px-2.5 py-1.5 rounded-lg shadow-xl border border-slate-700 whitespace-nowrap animate-bounce">
+                    {tooltipTextBn || 'à¦¹à§‹à¦¯à¦¼à¦¾à¦Ÿà¦¸à¦…à§�à¦¯à¦¾à¦ªà§‡ à¦šà§�à¦¯à¦¾à¦Ÿ à¦•à¦°à§�à¦¨'}
                   </div>
-                </div>
-              )}
 
-              {/* LIVE CHAT WIDGET MODE PREVIEW */}
-              {widgetType === 'LIVE_CHAT' && (
-                <>
-                  {isPreviewOpen && (
-                    <div className="w-full bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden mb-2 animate-in slide-in-from-bottom-4 duration-300">
+                  <a
+                    href={waUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="group relative flex items-center justify-center w-12 h-12 rounded-full text-white shadow-2xl transition transform hover:scale-110"
+                    style={{ backgroundColor: primaryColor }}
+                  >
+                    <span className="absolute -inset-1 rounded-full opacity-35 animate-ping pointer-events-none" style={{ backgroundColor: primaryColor }} />
+                    {customIconUrl ? (
+                      <img src={`${API}${customIconUrl}`} alt="Icon" className="w-6 h-6 object-contain rounded-full relative z-10" />
+                    ) : (
+                      <svg className="w-6 h-6 fill-current relative z-10" viewBox="0 0 24 24">
+                        <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+                      </svg>
+                    )}
+                  </a>
+                </div>
+              </div>
+            ) : (
+              <>
+                {isPreviewOpen && (
+                  <div className="w-full bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden mb-2 animate-in slide-in-from-bottom-4 duration-300">
                       <div className="p-3 text-white transition-colors flex items-center justify-between shadow-xs" style={{ backgroundColor: primaryColor }}>
                         <div className="flex items-center gap-2">
                           <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-white font-bold text-xs">
@@ -963,7 +1016,7 @@ function WidgetConfigModal({ widget, onClose, onRefresh, language, API }: any) {
                               AI
                             </div>
                             <div className="bg-white border border-slate-200 p-2 rounded-2xl rounded-tl-xs text-[11px] text-slate-800 shadow-2xs max-w-[85%] leading-relaxed">
-                              Hello! 👋 Welcome to our site. How can we help you today?
+                              Hello! ðŸ‘‹ Welcome to our site. How can we help you today?
                             </div>
                           </div>
                         )}
@@ -1001,7 +1054,7 @@ function WidgetConfigModal({ widget, onClose, onRefresh, language, API }: any) {
             </div>
             
             <p className="text-[10px] text-slate-400 mt-2 font-medium text-center">
-              💡 {language === 'en' ? 'Live preview updates instantly as you change settings' : 'ডিজাইন পরিবর্তন করলে সাথে সাথেই রিয়েল-টাইমে দেখা যাবে'}
+              ðŸ’¡ {language === 'en' ? 'Live preview updates instantly as you change settings' : 'à¦¡à¦¿à¦œà¦¾à¦‡à¦¨ à¦ªà¦°à¦¿à¦¬à¦°à§�à¦¤à¦¨ à¦•à¦°à¦²à§‡ à¦¸à¦¾à¦¥à§‡ à¦¸à¦¾à¦¥à§‡à¦‡ à¦°à¦¿à¦¯à¦¼à§‡à¦²-à¦Ÿà¦¾à¦‡à¦®à§‡ à¦¦à§‡à¦–à¦¾ à¦¯à¦¾à¦¬à§‡'}
             </p>
           </div>
 

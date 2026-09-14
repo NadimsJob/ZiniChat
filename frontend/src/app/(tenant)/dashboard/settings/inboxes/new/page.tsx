@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import {
   PhoneCall, MessageCircle, Camera, ChevronRight, CheckCircle2, ArrowLeft,
   Loader2, Sparkles, AlertCircle, Lock, TrendingUp, Crown, QrCode as QrIcon, Smartphone, RefreshCw,
-  Globe, Copy, Check, Zap, ExternalLink, ShieldCheck, HelpCircle
+  Globe, Copy, Check, Zap, ExternalLink, ShieldCheck, HelpCircle, Eye, Send, X, Trash2
 } from 'lucide-react';
 import { toast, Toaster } from 'react-hot-toast';
 import QRCode from 'react-qr-code';
@@ -80,6 +80,48 @@ export default function NewInboxStepper() {
     tagline: 'We are here to help you.',
     greetingEnabled: false,
   });
+  const [isPreviewOpen, setIsPreviewOpen] = useState(true);
+
+  const [waWidgetForm, setWaWidgetForm] = useState({
+    name: '',
+    primaryColor: '#1F824A',
+    customIconUrl: null as string | null,
+    position: 'bottom-right' as 'bottom-right' | 'bottom-left',
+    prefilledText: '',
+    tooltipTextEn: 'Chat with us on WhatsApp',
+    tooltipTextBn: 'হোয়াটসঅ্যাপে চ্যাট করুন',
+  });
+  const [uploadingWaIcon, setUploadingWaIcon] = useState(false);
+
+  const handleUploadWaIcon = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    setUploadingWaIcon(true);
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/website-widget/upload-icon`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setWaWidgetForm(prev => ({ ...prev, customIconUrl: data.iconUrl }));
+        toast.success(language === 'en' ? 'Custom icon uploaded successfully!' : 'কাস্টম আইকন সফলভাবে আপলোড হয়েছে!');
+      } else {
+        toast.error(language === 'en' ? 'Failed to upload icon' : 'আইকন আপলোড করতে ব্যর্থ হয়েছে');
+      }
+    } catch (err) {
+      toast.error('Error uploading icon');
+    } finally {
+      setUploadingWaIcon(false);
+    }
+  };
 
   const [showWaInstructions, setShowWaInstructions] = useState(false);
   const [showFbInstructions, setShowFbInstructions] = useState(false);
@@ -226,7 +268,11 @@ export default function NewInboxStepper() {
       });
       if (res.ok) {
         const channels = await res.json();
-        setWaInboxes(channels.filter((c: any) => c.channelType === 'whatsapp' && (c.status === 'active' || c.isConnected)));
+        const validWa = channels.filter((c: any) => c.channelType === 'whatsapp' && (c.status === 'active' || c.isConnected));
+        setWaInboxes(validWa);
+        if (validWa.length > 0) {
+          setSelectedWaInbox(validWa[0]);
+        }
       }
     } catch (e) { console.error(e); }
     finally { setWaInboxesLoading(false); }
@@ -255,15 +301,34 @@ export default function NewInboxStepper() {
   };
 
   // Website: create WhatsApp widget
-  const handleCreateWaWidget = async () => {
-    if (!selectedWaInbox) return;
+  const handleCreateWaWidget = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!selectedWaInbox) {
+      toast.error(language === 'en' ? 'Please select a WhatsApp channel' : 'অনুগ্রহ করে একটি হোয়াটসঅ্যাপ ইনবক্স নির্বাচন করুন');
+      return;
+    }
     setLoading(true);
     try {
       const token = Cookies.get('access_token');
+      const rawPhone = selectedWaInbox.phoneNumber || selectedWaInbox.displayName || '';
+      const cleanPhone = rawPhone.replace(/[\s\-\+\(\)]/g, '').split('@')[0];
+      const autoWhatsappNumber = cleanPhone ? (cleanPhone.startsWith('0') ? '88' + cleanPhone : cleanPhone) : '';
+
       const res = await fetch(`${API}/website-widget`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ type: 'WHATSAPP', name: `WA Widget – ${selectedWaInbox.displayName}`, whatsappInboxId: selectedWaInbox.id }),
+        body: JSON.stringify({
+          type: 'WHATSAPP',
+          name: waWidgetForm.name || `WA Widget – ${selectedWaInbox.displayName || selectedWaInbox.phoneNumber}`,
+          whatsappInboxId: selectedWaInbox.id,
+          whatsappNumber: autoWhatsappNumber,
+          primaryColor: waWidgetForm.primaryColor,
+          customIconUrl: waWidgetForm.customIconUrl,
+          position: waWidgetForm.position,
+          prefilledText: waWidgetForm.prefilledText,
+          tooltipTextEn: waWidgetForm.tooltipTextEn,
+          tooltipTextBn: waWidgetForm.tooltipTextBn,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Failed to create widget');
@@ -1274,87 +1339,203 @@ export default function NewInboxStepper() {
 
         {/* Step 3: Website — Live Chat Form */}
         {step === 3 && selectedChannel === 'website' && websiteSubType === 'LIVE_CHAT' && (
-          <div className="animate-in fade-in slide-in-from-right-8 duration-400 max-w-xl">
+          <div className="animate-in fade-in slide-in-from-right-8 duration-400 max-w-5xl">
             <button onClick={() => setStep(2)} className="flex items-center text-[12px] text-zinc-400 hover:text-foreground mb-6 transition-colors">
               <ArrowLeft className="w-3.5 h-3.5 mr-1" /> {language === 'en' ? 'Back' : 'পেছনে'}
             </button>
             <h1 className="text-2xl font-black text-foreground mb-6">
               {language === 'en' ? 'Configure Live Chat Widget' : 'লাইভ চ্যাট উইজেট কনফিগার করুন'}
             </h1>
-            <form onSubmit={handleCreateLiveChatWidget}>
-              <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-6 space-y-4">
-                {[
-                  { label: language === 'en' ? 'Widget Name' : 'উইজেটের নাম', key: 'name', placeholder: language === 'en' ? 'e.g. Sales Chat' : 'যেমন: সেলস চ্যাট', type: 'text', required: true },
-                  { label: language === 'en' ? 'Your Website Domain' : 'ওয়েবসাইট ডোমেইন', key: 'domain', placeholder: 'e.g. mystore.com', type: 'text', required: false },
-                  { label: language === 'en' ? 'Chat Heading' : 'চ্যাটের শিরোনাম', key: 'heading', placeholder: 'Chat with us', type: 'text', required: false },
-                  { label: language === 'en' ? 'Tagline' : 'ট্যাগলাইন', key: 'tagline', placeholder: 'We are here to help.', type: 'text', required: false },
-                ].map(field => (
-                  <div key={field.key}>
-                    <label className="block text-[12px] font-bold text-zinc-400 mb-1">{field.label}</label>
-                    <input
-                      required={field.required}
-                      type={field.type}
-                      value={(widgetForm as any)[field.key]}
-                      onChange={e => setWidgetForm({ ...widgetForm, [field.key]: e.target.value })}
-                      placeholder={field.placeholder}
-                      className="w-full bg-background border border-surface-hover rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-primary transition-colors text-foreground"
-                    />
-                  </div>
-                ))}
-                <div>
-                  <label className="block text-[12px] font-bold text-zinc-400 mb-1">
-                    {language === 'en' ? 'Brand Color' : 'ব্র্যান্ড কালার'}
-                  </label>
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="color"
-                      value={widgetForm.primaryColor}
-                      onChange={e => setWidgetForm({ ...widgetForm, primaryColor: e.target.value })}
-                      className="w-10 h-10 rounded-lg border border-surface-hover cursor-pointer bg-transparent"
-                    />
-                    <span className="text-[12px] font-mono text-zinc-400">{widgetForm.primaryColor}</span>
-                  </div>
-                </div>
-                <label className="flex items-center gap-3 cursor-pointer p-3 bg-background border border-surface-hover rounded-xl hover:border-primary/40 transition-colors">
-                  <input
-                    type="checkbox"
-                    checked={widgetForm.greetingEnabled}
-                    onChange={e => setWidgetForm({ ...widgetForm, greetingEnabled: e.target.checked })}
-                    className="w-4 h-4 rounded text-primary"
-                  />
+            
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              {/* Form Controls (Left Column - 7 cols) */}
+              <form onSubmit={handleCreateLiveChatWidget} className="lg:col-span-7">
+                <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-6 space-y-4 shadow-xl">
+                  {[
+                    { label: language === 'en' ? 'Widget Name' : 'উইজেটের নাম', key: 'name', placeholder: language === 'en' ? 'e.g. Sales Chat' : 'যেমন: সেলস চ্যাট', type: 'text', required: true },
+                    { label: language === 'en' ? 'Your Website Domain' : 'ওয়েবসাইট ডোমেইন', key: 'domain', placeholder: 'e.g. mystore.com', type: 'text', required: false },
+                    { label: language === 'en' ? 'Chat Heading' : 'চ্যাটের শিরোনাম', key: 'heading', placeholder: 'Chat with us', type: 'text', required: false },
+                    { label: language === 'en' ? 'Tagline' : 'ট্যাগলাইন', key: 'tagline', placeholder: 'We are here to help.', type: 'text', required: false },
+                  ].map(field => (
+                    <div key={field.key}>
+                      <label className="block text-[12px] font-bold text-zinc-400 mb-1">{field.label}</label>
+                      <input
+                        required={field.required}
+                        type={field.type}
+                        value={(widgetForm as any)[field.key]}
+                        onChange={e => setWidgetForm({ ...widgetForm, [field.key]: e.target.value })}
+                        placeholder={field.placeholder}
+                        className="w-full bg-background border border-surface-hover rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-primary transition-colors text-foreground"
+                      />
+                    </div>
+                  ))}
+
                   <div>
-                    <div className="text-[12px] font-bold text-foreground">{language === 'en' ? 'Show Greeting Message' : 'স্বাগত বার্তা দেখান'}</div>
-                    <div className="text-[11px] text-zinc-400">{language === 'en' ? 'Auto-open chat with a greeting when visitor arrives' : 'ভিজিটর আসলে স্বয়ংক্রিয়ভাবে চ্যাট খুলবে'}</div>
+                    <label className="block text-[12px] font-bold text-zinc-400 mb-1.5">
+                      {language === 'en' ? 'Brand Color' : 'ব্র্যান্ড কালার'}
+                    </label>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {['#1F824A', '#2563EB', '#7C3AED', '#0891B2', '#EE8D27', '#DC2626', '#000000'].map(color => (
+                        <button
+                          key={color}
+                          type="button"
+                          onClick={() => setWidgetForm({ ...widgetForm, primaryColor: color })}
+                          style={{ backgroundColor: color }}
+                          className={`w-7 h-7 rounded-full border-2 transition-all cursor-pointer ${
+                            widgetForm.primaryColor === color ? 'border-white scale-110 shadow-md' : 'border-transparent opacity-80 hover:opacity-100'
+                          }`}
+                        />
+                      ))}
+                      <div className="flex items-center gap-1.5 ml-2 border border-surface-hover rounded-lg px-2 py-1 bg-background">
+                        <input
+                          type="color"
+                          value={widgetForm.primaryColor}
+                          onChange={e => setWidgetForm({ ...widgetForm, primaryColor: e.target.value })}
+                          className="w-5 h-5 rounded cursor-pointer border-0 bg-transparent"
+                        />
+                        <span className="text-[11px] font-mono text-foreground uppercase">{widgetForm.primaryColor}</span>
+                      </div>
+                    </div>
                   </div>
-                </label>
-                <button disabled={loading} type="submit" className="w-full bg-purple-600 text-white py-2.5 rounded-xl font-bold hover:bg-purple-700 flex items-center justify-center gap-2 disabled:opacity-50 transition-all mt-2">
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
-                  {language === 'en' ? 'Generate Widget Code' : 'উইজেট কোড তৈরি করুন'}
-                </button>
+
+                  <label className="flex items-center gap-3 cursor-pointer p-3 bg-background border border-surface-hover rounded-xl hover:border-primary/40 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={widgetForm.greetingEnabled}
+                      onChange={e => setWidgetForm({ ...widgetForm, greetingEnabled: e.target.checked })}
+                      className="w-4 h-4 rounded text-primary"
+                    />
+                    <div>
+                      <div className="text-[12px] font-bold text-foreground">{language === 'en' ? 'Show Greeting Message' : 'স্বাগত বার্তা দেখান'}</div>
+                      <div className="text-[11px] text-zinc-400">{language === 'en' ? 'Auto-open chat with a greeting when visitor arrives' : 'ভিজিটর আসলে স্বয়ংক্রিয়ভাবে চ্যাট খুলবে'}</div>
+                    </div>
+                  </label>
+
+                  <button disabled={loading} type="submit" className="w-full bg-purple-600 text-white py-2.5 rounded-xl font-bold hover:bg-purple-700 flex items-center justify-center gap-2 disabled:opacity-50 transition-all mt-2 cursor-pointer shadow-lg">
+                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                    {language === 'en' ? 'Generate Widget Code' : 'উইজেট কোড তৈরি করুন'}
+                  </button>
+                </div>
+              </form>
+
+              {/* Live Interactive Visual Preview (Right Column - 5 cols) */}
+              <div className="lg:col-span-5 flex flex-col items-center">
+                <div className="w-full bg-slate-900 rounded-2xl border border-slate-800 shadow-2xl overflow-hidden relative min-h-[400px] flex flex-col justify-between p-3 select-none">
+                  
+                  {/* Simulated Browser Bar */}
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-2 px-1">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2.5 h-2.5 rounded-full bg-rose-500" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                    </div>
+                    <span className="text-[10px] font-medium text-slate-400 bg-slate-800 px-2 py-0.5 rounded truncate max-w-[140px]">
+                      {widgetForm.domain || 'your-website.com'}
+                    </span>
+                    <Eye className="w-3.5 h-3.5 text-slate-500" />
+                  </div>
+
+                  {/* Simulated Website Background Content */}
+                  <div className="flex-1 flex flex-col items-center justify-center p-4 text-center my-4">
+                    <div className="w-12 h-12 rounded-2xl bg-slate-800/80 border border-slate-700/50 flex items-center justify-center mb-2">
+                      <Globe className="w-6 h-6 text-slate-400" />
+                    </div>
+                    <p className="text-xs font-bold text-slate-300">
+                      {language === 'en' ? 'Live Chat Preview' : 'লাইভ চ্যাট প্রিভিউ'}
+                    </p>
+                    <p className="text-[10px] text-slate-500 mt-1 max-w-[200px]">
+                      {language === 'en' 
+                        ? 'See how your live chat widget bubble & chat box look on your site in real-time' 
+                        : 'আপনার ওয়েবসাইটে চ্যাট বাটন এবং উইজেট কেমন দেখাবে তা রিয়েল-টাইমে দেখুন'}
+                    </p>
+                  </div>
+
+                  {/* Live Chat Widget Box Preview */}
+                  <div>
+                    {isPreviewOpen && (
+                      <div className="w-full bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden mb-2 animate-in slide-in-from-bottom-4 duration-300">
+                        <div className="p-3 text-white transition-colors flex items-center justify-between shadow-xs" style={{ backgroundColor: widgetForm.primaryColor || '#1F824A' }}>
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-white font-bold text-xs">
+                              Z
+                            </div>
+                            <div>
+                              <h5 className="font-bold text-xs truncate max-w-[150px] leading-tight">{widgetForm.heading || 'Chat with us'}</h5>
+                              <p className="text-[10px] text-white/80 truncate max-w-[150px] leading-tight">{widgetForm.tagline || 'We are here to help you.'}</p>
+                            </div>
+                          </div>
+                          <button type="button" onClick={() => setIsPreviewOpen(false)} className="text-white/80 hover:text-white p-1 cursor-pointer">
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
+                        <div className="p-3 bg-slate-50 space-y-2 min-h-[100px] max-h-[120px] overflow-y-auto">
+                          {widgetForm.greetingEnabled && (
+                            <div className="flex items-start gap-1.5">
+                              <div className="w-5 h-5 rounded-full text-[9px] font-bold text-white flex items-center justify-center shrink-0 mt-0.5 transition-colors" style={{ backgroundColor: widgetForm.primaryColor || '#1F824A' }}>
+                                AI
+                              </div>
+                              <div className="bg-white border border-slate-200 p-2 rounded-2xl rounded-tl-xs text-[11px] text-slate-800 shadow-2xs max-w-[85%] leading-relaxed">
+                                Hello! 👋 Welcome to our site. How can we help you today?
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="p-2 border-t border-slate-100 bg-white flex items-center gap-2">
+                          <input
+                            disabled
+                            type="text"
+                            placeholder="Type a message..."
+                            className="w-full bg-slate-100 rounded-lg px-2.5 py-1 text-[10px] text-slate-400 focus:outline-none"
+                          />
+                          <div className="p-1 rounded-lg text-white shrink-0 transition-colors" style={{ backgroundColor: widgetForm.primaryColor || '#1F824A' }}>
+                            <Send className="w-3 h-3" />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex justify-end pr-1 pb-1">
+                      <button
+                        type="button"
+                        onClick={() => setIsPreviewOpen(!isPreviewOpen)}
+                        style={{ backgroundColor: widgetForm.primaryColor || '#1F824A' }}
+                        className="w-11 h-11 rounded-full text-white flex items-center justify-center shadow-lg hover:scale-105 transition-all cursor-pointer relative"
+                        title="Click to toggle chat preview"
+                      >
+                        <MessageCircle className="w-5 h-5" />
+                        <span className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-400 border-2 border-slate-900 rounded-full animate-pulse" />
+                      </button>
+                    </div>
+                  </div>
+
+                </div>
+
+                <p className="text-[10px] text-zinc-400 mt-2 font-medium text-center">
+                  💡 {language === 'en' ? 'Live preview updates instantly as you type' : 'ইনপুট পরিবর্তন করলে সাথে সাথেই রিয়েল-টাইমে দেখা যাবে'}
+                </p>
               </div>
-            </form>
+            </div>
           </div>
         )}
 
-        {/* Step 3: Website — WhatsApp Inbox Picker */}
+        {/* Step 3: Website — WhatsApp Widget Setup & Live Preview */}
         {step === 3 && selectedChannel === 'website' && websiteSubType === 'WHATSAPP' && (
-          <div className="animate-in fade-in slide-in-from-right-8 duration-400 max-w-xl">
-            <button onClick={() => setStep(2)} className="flex items-center text-[12px] text-zinc-400 hover:text-foreground mb-6 transition-colors">
+          <div className="animate-in fade-in slide-in-from-right-8 duration-400 max-w-5xl">
+            <button onClick={() => setStep(2)} className="flex items-center text-[12px] text-zinc-400 hover:text-foreground mb-6 transition-colors cursor-pointer">
               <ArrowLeft className="w-3.5 h-3.5 mr-1" /> {language === 'en' ? 'Back' : 'পেছনে'}
             </button>
-            <h1 className="text-2xl font-black text-foreground mb-1">
-              {language === 'en' ? 'Pick a WhatsApp Inbox' : 'হোয়াটসঅ্যাপ ইনবক্স বেছে নিন'}
+            <h1 className="text-2xl font-black text-foreground mb-6">
+              {language === 'en' ? 'Configure WhatsApp Website Widget' : 'ওয়েবসাইট হোয়াটসঅ্যাপ উইজেট কনফিগার করুন'}
             </h1>
-            <p className="text-[13px] text-zinc-400 mb-6">
-              {language === 'en' ? 'Visitors clicking your website button will open a chat with this number.' : 'ভিজিটররা বাটন ক্লিক করলে এই নম্বরে চ্যাট খুলবে।'}
-            </p>
 
             {waInboxesLoading ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="w-6 h-6 animate-spin text-primary" />
               </div>
             ) : waInboxes.length === 0 ? (
-              <div className="bg-surface/70 border border-surface-hover rounded-2xl p-8 text-center">
+              <div className="bg-surface/70 border border-surface-hover rounded-2xl p-8 text-center max-w-md mx-auto">
                 <div className="w-14 h-14 rounded-2xl bg-orange-500/10 flex items-center justify-center mx-auto mb-4">
                   <AlertCircle className="w-7 h-7 text-orange-400" />
                 </div>
@@ -1366,46 +1547,259 @@ export default function NewInboxStepper() {
                 </p>
                 <button
                   onClick={() => { setStep(1); setSelectedChannel('whatsapp'); setTimeout(() => setStep(2), 100); }}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-xl font-bold text-[12px] hover:bg-emerald-500 transition-colors"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-xl font-bold text-[12px] hover:bg-emerald-500 transition-colors cursor-pointer"
                 >
                   <PhoneCall className="w-4 h-4" />
                   {language === 'en' ? 'Connect WhatsApp First' : 'WhatsApp কানেক্ট করুন'}
                 </button>
               </div>
             ) : (
-              <div className="space-y-3">
-                {waInboxes.map(inbox => (
-                  <button
-                    key={inbox.id}
-                    onClick={() => setSelectedWaInbox(selectedWaInbox?.id === inbox.id ? null : inbox)}
-                    className={`w-full text-left p-4 rounded-2xl border transition-all ${
-                      selectedWaInbox?.id === inbox.id
-                        ? 'border-emerald-500 bg-emerald-500/10'
-                        : 'border-surface-hover bg-surface/70 hover:border-emerald-500/50'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
-                        <PhoneCall className="w-4 h-4 text-emerald-500" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-bold text-[13px] text-foreground truncate">{inbox.displayName || 'WhatsApp'}</div>
-                        <div className="text-[11px] text-zinc-400">{inbox.phoneNumber || inbox.provider}</div>
-                      </div>
-                      {selectedWaInbox?.id === inbox.id && (
-                        <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                {/* Form Controls (Left Column - 7 cols) */}
+                <form onSubmit={handleCreateWaWidget} className="lg:col-span-7 space-y-4">
+                  <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-6 space-y-4 shadow-xl">
+                    
+                    {/* Select Connected WhatsApp Channel */}
+                    <div>
+                      <label className="block text-[12px] font-bold text-zinc-400 mb-1">
+                        {language === 'en' ? 'Target WhatsApp Channel' : 'টার্গেট হোয়াটসঅ্যাপ চ্যানেল'}
+                      </label>
+                      {waInboxes.length === 1 ? (
+                        <div className="p-3 bg-background border border-emerald-500/30 rounded-xl flex items-center justify-between">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20">
+                              <PhoneCall className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold text-foreground font-mono">
+                                {selectedWaInbox?.phoneNumber || selectedWaInbox?.displayName}
+                              </p>
+                              <p className="text-[10px] text-zinc-400">
+                                {selectedWaInbox?.displayName || 'Active WhatsApp'}
+                              </p>
+                            </div>
+                          </div>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                            Connected 🟢
+                          </span>
+                        </div>
+                      ) : (
+                        <select
+                          value={selectedWaInbox?.id || ''}
+                          onChange={e => {
+                            const found = waInboxes.find(i => i.id === e.target.value);
+                            if (found) setSelectedWaInbox(found);
+                          }}
+                          className="w-full bg-background border border-surface-hover rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-primary transition-colors text-foreground font-mono cursor-pointer"
+                        >
+                          {waInboxes.map(inbox => (
+                            <option key={inbox.id} value={inbox.id}>
+                              {inbox.displayName || inbox.phoneNumber} ({inbox.phoneNumber})
+                            </option>
+                          ))}
+                        </select>
                       )}
                     </div>
-                  </button>
-                ))}
-                <button
-                  disabled={!selectedWaInbox || loading}
-                  onClick={handleCreateWaWidget}
-                  className="w-full mt-2 bg-emerald-600 text-white py-2.5 rounded-xl font-bold hover:bg-emerald-500 flex items-center justify-center gap-2 disabled:opacity-40 transition-all"
-                >
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Globe className="w-4 h-4" />}
-                  {language === 'en' ? 'Generate Widget Code' : 'উইজেট কোড তৈরি করুন'}
-                </button>
+
+                    {/* Widget Name */}
+                    <div>
+                      <label className="block text-[12px] font-bold text-zinc-400 mb-1">
+                        {language === 'en' ? 'Widget Name' : 'উইজেটের নাম'}
+                      </label>
+                      <input
+                        type="text"
+                        value={waWidgetForm.name}
+                        onChange={e => setWaWidgetForm({ ...waWidgetForm, name: e.target.value })}
+                        placeholder={selectedWaInbox ? `WA Widget – ${selectedWaInbox.displayName || selectedWaInbox.phoneNumber}` : 'e.g. Website WhatsApp Button'}
+                        className="w-full bg-background border border-surface-hover rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-primary transition-colors text-foreground"
+                      />
+                    </div>
+
+                    {/* Brand Color Selector */}
+                    <div>
+                      <label className="block text-[12px] font-bold text-zinc-400 mb-1.5">
+                        {language === 'en' ? 'Button Theme Color' : 'বাটন ব্র্যান্ড কালার'}
+                      </label>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {['#1F824A', '#25D366', '#128C7E', '#075E54', '#EE8D27', '#2563EB', '#0891B2'].map(color => (
+                          <button
+                            key={color}
+                            type="button"
+                            onClick={() => setWaWidgetForm({ ...waWidgetForm, primaryColor: color })}
+                            style={{ backgroundColor: color }}
+                            className={`w-7 h-7 rounded-full border-2 transition-all cursor-pointer ${
+                              waWidgetForm.primaryColor === color ? 'border-white scale-110 shadow-md' : 'border-transparent opacity-80 hover:opacity-100'
+                            }`}
+                          />
+                        ))}
+                        <div className="flex items-center gap-1.5 ml-2 border border-surface-hover rounded-lg px-2 py-1 bg-background">
+                          <input
+                            type="color"
+                            value={waWidgetForm.primaryColor}
+                            onChange={e => setWaWidgetForm({ ...waWidgetForm, primaryColor: e.target.value })}
+                            className="w-5 h-5 rounded cursor-pointer border-0 bg-transparent"
+                          />
+                          <span className="text-[11px] font-mono text-foreground uppercase">{waWidgetForm.primaryColor}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Widget Icon Customization */}
+                    <div>
+                      <label className="block text-[12px] font-bold text-zinc-400 mb-1">
+                        {language === 'en' ? 'Widget Icon' : 'উইজেট আইকন'}
+                      </label>
+                      <div className="flex items-center gap-3 p-3 bg-background border border-surface-hover rounded-xl">
+                        <div
+                          className="w-10 h-10 rounded-full flex items-center justify-center text-white shrink-0 shadow-sm"
+                          style={{ backgroundColor: waWidgetForm.primaryColor }}
+                        >
+                          {waWidgetForm.customIconUrl ? (
+                            <img src={`${API}${waWidgetForm.customIconUrl}`} alt="Icon" className="w-6 h-6 object-contain rounded-full" />
+                          ) : (
+                            <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
+                              <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+                            </svg>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-foreground">
+                            {waWidgetForm.customIconUrl ? 'Custom Icon Image' : 'Vector WhatsApp Icon'}
+                          </p>
+                          <p className="text-[10px] text-zinc-400">
+                            {language === 'en' ? 'Use default icon or upload custom image' : 'ডিফল্ট আইকন অথবা আপনার লোগো আপলোড করুন'}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <label className="px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-xs font-bold cursor-pointer transition">
+                            {uploadingWaIcon ? '...' : (language === 'en' ? 'Upload' : 'আপলোড')}
+                            <input type="file" accept="image/*" onChange={handleUploadWaIcon} className="hidden" disabled={uploadingWaIcon} />
+                          </label>
+                          {waWidgetForm.customIconUrl && (
+                            <button
+                              type="button"
+                              onClick={() => setWaWidgetForm({ ...waWidgetForm, customIconUrl: null })}
+                              className="p-1.5 text-red-500 hover:bg-red-500/10 rounded-lg transition cursor-pointer"
+                              title="Reset to default icon"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Prefilled Text */}
+                    <div>
+                      <label className="block text-[12px] font-bold text-zinc-400 mb-1">
+                        {language === 'en' ? 'Prefilled Text Message (Optional)' : 'পূর্বনির্ধারিত মেসেজ (ঐচ্ছিক)'}
+                      </label>
+                      <input
+                        type="text"
+                        value={waWidgetForm.prefilledText}
+                        onChange={e => setWaWidgetForm({ ...waWidgetForm, prefilledText: e.target.value })}
+                        placeholder="e.g. Hello! I came from your website."
+                        className="w-full bg-background border border-surface-hover rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-primary transition-colors text-foreground"
+                      />
+                    </div>
+
+                    {/* Position & Tooltip Text */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[12px] font-bold text-zinc-400 mb-1">
+                          {language === 'en' ? 'Button Position' : 'বাটন পজিশন'}
+                        </label>
+                        <select
+                          value={waWidgetForm.position}
+                          onChange={e => setWaWidgetForm({ ...waWidgetForm, position: e.target.value as any })}
+                          className="w-full bg-background border border-surface-hover rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-primary cursor-pointer text-foreground"
+                        >
+                          <option value="bottom-right">{language === 'en' ? 'Bottom Right' : 'নিচে ডানদিকে'}</option>
+                          <option value="bottom-left">{language === 'en' ? 'Bottom Left' : 'নিচে বামদিকে'}</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[12px] font-bold text-zinc-400 mb-1">
+                          {language === 'en' ? 'Tooltip Text (Bangla)' : 'টুলটিপ টেক্সট (বাংলা)'}
+                        </label>
+                        <input
+                          type="text"
+                          value={waWidgetForm.tooltipTextBn}
+                          onChange={e => setWaWidgetForm({ ...waWidgetForm, tooltipTextBn: e.target.value })}
+                          className="w-full bg-background border border-surface-hover rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-primary transition-colors text-foreground"
+                        />
+                      </div>
+                    </div>
+
+                    <button disabled={loading || !selectedWaInbox} type="submit" className="w-full bg-emerald-600 text-white py-2.5 rounded-xl font-bold hover:bg-emerald-500 flex items-center justify-center gap-2 disabled:opacity-50 transition-all mt-2 cursor-pointer shadow-lg">
+                      {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Globe className="w-4 h-4" />}
+                      {language === 'en' ? 'Generate Widget Code' : 'উইজেট কোড তৈরি করুন'}
+                    </button>
+                  </div>
+                </form>
+
+                {/* Live Interactive Visual Preview (Right Column - 5 cols) */}
+                <div className="lg:col-span-5 flex flex-col items-center">
+                  <div className="w-full bg-slate-900 rounded-2xl border border-slate-800 shadow-2xl overflow-hidden relative min-h-[400px] flex flex-col justify-between p-3 select-none">
+                    
+                    {/* Simulated Browser Bar */}
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-2 px-1">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-2.5 h-2.5 rounded-full bg-rose-500" />
+                        <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                      </div>
+                      <span className="text-[10px] font-medium text-slate-400 bg-slate-800 px-2 py-0.5 rounded truncate max-w-[140px]">
+                        your-website.com
+                      </span>
+                      <Eye className="w-3.5 h-3.5 text-slate-500" />
+                    </div>
+
+                    {/* Simulated Website Background Content */}
+                    <div className="flex-1 flex flex-col items-center justify-center p-4 text-center my-4">
+                      <div className="w-12 h-12 rounded-2xl bg-slate-800/80 border border-slate-700/50 flex items-center justify-center mb-2">
+                        <PhoneCall className="w-6 h-6 text-emerald-400" />
+                      </div>
+                      <p className="text-xs font-bold text-slate-300">
+                        {language === 'en' ? 'WhatsApp Button Preview' : 'হোয়াটসঅ্যাপ বাটন প্রিভিউ'}
+                      </p>
+                      <p className="text-[10px] text-slate-500 mt-1 max-w-[200px]">
+                        {language === 'en' 
+                          ? 'Preview how the direct WhatsApp button renders on your site in real-time' 
+                          : 'আপনার ওয়েবসাইটে হোয়াটসঅ্যাপ ফ্লোটিং বাটন কেমন দেখাবে তা দেখুন'}
+                      </p>
+                    </div>
+
+                    {/* Floating WhatsApp Button Preview */}
+                    <div className={`w-full flex items-center ${waWidgetForm.position === 'bottom-left' ? 'justify-start' : 'justify-end'} p-2`}>
+                      <div className="flex items-center gap-2">
+                        <div className="bg-slate-800 text-white text-[10px] font-medium px-2.5 py-1.5 rounded-lg shadow-xl border border-slate-700 whitespace-nowrap animate-bounce">
+                          {waWidgetForm.tooltipTextBn || 'হোয়াটসঅ্যাপে চ্যাট করুন'}
+                        </div>
+
+                        <div
+                          className="group relative flex items-center justify-center w-12 h-12 rounded-full text-white shadow-2xl transition transform hover:scale-110"
+                          style={{ backgroundColor: waWidgetForm.primaryColor }}
+                        >
+                          <span className="absolute -inset-1 rounded-full opacity-35 animate-ping pointer-events-none" style={{ backgroundColor: waWidgetForm.primaryColor }} />
+                          {waWidgetForm.customIconUrl ? (
+                            <img src={`${API}${waWidgetForm.customIconUrl}`} alt="Icon" className="w-6 h-6 object-contain rounded-full relative z-10" />
+                          ) : (
+                            <svg className="w-6 h-6 fill-current relative z-10" viewBox="0 0 24 24">
+                              <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+                            </svg>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+
+                  <p className="text-[10px] text-zinc-400 mt-2 font-medium text-center">
+                    💡 {language === 'en' ? 'Live preview updates instantly as you change settings' : 'ইনপুট পরিবর্তন করলে সাথে সাথেই রিয়েল-টাইমে দেখা যাবে'}
+                  </p>
+                </div>
               </div>
             )}
           </div>
