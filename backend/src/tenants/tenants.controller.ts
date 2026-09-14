@@ -72,6 +72,32 @@ export class TenantsController {
     return this.tenantsService.updateCountry(id, country, actorUserId);
   }
 
+  @Patch(':id/profile')
+  @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
+  @Roles('superadmin')
+  @RequirePermissions('manage:tenants')
+  updateProfile(
+    @Param('id') id: string,
+    @Body() data: any,
+    @Req() req: any,
+  ) {
+    const actorUserId = req.user.userId;
+    return this.tenantsService.updateTenantProfile(id, data, actorUserId);
+  }
+
+  @Patch(':id/reset-password')
+  @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
+  @Roles('superadmin')
+  @RequirePermissions('manage:tenants')
+  resetOwnerPassword(
+    @Param('id') id: string,
+    @Body('newPassword') newPassword: string,
+    @Req() req: any,
+  ) {
+    const actorUserId = req.user.userId;
+    return this.tenantsService.superadminResetTenantOwnerPassword(id, newPassword, actorUserId);
+  }
+
   @Patch(':id/customize')
   @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
   @Roles('superadmin')

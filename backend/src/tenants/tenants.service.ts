@@ -5,6 +5,7 @@ import { BillingService } from '../billing/billing.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { SmtpService } from '../smtp/smtp.service';
 import { Prisma } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class TenantsService {
@@ -652,5 +653,96 @@ export class TenantsService {
     });
 
     return { success: true, country: updated.country };
+  }
+
+  async updateTenantProfile(
+    id: string,
+    data: {
+      businessName?: string;
+      brandName?: string;
+      ownerName?: string;
+      address?: string;
+      phoneNo?: string;
+      country?: string;
+    },
+    actorUserId: string,
+  ) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id },
+      include: {
+        users: {
+          where: { role: { in: ['owner', 'admin'] } },
+          select: { id: true },
+          take: 1,
+        },
+      },
+    });
+    if (!tenant) throw new NotFoundException('Tenant not found');
+
+    const updateData: Prisma.TenantUpdateInput = {};
+    if (data.businessName !== undefined) updateData.businessName = data.businessName;
+    if (data.brandName !== undefined) updateData.brandName = data.brandName;
+    if (data.address !== undefined) updateData.address = data.address;
+    if (data.phoneNo !== undefined) updateData.phoneNo = data.phoneNo;
+    if (data.country !== undefined) updateData.country = data.country;
+
+    const updated = await this.prisma.tenant.update({
+      where: { id },
+      data: updateData,
+    });
+
+    if (data.ownerName && tenant.users?.[0]?.id) {
+      await this.prisma.user.update({
+        where: { id: tenant.users[0].id },
+        data: { name: data.ownerName },
+      });
+    }
+
+    await this.prisma.auditLog.create({
+      data: {
+        actorUserId,
+        targetTenantId: id,
+        action: 'SUPERADMIN_UPDATED_TENANT_PROFILE',
+        metadataJson: data,
+      },
+    });
+
+    return { success: true, tenant: updated };
+  }
+
+  async superadminResetTenantOwnerPassword(tenantId: string, newPassword: string, actorUserId: string) {
+    if (!newPassword || newPassword.trim().length < 6) {
+      throw new BadRequestException('Password must be at least 6 characters long');
+    }
+
+    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+    if (!tenant) throw new NotFoundException('Tenant not found');
+
+    const owner = await this.prisma.user.findFirst({
+      where: { tenantId, role: { in: ['owner', 'admin'] } },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    if (!owner) throw new NotFoundException('Tenant owner user not found');
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await this.prisma.user.update({
+      where: { id: owner.id },
+      data: { passwordHash },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        actorUserId,
+        targetTenantId: tenantId,
+        action: 'SUPERADMIN_RESET_TENANT_OWNER_PASSWORD',
+        metadataJson: {
+          targetUserId: owner.id,
+          targetUserEmail: owner.email,
+        },
+      },
+    });
+
+    return { success: true, message: 'Password updated successfully' };
   }
 }

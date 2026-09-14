@@ -32,6 +32,8 @@ describe('TenantsService - Plan Customization', () => {
       },
       user: {
         findUnique: jest.fn(),
+        findFirst: jest.fn(),
+        update: jest.fn(),
         count: jest.fn().mockResolvedValue(1),
       },
       plan: {
@@ -355,6 +357,79 @@ describe('TenantsService - Plan Customization', () => {
           name: 'Acme Corp',
         },
       });
+    });
+  });
+
+  describe('updateTenantProfile', () => {
+    it('throws NotFoundException if tenant not found', async () => {
+      prisma.tenant.findUnique.mockResolvedValue(null);
+      await expect(service.updateTenantProfile(TENANT_ID, {}, ACTOR_ID)).rejects.toThrow(NotFoundException);
+    });
+
+    it('updates tenant profile fields and owner name, creating an audit log', async () => {
+      const mockTenant = {
+        id: TENANT_ID,
+        businessName: 'Old Name',
+        users: [{ id: 'user-owner-1', name: 'Old Owner' }],
+      };
+      prisma.tenant.findUnique.mockResolvedValue(mockTenant);
+      prisma.tenant.update.mockResolvedValue({ ...mockTenant, businessName: 'New Name', phoneNo: '+8801700000000' });
+      prisma.user.update.mockResolvedValue({ id: 'user-owner-1', name: 'New Owner' });
+
+      const res = await service.updateTenantProfile(
+        TENANT_ID,
+        { businessName: 'New Name', ownerName: 'New Owner', phoneNo: '+8801700000000' },
+        ACTOR_ID,
+      );
+
+      expect(prisma.tenant.update).toHaveBeenCalledWith({
+        where: { id: TENANT_ID },
+        data: expect.objectContaining({ businessName: 'New Name', phoneNo: '+8801700000000' }),
+      });
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id: 'user-owner-1' },
+        data: { name: 'New Owner' },
+      });
+      expect(prisma.auditLog.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          actorUserId: ACTOR_ID,
+          targetTenantId: TENANT_ID,
+          action: 'SUPERADMIN_UPDATED_TENANT_PROFILE',
+        }),
+      });
+      expect(res.success).toBe(true);
+    });
+  });
+
+  describe('superadminResetTenantOwnerPassword', () => {
+    it('throws BadRequestException if password is too short', async () => {
+      await expect(service.superadminResetTenantOwnerPassword(TENANT_ID, '123', ACTOR_ID)).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws NotFoundException if tenant not found', async () => {
+      prisma.tenant.findUnique.mockResolvedValue(null);
+      await expect(service.superadminResetTenantOwnerPassword(TENANT_ID, 'newpassword123', ACTOR_ID)).rejects.toThrow(NotFoundException);
+    });
+
+    it('resets owner password hash and logs audit entry', async () => {
+      prisma.tenant.findUnique.mockResolvedValue({ id: TENANT_ID });
+      prisma.user.findFirst.mockResolvedValue({ id: 'owner-user-id', email: 'owner@test.com', role: 'owner' });
+      prisma.user.update.mockResolvedValue({ id: 'owner-user-id' });
+
+      const res = await service.superadminResetTenantOwnerPassword(TENANT_ID, 'newSecretPassword123', ACTOR_ID);
+
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id: 'owner-user-id' },
+        data: { passwordHash: expect.any(String) },
+      });
+      expect(prisma.auditLog.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          actorUserId: ACTOR_ID,
+          targetTenantId: TENANT_ID,
+          action: 'SUPERADMIN_RESET_TENANT_OWNER_PASSWORD',
+        }),
+      });
+      expect(res.success).toBe(true);
     });
   });
 });
