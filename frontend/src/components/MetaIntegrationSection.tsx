@@ -66,7 +66,7 @@ export function MetaIntegrationSection({ variant = 'full' }: { variant?: 'full' 
 
               <p className="text-xs sm:text-sm text-muted-foreground font-medium leading-relaxed">
                 {language === 'en'
-                  ? 'ZiniChat holds direct Meta Tech Provider authorization (Portfolio ID: 3833563216908598), granting enterprise-grade Graph API access, high message volume throughput, and direct Meta technical support.'
+                  ? 'ZiniChat holds direct Meta Tech Provider authorization, granting enterprise-grade Graph API access, high message volume throughput, and direct Meta technical support.'
                   : 'ZiniChat সরাসরি মেটা অফিশিয়াল টেক প্রোভাইডার একসেসপ্রাপ্ত। অফিশিয়াল মেটা গ্রাফ এপিআই (Graph API v21.0+), হাই-ভলিউম মেসেজিং স্পিড ও মেটার ডাইরেক্ট টেকনিক্যাল পার্টনার সাপোর্ট সুবিধা এতে অন্তর্ভুক্ত।'}
               </p>
 
@@ -84,128 +84,6 @@ export function MetaIntegrationSection({ variant = 'full' }: { variant?: 'full' 
             </div>
 
           </div>
-        </div>
-
-        {/* 3 Main Meta Platforms Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 mb-12">
-          
-          {/* WhatsApp Cloud API */}
-          <div className="group relative rounded-3xl border border-emerald-500/20 bg-card/80 dark:bg-surface/80 p-6 sm:p-8 shadow-xl backdrop-blur-xl transition-all duration-300 hover:border-emerald-500/50 hover:shadow-2xl hover:shadow-emerald-500/10 flex flex-col justify-between">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-bl-full pointer-events-none transition-all group-hover:bg-emerald-500/10" />
-            <div>
-              <div className="flex items-center justify-between mb-6">
-                <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/30 shadow-inner">
-                  <WhatsAppBadgeIcon className="w-10 h-10" />
-                </div>
-                <span className="px-3 py-1 text-[11px] font-extrabold uppercase tracking-wider rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3" /> Tech Provider API
-                </span>
-              </div>
-
-              <h3 className="text-xl font-bold text-foreground mb-2">
-                {language === 'en' ? 'WhatsApp Cloud API' : 'হোয়াটসঅ্যাপ ক্লাউড এপিআই'}
-              </h3>
-              <p className="text-sm text-muted-foreground leading-relaxed mb-6">
-                {language === 'en'
-                  ? 'Direct Meta server connection for bulk broadcast, verified templates & high-throughput AI auto-replies.'
-                  : 'মেটা সার্ভার দিয়ে হাই-স্পিড বাল্ক মেসেজ ব্রডকাস্ট, ভেরিফাইড টেমপ্লেট ও এআই অটো-রেসপন্স।'}
-              </p>
-
-              <ul className="space-y-2.5 text-xs sm:text-sm font-medium text-foreground/90 mb-6">
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                  <span>{language === 'en' ? '100% Account Safety (Zero Ban Risk)' : '১০০% একাউন্ট সেইফ (ব্যান ঝুঁকি মুক্ত)'}</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                  <span>{language === 'en' ? 'Green Tick Badge Verification Ready' : 'অফিশিয়াল গ্রিন টিক ভেরিফিকেশন রেডি'}</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                  <span>{language === 'en' ? 'Sub-second Webhook Latency' : 'সাব-সেকেন্ড সুপার-ফাস্ট রেসপন্স স্পিড'}</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          {/* Facebook Messenger API */}
-          <div className="group relative rounded-3xl border border-blue-500/20 bg-card/80 dark:bg-surface/80 p-6 sm:p-8 shadow-xl backdrop-blur-xl transition-all duration-300 hover:border-blue-500/50 hover:shadow-2xl hover:shadow-blue-500/10 flex flex-col justify-between">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-bl-full pointer-events-none transition-all group-hover:bg-blue-500/10" />
-            <div>
-              <div className="flex items-center justify-between mb-6">
-                <div className="w-14 h-14 rounded-2xl bg-blue-500/10 flex items-center justify-center border border-blue-500/30 shadow-inner">
-                  <MessengerBadgeIcon className="w-10 h-10" />
-                </div>
-                <span className="px-3 py-1 text-[11px] font-extrabold uppercase tracking-wider rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3" /> Tech Provider
-                </span>
-              </div>
-
-              <h3 className="text-xl font-bold text-foreground mb-2">
-                {language === 'en' ? 'Facebook Messenger API' : 'ফেসবুক মেসেঞ্জার এপিআই'}
-              </h3>
-              <p className="text-sm text-muted-foreground leading-relaxed mb-6">
-                {language === 'en'
-                  ? 'Official Meta Graph API connection for instant Page DM auto-replies, post comment management & live chat.'
-                  : 'অফিশিয়াল মেটা গ্রাফ এপিআই দিয়ে পেজ ডিএম অটো-রিপ্লাই, পোস্ট কমেন্ট অটোমেশন ও লাইভ চ্যাট।'}
-              </p>
-
-              <ul className="space-y-2.5 text-xs sm:text-sm font-medium text-foreground/90 mb-6">
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-blue-500 shrink-0" />
-                  <span>{language === 'en' ? 'Automated Post Comment to DM' : 'অটোমেটিক পোস্ট কমেন্ট থেকে ডিএম সেন্ড'}</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-blue-500 shrink-0" />
-                  <span>{language === 'en' ? 'Direct Page Token Authentication' : 'মেটা অফিশিয়াল পেজ টোকেন সিকিউরিটি'}</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-blue-500 shrink-0" />
-                  <span>{language === 'en' ? 'Product Catalog & Order Capture' : 'মেসেঞ্জারে সরাসরি প্রোডাক্ট ক্যাটালগ ও অর্ডার'}</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          {/* Instagram DM API */}
-          <div className="group relative rounded-3xl border border-pink-500/20 bg-card/80 dark:bg-surface/80 p-6 sm:p-8 shadow-xl backdrop-blur-xl transition-all duration-300 hover:border-pink-500/50 hover:shadow-2xl hover:shadow-pink-500/10 flex flex-col justify-between">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-pink-500/5 rounded-bl-full pointer-events-none transition-all group-hover:bg-pink-500/10" />
-            <div>
-              <div className="flex items-center justify-between mb-6">
-                <div className="w-14 h-14 rounded-2xl bg-pink-500/10 flex items-center justify-center border border-pink-500/30 shadow-inner">
-                  <InstagramBadgeIcon className="w-10 h-10" />
-                </div>
-                <span className="px-3 py-1 text-[11px] font-extrabold uppercase tracking-wider rounded-full bg-pink-500/10 text-pink-600 dark:text-pink-400 border border-pink-500/20 flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3" /> Tech Provider
-                </span>
-              </div>
-
-              <h3 className="text-xl font-bold text-foreground mb-2">
-                {language === 'en' ? 'Instagram DM API' : 'ইনস্টাগ্রাম ডিএম এপিআই'}
-              </h3>
-              <p className="text-sm text-muted-foreground leading-relaxed mb-6">
-                {language === 'en'
-                  ? 'Official Meta Instagram messaging integration. Auto-reply to DMs, story mentions, and post comments 24/7.'
-                  : 'অফিশিয়াল মেটা ইনস্টাগ্রাম ইন্টিগ্রেশন। ডিএম, স্টোরি মেনশন ও পোস্ট কমেন্টে ২৪/৭ অটো-রিপ্লাই।'}
-              </p>
-
-              <ul className="space-y-2.5 text-xs sm:text-sm font-medium text-foreground/90 mb-6">
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-pink-500 shrink-0" />
-                  <span>{language === 'en' ? 'Story Mention Instant Auto-Reply' : 'স্টোরি মেনশনে ইনস্ট্যান্ট অটো-রিপ্লাই'}</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-pink-500 shrink-0" />
-                  <span>{language === 'en' ? 'Reels & Post Comment Automation' : 'রিলস ও পোস্ট কমেন্ট থেকে কাস্টমার লিড'}</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-pink-500 shrink-0" />
-                  <span>{language === 'en' ? 'Seamless Human Agent Handover' : 'প্রয়োজনে এআই থেকে লাইভ এজেন্টে হ্যান্ডওভার'}</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-
         </div>
 
         {/* High-Impact Meta Trust Metrics Banner */}
