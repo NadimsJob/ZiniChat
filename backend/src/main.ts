@@ -52,13 +52,13 @@ async function bootstrap() {
   }));
 
   // ─── Uploads ─────────────────────────────────────────────────────────────────
-  const uploadsDir = join(__dirname, '..', 'uploads', 'avatars');
+  const uploadsDir = join(process.cwd(), 'uploads', 'avatars');
   if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
   }
 
-  // Serve uploaded files statically
-  app.useStaticAssets(join(__dirname, '..', 'uploads'), {
+  // Serve uploaded files statically from process.cwd()/uploads
+  app.useStaticAssets(join(process.cwd(), 'uploads'), {
     prefix: '/uploads/',
   });
 

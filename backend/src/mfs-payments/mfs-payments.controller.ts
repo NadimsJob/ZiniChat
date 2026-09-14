@@ -138,6 +138,11 @@ export class MfsPaymentsController {
     @UploadedFile() file: any,
   ) {
     if (!file) throw new BadRequestException('QR Image file is required');
+    if (file.path && fs.existsSync(file.path)) {
+      try {
+        fs.chmodSync(file.path, 0o644);
+      } catch (e) {}
+    }
     const qrCodeUrl = `/uploads/mfs/${file.filename}`;
     if (id === 'temp') {
       return { qrCodeUrl };
