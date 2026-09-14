@@ -27,18 +27,13 @@ import { useCurrency } from '@/components/CurrencyProvider';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-const getQrImageUrl = (url?: string | null, qrString?: string | null) => {
-  if (url) {
-    if (url.startsWith('http://') || url.startsWith('https://')) return url;
-    if (url.startsWith('/api/uploads/')) return url;
-    if (url.startsWith('/uploads/')) return `/api${url}`;
-    const clean = url.startsWith('/') ? url : `/${url}`;
-    return `/api/uploads${clean.replace(/^\/uploads\/?/, '/')}`;
-  }
-  if (qrString) {
-    return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrString)}`;
-  }
-  return '';
+const getQrImageUrl = (url?: string | null) => {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  if (url.startsWith('/api/uploads/')) return url;
+  if (url.startsWith('/uploads/')) return `/api${url}`;
+  const clean = url.startsWith('/') ? url : `/${url}`;
+  return `/api/uploads${clean.replace(/^\/uploads\/?/, '/')}`;
 };
 
 function PayMfsContent() {
@@ -645,10 +640,10 @@ function PayMfsContent() {
  <span className="font-bold text-emerald-600 shrink-0">1.</span>
  <span>আপনার যেকোনো ব্যাংকিং বা পেমেন্ট অ্যাপ থেকে নিচের কিউআর (QR) কোডটি স্ক্যান করুন।</span>
  </div>
- {(qrPayload?.qrCodeUrl || selectedAccount.qrCodeUrl || qrPayload?.qrString) && (
+ {(qrPayload?.qrCodeUrl || selectedAccount.qrCodeUrl) && (
  <div className="my-2 bg-white rounded-xl flex justify-center items-center shadow-sm w-[180px] h-[180px] p-2 mx-auto border border-emerald-100">
  <img 
- src={getQrImageUrl(qrPayload?.qrCodeUrl || selectedAccount.qrCodeUrl, qrPayload?.qrString)} 
+ src={getQrImageUrl(qrPayload?.qrCodeUrl || selectedAccount.qrCodeUrl)} 
  alt="Bangla QR Code" 
  className="max-w-full max-h-full object-contain"
  />
