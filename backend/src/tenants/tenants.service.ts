@@ -77,6 +77,8 @@ export class TenantsService {
         id: t.id,
         name: t.businessName,
         email: t.users[0]?.email || 'N/A',
+        phoneNo: t.phoneNo || 'N/A',
+        businessNature: t.businessNature || 'Retail/E-commerce',
         ownerName: t.users[0]?.name || 'Unknown',
         createdAt: t.createdAt,
         status: t.status,

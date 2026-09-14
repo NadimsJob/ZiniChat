@@ -331,11 +331,13 @@ export default function TenantsPage() {
         ) : (
           <>
             <div className="overflow-x-auto">
-              <table className="w-full text-left min-w-[850px]">
+              <table className="w-full text-left min-w-[1000px]">
                 <thead className="bg-slate-100/90 dark:bg-surface-hover/50 text-slate-700 dark:text-zinc-400 text-[12px]">
                   <tr>
                     <th className="px-3 py-2 font-medium">Business Name</th>
                     <th className="px-3 py-2 font-medium">Email</th>
+                    <th className="px-3 py-2 font-medium">Phone</th>
+                    <th className="px-3 py-2 font-medium">Business Nature</th>
                     <th className="px-3 py-2 font-medium">Sub. Status</th>
                     <th className="px-3 py-2 font-medium">Renewal</th>
                     <th className="px-3 py-2 font-medium">AI Responses</th>
@@ -346,12 +348,18 @@ export default function TenantsPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-surface-hover text-[12px] text-slate-900 dark:text-zinc-200">
                   {tenants.length === 0 ? (
-                    <tr><td colSpan={8} className="px-3 py-8 text-center text-slate-500 dark:text-zinc-500">No tenants found.</td></tr>
+                    <tr><td colSpan={10} className="px-3 py-8 text-center text-slate-500 dark:text-zinc-500">No tenants found.</td></tr>
                   ) : (
                     tenants.slice((page - 1) * pageSize, page * pageSize).map(tenant => (
                       <tr key={tenant.id} className="hover:bg-slate-50 dark:hover:bg-surface-hover/30 transition-colors">
                         <td className="px-3 py-2 font-medium text-slate-900 dark:text-white">{tenant.name}</td>
                         <td className="px-3 py-2 text-slate-700 dark:text-zinc-300">{tenant.email}</td>
+                        <td className="px-3 py-2 text-slate-700 dark:text-zinc-300 font-mono text-[11px]">{tenant.phoneNo || 'N/A'}</td>
+                        <td className="px-3 py-2">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 whitespace-nowrap">
+                            {tenant.businessNature || 'Retail/E-commerce'}
+                          </span>
+                        </td>
                         <td className="px-3 py-2">
                           <div className="flex flex-col gap-0.5">
                             <div className="flex items-center gap-1.5">

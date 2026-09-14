@@ -1124,12 +1124,12 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  {/* Trial Expired Modal */}
  {showTrialModal && (
  <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-4">
- <div className="bg-card text-card-foreground rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8 text-center border border-red-500/20 max-h-[90vh] overflow-y-auto">
- <div className="w-16 h-16 bg-red-100 dark:bg-red-950/40 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6 shrink-0">
+ <div className="bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8 text-center border border-red-500/20 max-h-[90vh] overflow-y-auto">
+ <div className="w-16 h-16 bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400 rounded-full flex items-center justify-center mx-auto mb-6 shrink-0">
  <Crown className="w-8 h-8" />
  </div>
- <h3 className="text-2xl font-bold text-foreground mb-2">Trial Expired</h3>
- <p className="text-muted-foreground mb-8 text-sm">
+ <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Trial Expired</h3>
+ <p className="text-slate-600 dark:text-zinc-400 mb-8 text-sm">
  Your free trial has ended. Please subscribe to a plan to continue using this feature and unlock all premium capabilities.
  </p>
  <div className="flex gap-2">
