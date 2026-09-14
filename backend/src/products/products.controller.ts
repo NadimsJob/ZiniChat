@@ -2,18 +2,19 @@ import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, Request, 
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ProductsService } from './products.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { diskStorage } from 'multer';
 import { extname, join } from 'path';
 import * as fs from 'fs';
 
 const imageStorageOptions = diskStorage({
-  destination: (req, file, cb) => {
+  destination: (req: any, file: any, cb: any) => {
     const uploadDir = join(process.cwd(), 'uploads', 'products');
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
     cb(null, uploadDir);
   },
-  filename: (req, file, cb) => {
+  filename: (req: any, file: any, cb: any) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
     cb(null, uniqueSuffix + extname(file.originalname));
   }
