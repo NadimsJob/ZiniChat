@@ -27,6 +27,15 @@ import { useCurrency } from '@/components/CurrencyProvider';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+const getQrImageUrl = (url: string | null | undefined) => {
+  if (!url) return '';
+  if (url.startsWith('http')) return url;
+  const rawApi = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').replace(/\/+$/, '');
+  const baseApi = rawApi.endsWith('/api') ? rawApi : `${rawApi}/api`;
+  const cleanPath = url.startsWith('/') ? url : `/${url}`;
+  return `${baseApi}${cleanPath}`;
+};
+
 function PayMfsContent() {
  const searchParams = useSearchParams();
  const router = useRouter();
@@ -634,7 +643,7 @@ function PayMfsContent() {
  {(qrPayload?.qrCodeUrl || selectedAccount.qrCodeUrl) && (
  <div className="my-2 bg-white rounded-xl flex justify-center items-center shadow-sm w-[180px] h-[180px] p-2 mx-auto border border-emerald-100">
  <img 
- src={(qrPayload?.qrCodeUrl || selectedAccount.qrCodeUrl).startsWith('http') ? (qrPayload?.qrCodeUrl || selectedAccount.qrCodeUrl) : `${API}${(qrPayload?.qrCodeUrl || selectedAccount.qrCodeUrl)}`} 
+ src={getQrImageUrl(qrPayload?.qrCodeUrl || selectedAccount.qrCodeUrl)} 
  alt="Bangla QR Code" 
  className="max-w-full max-h-full object-contain"
  />
