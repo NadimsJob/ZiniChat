@@ -640,12 +640,18 @@ function PayMfsContent() {
  <span className="font-bold text-emerald-600 shrink-0">1.</span>
  <span>আপনার যেকোনো ব্যাংকিং বা পেমেন্ট অ্যাপ থেকে নিচের কিউআর (QR) কোডটি স্ক্যান করুন।</span>
  </div>
- {(qrPayload?.qrCodeUrl || selectedAccount.qrCodeUrl) && (
- <div className="my-2 bg-white rounded-xl flex justify-center items-center shadow-sm w-[180px] h-[180px] p-2 mx-auto border border-emerald-100">
+ {(qrPayload?.qrCodeUrl || selectedAccount.qrCodeUrl || qrPayload?.qrString) && (
+ <div className="my-2 bg-white rounded-xl flex justify-center items-center shadow-sm w-[180px] h-[180px] p-2 mx-auto border border-emerald-100 relative group">
  <img 
  src={getQrImageUrl(qrPayload?.qrCodeUrl || selectedAccount.qrCodeUrl)} 
  alt="Bangla QR Code" 
  className="max-w-full max-h-full object-contain"
+ onError={(e) => {
+ const img = e.target as HTMLImageElement;
+ if (qrPayload?.qrString) {
+ img.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrPayload.qrString)}`;
+ }
+ }}
  />
  </div>
  )}

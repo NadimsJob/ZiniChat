@@ -1156,14 +1156,14 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  {/* Feature Locked Modal */}
  {showFeatureLockedModal && (
  <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-1.5">
- <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center border border-amber-500/20">
- <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-6">
+ <div className="bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8 text-center border border-amber-500/30 dark:border-amber-500/20 max-h-[90vh] overflow-y-auto">
+  <div className="w-16 h-16 bg-amber-100 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 rounded-full flex items-center justify-center mx-auto mb-6 shrink-0">
  <Lock className="w-8 h-8" />
  </div>
- <h3 className="text-2xl font-bold text-slate-900 mb-2">
+  <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
  {language === 'en' ? 'Feature Locked' : 'ফিচারটি লক করা আছে'}
  </h3>
- <p className="text-slate-600 mb-8">
+  <p className="text-slate-600 dark:text-zinc-400 mb-8 text-sm">
  {language === 'en' 
  ? 'This feature is not available in your current plan. Please upgrade your subscription to access it.'
  : 'এই ফিচারটি আপনার বর্তমান প্ল্যানে নেই। এটি ব্যবহার করতে আপনার প্ল্যান আপগ্রেড করুন।'}
@@ -1171,7 +1171,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  <div className="flex gap-2">
  <button 
  onClick={() => setShowFeatureLockedModal(false)}
- className="flex-1 px-1.5 py-1 rounded-xl border border-border font-medium hover:bg-muted text-foreground transition-colors"
+  className="flex-1 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-100 dark:bg-zinc-800 font-semibold hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-900 dark:text-slate-100 transition-colors text-sm"
  >
  {language === 'en' ? 'Close' : 'বন্ধ করুন'}
  </button>
@@ -1180,7 +1180,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  setShowFeatureLockedModal(false);
  router.push('/dashboard/settings/subscription');
  }}
- className="flex-1 px-1.5 py-1 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white font-medium shadow-lg shadow-orange-500/20 hover:scale-105 transition-transform"
+  className="flex-1 px-3 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white font-semibold shadow-lg shadow-orange-500/20 hover:scale-[1.02] transition-transform text-sm"
  >
  {language === 'en' ? 'Upgrade Plan' : 'আপগ্রেড করুন'}
  </button>
