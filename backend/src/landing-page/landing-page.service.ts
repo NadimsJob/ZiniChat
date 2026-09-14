@@ -202,16 +202,24 @@ const OFFICIAL_FAQS_JSON = {
       categoryId: 'general',
       question: { en: 'What is ZiniChat and how does it help my business?', bn: 'ZiniChat কী এবং এটি আমার ব্যবসার কীভাবে উন্নয়ন ঘটায়?' }, 
       answer: { 
-        en: 'ZiniChat is an all-in-one Omnichannel AI Business Assistant SaaS. It connects your WhatsApp, Facebook Messenger, Instagram DM, and Website Chat into a single Unified Inbox, while training an AI assistant to handle customer inquiries, place orders, and manage leads 24/7.', 
-        bn: 'ZiniChat হলো একটি অল-ইন-ওয়ান অমনিচ্যানেল AI বিজনেস অ্যাসিস্ট্যান্ট। এটি আপনার WhatsApp, Facebook Messenger, Instagram DM এবং ওয়েবসাইটের সমস্ত মেসেজকে একটি ইউনিফাইড ইনবক্সে নিয়ে আসে এবং একটি AI অ্যাসিস্ট্যান্টকে আপনার ব্যবসার তথ্য দিয়ে ট্রেইন করে ২৪/৭ কাস্টমার সাপোর্ট ও সেলস অটোমেট করে।' 
+        en: 'ZiniChat is an Official Meta Tech Provider & Graph API Partner all-in-one Omnichannel AI Business Assistant SaaS. It connects your WhatsApp, Facebook Messenger, Instagram DM, and Website Chat into a single Unified Inbox, while training an AI assistant to handle customer inquiries, place orders, and manage leads 24/7.', 
+        bn: 'ZiniChat হলো একটি অনুমোদিত অফিসিয়াল মেটা টেক প্রোভাইডার (Official Meta Tech Provider & Graph API Partner) এবং অল-ইন-ওয়ান অমনিচ্যানেল AI বিজনেস অ্যাসিস্ট্যান্ট। এটি আপনার WhatsApp, Facebook Messenger, Instagram DM এবং ওয়েবসাইটের সমস্ত চ্যাটকে একটি ইউনিফাইড ইনবক্সে নিয়ে আসে এবং ২৪/৭ কাস্টমার সাপোর্ট ও সেলস অটোমেট করে।' 
+      } 
+    },
+    { 
+      categoryId: 'general',
+      question: { en: 'Is ZiniChat an Official Meta Tech Provider & Graph API Partner?', bn: 'ZiniChat কি মেটার অফিসিয়াল টেক প্রোভাইডার (Official Meta Tech Provider)?' }, 
+      answer: { 
+        en: 'Yes! ZiniChat is an officially verified Meta Tech Provider & Graph API Partner (Meta Business Portfolio ID: 3833563216908598). This guarantees 100% official Meta Graph API integration, enterprise message delivery speed, direct Meta authorization flow, and zero risk of account bans or restrictions.', 
+        bn: 'হ্যাঁ! ZiniChat মেটার অনুমোদিত অফিসিয়াল মেটা টেক প্রোভাইডার ও গ্রাফ এপিআই পার্টনার (Meta Business Portfolio ID: 3833563216908598)। অফিসিয়াল মেটা পার্টনার হিসেবে ZiniChat ১০০% নিরাপদ, পেজ বা হোয়াটসঅ্যাপ ব্যান হওয়ার কোনো ঝুঁকি নেই এবং সরাসরি মেটা অফিসিয়াল এপিআই এর মাধ্যমে দ্রুত বার্তা আদান-প্রদান নিশ্চিত করে।' 
       } 
     },
     { 
       categoryId: 'general',
       question: { en: 'Do I need technical skills or coding knowledge to set up ZiniChat?', bn: 'ZiniChat সেটআপ করার জন্য কি কোনো কোডিং বা টেকনিক্যাল দক্ষতার প্রয়োজন আছে?' }, 
       answer: { 
-        en: 'Not at all! ZiniChat is built for business owners. You can connect your Facebook Page or Instagram in 1 click, link WhatsApp Web via QR code, and train your AI simply by uploading a PDF or pasting your website URL in under 2 minutes.', 
-        bn: 'একদমই না! ZiniChat সাধারণ উদ্যোক্তাদের জন্য তৈরি। ১-ক্লিকে ফেসবুক পেজ বা ইনস্টাগ্রাম কানেক্ট করা যায়, QR কোড স্ক্যান করে হোয়াটসঅ্যাপ এবং PDF বা ওয়েবসাইটের URL দিয়ে ২ মিনিটেই AI সেটআপ করা যায়।' 
+        en: 'Not at all! ZiniChat is built for business owners. With official Meta OAuth integration, you can connect your Facebook Page or Instagram in 1 click, link WhatsApp Web via QR code, and train your AI simply by uploading a PDF or pasting your website URL in under 2 minutes.', 
+        bn: 'একদমই না! ZiniChat সাধারণ উদ্যোক্তাদের জন্য তৈরি। মেটা অফিসিয়াল OAuth এর মাধ্যমে ১-ক্লিকে ফেসবুক পেজ বা ইনস্টাগ্রাম কানেক্ট করা যায়, QR কোড স্ক্যান করে হোয়াটসঅ্যাপ এবং PDF বা ওয়েবসাইটের URL দিয়ে ২ মিনিটেই AI সেটআপ করা যায়।' 
       } 
     },
     { 
@@ -228,8 +236,16 @@ const OFFICIAL_FAQS_JSON = {
       categoryId: 'channels',
       question: { en: 'Which messaging channels are supported by ZiniChat?', bn: 'ZiniChat-এ কোন কোন মেসেজিং চ্যানেল সাপোর্ট করে?' }, 
       answer: { 
-        en: 'ZiniChat supports Official WhatsApp Cloud API, WhatsApp Web (QR code scan), Facebook Messenger, Instagram Direct DM, Facebook Comment Automation (Public & Private DM reply), and Website Live Chat Widget.', 
-        bn: 'ZiniChat সাপোর্ট করে: Official WhatsApp Cloud API, WhatsApp Web (QR স্ক্যান), Facebook Messenger, Instagram Direct DM, Facebook Comment Automation (পাবলিক কমেন্ট + প্রাইভেট DM) এবং Website Live Chat Widget।' 
+        en: 'As an Official Meta Tech Provider, ZiniChat supports Official WhatsApp Cloud API, WhatsApp Web (QR code scan), Meta Messenger, Instagram Direct DM, Facebook Comment Automation (Public & Private DM reply), and Website Live Chat Widget.', 
+        bn: 'মেটার অফিসিয়াল টেক প্রোভাইডার হিসেবে ZiniChat সাপোর্ট করে: Official WhatsApp Cloud API, WhatsApp Web (QR স্ক্যান), Facebook Messenger, Instagram Direct DM, Facebook Comment Automation (পাবলিক কমেন্ট + প্রাইভেট DM) এবং Website Live Chat Widget।' 
+      } 
+    },
+    { 
+      categoryId: 'channels',
+      question: { en: 'Why is choosing an Official Meta Tech Provider important for account safety?', bn: 'WhatsApp ও Messenger ব্যবহারে মেটা অফিসিয়াল টেক প্রোভাইডার নির্বাচন করা কেন জরুরি?' }, 
+      answer: { 
+        en: 'Unapproved third-party tools or unauthorized software risk permanent Facebook Page & WhatsApp number bans by Meta. As an Official Meta Tech Provider, ZiniChat uses Meta-certified Graph API endpoints, HMAC-SHA256 signature verification, and official Meta OAuth flow — ensuring your business accounts remain 100% safe, verified, and ban-free.', 
+        bn: 'অননুমোদিত থার্ডপার্টি টুলস বা অনফিশিয়াল সফটওয়্যার ব্যবহারে ফেসবুক পেজ ও হোয়াটসঅ্যাপ নাম্বার স্থায়ীভাবে ব্যান (Permanent Ban) হওয়ার ঝুঁকি থাকে। ZiniChat মেটার অফিসিয়াল টেক প্রোভাইডার হওয়ায় মেটা অনুমোদিত Graph API v25.0, মেটা OAuth ২.০ ও সিকিউর এনক্রিপশন ব্যবহার করে, যা আপনার ব্যবসা ও হোয়াটসঅ্যাপ একাউন্ট ১০০% নিরাপদ রাখে।' 
       } 
     },
     { 
@@ -244,8 +260,8 @@ const OFFICIAL_FAQS_JSON = {
       categoryId: 'channels',
       question: { en: 'How does WhatsApp Bulk Broadcast Campaign work?', bn: 'WhatsApp ব্রডকাস্ট ক্যাম্পেইন দিয়ে কীভাবে বাল্ক মেসেজ পাঠানো যায়?' }, 
       answer: { 
-        en: 'Using Meta Approved WhatsApp Marketing Templates (Graph API v25.0), you can upload a CSV contact list and send bulk promotional offers to thousands of customers at once. WhatsApp boasts a 98% open rate compared to 22% in email marketing.', 
-        bn: 'Meta Approved হোয়াটসঅ্যাপ মার্কেটিং টেমপ্লেট ব্যবহার করে CSV ফাইল আপলোড করে হাজার হাজার কাস্টমারকে একসাথে অফার পাঠাতে পারবেন। এর ওপেন রেট ৯৮% — যা ইমেইল মার্কেটিংয়ের ২২%-এর চেয়ে ৪.৫ গুণ বেশি।' 
+        en: 'Using Meta Approved WhatsApp Marketing Templates via official Meta Graph API, you can upload a CSV contact list and send bulk promotional offers to thousands of customers at once. WhatsApp boasts a 98% open rate compared to 22% in email marketing.', 
+        bn: 'অফিসিয়াল মেটা গ্রাফ এপিআই এর মাধ্যমে Meta Approved হোয়াটসঅ্যাপ মার্কেটিং টেমপ্লেট ব্যবহার করে CSV ফাইল আপলোড করে হাজার হাজার কাস্টমারকে একসাথে অফার পাঠাতে পারবেন। এর ওপেন রেট ৯৮% — যা ইমেইল মার্কেটিংয়ের ২২%-এর চেয়ে ৪.৫ গুণ বেশি।' 
       } 
     },
 
