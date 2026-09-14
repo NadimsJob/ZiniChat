@@ -93,5 +93,54 @@ describe('PaymentsService', () => {
       expect(res.isPaidAdvance).toBe(true);
       expect(res.hasPendingPayment).toBe(false);
     });
+
+    it('should return promo discounted amount when promo is active for monthly cycle', async () => {
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + 10);
+
+      mockPrisma.tenant.findUnique.mockResolvedValue({
+        id: 't-promo',
+        plan: { id: 'p-promo', name: 'Growth Plan', priceMonthlyBdt: 2000, promoPriceMonthlyBdt: 999, promoMonths: 2 },
+      });
+      mockPrisma.subscription.findFirst.mockResolvedValue({
+        id: 'sub-promo',
+        status: 'active',
+        billingCycle: 'monthly',
+        currentPeriodEnd: futureDate,
+        plan: { id: 'p-promo', name: 'Growth Plan', priceMonthlyBdt: 2000, promoPriceMonthlyBdt: 999, promoMonths: 2 },
+      });
+      mockPrisma.payment.count.mockResolvedValue(0); // 0 successful payments, so promo is active
+      mockPrisma.payment.findFirst.mockResolvedValue(null);
+
+      const res = await service.getUpcomingBill('t-promo');
+      expect(res.amountBdt).toBe(999);
+      expect(res.regularPriceBdt).toBe(2000);
+      expect(res.isPromoActive).toBe(true);
+      expect(res.promoMonthsRemaining).toBe(2);
+    });
+
+    it('should return regular price after promo months are exhausted', async () => {
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + 10);
+
+      mockPrisma.tenant.findUnique.mockResolvedValue({
+        id: 't-promo',
+        plan: { id: 'p-promo', name: 'Growth Plan', priceMonthlyBdt: 2000, promoPriceMonthlyBdt: 999, promoMonths: 2 },
+      });
+      mockPrisma.subscription.findFirst.mockResolvedValue({
+        id: 'sub-promo',
+        status: 'active',
+        billingCycle: 'monthly',
+        currentPeriodEnd: futureDate,
+        plan: { id: 'p-promo', name: 'Growth Plan', priceMonthlyBdt: 2000, promoPriceMonthlyBdt: 999, promoMonths: 2 },
+      });
+      mockPrisma.payment.count.mockResolvedValue(2); // 2 successful payments = promo exhausted
+      mockPrisma.payment.findFirst.mockResolvedValue(null);
+
+      const res = await service.getUpcomingBill('t-promo');
+      expect(res.amountBdt).toBe(2000);
+      expect(res.isPromoActive).toBe(false);
+      expect(res.promoMonthsRemaining).toBe(0);
+    });
   });
 });
