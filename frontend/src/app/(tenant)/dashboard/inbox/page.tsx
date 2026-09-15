@@ -11,7 +11,7 @@ import {
   Check, CheckCheck, MessageCircle, MoreVertical, X, UserCircle, UserPlus, Mail, Building, 
   MapPin, AlertCircle, Paperclip, File as FileIcon, Trash2, Bot, ToggleLeft, 
   ToggleRight, Wand2, RefreshCw, ChevronLeft, PanelRight, Eye, Star, Archive, 
-  CheckCircle2, Flag, UserCheck, Sparkles, Calendar, Download, Reply, Share2, Ban, Filter
+  CheckCircle2, Flag, UserCheck, Sparkles, Calendar, Download, Reply, Share2, Ban, Filter, Globe
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
@@ -948,9 +948,9 @@ export default function InboxPage() {
     <div className="flex flex-col h-[calc(100vh-8rem)] md:h-[calc(100vh-4rem)] overflow-hidden bg-background text-foreground">
       
       {/* FULL-WIDTH TOP HEADER */}
-      <div className="w-full flex items-center justify-between border-b border-border bg-surface/80 backdrop-blur-md shrink-0 px-2 sm:px-4 py-2 z-10 shadow-sm overflow-x-auto custom-scrollbar">
+      <div className="w-full flex items-center justify-between border-b border-border bg-surface/90 backdrop-blur-md shrink-0 px-2 sm:px-4 py-2 z-10 shadow-2xs overflow-x-auto no-scrollbar gap-3">
         {/* Smart Tabs Bar */}
-        <div className="flex items-center gap-1.5 text-[11px] font-medium shrink-0">
+        <div className="flex items-center gap-1.5 text-[11px] font-medium shrink-0 overflow-x-auto no-scrollbar">
           {hasSmartTabs && [
             { id: 'all', label: language === 'en' ? 'All Contacts' : 'সব কন্টাক্ট', count: tabCounts.all, icon: UserIcon },
             { id: 'order_requests', label: language === 'en' ? 'Order Requests' : 'অর্ডার রিকোয়েস্ট', count: tabCounts.order_requests, icon: CheckCircle2 },
@@ -964,17 +964,17 @@ export default function InboxPage() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-3 py-1.5 rounded-md transition-all shrink-0 flex items-center gap-1.5 cursor-pointer border border-transparent ${
+                className={`px-3 py-1.5 rounded-lg transition-all shrink-0 whitespace-nowrap flex items-center gap-1.5 cursor-pointer border ${
                   activeTab === tab.id 
-                    ? 'bg-primary text-primary-foreground font-bold shadow-sm' 
-                    : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground border-border/40'
+                    ? 'bg-primary text-primary-foreground font-semibold shadow-2xs border-primary' 
+                    : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground border-border/40'
                 }`}
               >
-                <Icon className="w-3.5 h-3.5 opacity-70" />
-                {tab.label}
+                <Icon className="w-3.5 h-3.5 opacity-80 shrink-0" />
+                <span>{tab.label}</span>
                 {tab.count !== undefined && (
-                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                    activeTab === tab.id ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-primary/10 text-primary font-bold'
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold shrink-0 ${
+                    activeTab === tab.id ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-primary/10 text-primary'
                   }`}>
                     {tab.count}
                   </span>
@@ -985,15 +985,19 @@ export default function InboxPage() {
         </div>
 
         {/* Channel Filter Row */}
-        <div className="flex items-center gap-1.5 pl-3 border-l border-border/40 text-xs shrink-0 h-8 ml-3 overflow-x-auto max-w-[500px]">
+        <div className="flex items-center gap-1.5 pl-3 border-l border-border/50 text-xs shrink-0 overflow-x-auto no-scrollbar">
           <button
             onClick={() => setChannelFilter('all')}
-            className={`px-3 py-1 rounded-md text-[11px] transition-colors cursor-pointer border border-transparent ${
-              channelFilter === 'all' ? 'bg-secondary text-secondary-foreground font-bold shadow-sm' : 'text-muted-foreground hover:bg-muted/50 border-border/40'
+            className={`px-3 py-1.5 rounded-lg text-[11px] whitespace-nowrap transition-all cursor-pointer shrink-0 flex items-center gap-1.5 border ${
+              channelFilter === 'all' 
+                ? 'bg-emerald-600 dark:bg-emerald-500 text-white font-semibold shadow-2xs border-emerald-600/30' 
+                : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground border-border/40'
             }`}
           >
-            {language === 'en' ? 'All channels' : 'সব চ্যানেল'}
+            <Globe className="w-3.5 h-3.5 opacity-80 shrink-0" />
+            <span>{language === 'en' ? 'All Channels' : 'সব চ্যানেল'}</span>
           </button>
+
           {activeChannels.map(ch => {
             const pageId = ch.channelType?.toLowerCase() === 'messenger'
               ? ch.externalAccountId
@@ -1001,43 +1005,50 @@ export default function InboxPage() {
                 ? ch.verifyToken
                 : null;
             const profilePicUrl = pageId ? `https://graph.facebook.com/${pageId}/picture?type=normal` : null;
+            const isSelected = channelFilter === ch.channelType;
 
             return (
               <button
                 key={ch.id}
                 onClick={() => setChannelFilter(ch.channelType)}
-                className={`px-2.5 py-1 rounded-md text-[11px] transition-colors cursor-pointer border border-transparent flex items-center gap-1.5 shrink-0 ${
-                  channelFilter === ch.channelType ? 'bg-secondary text-secondary-foreground font-bold shadow-sm' : 'text-muted-foreground hover:bg-muted/50 border-border/40'
+                className={`px-3 py-1.5 rounded-lg text-[11px] whitespace-nowrap transition-all cursor-pointer border flex items-center gap-1.5 shrink-0 ${
+                  isSelected 
+                    ? 'bg-primary/15 text-primary border-primary/30 font-semibold shadow-2xs' 
+                    : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground border-border/40'
                 }`}
               >
                 {profilePicUrl ? (
                   <img
                     src={profilePicUrl}
                     alt={ch.displayName || ch.channelType}
-                    className="w-4 h-4 rounded-full object-cover shrink-0 border border-border/40"
+                    className="w-3.5 h-3.5 rounded-full object-cover shrink-0 border border-border/40"
                     onError={(e) => { e.currentTarget.style.display = 'none'; }}
                   />
                 ) : (
-                  <ChannelBrandIcon channelType={ch.channelType} className="w-3.5 h-3.5" />
+                  <ChannelBrandIcon channelType={ch.channelType} className="w-3.5 h-3.5 shrink-0" />
                 )}
                 <span>{ch.displayName || ch.channelType}</span>
               </button>
             );
           })}
+
           {(hasCommentAutomation || activeChannels.some((c: any) => ['messenger', 'instagram'].includes(c.channelType))) && (
             (() => {
               const unreadCommentsCount = commentLogs.filter(c => !readCommentIds.includes(c.commentId) && !c.isRead).length;
+              const isSelected = channelFilter === 'facebook_comments';
               return (
                 <button
                   onClick={() => setChannelFilter('facebook_comments')}
-                  className={`px-3 py-1 rounded-md text-[11px] transition-colors cursor-pointer border border-transparent flex items-center gap-1.5 ${
-                    channelFilter === 'facebook_comments' ? 'bg-orange-500 text-white font-bold shadow-sm' : 'text-muted-foreground hover:bg-muted/50 border-border/40'
+                  className={`px-3 py-1.5 rounded-lg text-[11px] whitespace-nowrap transition-all cursor-pointer border flex items-center gap-1.5 shrink-0 ${
+                    isSelected 
+                      ? 'bg-orange-500 text-white font-semibold shadow-2xs border-orange-500/30' 
+                      : 'text-orange-600 dark:text-orange-400 bg-orange-500/10 hover:bg-orange-500/20 border-orange-500/30 font-medium'
                   }`}
                 >
-                  <FacebookCommentBadgeIcon className="w-3.5 h-3.5" />
+                  <FacebookCommentBadgeIcon className="w-3.5 h-3.5 shrink-0" />
                   <span>{language === 'en' ? 'FB Comments' : 'FB কমেন্ট'}</span>
                   {unreadCommentsCount > 0 && (
-                    <span className="bg-red-500 text-white text-[10px] md:text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-xs">
+                    <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full shadow-2xs shrink-0">
                       {unreadCommentsCount}
                     </span>
                   )}
