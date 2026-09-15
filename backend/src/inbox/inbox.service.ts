@@ -1414,9 +1414,58 @@ export class InboxService {
     });
     
     if (!conv) {
-      throw new Error('Conversation not found');
+      throw new NotFoundException('Conversation not found');
     }
 
+    // 1. Fetch all messages in this conversation to find physical media files on disk
+    const messages = await this.prisma.message.findMany({
+      where: { conversationId },
+      select: { content: true }
+    });
+
+    // 2. Extract disk paths of media files and physically delete them from disk storage
+    for (const msg of messages) {
+      let contentObj: any = msg.content;
+      if (typeof contentObj === 'string' && contentObj.trim().startsWith('{')) {
+        try { contentObj = JSON.parse(contentObj); } catch (e) {}
+      }
+      if (typeof contentObj === 'object' && contentObj !== null) {
+        const mediaUrls = [
+          contentObj.mediaUrl,
+          contentObj.localUrl,
+          contentObj.url,
+          contentObj.fileUrl,
+        ].filter(Boolean);
+
+        for (const relUrl of mediaUrls) {
+          if (typeof relUrl === 'string' && (relUrl.includes('/uploads/') || relUrl.startsWith('uploads/'))) {
+            const cleanRelPath = relUrl.startsWith('/') ? relUrl.slice(1) : relUrl;
+            const absoluteFilePath = path.join(process.cwd(), cleanRelPath);
+            if (fs.existsSync(absoluteFilePath)) {
+              try {
+                const fileStats = fs.statSync(absoluteFilePath);
+                fs.unlinkSync(absoluteFilePath);
+                
+                if (fileStats.size > 0) {
+                  await this.prisma.tenant.update({
+                    where: { id: tenantId },
+                    data: {
+                      storageUsedBytes: {
+                        decrement: BigInt(fileStats.size)
+                      }
+                    }
+                  }).catch(() => {});
+                }
+              } catch (unlinkErr) {
+                this.logger.warn(`Failed to unlink media file ${absoluteFilePath}: ${unlinkErr.message}`);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // 3. Database transaction to hard-delete all conversation records
     return this.prisma.$transaction(async (tx) => {
       await tx.order.updateMany({
         where: { conversationId },
