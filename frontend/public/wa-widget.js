@@ -90,7 +90,17 @@
     container.appendChild(ring);
     container.appendChild(btn);
     container.appendChild(tooltipEl);
-    document.body.appendChild(container);
+
+    function safeAppend(el) {
+      if (document.body) {
+        document.body.appendChild(el);
+      } else {
+        document.addEventListener('DOMContentLoaded', function () {
+          if (document.body) document.body.appendChild(el);
+        });
+      }
+    }
+    safeAppend(container);
 
     // Hover interactions
     container.addEventListener('mouseenter', function () {
