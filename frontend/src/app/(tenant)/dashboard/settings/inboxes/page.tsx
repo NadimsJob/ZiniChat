@@ -8,7 +8,7 @@ import InstructionBanner from '@/components/InstructionBanner';
 import toast from 'react-hot-toast';
 import { 
   Plus, Webhook, Trash2, RefreshCw, MessageCircle, PhoneCall, Camera, RotateCcw, 
-  Globe, Code, Zap, Copy, X, Sparkles, Save, Eye, Send, MessageSquare
+  Globe, Code, Zap, Copy, X, Sparkles, Save, Eye, Send, MessageSquare, ExternalLink
 } from 'lucide-react';
 import CommentConfigModal from './CommentConfigModal';
 import { ChannelBrandIcon } from '@/components/BrandIcons';
@@ -567,9 +567,31 @@ function WidgetConfigModal({ widget, onClose, onRefresh, language, API }: any) {
     }
   };
 
-  const scriptCode = widgetType === 'WHATSAPP'
-    ? `<script src="https://zinichat.com/wa-widget.js" data-token="${widget.widgetToken}" async></script>`
-    : `<script src="https://zinichat.com/widget.js" data-widget-token="${widget.widgetToken}" async></script>`;
+  const getWidgetEmbedCode = () => {
+    if (widgetType === 'WHATSAPP') {
+      let cleanPhone = whatsappNumber.replace(/[\s\-\+\(\)]/g, '');
+      if (cleanPhone.startsWith('0')) cleanPhone = '88' + cleanPhone;
+      return `<!-- ZiniChat WhatsApp Widget -->
+<script 
+  src="https://zinichat.com/wa-widget.js" 
+  data-token="${widget.widgetToken}"
+  data-phone="${cleanPhone}"
+  data-color="${primaryColor}"
+  data-position="${position}"
+  async>
+</script>`;
+    }
+    return `<!-- ZiniChat Live Chat Widget -->
+<script 
+  src="https://zinichat.com/widget.js" 
+  data-token="${widget.widgetToken}"
+  data-color="${primaryColor}"
+  data-heading="${heading}"
+  async>
+</script>`;
+  };
+
+  const scriptCode = getWidgetEmbedCode();
 
   const cleanPhoneFormatted = whatsappNumber.replace(/[\s\-\+\(\)]/g, '');
   const waUrl = `https://wa.me/${cleanPhoneFormatted.startsWith('0') ? '88' + cleanPhoneFormatted : cleanPhoneFormatted}${prefilledText ? `?text=${encodeURIComponent(prefilledText)}` : ''}`;
@@ -841,7 +863,7 @@ function WidgetConfigModal({ widget, onClose, onRefresh, language, API }: any) {
             </div>
 
             {/* Script Code Block */}
-            <div className="space-y-2">
+            <div className="space-y-3">
               <label className="text-xs font-bold text-foreground flex items-center justify-between">
                 <span>{language === 'en' ? 'Website Embed Code' : 'আপনার ওয়েবসাইটের জন্য ইন্টিগ্রেশন কোড'}</span>
                 <span className="text-[10px] text-muted-foreground font-normal">
@@ -849,8 +871,8 @@ function WidgetConfigModal({ widget, onClose, onRefresh, language, API }: any) {
                 </span>
               </label>
 
-              <div className="relative bg-slate-950 text-slate-100 p-3.5 rounded-xl font-mono text-[11px] overflow-x-auto leading-relaxed border border-slate-800">
-                <code>{scriptCode}</code>
+              <div className="relative bg-slate-950 text-slate-100 p-3.5 rounded-xl border border-slate-800">
+                <pre className="text-emerald-400 font-mono text-[11px] whitespace-pre-wrap break-all leading-relaxed m-0 p-0">{scriptCode}</pre>
               </div>
 
               <div className="flex items-center justify-between pt-1">
@@ -872,6 +894,20 @@ function WidgetConfigModal({ widget, onClose, onRefresh, language, API }: any) {
                   <Copy className="w-3.5 h-3.5" />
                   <span>{language === 'en' ? 'Copy Script Code' : 'কোড কপি করুন'}</span>
                 </button>
+              </div>
+
+              {/* Installation Instructions */}
+              <div className="bg-blue-500/5 border border-blue-500/15 rounded-xl p-3.5 space-y-2 text-xs mt-3">
+                <div className="flex items-center gap-2 text-blue-400 font-bold text-[11px]">
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>{language === 'en' ? 'Installation Instructions' : 'ইন্সটলেশন নির্দেশনা'}</span>
+                </div>
+                <ol className="space-y-1 text-[11px] text-muted-foreground pl-1">
+                  <li className="flex gap-1.5"><span className="text-primary font-bold shrink-0">1.</span>{language === 'en' ? 'Copy the code above.' : 'উপরের কোডটি কপি করুন।'}</li>
+                  <li className="flex gap-1.5"><span className="text-primary font-bold shrink-0">2.</span>{language === 'en' ? 'Open your website HTML file or CMS template.' : 'আপনার ওয়েবসাইটের HTML ফাইল বা CMS টেমপ্লেট খুলুন।'}</li>
+                  <li className="flex gap-1.5"><span className="text-primary font-bold shrink-0">3.</span>{language === 'en' ? 'Paste it just before the closing </body> tag.' : 'কোডটি </body> ট্যাগের ঠিক আগে পেস্ট করুন।'}</li>
+                  <li className="flex gap-1.5"><span className="text-primary font-bold shrink-0">4.</span>{language === 'en' ? 'Save & publish. Your widget will appear on the site.' : 'সেভ করে পাবলিশ করুন। ওয়েবসাইটে উইজেট দেখা যাবে।'}</li>
+                </ol>
               </div>
             </div>
           </div>

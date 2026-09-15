@@ -343,32 +343,25 @@ export default function NewInboxStepper() {
 
   const getEmbedCode = (widget: any) => {
     if (widget.type === 'WHATSAPP') {
-      const phone = selectedWaInbox?.phoneNumber?.replace(/\D/g, '') || '';
+      let phone = selectedWaInbox?.phoneNumber?.replace(/[\s\-\+\(\)]/g, '') || '';
+      if (phone.startsWith('0')) phone = '88' + phone;
       return `<!-- ZiniChat WhatsApp Widget -->
-<script>
-(function(){
-  var w=document.createElement('div');
-  w.id='zc-wa-widget';
-  document.body.appendChild(w);
-  var s=document.createElement('script');
-  s.src='${API}/widget.js';
-  s.setAttribute('data-token','${widget.widgetToken}');
-  s.setAttribute('data-phone','${phone}');
-  s.setAttribute('data-color','${widget.primaryColor}');
-  document.head.appendChild(s);
-})();
+<script 
+  src="https://zinichat.com/wa-widget.js" 
+  data-token="${widget.widgetToken}"
+  data-phone="${phone}"
+  data-color="${widget.primaryColor || '#1F824A'}"
+  data-position="${widget.position || 'bottom-right'}"
+  async>
 </script>`;
     }
     return `<!-- ZiniChat Live Chat Widget -->
-<script>
-(function(){
-  var s=document.createElement('script');
-  s.src='${API}/widget.js';
-  s.setAttribute('data-token','${widget.widgetToken}');
-  s.setAttribute('data-color','${widget.primaryColor}');
-  s.setAttribute('data-heading','${widget.heading}');
-  document.head.appendChild(s);
-})();
+<script 
+  src="https://zinichat.com/widget.js" 
+  data-token="${widget.widgetToken}"
+  data-color="${widget.primaryColor || '#1F824A'}"
+  data-heading="${widget.heading || 'Chat with us'}"
+  async>
 </script>`;
   };
 
