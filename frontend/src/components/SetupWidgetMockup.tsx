@@ -95,7 +95,7 @@ export default function SetupWidgetMockup({ language }: { language: string }) {
 
             {/* Widget Mockup Graphic */}
             <div className="w-full sm:w-[280px] shrink-0 relative perspective-1000">
-              <div className="w-full bg-card border border-border rounded-2xl p-4 shadow-xl rotate-y-[-10deg] rotate-x-[5deg] hover:rotate-0 transition-transform duration-500 ease-out relative overflow-hidden">
+              <div className="w-full bg-card border border-border rounded-2xl p-4 shadow-xl sm:rotate-y-[-10deg] sm:rotate-x-[5deg] hover:rotate-0 transition-transform duration-500 ease-out relative overflow-hidden">
                 
                 {/* Animated Cursor */}
                 <div 

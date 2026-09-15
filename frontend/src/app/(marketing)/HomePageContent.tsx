@@ -31,7 +31,7 @@ const DEFAULT_BRANDS = [
 
 function WhatsAppBotMockup({ language }: { language: string }) {
   return (
-    <div className="w-full max-w-sm animate-fade-in-up overflow-hidden rounded-[2rem] border-[6px] border-black/5 dark:border-white/5 bg-[#efeae2] dark:bg-[#0b141a] shadow-2xl shadow-primary/20 relative">
+    <div className="w-full max-w-[320px] sm:max-w-sm animate-fade-in-up overflow-hidden rounded-[2rem] border-[6px] border-black/5 dark:border-white/5 bg-[#efeae2] dark:bg-[#0b141a] shadow-2xl shadow-primary/20 relative">
       {/* WhatsApp Header */}
       <div className="flex items-center gap-3 bg-[#075E54] dark:bg-[#202c33] px-4 py-3 text-white shadow-sm relative z-10">
         <div className="flex w-9 h-9 items-center justify-center rounded-full bg-white/20">
@@ -226,15 +226,15 @@ export default function HomePageContent() {
             </div>
           </div>
 
-          <div className="relative flex items-center justify-center lg:col-span-6 mt-10 lg:mt-0">
+          <div className="relative flex items-center justify-center lg:col-span-6 mt-10 lg:mt-0 max-w-full px-2">
             {/* Floating Platform Icons */}
-            <div className="absolute -left-2 top-8 sm:left-0 lg:-left-4 animate-float rounded-xl bg-card p-2 shadow-lg shadow-border/80 transition-transform" style={{ animationDelay: '0s' }}>
+            <div className="absolute left-1 top-6 sm:left-0 lg:-left-4 animate-float rounded-xl bg-card p-2 shadow-lg shadow-border/80 transition-transform z-20" style={{ animationDelay: '0s' }}>
               <WhatsAppBadgeIcon className="w-7 h-7 sm:w-8 sm:h-8" />
             </div>
-            <div className="absolute -right-2 top-16 sm:right-0 lg:-right-4 animate-float rounded-xl bg-card p-2 shadow-lg shadow-border/80 transition-transform" style={{ animationDelay: '0.5s' }}>
+            <div className="absolute right-1 top-12 sm:right-0 lg:-right-4 animate-float rounded-xl bg-card p-2 shadow-lg shadow-border/80 transition-transform z-20" style={{ animationDelay: '0.5s' }}>
               <MessengerBadgeIcon className="w-7 h-7 sm:w-8 sm:h-8" />
             </div>
-            <div className="absolute -left-2 bottom-20 sm:left-2 lg:-left-2 animate-float rounded-xl bg-card p-2 shadow-lg shadow-border/80 transition-transform" style={{ animationDelay: '1s' }}>
+            <div className="absolute left-1 bottom-16 sm:left-2 lg:-left-2 animate-float rounded-xl bg-card p-2 shadow-lg shadow-border/80 transition-transform z-20" style={{ animationDelay: '1s' }}>
               <InstagramBadgeIcon className="w-7 h-7 sm:w-8 sm:h-8" />
             </div>
             
