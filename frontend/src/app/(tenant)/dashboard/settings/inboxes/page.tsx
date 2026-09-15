@@ -446,7 +446,7 @@ export default function InboxesPage() {
 }
 
 function WidgetConfigModal({ widget, onClose, onRefresh, language, API }: any) {
-  const [widgetType, setWidgetType] = useState<'LIVE_CHAT' | 'WHATSAPP'>(widget.type || 'LIVE_CHAT');
+  const widgetType: 'LIVE_CHAT' | 'WHATSAPP' = widget.type || 'LIVE_CHAT';
   const [primaryColor, setPrimaryColor] = useState(widget.primaryColor || '#1F824A');
   const [name, setName] = useState(widget.displayName || widget.name || 'Website Widget');
   const [heading, setHeading] = useState(widget.heading || 'Chat with us');
@@ -614,7 +614,9 @@ function WidgetConfigModal({ widget, onClose, onRefresh, language, API }: any) {
                 </span>
               </h3>
               <p className="text-xs text-muted-foreground">
-                {language === 'en' ? 'Customize colors, WhatsApp redirection link, and embed code for your website' : 'আপনার ওয়েবসাইটের হোয়াটসঅ্যাপ উইজেট কালার, ফোন নম্বর ও ডাইরেক্ট রিডাইরেকশন স্ক্রিপ্ট কাস্টমাইজ করুন'}
+                {widgetType === 'WHATSAPP'
+                  ? (language === 'en' ? 'Customize colors, WhatsApp redirection link, and embed code for your website' : 'আপনার ওয়েবসাইটের হোয়াটসঅ্যাপ উইজেট কালার, ফোন নম্বর ও রিডাইরেকশন স্ক্রিপ্ট কাস্টমাইজ করুন')
+                  : (language === 'en' ? 'Customize colors, headers, and embed code for your omnichannel live chat' : 'আপনার ওয়েবসাইটের অমনিচ্যানেল লাইভ চ্যাট উইজেট কালার, টেক্সট ও এম্বেড স্ক্রিপ্ট কাস্টমাইজ করুন')}
               </p>
             </div>
           </div>
@@ -628,39 +630,6 @@ function WidgetConfigModal({ widget, onClose, onRefresh, language, API }: any) {
           
           {/* Left Column: Settings & Controls (7 cols) */}
           <div className="lg:col-span-7 space-y-4">
-            
-            {/* Widget Mode Selector */}
-            <div className="bg-muted/30 border border-border p-3.5 rounded-xl space-y-2">
-              <label className="text-xs font-bold text-foreground uppercase tracking-wider block">
-                {language === 'en' ? 'Widget Type' : 'উইজেটের ধরণ'}
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setWidgetType('WHATSAPP')}
-                  className={`p-2.5 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
-                    widgetType === 'WHATSAPP'
-                      ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400'
-                      : 'bg-background border-border text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  <MessageCircle className="w-4 h-4 text-emerald-500" />
-                  <span>{language === 'en' ? 'WhatsApp Redirect Button' : 'হোয়াটসঅ্যাপ রিডাইরেক্ট বাটন'}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setWidgetType('LIVE_CHAT')}
-                  className={`p-2.5 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
-                    widgetType === 'LIVE_CHAT'
-                      ? 'bg-primary/20 border-primary text-primary'
-                      : 'bg-background border-border text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  <Globe className="w-4 h-4 text-primary" />
-                  <span>{language === 'en' ? 'Omnichannel Live Chat' : 'অমনিচ্যানেল লাইভ চ্যাট'}</span>
-                </button>
-              </div>
-            </div>
 
             {/* Design & Color Card */}
             <div className="bg-muted/30 border border-border p-4 rounded-xl space-y-3">
