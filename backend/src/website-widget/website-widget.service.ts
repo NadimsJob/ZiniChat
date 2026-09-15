@@ -5,6 +5,8 @@ import {
   ForbiddenException,
   Inject,
   forwardRef,
+  OnModuleInit,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { InboxService } from '../inbox/inbox.service';
@@ -29,12 +31,27 @@ export interface CreateWidgetDto {
 }
 
 @Injectable()
-export class WebsiteWidgetService {
+export class WebsiteWidgetService implements OnModuleInit {
+  private readonly logger = new Logger(WebsiteWidgetService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     @Inject(forwardRef(() => InboxService))
     private readonly inboxService: InboxService,
   ) {}
+
+  async onModuleInit() {
+    try {
+      const deleted = await this.prisma.websiteWidget.deleteMany({
+        where: { isActive: false },
+      });
+      if (deleted.count > 0) {
+        this.logger.log(`Hard-deleted ${deleted.count} inactive website widgets to prevent DB bloat.`);
+      }
+    } catch (err) {
+      this.logger.warn(`Failed to clean up inactive website widgets on init: ${err.message}`);
+    }
+  }
 
   // ─── Quota check helper ──────────────────────────────────────────────────────
   private async getWidgetQuota(tenantId: string): Promise<{

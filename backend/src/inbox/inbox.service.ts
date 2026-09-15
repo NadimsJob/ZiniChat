@@ -158,6 +158,11 @@ export class InboxService {
     });
 
     if (widget) {
+      if (!isActive) {
+        return this.prisma.websiteWidget.delete({
+          where: { id }
+        });
+      }
       return this.prisma.websiteWidget.update({
         where: { id },
         data: { isActive }
