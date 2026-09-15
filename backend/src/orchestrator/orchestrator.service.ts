@@ -1337,6 +1337,12 @@ export class OrchestratorService {
     const contactId = conversation.contactId;
 
     try {
+      // 0. Mark conversation as order/lead request
+      await this.prisma.conversation.update({
+        where: { id: conversationId },
+        data: { hasOrderRequest: true }
+      });
+
       // 1. Find or create 'Intake' stage
       let intakeStage = await this.prisma.kanbanStage.findFirst({
         where: { tenantId, name: 'Intake' }
@@ -1408,6 +1414,12 @@ export class OrchestratorService {
     const contactId = conversation.contactId;
 
     try {
+      // 0. Mark conversation as order/booking request
+      await this.prisma.conversation.update({
+        where: { id: conversationId },
+        data: { hasOrderRequest: true }
+      });
+
       // 1. Find or create 'Intake' stage
       let intakeStage = await this.prisma.kanbanStage.findFirst({
         where: { tenantId, name: 'Intake' }
@@ -1479,6 +1491,12 @@ export class OrchestratorService {
     const contactId = conversation.contactId;
 
     try {
+      // 0. Mark conversation as order/demo request
+      await this.prisma.conversation.update({
+        where: { id: conversationId },
+        data: { hasOrderRequest: true }
+      });
+
       // 1. Find or create 'Qualified' stage
       let qualifiedStage = await this.prisma.kanbanStage.findFirst({
         where: { tenantId, name: 'Qualified' }
@@ -1550,6 +1568,12 @@ export class OrchestratorService {
     const contactId = conversation.contactId;
 
     try {
+      // 0. Mark conversation as order/consultation request
+      await this.prisma.conversation.update({
+        where: { id: conversationId },
+        data: { hasOrderRequest: true }
+      });
+
       // 1. Find or create 'Intake' stage
       let intakeStage = await this.prisma.kanbanStage.findFirst({
         where: { tenantId, name: 'Intake' }
@@ -1621,6 +1645,12 @@ export class OrchestratorService {
     const contactId = conversation.contactId;
 
     try {
+      // 0. Mark conversation as order/appointment request
+      await this.prisma.conversation.update({
+        where: { id: conversationId },
+        data: { hasOrderRequest: true }
+      });
+
       // 1. Find or create 'Triage' stage
       let triageStage = await this.prisma.kanbanStage.findFirst({
         where: { tenantId, name: 'Triage' }
@@ -1692,6 +1722,12 @@ export class OrchestratorService {
     const contactId = conversation.contactId;
 
     try {
+      // 0. Mark conversation as order/course inquiry
+      await this.prisma.conversation.update({
+        where: { id: conversationId },
+        data: { hasOrderRequest: true }
+      });
+
       // 1. Find or create 'Admissions' stage
       let admissionsStage = await this.prisma.kanbanStage.findFirst({
         where: { tenantId, name: 'Admissions' }
@@ -1763,6 +1799,12 @@ export class OrchestratorService {
     const contactId = conversation.contactId;
 
     try {
+      // 0. Mark conversation as order/RFQ request
+      await this.prisma.conversation.update({
+        where: { id: conversationId },
+        data: { hasOrderRequest: true }
+      });
+
       // 1. Find or create 'RFQ / Quotations' stage
       let rfqStage = await this.prisma.kanbanStage.findFirst({
         where: { tenantId, name: 'RFQ / Quotations' }
@@ -1834,6 +1876,12 @@ export class OrchestratorService {
     const contactId = conversation.contactId;
 
     try {
+      // 0. Mark conversation as order/shipment request
+      await this.prisma.conversation.update({
+        where: { id: conversationId },
+        data: { hasOrderRequest: true }
+      });
+
       // 1. Find or create 'Shipments & Bookings' stage
       let shipmentStage = await this.prisma.kanbanStage.findFirst({
         where: { tenantId, name: 'Shipments & Bookings' }

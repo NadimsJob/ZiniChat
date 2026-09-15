@@ -1,4 +1,4 @@
-import { Injectable, Logger, Inject, forwardRef, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef, NotFoundException, ForbiddenException, BadRequestException, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
@@ -13,8 +13,35 @@ import { InboxGateway } from './inbox.gateway';
 import { QuotaService } from '../tenants/quota.service';
 
 @Injectable()
-export class InboxService {
+export class InboxService implements OnModuleInit {
   private readonly logger = new Logger(InboxService.name);
+
+  async onModuleInit() {
+    try {
+      // Retroactive sync: mark conversations with AI demo/inquiry notes as hasOrderRequest = true
+      const demoNotes = await this.prisma.contactNote.findMany({
+        where: {
+          content: { startsWith: '[AI ' }
+        },
+        select: { contactId: true }
+      });
+      const contactIds = Array.from(new Set(demoNotes.map(n => n.contactId)));
+      if (contactIds.length > 0) {
+        const updated = await this.prisma.conversation.updateMany({
+          where: {
+            contactId: { in: contactIds },
+            hasOrderRequest: false
+          },
+          data: { hasOrderRequest: true }
+        });
+        if (updated.count > 0) {
+          this.logger.log(`Retroactively marked ${updated.count} conversation(s) with hasOrderRequest = true.`);
+        }
+      }
+    } catch (e: any) {
+      this.logger.error(`Retroactive hasOrderRequest sync failed: ${e.message}`);
+    }
+  }
 
   constructor(
     private prisma: PrismaService,
@@ -1196,26 +1223,11 @@ export class InboxService {
       });
     }
 
-    this.checkAndTriggerSummarization(conversation.id);
-
     return {
       message,
       conversation,
       contact
     };
-  }
-
-  private async checkAndTriggerSummarization(conversationId: string) {
-    try {
-      const count = await this.prisma.message.count({ where: { conversationId } });
-      if (count >= 12 && (count === 12 || (count - 12) % 10 === 0)) {
-        this.aiService.generateConversationSummary(conversationId).catch(err => {
-          this.logger.error(`Failed to generate conversation summary for ${conversationId}: ${err.message}`);
-        });
-      }
-    } catch (err: any) {
-      this.logger.error(`Failed checking message count for summarization: ${err.message}`);
-    }
   }
 
   async checkBotLoopSafeguard(conversationId: string): Promise<boolean> {
@@ -1310,8 +1322,6 @@ export class InboxService {
       where: { id: conversation.id },
       data: { lastMessageAt: new Date() }
     });
-
-    this.checkAndTriggerSummarization(conversation.id);
 
     if (senderType === 'ai' || aiAssistantId) {
       await this.checkBotLoopSafeguard(conversation.id);
