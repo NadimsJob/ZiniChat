@@ -60,7 +60,7 @@ export class WebsiteWidgetService {
     const limit = tenant.customWebsiteWidgetLimit ?? planLimit;
 
     const current = await this.prisma.websiteWidget.count({
-      where: { tenantId },
+      where: { tenantId, isActive: true },
     });
 
     return { limit, current };
@@ -131,7 +131,7 @@ export class WebsiteWidgetService {
   // ─── List Widgets ────────────────────────────────────────────────────────────
   async getWidgets(tenantId: string) {
     return this.prisma.websiteWidget.findMany({
-      where: { tenantId },
+      where: { tenantId, isActive: true },
       orderBy: { createdAt: 'desc' },
     });
   }

@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { WebsiteWidgetService, CreateWidgetDto } from './website-widget.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { InboxService } from '../inbox/inbox.service';
 import { ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
 
 // ─── Mock Factories ──────────────────────────────────────────────────────────
@@ -76,6 +77,10 @@ const mockPrisma = {
 
 // ─── Test Suite ──────────────────────────────────────────────────────────────
 
+const mockInboxService = {
+  handleIncomingMessage: jest.fn(),
+};
+
 describe('WebsiteWidgetService', () => {
   let service: WebsiteWidgetService;
 
@@ -84,6 +89,7 @@ describe('WebsiteWidgetService', () => {
       providers: [
         WebsiteWidgetService,
         { provide: PrismaService, useValue: mockPrisma },
+        { provide: InboxService, useValue: mockInboxService },
       ],
     }).compile();
 
@@ -205,7 +211,7 @@ describe('WebsiteWidgetService', () => {
 
       await expect(service.createWidget(TENANT_ID, dto)).rejects.toThrow(ForbiddenException);
       await expect(service.createWidget(TENANT_ID, dto)).rejects.toThrow(
-        'does not include website widgets',
+        'Website widget limit reached',
       );
     });
 
@@ -218,7 +224,7 @@ describe('WebsiteWidgetService', () => {
 
       await expect(service.createWidget(TENANT_ID, dto)).rejects.toThrow(ForbiddenException);
       await expect(service.createWidget(TENANT_ID, dto)).rejects.toThrow(
-        'allows 2 website widgets',
+        'Website widget limit reached',
       );
     });
 
