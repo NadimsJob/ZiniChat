@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Script from 'next/script';
 import { useLanguage } from '@/components/LanguageProvider';
 import { Globe, ArrowRight, Menu, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -215,6 +216,18 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
           </div>
         </div>
       </footer>
+      <Script
+        src="https://zinichat.com/wa-widget.js"
+        data-token="ff0c5def-9c1d-410b-9a5b-a15cb8f90a0c"
+        strategy="afterInteractive"
+      />
+      <Script
+        src="https://zinichat.com/widget.js"
+        data-token="622de982-7993-4778-b7c6-bf16c042dcb4"
+        data-color="#7C3AED"
+        data-heading="Chat with us"
+        strategy="afterInteractive"
+      />
     </div>
   );
 }

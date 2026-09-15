@@ -84,4 +84,16 @@ export class WebsiteWidgetController {
   getPublic(@Param('token') token: string) {
     return this.widgetService.getWidgetByToken(token);
   }
+
+  // Public: Send visitor message from website widget SDK
+  @Post('public/message')
+  sendVisitorMessage(
+    @Body() body: { widgetToken: string; visitorId: string; message: string },
+  ) {
+    return this.widgetService.sendVisitorMessage(
+      body.widgetToken,
+      body.visitorId,
+      body.message,
+    );
+  }
 }

@@ -3,8 +3,11 @@ import {
   BadRequestException,
   NotFoundException,
   ForbiddenException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { InboxService } from '../inbox/inbox.service';
 
 export interface CreateWidgetDto {
   type: 'LIVE_CHAT' | 'WHATSAPP';
@@ -25,7 +28,11 @@ export interface CreateWidgetDto {
 
 @Injectable()
 export class WebsiteWidgetService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(forwardRef(() => InboxService))
+    private readonly inboxService: InboxService,
+  ) {}
 
   // ─── Quota check helper ──────────────────────────────────────────────────────
   private async getWidgetQuota(tenantId: string): Promise<{
@@ -248,5 +255,39 @@ export class WebsiteWidgetService {
   // ─── Get quota info (for billing endpoint) ──────────────────────────────────
   async getQuotaInfo(tenantId: string) {
     return this.getWidgetQuota(tenantId);
+  }
+
+  // ─── Public: Send message from live chat widget ──────────────────────────────
+  async sendVisitorMessage(widgetToken: string, visitorId: string, message: string) {
+    if (!widgetToken || !visitorId || !message?.trim()) {
+      throw new BadRequestException('widgetToken, visitorId, and message are required.');
+    }
+
+    const widget = await this.prisma.websiteWidget.findFirst({
+      where: {
+        widgetToken,
+        isActive: true,
+        type: 'LIVE_CHAT',
+      },
+    });
+
+    if (!widget) {
+      throw new NotFoundException('Widget not found or inactive.');
+    }
+
+    const externalMessageId = `widget_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+
+    await this.inboxService.handleIncomingMessage({
+      tenantId: widget.tenantId,
+      channel: 'website',
+      externalContactId: visitorId,
+      contactName: `Website Visitor (${visitorId.slice(-4)})`,
+      messageType: 'text',
+      content: { body: message.trim() },
+      externalMessageId,
+      timestamp: new Date(),
+    });
+
+    return { success: true, messageId: externalMessageId };
   }
 }
