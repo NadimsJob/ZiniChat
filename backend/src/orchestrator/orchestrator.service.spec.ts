@@ -722,6 +722,60 @@ describe('OrchestratorService', () => {
       expect(aiCallArg).toContain('[Image Sent]');
       expect(aiCallArg).not.toContain('[Voice Message Transcription]:');
     });
+
+    // T-18: Software Demo Request — populates hasOrderRequest = true on conversation
+    it('T-18: demo_request intent in Tech & Software mode updates conversation with hasOrderRequest = true', async () => {
+      prismaService.message.findUnique.mockResolvedValue({
+        id: 'msg_demo', direction: 'inbound', type: 'text',
+        content: { body: 'I want a demo session tomorrow at 7pm' },
+        conversationId: 'c1',
+        conversation: {
+          tenantId: 'tenant1', id: 'c1', contactId: 'cnt1',
+          contact: { name: 'Customer', stage: { name: 'Lead' }, externalContactId: '01700000001' },
+          channelConnection: { id: 'conn1', isAiAutoReplyEnabled: true }
+        }
+      });
+      prismaService.aiAssistant.findFirst.mockResolvedValue({
+        id: 'ai1', tenantId: 'tenant1', isActive: true, routingMode: 'ai_first',
+        systemPrompt: 'Software Demo Assistant', tools: [],
+        customAiConfigId: null, tenant: { customAiConfigId: null }
+      });
+      prismaService.tenant.findUnique.mockResolvedValue({
+        id: 'tenant1', businessNature: 'Tech & Software'
+      });
+      prismaService.businessNature.findFirst.mockResolvedValue({
+        id: 'bn_tech', name: 'Tech & Software', isTechSoftwareMode: true
+      });
+      prismaService.kanbanStage = {
+        findFirst: jest.fn().mockResolvedValue({ id: 'stage_qual', name: 'Qualified' }),
+        create: jest.fn()
+      };
+      prismaService.contact = {
+        findUnique: jest.fn().mockResolvedValue({ id: 'cnt1', stageId: null }),
+        update: jest.fn().mockResolvedValue({ id: 'cnt1' })
+      };
+      prismaService.contactNote = { create: jest.fn().mockResolvedValue({ id: 'note1' }) };
+      notificationsService = { createNotificationForTenantAdmins: jest.fn().mockResolvedValue({}) };
+      prismaService.aiUsageLog.aggregate.mockResolvedValue({ _count: 0 });
+      prismaService.message.count.mockResolvedValue(0);
+
+      aiService.generateCompletionDetailed.mockResolvedValue({
+        text: JSON.stringify({
+          replyText: 'ধন্যবাদ! আমি আপনার ডেমো সেশনের বিষয়টি নোট করে নিচ্ছি।',
+          intent: 'demo_request',
+          interestedSoftwareName: 'ZiniChat',
+          supportSignal: false
+        })
+      });
+
+      await service.processMessage('msg_demo');
+
+      expect(prismaService.conversation.update).toHaveBeenCalledWith(expect.objectContaining({
+        where: { id: 'c1' },
+        data: expect.objectContaining({ hasOrderRequest: true })
+      }));
+    });
   });
 });
+
 
