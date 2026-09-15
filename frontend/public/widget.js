@@ -77,18 +77,34 @@
     var style = document.createElement('style');
     style.id = 'zc-widget-styles';
     style.innerHTML = 
+      '#zc-livechat-container, #zc-livechat-container * { box-sizing: border-box !important; }\n' +
       '@media (max-width: 640px) {\n' +
       '  #zc-livechat-container {\n' +
+      '    position: fixed !important;\n' +
       '    bottom: 16px !important;\n' +
+      '    bottom: calc(16px + env(safe-area-inset-bottom, 0px)) !important;\n' +
       '    right: 16px !important;\n' +
       '    left: auto !important;\n' +
-      '    max-width: calc(100vw - 32px) !important;\n' +
       '    z-index: 999999 !important;\n' +
+      '    display: flex !important;\n' +
+      '    flex-direction: column !important;\n' +
+      '    align-items: flex-end !important;\n' +
+      '    pointer-events: none !important;\n' +
+      '    margin: 0 !important;\n' +
+      '    padding: 0 !important;\n' +
+      '    width: auto !important;\n' +
+      '    max-width: calc(100vw - 32px) !important;\n' +
+      '    overflow: visible !important;\n' +
+      '  }\n' +
+      '  #zc-livechat-container > * {\n' +
+      '    pointer-events: auto !important;\n' +
       '  }\n' +
       '  #zc-livechat-btn {\n' +
-      '    width: 50px !important;\n' +
-      '    height: 50px !important;\n' +
-      '    margin-left: auto !important;\n' +
+      '    width: 52px !important;\n' +
+      '    height: 52px !important;\n' +
+      '    margin: 0 !important;\n' +
+      '    margin-left: 0 !important;\n' +
+      '    flex-shrink: 0 !important;\n' +
       '  }\n' +
       '  #zc-chat-window {\n' +
       '    position: fixed !important;\n' +
@@ -104,7 +120,8 @@
       '    margin: 0 !important;\n' +
       '    z-index: 2147483647 !important;\n' +
       '  }\n' +
-      '}';
+      '}\n' +
+      '#zc-livechat-container input::placeholder { color: #94a3b8 !important; opacity: 1 !important; }';
     (document.head || document.documentElement).appendChild(style);
   }
 
@@ -120,7 +137,7 @@
 
     var container = document.createElement('div');
     container.id = 'zc-livechat-container';
-    container.style.cssText = 'position:fixed; z-index:999999; bottom:20px; font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;' +
+    container.style.cssText = 'position:fixed; z-index:999999; bottom:20px; font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI,Roboto,sans-serif; display:flex; flex-direction:column; align-items:flex-end; pointer-events:none;' +
       (position === 'bottom-left' ? 'left:20px;' : 'right:20px;');
 
     // Chat Window Container
@@ -287,46 +304,76 @@
       leadFormContainer.innerHTML = '';
       
       var leadTitle = document.createElement('div');
-      leadTitle.style.cssText = 'font-size:12px; font-weight:700; color:#0f172a; margin-bottom:4px; text-align:center;';
-      leadTitle.innerText = 'Please introduce yourself to start chatting';
+      leadTitle.style.cssText = 'font-size:12px; font-weight:700; color:#0f172a; margin-bottom:8px; text-align:center; line-height:1.3;';
+      leadTitle.innerText = 'Please introduce yourself to start chatting / চ্যাট শুরু করতে আপনার তথ্য দিন';
       leadFormContainer.appendChild(leadTitle);
 
       var fields = leadFieldsStr.split(',').map(function(s){ return s.trim().toLowerCase(); });
       var inputs = {};
 
       if (fields.indexOf('name') !== -1 || fields.length === 0) {
+        var nameGroup = document.createElement('div');
+        nameGroup.style.cssText = 'display:flex; flex-direction:column; gap:3px; margin-bottom:6px; text-align:left;';
+        
+        var nameLabel = document.createElement('label');
+        nameLabel.style.cssText = 'font-size:11px; font-weight:700; color:#334155;';
+        nameLabel.innerHTML = 'Full Name / আপনার নাম <span style="color:#ef4444;">*</span>';
+        
         var nameInput = document.createElement('input');
         nameInput.type = 'text';
-        nameInput.placeholder = 'Your Name *';
+        nameInput.placeholder = 'e.g. Rahim Ahmed / রহিম আহমেদ';
         nameInput.required = true;
-        nameInput.style.cssText = 'width:100%; background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:8px 12px; font-size:12px; outline:none; box-sizing:border-box;';
-        leadFormContainer.appendChild(nameInput);
+        nameInput.style.cssText = 'width:100%; background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:9px 12px; font-size:12px; color:#0f172a; outline:none; box-sizing:border-box; font-weight:500;';
+        
+        nameGroup.appendChild(nameLabel);
+        nameGroup.appendChild(nameInput);
+        leadFormContainer.appendChild(nameGroup);
         inputs.name = nameInput;
       }
 
       if (fields.indexOf('phone') !== -1) {
+        var phoneGroup = document.createElement('div');
+        phoneGroup.style.cssText = 'display:flex; flex-direction:column; gap:3px; margin-bottom:6px; text-align:left;';
+        
+        var phoneLabel = document.createElement('label');
+        phoneLabel.style.cssText = 'font-size:11px; font-weight:700; color:#334155;';
+        phoneLabel.innerHTML = 'Phone Number / ফোন নম্বর <span style="color:#ef4444;">*</span>';
+        
         var phoneInput = document.createElement('input');
         phoneInput.type = 'tel';
-        phoneInput.placeholder = 'Phone Number *';
+        phoneInput.placeholder = 'e.g. 01712345678';
         phoneInput.required = true;
-        phoneInput.style.cssText = 'width:100%; background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:8px 12px; font-size:12px; outline:none; box-sizing:border-box;';
-        leadFormContainer.appendChild(phoneInput);
+        phoneInput.style.cssText = 'width:100%; background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:9px 12px; font-size:12px; color:#0f172a; outline:none; box-sizing:border-box; font-weight:500;';
+        
+        phoneGroup.appendChild(phoneLabel);
+        phoneGroup.appendChild(phoneInput);
+        leadFormContainer.appendChild(phoneGroup);
         inputs.phone = phoneInput;
       }
 
       if (fields.indexOf('email') !== -1) {
+        var emailGroup = document.createElement('div');
+        emailGroup.style.cssText = 'display:flex; flex-direction:column; gap:3px; margin-bottom:6px; text-align:left;';
+        
+        var emailLabel = document.createElement('label');
+        emailLabel.style.cssText = 'font-size:11px; font-weight:700; color:#334155;';
+        emailLabel.innerHTML = 'Email Address / ইমেইল ঠিকানা';
+        
         var emailInput = document.createElement('input');
         emailInput.type = 'email';
-        emailInput.placeholder = 'Email Address';
-        emailInput.style.cssText = 'width:100%; background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:8px 12px; font-size:12px; outline:none; box-sizing:border-box;';
-        leadFormContainer.appendChild(emailInput);
+        emailInput.placeholder = 'e.g. rahim@example.com';
+        emailInput.style.cssText = 'width:100%; background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:9px 12px; font-size:12px; color:#0f172a; outline:none; box-sizing:border-box; font-weight:500;';
+        
+        emailGroup.appendChild(emailLabel);
+        emailGroup.appendChild(emailInput);
+        leadFormContainer.appendChild(emailGroup);
         inputs.email = emailInput;
       }
 
       var startChatBtn = document.createElement('button');
       startChatBtn.type = 'button';
-      startChatBtn.style.cssText = 'background:' + color + '; color:#fff; border:none; border-radius:8px; padding:9px 14px; font-size:12px; font-weight:700; cursor:pointer; margin-top:4px;';
-      startChatBtn.innerText = 'Start Chat';
+      startChatBtn.style.cssText = 'background:' + color + '; color:#fff; border:none; border-radius:8px; padding:10px 14px; font-size:12px; font-weight:700; cursor:pointer; margin-top:4px; width:100%; box-shadow:0 2px 6px rgba(0,0,0,0.1);';
+      startChatBtn.innerText = 'Start Chat / চ্যাট শুরু করুন';
 
       startChatBtn.onclick = function() {
         var nameVal = inputs.name ? inputs.name.value.trim() : '';
@@ -425,8 +472,8 @@
     var btn = document.createElement('button');
     btn.id = 'zc-livechat-btn';
     btn.style.cssText = 'position:relative; display:flex; align-items:center; justify-content:center; width:56px; height:56px;' +
-      ' border-radius:50%; background:' + color + '; color:#ffffff; border:none;' +
-      ' box-shadow:0 10px 25px rgba(0,0,0,0.25); cursor:pointer; overflow:hidden; transition:transform 0.2s ease; margin-left:auto;';
+      ' border-radius:50%; background:' + color + '; color:#ffffff; border:none; pointer-events:auto;' +
+      ' box-shadow:0 10px 25px rgba(0,0,0,0.25); cursor:pointer; overflow:hidden; transition:transform 0.2s ease; margin:0; flex-shrink:0;';
     btn.innerHTML = '<svg style="width:26px;height:26px;fill:currentColor;" viewBox="0 0 24 24">' +
       '<path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>' +
       '</svg>';

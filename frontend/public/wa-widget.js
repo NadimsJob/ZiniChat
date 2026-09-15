@@ -35,7 +35,7 @@
     // Container
     var container = document.createElement('div');
     container.id = 'zc-wa-float-container';
-    container.style.cssText = 'position:fixed; z-index:999999; bottom:20px; font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;' +
+    container.style.cssText = 'position:fixed; z-index:999999; bottom:20px; font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; display:flex; flex-direction:column; align-items:flex-end; pointer-events:none;' +
       (position === 'bottom-left' ? 'left:20px;' : 'right:20px;');
 
     // Tooltip
@@ -53,11 +53,13 @@
 
     // Inject CSS keyframes & mobile responsiveness
     var style = document.createElement('style');
-    style.innerHTML = '@keyframes zc-wa-ping { 75%, 100% { transform: scale(1.4); opacity: 0; } }' +
-      ' #zc-wa-btn:hover { transform: scale(1.08); }' +
-      ' @media (max-width: 640px) {' +
-      '   #zc-wa-float-container { bottom: 16px !important; right: 16px !important; z-index: 999998 !important; max-width: calc(100vw - 32px) !important; }' +
-      '   #zc-wa-btn { width: 50px !important; height: 50px !important; }' +
+    style.innerHTML = '#zc-wa-float-container, #zc-wa-float-container * { box-sizing: border-box !important; }\n' +
+      '@keyframes zc-wa-ping { 75%, 100% { transform: scale(1.4); opacity: 0; } }\n' +
+      ' #zc-wa-float-container > * { pointer-events: auto !important; }\n' +
+      ' #zc-wa-btn:hover { transform: scale(1.08); }\n' +
+      ' @media (max-width: 640px) {\n' +
+      '   #zc-wa-float-container { position: fixed !important; bottom: 16px !important; bottom: calc(16px + env(safe-area-inset-bottom, 0px)) !important; right: 16px !important; left: auto !important; z-index: 999998 !important; margin: 0 !important; width: auto !important; max-width: calc(100vw - 32px) !important; }\n' +
+      '   #zc-wa-btn { width: 52px !important; height: 52px !important; margin: 0 !important; flex-shrink: 0 !important; }\n' +
       ' }';
     document.head.appendChild(style);
 
