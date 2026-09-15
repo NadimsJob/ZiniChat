@@ -78,6 +78,18 @@
     style.id = 'zc-widget-styles';
     style.innerHTML = 
       '@media (max-width: 640px) {\n' +
+      '  #zc-livechat-container {\n' +
+      '    bottom: 16px !important;\n' +
+      '    right: 16px !important;\n' +
+      '    left: auto !important;\n' +
+      '    max-width: calc(100vw - 32px) !important;\n' +
+      '    z-index: 999999 !important;\n' +
+      '  }\n' +
+      '  #zc-livechat-btn {\n' +
+      '    width: 50px !important;\n' +
+      '    height: 50px !important;\n' +
+      '    margin-left: auto !important;\n' +
+      '  }\n' +
       '  #zc-chat-window {\n' +
       '    position: fixed !important;\n' +
       '    top: 0 !important;\n' +

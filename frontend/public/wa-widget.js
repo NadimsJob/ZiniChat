@@ -51,10 +51,14 @@
     ring.style.cssText = 'position:absolute; inset:-4px; border-radius:50%; background:' + color + ';' +
       ' opacity:0.4; animation:zc-wa-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite; pointer-events:none;';
 
-    // Inject CSS keyframes
+    // Inject CSS keyframes & mobile responsiveness
     var style = document.createElement('style');
     style.innerHTML = '@keyframes zc-wa-ping { 75%, 100% { transform: scale(1.4); opacity: 0; } }' +
-      ' #zc-wa-btn:hover { transform: scale(1.08); }';
+      ' #zc-wa-btn:hover { transform: scale(1.08); }' +
+      ' @media (max-width: 640px) {' +
+      '   #zc-wa-float-container { bottom: 16px !important; right: 16px !important; z-index: 999998 !important; max-width: calc(100vw - 32px) !important; }' +
+      '   #zc-wa-btn { width: 50px !important; height: 50px !important; }' +
+      ' }';
     document.head.appendChild(style);
 
     // Main Button
