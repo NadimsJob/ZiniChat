@@ -1150,6 +1150,16 @@ export class InboxService {
       });
     }
 
+    // Broadcast real-time Socket.io event to tenant dashboard
+    if (this.inboxGateway) {
+      this.inboxGateway.broadcastToTenant(data.tenantId, 'new_message', {
+        message,
+        conversation,
+        contact,
+        conversationId: conversation.id
+      });
+    }
+
     this.checkAndTriggerSummarization(conversation.id);
 
     return {

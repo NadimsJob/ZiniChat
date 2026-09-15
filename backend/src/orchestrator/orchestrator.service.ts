@@ -81,10 +81,10 @@ export class OrchestratorService {
 
       if (message.conversation.channel === 'website') {
         const widget = await this.prisma.websiteWidget.findFirst({
-          where: { tenantId, type: 'LIVE_CHAT' }
+          where: { tenantId, isActive: true }
         });
-        if (!widget || widget.isActive === false || widget.isAiAutoReplyEnabled === false) {
-          this.logger.debug(`AI Auto-Reply is disabled or website widget is inactive. Skipping.`);
+        if (widget && widget.isAiAutoReplyEnabled === false) {
+          this.logger.debug(`AI Auto-Reply is disabled on website widget ${widget.id}. Skipping.`);
           return;
         }
       }
@@ -126,6 +126,7 @@ export class OrchestratorService {
       });
 
       if (!assistant || !assistant.isActive || assistant.routingMode === 'custom_only') {
+        this.logger.warn(`Skipped AI auto-reply for tenant ${tenantId}: AI Assistant missing, inactive, or routingMode custom_only (assistant: ${assistant?.id}, isActive: ${assistant?.isActive}).`);
         return;
       }
 

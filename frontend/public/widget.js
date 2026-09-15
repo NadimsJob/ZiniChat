@@ -32,7 +32,30 @@
     return vid;
   }
 
+  function injectStyles() {
+    if (document.getElementById('zc-widget-styles')) return;
+    var style = document.createElement('style');
+    style.id = 'zc-widget-styles';
+    style.innerHTML = 
+      '@media (max-width: 640px) {\n' +
+      '  #zc-livechat-container {\n' +
+      '    bottom: 12px !important;\n' +
+      '    right: 12px !important;\n' +
+      '    left: 12px !important;\n' +
+      '  }\n' +
+      '  #zc-chat-window {\n' +
+      '    width: 100% !important;\n' +
+      '    max-width: 100% !important;\n' +
+      '    height: calc(100vh - 90px) !important;\n' +
+      '    max-height: 540px !important;\n' +
+      '    margin-bottom: 8px !important;\n' +
+      '  }\n' +
+      '}';
+    (document.head || document.documentElement).appendChild(style);
+  }
+
   function initLiveChatWidget(config) {
+    injectStyles();
     var color = config.primaryColor || attrColor || '#7C3AED';
     var heading = config.heading || attrHeading || 'Chat with us';
     var tagline = config.tagline || 'We are here to help you.';
