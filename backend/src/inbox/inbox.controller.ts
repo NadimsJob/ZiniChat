@@ -29,6 +29,17 @@ export class InboxController {
     return this.inboxService.getActiveChannels(tenantId);
   }
 
+  @Patch('channels/:id/rename')
+  async renameChannel(
+    @Request() req: any,
+    @Param('id') channelId: string,
+    @Body() body: { displayName?: string; name?: string }
+  ) {
+    const tenantId = req.user.tenantId;
+    const nameToUse = body.displayName || body.name || '';
+    return this.inboxService.renameChannel(tenantId, channelId, nameToUse);
+  }
+
   @Patch('channels/:id/ai-reply')
   async toggleChannelAiReply(
     @Request() req: any,

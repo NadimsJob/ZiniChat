@@ -8,7 +8,8 @@ import InstructionBanner from '@/components/InstructionBanner';
 import toast from 'react-hot-toast';
 import { 
   Plus, Webhook, Trash2, RefreshCw, MessageCircle, PhoneCall, Camera, RotateCcw, 
-  Globe, Code, Zap, Copy, X, Sparkles, Save, Eye, Send, MessageSquare, ExternalLink
+  Globe, Code, Zap, Copy, X, Sparkles, Save, Eye, Send, MessageSquare, ExternalLink,
+  Pencil, Check
 } from 'lucide-react';
 import CommentConfigModal from './CommentConfigModal';
 import { ChannelBrandIcon } from '@/components/BrandIcons';
@@ -21,6 +22,42 @@ export default function InboxesPage() {
   const [loading, setLoading] = useState(true);
   const [codeModalWidget, setCodeModalWidget] = useState<any | null>(null);
   const [commentModalChannel, setCommentModalChannel] = useState<any | null>(null);
+
+  const [editingChannelId, setEditingChannelId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState<string>('');
+  const [savingRename, setSavingRename] = useState<boolean>(false);
+
+  const handleSaveRename = async (id: string) => {
+    if (!editingName.trim()) {
+      toast.error(language === 'en' ? 'Inbox name cannot be empty' : 'ইনবক্সের নাম খালি হতে পারবে না');
+      return;
+    }
+    setSavingRename(true);
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/inbox/channels/${id}/rename`, {
+        method: 'PATCH',
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ displayName: editingName.trim() })
+      });
+
+      if (res.ok) {
+        toast.success(language === 'en' ? 'Inbox renamed successfully' : 'ইনবক্সের নাম সেভ হয়েছে');
+        setConnections(prev => prev.map(c => c.id === id ? { ...c, displayName: editingName.trim(), name: editingName.trim() } : c));
+        setEditingChannelId(null);
+        setEditingName('');
+      } else {
+        toast.error(language === 'en' ? 'Failed to rename inbox' : 'নাম পরিবর্তন করতে ব্যর্থ হয়েছে');
+      }
+    } catch (err) {
+      toast.error(language === 'en' ? 'Error renaming inbox' : 'নাম পরিবর্তন করতে সমস্যা হয়েছে');
+    } finally {
+      setSavingRename(false);
+    }
+  };
 
   const fetchConnections = async () => {
     setLoading(true);
@@ -275,26 +312,74 @@ export default function InboxesPage() {
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h3 className="font-bold text-foreground flex items-center gap-2 text-xs truncate">
-                          <span className="truncate">{conn.displayName || conn.phoneNumber || getChannelName(conn.channelType)}</span>
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold inline-flex items-center gap-1.5 shrink-0 ${
-                            isChannelInactive
-                              ? 'bg-muted text-muted-foreground border border-border'
-                              : isActive
-                              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' 
-                              : 'bg-red-500/10 text-red-500 border border-red-500/20'
-                          }`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${
-                              isChannelInactive ? 'bg-muted-foreground' : isActive ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'
-                            }`} />
-                            {isChannelInactive 
-                              ? (language === 'en' ? 'Inactive' : 'নিষ্ক্রিয়')
-                              : isActive 
-                              ? (language === 'en' ? 'Active' : 'সক্রিয়') 
-                              : (language === 'en' ? 'Disconnected' : 'ডিসকানেক্টেড')
-                            }
-                          </span>
-                        </h3>
+                        {editingChannelId === conn.id ? (
+                          <div className="flex items-center gap-1.5 my-0.5">
+                            <input
+                              type="text"
+                              value={editingName}
+                              onChange={(e) => setEditingName(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleSaveRename(conn.id);
+                                if (e.key === 'Escape') {
+                                  setEditingChannelId(null);
+                                  setEditingName('');
+                                }
+                              }}
+                              autoFocus
+                              className="px-2.5 py-1 text-xs font-semibold bg-background border border-primary rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-primary w-48 max-w-full shadow-2xs"
+                              placeholder={language === 'en' ? 'Enter inbox name...' : 'ইনবক্সের নাম লিখুন...'}
+                            />
+                            <button
+                              onClick={() => handleSaveRename(conn.id)}
+                              disabled={savingRename}
+                              className="p-1 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 cursor-pointer shadow-2xs"
+                              title={language === 'en' ? 'Save Name' : 'সেভ করুন'}
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                setEditingChannelId(null);
+                                setEditingName('');
+                              }}
+                              className="p-1 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors cursor-pointer"
+                              title={language === 'en' ? 'Cancel' : 'বাতিল'}
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ) : (
+                          <h3 className="font-bold text-foreground flex items-center gap-1.5 text-xs truncate">
+                            <span className="truncate">{conn.displayName || conn.phoneNumber || getChannelName(conn.channelType)}</span>
+                            <button
+                              onClick={() => {
+                                setEditingChannelId(conn.id);
+                                setEditingName(conn.displayName || conn.phoneNumber || getChannelName(conn.channelType));
+                              }}
+                              className="p-1 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-colors cursor-pointer shrink-0 opacity-70 hover:opacity-100"
+                              title={language === 'en' ? 'Rename Inbox' : 'নাম পরিবর্তন করুন'}
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold inline-flex items-center gap-1.5 shrink-0 ${
+                              isChannelInactive
+                                ? 'bg-muted text-muted-foreground border border-border'
+                                : isActive
+                                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' 
+                                : 'bg-red-500/10 text-red-500 border border-red-500/20'
+                            }`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${
+                                isChannelInactive ? 'bg-muted-foreground' : isActive ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'
+                              }`} />
+                              {isChannelInactive 
+                                ? (language === 'en' ? 'Inactive' : 'নিষ্ক্রিয়')
+                                : isActive 
+                                ? (language === 'en' ? 'Active' : 'সক্রিয়') 
+                                : (language === 'en' ? 'Disconnected' : 'ডিসকানেক্টেড')
+                              }
+                            </span>
+                          </h3>
+                        )}
                         <p className="text-[11px] text-muted-foreground mt-0.5 truncate font-sans">
                           {getChannelName(conn.channelType)} {conn.provider ? `(${conn.provider})` : ''}
                         </p>

@@ -1,4 +1,4 @@
-import { Injectable, Logger, Inject, forwardRef, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
@@ -111,6 +111,37 @@ export class InboxService {
     });
 
     return [...mappedConnections, ...mappedWidgets];
+  }
+
+  async renameChannel(tenantId: string, id: string, name: string) {
+    const trimmedName = name?.trim();
+    if (!trimmedName) {
+      throw new BadRequestException('Inbox name cannot be empty');
+    }
+
+    const conn = await this.prisma.channelConnection.findFirst({
+      where: { id, tenantId }
+    });
+
+    if (conn) {
+      return this.prisma.channelConnection.update({
+        where: { id },
+        data: { displayName: trimmedName }
+      });
+    }
+
+    const widget = await this.prisma.websiteWidget.findFirst({
+      where: { id, tenantId }
+    });
+
+    if (widget) {
+      return this.prisma.websiteWidget.update({
+        where: { id },
+        data: { name: trimmedName }
+      });
+    }
+
+    throw new NotFoundException('Channel or Widget not found');
   }
 
   async toggleChannelAiReply(tenantId: string, id: string, isAiAutoReplyEnabled: boolean) {
