@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   Req,
   UseGuards,
   UseInterceptors,
@@ -79,6 +80,16 @@ export class WebsiteWidgetController {
     return this.widgetService.deleteWidget(req.user.tenantId, id);
   }
 
+  // Public: Fetch visitor messages for long-polling
+  @Get('public/messages')
+  getVisitorMessages(
+    @Query('token') token: string,
+    @Query('visitorId') visitorId: string,
+    @Query('after') after?: string,
+  ) {
+    return this.widgetService.getVisitorMessages(token, visitorId, after);
+  }
+
   // Public: Fetch widget config by token (for embed SDK)
   @Get('public/:token')
   getPublic(@Param('token') token: string) {
@@ -88,12 +99,19 @@ export class WebsiteWidgetController {
   // Public: Send visitor message from website widget SDK
   @Post('public/message')
   sendVisitorMessage(
-    @Body() body: { widgetToken: string; visitorId: string; message: string },
+    @Body()
+    body: {
+      widgetToken: string;
+      visitorId: string;
+      message: string;
+      leadInfo?: { name?: string; phone?: string; email?: string };
+    },
   ) {
     return this.widgetService.sendVisitorMessage(
       body.widgetToken,
       body.visitorId,
       body.message,
+      body.leadInfo,
     );
   }
 }

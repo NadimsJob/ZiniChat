@@ -18,18 +18,58 @@
     return String(text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
-  function getVisitorId() {
+  function getSessionInfo() {
+    var SESSION_DURATION = 30 * 60 * 1000; // 30 minutes session duration
     var vid = null;
     try {
       vid = localStorage.getItem('__zc_vid');
       if (!vid) {
-        vid = 'v_' + Math.random().toString(36).substring(2, 11) + Date.now().toString(36);
+        vid = 'v_' + Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
         localStorage.setItem('__zc_vid', vid);
       }
     } catch (e) {
-      vid = 'v_' + Math.random().toString(36).substring(2, 11) + Date.now().toString(36);
+      vid = 'v_' + Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
     }
-    return vid;
+
+    var sessKey = '__zc_sess_' + (token || 'default');
+    var sessTimeKey = '__zc_sess_time_' + (token || 'default');
+    var now = Date.now();
+    var lastTime = 0;
+    try {
+      lastTime = parseInt(localStorage.getItem(sessTimeKey) || '0', 10);
+    } catch (e) {}
+
+    var currentSess = null;
+    if (lastTime && (now - lastTime < SESSION_DURATION)) {
+      try { currentSess = localStorage.getItem(sessKey); } catch (e) {}
+    }
+
+    if (!currentSess) {
+      currentSess = vid + '_s' + Math.random().toString(36).substring(2, 7);
+      try {
+        localStorage.setItem(sessKey, currentSess);
+        localStorage.setItem(sessTimeKey, now.toString());
+      } catch (e) {}
+    } else {
+      try { localStorage.setItem(sessTimeKey, now.toString()); } catch (e) {}
+    }
+
+    return { visitorId: vid, sessionId: currentSess };
+  }
+
+  function getSavedLeadInfo() {
+    try {
+      var raw = localStorage.getItem('__zc_lead_' + (token || 'default'));
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function saveLeadInfo(info) {
+    try {
+      localStorage.setItem('__zc_lead_' + (token || 'default'), JSON.stringify(info));
+    } catch (e) {}
   }
 
   function injectStyles() {
@@ -38,17 +78,19 @@
     style.id = 'zc-widget-styles';
     style.innerHTML = 
       '@media (max-width: 640px) {\n' +
-      '  #zc-livechat-container {\n' +
-      '    bottom: 12px !important;\n' +
-      '    right: 12px !important;\n' +
-      '    left: 12px !important;\n' +
-      '  }\n' +
       '  #zc-chat-window {\n' +
-      '    width: 100% !important;\n' +
-      '    max-width: 100% !important;\n' +
-      '    height: calc(100vh - 90px) !important;\n' +
-      '    max-height: 540px !important;\n' +
-      '    margin-bottom: 8px !important;\n' +
+      '    position: fixed !important;\n' +
+      '    top: 0 !important;\n' +
+      '    left: 0 !important;\n' +
+      '    right: 0 !important;\n' +
+      '    bottom: 0 !important;\n' +
+      '    width: 100vw !important;\n' +
+      '    height: 100dvh !important;\n' +
+      '    max-width: 100vw !important;\n' +
+      '    max-height: 100dvh !important;\n' +
+      '    border-radius: 0 !important;\n' +
+      '    margin: 0 !important;\n' +
+      '    z-index: 2147483647 !important;\n' +
       '  }\n' +
       '}';
     (document.head || document.documentElement).appendChild(style);
@@ -56,92 +98,295 @@
 
   function initLiveChatWidget(config) {
     injectStyles();
-    var color = config.primaryColor || attrColor || '#7C3AED';
+    var color = config.primaryColor || attrColor || '#1F824A';
     var heading = config.heading || attrHeading || 'Chat with us';
     var tagline = config.tagline || 'We are here to help you.';
     var position = config.position || attrPosition || 'bottom-right';
     var greetingEnabled = config.greetingEnabled !== false;
+    var requireLeadCapture = config.requireLeadCapture === true;
+    var leadFieldsStr = config.leadCaptureFields || 'name,phone,email';
 
     var container = document.createElement('div');
     container.id = 'zc-livechat-container';
     container.style.cssText = 'position:fixed; z-index:999999; bottom:20px; font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;' +
       (position === 'bottom-left' ? 'left:20px;' : 'right:20px;');
 
-    // Chat Drawer Window
+    // Chat Window Container
     var windowEl = document.createElement('div');
     windowEl.id = 'zc-chat-window';
-    windowEl.style.cssText = 'width:340px; max-width:calc(100vw - 40px); height:460px; max-height:calc(100vh - 100px);' +
+    windowEl.style.cssText = 'width:340px; max-width:calc(100vw - 32px); height:480px; max-height:calc(100vh - 90px);' +
       ' background:#ffffff; border-radius:16px; box-shadow:0 20px 40px rgba(0,0,0,0.25);' +
       ' overflow:hidden; display:none; flex-direction:column; margin-bottom:12px;' +
-      ' border:1px solid rgba(0,0,0,0.08); transition:all 0.3s ease;';
+      ' border:1px solid rgba(0,0,0,0.08); transition:all 0.25s cubic-bezier(0.16, 1, 0.3, 1);';
 
     // Header
     var header = document.createElement('div');
-    header.style.cssText = 'padding:14px 16px; background:' + color + '; color:#ffffff; display:flex; align-items:center; justify-content:space-between; shadow:0 2px 8px rgba(0,0,0,0.1);';
+    header.style.cssText = 'padding:14px 16px; background:' + color + '; color:#ffffff; display:flex; align-items:center; justify-content:space-between; box-shadow:0 2px 8px rgba(0,0,0,0.08); shrink:0;';
     
     var headerTitle = document.createElement('div');
     headerTitle.style.cssText = 'display:flex; align-items:center; gap:10px;';
-    headerTitle.innerHTML = '<div style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;font-weight:bold;color:#fff;font-size:14px;">Z</div>' +
+    headerTitle.innerHTML = '<div style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.22);display:flex;align-items:center;justify-content:center;font-weight:bold;color:#fff;font-size:14px;">Z</div>' +
       '<div><div style="font-weight:700;font-size:13px;line-height:1.2;">' + escapeHtml(heading) + '</div><div style="font-size:11px;opacity:0.85;line-height:1.2;">' + escapeHtml(tagline) + '</div></div>';
     
-    var closeBtn = document.createElement('button');
-    closeBtn.innerHTML = '&#215;';
-    closeBtn.style.cssText = 'background:none; border:none; color:#ffffff; font-size:22px; cursor:pointer; padding:0 4px; line-height:1; opacity:0.85;';
-    closeBtn.onclick = function() {
-      windowEl.style.display = 'none';
+    var headerActions = document.createElement('div');
+    headerActions.style.cssText = 'display:flex; align-items:center; gap:8px;';
+
+    // Reset Session Button
+    var resetBtn = document.createElement('button');
+    resetBtn.title = 'Start New Conversation';
+    resetBtn.innerHTML = '&#8634;'; // Reload symbol
+    resetBtn.style.cssText = 'background:rgba(255,255,255,0.2); border:none; color:#ffffff; font-size:14px; cursor:pointer; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; opacity:0.9; transition:opacity 0.2s;';
+    resetBtn.onclick = function(e) {
+      e.stopPropagation();
+      if (confirm('Start a new chat conversation?')) {
+        try {
+          localStorage.removeItem('__zc_sess_' + (token || 'default'));
+          localStorage.removeItem('__zc_sess_time_' + (token || 'default'));
+        } catch(err){}
+        messagesEl.innerHTML = '';
+        renderedMsgIds = {};
+        lastMsgId = null;
+        if (greetingEnabled) {
+          renderBotMessage('Hello! 👋 Welcome back. How can we help you today?');
+        }
+        checkAndInitChatState();
+      }
     };
 
+    var closeBtn = document.createElement('button');
+    closeBtn.innerHTML = '&#215;';
+    closeBtn.style.cssText = 'background:none; border:none; color:#ffffff; font-size:24px; cursor:pointer; padding:0 4px; line-height:1; opacity:0.85;';
+    closeBtn.onclick = function() {
+      windowEl.style.display = 'none';
+      stopPolling();
+    };
+
+    headerActions.appendChild(resetBtn);
+    headerActions.appendChild(closeBtn);
     header.appendChild(headerTitle);
-    header.appendChild(closeBtn);
+    header.appendChild(headerActions);
     windowEl.appendChild(header);
 
-    // Messages Container
+    // Messages Area
     var messagesEl = document.createElement('div');
     messagesEl.id = 'zc-messages-list';
     messagesEl.style.cssText = 'flex:1; padding:14px; background:#f8fafc; overflow-y:auto; display:flex; flex-direction:column; gap:10px;';
-
-    if (greetingEnabled) {
-      var botMsg = document.createElement('div');
-      botMsg.style.cssText = 'display:flex; gap:8px; align-items:flex-start;';
-      botMsg.innerHTML = '<div style="width:24px;height:24px;border-radius:50%;background:' + color + ';color:#fff;font-size:10px;font-weight:bold;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">AI</div>' +
-        '<div style="background:#ffffff; border:1px solid #e2e8f0; padding:10px 14px; border-radius:14px; border-top-left-radius:2px; font-size:12px; color:#1e293b; max-width:82%; box-shadow:0 1px 3px rgba(0,0,0,0.05); line-height:1.4;">' +
-        'Hello! 👋 Welcome to our site. How can we help you today?</div>';
-      messagesEl.appendChild(botMsg);
-    }
-
     windowEl.appendChild(messagesEl);
 
-    // Input Bar
+    // Lead Capture Form Container
+    var leadFormContainer = document.createElement('div');
+    leadFormContainer.style.cssText = 'padding:16px; background:#ffffff; border-top:1px solid #e2e8f0; display:none; flex-direction:column; gap:10px;';
+
+    // Input Bar Form
     var inputForm = document.createElement('form');
-    inputForm.style.cssText = 'padding:10px 12px; background:#ffffff; border-top:1px solid #f1f5f9; display:flex; align-items:center; gap:8px;';
+    inputForm.style.cssText = 'padding:10px 12px; background:#ffffff; border-top:1px solid #f1f5f9; display:flex; align-items:center; gap:8px; shrink:0;';
     
     var inputEl = document.createElement('input');
     inputEl.type = 'text';
     inputEl.placeholder = 'Type a message...';
-    inputEl.style.cssText = 'flex:1; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:20px; padding:8px 14px; font-size:12px; outline:none; color:#0f172a;';
+    inputEl.style.cssText = 'flex:1; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:20px; padding:9px 14px; font-size:12px; outline:none; color:#0f172a;';
 
     var sendBtn = document.createElement('button');
     sendBtn.type = 'submit';
-    sendBtn.style.cssText = 'background:' + color + '; border:none; width:32px; height:32px; border-radius:50%; color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0;';
+    sendBtn.style.cssText = 'background:' + color + '; border:none; width:34px; height:34px; border-radius:50%; color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0;';
     sendBtn.innerHTML = '<svg style="width:14px;height:14px;fill:currentColor;" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>';
 
-    inputForm.onsubmit = function(e) {
+    inputForm.appendChild(inputEl);
+    inputForm.appendChild(sendBtn);
+    windowEl.appendChild(leadFormContainer);
+    windowEl.appendChild(inputForm);
+
+    // Polling State & Message Renderer
+    var pollTimer = null;
+    var lastMsgId = null;
+    var renderedMsgIds = {};
+
+    function renderUserMessage(text) {
+      var userMsg = document.createElement('div');
+      userMsg.style.cssText = 'display:flex; justify-content:flex-end; margin-bottom:2px;';
+      userMsg.innerHTML = '<div style="background:' + color + '; color:#ffffff; padding:10px 14px; border-radius:14px; border-top-right-radius:2px; font-size:12px; max-width:82%; box-shadow:0 1px 3px rgba(0,0,0,0.08); line-height:1.4; word-break:break-word;">' +
+        escapeHtml(text) + '</div>';
+      messagesEl.appendChild(userMsg);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function renderBotMessage(text) {
+      if (!text) return;
+      var botMsg = document.createElement('div');
+      botMsg.style.cssText = 'display:flex; gap:8px; align-items:flex-start; margin-bottom:2px;';
+      botMsg.innerHTML = '<div style="width:24px;height:24px;border-radius:50%;background:' + color + ';color:#fff;font-size:10px;font-weight:bold;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">AI</div>' +
+        '<div style="background:#ffffff; border:1px solid #e2e8f0; padding:10px 14px; border-radius:14px; border-top-left-radius:2px; font-size:12px; color:#1e293b; max-width:82%; box-shadow:0 1px 3px rgba(0,0,0,0.04); line-height:1.4; word-break:break-word;">' +
+        escapeHtml(text) + '</div>';
+      messagesEl.appendChild(botMsg);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function fetchMessages() {
+      if (!token) return;
+      var sess = getSessionInfo();
+      var url = API_HOST + '/website-widget/public/messages?token=' + encodeURIComponent(token) + '&visitorId=' + encodeURIComponent(sess.visitorId);
+      if (lastMsgId) {
+        url += '&after=' + encodeURIComponent(lastMsgId);
+      }
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', url, true);
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+          try {
+            var data = JSON.parse(xhr.responseText);
+            if (data.messages && data.messages.length) {
+              var hasNew = false;
+              for (var i = 0; i < data.messages.length; i++) {
+                var msg = data.messages[i];
+                lastMsgId = msg.id;
+                if (renderedMsgIds[msg.id]) continue;
+                renderedMsgIds[msg.id] = true;
+
+                if (msg.direction === 'outbound' || msg.senderType === 'ai' || msg.senderType === 'agent') {
+                  var text = msg.content && msg.content.body ? msg.content.body : (typeof msg.content === 'string' ? msg.content : '');
+                  if (text) {
+                    renderBotMessage(text);
+                    hasNew = true;
+                  }
+                }
+              }
+            }
+          } catch (e) {}
+        }
+      };
+      xhr.send();
+    }
+
+    function startPolling() {
+      if (pollTimer) return;
+      fetchMessages();
+      pollTimer = setInterval(fetchMessages, 3000);
+    }
+
+    function stopPolling() {
+      if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+      }
+    }
+
+    // Lead Capture Form Builder
+    function setupLeadForm() {
+      leadFormContainer.innerHTML = '';
+      
+      var leadTitle = document.createElement('div');
+      leadTitle.style.cssText = 'font-size:12px; font-weight:700; color:#0f172a; margin-bottom:4px; text-align:center;';
+      leadTitle.innerText = 'Please introduce yourself to start chatting';
+      leadFormContainer.appendChild(leadTitle);
+
+      var fields = leadFieldsStr.split(',').map(function(s){ return s.trim().toLowerCase(); });
+      var inputs = {};
+
+      if (fields.indexOf('name') !== -1 || fields.length === 0) {
+        var nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.placeholder = 'Your Name *';
+        nameInput.required = true;
+        nameInput.style.cssText = 'width:100%; background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:8px 12px; font-size:12px; outline:none; box-sizing:border-box;';
+        leadFormContainer.appendChild(nameInput);
+        inputs.name = nameInput;
+      }
+
+      if (fields.indexOf('phone') !== -1) {
+        var phoneInput = document.createElement('input');
+        phoneInput.type = 'tel';
+        phoneInput.placeholder = 'Phone Number *';
+        phoneInput.required = true;
+        phoneInput.style.cssText = 'width:100%; background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:8px 12px; font-size:12px; outline:none; box-sizing:border-box;';
+        leadFormContainer.appendChild(phoneInput);
+        inputs.phone = phoneInput;
+      }
+
+      if (fields.indexOf('email') !== -1) {
+        var emailInput = document.createElement('input');
+        emailInput.type = 'email';
+        emailInput.placeholder = 'Email Address';
+        emailInput.style.cssText = 'width:100%; background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:8px 12px; font-size:12px; outline:none; box-sizing:border-box;';
+        leadFormContainer.appendChild(emailInput);
+        inputs.email = emailInput;
+      }
+
+      var startChatBtn = document.createElement('button');
+      startChatBtn.type = 'button';
+      startChatBtn.style.cssText = 'background:' + color + '; color:#fff; border:none; border-radius:8px; padding:9px 14px; font-size:12px; font-weight:700; cursor:pointer; margin-top:4px;';
+      startChatBtn.innerText = 'Start Chat';
+
+      startChatBtn.onclick = function() {
+        var nameVal = inputs.name ? inputs.name.value.trim() : '';
+        var phoneVal = inputs.phone ? inputs.phone.value.trim() : '';
+        var emailVal = inputs.email ? inputs.email.value.trim() : '';
+
+        if (inputs.name && !nameVal) {
+          alert('Please enter your name.');
+          return;
+        }
+        if (inputs.phone && !phoneVal) {
+          alert('Please enter your phone number.');
+          return;
+        }
+
+        var leadInfo = { name: nameVal, phone: phoneVal, email: emailVal };
+        saveLeadInfo(leadInfo);
+
+        // Hide Lead Form & Show Chat Input
+        leadFormContainer.style.display = 'none';
+        inputForm.style.display = 'flex';
+
+        // Send Lead Information message to backend
+        var sess = getSessionInfo();
+        var leadSummary = 'Hello! I am ' + (nameVal || 'Visitor') + (phoneVal ? ', Phone: ' + phoneVal : '') + (emailVal ? ', Email: ' + emailVal : '');
+        
+        renderUserMessage(leadSummary);
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', API_HOST + '/website-widget/public/message', true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.send(JSON.stringify({
+          widgetToken: token,
+          visitorId: sess.visitorId,
+          message: leadSummary,
+          leadInfo: leadInfo
+        }));
+      };
+
+      leadFormContainer.appendChild(startChatBtn);
+    }
+
+    function checkAndInitChatState() {
+      var savedLead = getSavedLeadInfo();
+      if (requireLeadCapture && !savedLead) {
+        setupLeadForm();
+        leadFormContainer.style.display = 'flex';
+        inputForm.style.display = 'none';
+      } else {
+        leadFormContainer.style.display = 'none';
+        inputForm.style.display = 'flex';
+      }
+    }
+
+    if (greetingEnabled) {
+      renderBotMessage('Hello! 👋 Welcome to our site. How can we help you today?');
+    }
+
+    checkAndInitChatState();
+
+    // Input form submit listener
+    inputForm.onsubmit = function (e) {
       e.preventDefault();
       var text = inputEl.value.trim();
       if (!text || !token) return;
 
-      // Render User Message UI immediately
-      var userMsg = document.createElement('div');
-      userMsg.style.cssText = 'display:flex; justify-content:flex-end;';
-      userMsg.innerHTML = '<div style="background:' + color + '; color:#ffffff; padding:10px 14px; border-radius:14px; border-top-right-radius:2px; font-size:12px; max-width:82%; box-shadow:0 1px 3px rgba(0,0,0,0.1); line-height:1.4;">' +
-        escapeHtml(text) + '</div>';
-      messagesEl.appendChild(userMsg);
+      renderUserMessage(text);
       inputEl.value = '';
-      messagesEl.scrollTop = messagesEl.scrollHeight;
 
-      var visitorId = getVisitorId();
+      var sess = getSessionInfo();
+      var savedLead = getSavedLeadInfo();
 
-      // Send message to real backend public endpoint
       var xhr = new XMLHttpRequest();
       xhr.open('POST', API_HOST + '/website-widget/public/message', true);
       xhr.setRequestHeader('Content-Type', 'application/json');
@@ -153,27 +398,18 @@
             statusEl.innerText = 'Sent ✓';
             messagesEl.appendChild(statusEl);
             messagesEl.scrollTop = messagesEl.scrollHeight;
-          } else {
-            var errEl = document.createElement('div');
-            errEl.style.cssText = 'font-size:10px; color:#ef4444; text-align:right; margin-top:-4px; margin-bottom:4px;';
-            errEl.innerText = 'Failed to send';
-            messagesEl.appendChild(errEl);
-            messagesEl.scrollTop = messagesEl.scrollHeight;
           }
         }
       };
       xhr.send(JSON.stringify({
         widgetToken: token,
-        visitorId: visitorId,
-        message: text
+        visitorId: sess.visitorId,
+        message: text,
+        leadInfo: savedLead || undefined
       }));
     };
 
-    inputForm.appendChild(inputEl);
-    inputForm.appendChild(sendBtn);
-    windowEl.appendChild(inputForm);
-
-    // Floating Button
+    // Floating Launcher Button
     var btn = document.createElement('button');
     btn.id = 'zc-livechat-btn';
     btn.style.cssText = 'position:relative; display:flex; align-items:center; justify-content:center; width:56px; height:56px;' +
@@ -183,11 +419,13 @@
       '<path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>' +
       '</svg>';
 
-    btn.onclick = function() {
+    btn.onclick = function () {
       if (windowEl.style.display === 'none' || !windowEl.style.display) {
         windowEl.style.display = 'flex';
+        startPolling();
       } else {
         windowEl.style.display = 'none';
+        stopPolling();
       }
     };
 

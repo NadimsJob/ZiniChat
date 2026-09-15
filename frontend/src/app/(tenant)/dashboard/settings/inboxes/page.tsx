@@ -461,6 +461,12 @@ function WidgetConfigModal({ widget, onClose, onRefresh, language, API }: any) {
   const [tooltipTextEn, setTooltipTextEn] = useState(widget.tooltipTextEn || 'Chat with us on WhatsApp');
   const [tooltipTextBn, setTooltipTextBn] = useState(widget.tooltipTextBn || 'হোয়াটসঅ্যাপে চ্যাট করুন');
 
+  const [requireLeadCapture, setRequireLeadCapture] = useState(widget.requireLeadCapture ?? false);
+  const initialFields = widget.leadCaptureFields || 'name,phone,email';
+  const [leadName, setLeadName] = useState(initialFields.includes('name'));
+  const [leadPhone, setLeadPhone] = useState(initialFields.includes('phone'));
+  const [leadEmail, setLeadEmail] = useState(initialFields.includes('email'));
+
   const [isPreviewOpen, setIsPreviewOpen] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingIcon, setUploadingIcon] = useState(false);
@@ -515,6 +521,11 @@ function WidgetConfigModal({ widget, onClose, onRefresh, language, API }: any) {
       let cleanPhone = whatsappNumber.replace(/[\s\-\+\(\)]/g, '');
       if (cleanPhone.startsWith('0')) cleanPhone = '88' + cleanPhone;
 
+      const selectedFields: string[] = [];
+      if (leadName) selectedFields.push('name');
+      if (leadPhone) selectedFields.push('phone');
+      if (leadEmail) selectedFields.push('email');
+
       const res = await fetch(`${API}/website-widget/${widget.id}`, {
         method: 'PATCH',
         headers: {
@@ -534,6 +545,8 @@ function WidgetConfigModal({ widget, onClose, onRefresh, language, API }: any) {
           position,
           tooltipTextEn,
           tooltipTextBn,
+          requireLeadCapture,
+          leadCaptureFields: selectedFields.join(','),
         }),
       });
 
@@ -802,6 +815,72 @@ function WidgetConfigModal({ widget, onClose, onRefresh, language, API }: any) {
                       onChange={e => setHeading(e.target.value)}
                       className="w-full bg-background border border-border rounded-lg px-3 py-2 md:py-1.5 text-[16px] md:text-xs text-foreground focus:outline-none focus:border-primary"
                     />
+                  </div>
+
+                  {/* Lead Capture Toggle & Fields */}
+                  <div className="sm:col-span-2 border-t border-border pt-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                          {language === 'en' ? 'Pre-Chat Lead Form' : 'প্রাক-চ্যাট লিড ফর্ম'}
+                        </label>
+                        <p className="text-[10px] text-muted-foreground">
+                          {language === 'en'
+                            ? 'Collect customer contact details before starting live chat'
+                            : 'চ্যাট শুরু করার আগে কাস্টমারের নাম, ফোন বা ইমেইল সংগ্রহ করুন'}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setRequireLeadCapture(!requireLeadCapture)}
+                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer ${
+                          requireLeadCapture ? 'bg-primary' : 'bg-muted'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform shadow-sm ${
+                            requireLeadCapture ? 'translate-x-4.5' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                    </div>
+
+                    {requireLeadCapture && (
+                      <div className="bg-background border border-border rounded-xl p-3 space-y-2">
+                        <span className="text-[11px] font-semibold text-muted-foreground block">
+                          {language === 'en' ? 'Required Lead Fields' : 'প্রয়োজনীয় ফিল্ডসমূহ'}
+                        </span>
+                        <div className="flex items-center gap-4 text-xs font-medium text-foreground">
+                          <label className="flex items-center gap-1.5 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={leadName}
+                              onChange={(e) => setLeadName(e.target.checked)}
+                              className="rounded text-primary focus:ring-primary h-3.5 w-3.5"
+                            />
+                            <span>{language === 'en' ? 'Name' : 'নাম'}</span>
+                          </label>
+                          <label className="flex items-center gap-1.5 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={leadPhone}
+                              onChange={(e) => setLeadPhone(e.target.checked)}
+                              className="rounded text-primary focus:ring-primary h-3.5 w-3.5"
+                            />
+                            <span>{language === 'en' ? 'Phone' : 'ফোন নম্বর'}</span>
+                          </label>
+                          <label className="flex items-center gap-1.5 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={leadEmail}
+                              onChange={(e) => setLeadEmail(e.target.checked)}
+                              className="rounded text-primary focus:ring-primary h-3.5 w-3.5"
+                            />
+                            <span>{language === 'en' ? 'Email' : 'ইমেইল'}</span>
+                          </label>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

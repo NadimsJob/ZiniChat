@@ -743,6 +743,8 @@ model WebsiteWidget {
   tooltipTextBn   String?  @default("হোয়াটসঅ্যাপে চ্যাট করুন")
   isActive             Boolean  @default(true)
   isAiAutoReplyEnabled Boolean  @default(true)
+  requireLeadCapture   Boolean  @default(false)
+  leadCaptureFields    String   @default("name,phone,email")
   createdAt            DateTime @default(now())
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)

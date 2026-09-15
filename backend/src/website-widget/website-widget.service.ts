@@ -24,6 +24,8 @@ export interface CreateWidgetDto {
   position?: 'bottom-right' | 'bottom-left';
   tooltipTextEn?: string;
   tooltipTextBn?: string;
+  requireLeadCapture?: boolean;
+  leadCaptureFields?: string;
 }
 
 @Injectable()
@@ -58,7 +60,7 @@ export class WebsiteWidgetService {
     const limit = tenant.customWebsiteWidgetLimit ?? planLimit;
 
     const current = await this.prisma.websiteWidget.count({
-      where: { tenantId, isActive: true },
+      where: { tenantId },
     });
 
     return { limit, current };
@@ -66,17 +68,10 @@ export class WebsiteWidgetService {
 
   // ─── Create Widget ───────────────────────────────────────────────────────────
   async createWidget(tenantId: string, dto: CreateWidgetDto) {
-    const { limit, current } = await this.getWidgetQuota(tenantId);
-
-    if (limit === 0) {
+    const quota = await this.getWidgetQuota(tenantId);
+    if (quota.current >= quota.limit) {
       throw new ForbiddenException(
-        'Your plan does not include website widgets. Please upgrade your plan.',
-      );
-    }
-
-    if (current >= limit) {
-      throw new ForbiddenException(
-        `Your plan allows ${limit} website widget${limit > 1 ? 's' : ''}. Please upgrade to add more.`,
+        `Website widget limit reached (${quota.current}/${quota.limit}). Please upgrade your plan or purchase an addon to add more widgets.`,
       );
     }
 
@@ -127,6 +122,8 @@ export class WebsiteWidgetService {
         position: dto.position ?? 'bottom-right',
         tooltipTextEn: dto.tooltipTextEn ?? 'Chat with us on WhatsApp',
         tooltipTextBn: dto.tooltipTextBn ?? 'হোয়াটসঅ্যাপে চ্যাট করুন',
+        requireLeadCapture: dto.requireLeadCapture ?? false,
+        leadCaptureFields: dto.leadCaptureFields ?? 'name,phone,email',
       },
     });
   }
@@ -134,7 +131,7 @@ export class WebsiteWidgetService {
   // ─── List Widgets ────────────────────────────────────────────────────────────
   async getWidgets(tenantId: string) {
     return this.prisma.websiteWidget.findMany({
-      where: { tenantId, isActive: true },
+      where: { tenantId },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -159,6 +156,8 @@ export class WebsiteWidgetService {
         position: true,
         tooltipTextEn: true,
         tooltipTextBn: true,
+        requireLeadCapture: true,
+        leadCaptureFields: true,
         isActive: true,
         tenant: {
           select: {
@@ -248,6 +247,8 @@ export class WebsiteWidgetService {
         position: dto.position ?? widget.position,
         tooltipTextEn: dto.tooltipTextEn ?? widget.tooltipTextEn,
         tooltipTextBn: dto.tooltipTextBn ?? widget.tooltipTextBn,
+        requireLeadCapture: dto.requireLeadCapture !== undefined ? dto.requireLeadCapture : widget.requireLeadCapture,
+        leadCaptureFields: dto.leadCaptureFields ?? widget.leadCaptureFields,
       },
     });
   }
@@ -257,8 +258,84 @@ export class WebsiteWidgetService {
     return this.getWidgetQuota(tenantId);
   }
 
+  // ─── Public: Fetch visitor messages for polling ─────────────────────────────
+  async getVisitorMessages(widgetToken: string, visitorId: string, afterId?: string) {
+    if (!widgetToken || !visitorId) {
+      throw new BadRequestException('widgetToken and visitorId are required.');
+    }
+
+    const widget = await this.prisma.websiteWidget.findFirst({
+      where: {
+        widgetToken,
+        isActive: true,
+      },
+    });
+
+    if (!widget) {
+      throw new NotFoundException('Widget not found or inactive.');
+    }
+
+    const contact = await this.prisma.contact.findFirst({
+      where: {
+        tenantId: widget.tenantId,
+        externalContactId: visitorId,
+      },
+    });
+
+    if (!contact) {
+      return { messages: [] };
+    }
+
+    const conversation = await this.prisma.conversation.findFirst({
+      where: {
+        tenantId: widget.tenantId,
+        contactId: contact.id,
+        channel: 'website',
+      },
+    });
+
+    if (!conversation) {
+      return { messages: [] };
+    }
+
+    let afterMessageCreatedAt: Date | undefined;
+    if (afterId) {
+      const afterMsg = await this.prisma.message.findUnique({
+        where: { id: afterId },
+        select: { createdAt: true },
+      });
+      if (afterMsg) {
+        afterMessageCreatedAt = afterMsg.createdAt;
+      }
+    }
+
+    const messages = await this.prisma.message.findMany({
+      where: {
+        conversationId: conversation.id,
+        ...(afterMessageCreatedAt ? { createdAt: { gt: afterMessageCreatedAt } } : {}),
+      },
+      orderBy: { createdAt: 'asc' },
+      take: 100,
+    });
+
+    return {
+      messages: messages.map((m) => ({
+        id: m.id,
+        direction: m.direction,
+        senderType: m.senderType,
+        content: m.content,
+        createdAt: m.createdAt,
+      })),
+    };
+  }
+
   // ─── Public: Send message from live chat widget ──────────────────────────────
-  async sendVisitorMessage(widgetToken: string, visitorId: string, message: string) {
+  async sendVisitorMessage(
+    widgetToken: string,
+    visitorId: string,
+    message: string,
+    leadInfo?: { name?: string; phone?: string; email?: string },
+  ) {
     if (!widgetToken || !visitorId || !message?.trim()) {
       throw new BadRequestException('widgetToken, visitorId, and message are required.');
     }
@@ -273,6 +350,28 @@ export class WebsiteWidgetService {
 
     if (!widget) {
       throw new NotFoundException('Widget not found or inactive.');
+    }
+
+    let contactName = `Website Visitor (${visitorId.slice(-4)})`;
+    if (leadInfo?.name?.trim()) {
+      contactName = leadInfo.name.trim();
+    }
+
+    const contact = await this.prisma.contact.findFirst({
+      where: { tenantId: widget.tenantId, externalContactId: visitorId },
+    });
+
+    if (contact && leadInfo) {
+      const updateData: any = {};
+      if (leadInfo.name?.trim()) updateData.name = leadInfo.name.trim();
+      if (leadInfo.phone?.trim()) updateData.phone = leadInfo.phone.trim();
+      if (leadInfo.email?.trim()) updateData.email = leadInfo.email.trim();
+      if (Object.keys(updateData).length > 0) {
+        await this.prisma.contact.update({
+          where: { id: contact.id },
+          data: updateData,
+        });
+      }
     }
 
     const externalMessageId = `widget_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
