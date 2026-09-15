@@ -352,40 +352,62 @@ export class WebsiteWidgetService {
       throw new NotFoundException('Widget not found or inactive.');
     }
 
-    let contactName = `Website Visitor (${visitorId.slice(-4)})`;
-    if (leadInfo?.name?.trim()) {
-      contactName = leadInfo.name.trim();
-    }
-
-    const contact = await this.prisma.contact.findFirst({
+    // 1. Find existing contact
+    const existingContact = await this.prisma.contact.findFirst({
       where: { tenantId: widget.tenantId, externalContactId: visitorId },
     });
 
-    if (contact && leadInfo) {
-      const updateData: any = {};
-      if (leadInfo.name?.trim()) updateData.name = leadInfo.name.trim();
-      if (leadInfo.phone?.trim()) updateData.phone = leadInfo.phone.trim();
-      if (leadInfo.email?.trim()) updateData.email = leadInfo.email.trim();
-      if (Object.keys(updateData).length > 0) {
-        await this.prisma.contact.update({
-          where: { id: contact.id },
-          data: updateData,
-        });
-      }
+    // 2. Resolve target contact name
+    let contactName = leadInfo?.name?.trim();
+    if (!contactName && existingContact?.name && !existingContact.name.startsWith('Website Visitor (')) {
+      contactName = existingContact.name;
+    }
+    if (!contactName) {
+      contactName = `Website Visitor (${visitorId.slice(-4)})`;
     }
 
     const externalMessageId = `widget_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 
+    // 3. Handle incoming message with resolved contact name
     await this.inboxService.handleIncomingMessage({
       tenantId: widget.tenantId,
       channel: 'website',
       externalContactId: visitorId,
-      contactName: `Website Visitor (${visitorId.slice(-4)})`,
+      contactName,
       messageType: 'text',
       content: { body: message.trim() },
       externalMessageId,
       timestamp: new Date(),
     });
+
+    // 4. Update contact with lead info (name, phone, email) if provided
+    if (leadInfo) {
+      const targetContact = await this.prisma.contact.findFirst({
+        where: { tenantId: widget.tenantId, externalContactId: visitorId },
+      });
+
+      if (targetContact) {
+        const updateData: any = {};
+        if (leadInfo.name?.trim()) updateData.name = leadInfo.name.trim();
+        if (leadInfo.phone?.trim()) updateData.phone = leadInfo.phone.trim();
+        if (leadInfo.email?.trim()) updateData.email = leadInfo.email.trim();
+
+        if (Object.keys(updateData).length > 0) {
+          const updatedContact = await this.prisma.contact.update({
+            where: { id: targetContact.id },
+            data: updateData,
+          });
+
+          if (this.inboxService['inboxGateway']) {
+            this.inboxService['inboxGateway'].broadcastToTenant(
+              widget.tenantId,
+              'contact:updated',
+              updatedContact,
+            );
+          }
+        }
+      }
+    }
 
     return { success: true, messageId: externalMessageId };
   }
