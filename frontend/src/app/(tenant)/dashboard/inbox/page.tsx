@@ -75,6 +75,8 @@ export default function InboxPage() {
   const [replyingToMessage, setReplyingToMessage] = useState<any | null>(null);
   const [forwardingMessage, setForwardingMessage] = useState<any | null>(null);
   const [forwardSearchQuery, setForwardSearchQuery] = useState('');
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [isDeletingConv, setIsDeletingConv] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterParam, setFilterParam] = useState('all'); // all, starred, unassigned, blocked, order_requests
 
@@ -848,7 +850,7 @@ export default function InboxPage() {
 
   const handleDeleteConversation = async () => {
     if (!selectedConvId || !activeConv) return;
-    if (!window.confirm(language === 'en' ? 'Are you sure you want to delete this conversation?' : 'কনভারসেশনটি মুছে ফেলতে চান?')) return;
+    setIsDeletingConv(true);
 
     try {
       const token = Cookies.get('access_token');
@@ -859,11 +861,16 @@ export default function InboxPage() {
       if (res.ok) {
         setConversations(prev => prev.filter(c => c.id !== selectedConvId));
         setSelectedConvId(null);
+        setShowDeleteConfirmModal(false);
         fetchCounts();
-        toast.success('Conversation deleted');
+        toast.success(language === 'en' ? 'Conversation permanently hard-deleted!' : 'কনভারসেশনটি স্থায়ীভাবে ডিলিট করা হয়েছে!');
+      } else {
+        toast.error(language === 'en' ? 'Failed to delete conversation' : 'কনভারসেশন মোছা ব্যর্থ হয়েছে');
       }
     } catch (err) {
-      toast.error('Failed to delete conversation');
+      toast.error(language === 'en' ? 'Error deleting conversation' : 'কনভারসেশন মুছতে সমস্যা হয়েছে');
+    } finally {
+      setIsDeletingConv(false);
     }
   };
 
@@ -1670,9 +1677,9 @@ export default function InboxPage() {
 
                 {/* Delete */}
                 <button
-                  onClick={handleDeleteConversation}
-                  className="p-1.5 rounded-lg hover:bg-red-500/10 text-red-500 transition-colors shrink-0"
-                  title={language === 'en' ? 'Delete Conversation' : 'কনভারসেশন মুছুন'}
+                  onClick={() => setShowDeleteConfirmModal(true)}
+                  className="p-1.5 rounded-lg hover:bg-red-500/10 text-red-500 transition-colors shrink-0 cursor-pointer"
+                  title={language === 'en' ? 'Delete Conversation' : 'কনভারসেশন স্থায়ীভাবে মুছুন'}
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -2091,6 +2098,68 @@ export default function InboxPage() {
                     </button>
                   </div>
                 ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirmModal && activeConv && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+          <div className="bg-card border border-border rounded-2xl shadow-xl max-w-md w-full p-5 space-y-4 animate-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-3 text-red-500">
+              <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center shrink-0 border border-red-500/20">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-foreground">
+                  {language === 'en' ? 'Permanently Delete Conversation?' : 'কনভারসেশনটি চিরতরে মুছে ফেলবেন?'}
+                </h3>
+                <p className="text-[11px] text-muted-foreground">
+                  {activeConv.contact?.name || activeConv.contact?.phone || 'Customer'} ({activeConv.channel})
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-xs text-red-600 dark:text-red-400 space-y-1">
+              <p className="font-semibold flex items-center gap-1.5">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{language === 'en' ? 'Warning: Hard Delete' : 'সতর্কবার্তা: স্থায়ীভাবে মুছবে'}</span>
+              </p>
+              <p className="text-[11px] opacity-90 leading-relaxed">
+                {language === 'en' 
+                  ? 'All messages, files, and activity history in this conversation will be permanently hard-deleted from PostgreSQL database to free up server space. This action CANNOT be undone.' 
+                  : 'এই কনভারসেশনের সকল মেসেজ, ফাইল ও হিস্ট্রি ডেটাবেজ থেকে স্থায়ীভাবে মুছে ফেলা হবে যেন সার্ভার বা ডেটাবেজ ভারি না হয়। এই কাজটি পরে আর ফিরিয়ে আনা যাবে না।'}
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                disabled={isDeletingConv}
+                onClick={() => setShowDeleteConfirmModal(false)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold border border-border hover:bg-muted text-muted-foreground hover:text-foreground transition-all cursor-pointer"
+              >
+                {language === 'en' ? 'Cancel' : 'বাতিল'}
+              </button>
+              <button
+                type="button"
+                disabled={isDeletingConv}
+                onClick={handleDeleteConversation}
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-red-600 hover:bg-red-700 text-white transition-all shadow-sm cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+              >
+                {isDeletingConv ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>{language === 'en' ? 'Deleting...' : 'মুছে ফেলা হচ্ছে...'}</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>{language === 'en' ? 'Delete Permanently' : 'স্থায়ীভাবে মুছুন'}</span>
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>

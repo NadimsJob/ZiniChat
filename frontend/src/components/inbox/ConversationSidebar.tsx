@@ -488,11 +488,6 @@ export default function ConversationSidebar({
                     {contact?.phone ? contact.phone : (language === 'en' ? 'No phone set' : 'ফোন নম্বর যুক্ত নেই')}
                   </span>
                 </div>
-                {contact?.externalContactId && (
-                  <div className="text-[10px] text-muted-foreground/70 font-mono pl-5">
-                    ID: {contact.externalContactId}
-                  </div>
-                )}
                 {contact?.email && (
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Mail className="w-3.5 h-3.5 text-secondary shrink-0" />
