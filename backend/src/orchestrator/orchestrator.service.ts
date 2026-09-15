@@ -271,12 +271,38 @@ export class OrchestratorService {
         userText = userCaption ? `[Image Sent] Caption: ${userCaption}` : '[Image Sent by Customer]';
       }
 
-      // Stage 0 — Dynamic Indexing & RAG Retrieval to minimize AI Token Consumption
-      const retrievedProducts = await this.aiService.searchRelevantProducts(tenantId, userText, 5);
-      const retrievedQnas = await this.aiService.searchRelevantQnas(tenantId, userText, 5);
+      // Stage 0 — Context-aware RAG Augmentation & Dynamic Indexing
+      // If the customer's message is short (≤5 words), e.g. "হ্যাঁ", "জানতে চাই", "yes", "ok",
+      // these cannot match products/Q&As via vector search alone. We augment the RAG query
+      // with the last AI message so the relevant product/catalog context is retrieved.
+      const ragWordCount = userText.trim().split(/\s+/).filter(Boolean).length;
+      let ragQuery = userText;
+      if (ragWordCount <= 5 && !isAudioMessage) {
+        try {
+          const lastAiMsg = await this.prisma.message.findFirst({
+            where: { conversationId: message.conversationId, direction: 'outbound' },
+            orderBy: { createdAt: 'desc' },
+            select: { content: true }
+          });
+          if (lastAiMsg) {
+            const lastAiText =
+              typeof lastAiMsg.content === 'object' && lastAiMsg.content !== null
+                ? (lastAiMsg.content as any).text || ''
+                : String(lastAiMsg.content);
+            if (lastAiText.trim()) {
+              ragQuery = `${lastAiText.slice(0, 300)} ${userText}`;
+            }
+          }
+        } catch (e) {
+          this.logger.debug('Context-aware RAG augmentation skipped:', e);
+        }
+      }
+
+      const retrievedProducts = await this.aiService.searchRelevantProducts(tenantId, ragQuery, 5);
+      const retrievedQnas = await this.aiService.searchRelevantQnas(tenantId, ragQuery, 5);
       let retrievedChunks: any[] = [];
       try {
-        const queryVector = await this.aiService.generateEmbedding(userText).catch(() => null);
+        const queryVector = await this.aiService.generateEmbedding(ragQuery).catch(() => null);
         if (queryVector) {
           retrievedChunks = await this.aiService.searchRelevantChunks(tenantId, queryVector, 3).catch(() => []);
         }
@@ -858,6 +884,21 @@ export class OrchestratorService {
     if (systemPrompt) {
       prompt += `\nYour Core Instructions:\n${systemPrompt}\n`;
     }
+
+    // =========================================================================
+    // CRITICAL CONVERSATION CONTINUITY RULE (applies to ALL messages)
+    // =========================================================================
+    prompt += `\n=== CRITICAL CONVERSATION CONTINUITY RULE ===\n`;
+    prompt += `If the customer's current message is a SHORT REPLY, ACKNOWLEDGMENT, or CONTINUATION such as:\n`;
+    prompt += `  Bengali: "হ্যাঁ", "না", "জি", "ঠিক আছে", "আচ্ছা", "জানতে চাই", "জানতে চাই না", "বলুন", "হুম", "হ্যাঁ বলুন", "বলুন না", "ওকে", "ঠিকাছে"\n`;
+    prompt += `  English: "yes", "no", "ok", "sure", "okay", "go ahead", "tell me", "continue", "please", "i want to know", "i don't want to know"\n`;
+    prompt += `THEN you MUST:\n`;
+    prompt += `1. READ the CONVERSATION HISTORY section carefully (below) to identify the PREVIOUS AI question or offer.\n`;
+    prompt += `2. CONTINUE EXACTLY in that same topic, flow, and context — NEVER reset or start a new topic.\n`;
+    prompt += `3. If customer said YES / affirmative → provide the information/details/next step that was offered in your last message.\n`;
+    prompt += `4. If customer said NO / negative → acknowledge politely and ask how else you may assist.\n`;
+    prompt += `5. NEVER respond as if you have lost track of the conversation or don't know what the customer is referring to.\n`;
+    prompt += `VIOLATION OF THIS RULE IS NOT ALLOWED.\n`;
 
     if (activeTags.length > 0) {
       prompt += `\n--- CONVERSATION TAGS RULES ---\n`;

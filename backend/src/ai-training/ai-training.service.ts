@@ -865,6 +865,18 @@ ${combinedText}`;
       prompt += `\nYour Core Instructions:\n${systemPrompt}\n`;
     }
 
+    // CRITICAL CONVERSATION CONTINUITY RULE (mirrors OrchestratorService)
+    prompt += `\n=== CRITICAL CONVERSATION CONTINUITY RULE ===\n`;
+    prompt += `If the customer\'s current message is a SHORT REPLY, ACKNOWLEDGMENT, or CONTINUATION such as:\n`;
+    prompt += `  Bengali: "হ্যাঁ", "না", "জি", "ঠিক আছে", "আচ্ছা", "জানতে চাই", "জানতে চাই না", "বলুন", "হুম", "ওকে", "ঠিকাছে"\n`;
+    prompt += `  English: "yes", "no", "ok", "sure", "okay", "go ahead", "tell me", "continue", "please"\n`;
+    prompt += `THEN you MUST:\n`;
+    prompt += `1. Continue EXACTLY in the same topic and flow as the last exchange — NEVER reset or start a new topic.\n`;
+    prompt += `2. If customer said YES / affirmative → provide the information or next step you just offered.\n`;
+    prompt += `3. If customer said NO / negative → acknowledge politely and ask how else you may assist.\n`;
+    prompt += `4. NEVER respond as if you have lost track of what the customer is responding to.\n`;
+    prompt += `VIOLATION OF THIS RULE IS NOT ALLOWED.\n`;
+
     // ── Labels / Tag Rules (was MISSING — now added for parity) ─────────────
     const tagsWithPrompts = activeLabels.filter(t => t.aiPrompt);
     if (tagsWithPrompts.length > 0) {
