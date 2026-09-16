@@ -1208,11 +1208,6 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  </div>
  )}
 
- {/* Floating Action Buttons or Modals */}
- {(Array.isArray(allowedFeatures) && (allowedFeatures.includes('*') || allowedFeatures.includes('platform_support_ai'))) && (
- <SupportWidget />
- )}
-
  </div>
  );
 }
