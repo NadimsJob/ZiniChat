@@ -1216,6 +1216,9 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  </div>
  )}
 
+ {/* Floating Action Buttons or Modals */}
+ <SupportWidget />
+
  </div>
  );
 }
