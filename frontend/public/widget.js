@@ -1,4 +1,5 @@
 (function () {
+  if (window.location.pathname.startsWith('/dashboard') || window.location.pathname.startsWith('/sp@dmin')) return;
   if (window.__zc_widget_loaded) return;
   window.__zc_widget_loaded = true;
 

@@ -464,6 +464,14 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
     }
   }, [pathname]);
 
+  // Purge any external marketing chat widgets mounted on document.body when inside tenant panel
+  useEffect(() => {
+    const el = document.getElementById('zc-livechat-container');
+    if (el) el.remove();
+    const waEl = document.getElementById('zc-wa-float-container');
+    if (waEl) waEl.remove();
+  }, [pathname]);
+
  // Prevent direct URL access to locked features
  useEffect(() => {
    const featuresList = Array.isArray(allowedFeatures) ? allowedFeatures : ['*'];
