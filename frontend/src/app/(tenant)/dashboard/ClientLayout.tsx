@@ -1075,18 +1075,18 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  <div className="md:hidden fixed bottom-0 left-0 right-0 h-[64px] bg-card border-t border-border z-50 flex items-center justify-around px-1 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] pb-safe">
    <Link 
      href="/dashboard" 
-     className={`flex flex-col items-center justify-center w-full h-full text-[11px] font-medium transition-colors ${pathname === '/dashboard' ? 'text-primary font-bold' : 'text-muted-foreground hover:text-foreground'}`}
-   >
-     <LayoutGrid className="w-5 h-5 mb-1" />
+      className={`flex flex-col items-center justify-center w-full h-full text-[11px] font-semibold transition-all duration-150 ${pathname === '/dashboard' ? 'text-primary font-bold scale-105' : 'text-slate-700 dark:text-zinc-200 hover:text-primary active:scale-95'}`}
+    >
+      <LayoutGrid className="w-5 h-5 mb-0.5" />
      <span>{language === 'en' ? 'Home' : 'হোম'}</span>
    </Link>
 
    <Link 
      href="/dashboard/inbox" 
-     className={`flex flex-col items-center justify-center w-full h-full text-[11px] font-medium transition-colors relative ${isInboxPage ? 'text-primary font-bold' : 'text-muted-foreground hover:text-foreground'}`}
-   >
-     <div className="relative">
-       <Inbox className="w-5 h-5 mb-1" />
+      className={`flex flex-col items-center justify-center w-full h-full text-[11px] font-semibold transition-all duration-150 relative ${isInboxPage ? 'text-primary font-bold scale-105' : 'text-slate-700 dark:text-zinc-200 hover:text-primary active:scale-95'}`}
+    >
+      <div className="relative">
+        <Inbox className="w-5 h-5 mb-0.5" />
        {inboxUnreadCount > 0 && (
          <span className="absolute -top-1 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
            {inboxUnreadCount > 99 ? '99+' : inboxUnreadCount}
@@ -1098,24 +1098,43 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
 
    <Link 
      href="/dashboard/leads" 
-     className={`flex flex-col items-center justify-center w-full h-full text-[11px] font-medium transition-colors ${pathname.includes('/leads') ? 'text-primary font-bold' : 'text-muted-foreground hover:text-foreground'}`}
-   >
-     <UserCircle className="w-5 h-5 mb-1" />
+      className={`flex flex-col items-center justify-center w-full h-full text-[11px] font-semibold transition-all duration-150 ${pathname.includes('/leads') ? 'text-primary font-bold scale-105' : 'text-slate-700 dark:text-zinc-200 hover:text-primary active:scale-95'}`}
+    >
+      <UserCircle className="w-5 h-5 mb-0.5" />
      <span>{language === 'en' ? 'Leads' : 'লিডস'}</span>
    </Link>
 
-   <Link 
-     href="/dashboard/orders" 
-   >
-     <ShoppingBag className={`w-6 h-6 mb-1 ${pathname.includes('/orders') ? 'fill-primary/10 stroke-[2.5px]' : 'stroke-2'}`} />
-     <span>{language === 'en' ? 'Orders' : 'অর্ডার'}</span>
-   </Link>
+    <Link 
+      href="/dashboard/orders" 
+      className={`flex flex-col items-center justify-center w-full h-full text-[11px] font-semibold transition-all duration-150 ${pathname.includes('/orders') ? 'text-primary font-bold scale-105' : 'text-slate-700 dark:text-zinc-200 hover:text-primary active:scale-95'}`}
+    >
+      <ShoppingBag className="w-5 h-5 mb-0.5" />
+      <span className="truncate max-w-[68px]">
+        {isPropertyMode 
+          ? (language === 'en' ? 'Inquiries' : 'ইনকোয়ারি') 
+          : isHospitalityMode
+          ? (language === 'en' ? 'Reservations' : 'রিজার্ভেশন')
+          : isTechSoftwareMode
+          ? (language === 'en' ? 'Demos' : 'ডেমো')
+          : isFinancialServiceMode
+          ? (language === 'en' ? 'Consultations' : 'কন্সালটেন্সি')
+          : isHealthcareMode
+          ? (language === 'en' ? 'Appointments' : 'অ্যাপয়েন্টমেন্ট')
+          : isEducationMode
+          ? (language === 'en' ? 'Admissions' : 'ভর্তি')
+          : isManufacturingMode
+          ? (language === 'en' ? 'RFQ' : 'কোটেশন')
+          : isLogisticsMode
+          ? (language === 'en' ? 'Shipments' : 'শিপমেন্ট')
+          : (language === 'en' ? 'Orders' : 'অর্ডার')}
+      </span>
+    </Link>
 
    <button 
      onClick={() => setIsMobileMenuOpen(true)}
-     className="flex flex-col items-center justify-center w-full h-full text-[11px] font-medium text-muted-foreground hover:text-primary transition-colors"
-   >
-     <Menu className="w-6 h-6 mb-1 stroke-2" />
+      className="flex flex-col items-center justify-center w-full h-full text-[11px] font-semibold text-slate-700 dark:text-zinc-200 hover:text-primary active:scale-95 transition-all duration-150 cursor-pointer"
+    >
+      <Menu className="w-5 h-5 mb-0.5" />
      <span>{language === 'en' ? 'Menu' : 'মেনু'}</span>
    </button>
  </div>

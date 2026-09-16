@@ -335,30 +335,30 @@ export default function LeadsPage() {
  <div className="flex items-center space-x-2">
               <button
                 onClick={handleExportLeads}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-muted text-muted-foreground border border-border/80 text-[12px] font-medium rounded-lg hover:bg-muted/80 hover:text-foreground transition-colors shadow-sm"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-surface hover:bg-surface/80 text-foreground border border-border/90 text-[12px] font-semibold rounded-lg hover:border-primary/50 transition-all shadow-sm active:scale-95 shrink-0 whitespace-nowrap cursor-pointer"
               >
-                <Download className="w-3.5 h-3.5" />
-                {language === 'en' ? 'Export' : 'এক্সপোর্ট'}
+                <Download className="w-3.5 h-3.5 text-primary shrink-0" />
+                <span>{language === 'en' ? 'Export' : 'এক্সপোর্ট'}</span>
               </button>
- <button
- onClick={() => setIsCreatingLead(true)}
- className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white text-[12px] font-medium rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
- >
- <Plus className="w-3.5 h-3.5" />
- {language === 'en' ? 'Add Lead' : 'নতুন লিড'}
- </button>
- <div className="flex bg-surface/80 p-0.5 rounded-lg border border-border">
- <button onClick={() => setView('kanban')} className={`p-1.5 rounded-md transition-all ${view === 'kanban' ? 'bg-primary text-primary-foreground' : 'text-foreground/70 hover:bg-surface'}`}>
- <Kanban className="h-3.5 w-3.5" />
- </button>
- <button onClick={() => setView('list')} className={`p-1.5 rounded-md transition-all ${view === 'list' ? 'bg-primary text-primary-foreground' : 'text-foreground/70 hover:bg-surface'}`}>
- <List className="h-3.5 w-3.5" />
- </button>
- </div>
- </div>
- </div>
+  <button
+  onClick={() => setIsCreatingLead(true)}
+  className="flex items-center gap-1.5 px-2.5 py-1.5 bg-primary text-white text-[12px] font-bold rounded-lg hover:bg-primary/90 transition-all shadow-md shadow-primary/20 active:scale-95 shrink-0 whitespace-nowrap cursor-pointer"
+  >
+  <Plus className="w-3.5 h-3.5 stroke-[2.5px] shrink-0" />
+  <span>{language === 'en' ? 'Add Lead' : 'নতুন লিড'}</span>
+  </button>
+  <div className="flex bg-surface p-0.5 rounded-lg border border-border shrink-0">
+  <button onClick={() => setView('kanban')} title="Kanban View" className={`p-1.5 rounded-md transition-all cursor-pointer ${view === 'kanban' ? 'bg-primary text-white font-bold shadow-sm' : 'text-slate-700 dark:text-zinc-200 hover:bg-surface/80 hover:text-foreground'}`}>
+  <Kanban className="h-3.5 w-3.5" />
+  </button>
+  <button onClick={() => setView('list')} title="List View" className={`p-1.5 rounded-md transition-all cursor-pointer ${view === 'list' ? 'bg-primary text-white font-bold shadow-sm' : 'text-slate-700 dark:text-zinc-200 hover:bg-surface/80 hover:text-foreground'}`}>
+  <List className="h-3.5 w-3.5" />
+  </button>
+  </div>
+  </div>
+  </div>
 
- {/* Content Area */}
+  {/* Content Area */}
  <div className="flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar bg-transparent p-1.5">
  {loading ? (
  <div className="flex justify-center items-center h-full"><div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" /></div>
