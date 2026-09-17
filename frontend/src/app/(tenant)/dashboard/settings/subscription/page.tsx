@@ -174,16 +174,36 @@ export default function SubscriptionSettingsPage() {
                   <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
                     currentSubscription.status === 'active' ? 'bg-green-500/15 text-green-400' :
                     currentSubscription.status === 'trialing' ? 'bg-blue-500/15 text-blue-400' :
+                    currentSubscription.status === 'expired' ? 'bg-red-500/15 text-red-400' :
                     'bg-orange-500/15 text-orange-400'
                   }`}>
                     {currentSubscription.status?.toUpperCase()}
                   </span>
-                  <span className="text-[12px] text-muted-foreground">
-                    {language === 'en' ? 'Renews:' : 'রিনিউ হবে:'}{' '}
-                    <span className="text-foreground font-medium">
-                      {new Date(currentSubscription.currentPeriodEnd).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                  
+                  {currentSubscription.plan?.name === 'Free' ? (
+                    <span className="text-[12px] text-muted-foreground flex items-center gap-2">
+                      <span>
+                        {language === 'en' ? 'Started:' : 'শুরু:'}{' '}
+                        <span className="text-foreground font-medium">
+                          {new Date(currentSubscription.currentPeriodStart).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </span>
+                      </span>
+                      <span>|</span>
+                      <span>
+                        {language === 'en' ? 'Trial Ends:' : 'ট্রায়াল শেষ:'}{' '}
+                        <span className="text-foreground font-medium">
+                          {new Date(currentSubscription.currentPeriodEnd).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </span>
+                      </span>
                     </span>
-                  </span>
+                  ) : (
+                    <span className="text-[12px] text-muted-foreground">
+                      {language === 'en' ? 'Renews:' : 'রিনিউ হবে:'}{' '}
+                      <span className="text-foreground font-medium">
+                        {new Date(currentSubscription.currentPeriodEnd).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </span>
+                    </span>
+                  )}
                 </div>
               ) : (
                 <p className="text-[12px] text-muted-foreground mt-2">
@@ -417,7 +437,13 @@ export default function SubscriptionSettingsPage() {
                   <div className="mt-2 flex items-end gap-1">
                     <span className="text-lg font-bold text-primary mt-1">{displayCurrency === 'BDT' ? '৳' : '$'}</span>
                     <span className="text-4xl font-black text-primary leading-none">{formatNumber(displayPrice)}</span>
-                    <span className="text-[12px] text-muted-foreground mb-1">/{isWeekly ? (language === 'en' ? 'wk' : 'সপ্তাহ') : (language === 'en' ? 'mo' : 'মাস')}</span>
+                    {plan.name === 'Free' ? (
+                      <span className="text-[12px] text-muted-foreground mb-1">
+                        / {language === 'en' ? '7 Days' : '৭ দিন'}
+                      </span>
+                    ) : (
+                      <span className="text-[12px] text-muted-foreground mb-1">/{isWeekly ? (language === 'en' ? 'wk' : 'সপ্তাহ') : (language === 'en' ? 'mo' : 'মাস')}</span>
+                    )}
                     {hasPromo && (
                       <span className="text-[12px] text-muted-foreground line-through mb-1 ml-1">
                         {displayCurrency === 'BDT' ? '৳' : '$'}{formatNumber(baseMonthly)}
