@@ -6,6 +6,8 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { SmtpService } from '../smtp/smtp.service';
 import { Prisma } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class TenantsService {
@@ -746,5 +748,72 @@ export class TenantsService {
     });
 
     return { success: true, message: 'Password updated successfully' };
+  }
+
+  async hardDeleteTenant(tenantId: string, actorUserId: string) {
+    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+    if (!tenant) throw new NotFoundException('Tenant not found');
+
+    await this.prisma.$transaction(async (tx) => {
+      // Level 3 (Deepest)
+      await tx.userPushSubscription.deleteMany({ where: { user: { tenantId } } });
+      await tx.contactNote.deleteMany({ where: { contact: { tenantId } } });
+      await tx.message.deleteMany({ where: { conversation: { tenantId } } });
+      await tx.aiAssistantTool.deleteMany({ where: { aiAssistant: { tenantId } } });
+      await tx.knowledgeChunk.deleteMany({ where: { knowledgeDoc: { tenantId } } });
+      await tx.broadcastRecipient.deleteMany({ where: { broadcast: { tenantId } } });
+      await tx.orderItem.deleteMany({ where: { order: { tenantId } } });
+      await tx.ticketMessage.deleteMany({ where: { ticket: { tenantId } } });
+      await tx.supportMessage.deleteMany({ where: { conversation: { tenantId } } });
+      await tx.conversationCollaborator.deleteMany({ where: { conversation: { tenantId } } });
+      await tx.userPresence.deleteMany({ where: { user: { tenantId } } });
+      await tx.conversationLabel.deleteMany({ where: { conversation: { tenantId } } });
+      await tx.agentChannelAssignment.deleteMany({ where: { user: { tenantId } } });
+
+      // Level 2
+      await tx.conversation.deleteMany({ where: { tenantId } });
+      await tx.order.deleteMany({ where: { tenantId } });
+      await tx.contact.deleteMany({ where: { tenantId } });
+      await tx.product.deleteMany({ where: { tenantId } });
+      await tx.knowledgeDocument.deleteMany({ where: { tenantId } });
+      await tx.qnAKnowledgeBase.deleteMany({ where: { tenantId } });
+      await tx.aiAssistant.deleteMany({ where: { tenantId } });
+      await tx.ticket.deleteMany({ where: { tenantId } });
+      await tx.subscription.deleteMany({ where: { tenantId } });
+      await tx.payment.deleteMany({ where: { tenantId } });
+      await tx.facebookCommentLog.deleteMany({ where: { tenantId } });
+      await tx.broadcast.deleteMany({ where: { tenantId } });
+      await tx.template.deleteMany({ where: { tenantId } });
+      await tx.automation.deleteMany({ where: { tenantId } });
+      await tx.supportConversation.deleteMany({ where: { tenantId } });
+
+      // Level 1
+      await tx.kanbanStage.deleteMany({ where: { tenantId } });
+      await tx.label.deleteMany({ where: { tenantId } });
+      await tx.coupon.deleteMany({ where: { tenantId } });
+      await tx.websiteWidget.deleteMany({ where: { tenantId } });
+      await tx.channelConnection.deleteMany({ where: { tenantId } });
+      await tx.aiUsageLog.deleteMany({ where: { tenantId } });
+      
+      // Delete any logs or notifications for these users
+      await tx.auditLog.deleteMany({ where: { OR: [{ targetTenantId: tenantId }, { tenantId }] } });
+      await tx.notification.deleteMany({ where: { user: { tenantId } } });
+      await tx.user.deleteMany({ where: { tenantId } });
+
+      // Level 0
+      await tx.tenant.delete({ where: { id: tenantId } });
+    });
+
+    // Delete physical files
+    try {
+      const uploadPath = path.join(process.cwd(), 'uploads', 'tenants', tenantId);
+      if (fs.existsSync(uploadPath)) {
+        fs.rmSync(uploadPath, { recursive: true, force: true });
+      }
+    } catch (err) {
+      console.error(`Failed to delete files for tenant ${tenantId}:`, err);
+    }
+
+    return { success: true, message: 'Tenant fully hard-deleted' };
   }
 }

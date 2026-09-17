@@ -495,6 +495,13 @@ export default function TenantsPage() {
                             >
                               {tenant.status === 'active' ? 'Suspend' : 'Activate'}
                             </button>
+                            <button
+                              onClick={() => setDeletingTenant(tenant)}
+                              title="Permanently Delete Tenant"
+                              className="text-xs px-2.5 py-1.5 rounded-lg font-medium bg-red-500/10 text-red-700 hover:bg-red-500/20 dark:text-red-400 dark:border-red-500/20 border border-transparent transition-colors flex items-center justify-center cursor-pointer ml-1"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -812,6 +819,65 @@ export default function TenantsPage() {
                 </div>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {deletingTenant && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white dark:bg-[#121214] border border-red-500/30 rounded-2xl shadow-2xl max-w-md w-full p-6 animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-red-600 dark:text-red-500 flex items-center gap-2">
+                <Trash2 className="w-6 h-6" />
+                DANGER: Hard Delete
+              </h3>
+              <button onClick={() => { setDeletingTenant(null); setDeleteConfirmText(''); }} className="text-slate-400 dark:text-zinc-500 hover:text-slate-900 dark:hover:text-white cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <p className="text-sm text-slate-700 dark:text-zinc-300 mb-4 font-medium leading-relaxed">
+              You are about to permanently delete <strong className="text-red-600 dark:text-red-400">{deletingTenant.name}</strong>.
+            </p>
+            <ul className="text-xs text-slate-600 dark:text-zinc-400 mb-6 space-y-1.5 bg-red-50 dark:bg-red-950/20 p-3 rounded-lg border border-red-100 dark:border-red-900/30">
+              <li className="flex items-start gap-2"><span>•</span> <span>All <strong>Users</strong> and their sessions will be destroyed.</span></li>
+              <li className="flex items-start gap-2"><span>•</span> <span>All <strong>Messages, Conversations, and CRM data</strong> will be wiped.</span></li>
+              <li className="flex items-start gap-2"><span>•</span> <span>All <strong>Physical Files</strong> (images, documents) will be removed.</span></li>
+              <li className="flex items-start gap-2"><span>•</span> <span>All <strong>Products and Orders</strong> will be deleted.</span></li>
+              <li className="flex items-start gap-2 text-red-600 dark:text-red-400 font-bold"><span>•</span> <span>This action CANNOT BE UNDONE.</span></li>
+            </ul>
+
+            <div className="mb-6">
+              <label className="text-xs font-semibold text-slate-700 dark:text-zinc-300 block mb-2">
+                To confirm, type <strong className="select-none bg-slate-200 dark:bg-zinc-800 px-1 py-0.5 rounded">{deletingTenant.name}</strong> below:
+              </label>
+              <input 
+                type="text" 
+                value={deleteConfirmText}
+                onChange={e => setDeleteConfirmText(e.target.value)}
+                className="w-full bg-slate-50 dark:bg-[#09090b] border border-slate-300 dark:border-zinc-800 rounded-xl px-4 py-2 text-sm text-slate-900 dark:text-white focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-colors"
+                placeholder="Type business name here"
+              />
+            </div>
+            
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => { setDeletingTenant(null); setDeleteConfirmText(''); }}
+                className="flex-1 px-4 py-2 rounded-xl text-sm font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleHardDelete}
+                disabled={isDeleting || deleteConfirmText !== deletingTenant.name}
+                className="flex-1 px-4 py-2 rounded-xl text-sm font-bold bg-red-600 text-white hover:bg-red-500 transition-colors disabled:opacity-50 cursor-pointer shadow-md flex items-center justify-center gap-2"
+              >
+                {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                {isDeleting ? 'Deleting...' : 'PERMANENTLY DELETE'}
+              </button>
+            </div>
           </div>
         </div>
       )}

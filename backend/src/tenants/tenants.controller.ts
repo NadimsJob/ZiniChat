@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Post, Param, Body, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Patch, Post, Delete, Param, Body, UseGuards, Req } from '@nestjs/common';
 import { TenantsService } from './tenants.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -160,6 +160,17 @@ export class TenantsController {
     const actorUserId = req.user.userId;
     return this.tenantsService.impersonateTenant(id, actorUserId);
   }
-}
 
+  @Delete(':id/hard-delete')
+  @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
+  @Roles('superadmin')
+  @RequirePermissions('manage:tenants')
+  hardDeleteTenant(
+    @Param('id') id: string,
+    @Req() req: any,
+  ) {
+    const actorUserId = req.user.userId;
+    return this.tenantsService.hardDeleteTenant(id, actorUserId);
+  }
+}
 
