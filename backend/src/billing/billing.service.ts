@@ -376,5 +376,60 @@ export class BillingService {
       newPeriodEnd
     };
   }
+
+  async forceActivateSubscription(tenantId: string, actorUserId?: string) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      include: {
+        subscriptions: {
+          orderBy: { currentPeriodEnd: 'desc' },
+          take: 1
+        },
+        plan: true
+      }
+    });
+
+    if (!tenant) throw new NotFoundException('Tenant not found');
+
+    const latestSub = tenant.subscriptions[0];
+    if (!latestSub) throw new NotFoundException('No subscription found for tenant');
+
+    let periodDays = 30;
+    if (latestSub.billingCycle === 'yearly') periodDays = 365;
+    if (latestSub.billingCycle === 'weekly') periodDays = 7;
+    
+    // For free plans or initial signups, we can give 7 days or 30 days. Let's just give them the plan period from now.
+    const now = new Date();
+    const periodEnd = new Date(now.getTime() + periodDays * 24 * 60 * 60 * 1000);
+
+    await this.prisma.subscription.update({
+      where: { id: latestSub.id },
+      data: {
+        status: tenant.plan?.name === 'Free' ? 'trialing' : 'active',
+        currentPeriodStart: now,
+        currentPeriodEnd: periodEnd
+      }
+    });
+
+    if (tenant.status !== 'active') {
+      await this.prisma.tenant.update({
+        where: { id: tenantId },
+        data: { status: 'active' }
+      });
+    }
+
+    if (actorUserId) {
+      await this.prisma.auditLog.create({
+        data: {
+          actorUserId,
+          targetTenantId: tenantId,
+          action: 'SUPERADMIN_FORCE_ACTIVATE_SUBSCRIPTION',
+          metadataJson: { newPeriodEnd: periodEnd.toISOString() }
+        }
+      }).catch(() => {});
+    }
+
+    return { success: true, message: 'Subscription activated manually' };
+  }
 }
 

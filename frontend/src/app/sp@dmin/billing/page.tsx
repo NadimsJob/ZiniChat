@@ -155,6 +155,37 @@ export default function SuperadminBillingPage() {
     }
   };
 
+  const [activatingId, setActivatingId] = useState<string | null>(null);
+
+  const handleForceActivate = async (tenantId: string) => {
+    if (!confirm('Are you sure you want to force activate this subscription?')) return;
+    try {
+      setActivatingId(tenantId);
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/billing/admin/activate-subscription`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ tenantId })
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Failed to activate subscription');
+      }
+
+      toast.success('Subscription activated successfully');
+      fetchOverview(); // refresh
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'Could not activate subscription');
+    } finally {
+      setActivatingId(null);
+    }
+  };
+
   if (loading) {
     return <div className="p-8 text-center text-zinc-500 animate-pulse">Loading billing & subscription ledger...</div>;
   }
@@ -442,6 +473,20 @@ export default function SuperadminBillingPage() {
                           </td>
                           <td className="px-4 py-3 text-right">
                             <div className="flex items-center justify-end gap-1.5">
+                              {sub.status === 'pending' && (
+                                <button
+                                  onClick={() => handleForceActivate(sub.tenantId)}
+                                  disabled={activatingId === sub.tenantId}
+                                  className="p-1.5 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 rounded-lg transition-colors cursor-pointer"
+                                  title="Approve / Activate Subscription"
+                                >
+                                  {activatingId === sub.tenantId ? (
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  ) : (
+                                    <CheckCircle className="w-3.5 h-3.5" />
+                                  )}
+                                </button>
+                              )}
                               <button
                                 onClick={() => {
                                   setExtendModalSub(sub);

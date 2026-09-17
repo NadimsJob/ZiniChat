@@ -45,6 +45,19 @@ export class BillingController {
     return this.billingService.extendSubscription(body.tenantId, Number(body.days), req.user?.id);
   }
 
+  @Post('admin/activate-subscription')
+  @Roles('superadmin')
+  @RequirePermissions('manage:billing')
+  activateSubscription(
+    @Body() body: { tenantId: string },
+    @Request() req: any
+  ) {
+    if (!body.tenantId) {
+      throw new BadRequestException('tenantId is required');
+    }
+    return this.billingService.forceActivateSubscription(body.tenantId, req.user?.id);
+  }
+
   @Get('quotas')
   // Available to all authenticated users (agents/admins) to check their own tenant limits
   getQuotas(@Request() req: any) {

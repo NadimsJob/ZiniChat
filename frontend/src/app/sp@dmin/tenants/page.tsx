@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Cookies from 'js-cookie';
-import { Settings2, X, Eye, LogIn, Loader2 } from 'lucide-react';
+import { Settings2, X, Eye, LogIn, Loader2, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import AdminPagination from '@/components/AdminPagination';
@@ -83,6 +83,37 @@ export default function TenantsPage() {
       toast.error(err.message || 'Could not enter tenant workspace');
     } finally {
       setImpersonatingId(null);
+    }
+  };
+
+  const [activatingId, setActivatingId] = useState<string | null>(null);
+
+  const handleForceActivate = async (tenantId: string) => {
+    if (!confirm('Are you sure you want to force activate this subscription?')) return;
+    try {
+      setActivatingId(tenantId);
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/billing/admin/activate-subscription`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ tenantId })
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Failed to activate subscription');
+      }
+
+      toast.success('Subscription activated successfully');
+      fetchTenantsAndConfigs();
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'Could not activate subscription');
+    } finally {
+      setActivatingId(null);
     }
   };
 
@@ -411,6 +442,21 @@ export default function TenantsPage() {
                         </td>
                         <td className="px-3 py-2 text-right">
                           <div className="flex flex-wrap justify-end items-center gap-1.5 sm:gap-2">
+                            {tenant.status === 'pending' && (
+                              <button
+                                onClick={() => handleForceActivate(tenant.id)}
+                                disabled={activatingId === tenant.id}
+                                title="Approve / Activate Subscription"
+                                className="text-xs px-2.5 py-1.5 rounded-lg font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20 transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                              >
+                                {activatingId === tenant.id ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  <CheckCircle className="w-3.5 h-3.5" />
+                                )}
+                                <span className="hidden sm:inline">Approve</span>
+                              </button>
+                            )}
                             <button
                               onClick={() => handleImpersonate(tenant.id, tenant.name)}
                               disabled={impersonatingId === tenant.id}
