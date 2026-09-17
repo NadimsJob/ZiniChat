@@ -102,8 +102,11 @@ export class PaymentsService {
         data: { tenantId, planId, billingCycle, couponId, status: 'pending', currentPeriodStart: new Date(), currentPeriodEnd: new Date(Date.now() + periodDays * 24 * 60 * 60 * 1000) }
       });
     } else {
+      const newStatus = (subscription.status === 'active' || subscription.status === 'trialing') 
+                          ? subscription.status 
+                          : 'pending';
       subscription = await this.prisma.subscription.update({
-        where: { id: subscription.id }, data: { status: 'pending', billingCycle, couponId }
+        where: { id: subscription.id }, data: { status: newStatus, billingCycle, couponId }
       });
     }
 

@@ -198,16 +198,8 @@ export class AuthService {
       const isPaid = initialPlan && Number(initialPlan.priceMonthlyBdt) > 0;
       const trialDays = initialPlan?.trialDays || 0;
       
-      let status = 'active';
-      let trialEndsAt = null;
-
-      if (isPaid && trialDays > 0) {
-        status = 'trialing';
-        trialEndsAt = new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000);
-      } else {
-        status = 'active';
-        trialEndsAt = new Date();
-      }
+      const status = 'trialing';
+      const trialEndsAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // Enforce strictly 7 days
 
       const defaultAiConfig = await prisma.aiConfig.findFirst({
         where: { isActive: true, isSupportDefault: false }
@@ -273,15 +265,14 @@ export class AuthService {
       });
 
       if (initialPlan) {
-        const isWeeklyFree = (initialPlan as any).allowWeekly && Number(initialPlan.priceMonthlyBdt) === 0;
-        const periodDays = isWeeklyFree ? 7 : 30;
+        const periodDays = 7; // Enforce 7 days trial subscription
         const currentPeriodEnd = new Date(Date.now() + periodDays * 24 * 60 * 60 * 1000);
         await prisma.subscription.create({
           data: {
             tenantId: tenant.id,
             planId: initialPlan.id,
             status,
-            billingCycle: isWeeklyFree ? 'weekly' : 'monthly',
+            billingCycle: 'weekly',
             currentPeriodStart: new Date(),
             currentPeriodEnd
           }
@@ -881,16 +872,8 @@ export class AuthService {
         const isPaid = initialPlan && Number(initialPlan.priceMonthlyBdt) > 0;
         const trialDays = initialPlan?.trialDays || 0;
         
-        let status = 'active';
-        let trialEndsAt = null;
-
-        if (isPaid && trialDays > 0) {
-          status = 'trialing';
-          trialEndsAt = new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000);
-        } else {
-          status = 'active';
-          trialEndsAt = new Date();
-        }
+        const status = 'trialing';
+        const trialEndsAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // Enforce strictly 7 days
 
         const defaultAiConfig = await this.prisma.aiConfig.findFirst({
           where: { isActive: true, isSupportDefault: false }
@@ -944,13 +927,13 @@ export class AuthService {
         });
 
         if (initialPlan) {
-          const currentPeriodEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 1 month
+          const currentPeriodEnd = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // Enforce 7 days trial subscription
           await this.prisma.subscription.create({
             data: {
               tenantId: tenant.id,
               planId: initialPlan.id,
               status,
-              billingCycle: 'monthly',
+              billingCycle: 'weekly',
               currentPeriodStart: new Date(),
               currentPeriodEnd
             }

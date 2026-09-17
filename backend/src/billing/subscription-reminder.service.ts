@@ -37,7 +37,7 @@ export class SubscriptionReminderService {
 
       const subscriptions = await this.prisma.subscription.findMany({
         where: {
-          status: 'active',
+          status: { in: ['active', 'trialing'] },
           currentPeriodEnd: { gte: startOfDay, lte: endOfDay }
         },
         include: {
@@ -114,7 +114,7 @@ export class SubscriptionReminderService {
     // Find subscriptions that have passed currentPeriodEnd and are still marked active
     const expiredSubscriptions = await this.prisma.subscription.findMany({
       where: {
-        status: 'active',
+        status: { in: ['active', 'trialing'] },
         currentPeriodEnd: { lt: now }
       },
       include: {
