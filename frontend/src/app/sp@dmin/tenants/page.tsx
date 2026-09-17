@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Cookies from 'js-cookie';
-import { Settings2, X, Eye, LogIn, Loader2, CheckCircle } from 'lucide-react';
+import { Settings2, X, Eye, LogIn, Loader2, CheckCircle, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import AdminPagination from '@/components/AdminPagination';
