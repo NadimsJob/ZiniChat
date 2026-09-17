@@ -643,8 +643,8 @@ export default function AiTrainingPage() {
       type: 'image_reading',
       titleEn: 'Image Reading',
       titleBn: 'ইমেজ রিডিং (ভিশন)',
-      descEn: 'AI will look at photos customers send and analyze products.',
-      descBn: 'কাস্টমারদের পাঠানো পণ্যের ছবি দেখে এআই প্রডাক্ট নাম ও বিবরণ বিশ্লেষণ করবে।',
+      descEn: 'AI will look at photos customers send and analyze products. (Cost: 5 AI Responses per image)',
+      descBn: 'কাস্টমারদের পাঠানো পণ্যের ছবি দেখে এআই প্রডাক্ট নাম ও বিবরণ বিশ্লেষণ করবে। (চার্জ: প্রতি ইমেজে ৫টি এআই রেসপন্স)',
       allowed: canImageReading
     },
     {
