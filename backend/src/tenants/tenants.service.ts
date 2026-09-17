@@ -759,8 +759,8 @@ export class TenantsService {
       await tx.userPushSubscription.deleteMany({ where: { user: { tenantId } } });
       await tx.contactNote.deleteMany({ where: { contact: { tenantId } } });
       await tx.message.deleteMany({ where: { conversation: { tenantId } } });
-      await tx.aiAssistantTool.deleteMany({ where: { aiAssistant: { tenantId } } });
-      await tx.knowledgeChunk.deleteMany({ where: { knowledgeDoc: { tenantId } } });
+      await tx.aiAssistantTool.deleteMany({ where: { assistant: { tenantId } } });
+      await tx.knowledgeChunk.deleteMany({ where: { document: { tenantId } } });
       await tx.broadcastRecipient.deleteMany({ where: { broadcast: { tenantId } } });
       await tx.orderItem.deleteMany({ where: { order: { tenantId } } });
       await tx.ticketMessage.deleteMany({ where: { ticket: { tenantId } } });
@@ -796,7 +796,7 @@ export class TenantsService {
       await tx.aiUsageLog.deleteMany({ where: { tenantId } });
       
       // Delete any logs or notifications for these users
-      await tx.auditLog.deleteMany({ where: { OR: [{ targetTenantId: tenantId }, { tenantId }] } });
+      await tx.auditLog.deleteMany({ where: { OR: [{ targetTenantId: tenantId }, { actorUser: { tenantId } }] } });
       await tx.notification.deleteMany({ where: { user: { tenantId } } });
       await tx.user.deleteMany({ where: { tenantId } });
 
