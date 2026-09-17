@@ -52,6 +52,41 @@ export default function TenantsPage() {
   const [saving, setSaving] = useState(false);
   const [impersonatingId, setImpersonatingId] = useState<string | null>(null);
 
+  const [deletingTenant, setDeletingTenant] = useState<any>(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleHardDelete = async () => {
+    if (!deletingTenant) return;
+    if (deleteConfirmText !== deletingTenant.name) {
+      toast.error('Business name does not match');
+      return;
+    }
+    
+    setIsDeleting(true);
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/tenants/${deletingTenant.id}/hard-delete`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Failed to delete tenant');
+      }
+      
+      toast.success(`${deletingTenant.name} has been permanently deleted.`);
+      setDeletingTenant(null);
+      setDeleteConfirmText('');
+      fetchTenants();
+    } catch (err: any) {
+      toast.error(err.message || 'Error deleting tenant');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const handleImpersonate = async (tenantId: string, tenantName: string) => {
     try {
       setImpersonatingId(tenantId);
