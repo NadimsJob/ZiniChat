@@ -659,8 +659,8 @@ export default function AiTrainingPage() {
       type: 'product_matching',
       titleEn: 'Product Photo Matching',
       titleBn: 'প্রডাক্ট ফটো ম্যাচিং',
-      descEn: 'AI will suggest a matching product photo from your catalog when relevant.',
-      descBn: 'কাস্টমারের চাহিদা অনুযায়ী প্রাসঙ্গিক পণ্যের ছবি ক্যাটালগ থেকে অটো রিগ্রুপ করে পাঠাবে।',
+      descEn: 'AI will match and send product photos from your catalog when a customer sends an image. (Uses Image Reading: 5 AI Responses per image)',
+      descBn: 'কাস্টমার পণ্যের ছবি পাঠালে ক্যাটালগ থেকে মিলিয়ে সঠিক প্রডাক্টের ছবি ও বিবরণ পাঠাবে। (ইমেজ রিডিং কোটা: প্রতি ইমেজে ৫টি এআই রেসপন্স)',
       allowed: canProductMatching
     }
   ];

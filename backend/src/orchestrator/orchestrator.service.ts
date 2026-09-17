@@ -472,7 +472,7 @@ export class OrchestratorService {
 
       // 7. Log AI Usage Credits
       if (llmResult?.usage) {
-        await this.aiService.recordUsageLog(tenantId, assistant.id, llmResult.usage);
+        await this.aiService.recordUsageLog(tenantId, assistant.id, llmResult.usage, creditsNeeded);
       } else {
         const logsToCreate = Array.from({ length: creditsNeeded }).map(() => ({
           tenantId,

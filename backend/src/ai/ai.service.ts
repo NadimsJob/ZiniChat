@@ -423,7 +423,7 @@ export class AiService {
     return res.text;
   }
 
-  async recordUsageLog(tenantId: string, assistantId: string, usage: AiUsageMetrics) {
+  async recordUsageLog(tenantId: string, assistantId: string, usage: AiUsageMetrics, multiplier: number = 1) {
     const savingsPercent = usage.promptTokenCount > 0 
       ? ((usage.cachedContentTokenCount / usage.promptTokenCount) * 75).toFixed(1)
       : '0.0';
@@ -432,14 +432,17 @@ export class AiService {
       `[AI Cache Audit] Total Tokens: ${usage.totalTokenCount} | Cached Tokens: ${usage.cachedContentTokenCount} | Savings: ${savingsPercent}%`
     );
 
-    return this.prisma.aiUsageLog.create({
-      data: {
-        tenantId,
-        assistantId,
-        tokensUsed: usage.totalTokenCount,
-        cachedTokens: usage.cachedContentTokenCount,
-        costUsd: usage.costUsd,
-      }
+    const count = Math.max(1, multiplier);
+    const logsToCreate = Array.from({ length: count }).map((_, idx) => ({
+      tenantId,
+      assistantId,
+      tokensUsed: idx === 0 ? usage.totalTokenCount : 0,
+      cachedTokens: idx === 0 ? usage.cachedContentTokenCount : 0,
+      costUsd: idx === 0 ? usage.costUsd : 0,
+    }));
+
+    return this.prisma.aiUsageLog.createMany({
+      data: logsToCreate,
     });
   }
 
