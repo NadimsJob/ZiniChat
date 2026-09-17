@@ -79,7 +79,7 @@ export default function TenantsPage() {
       toast.success(`${deletingTenant.name} has been permanently deleted.`);
       setDeletingTenant(null);
       setDeleteConfirmText('');
-      fetchTenants();
+      fetchTenantsAndConfigs();
     } catch (err: any) {
       toast.error(err.message || 'Error deleting tenant');
     } finally {
