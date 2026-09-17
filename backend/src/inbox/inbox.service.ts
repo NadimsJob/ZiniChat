@@ -1056,18 +1056,21 @@ export class InboxService implements OnModuleInit {
           tenantId: data.tenantId,
           channel: data.channel,
           externalContactId: cleanId,
-          name: data.contactName || cleanId,
+          name: isOutboundFromPhone ? cleanId : (data.contactName || cleanId),
           phone: data.channel === 'whatsapp' ? strippedId : undefined,
           lastSeenAt: data.timestamp,
           stageId: firstStage?.id || null
         }
       });
     } else {
+      const newName = (!isOutboundFromPhone && data.contactName && data.contactName !== data.externalContactId) 
+                        ? data.contactName 
+                        : contact.name;
       contact = await this.prisma.contact.update({
         where: { id: contact.id },
         data: { 
           lastSeenAt: data.timestamp, 
-          name: (data.contactName && data.contactName !== data.externalContactId) ? data.contactName : contact.name,
+          name: newName,
           phone: data.channel === 'whatsapp' && !contact.phone ? strippedId : contact.phone
         }
       });
