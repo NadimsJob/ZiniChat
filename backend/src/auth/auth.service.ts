@@ -615,7 +615,7 @@ export class AuthService {
           status: 'active',
           NOT: {
             AND: [
-              { provider: 'BAILEYS' },
+              { provider: 'WEB_QR' },
               { qrStatus: { not: 'CONNECTED' } }
             ]
           }
