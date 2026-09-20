@@ -51,13 +51,19 @@ export class WhatsappController {
     res.sendStatus(HttpStatus.OK);
 
     try {
-      // Check for Meta Template Status Update webhook events
       if (body?.entry) {
         for (const entry of body.entry) {
           if (entry.changes) {
             for (const change of entry.changes) {
               if (change.field === 'message_template_status_update') {
                 await this.broadcastsService.handleMetaWebhookTemplateEvent(change.value);
+              }
+              
+              // Handle asynchronous message statuses (delivered, read, failed)
+              if (change.value?.statuses) {
+                for (const status of change.value.statuses) {
+                  await this.inboxService.handleMessageStatusUpdate(status);
+                }
               }
             }
           }

@@ -1539,4 +1539,62 @@ export class InboxService implements OnModuleInit {
       return { success: true };
     });
   }
+
+  async handleMessageStatusUpdate(statusObj: any) {
+    if (!statusObj?.id || !statusObj?.status) return;
+
+    try {
+      const externalMessageId = statusObj.id;
+      const newStatus = statusObj.status; // 'sent', 'delivered', 'read', 'failed'
+      
+      let errorMessage: string | undefined = undefined;
+      
+      if (newStatus === 'failed' && statusObj.errors && statusObj.errors.length > 0) {
+        const err = statusObj.errors[0];
+        errorMessage = err.title || err.message || err.error_data?.details || 'Unknown Error';
+      }
+
+      // Update Message Table
+      const updatedMessage = await this.prisma.message.findFirst({
+        where: { externalMessageId }
+      });
+
+      if (updatedMessage) {
+        await this.prisma.message.updateMany({
+          where: { externalMessageId },
+          data: { 
+            status: newStatus,
+            ...(errorMessage ? { errorMessage } : {})
+          }
+        });
+        
+        // Broadcast UI update
+        if (this.inboxGateway) {
+          const conversation = await this.prisma.conversation.findUnique({
+            where: { id: updatedMessage.conversationId }
+          });
+          if (conversation) {
+            this.inboxGateway.broadcastToTenant(conversation.tenantId, 'message:status', {
+              messageId: updatedMessage.id,
+              conversationId: conversation.id,
+              status: newStatus,
+              errorMessage
+            });
+          }
+        }
+      }
+
+      // Update BroadcastRecipient Table if applicable
+      await this.prisma.broadcastRecipient.updateMany({
+        where: { externalMessageId },
+        data: { 
+          status: newStatus,
+          ...(errorMessage ? { errorMessage } : {})
+        }
+      });
+      
+    } catch (err) {
+      this.logger.error(`Error in handleMessageStatusUpdate: ${err.message}`);
+    }
+  }
 }

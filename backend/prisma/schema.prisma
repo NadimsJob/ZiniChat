@@ -407,6 +407,7 @@ model Message {
   type              String // text, image, document, button
   content           Json
   status            String // sent, delivered, read, failed
+  errorMessage      String? // specific error from Meta
   createdAt         DateTime @default(now())
 
   senderType    String       @default("customer") // customer, agent, ai
@@ -606,10 +607,12 @@ model Broadcast {
 }
 
 model BroadcastRecipient {
-  id          String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  broadcastId String @db.Uuid
-  contactId   String @db.Uuid
-  status      String // pending, sent, failed
+  id                String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  broadcastId       String  @db.Uuid
+  contactId         String  @db.Uuid
+  status            String  // pending, sent, delivered, read, failed
+  externalMessageId String? // Meta wamid
+  errorMessage      String? // e.g. "Payment due"
 
   broadcast Broadcast @relation(fields: [broadcastId], references: [id])
   contact   Contact   @relation(fields: [contactId], references: [id])

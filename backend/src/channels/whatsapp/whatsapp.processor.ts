@@ -207,6 +207,17 @@ export class WhatsappProcessor extends WorkerHost {
         status: 'sent'
       });
 
+      if (messageId && messageId.startsWith('broadcast_')) {
+        const recipientId = messageId.replace('broadcast_', '');
+        await this.prisma.broadcastRecipient.update({
+          where: { id: recipientId },
+          data: { 
+            status: 'sent',
+            externalMessageId: externalMessageId
+          }
+        }).catch(e => this.logger.error(`Failed to update broadcast recipient status: ${e.message}`));
+      }
+
       this.logger.log(`Successfully processed outbound message job ${job.id}`);
       return { success: true, externalMessageId };
     } catch (error: any) {
@@ -214,12 +225,13 @@ export class WhatsappProcessor extends WorkerHost {
       
       const isRateLimit = error.message === 'RATE_LIMIT_EXCEEDED';
       const finalStatus = isRateLimit ? 'rate_limited' : 'failed';
+      const errorMessage = error.message || 'Unknown Error';
       
       if (messageId && messageId.startsWith('broadcast_')) {
         const recipientId = messageId.replace('broadcast_', '');
         await this.prisma.broadcastRecipient.update({
           where: { id: recipientId },
-          data: { status: 'failed' }
+          data: { status: 'failed', errorMessage }
         }).catch(e => this.logger.error(`Failed to update broadcast recipient status: ${e.message}`));
       }
 
@@ -228,13 +240,15 @@ export class WhatsappProcessor extends WorkerHost {
         where: { id: messageId },
         data: {
           status: finalStatus,
+          errorMessage
         }
       }).catch(e => this.logger.error(`Failed to update message status: ${e.message}`));
       
       this.inboxGateway.broadcastToTenant(tenantId, 'message:status', {
         messageId,
         conversationId,
-        status: finalStatus
+        status: finalStatus,
+        errorMessage
       });
 
       if (isRateLimit) {
