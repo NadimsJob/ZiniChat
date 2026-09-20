@@ -607,23 +607,33 @@ export class AuthService {
   async getSetupStatus(tenantId: string) {
     if (!tenantId) throw new BadRequestException('Tenant ID required');
 
-    const [tenant, channelCount, aiAssistant, productCount, leadCount, userCount] = await Promise.all([
-      this.prisma.tenant.findUnique({ where: { id: tenantId }, select: { isOnboarded: true } }),
+    const [tenant, channelCount, aiAssistant, productCount, qnaCount, leadCount, userCount] = await Promise.all([
+      this.prisma.tenant.findUnique({ where: { id: tenantId }, select: { isOnboarded: true, businessNature: true } }),
       this.prisma.channelConnection.count({ where: { tenantId } }),
       this.prisma.aiAssistant.findFirst({ where: { tenantId } }),
       this.prisma.product.count({ where: { tenantId } }),
+      this.prisma.qnAKnowledgeBase.count({ where: { tenantId } }),
       this.prisma.contact.count({ where: { tenantId } }),
       this.prisma.user.count({ where: { tenantId } })
     ]);
 
+    let aiTrainingScore = 0;
+    if (aiAssistant?.agentName) aiTrainingScore += 20;
+    if ((aiAssistant?.systemPrompt || '').length > 50) aiTrainingScore += 30;
+    if (qnaCount >= 3) aiTrainingScore += 30;
+    if (productCount > 0) aiTrainingScore += 20;
+
     return {
       hasBusinessProfile: tenant?.isOnboarded || false,
+      businessNature: tenant?.businessNature || null,
       hasConnectedChannel: channelCount > 0,
       hasConfiguredAi: !!aiAssistant,
       hasNamedAgent: !!aiAssistant?.agentName,
       hasCreatedProduct: productCount > 0,
       hasCreatedLead: leadCount > 0,
-      hasInvitedTeam: userCount > 1
+      hasInvitedTeam: userCount > 1,
+      aiTrainingScore,
+      qnaCount,
     };
   }
 

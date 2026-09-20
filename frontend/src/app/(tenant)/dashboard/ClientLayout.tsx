@@ -50,7 +50,8 @@ import {
  Stethoscope,
  GraduationCap,
  Factory,
- Truck
+ Truck,
+ BookOpen
 } from 'lucide-react';
 import NotificationBell from '@/components/NotificationBell';
 import SupportWidget from '@/components/SupportWidget';
@@ -568,6 +569,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
         },
         { name: language === 'en' ? 'Broadcasts' : 'ব্রডকাস্ট', icon: Megaphone, href: '/dashboard/broadcasts' },
         { name: language === 'en' ? 'Team' : 'টিম', icon: UserCircle, href: '/dashboard/team' },
+        { name: language === 'en' ? 'Help Center' : 'হেল্প সেন্টার', icon: BookOpen, href: '/dashboard/help-center' },
         { name: language === 'en' ? 'Support Ticket' : 'সাপোর্ট টিকিট', icon: MessageSquare, href: '/dashboard/support' },
       ]
     },

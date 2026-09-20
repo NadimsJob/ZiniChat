@@ -25,6 +25,8 @@ export default function OnboardingPage() {
   const [countryOpen, setCountryOpen] = useState(false);
   const countryRef = useRef<HTMLDivElement>(null);
 
+  const Req = () => <span className="text-red-500 font-bold ml-1">*</span>;
+
   const [formData, setFormData] = useState({
     brandName: '',
     address: '',
@@ -182,8 +184,8 @@ export default function OnboardingPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {/* Owner Name */}
             <div>
-              <label className="block text-sm font-semibold mb-1.5 text-slate-700">
-                {language === 'en' ? 'Owner Name' : 'মালিকের নাম'}
+              <label className="block text-sm font-semibold mb-1.5 text-slate-700 dark:text-zinc-200">
+                {language === 'en' ? 'Owner Name' : 'মালিকের নাম'}<Req />
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -202,8 +204,8 @@ export default function OnboardingPage() {
 
             {/* Brand Name */}
             <div>
-              <label className="block text-sm font-semibold mb-1.5 text-slate-700">
-                {language === 'en' ? 'Brand Name' : 'ব্র্যান্ডের নাম'}
+              <label className="block text-sm font-semibold mb-1.5 text-slate-700 dark:text-zinc-200">
+                {language === 'en' ? 'Brand Name' : 'ব্র্যান্ডের নাম'}<Req />
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -222,8 +224,8 @@ export default function OnboardingPage() {
 
             {/* Country Selection */}
             <div>
-              <label className="block text-sm font-semibold mb-1.5 text-slate-700">
-                {language === 'en' ? 'Country' : 'দেশ'}
+              <label className="block text-sm font-semibold mb-1.5 text-slate-700 dark:text-zinc-200">
+                {language === 'en' ? 'Country' : 'দেশ'}<Req />
               </label>
               <div className="relative" ref={countryRef}>
                 <button
@@ -265,8 +267,8 @@ export default function OnboardingPage() {
 
             {/* Phone No */}
             <div>
-              <label className="block text-sm font-semibold mb-1.5 text-slate-700">
-                {language === 'en' ? 'Phone Number' : 'ফোন নম্বর'}
+              <label className="block text-sm font-semibold mb-1.5 text-slate-700 dark:text-zinc-200">
+                {language === 'en' ? 'Phone Number' : 'ফোন নম্বর'}<Req />
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -285,8 +287,8 @@ export default function OnboardingPage() {
 
             {/* Employee Count */}
             <div>
-              <label className="block text-sm font-semibold mb-1.5 text-slate-700">
-                {language === 'en' ? 'No. of Employees' : 'কর্মীর সংখ্যা'}
+              <label className="block text-sm font-semibold mb-1.5 text-slate-700 dark:text-zinc-200">
+                {language === 'en' ? 'No. of Employees' : 'কর্মীর সংখ্যা'}<Req />
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -307,8 +309,8 @@ export default function OnboardingPage() {
 
             {/* Business Nature */}
             <div>
-              <label className="block text-sm font-semibold mb-1.5 text-slate-700">
-                {language === 'en' ? 'Business Nature' : 'ব্যবসার ধরন'}
+              <label className="block text-sm font-semibold mb-1.5 text-slate-700 dark:text-zinc-200">
+                {language === 'en' ? 'Business Nature' : 'ব্যবসার ধরন'}<Req />
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -334,8 +336,8 @@ export default function OnboardingPage() {
 
             {/* Address */}
             <div className="md:col-span-2">
-              <label className="block text-sm font-semibold mb-1.5 text-slate-700">
-                {language === 'en' ? 'Business Address' : 'ব্যবসার ঠিকানা'}
+              <label className="block text-sm font-semibold mb-1.5 text-slate-700 dark:text-zinc-200">
+                {language === 'en' ? 'Business Address' : 'ব্যবসার ঠিকানা'}<Req />
               </label>
               <div className="relative">
                 <div className="absolute top-3 left-3 pointer-events-none">
@@ -355,8 +357,8 @@ export default function OnboardingPage() {
             {/* Password Field (only if Google user without password) */}
             {needsPassword && (
               <div className="md:col-span-2">
-                <label className="block text-sm font-semibold mb-1.5 text-slate-700">
-                  {language === 'en' ? 'Set Account Password' : 'অ্যাকাউন্টের পাসওয়ার্ড সেট করুন'}
+                <label className="block text-sm font-semibold mb-1.5 text-slate-700 dark:text-zinc-200">
+                  {language === 'en' ? 'Set Account Password' : 'অ্যাকাউন্টের পাসওয়ার্ড সেট করুন'}<Req />
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">

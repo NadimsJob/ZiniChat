@@ -588,7 +588,7 @@ export default function SignupPage() {
           {/* Employee Count */}
           <div>
             <label className="block text-xs font-semibold mb-1 text-zinc-400">
-              {isBn ? 'কর্মচারী সংখ্যা' : 'No. of Employees'}
+              {isBn ? 'কর্মচারী সংখ্যা' : 'No. of Employees'}<Req />
             </label>
             <div className="relative" ref={ecRef}>
               <button

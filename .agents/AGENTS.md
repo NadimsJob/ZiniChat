@@ -45,3 +45,6 @@ All AI agents MUST adhere to these workspace-specific behavioral and technical g
 * **No Unauthorized Design Changes**: Do NOT change design, styles (Tailwind classes, layouts, theme settings) or UI structure unless explicitly instructed.
 * **Fit into Existing Design**: Implement all features within existing UI/layout framework.
 * **Double Confirmation**: Request explicit confirmation before any design/layout changes, or before deleting/replacing existing features, buttons, or UI segments.
+
+## 8. Documentation Sync Requirement
+* **Help Center Synchronization**: Whenever a new feature is built or an existing feature is modified in the Tenant Panel, the corresponding manual inside `frontend/src/data/help-docs/` MUST be updated. All changes must be fully documented with screenshots embedded via markdown.
