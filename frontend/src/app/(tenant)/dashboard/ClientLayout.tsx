@@ -569,7 +569,6 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
         },
         { name: language === 'en' ? 'Broadcasts' : 'ব্রডকাস্ট', icon: Megaphone, href: '/dashboard/broadcasts' },
         { name: language === 'en' ? 'Team' : 'টিম', icon: UserCircle, href: '/dashboard/team' },
-        { name: language === 'en' ? 'Help Center' : 'হেল্প সেন্টার', icon: BookOpen, href: '/dashboard/help-center' },
         { name: language === 'en' ? 'Support Ticket' : 'সাপোর্ট টিকিট', icon: MessageSquare, href: '/dashboard/support' },
       ]
     },
@@ -579,6 +578,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
         { name: language === 'en' ? 'Storage' : 'স্টোরেজ', icon: Settings2, href: '/dashboard/settings/storage' },
         { name: language === 'en' ? 'Subscription' : 'সাবস্ক্রিপশন', icon: Crown, href: '/dashboard/settings/subscription' },
         { name: language === 'en' ? 'Billing History' : 'বিলিং হিস্ট্রি', icon: Receipt, href: '/dashboard/settings/billing-history' },
+        { name: language === 'en' ? 'Help Center' : 'হেল্প সেন্টার', icon: BookOpen, href: '/dashboard/help-center' },
       ]
     }
   ];

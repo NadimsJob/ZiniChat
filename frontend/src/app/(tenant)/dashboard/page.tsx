@@ -7,7 +7,6 @@ import { useLanguage } from '@/components/LanguageProvider';
 import { useCurrency } from '@/components/CurrencyProvider';
 import { ChannelBrandIcon } from '@/components/BrandIcons';
 import SetupJourneyWidget from '@/components/SetupJourneyWidget';
-import SetupWizardModal from '@/components/SetupWizardModal';
 import AiTrainingReminderPopup from '@/components/AiTrainingReminderPopup';
 import toast from 'react-hot-toast';
 import { useFeature } from '@/hooks/useFeature';
@@ -163,17 +162,6 @@ export default function ExecutiveDashboardPage() {
   const hasAnyChannel = Array.isArray(data?.features) ? data.features.some((f: string) => ['whatsapp', 'messenger', 'instagram_dm', 'whatsapp_qr'].includes(f)) : false;
   const isSetupPending = setupStatus && (!setupStatus.hasBusinessProfile || (hasAnyChannel && !setupStatus.hasConnectedChannel));
 
-  const [showWizard, setShowWizard] = useState(false);
-
-  useEffect(() => {
-    if (setupStatus) {
-      const isWizardSeen = typeof window !== 'undefined' && localStorage.getItem('zinichat_wizard_seen') === 'true';
-      if (!isWizardSeen) {
-        setShowWizard(true);
-      }
-    }
-  }, [setupStatus]);
-
   if (loading && !data) {
     return (
       <div className="max-w-[1600px] mx-auto p-4 space-y-6 animate-pulse">
@@ -223,20 +211,7 @@ export default function ExecutiveDashboardPage() {
   return (
     <div className="max-w-[1600px] mx-auto space-y-6 p-2 sm:p-4 pb-16 animate-in fade-in duration-500 text-foreground">
 
-      <SetupWizardModal 
-        open={showWizard} 
-        onClose={() => setShowWizard(false)}
-        setupStatus={setupStatus}
-      />
-
-      {!isReminderDismissed && setupStatus?.aiTrainingScore < 50 && (
-        <AiTrainingReminderPopup 
-          score={setupStatus.aiTrainingScore}
-          qnaCount={setupStatus.qnaCount}
-          hasProduct={setupStatus.hasCreatedProduct}
-          businessNature={setupStatus.businessNature}
-        />
-      )}
+      <AiTrainingReminderPopup setupStatus={setupStatus} />
 
       {/* INLINE GAMIFIED SETUP CHECKLIST BANNER */}
       <SetupJourneyWidget initialStatus={setupStatus} />
