@@ -1,56 +1,76 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 480" width="100%" height="100%">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 540" width="100%" height="100%">
   <defs>
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0b0f19"/>
-      <stop offset="100%" stop-color="#111827"/>
-    </linearGradient>
+    <style>
+      .bg-app { fill: #090d16; }
+      .bg-card { fill: #121827; stroke: #1f293d; stroke-width: 1; }
+      .text-white { fill: #ffffff; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+      .text-muted { fill: #94a3b8; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+      .text-green { fill: #34d399; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+    </style>
     <linearGradient id="orangeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#EE8D27"/>
       <stop offset="100%" stop-color="#C76B13"/>
     </linearGradient>
   </defs>
 
-  <rect width="900" height="480" rx="16" fill="url(#bgGrad)"/>
-  <rect width="898" height="478" x="1" y="1" rx="15" fill="none" stroke="#ffffff" stroke-opacity="0.1" stroke-width="1"/>
+  <rect width="920" height="540" rx="16" fill="#090d16"/>
+  <rect width="918" height="538" x="1" y="1" rx="15" fill="none" stroke="#26334d" stroke-width="1"/>
 
-  <!-- Top Bar -->
-  <rect x="20" y="20" width="860" height="44" rx="10" fill="#182234" stroke="#ffffff" stroke-opacity="0.08"/>
-  <text x="40" y="47" fill="#ffffff" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="14" font-weight="700">Catalog &amp; Multi-Vertical Orders Management</text>
-  <rect x="730" y="28" width="130" height="28" rx="6" fill="url(#orangeGrad)"/>
-  <text x="795" y="46" text-anchor="middle" fill="#ffffff" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="12" font-weight="600">+ Add Product</text>
+  <!-- Top App Bar -->
+  <rect x="0" y="0" width="920" height="42" fill="#121827"/>
+  <circle cx="24" cy="21" r="5.5" fill="#ef4444"/>
+  <circle cx="40" cy="21" r="5.5" fill="#f59e0b"/>
+  <circle cx="56" cy="21" r="5.5" fill="#10b981"/>
+  <text x="460" y="26" text-anchor="middle" class="text-muted" font-size="12" font-weight="600">ZiniChat — Catalog Products &amp; Multi-Vertical Orders (প্রোডাক্ট ক্যাটালগ ও অর্ডারসমূহ)</text>
 
-  <!-- Table Container -->
-  <rect x="20" y="80" width="860" height="375" rx="12" fill="#111827" stroke="#374151"/>
+  <!-- Page Header -->
+  <rect x="30" y="58" width="860" height="55" rx="10" fill="#161e2e" stroke="#26334d"/>
+  <text x="50" y="86" class="text-white" font-size="16" font-weight="700">প্রোডাক্ট ক্যাটালগ (Products Catalog)</text>
+  <text x="50" y="103" class="text-muted" font-size="11">আপনার বিজনেস ক্যাটালগে প্রোডাক্ট ও কাস্টম অ্যাট্রিবিউট যুক্ত করুন। এআই স্বয়ংক্রিয়ভাবে দাম ও তথ্য শেয়ার করবে।</text>
+  
+  <rect x="735" y="70" width="140" height="32" rx="8" fill="url(#orangeGrad)"/>
+  <text x="805" y="91" text-anchor="middle" class="text-white" font-size="12" font-weight="700">+ Add New Product</text>
+
+  <!-- Products Table Container -->
+  <rect x="30" y="125" width="860" height="385" rx="12" class="bg-card"/>
   
   <!-- Table Header -->
-  <rect x="20" y="80" width="860" height="45" rx="12" fill="#1f293d"/>
-  <text x="40" y="108" fill="#94a3b8" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="12" font-weight="700">PRODUCT / SERVICE</text>
-  <text x="300" y="108" fill="#94a3b8" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="12" font-weight="700">PRICE</text>
-  <text x="440" y="108" fill="#94a3b8" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="12" font-weight="700">STOCK / STATUS</text>
-  <text x="620" y="108" fill="#94a3b8" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="12" font-weight="700">VERTICAL MODE</text>
-  <text x="780" y="108" fill="#94a3b8" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="12" font-weight="700">ACTIONS</text>
+  <rect x="30" y="125" width="860" height="42" rx="12" fill="#18181b"/>
+  <text x="50" y="151" class="text-muted" font-size="11" font-weight="700">PRODUCT / SERVICE</text>
+  <text x="320" y="151" class="text-muted" font-size="11" font-weight="700">PRICE (দাম)</text>
+  <text x="460" y="151" class="text-muted" font-size="11" font-weight="700">STOCK STATUS</text>
+  <text x="630" y="151" class="text-muted" font-size="11" font-weight="700">BUSINESS VERTICAL</text>
+  <text x="800" y="151" class="text-muted" font-size="11" font-weight="700">ACTIONS</text>
 
   <!-- Row 1 -->
-  <line x1="20" y1="180" x2="880" y2="180" stroke="#374151" stroke-width="1"/>
-  <rect x="40" y="138" width="32" height="32" rx="6" fill="#3b82f6" fill-opacity="0.2"/>
-  <text x="82" y="152" fill="#ffffff" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="13" font-weight="700">Premium Leather Jacket</text>
-  <text x="82" y="167" fill="#94a3b8" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="11">SKU: JK-9901 • Color: Black</text>
-  <text x="300" y="158" fill="#34d399" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="13" font-weight="700">৳ 2,450</text>
-  <rect x="440" y="143" width="90" height="24" rx="12" fill="#10b981" fill-opacity="0.2"/>
-  <text x="485" y="159" text-anchor="middle" fill="#34d399" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="11" font-weight="600">In Stock (45)</text>
-  <rect x="620" y="143" width="90" height="24" rx="12" fill="#3b82f6" fill-opacity="0.2"/>
-  <text x="665" y="159" text-anchor="middle" fill="#60a5fa" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="11" font-weight="600">Retail</text>
-  <text x="780" y="158" fill="#fb923c" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="12" font-weight="600">Edit / Sync</text>
+  <line x1="30" y1="230" x2="890" y2="230" stroke="#1f293d" stroke-width="1"/>
+  <rect x="50" y="180" width="40" height="40" rx="8" fill="#1f293d"/>
+  <text x="102" y="198" class="text-white" font-size="14" font-weight="700">Premium Leather Jacket</text>
+  <text x="102" y="215" class="text-muted" font-size="11">SKU: JK-9901 • Color: Black</text>
+  
+  <text x="320" y="205" class="text-green" font-size="14" font-weight="700">৳ ২,৪৫০ BDT</text>
+
+  <rect x="460" y="190" width="105" height="24" rx="12" fill="#10b981" fill-opacity="0.18"/>
+  <text x="512" y="206" text-anchor="middle" class="text-green" font-size="11" font-weight="700">In Stock (45)</text>
+
+  <rect x="630" y="190" width="95" height="24" rx="12" fill="#3b82f6" fill-opacity="0.18"/>
+  <text x="677" y="206" text-anchor="middle" fill="#60a5fa" font-size="11" font-weight="700">Retail Store</text>
+
+  <text x="800" y="205" fill="#fb923c" font-size="12" font-weight="600">Edit / Sync</text>
 
   <!-- Row 2 -->
-  <line x1="20" y1="240" x2="880" y2="240" stroke="#374151" stroke-width="1"/>
-  <rect x="40" y="198" width="32" height="32" rx="6" fill="#8b5cf6" fill-opacity="0.2"/>
-  <text x="82" y="212" fill="#ffffff" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="13" font-weight="700">Executive Office Suite 402</text>
-  <text x="82" y="227" fill="#94a3b8" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="11">Property Mode • 1,200 sqft</text>
-  <text x="300" y="218" fill="#facc15" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="12" font-style="italic">Price on Call</text>
-  <rect x="440" y="203" width="90" height="24" rx="12" fill="#f59e0b" fill-opacity="0.2"/>
-  <text x="485" y="219" text-anchor="middle" fill="#fbbf24" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="11" font-weight="600">Available</text>
-  <rect x="620" y="203" width="100" height="24" rx="12" fill="#8b5cf6" fill-opacity="0.2"/>
-  <text x="670" y="219" text-anchor="middle" fill="#c084fc" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="11" font-weight="600">Real Estate</text>
-  <text x="780" y="218" fill="#fb923c" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="12" font-weight="600">Edit / Sync</text>
+  <line x1="30" y1="300" x2="890" y2="300" stroke="#1f293d" stroke-width="1"/>
+  <rect x="50" y="250" width="40" height="40" rx="8" fill="#1f293d"/>
+  <text x="102" y="268" class="text-white" font-size="14" font-weight="700">Executive Office Suite 402</text>
+  <text x="102" y="285" class="text-muted" font-size="11">Property Mode • 1,200 sqft</text>
+
+  <text x="320" y="275" fill="#facc15" font-size="13" font-style="italic">Price on Call (আলোচনা সাপেক্ষে)</text>
+
+  <rect x="460" y="260" width="105" height="24" rx="12" fill="#f59e0b" fill-opacity="0.18"/>
+  <text x="512" y="276" text-anchor="middle" fill="#fbbf24" font-size="11" font-weight="700">Available</text>
+
+  <rect x="630" y="260" width="95" height="24" rx="12" fill="#8b5cf6" fill-opacity="0.18"/>
+  <text x="677" y="276" text-anchor="middle" fill="#c084fc" font-size="11" font-weight="700">Real Estate</text>
+
+  <text x="800" y="275" fill="#fb923c" font-size="12" font-weight="600">Edit / Sync</text>
 </svg>
