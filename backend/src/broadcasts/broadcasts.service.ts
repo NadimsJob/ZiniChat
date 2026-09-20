@@ -104,7 +104,7 @@ export class BroadcastsService {
     }
 
     const channelConn = await this.prisma.channelConnection.findFirst({
-      where: { tenantId, channelType: 'whatsapp', status: 'active' }
+      where: { tenantId, channelType: 'whatsapp', status: 'active', provider: 'CLOUD_API' }
     });
 
     if (!channelConn || !channelConn.wabaId || !channelConn.accessTokenEncrypted) {
@@ -272,7 +272,7 @@ export class BroadcastsService {
     if (!template) throw new NotFoundException('Template not found');
 
     const channelConn = await this.prisma.channelConnection.findFirst({
-      where: { tenantId, channelType: 'whatsapp', status: 'active' }
+      where: { tenantId, channelType: 'whatsapp', status: 'active', provider: 'CLOUD_API' }
     });
 
     if (channelConn && channelConn.wabaId && channelConn.accessTokenEncrypted) {
@@ -334,6 +334,36 @@ export class BroadcastsService {
     }
   }
 
+  async getMetaConnectionStatus(tenantId: string) {
+    const channelConn = await this.prisma.channelConnection.findFirst({
+      where: { tenantId, channelType: 'whatsapp', status: 'active', provider: 'CLOUD_API' }
+    });
+
+    if (!channelConn || !channelConn.wabaId || !channelConn.accessTokenEncrypted) {
+      return { isConnected: false, error: 'No active WhatsApp Cloud API connection found.' };
+    }
+
+    try {
+      const response = await fetch(`https://graph.facebook.com/v21.0/${channelConn.wabaId}`, {
+        headers: { Authorization: `Bearer ${channelConn.accessTokenEncrypted}` }
+      });
+
+      if (!response.ok) {
+        return { isConnected: false, error: 'Meta Cloud API token is invalid or expired.' };
+      }
+
+      return {
+        isConnected: true,
+        displayName: channelConn.displayName,
+        wabaId: channelConn.wabaId,
+        phoneNumber: channelConn.phoneNumber
+      };
+    } catch (error) {
+      this.logger.error('Failed to check Meta connection status', error);
+      return { isConnected: false, error: 'Failed to reach Meta API.' };
+    }
+  }
+
   async getBroadcasts(tenantId: string) {
     await this.checkAccessControl(tenantId);
     return this.prisma.broadcast.findMany({
@@ -345,6 +375,14 @@ export class BroadcastsService {
 
   async createBroadcast(tenantId: string, data: any) {
     await this.checkAccessControl(tenantId);
+
+    const channelConn = await this.prisma.channelConnection.findFirst({
+      where: { tenantId, channelType: 'whatsapp', status: 'active', provider: 'CLOUD_API' }
+    });
+
+    if (!channelConn) {
+      throw new BadRequestException('An active WhatsApp Cloud API connection is required to schedule a broadcast.');
+    }
 
     const template = await this.prisma.template.findFirst({
       where: { id: data.templateId, tenantId }

@@ -51,6 +51,11 @@ export class BroadcastsController {
     return this.broadcastsService.syncTemplatesFromMeta(req.user.tenantId);
   }
 
+  @Get('meta-status')
+  getMetaConnectionStatus(@Request() req: any) {
+    return this.broadcastsService.getMetaConnectionStatus(req.user.tenantId);
+  }
+
   @Get()
   getBroadcasts(@Request() req: any) {
     return this.broadcastsService.getBroadcasts(req.user.tenantId);

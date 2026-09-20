@@ -23,6 +23,10 @@ export default function BroadcastsPage() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'campaigns' | 'templates' | 'library'>('campaigns');
 
+  // Meta Connection Status
+  const [metaStatus, setMetaStatus] = useState<any>(null);
+  const [metaStatusLoading, setMetaStatusLoading] = useState(true);
+
   // Library state
   const [libTemplates, setLibTemplates] = useState<any[]>([]);
   const [libLoading, setLibLoading] = useState(false);
@@ -176,6 +180,27 @@ export default function BroadcastsPage() {
   };
 
   const bodyTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const fetchMetaStatus = async () => {
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/broadcasts/meta-status`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setMetaStatus(data);
+      }
+    } catch (e) {
+      console.error('Failed to fetch meta status', e);
+    } finally {
+      setMetaStatusLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchMetaStatus();
+  }, []);
 
   useEffect(() => {
     fetchData();
@@ -528,7 +553,7 @@ export default function BroadcastsPage() {
             {activeTab === 'templates' && (
               <button
                 onClick={handleSyncFromMeta}
-                disabled={isSyncing}
+                disabled={isSyncing || metaStatus?.isConnected === false}
                 title={language === 'en' ? 'Pull all templates from your Meta WABA account' : 'Meta WABA অ্যাকাউন্ট থেকে সব টেমপ্লেট নিয়ে আসুন'}
                 className="flex items-center gap-1.5 px-3 py-2 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/20 text-xs font-bold rounded-xl transition-all disabled:opacity-60 whitespace-nowrap">
                 <RefreshCw className={`w-3.5 h-3.5 shrink-0 ${isSyncing ? 'animate-spin' : ''}`} />
@@ -538,7 +563,8 @@ export default function BroadcastsPage() {
 
             <button 
               onClick={() => activeTab === 'campaigns' ? setIsCampaignModalOpen(true) : setIsTemplateModalOpen(true)}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-xs font-bold rounded-xl shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all whitespace-nowrap">
+              disabled={metaStatus?.isConnected === false}
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-xs font-bold rounded-xl shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed">
               <Plus className="w-4 h-4 shrink-0" /> 
               <span>{activeTab === 'campaigns' 
                 ? (language === 'en' ? 'New Campaign' : 'নতুন ক্যাম্পেইন') 
@@ -547,6 +573,24 @@ export default function BroadcastsPage() {
           </div>
         )}
       </div>
+
+      {!metaStatusLoading && metaStatus?.isConnected === false && (
+        <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 flex items-start gap-3">
+          <div className="bg-red-500/20 p-2 rounded-xl shrink-0">
+            <AlertCircle className="w-5 h-5 text-red-500" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-red-500">
+              {language === 'en' ? 'Meta Cloud API Disconnected' : 'মেটা ক্লাউড এপিআই ডিসকানেক্টেড'}
+            </h3>
+            <p className="text-xs text-red-400 mt-1">
+              {language === 'en'
+                ? 'Your WhatsApp Meta Cloud API connection is invalid or missing. You cannot create templates or send broadcasts. Please go to Settings > Channels to reconnect your Meta WhatsApp Business account.'
+                : 'আপনার হোয়াটসঅ্যাপ মেটা ক্লাউড এপিআই কানেকশন নেই অথবা ইনভ্যালিড। আপনি টেমপ্লেট বা ব্রডকাস্ট পাঠাতে পারবেন না। দয়া করে Settings > Channels থেকে মেটা অ্যাকাউন্টটি পুনরায় কানেক্ট করুন।'}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* 4-Step Broadcast Campaign & CSV Import Guidelines */}
       <div className="bg-gradient-to-r from-primary/10 via-emerald-500/10 to-blue-500/10 border border-primary/20 p-4 rounded-2xl space-y-3">
