@@ -7,7 +7,6 @@
       .text-white { fill: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
       .text-muted { fill: #94a3b8; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
       .text-green { fill: #34d399; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-      .btn-primary { fill: #1F824A; rx: 10px; }
       .btn-primary-text { fill: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-weight: 700; font-size: 13px; }
     </style>
     <linearGradient id="primaryGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -26,22 +25,22 @@
   <circle cx="24" cy="21" r="5.5" fill="#ef4444"/>
   <circle cx="40" cy="21" r="5.5" fill="#f59e0b"/>
   <circle cx="56" cy="21" r="5.5" fill="#10b981"/>
-  <text x="460" y="26" text-anchor="middle" class="text-muted" font-size="12" font-weight="600">ZiniChat Dashboard — Connected Inboxes (সংযুক্ত ইনবক্সসমূহ)</text>
+  <text x="460" y="26" text-anchor="middle" class="text-muted" font-size="12" font-weight="600">ZiniChat Dashboard — Connected Inboxes</text>
 
   <!-- Page Header Card -->
   <rect x="30" y="60" width="860" height="68" rx="14" class="bg-header"/>
-  <text x="50" y="92" class="text-white" font-size="18" font-weight="700">সংযুক্ত ইনবক্সসমূহ (Connected Inboxes)</text>
-  <text x="50" y="112" class="text-muted" font-size="12">আপনার হোয়াটসঅ্যাপ, মেসেঞ্জার বা ওয়েবসাইট উইজেট চ্যানেলের কানেকশন স্ট্যাটাস এবং AI রিপ্লাই সেটিংস ম্যানেজ করুন।</text>
+  <text x="50" y="92" class="text-white" font-size="18" font-weight="700">Connected Inboxes</text>
+  <text x="50" y="112" class="text-muted" font-size="12">Manage active communication channels (WhatsApp, Messenger, Instagram, Website Widgets) and check AI auto-reply status.</text>
   
   <rect x="735" y="78" width="135" height="34" rx="10" fill="url(#primaryGrad)"/>
-  <text x="802" y="100" text-anchor="middle" class="btn-primary-text">+ ইনবক্স যুক্ত করুন</text>
+  <text x="802" y="100" text-anchor="middle" class="btn-primary-text">+ Add Inbox</text>
 
   <!-- Instruction Banner (Emerald) -->
   <rect x="30" y="140" width="860" height="50" rx="12" fill="#064e3b" fill-opacity="0.25" stroke="#059669" stroke-opacity="0.4" stroke-width="1"/>
   <circle cx="55" cy="165" r="12" fill="#10b981" fill-opacity="0.2"/>
   <path d="M50 165h10M55 160v10" stroke="#34d399" stroke-width="2" stroke-linecap="round"/>
-  <text x="78" y="162" class="text-white" font-size="13" font-weight="700">ইনবক্স কানেকশন স্ট্যাটাস নির্দেশিকা</text>
-  <text x="78" y="177" class="text-green" font-size="11">সবুজ "Active" ব্যাজ দেখানোর অর্থ হলো চ্যানেলটি মেসেজ আদান-প্রদানের জন্য সম্পূর্ণ প্রস্তুত।</text>
+  <text x="78" y="162" class="text-white" font-size="13" font-weight="700">Inbox Connection Status Guide</text>
+  <text x="78" y="177" class="text-green" font-size="11">A green "Active" badge indicates the channel is fully connected and ready to send &amp; receive customer messages.</text>
 
   <!-- Inbox Channel Card 1: Meta Facebook Page & Instagram -->
   <rect x="30" y="205" width="860" height="92" rx="14" class="bg-card"/>
@@ -60,7 +59,6 @@
   <rect x="655" y="239" width="135" height="24" rx="12" fill="#3b82f6" fill-opacity="0.18" stroke="#3b82f6" stroke-opacity="0.4"/>
   <text x="722" y="255" text-anchor="middle" fill="#60a5fa" font-family="-apple-system, sans-serif" font-size="11" font-weight="700">✓ Official Meta Partner</text>
 
-  <!-- Action Controls -->
   <rect x="805" y="239" width="30" height="24" rx="6" fill="#1f293d"/>
   <text x="820" y="255" text-anchor="middle" fill="#94a3b8" font-size="11">✏️</text>
   <rect x="845" y="239" width="30" height="24" rx="6" fill="#ef4444" fill-opacity="0.15"/>

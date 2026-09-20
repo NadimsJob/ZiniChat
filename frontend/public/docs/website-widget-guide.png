@@ -21,7 +21,7 @@
   <circle cx="24" cy="21" r="5.5" fill="#ef4444"/>
   <circle cx="40" cy="21" r="5.5" fill="#f59e0b"/>
   <circle cx="56" cy="21" r="5.5" fill="#10b981"/>
-  <text x="460" y="26" text-anchor="middle" class="text-muted" font-size="12" font-weight="600">ZiniChat — Website Live Chat Widget Embed SDK (ওয়েবসাইট উইজেট সেটআপ)</text>
+  <text x="460" y="26" text-anchor="middle" class="text-muted" font-size="12" font-weight="600">ZiniChat — Website Live Chat Widget Embed SDK</text>
 
   <!-- Left: Embed Code -->
   <rect x="30" y="60" width="480" height="450" rx="14" class="bg-card"/>

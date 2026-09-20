@@ -30,40 +30,40 @@
 
   <!-- Banner -->
   <rect x="30" y="55" width="860" height="45" rx="10" fill="#064e3b" fill-opacity="0.3" stroke="#059669" stroke-opacity="0.4"/>
-  <text x="50" y="82" class="text-white" font-size="13" font-weight="700">এআই অ্যাসিস্ট্যান্ট সেটিংস ও ট্রেইনিং নির্দেশিকা (AI Persona &amp; Q&amp;A Training Guide)</text>
+  <text x="50" y="82" class="text-white" font-size="13" font-weight="700">AI Assistant Settings &amp; Training Guide (AI Persona &amp; Q&amp;A Setup)</text>
 
   <!-- Left Box: AI System Prompt Persona -->
   <rect x="30" y="112" width="410" height="400" rx="14" class="bg-card"/>
-  <text x="50" y="140" class="text-white" font-size="15" font-weight="700">১. এআই পারসোনা ও ইনস্ট্রাকশন (System Persona Prompt)</text>
-  <text x="50" y="158" class="text-muted" font-size="11">আপনার ব্র্যান্ডের ভাষা, কথা বলার ধরণ এবং কাস্টমার হ্যান্ডলিংয়ের নিয়ম লিখুন।</text>
+  <text x="50" y="140" class="text-white" font-size="15" font-weight="700">1. AI Persona &amp; System Prompt Instructions</text>
+  <text x="50" y="158" class="text-muted" font-size="11">Describe your brand voice, tone, guidelines, and customer greeting rules.</text>
 
   <rect x="50" y="172" width="370" height="235" rx="10" fill="#18181b" stroke="#27272a" stroke-width="1"/>
-  <text x="65" y="197" fill="#a7f3d0" font-family="monospace" font-size="12">আপনার নাম ZiniBot, ডেমো শপের স্মার্ট কাস্টমার কেয়ার সহকারী।</text>
-  <text x="65" y="222" fill="#e2e8f0" font-family="monospace" font-size="12">১. কাস্টমারকে সবসময় "আসসালামু আলাইকুম" বলে সম্বোধন করবেন।</text>
-  <text x="65" y="247" fill="#e2e8f0" font-family="monospace" font-size="12">২. প্রোডাক্টের সঠিক দাম এবং ইন-স্টক স্ট্যাটাস জানাবেন।</text>
-  <text x="65" y="272" fill="#e2e8f0" font-family="monospace" font-size="12">৩. কাস্টমার অর্ডার দিতে চাইলে নাম, ঠিকানা ও মোবাইল নম্বর নিবেন।</text>
-  <text x="65" y="297" fill="#e2e8f0" font-family="monospace" font-size="12">৪. সবসময় বিনম্র, প্রফেশনাল এবং সংক্ষেপে উত্তর দিবেন।</text>
-  <text x="65" y="322" fill="#94a3b8" font-family="monospace" font-size="11">৫. ডেলিভারি সময়: ঢাকার ভেতরে ২৪ ঘণ্টা, বাইরে ৪৮ ঘণ্টা।</text>
+  <text x="65" y="197" fill="#a7f3d0" font-family="monospace" font-size="12">You are ZiniBot, smart sales assistant for Demo Store.</text>
+  <text x="65" y="222" fill="#e2e8f0" font-family="monospace" font-size="12">1. Greet customers warmly with "Hello! Welcome to Demo Store".</text>
+  <text x="65" y="247" fill="#e2e8f0" font-family="monospace" font-size="12">2. Answer questions accurately using catalog items &amp; Q&amp;A base.</text>
+  <text x="65" y="272" fill="#e2e8f0" font-family="monospace" font-size="12">3. Ask for Name, Address, &amp; Phone Number when placing an order.</text>
+  <text x="65" y="297" fill="#e2e8f0" font-family="monospace" font-size="12">4. Maintain a polite, professional, and helpful conversation tone.</text>
+  <text x="65" y="322" fill="#94a3b8" font-family="monospace" font-size="11">5. Standard delivery timeframe: 24-48 hours nationwide.</text>
 
   <rect x="50" y="420" width="370" height="38" rx="10" fill="url(#primaryGrad)"/>
-  <text x="235" y="444" text-anchor="middle" class="text-white" font-size="13" font-weight="700">💾 এআই সেটিং সেভ করুন (Save AI Settings)</text>
+  <text x="235" y="444" text-anchor="middle" class="text-white" font-size="13" font-weight="700">💾 Save AI Settings</text>
 
   <rect x="50" y="468" width="370" height="30" rx="8" fill="#10b981" fill-opacity="0.15" stroke="#10b981" stroke-opacity="0.3"/>
-  <text x="235" y="487" text-anchor="middle" class="text-green" font-size="11" font-weight="600">✓ এআই রিপ্লাই লাইভ ইনবক্সে সক্রিয় আছে</text>
+  <text x="235" y="487" text-anchor="middle" class="text-green" font-size="11" font-weight="600">✓ AI Auto-Reply is active on Live Inbox</text>
 
   <!-- Right Box: Quick Q&A Knowledge Base -->
   <rect x="460" y="112" width="430" height="240" rx="14" class="bg-card"/>
-  <text x="480" y="140" class="text-white" font-size="15" font-weight="700">২. প্রশ্ন-উত্তর (Quick Q&amp;A Knowledge Base)</text>
-  <text x="480" y="158" class="text-muted" font-size="11">সচরাচর করা প্রশ্নের জন্য নির্দিষ্ট উত্তর যোগ করুন।</text>
+  <text x="480" y="140" class="text-white" font-size="15" font-weight="700">2. Quick Q&amp;A Knowledge Base</text>
+  <text x="480" y="158" class="text-muted" font-size="11">Add instant answers for frequently asked customer questions.</text>
 
   <rect x="480" y="172" width="390" height="65" rx="10" fill="#1f293d" stroke="#374151"/>
-  <text x="495" y="194" class="text-orange" font-size="12" font-weight="700">Q: ডেলিভারি চার্জ কত?</text>
-  <text x="495" y="214" class="text-white" font-size="12">A: ঢাকার ভিতরে ৭০ টাকা, ঢাকার বাইরে ১২০ টাকা।</text>
+  <text x="495" y="194" class="text-orange" font-size="12" font-weight="700">Q: What is your shipping &amp; delivery charge?</text>
+  <text x="495" y="214" class="text-white" font-size="12">A: Inside Dhaka ৳ 70 BDT, Outside Dhaka ৳ 120 BDT.</text>
   <text x="495" y="228" class="text-muted" font-size="10">Tags: delivery, charge, shipping</text>
 
   <rect x="480" y="247" width="390" height="65" rx="10" fill="#1f293d" stroke="#374151"/>
-  <text x="495" y="269" class="text-orange" font-size="12" font-weight="700">Q: পণ্য রিটার্ন পলিসি কী?</text>
-  <text x="495" y="289" class="text-white" font-size="12">A: কুরিয়ারে গ্রহণের ৩ দিনের মধ্যে রিটার্ন প্রযোজ্য।</text>
+  <text x="495" y="269" class="text-orange" font-size="12" font-weight="700">Q: What is your item return policy?</text>
+  <text x="495" y="289" class="text-white" font-size="12">A: Returns accepted within 3 days of parcel delivery.</text>
   <text x="495" y="303" class="text-muted" font-size="10">Tags: return, policy, refund</text>
 
   <rect x="480" y="320" width="185" height="26" rx="8" fill="url(#orangeGrad)"/>
@@ -77,12 +77,12 @@
   <text x="480" y="385" class="text-white" font-size="14" font-weight="700">🤖 AI Live Test Simulator</text>
   
   <!-- Chat bubble 1 -->
-  <rect x="480" y="398" width="190" height="28" rx="8" fill="#1f293d"/>
-  <text x="492" y="416" class="text-white" font-size="11">প্রোডাক্টের রিটার্ন পলিসি কী?</text>
+  <rect x="480" y="398" width="210" height="28" rx="8" fill="#1f293d"/>
+  <text x="492" y="416" class="text-white" font-size="11">What is your item return policy?</text>
 
   <!-- AI Reply bubble -->
   <rect x="580" y="432" width="290" height="36" rx="8" fill="url(#primaryGrad)"/>
-  <text x="592" y="454" class="text-white" font-size="11">কুরিয়ারে গ্রহণের ৩ দিনের মধ্যে রিটার্ন প্রযোজ্য।</text>
+  <text x="592" y="454" class="text-white" font-size="11">Returns accepted within 3 days of parcel delivery.</text>
 
   <!-- Input -->
   <rect x="480" y="475" width="390" height="28" rx="14" fill="#1f293d" stroke="#374151"/>

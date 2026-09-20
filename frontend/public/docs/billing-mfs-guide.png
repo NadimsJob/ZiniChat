@@ -21,7 +21,7 @@
   <circle cx="24" cy="21" r="5.5" fill="#ef4444"/>
   <circle cx="40" cy="21" r="5.5" fill="#f59e0b"/>
   <circle cx="56" cy="21" r="5.5" fill="#10b981"/>
-  <text x="460" y="26" text-anchor="middle" class="text-muted" font-size="12" font-weight="600">ZiniChat — bKash / Nagad EMVCo Bangla QR Checkout (বাংলা কিউআর পেমেন্ট)</text>
+  <text x="460" y="26" text-anchor="middle" class="text-muted" font-size="12" font-weight="600">ZiniChat — bKash / Nagad EMVCo Bangla QR Checkout</text>
 
   <!-- Left Side: EMVCo Bangla QR Code -->
   <rect x="30" y="60" width="410" height="450" rx="14" class="bg-card"/>
@@ -45,7 +45,7 @@
   <circle cx="235" cy="270" r="26" fill="#e2136e"/>
   <text x="235" y="278" text-anchor="middle" class="text-white" font-size="18" font-weight="900">৳</text>
 
-  <text x="235" y="418" text-anchor="middle" class="text-muted" font-size="12">bKash বা Nagad অ্যাপ দিয়ে স্ক্রিনের QR কোড স্ক্যান করুন</text>
+  <text x="235" y="418" text-anchor="middle" class="text-muted" font-size="12">Scan QR code using bKash or Nagad Mobile App</text>
 
   <!-- Right Side: Plan details & Claim Form -->
   <rect x="460" y="60" width="430" height="450" rx="14" class="bg-card"/>
@@ -54,7 +54,7 @@
   <rect x="480" y="115" width="390" height="85" rx="10" fill="#18181b" stroke="#27272a"/>
   <text x="500" y="142" class="text-muted" font-size="12">Selected Plan: <tspan fill="#ffffff" font-weight="700">Growth (Monthly)</tspan></text>
   <text x="500" y="165" class="text-muted" font-size="12">Billing Cycle: <tspan fill="#ffffff" font-weight="700">30 Days Auto-Reset</tspan></text>
-  <text x="500" y="188" class="text-green" font-size="15" font-weight="700">Total BDT: ৳ ১,৯৯০ BDT</text>
+  <text x="500" y="188" class="text-green" font-size="15" font-weight="700">Total BDT: ৳ 1,990 BDT</text>
 
   <text x="480" y="235" class="text-white" font-size="13" font-weight="700">Enter Transaction ID (TrxID):</text>
   <rect x="480" y="250" width="390" height="44" rx="10" fill="#18181b" stroke="#374151"/>

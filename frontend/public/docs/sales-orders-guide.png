@@ -21,12 +21,12 @@
   <circle cx="24" cy="21" r="5.5" fill="#ef4444"/>
   <circle cx="40" cy="21" r="5.5" fill="#f59e0b"/>
   <circle cx="56" cy="21" r="5.5" fill="#10b981"/>
-  <text x="460" y="26" text-anchor="middle" class="text-muted" font-size="12" font-weight="600">ZiniChat — Catalog Products &amp; Multi-Vertical Orders (প্রোডাক্ট ক্যাটালগ ও অর্ডারসমূহ)</text>
+  <text x="460" y="26" text-anchor="middle" class="text-muted" font-size="12" font-weight="600">ZiniChat — Catalog Products &amp; Multi-Vertical Orders</text>
 
   <!-- Page Header -->
   <rect x="30" y="58" width="860" height="55" rx="10" fill="#161e2e" stroke="#26334d"/>
-  <text x="50" y="86" class="text-white" font-size="16" font-weight="700">প্রোডাক্ট ক্যাটালগ (Products Catalog)</text>
-  <text x="50" y="103" class="text-muted" font-size="11">আপনার বিজনেস ক্যাটালগে প্রোডাক্ট ও কাস্টম অ্যাট্রিবিউট যুক্ত করুন। এআই স্বয়ংক্রিয়ভাবে দাম ও তথ্য শেয়ার করবে।</text>
+  <text x="50" y="86" class="text-white" font-size="16" font-weight="700">Products Catalog</text>
+  <text x="50" y="103" class="text-muted" font-size="11">Add items, stock levels, and custom attributes. The AI assistant automatically references this catalog during customer chats.</text>
   
   <rect x="735" y="70" width="140" height="32" rx="8" fill="url(#orangeGrad)"/>
   <text x="805" y="91" text-anchor="middle" class="text-white" font-size="12" font-weight="700">+ Add New Product</text>
@@ -37,7 +37,7 @@
   <!-- Table Header -->
   <rect x="30" y="125" width="860" height="42" rx="12" fill="#18181b"/>
   <text x="50" y="151" class="text-muted" font-size="11" font-weight="700">PRODUCT / SERVICE</text>
-  <text x="320" y="151" class="text-muted" font-size="11" font-weight="700">PRICE (দাম)</text>
+  <text x="320" y="151" class="text-muted" font-size="11" font-weight="700">PRICE</text>
   <text x="460" y="151" class="text-muted" font-size="11" font-weight="700">STOCK STATUS</text>
   <text x="630" y="151" class="text-muted" font-size="11" font-weight="700">BUSINESS VERTICAL</text>
   <text x="800" y="151" class="text-muted" font-size="11" font-weight="700">ACTIONS</text>
@@ -48,7 +48,7 @@
   <text x="102" y="198" class="text-white" font-size="14" font-weight="700">Premium Leather Jacket</text>
   <text x="102" y="215" class="text-muted" font-size="11">SKU: JK-9901 • Color: Black</text>
   
-  <text x="320" y="205" class="text-green" font-size="14" font-weight="700">৳ ২,৪৫০ BDT</text>
+  <text x="320" y="205" class="text-green" font-size="14" font-weight="700">৳ 2,450 BDT</text>
 
   <rect x="460" y="190" width="105" height="24" rx="12" fill="#10b981" fill-opacity="0.18"/>
   <text x="512" y="206" text-anchor="middle" class="text-green" font-size="11" font-weight="700">In Stock (45)</text>
@@ -64,7 +64,7 @@
   <text x="102" y="268" class="text-white" font-size="14" font-weight="700">Executive Office Suite 402</text>
   <text x="102" y="285" class="text-muted" font-size="11">Property Mode • 1,200 sqft</text>
 
-  <text x="320" y="275" fill="#facc15" font-size="13" font-style="italic">Price on Call (আলোচনা সাপেক্ষে)</text>
+  <text x="320" y="275" fill="#facc15" font-size="13" font-style="italic">Price on Call</text>
 
   <rect x="460" y="260" width="105" height="24" rx="12" fill="#f59e0b" fill-opacity="0.18"/>
   <text x="512" y="276" text-anchor="middle" fill="#fbbf24" font-size="11" font-weight="700">Available</text>
