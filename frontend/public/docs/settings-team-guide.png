@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 480" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b0f19"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="greenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1F824A"/>
+      <stop offset="100%" stop-color="#145932"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="900" height="480" rx="16" fill="url(#bgGrad)"/>
+  <rect width="898" height="478" x="1" y="1" rx="15" fill="none" stroke="#ffffff" stroke-opacity="0.1" stroke-width="1"/>
+
+  <!-- Top Bar -->
+  <rect x="20" y="20" width="860" height="44" rx="10" fill="#182234" stroke="#ffffff" stroke-opacity="0.08"/>
+  <text x="40" y="47" fill="#ffffff" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="14" font-weight="700">Team Roles &amp; Granular Access Control Settings</text>
+  <rect x="740" y="28" width="120" height="28" rx="6" fill="url(#greenGrad)"/>
+  <text x="800" y="46" text-anchor="middle" fill="#ffffff" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="12" font-weight="600">+ Invite Member</text>
+
+  <!-- Left: Team Members -->
+  <rect x="20" y="80" width="380" height="375" rx="12" fill="#111827" stroke="#374151"/>
+  <text x="40" y="110" fill="#ffffff" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="14" font-weight="700">Team Members (3/5 Seats)</text>
+
+  <!-- Member 1 -->
+  <rect x="35" y="130" width="350" height="65" rx="8" fill="#1f293d"/>
+  <circle cx="60" cy="162" r="16" fill="#10b981"/>
+  <text x="60" y="167" text-anchor="middle" fill="#ffffff" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="12" font-weight="700">N</text>
+  <text x="88" y="154" fill="#ffffff" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="13" font-weight="700">Nadim (Owner)</text>
+  <text x="88" y="172" fill="#94a3b8" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="11">nadim@zinichat.com • Full Access</text>
+
+  <!-- Member 2 -->
+  <rect x="35" y="205" width="350" height="65" rx="8" fill="#1f293d"/>
+  <circle cx="60" cy="237" r="16" fill="#3b82f6"/>
+  <text x="60" y="242" text-anchor="middle" fill="#ffffff" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="12" font-weight="700">S</text>
+  <text x="88" y="229" fill="#ffffff" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="13" font-weight="700">Sarah Agent</text>
+  <text x="88" y="247" fill="#94a3b8" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="11">sarah@zinichat.com • Sales Support</text>
+
+  <!-- Right: Permissions Matrix -->
+  <rect x="420" y="80" width="460" height="375" rx="12" fill="#111827" stroke="#374151"/>
+  <text x="440" y="110" fill="#ffffff" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="14" font-weight="700">Granular Role Permissions</text>
+
+  <!-- Permission Toggles -->
+  <rect x="440" y="130" width="420" height="42" rx="8" fill="#1f293d"/>
+  <text x="460" y="155" fill="#cbd5e1" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="12" font-weight="600">Access Live Inbox &amp; Reply Messages</text>
+  <rect x="800" y="141" width="40" height="20" rx="10" fill="#10b981"/>
+  <circle cx="830" cy="151" r="8" fill="#ffffff"/>
+
+  <rect x="440" y="180" width="420" height="42" rx="8" fill="#1f293d"/>
+  <text x="460" y="205" fill="#cbd5e1" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="12" font-weight="600">Create &amp; Edit Catalog Products</text>
+  <rect x="800" y="191" width="40" height="20" rx="10" fill="#10b981"/>
+  <circle cx="830" cy="201" r="8" fill="#ffffff"/>
+
+  <rect x="440" y="230" width="420" height="42" rx="8" fill="#1f293d"/>
+  <text x="460" y="255" fill="#cbd5e1" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="12" font-weight="600">Modify AI Training &amp; Persona Settings</text>
+  <rect x="800" y="241" width="40" height="20" rx="10" fill="#374151"/>
+  <circle cx="810" cy="251" r="8" fill="#94a3b8"/>
+</svg>

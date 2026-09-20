@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 480" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b0f19"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="widgetGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7C3AED"/>
+      <stop offset="100%" stop-color="#5B21B6"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="900" height="480" rx="16" fill="url(#bgGrad)"/>
+  <rect width="898" height="478" x="1" y="1" rx="15" fill="none" stroke="#ffffff" stroke-opacity="0.1" stroke-width="1"/>
+
+  <!-- Top Bar -->
+  <rect x="20" y="20" width="860" height="44" rx="10" fill="#182234" stroke="#ffffff" stroke-opacity="0.08"/>
+  <text x="40" y="47" fill="#ffffff" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="14" font-weight="700">Web Embed Widget SDK Integration &amp; Config</text>
+
+  <!-- Left: Embed Code -->
+  <rect x="20" y="80" width="480" height="375" rx="12" fill="#111827" stroke="#374151"/>
+  <text x="40" y="110" fill="#c084fc" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="14" font-weight="700">HTML Embed Code (<script>)</text>
+
+  <rect x="40" y="130" width="440" height="200" rx="8" fill="#1f293d"/>
+  <text x="55" y="160" fill="#a7f3d0" font-family="monospace" font-size="11">&lt;!-- ZiniChat Live Chat Widget SDK --&gt;</text>
+  <text x="55" y="185" fill="#a78bfa" font-family="monospace" font-size="11">&lt;script src="https://zinichat.com/widget.js"</text>
+  <text x="70" y="210" fill="#a78bfa" font-family="monospace" font-size="11">data-token="622de982-7993-4778-b7c6..."</text>
+  <text x="70" y="235" fill="#a78bfa" font-family="monospace" font-size="11">data-color="#7C3AED"</text>
+  <text x="70" y="260" fill="#a78bfa" font-family="monospace" font-size="11">data-heading="Chat with us"</text>
+  <text x="55" y="285" fill="#a78bfa" font-family="monospace" font-size="11">&gt;&lt;/script&gt;</text>
+
+  <rect x="40" y="350" width="440" height="40" rx="8" fill="#7C3AED"/>
+  <text x="260" y="375" text-anchor="middle" fill="#ffffff" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="13" font-weight="700">Copy Embed Code</text>
+
+  <!-- Right: Floating Preview -->
+  <rect x="520" y="80" width="360" height="375" rx="12" fill="#111827" stroke="#374151"/>
+  <text x="540" y="110" fill="#ffffff" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="14" font-weight="700">Live Website Preview</text>
+
+  <!-- Simulated Chat Box -->
+  <rect x="550" y="140" width="300" height="230" rx="12" fill="#1f293d" stroke="#374151"/>
+  <rect x="550" y="140" width="300" height="45" rx="12" fill="url(#widgetGrad)"/>
+  <text x="570" y="167" fill="#ffffff" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="13" font-weight="700">Chat with us 👋</text>
+
+  <rect x="565" y="195" width="200" height="35" rx="10" fill="#374151"/>
+  <text x="580" y="217" fill="#e2e8f0" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="11">Hello! How can we help you today?</text>
+
+  <!-- Floating Trigger Button -->
+  <circle cx="810" cy="410" r="24" fill="url(#widgetGrad)"/>
+  <path d="M802 410h16v-2h-16z" fill="#ffffff"/>
+</svg>

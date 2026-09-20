@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 480" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b0f19"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="greenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1F824A"/>
+      <stop offset="100%" stop-color="#145932"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="900" height="480" rx="16" fill="url(#bgGrad)"/>
+  <rect width="898" height="478" x="1" y="1" rx="15" fill="none" stroke="#ffffff" stroke-opacity="0.1" stroke-width="1"/>
+
+  <!-- Top Navigation Header -->
+  <rect x="20" y="20" width="860" height="44" rx="10" fill="#182234" stroke="#ffffff" stroke-opacity="0.08"/>
+  <text x="40" y="47" fill="#ffffff" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="14" font-weight="700">AI Assistant Settings &amp; Knowledge Training</text>
+  <rect x="730" y="28" width="130" height="28" rx="6" fill="url(#greenGrad)"/>
+  <text x="795" y="46" text-anchor="middle" fill="#ffffff" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="12" font-weight="600">Save Persona</text>
+
+  <!-- Left Side: System Prompt / Persona -->
+  <rect x="40" y="85" width="410" height="365" rx="12" fill="#111827" stroke="#374151" stroke-width="1"/>
+  <text x="60" y="115" fill="#10b981" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="15" font-weight="700">1. AI Persona &amp; Instructions</text>
+  <text x="60" y="135" fill="#94a3b8" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="12">Define brand voice, tone, and customer handling rules</text>
+  
+  <rect x="60" y="155" width="370" height="230" rx="8" fill="#1f293d" stroke="#374151"/>
+  <text x="75" y="180" fill="#a7f3d0" font-family="monospace" font-size="12">You are ZiniBot, polite sales assistant for Demo Store.</text>
+  <text x="75" y="205" fill="#cbd5e1" font-family="monospace" font-size="12">- Greet customers warmly with "Hello/Assalamu Alaikum".</text>
+  <text x="75" y="230" fill="#cbd5e1" font-family="monospace" font-size="12">- Help customers explore products and make orders.</text>
+  <text x="75" y="255" fill="#cbd5e1" font-family="monospace" font-size="12">- If user asks about delivery time, state 24-48 hours.</text>
+  <text x="75" y="280" fill="#cbd5e1" font-family="monospace" font-size="12">- Keep answers concise, helpful, and natural.</text>
+
+  <rect x="60" y="395" width="370" height="36" rx="8" fill="#10b981" fill-opacity="0.15" stroke="#10b981" stroke-opacity="0.3"/>
+  <text x="245" y="418" text-anchor="middle" fill="#34d399" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="12" font-weight="600">✓ AI Auto-Reply Enabled on Inbox</text>
+
+  <!-- Right Side: Quick Q&A Knowledge Base -->
+  <rect x="470" y="85" width="390" height="365" rx="12" fill="#111827" stroke="#374151" stroke-width="1"/>
+  <text x="490" y="115" fill="#EE8D27" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="15" font-weight="700">2. Quick Q&amp;A Knowledge Base</text>
+  <text x="490" y="135" fill="#94a3b8" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="12">Add instant answers for common questions</text>
+
+  <!-- QnA Item 1 -->
+  <rect x="490" y="155" width="350" height="85" rx="8" fill="#1f293d" stroke="#374151"/>
+  <text x="505" y="178" fill="#fdba74" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="12" font-weight="700">Q: ডেলিভারি চার্জ কত?</text>
+  <text x="505" y="200" fill="#cbd5e1" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="12">A: ঢাকার ভিতরে ৭০ টাকা, ঢাকার বাইরে ১২০ টাকা।</text>
+  <text x="505" y="222" fill="#64748b" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="11">Tags: delivery, charge, shipping</text>
+
+  <!-- QnA Item 2 -->
+  <rect x="490" y="250" width="350" height="85" rx="8" fill="#1f293d" stroke="#374151"/>
+  <text x="505" y="273" fill="#fdba74" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="12" font-weight="700">Q: রিটার্ন বা পলিসি কী?</text>
+  <text x="505" y="295" fill="#cbd5e1" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="12">A: পণ্য গ্রহণের ৩ দিনের মধ্যে রিটার্ন প্রযোজ্য।</text>
+  <text x="505" y="317" fill="#64748b" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="11">Tags: return, policy, refund</text>
+
+  <!-- Add QnA Button -->
+  <rect x="490" y="345" width="350" height="38" rx="8" fill="#EE8D27" fill-opacity="0.2" stroke="#EE8D27" stroke-opacity="0.5"/>
+  <text x="665" y="369" text-anchor="middle" fill="#fb923c" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="13" font-weight="700">+ Add New Q&amp;A</text>
+</svg>
