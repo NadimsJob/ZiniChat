@@ -153,6 +153,14 @@ export class TenantTeamService {
           permissions: true,
           specializationTags: true,
           createdAt: true,
+          presence: {
+            select: { status: true, updatedAt: true }
+          },
+          loginLogs: {
+            select: { createdAt: true },
+            orderBy: { createdAt: 'desc' },
+            take: 1
+          },
           channelAssignments: {
             select: { channelConnectionId: true }
           }
@@ -162,7 +170,13 @@ export class TenantTeamService {
       this.getEffectiveSeatLimit(tenantId)
     ]);
 
-    return { users, seatLimit: seatInfo.limit, seatUsed: seatInfo.used };
+    const formattedUsers = users.map(u => ({
+      ...u,
+      presenceStatus: u.presence?.status || 'offline',
+      lastLoginAt: u.loginLogs?.[0]?.createdAt || null,
+    }));
+
+    return { users: formattedUsers, seatLimit: seatInfo.limit, seatUsed: seatInfo.used };
   }
 
   async findOne(tenantId: string, id: string) {
@@ -177,13 +191,71 @@ export class TenantTeamService {
         permissions: true,
         specializationTags: true,
         createdAt: true,
+        presence: {
+          select: { status: true, updatedAt: true }
+        },
+        loginLogs: {
+          select: { createdAt: true },
+          orderBy: { createdAt: 'desc' },
+          take: 1
+        },
         channelAssignments: {
           select: { channelConnectionId: true }
         }
       }
     });
     if (!user) throw new NotFoundException('User not found');
-    return user;
+    return {
+      ...user,
+      presenceStatus: user.presence?.status || 'offline',
+      lastLoginAt: user.loginLogs?.[0]?.createdAt || null,
+    };
+  }
+
+  async getMemberActivityStats(tenantId: string, id: string) {
+    const user = await this.findOne(tenantId, id);
+
+    const [handledConvs, assignedContacts, recentLogins] = await Promise.all([
+      this.prisma.conversation.count({
+        where: { tenantId, assignedAgentId: id }
+      }),
+      this.prisma.contact.count({
+        where: { tenantId, assignedUserId: id }
+      }),
+      this.prisma.loginLog.findMany({
+        where: { userId: id },
+        select: {
+          id: true,
+          ipAddress: true,
+          browser: true,
+          os: true,
+          deviceType: true,
+          status: true,
+          createdAt: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 5
+      })
+    ]);
+
+    return {
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        presenceStatus: user.presenceStatus,
+        lastLoginAt: user.lastLoginAt,
+        specializationTags: user.specializationTags,
+        permissions: user.permissions,
+        agentAccessMode: user.agentAccessMode,
+      },
+      stats: {
+        handledConversationsCount: handledConvs,
+        assignedContactsCount: assignedContacts,
+      },
+      recentLogins,
+    };
   }
 
   async updateAgent(tenantId: string, id: string, data: any) {

@@ -28,6 +28,12 @@ export class TenantTeamController {
     return this.tenantTeamService.findOne(tenantId, id);
   }
 
+  @Get(':id/stats')
+  getMemberActivityStats(@Request() req: any, @Param('id') id: string) {
+    const tenantId = req.user.tenantId;
+    return this.tenantTeamService.getMemberActivityStats(tenantId, id);
+  }
+
   @Patch(':id')
   @Roles('owner', 'admin') // Only tenant owners and admins can update agents
   update(@Request() req: any, @Param('id') id: string, @Body() updateData: any) {

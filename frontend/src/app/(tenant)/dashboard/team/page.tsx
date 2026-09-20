@@ -6,7 +6,7 @@ import Cookies from 'js-cookie';
 import {
   Users, Plus, Shield, ShieldCheck, Mail, X, Edit2, Trash2, Crown, Save,
   CheckCircle2, Lock, Wifi, LayoutDashboard, Megaphone, ShoppingCart, ShoppingBag, Settings,
-  Brain, CreditCard, UserCog, Inbox, Tag, MessageSquare
+  Brain, CreditCard, UserCog, Inbox, Tag, MessageSquare, BarChart2, Clock, Globe
 } from 'lucide-react';
 import InstructionBanner from '@/components/InstructionBanner';
 
@@ -35,6 +35,29 @@ export default function TeamPage() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAgent, setEditingAgent] = useState<any>(null);
+  const [statsAgent, setStatsAgent] = useState<any>(null);
+  const [statsData, setStatsData] = useState<any>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+
+  const openStatsModal = async (agent: any) => {
+    setStatsAgent(agent);
+    setStatsLoading(true);
+    setStatsData(null);
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/tenant/team/${agent.id}/stats`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setStatsData(data);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setStatsLoading(false);
+    }
+  };
 
   const [formData, setFormData] = useState({
     name: '',
@@ -251,13 +274,38 @@ export default function TeamPage() {
                   <tr key={agent.id} className="hover:bg-muted/30 transition-colors">
                     <td className="px-3 py-2">
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-[12px] uppercase shrink-0">
-                          {agent.name.substring(0, 2)}
+                        <div className="relative shrink-0">
+                          <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-[12px] uppercase">
+                            {agent.name.substring(0, 2)}
+                          </div>
+                          <span
+                            className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-card ${
+                              agent.presenceStatus === 'available'
+                                ? 'bg-emerald-500 animate-pulse'
+                                : agent.presenceStatus === 'busy'
+                                ? 'bg-amber-500'
+                                : agent.presenceStatus === 'away'
+                                ? 'bg-orange-500'
+                                : 'bg-slate-400'
+                            }`}
+                            title={`Status: ${agent.presenceStatus || 'offline'}`}
+                          />
                         </div>
                         <div>
-                          <div className="text-[13px] font-semibold text-foreground flex items-center gap-1">
-                            {agent.name}
+                          <div className="text-[13px] font-semibold text-foreground flex items-center gap-1.5">
+                            <span>{agent.name}</span>
                             {agent.role === 'owner' && <Crown className="w-3 h-3 text-amber-500" />}
+                            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold uppercase ${
+                              agent.presenceStatus === 'available'
+                                ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
+                                : agent.presenceStatus === 'busy'
+                                ? 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
+                                : agent.presenceStatus === 'away'
+                                ? 'bg-orange-500/10 text-orange-600 border border-orange-500/20'
+                                : 'bg-slate-500/10 text-slate-500 border border-slate-500/20'
+                            }`}>
+                              {agent.presenceStatus || 'offline'}
+                            </span>
                           </div>
                           <div className="text-[11px] text-muted-foreground">{agent.email}</div>
                           {agent.specializationTags?.length > 0 && (
@@ -307,6 +355,13 @@ export default function TeamPage() {
                     </td>
                     <td className="px-3 py-2 text-right">
                       <div className="flex items-center gap-1 justify-end">
+                        <button
+                          onClick={() => openStatsModal(agent)}
+                          title={language === 'en' ? 'View Activity & Stats' : 'অ্যাক্টিভিটি ও স্ট্যাটস দেখুন'}
+                          className="p-1.5 text-muted-foreground hover:text-emerald-500 hover:bg-emerald-500/10 rounded-lg transition-colors cursor-pointer"
+                        >
+                          <BarChart2 className="w-3.5 h-3.5" />
+                        </button>
                         {agent.role !== 'owner' && (
                           <>
                             <button
@@ -595,6 +650,137 @@ export default function TeamPage() {
                   ? <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   : <Save className="w-3.5 h-3.5" />}
                 {language === 'en' ? 'Save Member' : 'সেইভ করুন'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Activity & Stats Summary Modal */}
+      {statsAgent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-card border border-border rounded-2xl shadow-2xl w-[95vw] sm:w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-border shrink-0 bg-muted/20">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center font-bold text-xs">
+                  <BarChart2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h2 className="text-[15px] font-bold text-foreground flex items-center gap-1.5">
+                    {statsAgent.name}
+                    <span className="text-[11px] font-normal text-muted-foreground">({statsAgent.email})</span>
+                  </h2>
+                  <p className="text-[11px] text-muted-foreground">
+                    {language === 'en' ? 'Member Activity & Access Overview' : 'মেম্বার অ্যাক্টিভিটি ও অ্যাক্সেস ওভারভিউ'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setStatsAgent(null)}
+                className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-4 flex-1 overflow-y-auto space-y-4">
+              {statsLoading ? (
+                <div className="h-48 flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-7 w-7 border-b-2 border-emerald-500" />
+                </div>
+              ) : statsData ? (
+                <>
+                  {/* Status & Last Active Cards */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                    <div className="p-3 bg-muted/30 border border-border rounded-xl">
+                      <div className="text-[10px] text-muted-foreground font-semibold uppercase">
+                        {language === 'en' ? 'Presence' : 'স্ট্যাটাস'}
+                      </div>
+                      <div className="text-[13px] font-bold capitalize mt-0.5 flex items-center gap-1.5">
+                        <span className={`w-2 h-2 rounded-full ${
+                          statsData.user.presenceStatus === 'available' ? 'bg-emerald-500' : statsData.user.presenceStatus === 'busy' ? 'bg-amber-500' : 'bg-slate-400'
+                        }`} />
+                        {statsData.user.presenceStatus}
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-muted/30 border border-border rounded-xl">
+                      <div className="text-[10px] text-muted-foreground font-semibold uppercase">
+                        {language === 'en' ? 'Conversations' : 'ইনবক্স হ্যান্ডেল্ড'}
+                      </div>
+                      <div className="text-[15px] font-extrabold text-emerald-500 mt-0.5">
+                        {statsData.stats.handledConversationsCount}
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-muted/30 border border-border rounded-xl col-span-2 sm:col-span-1">
+                      <div className="text-[10px] text-muted-foreground font-semibold uppercase">
+                        {language === 'en' ? 'Assigned Leads' : 'অ্যাসাইনকৃত লিড'}
+                      </div>
+                      <div className="text-[15px] font-extrabold text-blue-500 mt-0.5">
+                        {statsData.stats.assignedContactsCount}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Last Login Timestamp */}
+                  <div className="p-3 bg-card border border-border rounded-xl flex items-center justify-between text-[12px]">
+                    <span className="text-muted-foreground flex items-center gap-1.5 font-medium">
+                      <Clock className="w-3.5 h-3.5 text-primary" />
+                      {language === 'en' ? 'Last Active Login:' : 'সর্বশেষ লগইন:'}
+                    </span>
+                    <span className="font-bold text-foreground">
+                      {statsData.user.lastLoginAt
+                        ? new Date(statsData.user.lastLoginAt).toLocaleString(language === 'en' ? 'en-US' : 'bn-BD')
+                        : (language === 'en' ? 'Never logged in' : 'লগইন রেকর্ড নেই')}
+                    </span>
+                  </div>
+
+                  {/* Login Log History */}
+                  <div>
+                    <h4 className="text-[12px] font-bold text-foreground mb-2 flex items-center gap-1.5">
+                      <Globe className="w-3.5 h-3.5 text-primary" />
+                      {language === 'en' ? 'Recent Login Sessions' : 'সাম্প্রতিক লগইন সেশন'}
+                    </h4>
+                    {statsData.recentLogins?.length > 0 ? (
+                      <div className="border border-border rounded-xl overflow-hidden divide-y divide-border/50 text-[11px]">
+                        {statsData.recentLogins.map((log: any) => (
+                          <div key={log.id} className="p-2.5 flex items-center justify-between bg-muted/10">
+                            <div>
+                              <div className="font-semibold text-foreground">
+                                {log.browser || 'Browser'} / {log.os || 'OS'} ({log.deviceType || 'Desktop'})
+                              </div>
+                              <div className="text-[10px] text-muted-foreground">
+                                IP: {log.ipAddress}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <span className="px-1.5 py-0.5 bg-emerald-500/10 text-emerald-600 rounded font-bold text-[10px]">
+                                {log.status}
+                              </span>
+                              <div className="text-[10px] text-muted-foreground mt-0.5">
+                                {new Date(log.createdAt).toLocaleDateString()}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-3 bg-muted/20 border border-border rounded-xl text-[11px] text-muted-foreground text-center">
+                        {language === 'en' ? 'No recent login history logged.' : 'কোনো সাম্প্রতিক লগইন হিস্ট্রি নেই।'}
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : null}
+            </div>
+
+            <div className="px-4 py-3 border-t border-border bg-muted/30 flex justify-end rounded-b-2xl shrink-0">
+              <button
+                onClick={() => setStatsAgent(null)}
+                className="px-4 py-1.5 bg-primary hover:bg-primary/90 text-white rounded-xl text-[12px] font-bold transition-all shadow-md"
+              >
+                {language === 'en' ? 'Close' : 'বন্ধ করুন'}
               </button>
             </div>
           </div>
