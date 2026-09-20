@@ -21,9 +21,8 @@ export default function AiTrainingReminderPopup({
   useEffect(() => {
     // Check if dismissed
     if (typeof window !== 'undefined' && setupStatus) {
-      const isDismissedPerm = localStorage.getItem('zinichat_wizard_seen') === 'true';
       const isDismissedSession = sessionStorage.getItem('wizard_dismissed_session') === 'true';
-      if (isDismissedPerm || isFullyDone) return;
+      if (isFullyDone) return;
       
       // Delay to avoid jumping on initial load
       const initialTimer = setTimeout(() => {

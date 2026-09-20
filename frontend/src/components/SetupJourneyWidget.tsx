@@ -77,8 +77,8 @@ export default function SetupJourneyWidget({
   if (loading) return null;
 
   const step1Done = Boolean(status?.hasConnectedChannel);
-  const step2Done = Boolean(status?.hasConfiguredAi || status?.hasNamedAgent || status?.hasCreatedProduct);
-  const step3Done = Boolean(status?.hasCreatedLead || status?.hasInvitedTeam || checkedInbox);
+  const step2Done = Boolean(status?.hasConfiguredAi && (status?.aiTrainingScore >= 50));
+  const step3Done = Boolean(checkedInbox || status?.hasCreatedLead);
 
   const steps = [
     {

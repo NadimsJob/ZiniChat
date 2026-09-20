@@ -609,7 +609,18 @@ export class AuthService {
 
     const [tenant, channelCount, aiAssistant, productCount, qnaCount, leadCount, userCount] = await Promise.all([
       this.prisma.tenant.findUnique({ where: { id: tenantId }, select: { isOnboarded: true, businessNature: true } }),
-      this.prisma.channelConnection.count({ where: { tenantId } }),
+      this.prisma.channelConnection.count({ 
+        where: { 
+          tenantId,
+          status: 'active',
+          NOT: {
+            AND: [
+              { provider: 'BAILEYS' },
+              { qrStatus: { not: 'CONNECTED' } }
+            ]
+          }
+        } 
+      }),
       this.prisma.aiAssistant.findFirst({ where: { tenantId } }),
       this.prisma.product.count({ where: { tenantId } }),
       this.prisma.qnAKnowledgeBase.count({ where: { tenantId } }),
