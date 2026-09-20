@@ -14,22 +14,13 @@ export default function AiTrainingReminderPopup({
   const router = useRouter();
   const [show, setShow] = useState(false);
 
-  // If no status loaded, return null
-  if (!setupStatus) return null;
-
-  const {
-    hasConnectedChannel,
-    hasConfiguredAi,
-    hasCreatedProduct,
-    businessNature,
-    aiTrainingScore
-  } = setupStatus;
-
-  const isFullyDone = hasConnectedChannel && hasConfiguredAi && hasCreatedProduct && aiTrainingScore >= 50;
+  const isFullyDone = setupStatus 
+    ? (setupStatus.hasConnectedChannel && setupStatus.hasConfiguredAi && setupStatus.hasCreatedProduct && setupStatus.aiTrainingScore >= 50)
+    : false;
 
   useEffect(() => {
     // Check if dismissed
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && setupStatus) {
       const isDismissedPerm = localStorage.getItem('zinichat_wizard_seen') === 'true';
       const isDismissedSession = sessionStorage.getItem('wizard_dismissed_session') === 'true';
       if (isDismissedPerm || isFullyDone) return;
@@ -49,9 +40,17 @@ export default function AiTrainingReminderPopup({
         clearInterval(interval);
       };
     }
-  }, [isFullyDone]);
+  }, [isFullyDone, setupStatus]);
 
-  if (!show) return null;
+  if (!setupStatus || !show) return null;
+
+  const {
+    hasConnectedChannel,
+    hasConfiguredAi,
+    hasCreatedProduct,
+    businessNature,
+    aiTrainingScore
+  } = setupStatus;
 
   const handleDismiss = () => {
     if (typeof window !== 'undefined') {
