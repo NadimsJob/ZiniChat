@@ -301,15 +301,25 @@ export default function InboxPage() {
       setConversations(prev => {
         const convIndex = prev.findIndex(c => c.id === data.conversationId);
         if (convIndex > -1) {
-          const updatedConv = { ...prev[convIndex], lastMessageAt: new Date().toISOString() };
+          const existingConv = prev[convIndex];
+          const updatedConv = {
+            ...existingConv,
+            lastMessageAt: data.message?.createdAt || new Date().toISOString(),
+            messages: data.message ? [data.message, ...(existingConv.messages || []).filter((m: any) => m.id !== data.message.id)] : existingConv.messages
+          };
           if (data.contact) updatedConv.contact = { ...updatedConv.contact, ...data.contact };
           const newConvs = [...prev];
           newConvs.splice(convIndex, 1);
           newConvs.unshift(updatedConv);
           return newConvs;
         } else if (data.conversation) {
-          if (prev.some(c => c.id === data.conversation.id)) return prev;
-          return [data.conversation, ...prev];
+          const newConv = {
+            ...data.conversation,
+            contact: data.contact || data.conversation.contact,
+            messages: data.message ? [data.message] : (data.conversation.messages || [])
+          };
+          if (prev.some(c => c.id === newConv.id)) return prev;
+          return [newConv, ...prev];
         }
         return prev;
       });
