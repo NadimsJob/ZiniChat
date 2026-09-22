@@ -20,7 +20,7 @@ export class MetaAdsAccountController {
     return this.metaAdsAccountService.handleCallback(body.code, tenantId, body.redirectUri);
   }
 
-  @Get()
+  @Get(['', 'accounts'])
   async getConnectedAccounts(@Req() req: any) {
     const tenantId = (req.user as any).tenantId;
     return this.metaAdsAccountService.getConnectedAccounts(tenantId);
