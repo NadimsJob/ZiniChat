@@ -593,6 +593,7 @@ export default function PackagesPage() {
                     { id: 'ai_tool_product_matching', label: 'AI Tool: Product Photo Matching', labelBn: 'এআই টুল: প্রোডাক্ট ফটো ম্যাচিং' },
                     { id: 'capi_hub', label: 'Server-Side Tracking (CAPI)', labelBn: 'সার্ভার-সাইড ট্র্যাকিং (CAPI)' },
                     { id: 'meta_ads_agent', label: 'Ads Copilot AI', labelBn: 'অ্যাডস কোপাইলট এআই' },
+                    { id: 'meta_ads_account', label: 'Meta Ads Account Connection', labelBn: 'মেটা অ্যাডস অ্যাকাউন্ট ইন্টিগ্রেশন' },
                     { id: 'ads_auto_scaling', label: 'Ads Auto-Scaling', labelBn: 'অ্যাডস অটো-স্কেলিং' }
                   ].map(feature => (
                     <label key={feature.id} className="flex items-center gap-2 cursor-pointer bg-background border border-surface-hover p-3 rounded-xl hover:border-primary/50 transition-colors">

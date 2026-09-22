@@ -234,7 +234,6 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
         { name: language === 'en' ? 'Meta Marketing API' : 'মেটা মার্কেটিং এপিআই', icon: Globe, href: '/sp@dmin/settings/meta-marketing-api', show: hasPermission('view:settings') },
         { name: language === 'en' ? 'Meta Pixel & CAPI' : 'মেটা পিক্সেল ও CAPI', icon: Activity, href: '/sp@dmin/settings/meta-pixel', show: hasPermission('view:settings') },
         { name: language === 'en' ? 'Google Analytics' : 'গুগল অ্যানালিটিক্স', icon: BarChart3, href: '/sp@dmin/settings/google-analytics', show: hasPermission('view:settings') },
-        { name: language === 'en' ? 'Feature Rollout' : 'ফিচার রোলআউট', icon: Layers, href: '/sp@dmin/settings/feature-rollout', show: hasPermission('view:settings') },
       ].filter(sub => sub.show)
     }
   ];
