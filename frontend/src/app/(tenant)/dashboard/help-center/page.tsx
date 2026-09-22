@@ -97,7 +97,7 @@ export default function HelpCenterPage() {
                 }`}
               >
                 <Icon className="w-5 h-5" />
-                <span>{language === 'en' ? cat.labelEn : cat.labelBn}</span>
+                <span>{cat.labelEn}</span>
               </button>
             );
           })}
@@ -117,7 +117,7 @@ export default function HelpCenterPage() {
               </button>
 
               <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
-                {language === 'en' ? selectedArticle.titleEn : selectedArticle.titleBn}
+                {selectedArticle.titleEn}
               </h1>
 
               {/* Badges / Metadata */}
@@ -146,7 +146,7 @@ export default function HelpCenterPage() {
                     a: ({node, ...props}) => <a className="text-primary hover:underline" {...props} />
                   }}
                 >
-                  {language === 'en' ? selectedArticle.contentEn : selectedArticle.contentBn}
+                  {selectedArticle.contentEn}
                 </ReactMarkdown>
               </div>
 
@@ -185,10 +185,10 @@ export default function HelpCenterPage() {
                     >
                       <div className="flex-1">
                         <h3 className="font-bold text-foreground group-hover:text-primary transition-colors mb-2 text-lg">
-                          {language === 'en' ? doc.titleEn : doc.titleBn}
+                          {doc.titleEn}
                         </h3>
                         <p className="text-sm text-muted-foreground line-clamp-2">
-                          {language === 'en' ? doc.excerptEn : doc.excerptBn}
+                          {doc.excerptEn}
                         </p>
                       </div>
                       <div className="mt-4 pt-4 border-t border-surface-hover flex items-center justify-between text-xs text-muted-foreground">
@@ -202,7 +202,7 @@ export default function HelpCenterPage() {
                               <>
                                 {/* @ts-ignore */}
                                 <Icon className="w-3.5 h-3.5" />
-                                {language === 'en' ? cat.labelEn : cat.labelBn}
+                                {cat.labelEn}
                               </>
                             );
                           })()}

@@ -21,7 +21,7 @@ export const helpCategories: { id: DocCategory; labelEn: string; labelBn: string
   { id: 'sales-ecommerce', labelEn: 'Sales & E-Commerce', labelBn: 'Sales & E-Commerce', icon: 'ShoppingBag' },
   { id: 'billing-quotas', labelEn: 'Billing & Quotas', labelBn: 'Billing & Quotas', icon: 'CreditCard' },
   { id: 'settings', labelEn: 'Settings & Team', labelBn: 'Settings & Team', icon: 'Settings' },
-  { id: 'marketing-ads', labelEn: 'Marketing & Ads', labelBn: 'মার্কেটিং ও এডস', icon: 'Megaphone' }
+  { id: 'marketing-ads', labelEn: 'Marketing & Ads', labelBn: 'Marketing & Ads', icon: 'Megaphone' }
 ];
 
 export const helpDocs: HelpArticle[] = [
