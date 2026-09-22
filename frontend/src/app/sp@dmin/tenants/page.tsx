@@ -251,7 +251,7 @@ export default function TenantsPage() {
       customWebsiteWidgetLimit: tenant.customWebsiteWidgetLimit !== null && tenant.customWebsiteWidgetLimit !== undefined ? String(tenant.customWebsiteWidgetLimit) : (tenant.basePlan?.websiteWidgetLimit !== undefined ? String(tenant.basePlan.websiteWidgetLimit) : ''),
       customProductCatalogLimit: tenant.customProductCatalogLimit !== null && tenant.customProductCatalogLimit !== undefined ? String(tenant.customProductCatalogLimit) : (tenant.basePlan?.productCatalogLimit !== undefined ? String(tenant.basePlan.productCatalogLimit) : ''),
       customContactsLimit: tenant.customContactsLimit !== null && tenant.customContactsLimit !== undefined ? String(tenant.customContactsLimit) : (tenant.basePlan?.contactsLimit !== undefined && tenant.basePlan?.contactsLimit !== null ? String(tenant.basePlan.contactsLimit) : ''),
-      billingCycleStart: tenant.trialEndsAt ? new Date(tenant.trialEndsAt).toISOString().split('T')[0] : '',
+      billingCycleStart: (tenant.trialEndsAt || tenant.currentPeriodEnd) ? new Date(tenant.trialEndsAt || tenant.currentPeriodEnd).toISOString().split('T')[0] : '',
       customAllowByok: tenant.customAllowByok ?? (tenant.basePlan?.allowByok ?? false),
       customFeatures: activeFeatures,
       hasFeaturesOverride: tenant.customFeatures !== null,

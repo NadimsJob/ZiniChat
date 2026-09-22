@@ -156,21 +156,21 @@ export default function MetaMarketingApiPage() {
 
   return (
     <div className="space-y-6 pb-20">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-white flex items-center gap-2">
+          <h1 className="text-2xl font-semibold text-slate-900 dark:text-white flex items-center gap-2">
             <Globe className="w-6 h-6 text-brand-green" />
             Meta Marketing API Configuration
           </h1>
-          <p className="text-sm text-text-secondary mt-1">
+          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
             Configure system-wide Meta Marketing API credentials for MCP Ads Agent.
           </p>
         </div>
-        <div className="flex items-center gap-3 bg-surface/50 border border-white/10 px-4 py-2 rounded-lg">
-          <span className="text-sm font-medium text-white">Master Kill-Switch</span>
+        <div className="flex items-center gap-3 bg-white dark:bg-surface/50 border border-slate-200 dark:border-white/10 px-4 py-2 rounded-lg shadow-sm">
+          <span className="text-sm font-medium text-slate-900 dark:text-white">Master Kill-Switch</span>
           <button
             onClick={() => setForm({ ...form, isEnabled: !form.isEnabled })}
-            className={`w-12 h-6 rounded-full transition-colors relative ${form.isEnabled ? 'bg-brand-green' : 'bg-surface-light border border-white/10'}`}
+            className={`w-12 h-6 rounded-full transition-colors relative ${form.isEnabled ? 'bg-brand-green' : 'bg-slate-300 dark:bg-surface-light border border-slate-300 dark:border-white/10'}`}
           >
             <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${form.isEnabled ? 'left-7' : 'left-1'}`} />
           </button>
@@ -178,93 +178,93 @@ export default function MetaMarketingApiPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <form onSubmit={handleSave} className="space-y-6 bg-surface/70 backdrop-blur-xl border border-white/10 rounded-xl p-6">
-          <h2 className="text-lg font-medium text-white flex items-center gap-2 mb-4">
+        <form onSubmit={handleSave} className="space-y-6 bg-white dark:bg-surface/70 backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-xl p-6 shadow-sm">
+          <h2 className="text-lg font-medium text-slate-900 dark:text-white flex items-center gap-2 mb-4">
             <Zap className="w-5 h-5 text-brand-orange" />
             Core Configuration
           </h2>
 
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-text-secondary mb-1">App ID</label>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">App ID</label>
               <input
                 type="text"
                 value={form.appId}
                 onChange={e => setForm({ ...form, appId: e.target.value })}
-                className="w-full bg-surface-light border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-green"
+                className="w-full bg-slate-50 dark:bg-surface-light border border-slate-300 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-brand-green"
                 placeholder="Meta App ID"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-text-secondary mb-1">App Secret</label>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">App Secret</label>
               <input
                 type="password"
                 value={form.appSecret}
                 onChange={e => setForm({ ...form, appSecret: e.target.value })}
-                className="w-full bg-surface-light border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-green"
+                className="w-full bg-slate-50 dark:bg-surface-light border border-slate-300 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-brand-green"
                 placeholder="Leave blank to keep existing"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-text-secondary mb-1">Graph API Version</label>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Graph API Version</label>
               <input
                 type="text"
                 value={form.apiVersion}
                 onChange={e => setForm({ ...form, apiVersion: e.target.value })}
-                className="w-full bg-surface-light border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-green"
+                className="w-full bg-slate-50 dark:bg-surface-light border border-slate-300 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-brand-green"
                 placeholder="v21.0"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-text-secondary mb-1">System User Token</label>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">System User Token</label>
               <input
                 type="password"
                 value={form.systemUserToken}
                 onChange={e => setForm({ ...form, systemUserToken: e.target.value })}
-                className="w-full bg-surface-light border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-green"
+                className="w-full bg-slate-50 dark:bg-surface-light border border-slate-300 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-brand-green"
                 placeholder="Leave blank to keep existing"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-text-secondary mb-1">Webhook Verify Token</label>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Webhook Verify Token</label>
               <input
                 type="text"
                 value={form.webhookVerifyToken}
                 onChange={e => setForm({ ...form, webhookVerifyToken: e.target.value })}
-                className="w-full bg-surface-light border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-green"
+                className="w-full bg-slate-50 dark:bg-surface-light border border-slate-300 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-brand-green"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-medium text-text-secondary mb-1">Ad Run Unit Cost</label>
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Ad Run Unit Cost</label>
                 <input
                   type="number"
                   value={form.adRunUnitCost}
                   onChange={e => setForm({ ...form, adRunUnitCost: parseInt(e.target.value) || 0 })}
-                  className="w-full bg-surface-light border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-green"
+                  className="w-full bg-slate-50 dark:bg-surface-light border border-slate-300 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-brand-green"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-text-secondary mb-1">Auto Scale Unit Cost</label>
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Auto Scale Unit Cost</label>
                 <input
                   type="number"
                   value={form.autoScaleUnitCost}
                   onChange={e => setForm({ ...form, autoScaleUnitCost: parseInt(e.target.value) || 0 })}
-                  className="w-full bg-surface-light border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-green"
+                  className="w-full bg-slate-50 dark:bg-surface-light border border-slate-300 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-brand-green"
                 />
               </div>
             </div>
           </div>
 
           {status && (
-            <div className={`p-3 rounded-lg text-sm flex items-center gap-2 ${status.type === 'success' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
+            <div className={`p-3 rounded-lg text-sm flex items-center gap-2 ${status.type === 'success' ? 'bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20'}`}>
               {status.type === 'success' ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
               {status.message}
             </div>
           )}
 
-          <div className="flex items-center gap-3 pt-4 border-t border-white/10">
+          <div className="flex items-center gap-3 pt-4 border-t border-slate-200 dark:border-white/10">
             <button
               type="submit"
               disabled={saving}
@@ -278,59 +278,59 @@ export default function MetaMarketingApiPage() {
               type="button"
               onClick={handleTestConnection}
               disabled={testing || !form.appId}
-              className="px-4 py-2 bg-surface-light border border-white/10 hover:border-white/20 text-white rounded-lg font-medium text-sm transition-colors disabled:opacity-50"
+              className="px-4 py-2 bg-slate-100 dark:bg-surface-light border border-slate-300 dark:border-white/10 hover:border-slate-400 dark:hover:border-white/20 text-slate-900 dark:text-white rounded-lg font-medium text-sm transition-colors disabled:opacity-50"
             >
               {testing ? 'Testing...' : 'Test Connection'}
             </button>
           </div>
 
           {testResult && (
-            <div className={`p-3 rounded-lg text-sm mt-4 border ${testResult.success ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}>
+            <div className={`p-3 rounded-lg text-sm mt-4 border ${testResult.success ? 'bg-green-500/10 border-green-500/20 text-green-600 dark:text-green-400' : 'bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400'}`}>
               <div className="flex items-center gap-2 mb-1">
                 {testResult.success ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
                 <span className="font-medium">{testResult.success ? 'Connection Successful' : 'Connection Failed'}</span>
               </div>
-              <p className="text-xs opacity-80">{testResult.message}</p>
-              {testResult.timestamp && <p className="text-[10px] opacity-60 mt-2">Tested at: {testResult.timestamp}</p>}
+              <p className="text-xs opacity-90">{testResult.message}</p>
+              {testResult.timestamp && <p className="text-[10px] opacity-70 mt-2">Tested at: {testResult.timestamp}</p>}
             </div>
           )}
         </form>
 
-        <div className="space-y-6 bg-surface/70 backdrop-blur-xl border border-white/10 rounded-xl p-6">
-          <h2 className="text-lg font-medium text-white flex items-center gap-2 mb-4">
+        <div className="space-y-6 bg-white dark:bg-surface/70 backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-xl p-6 shadow-sm">
+          <h2 className="text-lg font-medium text-slate-900 dark:text-white flex items-center gap-2 mb-4">
             <List className="w-5 h-5 text-brand-green" />
             MCP Tool Registry
           </h2>
-          <p className="text-xs text-text-secondary mb-4">
+          <p className="text-xs text-slate-600 dark:text-slate-400 mb-4">
             Enable or disable specific tools for the AI Ads Copilot. This gives you granular control over what the AI is allowed to do.
           </p>
 
           <div className="space-y-3">
             {tools.map((tool) => (
-              <div key={tool.id} className="flex items-center justify-between p-3 bg-surface-light border border-white/10 rounded-lg">
+              <div key={tool.id} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-surface-light border border-slate-200 dark:border-white/10 rounded-lg">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-white">{tool.displayName}</span>
+                    <span className="text-sm font-medium text-slate-900 dark:text-white">{tool.displayName}</span>
                     <span className={`text-[10px] px-2 py-0.5 rounded-full ${
-                      tool.riskLevel === 'READ_ONLY' ? 'bg-green-500/20 text-green-400' :
-                      tool.riskLevel === 'WRITE_SPEND' ? 'bg-orange-500/20 text-orange-400' :
-                      'bg-red-500/20 text-red-400'
+                      tool.riskLevel === 'READ_ONLY' ? 'bg-green-500/20 text-green-600 dark:text-green-400' :
+                      tool.riskLevel === 'WRITE_SPEND' ? 'bg-orange-500/20 text-orange-600 dark:text-orange-400' :
+                      'bg-red-500/20 text-red-600 dark:text-red-400'
                     }`}>
                       {tool.riskLevel}
                     </span>
                   </div>
-                  <span className="text-[10px] text-text-secondary font-mono">{tool.toolKey}</span>
+                  <span className="text-[10px] text-slate-500 dark:text-text-secondary font-mono">{tool.toolKey}</span>
                 </div>
                 <button
                   onClick={() => toggleTool(tool.toolKey, !tool.isEnabled)}
-                  className={`w-10 h-5 rounded-full transition-colors relative ${tool.isEnabled ? 'bg-brand-green' : 'bg-surface border border-white/10'}`}
+                  className={`w-10 h-5 rounded-full transition-colors relative ${tool.isEnabled ? 'bg-brand-green' : 'bg-slate-300 dark:bg-surface border border-slate-300 dark:border-white/10'}`}
                 >
                   <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${tool.isEnabled ? 'left-[22px]' : 'left-0.5'}`} />
                 </button>
               </div>
             ))}
             {tools.length === 0 && (
-              <div className="text-center text-sm text-text-secondary py-8">
+              <div className="text-center text-sm text-slate-500 dark:text-text-secondary py-8">
                 No tools registered yet. Seed the database to populate this list.
               </div>
             )}

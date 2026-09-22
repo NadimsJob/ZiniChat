@@ -502,7 +502,45 @@ export class TenantsService {
     if (data.customContactsLimit !== undefined) updateData.customContactsLimit = data.customContactsLimit;
     if (data.customFeatures !== undefined) updateData.customFeatures = data.customFeatures === null ? Prisma.DbNull : data.customFeatures;
     if (data.customAllowByok !== undefined) updateData.customAllowByok = data.customAllowByok;
-    if (data.billingCycleStart !== undefined) updateData.trialEndsAt = new Date(data.billingCycleStart);
+    if (data.billingCycleStart !== undefined && data.billingCycleStart !== null && data.billingCycleStart !== '') {
+      let expiryDate = new Date(data.billingCycleStart);
+      if (typeof data.billingCycleStart === 'string' && data.billingCycleStart.length === 10) {
+        expiryDate = new Date(`${data.billingCycleStart}T23:59:59.999Z`);
+      }
+      updateData.trialEndsAt = expiryDate;
+
+      const latestSub = await this.prisma.subscription.findFirst({
+        where: { tenantId: id },
+        orderBy: { currentPeriodEnd: 'desc' },
+      });
+
+      const newStatus = expiryDate > new Date() ? 'active' : 'expired';
+
+      if (latestSub) {
+        await this.prisma.subscription.update({
+          where: { id: latestSub.id },
+          data: {
+            currentPeriodEnd: expiryDate,
+            status: newStatus,
+          },
+        });
+      } else {
+        const defaultPlan = await this.prisma.plan.findFirst({
+          where: { OR: [{ isDefault: true }, { priceMonthlyBdt: 0 }] }
+        });
+        if (defaultPlan) {
+          await this.prisma.subscription.create({
+            data: {
+              tenantId: id,
+              planId: defaultPlan.id,
+              status: newStatus,
+              currentPeriodStart: new Date(),
+              currentPeriodEnd: expiryDate,
+            }
+          });
+        }
+      }
+    }
 
     const updatedTenant = await this.prisma.tenant.update({
       where: { id },

@@ -25,20 +25,20 @@ export class CapiHubController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get('events/config')
+  @Get(['events/config', 'event-configs'])
   async getEventConfigs(@Req() req: any) {
     return this.capiHubService.getEventConfigs(req.user.tenantId);
   }
 
   @UseGuards(JwtAuthGuard)
-  @Patch('events/config/:eventName')
+  @Patch(['events/config/:eventName', 'event-configs/:eventName'])
   async updateEventConfig(@Req() req: any, @Param('eventName') eventName: string, @Body() data: any) {
     if (req.user.role !== 'owner' && req.user.role !== 'admin') throw new ForbiddenException();
     return this.capiHubService.updateEventConfig(req.user.tenantId, eventName, data);
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get('events/logs')
+  @Get(['events/logs', 'logs'])
   async getLogs(@Req() req: any) {
     return this.capiHubService.getEventLogs(req.user.tenantId);
   }

@@ -17,36 +17,49 @@ export class FeatureRolloutService {
       }
     });
 
-    if (!rollout) {
-      return false;
+    if (rollout) {
+      if (rollout.isGlobal) {
+        return true;
+      }
+      if (rollout.tenants.length > 0) {
+        return rollout.tenants[0].isEnabled;
+      }
     }
 
-    // Level 2: Global check
-    if (rollout.isGlobal) {
-      return true;
-    }
-
-    // Level 4: Tenant specific override
-    if (rollout.tenants.length > 0) {
-      return rollout.tenants[0].isEnabled;
-    }
-
-    // Level 3: Plan-wise feature check
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },
-      include: { plan: true }
+      include: {
+        subscriptions: {
+          where: { status: { in: ['active', 'trialing'] } },
+          orderBy: { currentPeriodEnd: 'desc' },
+          include: { plan: true }
+        }
+      } as any
     });
 
-    if (tenant?.plan?.features) {
-      const features = tenant.plan.features as string[];
-      if (features.includes(featureKey)) {
+    if (!tenant) return false;
+
+    // Check customFeatures override
+    if (tenant.customFeatures !== null && tenant.customFeatures !== undefined) {
+      const customFeatures = Array.isArray(tenant.customFeatures)
+        ? tenant.customFeatures
+        : typeof tenant.customFeatures === 'string'
+        ? JSON.parse(tenant.customFeatures)
+        : [];
+      if (Array.isArray(customFeatures) && customFeatures.includes(featureKey)) {
         return true;
       }
     }
 
-    if (tenant?.customFeatures) {
-      const customFeatures = tenant.customFeatures as string[];
-      if (customFeatures.includes(featureKey)) {
+    // Check Plan features (direct plan or active subscription plan)
+    const activePlan = (tenant as any).plan || (tenant as any).subscriptions?.[0]?.plan;
+    if (activePlan?.features) {
+      const planFeatures = Array.isArray(activePlan.features)
+        ? activePlan.features
+        : typeof activePlan.features === 'string'
+        ? JSON.parse(activePlan.features)
+        : [];
+      if (Array.isArray(planFeatures) && planFeatures.includes(featureKey)) {
         return true;
       }
     }
