@@ -79,8 +79,8 @@ export default function MetaMarketingApiPage() {
     }
   };
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSave = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setSaving(true);
     setStatus(null);
     try {
@@ -96,8 +96,10 @@ export default function MetaMarketingApiPage() {
       
       if (!res.ok) throw new Error('Failed to update settings');
       setStatus({ type: 'success', message: 'Settings saved successfully' });
+      return true;
     } catch (err: any) {
       setStatus({ type: 'error', message: err.message || 'An error occurred' });
+      return false;
     } finally {
       setSaving(false);
     }
@@ -107,6 +109,9 @@ export default function MetaMarketingApiPage() {
     setTesting(true);
     setTestResult(null);
     try {
+      // Auto-save form settings before testing connection
+      await handleSave();
+
       const token = Cookies.get('access_token');
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/meta-marketing-config/test-connection`, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -166,14 +171,25 @@ export default function MetaMarketingApiPage() {
             Configure system-wide Meta Marketing API credentials for MCP Ads Agent.
           </p>
         </div>
-        <div className="flex items-center gap-3 bg-white dark:bg-surface/50 border border-slate-200 dark:border-white/10 px-4 py-2 rounded-lg shadow-sm">
-          <span className="text-sm font-medium text-slate-900 dark:text-white">Master Kill-Switch</span>
+        <div className="flex items-center gap-3">
           <button
-            onClick={() => setForm({ ...form, isEnabled: !form.isEnabled })}
-            className={`w-12 h-6 rounded-full transition-colors relative ${form.isEnabled ? 'bg-brand-green' : 'bg-slate-300 dark:bg-surface-light border border-slate-300 dark:border-white/10'}`}
+            type="button"
+            onClick={() => handleSave()}
+            disabled={saving}
+            className="px-4 py-2 bg-brand-green hover:bg-brand-green/90 text-white rounded-lg font-medium text-sm transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50"
           >
-            <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${form.isEnabled ? 'left-7' : 'left-1'}`} />
+            <Save className="w-4 h-4" />
+            {saving ? 'Saving...' : 'Save Configuration'}
           </button>
+          <div className="flex items-center gap-3 bg-white dark:bg-surface/50 border border-slate-200 dark:border-white/10 px-4 py-2 rounded-lg shadow-sm">
+            <span className="text-sm font-medium text-slate-900 dark:text-white">Master Kill-Switch</span>
+            <button
+              onClick={() => setForm({ ...form, isEnabled: !form.isEnabled })}
+              className={`w-12 h-6 rounded-full transition-colors relative ${form.isEnabled ? 'bg-brand-green' : 'bg-slate-300 dark:bg-surface-light border border-slate-300 dark:border-white/10'}`}
+            >
+              <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${form.isEnabled ? 'left-7' : 'left-1'}`} />
+            </button>
+          </div>
         </div>
       </div>
 

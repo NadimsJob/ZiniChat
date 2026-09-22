@@ -72,40 +72,80 @@ export class MetaMarketingConfigService {
 
   async testConnection() {
     const config = await this.prisma.metaMarketingApiConfig.findFirst();
-    if (!config || !config.systemUserToken) {
-      throw new BadRequestException('System User Token not configured.');
+    if (!config) {
+      throw new BadRequestException('Configuration not found.');
     }
 
-    const token = this.crypto.decrypt(config.systemUserToken);
-    
-    try {
-      // Call Meta Graph API to verify token
-      const response = await axios.get(`https://graph.facebook.com/${config.apiVersion}/me`, {
-        params: { access_token: token }
-      });
+    if (config.systemUserToken) {
+      const token = this.crypto.decrypt(config.systemUserToken);
+      try {
+        const response = await axios.get(`https://graph.facebook.com/${config.apiVersion || 'v21.0'}/me`, {
+          params: { access_token: token }
+        });
 
-      await this.prisma.metaMarketingApiConfig.update({
-        where: { id: config.id },
-        data: {
-          lastTestedAt: new Date(),
-          lastTestStatus: 'success',
-          lastTestMessage: `Connected as ${response.data.name || response.data.id}`
-        }
-      });
+        const successMsg = `Connected as ${response.data.name || response.data.id}`;
+        await this.prisma.metaMarketingApiConfig.update({
+          where: { id: config.id },
+          data: {
+            lastTestedAt: new Date(),
+            lastTestStatus: 'success',
+            lastTestMessage: successMsg
+          }
+        });
 
-      return { success: true, message: 'Connection successful' };
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.error?.message || error.message;
-      await this.prisma.metaMarketingApiConfig.update({
-        where: { id: config.id },
-        data: {
-          lastTestedAt: new Date(),
-          lastTestStatus: 'failed',
-          lastTestMessage: errorMessage
-        }
-      });
-      return { success: false, message: errorMessage };
+        return { success: true, message: successMsg };
+      } catch (error: any) {
+        const errorMessage = error.response?.data?.error?.message || error.message;
+        await this.prisma.metaMarketingApiConfig.update({
+          where: { id: config.id },
+          data: {
+            lastTestedAt: new Date(),
+            lastTestStatus: 'failed',
+            lastTestMessage: errorMessage
+          }
+        });
+        return { success: false, message: errorMessage };
+      }
     }
+
+    if (config.appId && config.appSecret) {
+      const appSecret = this.crypto.decrypt(config.appSecret);
+      try {
+        const response = await axios.get(`https://graph.facebook.com/${config.apiVersion || 'v21.0'}/oauth/access_token`, {
+          params: {
+            client_id: config.appId,
+            client_secret: appSecret,
+            grant_type: 'client_credentials'
+          }
+        });
+
+        if (response.data?.access_token) {
+          const successMsg = `Meta App ID (${config.appId}) & App Secret verified with Meta Graph API.`;
+          await this.prisma.metaMarketingApiConfig.update({
+            where: { id: config.id },
+            data: {
+              lastTestedAt: new Date(),
+              lastTestStatus: 'success',
+              lastTestMessage: successMsg
+            }
+          });
+          return { success: true, message: successMsg };
+        }
+      } catch (error: any) {
+        const errorMessage = error.response?.data?.error?.message || error.message;
+        await this.prisma.metaMarketingApiConfig.update({
+          where: { id: config.id },
+          data: {
+            lastTestedAt: new Date(),
+            lastTestStatus: 'failed',
+            lastTestMessage: errorMessage
+          }
+        });
+        return { success: false, message: errorMessage };
+      }
+    }
+
+    throw new BadRequestException('Please enter App ID and App Secret first, then click Save Configuration.');
   }
 
   async isMcpEnabled() {
