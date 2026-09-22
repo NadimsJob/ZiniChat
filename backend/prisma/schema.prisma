@@ -6,7 +6,6 @@ generator client {
 datasource db {
   provider   = "postgresql"
   url        = env("DATABASE_URL")
-  directUrl  = env("DIRECT_URL")
   extensions = [vector]
 }
 
@@ -85,6 +84,12 @@ model Tenant {
   websiteWidgets       WebsiteWidget[]
   plan                 Plan?                 @relation(fields: [planId], references: [id])
   facebookCommentLogs  FacebookCommentLog[]
+  featureRollouts      FeatureRolloutTenant[]
+  capiIntegration      TenantCapiIntegration?
+  capiEventConfigs     TenantCapiEventConfig[]
+  metaAdAccounts       TenantMetaAdAccount[]
+  adCampaignDrafts     AdCampaignDraft[]
+  aiTokenUsageLogs     AiTokenUsageLog[]
 
   @@map("tenants")
 }
@@ -319,6 +324,9 @@ model Contact {
   address        String?
   assignedUserId String? @db.Uuid
 
+  automatedFollowUpMessage String?  @db.Text
+  automatedFollowUpSent    Boolean  @default(false)
+
   tenant              Tenant               @relation(fields: [tenantId], references: [id])
   conversations       Conversation[]
   broadcastRecipients BroadcastRecipient[]
@@ -327,6 +335,7 @@ model Contact {
   assignedUser        User?                @relation("AssignedContacts", fields: [assignedUserId], references: [id], onDelete: SetNull)
   notes               ContactNote[]
 
+  @@index([tenantId, followUpAt, automatedFollowUpSent])
   @@map("contacts")
 }
 
@@ -514,17 +523,23 @@ model QnAKnowledgeBase {
 }
 
 model AiUsageLog {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenantId    String   @db.Uuid
-  assistantId String   @db.Uuid
-  tokensUsed  Int
-  cachedTokens Int     @default(0)
-  costUsd     Decimal  @db.Decimal(10, 4)
-  createdAt   DateTime @default(now())
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String   @db.Uuid
+  assistantId   String?  @db.Uuid
+  featureName   String?
+  unitsConsumed Int      @default(1)
+  status        String   @default("COMMITTED")
+  referenceId   String?
+  tokensUsed    Int
+  cachedTokens  Int      @default(0)
+  costUsd       Decimal  @db.Decimal(10, 4)
+  createdAt     DateTime @default(now())
 
-  tenant    Tenant      @relation(fields: [tenantId], references: [id])
-  assistant AiAssistant @relation(fields: [assistantId], references: [id])
+  tenant    Tenant       @relation(fields: [tenantId], references: [id])
+  assistant AiAssistant? @relation(fields: [assistantId], references: [id])
 
+  @@index([tenantId, createdAt])
+  @@index([referenceId])
   @@map("ai_usage_logs")
 }
 
@@ -1304,5 +1319,227 @@ model UserPresence {
   @@map("user_presence")
 }
 
+// ─── Feature Rollout ────────
+model FeatureRollout {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  featureKey  String   @unique
+  isGlobal    Boolean  @default(false)
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  tenants     FeatureRolloutTenant[]
+  @@map("feature_rollouts")
+}
 
+model FeatureRolloutTenant {
+  id               String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  featureRolloutId String         @db.Uuid
+  tenantId         String         @db.Uuid
+  isEnabled        Boolean        @default(true)
+  enabledAt        DateTime       @default(now())
+  featureRollout   FeatureRollout @relation(fields: [featureRolloutId], references: [id])
+  tenant           Tenant         @relation(fields: [tenantId], references: [id])
+  @@unique([featureRolloutId, tenantId])
+  @@map("feature_rollout_tenants")
+}
+
+// ─── CAPI Hub (Server-Side Tracking) ────────
+model TenantCapiIntegration {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String   @unique @db.Uuid
+  pixelId       String
+  datasetId     String?
+  accessToken   String   // encrypted via CryptoService
+  testEventCode String?
+  webhookToken  String   @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  webhookSecret String   // bcrypt hashed
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  tenant        Tenant   @relation(fields: [tenantId], references: [id])
+  eventConfigs  TenantCapiEventConfig[]
+  events        CapiEventLog[]
+  
+  @@map("tenant_capi_integrations")
+}
+
+model TenantCapiEventConfig {
+  id                    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId              String   @db.Uuid
+  integrationId         String   @db.Uuid
+  eventName             String
+  isEnabled             Boolean  @default(false)
+
+  // Sources
+  sourceInboxAiIntent   Boolean  @default(false)
+  sourceOrderCompleted  Boolean  @default(false)
+  sourceLeadCreated     Boolean  @default(false)
+  sourceWidgetForm      Boolean  @default(false)
+  sourceAppointment     Boolean  @default(false)
+  sourceExternalWebhook Boolean  @default(false)
+
+  // Parameters to include
+  includeValue          Boolean  @default(true)
+  includeCurrency       Boolean  @default(true)
+  includeOrderId        Boolean  @default(false)
+  includeContentIds     Boolean  @default(false)
+  includeUserData       Boolean  @default(true)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  tenant        Tenant                @relation(fields: [tenantId], references: [id])
+  integration   TenantCapiIntegration @relation(fields: [integrationId], references: [id])
+  
+  @@unique([tenantId, eventName])
+  @@map("tenant_capi_event_configs")
+}
+
+model CapiEventLog {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  integrationId String   @db.Uuid
+  tenantId      String   @db.Uuid
+  eventName     String
+  eventId       String?  // dedup key
+  source        String   // 'inbox_ai' | 'order' | 'lead' | 'widget' | 'webhook'
+  status        String   // 'sent' | 'failed' | 'suppressed_duplicate'
+  responseCode  Int?
+  errorMessage  String?
+  
+  createdAt     DateTime @default(now())
+  
+  integration   TenantCapiIntegration @relation(fields: [integrationId], references: [id])
+  
+  @@index([tenantId, createdAt])
+  @@index([eventId])
+  @@map("capi_event_logs")
+}
+
+model MetaMarketingApiConfig {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  appId              String
+  appSecret          String?   // encrypted via CryptoService
+  apiVersion         String    @default("v21.0")
+  systemUserToken    String?   // encrypted
+  webhookVerifyToken String?
+  isEnabled          Boolean   @default(false)  // MASTER KILL-SWITCH
+  adRunUnitCost      Int       @default(10)
+  autoScaleUnitCost  Int       @default(5)
+  lastTestedAt       DateTime?
+  lastTestStatus     String?   // 'success' | 'failed'
+  lastTestMessage    String?
+  updatedByUserId    String?   @db.Uuid
+  updatedAt          DateTime  @updatedAt
+  @@map("meta_marketing_api_config")
+}
+
+model McpToolRegistry {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  toolKey     String   @unique
+  displayName String
+  riskLevel   String   // 'READ_ONLY' | 'WRITE_SPEND' | 'WRITE_STRUCTURAL'
+  isEnabled   Boolean  @default(false)
+  updatedAt   DateTime @updatedAt
+  @@map("mcp_tool_registry")
+}
+
+model TenantMetaAdAccount {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String   @db.Uuid
+  adAccountId    String   // act_XXXXXX
+  adAccountName  String?
+  accessToken    String   // encrypted
+  tokenExpiresAt DateTime?
+  currency       String?
+  timezone       String?
+  facebookPageId String?  // auto-populated from Messenger channel connection
+  facebookPageName String?
+  instagramActorId String? // auto-populated if Instagram connected
+  status         String   @default("active") // 'active' | 'disconnected'
+  connectedAt    DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  tenant         Tenant   @relation(fields: [tenantId], references: [id])
+  
+  @@unique([tenantId, adAccountId])
+  @@map("tenant_meta_ad_accounts")
+}
+
+model AdCampaignDraft {
+  id                      String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId                String   @db.Uuid
+  adAccountId             String
+  facebookPageId          String
+  instagramActorId        String?
+  status                  String   @default("DRAFT")
+  // DRAFT | PENDING_REVIEW | ACTIVE | FAILED_REFUNDED | PAUSED | REJECTED_BY_META
+  aiResponseUnitsReserved Int      @default(10)
+  sessionKey              String?
+
+  // Turn 1: What to promote
+  productIds              String[]
+  promotionDescription    String?
+
+  // Turn 2: Audience
+  targetLocations         Json?
+  ageMin                  Int?
+  ageMax                  Int?
+  audienceType            String   @default("ADVANTAGE_PLUS")
+
+  // Turn 3: Budget & Placements
+  budgetType              String   @default("DAILY")
+  budget                  Decimal? @db.Decimal(10, 2)
+  currency                String?
+  durationDays            Int?
+  placements              String[]
+
+  // Turn 4: Creative
+  headline                String?
+  bodyText                String?
+  callToAction            String?
+  imageSourceType         String?
+  imageProductId          String?
+  imageUrl                String?
+  metaImageHash           String?
+
+  // Turn 5: Final approval
+  approvedAt              DateTime?
+
+  // Meta resource IDs
+  metaCampaignId          String?
+  metaAdSetId             String?
+  metaAdId                String?
+  metaAdReviewStatus      String?
+  failureReason           String?
+
+  // Auto-scaling
+  autoScalingEnabled      Boolean  @default(false)
+  autoScalingMaxBudget    Decimal? @db.Decimal(10, 2)
+  autoScalingLastActionAt DateTime?
+  autoScalingActionsToday Int      @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  @@index([tenantId, status])
+  @@map("ad_campaign_drafts")
+}
+
+model AiTokenUsageLog {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String   @db.Uuid
+  featureName  String   // 'AD_CREATOR' | 'AD_INSIGHTS_SUMMARY'
+  modelName    String
+  inputTokens  Int
+  outputTokens Int
+  cachedTokens Int      @default(0)
+  costUsd      Decimal  @db.Decimal(10, 6)
+  draftId      String?
+  createdAt    DateTime @default(now())
+
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+  @@index([tenantId, createdAt])
+  @@map("ai_token_usage_logs")
+}
 

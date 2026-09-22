@@ -238,7 +238,23 @@ export class PaymentsService {
           where: { tenantId, createdAt: { gte: pStart } }
         }),
         this.prisma.message.count({
-          where: { direction: 'outbound', conversation: { tenantId }, createdAt: { gte: pStart } }
+          where: {
+            direction: 'outbound',
+            conversation: { tenantId },
+            createdAt: { gte: pStart },
+            NOT: {
+              OR: [
+                { content: { path: ['isExternalSync'], equals: true } },
+                {
+                  AND: [
+                    { senderUserId: null },
+                    { aiAssistantId: null },
+                    { senderType: 'agent' }
+                  ]
+                }
+              ]
+            }
+          }
         }),
         this.prisma.broadcastRecipient.count({
           where: { broadcast: { tenantId, createdAt: { gte: pStart } }, status: { notIn: ['pending', 'failed'] } }
@@ -488,7 +504,23 @@ export class PaymentsService {
             where: { tenantId: payment.tenantId, createdAt: { gte: pStart } }
           }),
           this.prisma.message.count({
-            where: { direction: 'outbound', conversation: { tenantId: payment.tenantId }, createdAt: { gte: pStart } }
+            where: {
+              direction: 'outbound',
+              conversation: { tenantId: payment.tenantId },
+              createdAt: { gte: pStart },
+              NOT: {
+                OR: [
+                  { content: { path: ['isExternalSync'], equals: true } },
+                  {
+                    AND: [
+                      { senderUserId: null },
+                      { aiAssistantId: null },
+                      { senderType: 'agent' }
+                    ]
+                  }
+                ]
+              }
+            }
           }),
           this.prisma.broadcastRecipient.count({
             where: { broadcast: { tenantId: payment.tenantId, createdAt: { gte: pStart } }, status: { notIn: ['pending', 'failed'] } }

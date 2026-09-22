@@ -230,9 +230,11 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
         { name: language === 'en' ? 'AI Integrations' : 'এআই ইন্টিগ্রেশন', icon: Bot, href: '/sp@dmin/settings/ai', show: hasPermission('view:settings') },
         { name: language === 'en' ? 'MFS & Bank Gateway' : 'এমএফএস ও ব্যাংক গেটওয়ে', icon: Landmark, href: '/sp@dmin/settings/mfs', show: hasPermission('view:settings') },
         { name: language === 'en' ? 'Google Login' : 'গুগল লগইন সেটিংস', icon: Key, href: '/sp@dmin/settings/google-auth', show: hasPermission('view:settings') },
-        { name: language === 'en' ? 'Facebook Login' : 'ফেসবুক লগইন সেটিংস', icon: Globe, href: '/sp@dmin/settings/facebook-auth', show: hasPermission('view:settings') },
+        { name: language === 'en' ? 'Facebook Login' : 'ফেসবুক লগিন এক্সেস', icon: Globe, href: '/sp@dmin/settings/facebook-auth', show: hasPermission('view:settings') },
+        { name: language === 'en' ? 'Meta Marketing API' : 'মেটা মার্কেটিং এপিআই', icon: Globe, href: '/sp@dmin/settings/meta-marketing-api', show: hasPermission('view:settings') },
         { name: language === 'en' ? 'Meta Pixel & CAPI' : 'মেটা পিক্সেল ও CAPI', icon: Activity, href: '/sp@dmin/settings/meta-pixel', show: hasPermission('view:settings') },
         { name: language === 'en' ? 'Google Analytics' : 'গুগল অ্যানালিটিক্স', icon: BarChart3, href: '/sp@dmin/settings/google-analytics', show: hasPermission('view:settings') },
+        { name: language === 'en' ? 'Feature Rollout' : 'ফিচার রোলআউট', icon: Layers, href: '/sp@dmin/settings/feature-rollout', show: hasPermission('view:settings') },
       ].filter(sub => sub.show)
     }
   ];

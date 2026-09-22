@@ -10,8 +10,10 @@ import Cookies from 'js-cookie';
 import { useFeature } from '@/hooks/useFeature';
 import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
+import { FacebookBadgeIcon as Facebook } from '@/components/BrandIcons';
 import { 
  MessageSquare,
+ Bot,
  MessageCircle,
  LayoutGrid, 
  Inbox, 
@@ -52,7 +54,8 @@ import {
  GraduationCap,
  Factory,
  Truck,
- BookOpen
+ BookOpen,
+ Server
 } from 'lucide-react';
 import NotificationBell from '@/components/NotificationBell';
 import SupportWidget from '@/components/SupportWidget';
@@ -571,6 +574,14 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
         },
         { name: language === 'en' ? 'Broadcasts' : 'ব্রডকাস্ট', icon: Megaphone, href: '/dashboard/broadcasts' },
         { name: language === 'en' ? 'Support Ticket' : 'সাপোর্ট টিকিট', icon: MessageSquare, href: '/dashboard/support' },
+      ]
+    },
+    {
+      title: language === 'en' ? 'MARKETING & ADS' : 'মার্কেটিং ও এডস',
+      items: [
+        { name: language === 'en' ? 'Ads Copilot' : 'অ্যাডস কোপাইলট', icon: Bot, href: '/dashboard/ads-agent' },
+        { name: language === 'en' ? 'CAPI Hub' : 'ক্যাপি হাব', icon: Server, href: '/dashboard/settings/capi-hub' },
+        { name: language === 'en' ? 'Meta Ads Account' : 'মেটা অ্যাডস অ্যাকাউন্ট', icon: Facebook, href: '/dashboard/settings/meta-ads' },
       ]
     },
     {

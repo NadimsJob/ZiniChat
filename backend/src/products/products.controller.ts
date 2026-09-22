@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, Request, UseInterceptors, UploadedFile, BadRequestException, ParseIntPipe } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ProductsService } from './products.service';
+import { QuotaService } from '../tenants/quota.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
@@ -23,7 +24,10 @@ const imageStorageOptions = diskStorage({
 @Controller('products')
 @UseGuards(JwtAuthGuard)
 export class ProductsController {
-  constructor(private readonly productsService: ProductsService) {}
+  constructor(
+    private readonly productsService: ProductsService,
+    private readonly quotaService: QuotaService
+  ) {}
 
   @Get()
   async getProducts(@Request() req: any) {
@@ -68,6 +72,9 @@ export class ProductsController {
   async uploadImage(@Request() req: any, @Param('id') id: string, @UploadedFile() file: any) {
     if (!file) throw new BadRequestException('Image file is required');
     const imageUrl = `/uploads/products/${file.filename}`;
+    if (file.size) {
+      await this.quotaService.incrementStorage(req.user.tenantId, file.size);
+    }
     return this.productsService.updateProduct(req.user.tenantId, id, { imageUrl });
   }
 
@@ -77,6 +84,9 @@ export class ProductsController {
   async addGalleryImage(@Request() req: any, @Param('id') id: string, @UploadedFile() file: any) {
     if (!file) throw new BadRequestException('Image file is required');
     const imageUrl = `/uploads/products/${file.filename}`;
+    if (file.size) {
+      await this.quotaService.incrementStorage(req.user.tenantId, file.size);
+    }
     return this.productsService.addGalleryImage(req.user.tenantId, id, imageUrl);
   }
 

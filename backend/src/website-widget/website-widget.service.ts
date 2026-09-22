@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { InboxService } from '../inbox/inbox.service';
+import { CapiHubService } from '../capi-hub/capi-hub.service';
 
 export interface CreateWidgetDto {
   type: 'LIVE_CHAT' | 'WHATSAPP';
@@ -38,6 +39,7 @@ export class WebsiteWidgetService implements OnModuleInit {
     private readonly prisma: PrismaService,
     @Inject(forwardRef(() => InboxService))
     private readonly inboxService: InboxService,
+    private readonly capiHubService: CapiHubService,
   ) {}
 
   async onModuleInit() {
@@ -422,6 +424,17 @@ export class WebsiteWidgetService implements OnModuleInit {
               updatedContact,
             );
           }
+
+          // Trigger CAPI Lead Event
+          this.capiHubService.fireEvent(widget.tenantId, 'Lead', {
+            event_id: `widget_lead_${updatedContact.id}`,
+            event_source_url: widget.domain || 'website_widget',
+            user_data: {
+              em: updatedContact.email || undefined,
+              ph: updatedContact.phone || undefined,
+              fn: updatedContact.name || undefined
+            }
+          }, 'website_widget').catch(() => {});
         }
       }
     }

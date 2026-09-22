@@ -1197,6 +1197,14 @@ export class InboxService implements OnModuleInit {
       this.logger.error(`Media processing failed for incoming message: ${err.message}`);
     }
 
+    if (isOutboundFromPhone) {
+      if (typeof contentToSave === 'object' && contentToSave !== null) {
+        contentToSave = { ...contentToSave, isExternalSync: true };
+      } else {
+        contentToSave = { body: contentToSave, isExternalSync: true };
+      }
+    }
+
     const message = await this.prisma.message.create({
       data: {
         conversationId: conversation.id,

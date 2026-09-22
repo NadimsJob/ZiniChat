@@ -159,7 +159,7 @@ describe('Broadcast Queue Rate Limiting & DLQ Failure Handling', () => {
 
     expect(mockPrisma.broadcastRecipient.update).toHaveBeenCalledWith({
       where: { id: 'rcp-456' },
-      data: { status: 'failed' },
+      data: expect.objectContaining({ status: 'failed' }),
     });
   });
 

@@ -94,25 +94,20 @@ describe('AiService & AiCacheService - Prompt Caching & Token Logging Audit', ()
       costUsd: 0.0010125,
     };
 
-    mockPrisma.aiUsageLog.create.mockResolvedValue({
-      id: 'log-1',
-      tenantId: 'tenant-1',
-      assistantId: 'ast-1',
-      tokensUsed: 36000,
-      cachedTokens: 34000,
-      costUsd: 0.0010125,
-    });
+    mockPrisma.aiUsageLog.createMany.mockResolvedValue({ count: 1 });
 
     await service.recordUsageLog('tenant-1', 'ast-1', mockUsage);
 
-    expect(mockPrisma.aiUsageLog.create).toHaveBeenCalledWith({
-      data: {
-        tenantId: 'tenant-1',
-        assistantId: 'ast-1',
-        tokensUsed: 36000,
-        cachedTokens: 34000,
-        costUsd: 0.0010125,
-      },
+    expect(mockPrisma.aiUsageLog.createMany).toHaveBeenCalledWith({
+      data: [
+        {
+          tenantId: 'tenant-1',
+          assistantId: 'ast-1',
+          tokensUsed: 36000,
+          cachedTokens: 34000,
+          costUsd: 0.0010125,
+        },
+      ],
     });
   });
 

@@ -11,6 +11,8 @@ import { ActivityLogService } from '../inbox/activity-log.service';
 import { InboxGateway } from '../inbox/inbox.gateway';
 import { AiCacheService } from '../ai/ai-cache.service';
 
+import { CapiHubService } from '../capi-hub/capi-hub.service';
+
 describe('OrchestratorService', () => {
   let service: OrchestratorService;
   let prismaService: any;
@@ -22,8 +24,13 @@ describe('OrchestratorService', () => {
   let quotaService: any;
   let activityLogService: any;
   let inboxGateway: any;
+  let capiHubService: any;
 
   beforeEach(async () => {
+    capiHubService = {
+      fireEvent: jest.fn().mockResolvedValue(true),
+    };
+
     prismaService = {
       message: {
         findUnique: jest.fn(),
@@ -126,6 +133,8 @@ describe('OrchestratorService', () => {
       checkFeature: jest.fn().mockResolvedValue(true),
       isTenantSubscriptionActive: jest.fn().mockResolvedValue({ isActive: true }),
       checkAiQuota: jest.fn().mockResolvedValue(undefined),
+      getActivePeriodForTenant: jest.fn().mockResolvedValue({ periodStart: new Date(2026, 0, 1), periodEnd: new Date(2026, 11, 31) }),
+      getMessageUsage: jest.fn().mockResolvedValue(0),
     };
 
     activityLogService = {
@@ -155,6 +164,7 @@ describe('OrchestratorService', () => {
         { provide: QuotaService, useValue: quotaService },
         { provide: ActivityLogService, useValue: activityLogService },
         { provide: InboxGateway, useValue: inboxGateway },
+        { provide: CapiHubService, useValue: capiHubService },
       ],
     }).compile();
 

@@ -133,7 +133,19 @@ export class BillingService {
         where: {
           direction: 'outbound',
           conversation: { tenantId },
-          createdAt: { gte: activePeriod.periodStart }
+          createdAt: { gte: activePeriod.periodStart },
+          NOT: {
+            OR: [
+              { content: { path: ['isExternalSync'], equals: true } },
+              {
+                AND: [
+                  { senderUserId: null },
+                  { aiAssistantId: null },
+                  { senderType: 'agent' }
+                ]
+              }
+            ]
+          }
         }
       }).then(async (directCount) => {
         const broadcastCount = await this.prisma.broadcastRecipient.count({

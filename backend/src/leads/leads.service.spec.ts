@@ -16,6 +16,8 @@ jest.mock('exceljs', () => ({
   })),
 }), { virtual: true });
 
+import { CapiHubService } from '../capi-hub/capi-hub.service';
+
 describe('LeadsService', () => {
   let service: LeadsService;
   let prisma: PrismaService;
@@ -51,6 +53,7 @@ describe('LeadsService', () => {
       providers: [
         LeadsService,
         { provide: PrismaService, useValue: mockPrismaService },
+        { provide: CapiHubService, useValue: { fireEvent: jest.fn() } },
       ],
     }).compile();
 

@@ -1,9 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { CapiHubService } from '../capi-hub/capi-hub.service';
 
 @Injectable()
 export class LeadsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private capiHubService: CapiHubService
+  ) {}
 
   async getStages(tenantId: string) {
     const stages = await this.prisma.kanbanStage.findMany({
@@ -117,7 +121,7 @@ export class LeadsService {
       stageId = first?.id || null;
     }
 
-    return this.prisma.contact.create({
+    const lead = await this.prisma.contact.create({
       data: {
         tenantId,
         channel: 'manual',
@@ -136,6 +140,18 @@ export class LeadsService {
         assignedUser: { select: { id: true, name: true } }
       }
     });
+
+    this.capiHubService.fireEvent(tenantId, 'Lead', {
+      event_id: `lead_${lead.id}`,
+      event_source_url: 'crm_leads',
+      user_data: {
+        em: lead.email || undefined,
+        ph: lead.phone || undefined,
+        fn: lead.name || undefined
+      }
+    }, 'lead').catch(() => {});
+
+    return lead;
   }
 
   async addNote(tenantId: string, contactId: string, content: string, userId?: string) {

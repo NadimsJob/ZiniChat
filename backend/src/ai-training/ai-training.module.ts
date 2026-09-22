@@ -5,11 +5,12 @@ import { WebsiteCrawlerService } from './website-crawler.service';
 import { TenantsModule } from '../tenants/tenants.module';
 import { CryptoModule } from '../crypto/crypto.module';
 import { AiModule } from '../ai/ai.module';
+import { StorageModule } from '../storage/storage.module';
 import { FileValidationService } from '../file-validation/file-validation.service';
 import { ToolConfigValidatorService } from './services/tool-config-validator.service';
 
 @Module({
-  imports: [TenantsModule, CryptoModule, AiModule],
+  imports: [TenantsModule, CryptoModule, AiModule, StorageModule],
   controllers: [AiTrainingController],
   providers: [AiTrainingService, WebsiteCrawlerService, FileValidationService, ToolConfigValidatorService],
   exports: [AiTrainingService, WebsiteCrawlerService],

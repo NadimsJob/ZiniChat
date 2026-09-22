@@ -4,9 +4,12 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ActivityLogService } from '../inbox/activity-log.service';
 import { InboxGateway } from '../inbox/inbox.gateway';
 
+import { getQueueToken } from '@nestjs/bullmq';
+
 describe('ContactsService', () => {
   let service: ContactsService;
   let prismaService: any;
+  let followUpQueue: any;
 
   beforeEach(async () => {
     prismaService = {
@@ -23,12 +26,18 @@ describe('ContactsService', () => {
       },
     };
 
+    followUpQueue = {
+      remove: jest.fn().mockResolvedValue(true),
+      add: jest.fn().mockResolvedValue(true),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ContactsService,
         { provide: PrismaService, useValue: prismaService },
         { provide: ActivityLogService, useValue: { record: jest.fn().mockResolvedValue(true) } },
         { provide: InboxGateway, useValue: { broadcastToTenant: jest.fn() } },
+        { provide: getQueueToken('follow-up'), useValue: followUpQueue },
       ],
     }).compile();
 
@@ -75,6 +84,33 @@ describe('ContactsService', () => {
       expect(res.skippedCount).toBe(1);
       expect(res.tag).toBe('Eid_Promo_2026');
       expect(prismaService.contact.create).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('updateContact', () => {
+    it('should update contact and schedule automated follow-up job in BullMQ', async () => {
+      const futureDate = new Date(Date.now() + 60000);
+      prismaService.contact.findFirst.mockResolvedValue({ id: 'c1', tenantId: 't1' });
+      prismaService.contact.update.mockResolvedValue({
+        id: 'c1',
+        tenantId: 't1',
+        followUpAt: futureDate,
+        automatedFollowUpMessage: 'Hello follow up',
+        automatedFollowUpSent: false,
+      });
+
+      const updated = await service.updateContact('t1', 'c1', {
+        followUpAt: futureDate.toISOString(),
+        automatedFollowUpMessage: 'Hello follow up',
+      });
+
+      expect(updated.id).toBe('c1');
+      expect(followUpQueue.remove).toHaveBeenCalledWith('follow-up-c1');
+      expect(followUpQueue.add).toHaveBeenCalledWith(
+        'send-automated-follow-up',
+        { contactId: 'c1' },
+        expect.objectContaining({ jobId: 'follow-up-c1' })
+      );
     });
   });
 });

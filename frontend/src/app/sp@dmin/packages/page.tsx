@@ -590,7 +590,10 @@ export default function PackagesPage() {
                     { id: 'ai_tool_order_placement', label: 'AI Tool: Auto Order Placement', labelBn: 'এআই টুল: অটো অর্ডার প্লেসমেন্ট' },
                     { id: 'ai_tool_image_reading', label: 'AI Tool: Image Reading', labelBn: 'এআই টুল: ইমেজ রিডিং' },
                     { id: 'ai_tool_support_detection', label: 'AI Tool: Support Detection', labelBn: 'এআই টুল: সাপোর্ট ডিটেকশন' },
-                    { id: 'ai_tool_product_matching', label: 'AI Tool: Product Photo Matching', labelBn: 'এআই টুল: প্রোডাক্ট ফটো ম্যাচিং' }
+                    { id: 'ai_tool_product_matching', label: 'AI Tool: Product Photo Matching', labelBn: 'এআই টুল: প্রোডাক্ট ফটো ম্যাচিং' },
+                    { id: 'capi_hub', label: 'Server-Side Tracking (CAPI)', labelBn: 'সার্ভার-সাইড ট্র্যাকিং (CAPI)' },
+                    { id: 'meta_ads_agent', label: 'Ads Copilot AI', labelBn: 'অ্যাডস কোপাইলট এআই' },
+                    { id: 'ads_auto_scaling', label: 'Ads Auto-Scaling', labelBn: 'অ্যাডস অটো-স্কেলিং' }
                   ].map(feature => (
                     <label key={feature.id} className="flex items-center gap-2 cursor-pointer bg-background border border-surface-hover p-3 rounded-xl hover:border-primary/50 transition-colors">
                       <input 

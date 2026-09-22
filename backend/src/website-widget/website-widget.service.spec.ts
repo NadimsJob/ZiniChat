@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { WebsiteWidgetService, CreateWidgetDto } from './website-widget.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { InboxService } from '../inbox/inbox.service';
+import { CapiHubService } from '../capi-hub/capi-hub.service';
 import { ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
 
 // ─── Mock Factories ──────────────────────────────────────────────────────────
@@ -81,6 +82,10 @@ const mockInboxService = {
   handleIncomingMessage: jest.fn(),
 };
 
+const mockCapiHubService = {
+  fireEvent: jest.fn(),
+};
+
 describe('WebsiteWidgetService', () => {
   let service: WebsiteWidgetService;
 
@@ -90,6 +95,7 @@ describe('WebsiteWidgetService', () => {
         WebsiteWidgetService,
         { provide: PrismaService, useValue: mockPrisma },
         { provide: InboxService, useValue: mockInboxService },
+        { provide: CapiHubService, useValue: mockCapiHubService },
       ],
     }).compile();
 

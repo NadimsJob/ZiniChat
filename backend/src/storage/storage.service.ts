@@ -128,6 +128,40 @@ export class StorageService {
   }
 
   /**
+   * Recalculates the storage usage by scanning disk files and updates the tenant's storageUsedBytes.
+   */
+  async recalculateStorage(tenantId: string) {
+    const stats = await this.getStorageStats(tenantId);
+    
+    // Update the DB counter to match the actual physical size
+    await this.prisma.tenant.update({
+      where: { id: tenantId },
+      data: { storageUsedBytes: BigInt(stats.totalUsedBytes) }
+    });
+
+    // Also trigger quota checks to update any 80/100 warning flags based on the new actual size
+    const limitBytes = BigInt(stats.storageLimitBytes);
+    const newPercent = limitBytes > BigInt(0) ? Number((BigInt(stats.totalUsedBytes) * BigInt(100)) / limitBytes) : 0;
+    
+    const resetFlags: any = {};
+    if (newPercent < 80) resetFlags.storageWarning80Notified = false;
+    if (newPercent < 100) resetFlags.storageWarning100Notified = false;
+    
+    if (Object.keys(resetFlags).length > 0) {
+      await this.prisma.tenant.update({
+        where: { id: tenantId },
+        data: resetFlags
+      });
+    }
+
+    return {
+      success: true,
+      totalUsedBytes: stats.totalUsedBytes,
+      categories: stats.categories
+    };
+  }
+
+  /**
    * Returns list of file items filtered by category and upload age.
    */
   async getStorageFiles(tenantId: string, category?: string, olderThanDays?: number): Promise<StorageFileItem[]> {

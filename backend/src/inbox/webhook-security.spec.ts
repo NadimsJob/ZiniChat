@@ -65,7 +65,7 @@ describe('InboxService — Webhook Subscription Security Guard', () => {
         { provide: OrchestratorService, useValue: mockOrchestratorService },
         { provide: NotificationsService, useValue: { createNotification: jest.fn().mockResolvedValue(true), createNotificationForTenantAdmins: jest.fn().mockResolvedValue(true) } },
         { provide: QuotaService, useValue: mockQuotaService },
-        { provide: InboxGateway, useValue: { server: { emit: jest.fn() } } },
+        { provide: InboxGateway, useValue: { server: { emit: jest.fn() }, broadcastToTenant: jest.fn() } },
       ],
     }).compile();
 

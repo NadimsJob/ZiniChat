@@ -893,4 +893,30 @@ export class SmtpService {
 
     await this.sendMail({ to: toEmail, subject, html, plainText });
   }
+
+  async triggerAdPublishedEmail(toEmail: string, tenantName: string, adDetails: { name: string; budget: number; currency: string }) {
+    const subject = `🚀 Meta অ্যাড ক্যাম্পেইন রিভিউর জন্য সাবমিট হয়েছে – ${adDetails.name}`;
+    const plainText = `প্রিয় ${tenantName},\n\nআপনার Meta অ্যাড ক্যাম্পেইন "${adDetails.name}" সফলভাবে Meta review-তে সাবমিট করা হয়েছে।\nবাজেট: ${adDetails.currency} ${adDetails.budget}\nস্ট্যাটাস: Meta Review-এর অপেক্ষায়\n\nZiniChat Team`;
+    await this.sendMail({ to: toEmail, subject, plainText });
+  }
+
+  async triggerAdFailedRefundedEmail(toEmail: string, tenantName: string, reason: string) {
+    const subject = `⚠️ Meta অ্যাড ক্যাম্পেইন পাবলিশ ব্যর্থ – AI Response ইউনিট রিফান্ড করা হয়েছে`;
+    const plainText = `প্রিয় ${tenantName},\n\nআপনার Meta অ্যাড ক্যাম্পেইন তৈরি করতে সমস্যা হওয়ার কারণে রিফান্ড দেওয়া হয়েছে।\nকারণ: ${reason}\n\nরিজার্ভকৃত ১০টি AI Response Unit আপনার অ্যাকাউন্টে ফেরত দেওয়া হয়েছে।\n\nZiniChat Team`;
+    await this.sendMail({ to: toEmail, subject, plainText });
+  }
+
+  async triggerAdRejectedByMetaEmail(toEmail: string, tenantName: string, adName: string, reason: string) {
+    const subject = `🚨 Meta অ্যাড পলিসি দ্বারা বাতিল – ${adName}`;
+    const plainText = `প্রিয় ${tenantName},\n\nআপনার Meta অ্যাড ক্যাম্পেইন "${adName}" Meta Policy-র কারণে Rejected হয়েছে।\nকারণ: ${reason}\n\nআপনার রিজার্ভকৃত AI Response Unit অ্যাকাউন্টে রিফান্ড করা হয়েছে। আপনি ড্রাফট সংশোধন করে পুনরায় রি-সাবমিট করতে পারেন।\n\nZiniChat Team`;
+    await this.sendMail({ to: toEmail, subject, plainText });
+  }
+
+  async triggerAutoScaleActionEmail(toEmail: string, tenantName: string, adDetails: { name: string; oldBudget: number; newBudget: number; currency: string }) {
+    const subject = `📈 Ads Copilot Auto-Scaled Your Campaign Budget – ${adDetails.name}`;
+    const plainText = `প্রিয় ${tenantName},\n\nউচ্চ পারফরম্যান্সের কারণে Ads Copilot আপনার ক্যাম্পেইন "${adDetails.name}"-এর দৈনিক বাজেট বাড়িয়ে নতুন বাজেট নির্ধারণ করেছে।\nপূর্বের বাজেট: ${adDetails.currency} ${adDetails.oldBudget}\nনতুন বাজেট: ${adDetails.currency} ${adDetails.newBudget}\n\nZiniChat Team`;
+    await this.sendMail({ to: toEmail, subject, plainText });
+  }
 }
+
+

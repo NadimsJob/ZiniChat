@@ -49,6 +49,12 @@ import { GoogleAnalyticsModule } from './google-analytics/google-analytics.modul
 import { LoginLogsModule } from './login-logs/login-logs.module';
 
 import { ClientBrandsModule } from './client-brands/client-brands.module';
+import { FeatureRolloutModule } from './feature-rollout/feature-rollout.module';
+import { CapiHubModule } from './capi-hub/capi-hub.module';
+import { MetaMarketingConfigModule } from './meta-marketing-config/meta-marketing-config.module';
+import { MetaAdsAccountModule } from './meta-ads-account/meta-ads-account.module';
+import { McpAdsModule } from './mcp-ads/mcp-ads.module';
+import { AdsAgentModule } from './ads-agent/ads-agent.module';
 
 @Module({
   imports: [
@@ -67,6 +73,9 @@ import { ClientBrandsModule } from './client-brands/client-brands.module';
     WebsiteWidgetModule,
     MetaPixelModule,
     GoogleAnalyticsModule,
+    MetaMarketingConfigModule,
+    MetaAdsAccountModule,
+    McpAdsModule,
     ScheduleModule.forRoot(),
     BullModule.forRoot({
       connection: {
@@ -76,10 +85,6 @@ import { ClientBrandsModule } from './client-brands/client-brands.module';
     }),
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'public'),
-    }),
-    ServeStaticModule.forRoot({
-      rootPath: join(process.cwd(), 'uploads'),
-      serveRoot: '/uploads',
     }),
     PrismaModule, 
     ChannelsModule,  
@@ -115,7 +120,10 @@ import { ClientBrandsModule } from './client-brands/client-brands.module';
     InstagramAuthModule,
     MfsPaymentsModule,
     LoginLogsModule,
-    ClientBrandsModule
+    ClientBrandsModule,
+    FeatureRolloutModule,
+    CapiHubModule,
+    AdsAgentModule
   ],
   controllers: [AppController],
   providers: [

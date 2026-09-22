@@ -571,6 +571,14 @@ export default function StorageSettingsPage() {
                           <Square className="w-4 h-4 text-muted-foreground shrink-0" />
                         )}
 
+                        {file.url.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                          <img src={file.url} alt={file.name} className="w-8 h-8 rounded-lg object-cover shrink-0 border border-border/50" />
+                        ) : (
+                          <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0 border border-border/50">
+                            <FileText className="w-4 h-4 text-muted-foreground" />
+                          </div>
+                        )}
+
                         <div className="min-w-0">
                           <p className="text-xs font-semibold text-foreground truncate max-w-sm" title={file.name}>
                             {file.name}

@@ -125,12 +125,24 @@ export class QuotaService {
    */
   async getMessageUsage(tenantId: string, periodStart: Date): Promise<number> {
     const [directMessages, broadcastMessages] = await Promise.all([
-      // Direct outbound messages (agent + AI replies)
+      // Direct outbound messages (agent + AI replies sent via ZiniChat system, excluding external phone app sync)
       this.prisma.message.count({
         where: {
           direction: 'outbound',
           conversation: { tenantId },
-          createdAt: { gte: periodStart }
+          createdAt: { gte: periodStart },
+          NOT: {
+            OR: [
+              { content: { path: ['isExternalSync'], equals: true } },
+              {
+                AND: [
+                  { senderUserId: null },
+                  { aiAssistantId: null },
+                  { senderType: 'agent' }
+                ]
+              }
+            ]
+          }
         }
       }),
       // Broadcast messages (sent/delivered, not failed/pending)
@@ -196,12 +208,15 @@ export class QuotaService {
 
     const { periodStart, aiQuota } = await this.billingService.getActivePeriod(tenantId);
 
-    const aiUsed = await this.prisma.aiUsageLog.count({
+    const aiUsedRes = await this.prisma.aiUsageLog.aggregate({
+      _sum: { unitsConsumed: true },
       where: {
         tenantId,
-        createdAt: { gte: periodStart }
+        createdAt: { gte: periodStart },
+        status: { in: ['COMMITTED', 'RESERVED'] }
       }
     });
+    const aiUsed = aiUsedRes._sum.unitsConsumed || 0;
     const usagePercent = aiQuota > 0 ? (aiUsed * 100) / aiQuota : 0;
     const tenantName = (tenant as any).name || (tenant as any).slug || 'Tenant';
 
@@ -403,7 +418,12 @@ export class QuotaService {
   }
 
   async decrementStorage(tenantId: string, bytes: number): Promise<void> {
-    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      include: {
+        subscriptions: { where: { status: { in: ['active', 'trialing'] } }, include: { plan: true }, take: 1 }
+      }
+    });
     if (!tenant) return;
 
     const current = tenant.storageUsedBytes || BigInt(0);
@@ -411,7 +431,8 @@ export class QuotaService {
     const newValue = current - toSubtract < BigInt(0) ? BigInt(0) : current - toSubtract;
 
     // Calculate new usage percent to determine if we should reset warning flags
-    const limitMb = tenant.customStorageLimitMb ?? 500;
+    const activePlan = tenant.subscriptions?.find((sub: any) => ['active', 'trialing'].includes(sub.status))?.plan;
+    const limitMb = tenant.customStorageLimitMb ?? activePlan?.storageLimitMb ?? 500;
     const limitBytes = BigInt(limitMb) * BigInt(1024 * 1024);
     const newPercent = limitBytes > BigInt(0)
       ? Number((newValue * BigInt(100)) / limitBytes)
@@ -492,5 +513,85 @@ export class QuotaService {
       );
     }
   }
+
+  // --- AI Quota Saga Pattern ---
+  
+  async reserveAiQuota(tenantId: string, units: number, featureName: string, referenceId: string): Promise<string> {
+    const { periodStart, aiQuota } = await this.billingService.getActivePeriod(tenantId);
+    
+    return await this.prisma.$transaction(async (tx) => {
+      const currentUsageRes = await tx.aiUsageLog.aggregate({
+        _sum: { unitsConsumed: true },
+        where: {
+          tenantId,
+          createdAt: { gte: periodStart },
+          status: { in: ['COMMITTED', 'RESERVED'] }
+        }
+      });
+      const currentUsed = currentUsageRes._sum.unitsConsumed || 0;
+      
+      if (currentUsed + units > aiQuota) {
+        throw new ForbiddenException(`Insufficient AI quota. Needed: ${units}, Available: ${aiQuota - currentUsed}`);
+      }
+      
+      const log = await tx.aiUsageLog.create({
+        data: {
+          tenantId,
+          featureName,
+          unitsConsumed: units,
+          status: 'RESERVED',
+          referenceId,
+          tokensUsed: 0,
+          costUsd: 0
+        }
+      });
+      
+      return log.id;
+    });
+  }
+
+  async commitAiQuota(logId: string, tokensUsed: number, costUsd: number): Promise<void> {
+    await this.prisma.aiUsageLog.update({
+      where: { id: logId },
+      data: {
+        status: 'COMMITTED',
+        tokensUsed,
+        costUsd
+      }
+    });
+  }
+
+  async refundAiQuota(logId: string): Promise<void> {
+    await this.prisma.aiUsageLog.update({
+      where: { id: logId },
+      data: {
+        status: 'REFUNDED'
+      }
+    });
+  }
+
+  // --- Saga Alias Methods for Ads Copilot ---
+  async reserveAiResponseUnits(tenantId: string, units: number, featureName: string, referenceId: string): Promise<string> {
+    return this.reserveAiQuota(tenantId, units, featureName, referenceId);
+  }
+
+  async commitReservedUnits(referenceId: string, tokensUsed: number = 0, costUsd: number = 0): Promise<void> {
+    const log = await this.prisma.aiUsageLog.findFirst({
+      where: { referenceId, status: 'RESERVED' },
+    });
+    if (log) {
+      await this.commitAiQuota(log.id, tokensUsed, costUsd);
+    }
+  }
+
+  async refundReservedUnits(referenceId: string, reason?: string): Promise<void> {
+    const log = await this.prisma.aiUsageLog.findFirst({
+      where: { referenceId, status: 'RESERVED' },
+    });
+    if (log) {
+      await this.refundAiQuota(log.id);
+    }
+  }
 }
+
 

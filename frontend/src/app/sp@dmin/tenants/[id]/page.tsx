@@ -44,6 +44,10 @@ export default function TenantReportPage() {
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
 
+  // Detailed Storage State
+  const [detailedStorage, setDetailedStorage] = useState<any>(null);
+  const [fetchingStorage, setFetchingStorage] = useState(false);
+
   useEffect(() => {
     const fetchTenantData = async () => {
       try {
@@ -170,6 +174,33 @@ export default function TenantReportPage() {
     }
   };
 
+  const fetchDetailedStorage = async () => {
+    setFetchingStorage(true);
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/storage/admin/recalculate/${id}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setDetailedStorage(data);
+        // Also update the main tenant object's usage so the progress bar reflects the recalculated value
+        setTenant((prev: any) => ({
+          ...prev,
+          usage: {
+            ...prev.usage,
+            storageUsedBytes: data.totalUsedBytes
+          }
+        }));
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setFetchingStorage(false);
+    }
+  };
+
   if (loading) {
     return <AdminLoader message="Loading tenant report & financial overview..." />;
   }
@@ -237,7 +268,7 @@ export default function TenantReportPage() {
       </div>
 
       {/* Overview Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Profile Card */}
         <div className="bg-white dark:bg-surface border border-slate-200/80 dark:border-surface-hover rounded-2xl p-4 shadow-sm dark:shadow-xl">
           <div className="flex items-center gap-2 mb-4">
@@ -353,8 +384,81 @@ export default function TenantReportPage() {
               <div className="w-full bg-slate-100 dark:bg-zinc-800 h-2 rounded-full overflow-hidden">
                 <div className="bg-emerald-500 h-full rounded-full transition-all" style={{ width: `${storagePercent}%` }} />
               </div>
+              
+              {!detailedStorage ? (
+                <button 
+                  onClick={fetchDetailedStorage}
+                  disabled={fetchingStorage}
+                  className="mt-2 w-full py-1.5 rounded-lg border border-slate-200 dark:border-surface-hover text-[10px] font-semibold hover:bg-slate-50 dark:hover:bg-surface-hover transition-colors disabled:opacity-50"
+                >
+                  {fetchingStorage ? 'Loading...' : 'Recalculate & View Details'}
+                </button>
+              ) : (
+                <div className="mt-3 space-y-1.5 p-2 bg-slate-50 dark:bg-surface-hover/50 rounded-xl border border-slate-100 dark:border-surface-hover">
+                  <div className="flex justify-between text-[10px]">
+                    <span className="text-slate-500">Real Disk Usage</span>
+                    <span className="font-bold">{(detailedStorage.totalUsedBytes / (1024 * 1024)).toFixed(1)} MB</span>
+                  </div>
+                  <div className="flex justify-between text-[10px]">
+                    <span className="text-slate-500">Chat Media</span>
+                    <span>{(detailedStorage.categories?.chatMedia?.bytes / (1024 * 1024)).toFixed(1)} MB</span>
+                  </div>
+                  <div className="flex justify-between text-[10px]">
+                    <span className="text-slate-500">Products</span>
+                    <span>{(detailedStorage.categories?.products?.bytes / (1024 * 1024)).toFixed(1)} MB</span>
+                  </div>
+                  <div className="flex justify-between text-[10px]">
+                    <span className="text-slate-500">AI Docs</span>
+                    <span>{(detailedStorage.categories?.aiDocuments?.bytes / (1024 * 1024)).toFixed(1)} MB</span>
+                  </div>
+                  <div className="flex justify-between text-[10px]">
+                    <span className="text-slate-500">Tickets</span>
+                    <span>{(detailedStorage.categories?.tickets?.bytes / (1024 * 1024)).toFixed(1)} MB</span>
+                  </div>
+                  <button 
+                    onClick={fetchDetailedStorage}
+                    className="mt-1 w-full py-1 text-[9px] text-primary hover:underline"
+                  >
+                    Refresh Sync
+                  </button>
+                </div>
+              )}
             </div>
           </div>
+        </div>
+
+        {/* CAPI Hub Card */}
+        <div className="bg-white dark:bg-surface border border-slate-200/80 dark:border-surface-hover rounded-2xl p-4 shadow-sm dark:shadow-xl">
+          <div className="flex items-center gap-2 mb-4">
+            <Database className="w-4 h-4 text-emerald-500" />
+            <h2 className="text-sm font-bold text-slate-900 dark:text-white">CAPI Hub</h2>
+          </div>
+          {tenant.capiIntegration ? (
+            <div className="space-y-3 text-xs">
+              <div className="flex justify-between items-center py-1 border-b border-slate-100 dark:border-surface-hover/50">
+                <span className="text-slate-500 dark:text-zinc-400">Status</span>
+                <span className={`font-bold ${tenant.capiIntegration.isActive ? 'text-emerald-500' : 'text-slate-500'}`}>
+                  {tenant.capiIntegration.isActive ? 'Active' : 'Inactive'}
+                </span>
+              </div>
+              <div className="flex justify-between items-center py-1 border-b border-slate-100 dark:border-surface-hover/50">
+                <span className="text-slate-500 dark:text-zinc-400">Pixel ID</span>
+                <span className="font-medium text-slate-800 dark:text-zinc-200">{tenant.capiIntegration.pixelId}</span>
+              </div>
+              <div className="flex justify-between items-center py-1 border-b border-slate-100 dark:border-surface-hover/50">
+                <span className="text-slate-500 dark:text-zinc-400">Events (Month)</span>
+                <span className="font-medium text-slate-800 dark:text-zinc-200">{tenant.capiStats?.totalEventsMonth || 0}</span>
+              </div>
+              <div className="flex justify-between items-center py-1">
+                <span className="text-slate-500 dark:text-zinc-400">Success Rate</span>
+                <span className="font-medium text-emerald-500">{tenant.capiStats?.successRate || 0}%</span>
+              </div>
+            </div>
+          ) : (
+            <div className="text-xs text-slate-500 dark:text-zinc-400 py-4 text-center">
+              CAPI not connected by tenant yet.
+            </div>
+          )}
         </div>
       </div>
 

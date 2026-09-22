@@ -3,9 +3,10 @@ import { TicketsService } from './tickets.service';
 import { TicketsController } from './tickets.controller';
 import { SmtpModule } from '../smtp/smtp.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { TenantsModule } from '../tenants/tenants.module';
 
 @Module({
-  imports: [SmtpModule, NotificationsModule],
+  imports: [SmtpModule, NotificationsModule, TenantsModule],
   controllers: [TicketsController],
   providers: [TicketsService],
 })

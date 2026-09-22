@@ -1,12 +1,14 @@
 import { Injectable, NotFoundException, BadRequestException, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityLogService } from '../inbox/activity-log.service';
+import { CapiHubService } from '../capi-hub/capi-hub.service';
 
 @Injectable()
 export class OrdersService {
   constructor(
     private prisma: PrismaService,
-    @Inject(forwardRef(() => ActivityLogService)) private activityLogService: ActivityLogService
+    @Inject(forwardRef(() => ActivityLogService)) private activityLogService: ActivityLogService,
+    private capiHubService: CapiHubService
   ) {}
 
   async getOrders(tenantId: string) {
@@ -117,7 +119,7 @@ export class OrdersService {
     const isCancelledOrRefunded = ['cancelled', 'refunded'].includes(status);
     const wasCancelledOrRefunded = ['cancelled', 'refunded'].includes(previousStatus);
 
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       const updatedOrder = await tx.order.update({
         where: { id: orderId },
         data: { status }
@@ -147,5 +149,26 @@ export class OrdersService {
 
       return updatedOrder;
     });
+
+    if (status === 'completed' && previousStatus !== 'completed') {
+      const contact = (order as any).contact;
+      this.capiHubService.fireEvent(tenantId, 'Purchase', {
+        event_id: `order_${order.id}`,
+        event_source_url: 'order_management',
+        user_data: {
+          em: (contact as any)?.email || undefined,
+          ph: (contact as any)?.phone || undefined,
+          fn: (contact as any)?.name || undefined
+        },
+        custom_data: {
+          value: order.totalAmount,
+          currency: 'BDT',
+          order_id: order.id,
+          content_ids: order.items.map(i => i.productId)
+        }
+      }, 'order').catch(() => {});
+    }
+
+    return result;
   }
 }

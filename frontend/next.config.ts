@@ -19,6 +19,12 @@ const nextConfig: NextConfig = {
         source: '/api/uploads/:path*',
         destination: `${API_URL}/uploads/:path*`,
       },
+      {
+        // Proxy raw /uploads/* requests to the NestJS backend static file server
+        // This resolves 404s for file URLs generated directly by the backend (e.g., /uploads/tenants/...)
+        source: '/uploads/:path*',
+        destination: `${API_URL}/uploads/:path*`,
+      },
     ];
   },
   async headers() {

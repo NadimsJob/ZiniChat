@@ -94,6 +94,21 @@ export class TenantStatsService {
     const finalMsgLimit = tenant?.customMessageQuota ?? messageQuota;
     const finalAiLimit = tenant?.customAiQuota ?? aiQuota;
 
+    const systemOutboundNotFilter = {
+      NOT: {
+        OR: [
+          { content: { path: ['isExternalSync'], equals: true } },
+          {
+            AND: [
+              { senderUserId: null },
+              { aiAssistantId: null },
+              { senderType: 'agent' }
+            ]
+          }
+        ]
+      }
+    };
+
     // ── KPIs: Messages ──────────────────────────────────────────────────────
     const [
       msgToday,
@@ -102,13 +117,13 @@ export class TenantStatsService {
       messagesUsed,
     ] = await Promise.all([
       this.prisma.message.count({
-        where: { conversation: { tenantId }, direction: 'outbound', createdAt: { gte: todayStart } }
+        where: { conversation: { tenantId }, direction: 'outbound', createdAt: { gte: todayStart }, ...systemOutboundNotFilter }
       }),
       this.prisma.message.count({
-        where: { conversation: { tenantId }, direction: 'outbound', createdAt: { gte: from, lte: to } }
+        where: { conversation: { tenantId }, direction: 'outbound', createdAt: { gte: from, lte: to }, ...systemOutboundNotFilter }
       }),
       this.prisma.message.count({
-        where: { conversation: { tenantId }, direction: 'outbound', createdAt: { gte: prevFrom, lte: prevTo } }
+        where: { conversation: { tenantId }, direction: 'outbound', createdAt: { gte: prevFrom, lte: prevTo }, ...systemOutboundNotFilter }
       }),
       this.quotaService.getMessageUsage(tenantId, periodStart),
     ]);
@@ -152,7 +167,7 @@ export class TenantStatsService {
         where: { conversation: { tenantId }, createdAt: { gte: yesterday, lt: todayStart } }
       }),
       this.prisma.message.count({
-        where: { conversation: { tenantId }, direction: 'outbound', createdAt: { gte: todayStart } }
+        where: { conversation: { tenantId }, direction: 'outbound', createdAt: { gte: todayStart }, ...systemOutboundNotFilter }
       })
     ]);
 
@@ -162,7 +177,7 @@ export class TenantStatsService {
 
     // Human messages = total outbound - AI outbound in range
     const outboundFiltered = await this.prisma.message.count({
-      where: { conversation: { tenantId }, direction: 'outbound', createdAt: { gte: from, lte: to } }
+      where: { conversation: { tenantId }, direction: 'outbound', createdAt: { gte: from, lte: to }, ...systemOutboundNotFilter }
     });
     const humanFiltered = Math.max(0, outboundFiltered - aiFiltered);
     const automationRate = outboundFiltered > 0 ? Math.round((aiFiltered / outboundFiltered) * 100) : 0;
@@ -808,7 +823,23 @@ export class TenantStatsService {
     ]);
 
     const outboundToday = await this.prisma.message.count({
-      where: { conversation: { tenantId }, direction: 'outbound', createdAt: { gte: todayStart } }
+      where: {
+        conversation: { tenantId },
+        direction: 'outbound',
+        createdAt: { gte: todayStart },
+        NOT: {
+          OR: [
+            { content: { path: ['isExternalSync'], equals: true } },
+            {
+              AND: [
+                { senderUserId: null },
+                { aiAssistantId: null },
+                { senderType: 'agent' }
+              ]
+            }
+          ]
+        }
+      }
     });
 
     const aiRate = outboundToday > 0 ? Math.round((aiToday / outboundToday) * 100) : 0;

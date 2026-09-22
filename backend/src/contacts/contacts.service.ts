@@ -1,4 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException, Inject, forwardRef } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityLogService } from '../inbox/activity-log.service';
 import { InboxGateway } from '../inbox/inbox.gateway';
@@ -8,7 +10,8 @@ export class ContactsService {
   constructor(
     private prisma: PrismaService,
     @Inject(forwardRef(() => ActivityLogService)) private activityLogService: ActivityLogService,
-    @Inject(forwardRef(() => InboxGateway)) private inboxGateway: InboxGateway
+    @Inject(forwardRef(() => InboxGateway)) private inboxGateway: InboxGateway,
+    @InjectQueue('follow-up') private followUpQueue: Queue
   ) {}
 
   async getContacts(tenantId: string) {
@@ -139,7 +142,7 @@ export class ContactsService {
     });
     if (!contact) throw new NotFoundException('Contact not found');
 
-    return this.prisma.contact.update({
+    const updatedContact = await this.prisma.contact.update({
       where: { id: contactId },
       data: {
         name: data.name !== undefined ? data.name : contact.name,
@@ -150,6 +153,8 @@ export class ContactsService {
         stageId: data.stageId !== undefined ? data.stageId : contact.stageId,
         isBlocked: data.isBlocked !== undefined ? data.isBlocked : (contact as any).isBlocked,
         followUpAt: data.followUpAt !== undefined ? (data.followUpAt ? new Date(data.followUpAt) : null) : contact.followUpAt,
+        automatedFollowUpMessage: data.automatedFollowUpMessage !== undefined ? data.automatedFollowUpMessage : contact.automatedFollowUpMessage,
+        automatedFollowUpSent: (data.followUpAt !== undefined || data.automatedFollowUpMessage !== undefined) ? false : contact.automatedFollowUpSent,
         assignedUserId: data.assignedUserId !== undefined ? data.assignedUserId : contact.assignedUserId,
       },
       include: {
@@ -157,6 +162,34 @@ export class ContactsService {
         assignedUser: true
       }
     });
+
+    // Manage BullMQ delayed follow-up job
+    const jobId = `follow-up-${contactId}`;
+    try {
+      await this.followUpQueue.remove(jobId);
+    } catch (e) {
+      // Ignore if job didn't exist
+    }
+
+    if (
+      updatedContact.automatedFollowUpMessage &&
+      updatedContact.followUpAt &&
+      !updatedContact.automatedFollowUpSent
+    ) {
+      const delay = Math.max(0, new Date(updatedContact.followUpAt).getTime() - Date.now());
+      try {
+        await this.followUpQueue.add(
+          'send-automated-follow-up',
+          { contactId: updatedContact.id },
+          { jobId, delay }
+        );
+      } catch (err: any) {
+        // Log error but do not break contact update
+        console.error(`Failed to schedule follow-up job in BullMQ: ${err.message}`);
+      }
+    }
+
+    return updatedContact;
   }
 
   async importContacts(tenantId: string, contacts: any[], defaultTag?: string) {

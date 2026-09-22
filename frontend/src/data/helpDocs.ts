@@ -1,4 +1,4 @@
-export type DocCategory = 'getting-started' | 'ai-training' | 'inbox-messaging' | 'sales-ecommerce' | 'billing-quotas' | 'settings';
+export type DocCategory = 'getting-started' | 'ai-training' | 'inbox-messaging' | 'sales-ecommerce' | 'billing-quotas' | 'settings' | 'marketing-ads';
 
 export interface HelpArticle {
   id: string;
@@ -20,10 +20,60 @@ export const helpCategories: { id: DocCategory; labelEn: string; labelBn: string
   { id: 'inbox-messaging', labelEn: 'Inbox & Messaging', labelBn: 'Inbox & Messaging', icon: 'MessageSquare' },
   { id: 'sales-ecommerce', labelEn: 'Sales & E-Commerce', labelBn: 'Sales & E-Commerce', icon: 'ShoppingBag' },
   { id: 'billing-quotas', labelEn: 'Billing & Quotas', labelBn: 'Billing & Quotas', icon: 'CreditCard' },
-  { id: 'settings', labelEn: 'Settings & Team', labelBn: 'Settings & Team', icon: 'Settings' }
+  { id: 'settings', labelEn: 'Settings & Team', labelBn: 'Settings & Team', icon: 'Settings' },
+  { id: 'marketing-ads', labelEn: 'Marketing & Ads', labelBn: 'মার্কেটিং ও এডস', icon: 'Megaphone' }
 ];
 
 export const helpDocs: HelpArticle[] = [
+  {
+    id: 'capi-hub-setup',
+    titleEn: 'How to setup Meta CAPI (Conversion API)',
+    titleBn: 'মেটা CAPI (Conversion API) কিভাবে সেটআপ করবেন',
+    category: 'marketing-ads',
+    tags: ['CAPI', 'Meta', 'Pixel', 'Ads'],
+    excerptEn: 'Learn how to integrate Meta Conversion API to track sales and leads accurately.',
+    excerptBn: 'সঠিকভাবে সেলস এবং লিড ট্র্যাক করতে মেটা কনভার্শন এপিআই সেটআপ করার নিয়ম জানুন।',
+    planConditions: 'Available on all plans (Requires Rollout Access)',
+    aiCreditCost: '0.00 / setup',
+    contentEn: `
+## What is Meta CAPI?
+Meta Conversions API (CAPI) is designed to create a direct and reliable connection between ZiniChat and Meta. This helps track events like new leads and completed orders on your website or chat.
+
+### Steps to configure CAPI:
+1. Go to **Settings -> CAPI Hub**.
+2. Click on the **Connect Pixel & Dataset** section.
+3. Obtain your **Pixel ID** and **Dataset ID** from Meta Events Manager.
+4. Generate a **System User Access Token** in Meta Business Settings and paste it in the Access Token field.
+5. Click **Save Configuration**.
+
+### Event Selection
+Once configured, you can individually enable or disable events like:
+- **Lead** (when a new contact is captured)
+- **Purchase** (when an order is marked as delivered)
+
+> [!TIP]
+> Use the Event Logs tab to monitor the status of your events and troubleshoot failed requests.
+    `,
+    contentBn: `
+## Meta CAPI কি?
+মেটা কনভার্শনস এপিআই (CAPI) জিনিচ্যাট এবং মেটার মধ্যে একটি সরাসরি এবং নির্ভরযোগ্য সংযোগ তৈরি করার জন্য ডিজাইন করা হয়েছে। এটি আপনার ওয়েবসাইট বা চ্যাটে নতুন লিড এবং সম্পূর্ণ অর্ডারের মতো ইভেন্টগুলো ট্র্যাক করতে সহায়তা করে।
+
+### CAPI কনফিগার করার ধাপসমূহ:
+১. **সেটিংস -> CAPI Hub**-এ যান।
+২. **Connect Pixel & Dataset** সেকশনে ক্লিক করুন।
+৩. মেটা ইভেন্ট ম্যানেজার থেকে আপনার **Pixel ID** এবং **Dataset ID** সংগ্রহ করুন।
+৪. মেটা বিজনেস সেটিংসে একটি **System User Access Token** জেনারেট করুন এবং সেটি অ্যাক্সেস টোকেন ফিল্ডে পেস্ট করুন।
+৫. **Save Configuration**-এ ক্লিক করুন।
+
+### ইভেন্ট নির্বাচন
+একবার কনফিগার করা হলে, আপনি আলাদাভাবে ইভেন্টগুলো এনাবল বা ডিজেবল করতে পারবেন:
+- **Lead** (যখন নতুন কন্টাক্ট সেভ হয়)
+- **Purchase** (যখন অর্ডার ডেলিভার করা হয়)
+
+> [!TIP]
+> আপনার ইভেন্টের স্ট্যাটাস মনিটর করতে এবং ব্যর্থ রিকোয়েস্টের সমস্যা সমাধান করতে Event Logs ট্যাবটি ব্যবহার করুন।
+    `
+  },
   /* ---------------- GETTING STARTED ---------------- */
   {
     id: 'connect-facebook-page',
@@ -488,5 +538,97 @@ You can delegate customer handling to your sales agents without giving them acce
 
 ![Storage Settings Guide](/docs/settings-team-guide.svg)
 `
+  },
+  {
+    id: 'ads-copilot-creator-guide',
+    titleEn: 'Ads Copilot — Launching AI Ad Campaigns & Safety Auto-Scaling',
+    titleBn: 'অ্যাডস কোপাইলট — AI বিজ্ঞাপন প্রকাশ ও নিরাপত্তা অটো-স্কেলিং গাইড',
+    category: 'marketing-ads',
+    tags: ['Ads Copilot', 'Meta', 'AI Ads', 'Auto-Scaling', 'Saga', 'Quota'],
+    excerptEn: 'Learn how to create 5-turn AI ad campaigns, manage budget guardrails, and enable auto-scaling.',
+    excerptBn: 'কীভাবে ৫-টার্ন এআই বিজ্ঞাপন তৈরি করবেন, বাজেট নিয়ন্ত্রণ করবেন এবং অটো-স্কেলিং চালু করবেন তা জানুন।',
+    planConditions: 'Available on Growth & Scale plans (Requires Rollout Flag)',
+    aiCreditCost: '10 AI Units for Ad Launch, 5 AI Units per Auto-Scale Action',
+    contentEn: `
+### Overview
+Ads Copilot helps merchants launch Meta ad campaigns directly from ZiniChat using guided AI assistance. It handles catalog product matching, Advantage+ targeting, AI copy generation, image upload, and budget optimization with automatic saga refunds on failure.
+
+### 5-Step AI Ad Creation Flow:
+1. **Connect Ad Account**: Go to **Marketing & Ads > Ad Account** and connect your Meta Ad Account. Ensure a Facebook Messenger channel is connected to link your Facebook Page.
+2. **Start AI Session**: Open **Marketing & Ads > Ads Copilot** and click **Start AI Ad Creation**.
+3. **Turn 1 (Product Selection)**: Pick products from your store catalog or describe your promotion.
+4. **Turn 2 (Audience Target)**: Benefit from Meta Advantage+ Audience algorithms and select target cities/locations.
+5. **Turn 3 (Budget & Duration)**: Set your daily budget and duration. Balance telemetry checks warn if account balance is low.
+6. **Turn 4 (Creative Review)**: Review AI-generated headlines, body copy, and product image hashes.
+7. **Turn 5 (Approval & Saga Execution)**: Click **Approve & Publish Ad**. 10 AI Response Units are reserved. If Meta campaign/adset creation succeeds, the ad is submitted to Meta Review. If any step fails, reserved units are automatically refunded!
+
+### Safety-Guardrail Auto-Scaling Engine:
+* Enable **Auto-Scaling** on active campaigns in Campaign Manager.
+* Set a **Max Budget Cap** (e.g. ৳1,000/day).
+* The 6-hour cron evaluates CTR/conversions. High-performing ads are scaled up to 20% max per 24 hours.
+
+![Ads Copilot Setup Guide](/docs/ads-copilot-guide.png)
+`,
+    contentBn: `
+### ওভারভিউ
+অ্যাডস কোপাইলট মার্চেন্টদের সরাসরি জিনিচ্যাট থেকেই AI-এর সাহায্যে Meta বিজ্ঞাপন তৈরি ও পরিচালনা করতে সাহায্য করে। এটি অটোমেটিক ক্যাটালগ প্রোডাক্ট ম্যাচিং, Advantage+ অডিয়েন্স, AI কপি জেনারেশন এবং সিকিউর সাগা রিফান্ড নিশ্চিত করে।
+
+### ৫-ধাপে বিজ্ঞাপন তৈরির গাইড:
+১. **অ্যাড অ্যাকাউন্ট কানেক্ট**: **Marketing & Ads > Ad Account** থেকে ফেসবুক অ্যাড অ্যাকাউন্ট কানেক্ট করুন।
+২. **AI সেশন চালু**: **Marketing & Ads > Ads Copilot** থেকে **Start AI Ad Creation** ক্লিক করুন।
+৩. **ধাপ ১ (পণ্য বাছাই)**: ক্যাটালগ থেকে প্রোডাক্ট বা অফারের বিবরণ দিন।
+৪. **ধাপ ২ (অডিয়েন্স)**: Advantage+ অডিয়েন্স ও টার্গেটেড অঞ্চল বাছাই করুন।
+৫. **ধাপ ৩ (বাজেট)**: দৈনিক বাজেট ও স্থায়ীত্ব নির্ধারণ করুন।
+৬. **ধাপ ৪ (ডিজাইন রিভিউ)**: AI জেনারেটেড কপি ও ইমেজ প্রিভিউ চেক করুন।
+৭. **ধাপ ৫ (পাবলিশ)**: **Approve & Publish Ad** ক্লিক করুন। ১০টি AI ইউনিট রিজার্ভ হবে। প্রকাশ ব্যর্থ হলে স্বয়ংক্রিয়ভাবে ইউনিট রিফান্ড হবে!
+
+### অটো-স্কেলিং গাইড:
+* ক্যাম্পেইন ম্যানেজারে গিয়ে **Auto-Scaling ON** করুন এবং সর্বোচ্চ বাজেট সীমা নির্দিষ্ট করুন।
+* প্রতি ২৪ ঘণ্টায় সর্বোচ্চ ১ বার এবং ২০% পর্যন্ত বাজেট স্কেলিং করা হবে।
+
+![Ads Copilot Setup Guide](/docs/ads-copilot-guide.png)
+`
+  },
+  {
+    id: 'automated-ai-followups',
+    titleEn: 'Setting Up Automated AI Follow-up Messages in Live Inbox',
+    titleBn: 'লাইভ ইনবক্সে অটোমেটেড এআই ফলো-আপ মেসেজ সেটআপ গাইড',
+    category: 'inbox-messaging',
+    tags: ['followup', 'inbox', 'ai', 'automation', 'bullmq', 'schedule'],
+    excerptEn: 'Learn how to schedule automated AI follow-up messages for customers at specific dates and times with zero delay.',
+    excerptBn: 'নির্দিষ্ট তারিখ ও সময় অনুযায়ী গ্রাহকদের কাছে অটোমেটেড এআই ফলো-আপ মেসেজ পাঠানোর নিয়ম জানুন।',
+    planConditions: 'Available on all active plans.',
+    aiCreditCost: '1 AI Unit per scheduled message when sent.',
+    contentEn: `
+### Overview
+Automated AI Follow-ups allow merchants to set a future date, time, and custom follow-up message for any lead in Live Inbox. BullMQ delayed queues handle execution accurately without server lag or manual intervention.
+
+### Step-by-Step Guide:
+1. Open **Live Inbox** and select a customer conversation.
+2. In the right sidebar under **Follow-up Details**, select the **Follow-up Date & Time** using the date-time picker.
+3. Check the box **"Send Automated AI Follow-up Message"**.
+4. Type your personalized message (e.g. *"Hello! Any update regarding your order?"*) into the text box.
+5. Click **Save Details**.
+6. The system will automatically enqueue a BullMQ delayed job. When the exact time arrives, the message will be sent to the customer automatically under AI Assistant attribution!
+
+> [!NOTE]
+> If you change or clear the follow-up date, the previous scheduled job will automatically be updated or canceled.
+`,
+    contentBn: `
+### ওভারভিউ
+অটোমেটেড এআই ফলো-আপের মাধ্যমে আপনি লাইভ ইনবক্সের যেকোনো কাস্টমারের জন্য ভবিষ্যতের নির্দিষ্ট তারিখ ও সময় অনুযায়ী ফলো-আপ মেসেজ শিডিউল করতে পারবেন। বুল-এমকিউ (BullMQ) সিস্টেমের মাধ্যমে এটি অত্যন্ত দ্রুত ও নির্ভরযোগ্যভাবে নির্দিষ্ট সময়ে কাস্টমারকে মেসেজ পাঠাবে।
+
+### ব্যবহারের ধাপসমূহ:
+১. **লাইভ ইনবক্স** থেকে যেকোনো কাস্টমারের কথোপকথন সিলেক্ট করুন।
+২. ডানপাশের সাইডবারে **Follow-up Details** অংশে গিয়ে **তারিখ ও সময়** নির্বাচন করুন।
+৩. **"Send Automated AI Follow-up Message"** চেক বক্সটিতে টিক দিন।
+৪. মেসেজ বক্সে আপনার কাঙ্ক্ষিত ফলো-আপ বার্তাটি লিখুন (যেমন: *"হ্যালো! আপনার অর্ডারের কোনো আপডেট আছে কি?"*)।
+৫. **Save Details** বাটনে ক্লিক করুন।
+৬. নির্ধারিত সময় হওয়ার সাথে সাথে এআই অ্যাসিস্ট্যান্ট কাস্টমারকে স্বয়ংক্রিয়ভাবে মেসেজটি পাঠিয়ে দেবে!
+
+> [!NOTE]
+> আপনি যদি ফলো-আপের তারিখ পরিবর্তন বা বাদ দেন, তাহলে আগের শিডিউল করা মেসেজটি স্বয়ংক্রিয়ভাবে আপডেট বা বাতিল হয়ে যাবে।
+`
   }
 ];
+

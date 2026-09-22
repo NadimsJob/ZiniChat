@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Body, Param, Patch, UseGuards, Request, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { TicketsService } from './tickets.service';
+import { QuotaService } from '../tenants/quota.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -9,7 +10,10 @@ import * as fs from 'fs';
 @Controller('tickets')
 @UseGuards(JwtAuthGuard)
 export class TicketsController {
-  constructor(private readonly ticketsService: TicketsService) {}
+  constructor(
+    private readonly ticketsService: TicketsService,
+    private readonly quotaService: QuotaService
+  ) {}
 
   @Get()
   async getTickets(@Request() req: any) {
@@ -55,6 +59,9 @@ export class TicketsController {
     @UploadedFile() file: Express.Multer.File
   ) {
     const attachmentUrl = file ? `/uploads/tickets/${file.filename}` : undefined;
+    if (file && file.size) {
+      await this.quotaService.incrementStorage(req.user.tenantId, file.size);
+    }
     return this.ticketsService.createTicket(req.user.tenantId, req.user.id, body.subject, body.type || 'General', body.priority || 'medium', body.message, attachmentUrl);
   }
 
@@ -80,6 +87,9 @@ export class TicketsController {
     @UploadedFile() file: Express.Multer.File
   ) {
     const attachmentUrl = file ? `/uploads/tickets/${file.filename}` : undefined;
+    if (file && file.size) {
+      await this.quotaService.incrementStorage(req.user.tenantId, file.size);
+    }
     return this.ticketsService.addMessage(id, req.user, body.message, attachmentUrl);
   }
 

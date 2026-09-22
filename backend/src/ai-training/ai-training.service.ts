@@ -11,6 +11,7 @@ import { FileValidationService } from '../file-validation/file-validation.servic
 import { ToolConfigValidatorService } from './services/tool-config-validator.service';
 import { AiCacheService } from '../ai/ai-cache.service';
 import { AiService } from '../ai/ai.service';
+import { StorageService } from '../storage/storage.service';
 
 import { Logger } from '@nestjs/common';
 
@@ -28,7 +29,8 @@ export class AiTrainingService {
     private toolConfigValidator: ToolConfigValidatorService,
     private aiCacheService: AiCacheService,
     private aiService: AiService,
-    private websiteCrawlerService: WebsiteCrawlerService
+    private websiteCrawlerService: WebsiteCrawlerService,
+    private storageService: StorageService
   ) {}
 
   private async ensureAiAssistantExists(tenantId: string) {

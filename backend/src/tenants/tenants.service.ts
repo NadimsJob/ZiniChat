@@ -157,6 +157,9 @@ export class TenantsService {
         payments: {
           orderBy: { createdAt: 'desc' }
         },
+        capiIntegration: {
+          select: { pixelId: true, isActive: true, createdAt: true, updatedAt: true }
+        },
         _count: {
           select: { 
             users: true, 
@@ -176,7 +179,7 @@ export class TenantsService {
 
     if (!tenant) return null;
 
-    const [aiUsage, totalAiTokens] = await Promise.all([
+    const [aiUsage, totalAiTokens, capiEventsGroupByStatus] = await Promise.all([
       this.prisma.aiUsageLog.aggregate({
         where: { 
           tenantId: id,
@@ -188,8 +191,22 @@ export class TenantsService {
       this.prisma.aiUsageLog.aggregate({
         where: { tenantId: id },
         _sum: { tokensUsed: true }
+      }),
+      this.prisma.capiEventLog.groupBy({
+        by: ['status'],
+        where: { tenantId: id, createdAt: { gte: startOfMonth } },
+        _count: { id: true }
       })
     ]);
+
+    let capiTotal = 0;
+    let capiSuccess = 0;
+    capiEventsGroupByStatus.forEach(g => {
+      capiTotal += g._count.id;
+      if (g.status === 'sent') capiSuccess += g._count.id;
+    });
+
+    const capiSuccessRate = capiTotal > 0 ? Math.round((capiSuccess / capiTotal) * 100) : 0;
 
     return {
       ...tenant,
@@ -200,6 +217,10 @@ export class TenantsService {
         tokensUsed: aiUsage._sum.tokensUsed || 0,
         totalTokensUsed: totalAiTokens._sum.tokensUsed || 0,
         storageUsedBytes: Number(tenant.storageUsedBytes)
+      },
+      capiStats: {
+        totalEventsMonth: capiTotal,
+        successRate: capiSuccessRate
       }
     };
   }
@@ -223,13 +244,27 @@ export class TenantsService {
     const quotas = await this.billingService.getTenantQuotas(id);
     const activeSub = tenant.subscriptions.find((s: any) => s.status === 'active' || s.status === 'trialing');
     const basePlan = activeSub?.plan || tenant.subscriptions[0]?.plan || null;
-
-    // Current usage calculations
     const { periodStart } = await this.billingService.getActivePeriod(id);
-    
+
     const [directMessages, broadcastMessages, aiUsed, productsCount, contactsCount] = await Promise.all([
       this.prisma.message.count({
-        where: { direction: 'outbound', conversation: { tenantId: id }, createdAt: { gte: periodStart } }
+        where: {
+          direction: 'outbound',
+          conversation: { tenantId: id },
+          createdAt: { gte: periodStart },
+          NOT: {
+            OR: [
+              { content: { path: ['isExternalSync'], equals: true } },
+              {
+                AND: [
+                  { senderUserId: null },
+                  { aiAssistantId: null },
+                  { senderType: 'agent' }
+                ]
+              }
+            ]
+          }
+        }
       }),
       this.prisma.broadcastRecipient.count({
         where: { broadcast: { tenantId: id, createdAt: { gte: periodStart } }, status: { notIn: ['pending', 'failed'] } }
@@ -390,7 +425,23 @@ export class TenantsService {
         const { periodStart } = await this.billingService.getActivePeriod(id);
         const [directMessages, broadcastMessages] = await Promise.all([
           this.prisma.message.count({
-            where: { direction: 'outbound', conversation: { tenantId: id }, createdAt: { gte: periodStart } }
+            where: {
+              direction: 'outbound',
+              conversation: { tenantId: id },
+              createdAt: { gte: periodStart },
+              NOT: {
+                OR: [
+                  { content: { path: ['isExternalSync'], equals: true } },
+                  {
+                    AND: [
+                      { senderUserId: null },
+                      { aiAssistantId: null },
+                      { senderType: 'agent' }
+                    ]
+                  }
+                ]
+              }
+            }
           }),
           this.prisma.broadcastRecipient.count({
             where: { broadcast: { tenantId: id, createdAt: { gte: periodStart } }, status: { notIn: ['pending', 'failed'] } }

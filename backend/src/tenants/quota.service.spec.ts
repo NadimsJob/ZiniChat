@@ -32,14 +32,18 @@ const mockActiveTenant = (overrides?: any) => ({
 });
 
 // ─── Mock Factories ─────────────────────────────────────────────────────────────
-const createPrismaMock = () => ({
-  tenant: { findUnique: jest.fn(), update: jest.fn() },
-  user: { findMany: jest.fn().mockResolvedValue([]) },
-  message: { count: jest.fn() },
-  broadcastRecipient: { count: jest.fn() },
-  aiUsageLog: { count: jest.fn() },
-  product: { count: jest.fn() },
-});
+const createPrismaMock = () => {
+  const mock = {
+    tenant: { findUnique: jest.fn(), update: jest.fn() },
+    user: { findMany: jest.fn().mockResolvedValue([]) },
+    message: { count: jest.fn() },
+    broadcastRecipient: { count: jest.fn() },
+    aiUsageLog: { count: jest.fn(), aggregate: jest.fn(), create: jest.fn(), update: jest.fn() },
+    product: { count: jest.fn() },
+    $transaction: jest.fn().mockImplementation((cb) => cb(mock)),
+  };
+  return mock;
+};
 
 const createBillingMock = () => ({
   getActivePeriod: jest.fn(),
@@ -318,7 +322,7 @@ describe('QuotaService', () => {
     it('throws ForbiddenException when AI quota is reached', async () => {
       prisma.tenant.findUnique.mockResolvedValue(mockActiveTenant());
       billing.getActivePeriod.mockResolvedValue(mockActivePeriod({ aiQuota: 200 }));
-      prisma.aiUsageLog.count.mockResolvedValue(200); // exactly at limit
+      prisma.aiUsageLog.aggregate.mockResolvedValue({ _sum: { unitsConsumed: 200 } });
 
       await expect(service.checkAiQuota(TENANT_ID)).rejects.toThrow(
         /AI quota exceeded \(200\/200\)/
@@ -328,7 +332,7 @@ describe('QuotaService', () => {
     it('passes when AI usage is below quota', async () => {
       prisma.tenant.findUnique.mockResolvedValue(mockActiveTenant());
       billing.getActivePeriod.mockResolvedValue(mockActivePeriod({ aiQuota: 200 }));
-      prisma.aiUsageLog.count.mockResolvedValue(199);
+      prisma.aiUsageLog.aggregate.mockResolvedValue({ _sum: { unitsConsumed: 199 } });
 
       await expect(service.checkAiQuota(TENANT_ID)).resolves.toBeUndefined();
     });
@@ -336,14 +340,15 @@ describe('QuotaService', () => {
     it('uses subscription period start for AI log count', async () => {
       prisma.tenant.findUnique.mockResolvedValue(mockActiveTenant());
       billing.getActivePeriod.mockResolvedValue(mockActivePeriod());
-      prisma.aiUsageLog.count.mockResolvedValue(0);
+      prisma.aiUsageLog.aggregate.mockResolvedValue({ _sum: { unitsConsumed: 0 } });
 
       await service.checkAiQuota(TENANT_ID);
 
-      expect(prisma.aiUsageLog.count).toHaveBeenCalledWith(
+      expect(prisma.aiUsageLog.aggregate).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
             createdAt: { gte: PERIOD_START },
+            status: { in: ['COMMITTED', 'RESERVED'] }
           }),
         })
       );
@@ -355,7 +360,7 @@ describe('QuotaService', () => {
       });
       prisma.tenant.findUnique.mockResolvedValue(tenantMock);
       billing.getActivePeriod.mockResolvedValue(mockActivePeriod({ aiQuota: 100 }));
-      prisma.aiUsageLog.count.mockResolvedValue(80);
+      prisma.aiUsageLog.aggregate.mockResolvedValue({ _sum: { unitsConsumed: 80 } });
       prisma.user.findMany.mockResolvedValue([{ id: 'admin-1', email: 'admin@test.com', role: 'admin' }]);
 
       const notificationsService = (service as any).notificationsService;
@@ -388,7 +393,7 @@ describe('QuotaService', () => {
       });
       prisma.tenant.findUnique.mockResolvedValue(tenantMock);
       billing.getActivePeriod.mockResolvedValue(mockActivePeriod({ aiQuota: 100 }));
-      prisma.aiUsageLog.count.mockResolvedValue(80);
+      prisma.aiUsageLog.aggregate.mockResolvedValue({ _sum: { unitsConsumed: 80 } });
       prisma.tenant.update.mockClear();
 
       await service.checkAiQuota(TENANT_ID);
@@ -402,7 +407,7 @@ describe('QuotaService', () => {
       });
       prisma.tenant.findUnique.mockResolvedValue(tenantMock);
       billing.getActivePeriod.mockResolvedValue(mockActivePeriod({ aiQuota: 100 }));
-      prisma.aiUsageLog.count.mockResolvedValue(100);
+      prisma.aiUsageLog.aggregate.mockResolvedValue({ _sum: { unitsConsumed: 100 } });
       prisma.user.findMany.mockResolvedValue([{ id: 'admin-1', email: 'admin@test.com', role: 'admin' }]);
 
       const notificationsService = (service as any).notificationsService;
@@ -429,6 +434,55 @@ describe('QuotaService', () => {
         100,
         100
       );
+    });
+  });
+
+  // ─── AI Quota Saga ────────────────────────────────────────────────────────────
+  describe('AI Quota Saga', () => {
+    it('reserves AI quota successfully', async () => {
+      billing.getActivePeriod.mockResolvedValue(mockActivePeriod({ aiQuota: 100 }));
+      prisma.aiUsageLog.aggregate.mockResolvedValue({ _sum: { unitsConsumed: 50 } });
+      prisma.aiUsageLog.create.mockResolvedValue({ id: 'log-1' });
+
+      const logId = await service.reserveAiQuota(TENANT_ID, 20, 'AD_RUN', 'ref-1');
+      
+      expect(logId).toBe('log-1');
+      expect(prisma.aiUsageLog.create).toHaveBeenCalledWith({
+        data: {
+          tenantId: TENANT_ID,
+          featureName: 'AD_RUN',
+          unitsConsumed: 20,
+          status: 'RESERVED',
+          referenceId: 'ref-1',
+          tokensUsed: 0,
+          costUsd: 0
+        }
+      });
+    });
+
+    it('throws ForbiddenException if insufficient quota for reservation', async () => {
+      billing.getActivePeriod.mockResolvedValue(mockActivePeriod({ aiQuota: 100 }));
+      prisma.aiUsageLog.aggregate.mockResolvedValue({ _sum: { unitsConsumed: 90 } });
+
+      await expect(service.reserveAiQuota(TENANT_ID, 20, 'AD_RUN', 'ref-1')).rejects.toThrow(
+        /Insufficient AI quota/
+      );
+    });
+
+    it('commits AI quota', async () => {
+      await service.commitAiQuota('log-1', 1500, 0.002);
+      expect(prisma.aiUsageLog.update).toHaveBeenCalledWith({
+        where: { id: 'log-1' },
+        data: { status: 'COMMITTED', tokensUsed: 1500, costUsd: 0.002 }
+      });
+    });
+
+    it('refunds AI quota', async () => {
+      await service.refundAiQuota('log-1');
+      expect(prisma.aiUsageLog.update).toHaveBeenCalledWith({
+        where: { id: 'log-1' },
+        data: { status: 'REFUNDED' }
+      });
     });
   });
 

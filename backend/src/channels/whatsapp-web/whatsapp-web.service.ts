@@ -308,6 +308,35 @@ export class WhatsappWebService implements OnModuleInit {
           continue;
         }
 
+        if (!msg.message) continue;
+
+        // Unpack inner message if wrapped in ephemeral/viewOnce/documentWithCaption/editedMessage
+        const unwrapBaileysMessage = (raw: any): any => {
+          if (!raw) return null;
+          if (raw.ephemeralMessage?.message) return unwrapBaileysMessage(raw.ephemeralMessage.message);
+          if (raw.viewOnceMessage?.message) return unwrapBaileysMessage(raw.viewOnceMessage.message);
+          if (raw.viewOnceMessageV2?.message) return unwrapBaileysMessage(raw.viewOnceMessageV2.message);
+          if (raw.viewOnceMessageV2Extension?.message) return unwrapBaileysMessage(raw.viewOnceMessageV2Extension.message);
+          if (raw.documentWithCaptionMessage?.message) return unwrapBaileysMessage(raw.documentWithCaptionMessage.message);
+          if (raw.editedMessage?.message?.protocolMessage?.editedMessage) {
+            return unwrapBaileysMessage(raw.editedMessage.message.protocolMessage.editedMessage);
+          }
+          return raw;
+        };
+
+        const messageContent = unwrapBaileysMessage(msg.message);
+        if (!messageContent) continue;
+
+        // Ignore protocol control messages (e.g. revokes, key syncs, ephemeral timer updates)
+        if (messageContent.protocolMessage && !messageContent.protocolMessage.editedMessage) {
+          continue;
+        }
+
+        // Ignore standalone emoji reaction messages to avoid conversation list spam
+        if (messageContent.reactionMessage) {
+          continue;
+        }
+
         const externalContactId = isGroup ? remoteJid : remoteJid.split('@')[0];
         const contactName = msg.pushName || externalContactId;
         
@@ -317,13 +346,15 @@ export class WhatsappWebService implements OnModuleInit {
         let quotedMsg: any = null;
         let mediaUrl = '';
         
-        if (msg.message.conversation) {
-          contentStr = msg.message.conversation;
-        } else if (msg.message.extendedTextMessage?.text) {
-          contentStr = msg.message.extendedTextMessage.text;
-          const contextInfo = msg.message.extendedTextMessage.contextInfo;
+        const effectiveMsg = { key: msg.key, message: messageContent };
+
+        if (messageContent.conversation) {
+          contentStr = messageContent.conversation;
+        } else if (messageContent.extendedTextMessage?.text) {
+          contentStr = messageContent.extendedTextMessage.text;
+          const contextInfo = messageContent.extendedTextMessage.contextInfo;
           if (contextInfo?.quotedMessage) {
-            const qMsg = contextInfo.quotedMessage;
+            const qMsg = unwrapBaileysMessage(contextInfo.quotedMessage);
             let qText = '[Media message]';
             if (qMsg.conversation) qText = qMsg.conversation;
             else if (qMsg.extendedTextMessage?.text) qText = qMsg.extendedTextMessage.text;
@@ -331,11 +362,11 @@ export class WhatsappWebService implements OnModuleInit {
             else if (qMsg.videoMessage?.caption) qText = qMsg.videoMessage.caption;
             quotedMsg = { text: qText, participant: contextInfo.participant };
           }
-        } else if (msg.message.imageMessage) {
+        } else if (messageContent.imageMessage) {
           messageType = 'image';
-          contentStr = msg.message.imageMessage.caption || '[Photo]';
+          contentStr = messageContent.imageMessage.caption || '[Photo]';
           try {
-            const buffer = await downloadMediaMessage(msg, 'buffer', {});
+            const buffer = await downloadMediaMessage(effectiveMsg as any, 'buffer', {});
             thumbnail = buffer.toString('base64');
 
             // Compress and save high-clarity media file to disk (~10-30KB)
@@ -346,7 +377,7 @@ export class WhatsappWebService implements OnModuleInit {
 
             let compressedBuffer = buffer;
             try {
-              // Stage 1: Resize to max 720px (WhatsApp camera capture is typically portrait)
+              // Stage 1: Resize to max 720px
               let sharpInstance = sharp(buffer)
                 .resize({ width: 720, height: 720, fit: 'inside', withoutEnlargement: true });
 
@@ -377,11 +408,11 @@ export class WhatsappWebService implements OnModuleInit {
           } catch (err) {
             this.logger.error(`Failed to download image media for ${tenantId}: ${err.message}`);
           }
-        } else if (msg.message.videoMessage) {
+        } else if (messageContent.videoMessage) {
           messageType = 'video';
-          contentStr = msg.message.videoMessage.caption || '[Video]';
+          contentStr = messageContent.videoMessage.caption || '[Video]';
           try {
-            const buffer = await downloadMediaMessage(msg, 'buffer', {});
+            const buffer = await downloadMediaMessage(effectiveMsg as any, 'buffer', {});
             const uploadPath = path.join(process.cwd(), 'uploads', 'tenants', tenantId);
             if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true });
             const fileName = `wa_${Date.now()}_${Math.round(Math.random() * 1E6)}.mp4`;
@@ -391,25 +422,25 @@ export class WhatsappWebService implements OnModuleInit {
           } catch (err) {
             this.logger.error(`Failed to download video media for ${tenantId}: ${err.message}`);
           }
-        } else if (msg.message.documentMessage) {
+        } else if (messageContent.documentMessage) {
           messageType = 'document';
-          contentStr = msg.message.documentMessage.fileName || msg.message.documentMessage.caption || '[Document]';
+          contentStr = messageContent.documentMessage.fileName || messageContent.documentMessage.caption || '[Document]';
           try {
-            const buffer = await downloadMediaMessage(msg, 'buffer', {});
+            const buffer = await downloadMediaMessage(effectiveMsg as any, 'buffer', {});
             const uploadPath = path.join(process.cwd(), 'uploads', 'tenants', tenantId);
             if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true });
-            const fileName = msg.message.documentMessage.fileName || `wa_${Date.now()}_doc.pdf`;
+            const fileName = messageContent.documentMessage.fileName || `wa_${Date.now()}_doc.pdf`;
             const filePath = path.join(uploadPath, fileName);
             fs.writeFileSync(filePath, buffer);
             mediaUrl = `/uploads/tenants/${tenantId}/${fileName}`;
           } catch (err) {
             this.logger.error(`Failed to download document media for ${tenantId}: ${err.message}`);
           }
-        } else if (msg.message.audioMessage) {
+        } else if (messageContent.audioMessage) {
           messageType = 'audio';
-          contentStr = msg.message.audioMessage.ptt ? '🎤 [Voice Message]' : '🎵 [Audio]';
+          contentStr = messageContent.audioMessage.ptt ? '🎤 [Voice Message]' : '🎵 [Audio]';
           try {
-            const buffer = await downloadMediaMessage(msg, 'buffer', {});
+            const buffer = await downloadMediaMessage(effectiveMsg as any, 'buffer', {});
             const uploadPath = path.join(process.cwd(), 'uploads', 'tenants', tenantId);
             if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true });
             const fileName = `wa_${Date.now()}_${Math.round(Math.random() * 1E6)}.ogg`;
@@ -420,8 +451,60 @@ export class WhatsappWebService implements OnModuleInit {
           } catch (err) {
             this.logger.error(`Failed to download audio media for ${tenantId}: ${err.message}`);
           }
+        } else if (messageContent.stickerMessage) {
+          messageType = 'image';
+          contentStr = '🏷️ [Sticker]';
+          try {
+            const buffer = await downloadMediaMessage(effectiveMsg as any, 'buffer', {});
+            const uploadPath = path.join(process.cwd(), 'uploads', 'tenants', tenantId);
+            if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true });
+            const fileName = `wa_${Date.now()}_${Math.round(Math.random() * 1E6)}.webp`;
+            const filePath = path.join(uploadPath, fileName);
+            fs.writeFileSync(filePath, buffer);
+            mediaUrl = `/uploads/tenants/${tenantId}/${fileName}`;
+          } catch (err) {
+            this.logger.warn(`Sticker download skipped for ${tenantId}: ${err.message}`);
+          }
+        } else if (messageContent.locationMessage || messageContent.liveLocationMessage) {
+          messageType = 'text';
+          const loc = messageContent.locationMessage || messageContent.liveLocationMessage;
+          const locName = loc.name || loc.address || (loc.degreesLatitude ? `${loc.degreesLatitude}, ${loc.degreesLongitude}` : '');
+          contentStr = locName ? `📍 Location: ${locName}` : '📍 [Location Shared]';
+        } else if (messageContent.contactMessage || messageContent.contactsArrayMessage) {
+          messageType = 'text';
+          const contact = messageContent.contactMessage || messageContent.contactsArrayMessage?.contacts?.[0];
+          const cName = contact?.displayName || 'Contact Card';
+          contentStr = `👤 Contact: ${cName}`;
+        } else if (messageContent.buttonsResponseMessage) {
+          messageType = 'text';
+          contentStr = messageContent.buttonsResponseMessage.selectedDisplayText || messageContent.buttonsResponseMessage.selectedButtonId || '[Button Clicked]';
+        } else if (messageContent.templateButtonReplyMessage) {
+          messageType = 'text';
+          contentStr = messageContent.templateButtonReplyMessage.selectedDisplayText || messageContent.templateButtonReplyMessage.selectedId || '[Button Clicked]';
+        } else if (messageContent.listResponseMessage) {
+          messageType = 'text';
+          contentStr = messageContent.listResponseMessage.title || messageContent.listResponseMessage.singleSelectReply?.selectedRowId || '[Option Selected]';
+        } else if (messageContent.interactiveResponseMessage) {
+          messageType = 'text';
+          contentStr = messageContent.interactiveResponseMessage.body?.text || '[Interactive Response]';
+        } else if (messageContent.templateMessage || messageContent.buttonsMessage || messageContent.listMessage || messageContent.interactiveMessage) {
+          messageType = 'text';
+          contentStr = messageContent.templateMessage?.hydratedTemplate?.hydratedContentText ||
+            messageContent.templateMessage?.hydratedFourRowTemplate?.hydratedContentText ||
+            messageContent.buttonsMessage?.contentText ||
+            messageContent.listMessage?.description ||
+            messageContent.interactiveMessage?.body?.text ||
+            '[Interactive Message]';
+        } else if (messageContent.orderMessage) {
+          messageType = 'text';
+          contentStr = `🛒 Order: ${messageContent.orderMessage.title || 'Catalog Order'}`;
+        } else if (messageContent.pollCreationMessage || messageContent.pollUpdateMessage) {
+          messageType = 'text';
+          contentStr = `📊 Poll: ${messageContent.pollCreationMessage?.name || 'Poll'}`;
         } else {
-          contentStr = '[Unsupported Message Type]';
+          // Dynamic inspection fallback before generic string
+          const possibleText = messageContent.text || messageContent.caption || messageContent.body || messageContent.title;
+          contentStr = typeof possibleText === 'string' && possibleText.trim() ? possibleText : '[Message]';
         }
 
         try {

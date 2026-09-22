@@ -15,4 +15,14 @@ export class AuditLogsService {
       take: 100, // Limit to recent 100 logs
     });
   }
+
+  async createSuperadminLog(action: string, description: string, actorUserId: string, metadataJson?: any) {
+    return this.prisma.auditLog.create({
+      data: {
+        actorUserId,
+        action,
+        metadataJson: { description, ...metadataJson },
+      }
+    });
+  }
 }

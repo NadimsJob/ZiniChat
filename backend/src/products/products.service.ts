@@ -1,12 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { QuotaService } from '../tenants/quota.service';
+import { StorageService } from '../storage/storage.service';
 
 @Injectable()
 export class ProductsService {
   constructor(
     private prisma: PrismaService,
     private quotaService: QuotaService,
+    private storageService: StorageService,
   ) {}
 
   async getProducts(tenantId: string) {
@@ -65,6 +67,19 @@ export class ProductsService {
   async deleteProduct(tenantId: string, id: string) {
     const existing = await this.prisma.product.findFirst({ where: { id, tenantId } });
     if (!existing) throw new NotFoundException('Product not found');
+
+    // Delete associated physical images to free up storage quota
+    if (existing.imageUrl) {
+      await this.storageService.deleteMedia(existing.imageUrl, tenantId);
+    }
+    
+    if (Array.isArray(existing.images)) {
+      for (const url of existing.images as string[]) {
+        if (url) {
+          await this.storageService.deleteMedia(url, tenantId);
+        }
+      }
+    }
 
     await this.prisma.product.delete({ where: { id } });
     return { success: true };

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Query, UseInterceptors, UploadedFile, UseGuards, Req, BadRequestException, Body } from '@nestjs/common';
+import { Controller, Get, Post, Query, UseInterceptors, UploadedFile, UseGuards, Req, BadRequestException, Body, Param } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { StorageService } from './storage.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -11,7 +11,7 @@ export class StorageController {
   constructor(private readonly storageService: StorageService) {}
 
   @Get('stats')
-  @RequirePermissions('manage:contacts')
+  @RequirePermissions('manage:settings')
   async getStorageStats(@Req() req: any) {
     const tenantId = req.user?.tenantId;
     if (!tenantId) {
@@ -20,8 +20,26 @@ export class StorageController {
     return this.storageService.getStorageStats(tenantId);
   }
 
+  @Get('admin/stats/:tenantId')
+  @RequirePermissions('manage:tenants')
+  async getAdminStorageStats(@Req() req: any, @Param('tenantId') targetTenantId: string) {
+    if (!targetTenantId) {
+      throw new BadRequestException('Target Tenant ID is required');
+    }
+    return this.storageService.getStorageStats(targetTenantId);
+  }
+
+  @Post('admin/recalculate/:tenantId')
+  @RequirePermissions('manage:tenants')
+  async recalculateAdminStorage(@Req() req: any, @Param('tenantId') targetTenantId: string) {
+    if (!targetTenantId) {
+      throw new BadRequestException('Target Tenant ID is required');
+    }
+    return this.storageService.recalculateStorage(targetTenantId);
+  }
+
   @Get('files')
-  @RequirePermissions('manage:contacts')
+  @RequirePermissions('manage:settings')
   async getStorageFiles(
     @Query('category') category: string,
     @Query('olderThanDays') olderThanDays: string,
@@ -36,7 +54,7 @@ export class StorageController {
   }
 
   @Post('upload')
-  @RequirePermissions('manage:contacts') // A general permission to allow users to upload, or customize this
+  @RequirePermissions('manage:settings') // A general permission to allow users to upload, or customize this
   @UseInterceptors(FileInterceptor('file', {
     limits: { fileSize: 5 * 1024 * 1024 },
     fileFilter: (req, file, cb) => {
@@ -68,7 +86,7 @@ export class StorageController {
   }
 
   @Post('cleanup')
-  @RequirePermissions('manage:contacts')
+  @RequirePermissions('manage:settings')
   async cleanupStorage(@Body('urls') urls: string[], @Req() req: any) {
     const tenantId = req.user?.tenantId;
     if (!tenantId) {
@@ -89,7 +107,7 @@ export class StorageController {
   }
 
   @Post('clear-all')
-  @RequirePermissions('manage:contacts')
+  @RequirePermissions('manage:settings')
   async clearAllStorage(@Req() req: any) {
     const tenantId = req.user?.tenantId;
     if (!tenantId) {
@@ -102,5 +120,15 @@ export class StorageController {
     }
 
     return { success: true };
+  }
+
+  @Post('recalculate')
+  @RequirePermissions('manage:settings')
+  async recalculateStorage(@Req() req: any) {
+    const tenantId = req.user?.tenantId;
+    if (!tenantId) {
+      throw new BadRequestException('Tenant ID is missing from user context');
+    }
+    return this.storageService.recalculateStorage(tenantId);
   }
 }

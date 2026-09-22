@@ -9,6 +9,7 @@ import { QuotaService } from '../tenants/quota.service';
 import { ActivityLogService } from '../inbox/activity-log.service';
 import { InboxGateway } from '../inbox/inbox.gateway';
 import { AiCacheService } from '../ai/ai-cache.service';
+import { CapiHubService } from '../capi-hub/capi-hub.service';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -46,7 +47,8 @@ export class OrchestratorService {
     @Inject(forwardRef(() => InboxService))
     private inboxService: InboxService,
     @Inject(forwardRef(() => InboxGateway))
-    private inboxGateway: InboxGateway
+    private inboxGateway: InboxGateway,
+    private capiHubService: CapiHubService
   ) {}
 
   private assertBelongsToTenant(record: { tenantId: string }, tenantId: string, entityName: string) {
@@ -210,17 +212,11 @@ export class OrchestratorService {
       }
 
       // Check Global Message Quota
-      const messagesUsed = await this.prisma.message.count({
-        where: {
-          conversation: { tenantId },
-          createdAt: {
-            gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
-          }
-        }
-      });
+      const { periodStart } = await this.quotaService.getActivePeriodForTenant(tenantId);
+      const messagesUsed = await this.quotaService.getMessageUsage(tenantId, periodStart);
 
       if (messagesUsed >= quotas.messageQuota) {
-        this.logger.warn(`Tenant ${tenantId} exceeded global Message quota.`);
+        this.logger.warn(`Tenant ${tenantId} exceeded global Message quota (${messagesUsed}/${quotas.messageQuota}).`);
         return;
       }
 
@@ -679,6 +675,22 @@ export class OrchestratorService {
           where: { id: conversationId },
           data: { pendingOrderProposal: proposalJson }
         });
+
+        // Track CAPI Hub Intent (Purchase)
+        const contact = (conversation as any).contact;
+        this.capiHubService.fireEvent(tenantId, 'Purchase', {
+          event_source_url: 'inbox_ai',
+          user_data: {
+            em: contact?.email || undefined,
+            ph: contact?.phone || undefined,
+            fn: contact?.name || undefined
+          },
+          custom_data: {
+            value: totalAmount,
+            currency: 'BDT',
+            content_ids: proposalItems.map(i => i.productId)
+          }
+        }, 'inbox_ai').catch(err => this.logger.warn(`Failed to track CAPI Hub event for inbox_ai: ${err.message}`));
 
         const itemsListStr = proposalItems.map(i => `${i.quantity}x ${i.name} (${i.price} BDT)`).join(', ');
         return {
