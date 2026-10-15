@@ -21,6 +21,7 @@ All AI agents MUST adhere to these workspace-specific behavioral and technical g
 * **Localization**: Use `useLanguage()` hook (`{language === 'en' ? 'EN' : 'BN'}`). Never hardcode English.
 * **Superadmin Package Sync**: Any feature added to `superadmin/packages` MUST be mirrored in `superadmin/tenants` Customize Plan modal.
 * **Data Guards**: Parse raw JSON feature strings to JS arrays before checking. Filter `status: 'active' | 'trialing'` for active subscriptions.
+* **Under-Development Feature Isolation**: Unreleased/beta features (e.g., Server-Side Tracking CAPI Hub, Ads Copilot, Meta Ads Account) MUST NOT be visible in tenant navigation sidebars by default, even as locked items. They must be completely hidden (`hiddenUnlessAllowed`) unless explicitly assigned to a tenant via Superadmin Customize Plan (`customFeatures`) or an active package plan.
 
 ## 4. Quotas, Billing & SMS Gateway
 * **Limit Checks**: Enforce `QuotaService` before entity creation (Fallback: `Tenant.customLimit` > `Plan.limit`).
@@ -29,6 +30,7 @@ All AI agents MUST adhere to these workspace-specific behavioral and technical g
 * **Android SMS APK**: Use internal `android-sms-gateway` Kotlin App. Build Debug APKs (`assembleDebug`), ensure `android.useAndroidX=true` and `Theme.AppCompat` in Manifest.
 
 ## 5. Integrations: AI, WhatsApp & Messaging
+* **Multilingual & Same-Language Reply Directive**: Across all 3 AI agents (Live Inbox Agent, Simulator Agent, Support Agent), the AI MUST detect the customer's incoming language (German, English, Bengali, Arabic, Spanish, French, Hindi, Banglish, etc.) and compose its reply in that EXACT SAME language. NEVER default to Bengali or English if the customer messaged in another language. Seamlessly translate catalog information, guidance, and answers into the customer's language.
 * **Multi-Vertical Adaptive System**: Flags in `BusinessNature` (`isPropertyMode`, `isHospitalityMode`, `isTechSoftwareMode`, `isFinancialServiceMode`, `isHealthcareMode`, `isEducationMode`, `isManufacturingMode`, `isLogisticsMode`). `OrchestratorService` branches prompts, disables retail orders for non-retail, auto-moves Kanban stages, logs `ContactNote`. UI components (`products/page.tsx`, `orders/page.tsx`, `ClientLayout.tsx`, `/dashboard/page.tsx`) adapt labels, icons, attributes.
 * **Team Routing & Event Parity**: Route alerts via `NotificationsService.createNotificationForSpecializedTeam()` matching `User.specializationTags`. AI actions MUST trigger UI real-time sockets, notifications, and emails.
 * **Inbox AI 2-Stage Classification**: Stage A: LLM strict JSON Interface. Stage B: Backend validates stock, plan features, isolation.
