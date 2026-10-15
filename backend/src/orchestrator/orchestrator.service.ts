@@ -898,6 +898,16 @@ export class OrchestratorService {
     }
 
     // =========================================================================
+    // MANDATORY MULTILINGUAL & SAME-LANGUAGE REPLY DIRECTIVE
+    // =========================================================================
+    prompt += `\n=== MANDATORY MULTILINGUAL & SAME-LANGUAGE REPLY DIRECTIVE ===\n`;
+    prompt += `1. DETECT CUSTOMER LANGUAGE: You MUST identify the language of the customer's incoming message (e.g., German, English, Bengali, Arabic, Spanish, French, Hindi, Banglish, etc.).\n`;
+    prompt += `2. STRICT SAME-LANGUAGE OUTPUT: You MUST compose "replyText" in the EXACT SAME language used by the customer in their message. If the customer messages in German, you MUST reply in German. If the customer messages in English, reply in English. If in Bengali, reply in Bengali. If in Arabic, reply in Arabic. If in Banglish (Bengali in English characters), reply in Banglish or Bengali.\n`;
+    prompt += `3. NEVER DEFAULT TO BENGALI OR ENGLISH: If the customer messaged in another language (e.g., German, French, Spanish, Arabic, etc.), NEVER reply in Bengali or English. Even if the business catalog, Q&As, website summary, or instructions are written in Bengali or English, you MUST translate all facts, options, and answers seamlessly into the customer's language.\n`;
+    prompt += `4. PRESERVE BRAND & PRODUCT IDENTIFIERS: Specific brand names, model numbers, and technical terms may remain as stated, but all greetings, conversational sentences, and explanations MUST be in the customer's detected language.\n`;
+    prompt += `VIOLATION OF THIS LANGUAGE DIRECTIVE IS STRICTLY FORBIDDEN.\n`;
+
+    // =========================================================================
     // CRITICAL CONVERSATION CONTINUITY RULE (applies to ALL messages)
     // =========================================================================
     prompt += `\n=== CRITICAL CONVERSATION CONTINUITY RULE ===\n`;
@@ -986,7 +996,7 @@ export class OrchestratorService {
     prompt += `\n--- MANDATORY STRUCTURED JSON RESPONSE OUTPUT FORMAT ---\n`;
     prompt += `You MUST output a single valid JSON object with NO preamble. The JSON schema must strictly follow:\n`;
     prompt += `{\n`;
-    prompt += `  "replyText": "your friendly response to customer",\n`;
+    prompt += `  "replyText": "your friendly response to customer in the EXACT SAME language they used (German if German, English if English, Bengali if Bengali, etc.)",\n`;
     if (options?.isPropertyMode) {
       prompt += `  "intent": "general | property_inquiry | support_needed | product_lookup",\n`;
       prompt += `  "interestedPropertyName": "name of property customer is interested in (or empty string)",\n`;

@@ -309,6 +309,9 @@ ${combinedText}`;
     prompt += `- **Image Vision**: Analyze product photos or receipts sent by customers and respond accurately.\n`;
     prompt += `- **Support Detection**: Automatically detect complaints or human agent requests and flag support tickets.\n`;
     prompt += `- **Q&A & Website Info**: Refer to Q&A knowledge base and website summary for office hours, delivery policy & store location.\n\n`;
+    prompt += `### MANDATORY MULTILINGUAL & SAME-LANGUAGE COMMUNICATION:\n`;
+    prompt += `- Detect the customer's language (German, English, Bengali, Arabic, etc.) and ALWAYS reply in that EXACT same language.\n`;
+    prompt += `- Never default to Bengali or English if the customer wrote in another language; seamlessly translate catalog details, answers, and guidance into the customer's language.\n\n`;
 
     const activeLabels = tenant.labels.filter(l => l.aiPrompt && l.aiPrompt.trim().length > 0);
     
@@ -867,6 +870,14 @@ ${combinedText}`;
       prompt += `\nYour Core Instructions:\n${systemPrompt}\n`;
     }
 
+    // MANDATORY MULTILINGUAL & SAME-LANGUAGE REPLY DIRECTIVE (mirrors OrchestratorService)
+    prompt += `\n=== MANDATORY MULTILINGUAL & SAME-LANGUAGE REPLY DIRECTIVE ===\n`;
+    prompt += `1. DETECT CUSTOMER LANGUAGE: You MUST identify the language of the customer's incoming message (e.g., German, English, Bengali, Arabic, Spanish, French, Hindi, Banglish, etc.).\n`;
+    prompt += `2. STRICT SAME-LANGUAGE OUTPUT: You MUST compose your reply in the EXACT SAME language used by the customer in their message. If the customer messages in German, you MUST reply in German. If in English, reply in English. If in Bengali, reply in Bengali. If in Arabic, reply in Arabic. If in Banglish (Bengali in English characters), reply in Banglish or Bengali.\n`;
+    prompt += `3. NEVER DEFAULT TO BENGALI OR ENGLISH: If the customer messaged in another language (e.g., German, French, Spanish, Arabic, etc.), NEVER reply in Bengali or English. Even if the business catalog, Q&As, website summary, or instructions are written in Bengali or English, you MUST translate all facts, options, and answers seamlessly into the customer's language.\n`;
+    prompt += `4. PRESERVE BRAND & PRODUCT IDENTIFIERS: Specific brand names, model numbers, and technical terms may remain as stated, but all greetings, conversational sentences, and explanations MUST be in the customer's detected language.\n`;
+    prompt += `VIOLATION OF THIS LANGUAGE DIRECTIVE IS STRICTLY FORBIDDEN.\n`;
+
     // CRITICAL CONVERSATION CONTINUITY RULE (mirrors OrchestratorService)
     prompt += `\n=== CRITICAL CONVERSATION CONTINUITY RULE ===\n`;
     prompt += `If the customer\'s current message is a SHORT REPLY, ACKNOWLEDGMENT, or CONTINUATION such as:\n`;
@@ -1084,7 +1095,7 @@ ${combinedText}`;
       }
     }
 
-    prompt += `\n--- CUSTOMER TEST QUERY ---\n${message}\n\nPlease reply directly to the customer as the trained AI assistant.`;
+    prompt += `\n--- CUSTOMER TEST QUERY ---\n${message}\n\nPlease reply directly to the customer in the EXACT SAME LANGUAGE they used (e.g., German if German, English if English, Bengali if Bengali) as the trained AI assistant.`;
 
     let reply = '';
     try {

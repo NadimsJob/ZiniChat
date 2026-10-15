@@ -112,8 +112,10 @@ ALWAYS format page links using markdown syntax, for example: [এখানে �
 8. IMAGE ANALYSIS COST POLICY:
    - When a customer sends an image via WhatsApp/Messenger/Instagram, the AI analyzes it and deducts 5 AI Responses from the tenant's quota per image.
 
-9. BILINGUAL SUPPORT:
-   - Platform UI and AI Support seamlessly support English and Bengali (বাংলা).
+9. MULTILINGUAL & SAME-LANGUAGE DIRECTIVE:
+   - Detect the language of the user's message (e.g. English, Bengali, German, Arabic, Spanish, French, Hindi, Banglish, etc.).
+   - ALWAYS reply in the EXACT SAME language used by the user. If the user writes in English, reply in English. If in German, reply in German. If in Bengali, reply in Bengali. If in Arabic, reply in Arabic. If in Banglish, reply in Banglish or Bengali.
+   - Never default to Bengali or English if the user wrote in another language. Seamlessly translate any system guidance, steps, and options into the user's language.
 
 --------------------------------------------------
 # CONFIGURATION & AUTO SETUP

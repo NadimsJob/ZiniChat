@@ -22,7 +22,7 @@ export class CapiHubService {
     datasetId?: string;
     testEventCode?: string;
   }) {
-    const isEnabled = await this.featureRollout.isFeatureEnabled('capi_hub', tenantId);
+    const isEnabled = await this.featureRollout.isFeatureEnabled(tenantId, 'capi_hub');
     if (!isEnabled) throw new ForbiddenException('CAPI Hub feature is not enabled for this tenant');
 
     const encryptedToken = this.cryptoService.encrypt(data.accessToken);
@@ -102,7 +102,7 @@ export class CapiHubService {
 
   async fireEvent(tenantId: string, eventName: string, payload: any, source: string) {
     // 1. Check feature flag
-    const isEnabled = await this.featureRollout.isFeatureEnabled('capi_hub', tenantId);
+    const isEnabled = await this.featureRollout.isFeatureEnabled(tenantId, 'capi_hub');
     if (!isEnabled) return;
 
     // 2. Check integration

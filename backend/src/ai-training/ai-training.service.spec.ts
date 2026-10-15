@@ -9,6 +9,7 @@ import { ToolConfigValidatorService } from './services/tool-config-validator.ser
 import { AiCacheService } from '../ai/ai-cache.service';
 import { AiService } from '../ai/ai.service';
 import { WebsiteCrawlerService } from './website-crawler.service';
+import { StorageService } from '../storage/storage.service';
 
 describe('AiTrainingService', () => {
   let service: AiTrainingService;
@@ -64,6 +65,7 @@ describe('AiTrainingService', () => {
         { provide: AiCacheService, useValue: { invalidateCache: jest.fn(), getOrCreateCache: jest.fn(), computeChecksum: jest.fn() } },
         { provide: AiService, useValue: { generateCompletion: jest.fn().mockResolvedValue('Mock AI response') } },
         { provide: WebsiteCrawlerService, useValue: { crawlWebsite: jest.fn().mockResolvedValue({ combinedText: 'Mock content', pageCount: 1 }) } },
+        { provide: StorageService, useValue: { trackUsage: jest.fn(), releaseUsage: jest.fn() } },
       ],
     }).compile();
 

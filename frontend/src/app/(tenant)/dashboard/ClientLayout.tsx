@@ -500,9 +500,9 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
    '/dashboard/broadcasts': ['broadcast'],
    '/dashboard/team': ['team_management'],
    '/dashboard/settings/team': ['team_management'],
-   '/dashboard/ads-agent': ['meta_ads_agent'],
+   '/dashboard/ads-agent': ['meta_ads_agent', 'capi_hub'],
    '/dashboard/settings/capi-hub': ['capi_hub'],
-   '/dashboard/settings/meta-ads': ['meta_ads_account'],
+   '/dashboard/settings/meta-ads': ['meta_ads_account', 'capi_hub'],
  };
 
  const hasAccess = (href: string) => {
@@ -510,6 +510,15 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
    if (featuresList.includes('*')) return true; // still loading
    const requiredFeature = featureMap[href];
    if (!requiredFeature) return true; // no restriction
+   return requiredFeature.some(f => featuresList.includes(f));
+ };
+
+ // Check if an under-development feature is explicitly assigned to tenant
+ const isFeatureAssigned = (href: string) => {
+   const featuresList = Array.isArray(allowedFeatures) ? allowedFeatures : [];
+   if (featuresList.includes('*')) return false; // Hide while loading
+   const requiredFeature = featureMap[href];
+   if (!requiredFeature) return true;
    return requiredFeature.some(f => featuresList.includes(f));
  };
 
@@ -582,9 +591,9 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
     {
       title: language === 'en' ? 'MARKETING & ADS' : 'মার্কেটিং ও এডস',
       items: [
-        { name: language === 'en' ? 'Ads Copilot' : 'অ্যাডস কোপাইলট', icon: Bot, href: '/dashboard/ads-agent' },
-        { name: language === 'en' ? 'CAPI Hub' : 'CAPI Hub', icon: Server, href: '/dashboard/settings/capi-hub' },
-        { name: language === 'en' ? 'Meta Ads Account' : 'মেটা অ্যাডস অ্যাকাউন্ট', icon: Facebook, href: '/dashboard/settings/meta-ads' },
+        { name: language === 'en' ? 'Ads Copilot' : 'অ্যাডস কোপাইলট', icon: Bot, href: '/dashboard/ads-agent', hiddenUnlessAllowed: true },
+        { name: language === 'en' ? 'CAPI Hub' : 'CAPI Hub', icon: Server, href: '/dashboard/settings/capi-hub', hiddenUnlessAllowed: true },
+        { name: language === 'en' ? 'Meta Ads Account' : 'মেটা অ্যাডস অ্যাকাউন্ট', icon: Facebook, href: '/dashboard/settings/meta-ads', hiddenUnlessAllowed: true },
       ]
     },
     {
@@ -663,22 +672,32 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
 
         {/* Navigation Links */}
         <nav className="flex-1 px-1.5 py-2 space-y-3 overflow-y-auto custom-scrollbar pb-20">
-          {menuGroups.map((group, groupIdx) => (
-            <div key={groupIdx} className="flex flex-col">
-              {!isSidebarCollapsed && (
-                <div className={`px-3 mb-1.5 mt-2 text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1.5 ${
-                  group.title.includes('AUTOMATION') || group.title.includes('অটোমেশন')
-                    ? 'text-primary dark:text-emerald-400'
-                    : 'text-muted-foreground'
-                }`}>
-                  <span>{group.title}</span>
-                  {(group.title.includes('AUTOMATION') || group.title.includes('অটোমেশন')) && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary dark:bg-emerald-400 animate-pulse" />
-                  )}
-                </div>
-              )}
-              <div className="space-y-1">
-                {group.items.map((item) => {
+          {menuGroups.map((group, groupIdx) => {
+            const visibleItems = group.items.filter(item => {
+              if ((item as any).hiddenUnlessAllowed) {
+                return isFeatureAssigned(item.href);
+              }
+              return true;
+            });
+
+            if (visibleItems.length === 0) return null;
+
+            return (
+              <div key={groupIdx} className="flex flex-col">
+                {!isSidebarCollapsed && (
+                  <div className={`px-3 mb-1.5 mt-2 text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1.5 ${
+                    group.title.includes('AUTOMATION') || group.title.includes('অটোমেশন')
+                      ? 'text-primary dark:text-emerald-400'
+                      : 'text-muted-foreground'
+                  }`}>
+                    <span>{group.title}</span>
+                    {(group.title.includes('AUTOMATION') || group.title.includes('অটোমেশন')) && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary dark:bg-emerald-400 animate-pulse" />
+                    )}
+                  </div>
+                )}
+                <div className="space-y-1">
+                  {visibleItems.map((item) => {
                   const isActive = pathname === item.href;
                   const isLocked = !hasAccess(item.href);
                   const coreColor = (item as any).coreColor;
@@ -777,7 +796,8 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
                 })}
               </div>
             </div>
-          ))}
+          );
+        })}
         </nav>
       </aside>
 
