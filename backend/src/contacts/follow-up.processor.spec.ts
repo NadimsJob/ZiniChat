@@ -80,6 +80,7 @@ describe('FollowUpProcessor', () => {
       'conv1',
       'Please check your order',
       'text',
+      undefined,
       'ai1'
     );
     expect(prismaService.contact.update).toHaveBeenCalledWith({

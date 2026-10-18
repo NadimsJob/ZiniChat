@@ -15,6 +15,19 @@ import LabelForm from '@/components/labels/LabelForm';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+const toLocalISOString = (dateStr?: string | Date | null) => {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return '';
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  const year = d.getFullYear();
+  const month = pad(d.getMonth() + 1);
+  const day = pad(d.getDate());
+  const hours = pad(d.getHours());
+  const minutes = pad(d.getMinutes());
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
 interface ConversationSidebarProps {
   conversation: any;
   availableLabels: any[];
@@ -102,15 +115,28 @@ export default function ConversationSidebar({
   useEffect(() => {
     if (contact) {
       setDirectFollowUp({
-        date: contact.followUpAt ? new Date(contact.followUpAt).toISOString().slice(0, 16) : '',
+        date: toLocalISOString(contact.followUpAt),
         enable: !!contact.automatedFollowUpMessage,
         message: contact.automatedFollowUpMessage || ''
       });
     }
   }, [contact]);
 
+  const initialDirectDate = toLocalISOString(contact?.followUpAt);
+  const initialDirectEnable = !!contact?.automatedFollowUpMessage;
+  const initialDirectMessage = contact?.automatedFollowUpMessage || '';
+
+  const hasDirectChanges = 
+    directFollowUp.date !== initialDirectDate ||
+    directFollowUp.enable !== initialDirectEnable ||
+    directFollowUp.message !== initialDirectMessage;
+
   const handleDirectFollowUpSave = async () => {
     if (!contact?.id) return;
+    if (directFollowUp.enable && directFollowUp.message?.trim() && !directFollowUp.date) {
+      toast.error(language === 'en' ? 'Please set a follow-up date to schedule automated message' : 'অটোমেটেড মেসেজ শিডিউল করতে অনুগ্রহ করে ফলো-আপ তারিখ সিলেক্ট করুন');
+      return;
+    }
     try {
       const token = Cookies.get('access_token');
       const res = await fetch(`${API}/contacts/${contact.id}`, {
@@ -129,11 +155,53 @@ export default function ConversationSidebar({
         onUpdateContact(contact.id, updated);
         setIsPickingFollowUp(false);
         setTimeout(() => fetchActivities(), 250);
-        toast.success(language === 'en' ? 'Follow-up date saved' : 'ফলো-আপ তারিখ সেভ হয়েছে');
+        toast.success(language === 'en' ? 'Follow-up saved' : 'ফলো-আপ তথ্য সেভ হয়েছে');
       }
     } catch (err) {
       toast.error('Failed to update follow-up date');
     }
+  };
+
+  const handleResetFollowUp = async () => {
+    if (!contact?.id) return;
+    try {
+      const token = Cookies.get('access_token');
+      if (contact.followUpAt || contact.automatedFollowUpMessage) {
+        const res = await fetch(`${API}/contacts/${contact.id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            followUpAt: null,
+            automatedFollowUpMessage: null
+          }),
+        });
+        if (res.ok) {
+          const updated = await res.json();
+          onUpdateContact(contact.id, updated);
+          setDirectFollowUp({
+            date: '',
+            enable: false,
+            message: ''
+          });
+          setTimeout(() => fetchActivities(), 250);
+          toast.success(language === 'en' ? 'Follow-up cleared & reset' : 'ফলো-আপ রিসেট ও ডিলিট করা হয়েছে');
+          return;
+        }
+      }
+    } catch (err) {
+      toast.error('Failed to reset follow-up date');
+      return;
+    }
+
+    setDirectFollowUp({
+      date: '',
+      enable: false,
+      message: ''
+    });
+    toast.success(language === 'en' ? 'Follow-up cleared' : 'ফলো-আপ রিসেট করা হয়েছে');
   };
 
   const handleDirectStageSave = async (newStageId: string) => {
@@ -171,7 +239,7 @@ export default function ConversationSidebar({
         address: contact.address || '',
         stageId: contact.stageId || '',
         assignedUserId: contact.assignedUserId || '',
-        followUpAt: contact.followUpAt ? new Date(contact.followUpAt).toISOString().slice(0, 16) : '',
+        followUpAt: toLocalISOString(contact.followUpAt),
         automatedFollowUpMessage: contact.automatedFollowUpMessage || '',
         enableAutomatedFollowUp: !!contact.automatedFollowUpMessage,
       });
@@ -488,7 +556,20 @@ export default function ConversationSidebar({
                   </select>
                 </div>
                 <div>
-                  <label className="text-[10px] text-muted-foreground font-medium">{language === 'en' ? 'Follow-up Date' : 'ফলো-আপ তারিখ'}</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[10px] text-muted-foreground font-medium">{language === 'en' ? 'Follow-up Date' : 'ফলো-আপ তারিখ'}</label>
+                    {contactForm.followUpAt && (
+                      <button
+                        type="button"
+                        onClick={() => setContactForm(prev => ({ ...prev, followUpAt: '', enableAutomatedFollowUp: false, automatedFollowUpMessage: '' }))}
+                        className="text-[9.5px] text-red-500 hover:text-red-400 flex items-center gap-0.5 transition-colors"
+                        title={language === 'en' ? 'Clear follow-up date' : 'ফলো-আপ রিসেট বা মুছুন'}
+                      >
+                        <X className="w-2.5 h-2.5" />
+                        {language === 'en' ? 'Clear' : 'মুছুন / রিসেট'}
+                      </button>
+                    )}
+                  </div>
                   <input 
                     type="datetime-local" 
                     value={contactForm.followUpAt} 
@@ -496,21 +577,28 @@ export default function ConversationSidebar({
                     className="w-full bg-background border border-border rounded px-2 py-1 text-[11px] focus:outline-none focus:border-primary text-foreground" 
                   />
                   
-                  {contactForm.followUpAt && (
-                    <div className="mt-2 space-y-2 border-t border-border/50 pt-2">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={contactForm.enableAutomatedFollowUp}
-                          onChange={(e) => setContactForm({ ...contactForm, enableAutomatedFollowUp: e.target.checked })}
-                          className="rounded border-gray-300 text-primary focus:ring-primary w-3 h-3"
-                        />
-                        <span className="text-[10px] font-medium text-foreground">
-                          {language === 'en' ? 'Send Automated Follow-up Message (AI)' : 'অটোমেটেড ফলো-আপ মেসেজ (AI) পাঠান'}
+                  <div className="mt-2 space-y-2 border border-emerald-500/30 dark:border-emerald-500/20 bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent rounded-lg p-2 shadow-xs transition-all">
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                      <span className="relative flex h-2 w-2 shrink-0">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                      </span>
+                      <input
+                        type="checkbox"
+                        checked={contactForm.enableAutomatedFollowUp}
+                        onChange={(e) => setContactForm({ ...contactForm, enableAutomatedFollowUp: e.target.checked })}
+                        className="rounded border-gray-300 text-primary focus:ring-primary w-3 h-3"
+                      />
+                      <span className="text-[10px] font-semibold text-foreground flex items-center gap-1.5">
+                        {language === 'en' ? 'Send Automated Follow-up Message (AI)' : 'অটোমেটেড ফলো-আপ মেসেজ (AI) পাঠান'}
+                        <span className="text-[8.5px] px-1.5 py-0.2 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-500/20">
+                          AUTO
                         </span>
-                      </label>
+                      </span>
+                    </label>
 
-                      {contactForm.enableAutomatedFollowUp && (
+                    {contactForm.enableAutomatedFollowUp && (
+                      <div className="space-y-1">
                         <textarea
                           placeholder={language === 'en' ? 'Type automated message here...' : 'অটোমেটেড মেসেজ এখানে লিখুন...'}
                           value={contactForm.automatedFollowUpMessage}
@@ -518,9 +606,15 @@ export default function ConversationSidebar({
                           rows={3}
                           className="w-full bg-background border border-border rounded px-2 py-1.5 text-[11px] focus:outline-none focus:border-primary text-foreground resize-none"
                         />
-                      )}
-                    </div>
-                  )}
+                        {!contactForm.followUpAt && (
+                          <p className="text-[9px] text-amber-500 dark:text-amber-400 flex items-center gap-1 font-medium">
+                            <span>⚠️</span>
+                            {language === 'en' ? 'Select follow-up date above to schedule message' : 'মেসেজটি শিডিউল করতে উপরে ফলো-আপ তারিখ দিন'}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             ) : (
@@ -585,13 +679,22 @@ export default function ConversationSidebar({
                         className="text-[10px] bg-background border border-border/80 dark:border-border/60 rounded px-1.5 py-0.5 text-foreground focus:outline-none focus:border-primary cursor-pointer shrink-0"
                         title={language === 'en' ? 'Select follow-up date' : 'ফলো-আপ তারিখ নির্বাচন করুন'}
                       />
-                      {((directFollowUp.date !== (contact?.followUpAt ? new Date(contact.followUpAt).toISOString().slice(0, 16) : '')) || 
-                        (directFollowUp.enable !== !!contact?.automatedFollowUpMessage) ||
-                        (directFollowUp.message !== (contact?.automatedFollowUpMessage || ''))) && (
+                      {(directFollowUp.date || contact?.followUpAt) && (
                         <button
+                          type="button"
+                          onClick={handleResetFollowUp}
+                          className="p-1 rounded text-red-500 hover:text-red-600 hover:bg-red-500/10 transition-colors shrink-0"
+                          title={language === 'en' ? 'Reset / Delete follow-up' : 'ফলো-আপ রিসেট বা ডিলিট করুন'}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                      {hasDirectChanges && (
+                        <button
+                          type="button"
                           onClick={handleDirectFollowUpSave}
-                          className="bg-primary text-white p-0.5 rounded shadow-sm hover:bg-primary/90 transition"
-                          title="Save Follow-up"
+                          className="bg-primary text-white p-1 rounded shadow-sm hover:bg-primary/90 transition shrink-0"
+                          title={language === 'en' ? 'Save Follow-up' : 'ফলো-আপ সেভ করুন'}
                         >
                           <CheckCircle2 className="w-3.5 h-3.5" />
                         </button>
@@ -599,31 +702,73 @@ export default function ConversationSidebar({
                     </div>
                   </div>
 
-                  {directFollowUp.date && (
-                    <div className="flex flex-col gap-1.5 pt-1 w-full bg-muted/30 rounded p-1.5 border border-border/30">
-                      <label className="flex items-center gap-1.5 cursor-pointer w-full">
+                  {/* Automated Message Box - Always visible & highlighted with blinking live indicator */}
+                  <div className="flex flex-col gap-1.5 pt-1.5 w-full bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent rounded-lg p-2 border border-emerald-500/30 dark:border-emerald-500/20 shadow-xs transition-all">
+                    <div className="flex items-center justify-between w-full">
+                      <label className="flex items-center gap-2 cursor-pointer select-none">
+                        <span className="relative flex h-2 w-2 shrink-0">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                        </span>
                         <input
                           type="checkbox"
                           checked={directFollowUp.enable}
                           onChange={(e) => setDirectFollowUp(prev => ({ ...prev, enable: e.target.checked }))}
-                          className="rounded border-gray-300 text-primary focus:ring-primary w-2.5 h-2.5 cursor-pointer"
+                          className="rounded border-gray-300 text-primary focus:ring-primary w-3 h-3 cursor-pointer"
                         />
-                        <span className="text-[9.5px] font-medium text-foreground">
+                        <span className="text-[10px] font-semibold text-foreground tracking-tight flex items-center gap-1.5">
                           {language === 'en' ? 'Automated Message (AI)' : 'অটোমেটেড মেসেজ (AI)'}
+                          <span className="text-[8.5px] px-1.5 py-0.2 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-500/20">
+                            AUTO
+                          </span>
                         </span>
                       </label>
+                    </div>
 
-                      {directFollowUp.enable && (
+                    {directFollowUp.enable && (
+                      <div className="space-y-1.5 pt-1">
                         <textarea
-                          placeholder={language === 'en' ? 'Type automated message...' : 'অটোমেটেড মেসেজ লিখুন...'}
+                          placeholder={language === 'en' ? 'Type automated follow-up message to send...' : 'অটোমেটেড মেসেজ লিখুন...'}
                           value={directFollowUp.message}
                           onChange={(e) => setDirectFollowUp(prev => ({ ...prev, message: e.target.value }))}
                           rows={2}
-                          className="w-full bg-background border border-border rounded px-1.5 py-1 text-[10px] focus:outline-none focus:border-primary text-foreground resize-none"
+                          className="w-full bg-background border border-border/80 rounded px-2 py-1 text-[10px] focus:outline-none focus:border-emerald-500 text-foreground resize-none transition-colors"
                         />
-                      )}
-                    </div>
-                  )}
+                        {!directFollowUp.date && (
+                          <p className="text-[9px] text-amber-500 dark:text-amber-400 flex items-center gap-1 font-medium">
+                            <span>⚠️</span>
+                            {language === 'en' ? 'Select follow-up date above to schedule message' : 'মেসেজটি শিডিউল করতে উপরে ফলো-আপ তারিখ দিন'}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {hasDirectChanges && (
+                      <div className="flex items-center justify-end gap-1.5 pt-1 border-t border-border/40 mt-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDirectFollowUp({
+                              date: initialDirectDate,
+                              enable: initialDirectEnable,
+                              message: initialDirectMessage
+                            });
+                          }}
+                          className="px-2 py-0.5 rounded text-[10px] text-muted-foreground hover:bg-muted transition"
+                        >
+                          {language === 'en' ? 'Cancel' : 'বাতিল'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleDirectFollowUpSave}
+                          className="px-2.5 py-0.5 bg-primary text-white text-[10px] font-medium rounded hover:bg-primary/90 transition flex items-center gap-1 shadow-xs"
+                        >
+                          <Check className="w-3 h-3" />
+                          {language === 'en' ? 'Save' : 'সেভ করুন'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}

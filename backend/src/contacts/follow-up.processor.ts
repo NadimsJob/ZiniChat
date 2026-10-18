@@ -93,6 +93,7 @@ export class FollowUpProcessor extends WorkerHost {
         latestConv.id,
         contact.automatedFollowUpMessage,
         'text',
+        undefined,
         aiAssistant?.id || undefined,
       );
 
