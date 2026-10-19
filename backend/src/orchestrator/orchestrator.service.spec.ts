@@ -786,6 +786,375 @@ describe('OrchestratorService', () => {
       }));
     });
   });
+
+  describe('ZiniChat Payment & Order Policy Engine (Phases 3, 4, 5)', () => {
+    it('should ask for missing customer details when only partial information is provided', async () => {
+      const mockConv = {
+        id: 'c1',
+        tenantId: 'tenant1',
+        contactId: 'cnt1',
+        contact: { id: 'cnt1', name: 'Karim', phone: '01711223344', address: null },
+      };
+      prismaService.aiAssistant.findFirst.mockResolvedValue({
+        tenantId: 'tenant1',
+        tools: [
+          {
+            toolType: 'order_placement',
+            isEnabled: true,
+            configJson: {
+              paymentPolicy: 'cod',
+              deliveryChargeInsideDhaka: 60,
+              deliveryChargeOutsideDhaka: 120,
+            }
+          }
+        ]
+      });
+      prismaService.product.findFirst.mockResolvedValue({
+        id: 'p1',
+        name: 'Black T-Shirt',
+        price: 500,
+        tenantId: 'tenant1',
+        isActive: true
+      });
+
+      const classification: any = {
+        replyText: 'Sure!',
+        intent: 'order_intent',
+        orderProposal: [{ productNameGuess: 'Black T-Shirt', quantity: 1 }],
+        customerDetails: { name: 'Karim', phone: '01711223344' }
+      };
+
+      const result = await (service as any).handleOrderPlacement(
+        'tenant1',
+        mockConv,
+        classification,
+        'c1',
+        'আমি ১টা Black T-Shirt নিব'
+      );
+
+      expect(result).toBeDefined();
+      expect(result.overrideReplyText).toContain('অর্ডারটি প্রসেস করার জন্য');
+      expect(result.overrideReplyText).toContain('ঠিকানা');
+      expect(ordersService.createOrder).not.toHaveBeenCalled();
+    });
+
+    it('should propose COD order with ৳60 delivery charge when inside Dhaka details are complete', async () => {
+      const mockConv = {
+        id: 'c1',
+        tenantId: 'tenant1',
+        contactId: 'cnt1',
+        contact: { id: 'cnt1', name: 'Karim', phone: '01711223344', address: 'House 1, Dhanmondi, Dhaka' },
+      };
+      prismaService.aiAssistant.findFirst.mockResolvedValue({
+        tenantId: 'tenant1',
+        tools: [
+          {
+            toolType: 'order_placement',
+            isEnabled: true,
+            configJson: {
+              paymentPolicy: 'cod',
+              deliveryChargeInsideDhaka: 60,
+              deliveryChargeOutsideDhaka: 120,
+            }
+          }
+        ]
+      });
+      prismaService.product.findFirst.mockResolvedValue({
+        id: 'p1',
+        name: 'Black T-Shirt',
+        price: 500,
+        tenantId: 'tenant1',
+        isActive: true
+      });
+
+      const classification: any = {
+        replyText: 'Proposing order',
+        intent: 'order_intent',
+        orderProposal: [{ productNameGuess: 'Black T-Shirt', quantity: 2 }],
+        customerDetails: {
+          name: 'Karim',
+          phone: '01711223344',
+          address: 'House 1, Dhanmondi, Dhaka',
+          deliveryArea: 'inside_dhaka'
+        }
+      };
+
+      const result = await (service as any).handleOrderPlacement(
+        'tenant1',
+        mockConv,
+        classification,
+        'c1',
+        'আমার নাম Karim, ফোন 01711223344, ধানমন্ডি ঢাকা'
+      );
+
+      expect(result).toBeDefined();
+      expect(result.overrideReplyText).toContain('ক্যাশ অন ডেলিভারি');
+      expect(result.overrideReplyText).toContain('৳60');
+      expect(result.overrideReplyText).toContain('সর্বমোট: ৳1060');
+      expect(result.overrideReplyText).toContain('CONFIRM');
+      expect(prismaService.conversation.update).toHaveBeenCalledWith(expect.objectContaining({
+        where: { id: 'c1' },
+        data: expect.objectContaining({
+          pendingOrderProposal: expect.objectContaining({
+            paymentPolicy: 'cod',
+            deliveryCharge: 60,
+            totalAmount: 1060,
+            status: 'PROPOSED'
+          })
+        })
+      }));
+    });
+
+    it('should propose delivery charge advance of ৳120 for outside Dhaka and await screenshot', async () => {
+      const mockConv = {
+        id: 'c1',
+        tenantId: 'tenant1',
+        contactId: 'cnt1',
+        contact: { id: 'cnt1', name: 'Rahim', phone: '01811223344', address: 'GEC Circle, Chittagong' },
+      };
+      prismaService.aiAssistant.findFirst.mockResolvedValue({
+        tenantId: 'tenant1',
+        tools: [
+          {
+            toolType: 'order_placement',
+            isEnabled: true,
+            configJson: {
+              paymentPolicy: 'delivery_advance',
+              deliveryChargeInsideDhaka: 60,
+              deliveryChargeOutsideDhaka: 120,
+              mfsAccounts: [
+                { provider: 'bKash', accountNumber: '01700000000', accountType: 'Personal' }
+              ],
+              paymentInstructionNote: 'Send money only'
+            }
+          }
+        ]
+      });
+      prismaService.product.findFirst.mockResolvedValue({
+        id: 'p1',
+        name: 'Black T-Shirt',
+        price: 500,
+        tenantId: 'tenant1',
+        isActive: true
+      });
+
+      const classification: any = {
+        replyText: 'Proposing order',
+        intent: 'order_intent',
+        orderProposal: [{ productNameGuess: 'Black T-Shirt', quantity: 1 }],
+        customerDetails: {
+          name: 'Rahim',
+          phone: '01811223344',
+          address: 'GEC Circle, Chittagong',
+          deliveryArea: 'outside_dhaka'
+        }
+      };
+
+      const result = await (service as any).handleOrderPlacement(
+        'tenant1',
+        mockConv,
+        classification,
+        'c1',
+        'আমার নাম Rahim, 01811223344, Chittagong outside dhaka'
+      );
+
+      expect(result).toBeDefined();
+      expect(result.overrideReplyText).toContain('ডেলিভারি চার্জ ৳120 অগ্রিম');
+      expect(result.overrideReplyText).toContain('01700000000');
+      expect(result.overrideReplyText).toContain('স্ক্রিনশট');
+      expect(prismaService.conversation.update).toHaveBeenCalledWith(expect.objectContaining({
+        where: { id: 'c1' },
+        data: expect.objectContaining({
+          pendingOrderProposal: expect.objectContaining({
+            paymentPolicy: 'delivery_advance',
+            status: 'AWAITING_PAYMENT_PROOF',
+            advanceAmountRequired: 120,
+            dueAmountCod: 500,
+            deliveryCharge: 120
+          })
+        })
+      }));
+    });
+
+    it('should propose full advance payment (product + delivery) and set proposal to AWAITING_PAYMENT_PROOF', async () => {
+      const mockConv = {
+        id: 'c1',
+        tenantId: 'tenant1',
+        contactId: 'cnt1',
+        contact: { id: 'cnt1', name: 'Tanvir', phone: '01911223344', address: 'Mirpur 10, Dhaka' },
+      };
+      prismaService.aiAssistant.findFirst.mockResolvedValue({
+        tenantId: 'tenant1',
+        tools: [
+          {
+            toolType: 'order_placement',
+            isEnabled: true,
+            configJson: {
+              paymentPolicy: 'full_advance',
+              deliveryChargeInsideDhaka: 70,
+              deliveryChargeOutsideDhaka: 130,
+              mfsAccounts: [
+                { provider: 'Nagad', accountNumber: '01800000000', accountType: 'Merchant' }
+              ]
+            }
+          }
+        ]
+      });
+      prismaService.product.findFirst.mockResolvedValue({
+        id: 'p1',
+        name: 'Smart Watch',
+        price: 1500,
+        tenantId: 'tenant1',
+        isActive: true
+      });
+
+      const classification: any = {
+        replyText: 'Proposing order',
+        intent: 'order_intent',
+        orderProposal: [{ productNameGuess: 'Smart Watch', quantity: 1 }],
+        customerDetails: {
+          name: 'Tanvir',
+          phone: '01911223344',
+          address: 'Mirpur 10, Dhaka',
+          deliveryArea: 'inside_dhaka'
+        }
+      };
+
+      const result = await (service as any).handleOrderPlacement(
+        'tenant1',
+        mockConv,
+        classification,
+        'c1',
+        'Mirpur Dhaka'
+      );
+
+      expect(result).toBeDefined();
+      expect(result.overrideReplyText).toContain('সম্পূর্ণ মূল্য ৳1570 অগ্রিম');
+      expect(result.overrideReplyText).toContain('Nagad (Merchant): 01800000000');
+      expect(prismaService.conversation.update).toHaveBeenCalledWith(expect.objectContaining({
+        where: { id: 'c1' },
+        data: expect.objectContaining({
+          pendingOrderProposal: expect.objectContaining({
+            paymentPolicy: 'full_advance',
+            status: 'AWAITING_PAYMENT_PROOF',
+            advanceAmountRequired: 1570,
+            dueAmountCod: 0
+          })
+        })
+      }));
+    });
+
+    it('should verify payment screenshot via vision AI, confirm order, and record activity log', async () => {
+      const mockConv = {
+        id: 'c1',
+        tenantId: 'tenant1',
+        contactId: 'cnt1',
+        pendingOrderProposal: {
+          status: 'AWAITING_PAYMENT_PROOF',
+          paymentPolicy: 'delivery_advance',
+          advanceAmountRequired: 60,
+          dueAmountCod: 1000,
+          totalAmount: 1060,
+          deliveryCharge: 60,
+          deliveryArea: 'inside_dhaka',
+          items: [{ productId: 'p1', quantity: 1, priceAtTime: 1000 }],
+          expiresAt: new Date(Date.now() + 100000).toISOString()
+        }
+      };
+
+      prismaService.aiAssistant.findFirst.mockResolvedValue({
+        tenantId: 'tenant1',
+        tools: [{ toolType: 'order_placement', isEnabled: true }]
+      });
+      prismaService.product.findFirst.mockResolvedValue({
+        id: 'p1',
+        tenantId: 'tenant1',
+        price: 1000,
+        isActive: true
+      });
+
+      aiService.verifyPaymentReceiptScreenshot = jest.fn().mockResolvedValue({
+        isPaymentReceipt: true,
+        provider: 'bKash',
+        paidAmount: 60,
+        trxId: 'TRX99887766',
+        senderPhone: '01711223344',
+        status: 'success'
+      });
+
+      const fs = require('fs');
+      jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+
+      const result = await (service as any).handleOrderPlacement(
+        'tenant1',
+        mockConv,
+        { replyText: 'Here is the screenshot', intent: 'general' } as any,
+        'c1',
+        'Here is the screenshot',
+        ['/path/to/screenshot.jpg']
+      );
+
+      expect(aiService.verifyPaymentReceiptScreenshot).toHaveBeenCalledWith('/path/to/screenshot.jpg', 60);
+      expect(ordersService.createOrder).toHaveBeenCalledWith('tenant1', expect.objectContaining({
+        notes: expect.stringContaining('TRX99887766')
+      }));
+      expect(prismaService.conversation.update).toHaveBeenCalledWith(expect.objectContaining({
+        where: { id: 'c1' },
+        data: expect.objectContaining({ pendingOrderProposal: null, hasOrderRequest: true })
+      }));
+      expect(activityLogService.record).toHaveBeenCalledWith(expect.objectContaining({
+        type: 'ORDER_CREATED',
+        metadataJson: expect.objectContaining({ trxId: 'TRX99887766', paidAmount: 60 })
+      }));
+      expect(result.overrideReplyText).toContain('পেমেন্ট সফলভাবে ভেরিফাই হয়েছে');
+    });
+
+    it('should inform customer of underpayment when screenshot amount is less than expected', async () => {
+      const mockConv = {
+        id: 'c1',
+        tenantId: 'tenant1',
+        contactId: 'cnt1',
+        pendingOrderProposal: {
+          status: 'AWAITING_PAYMENT_PROOF',
+          paymentPolicy: 'delivery_advance',
+          advanceAmountRequired: 60,
+          dueAmountCod: 1000,
+          items: [{ productId: 'p1', quantity: 1, priceAtTime: 1000 }],
+          expiresAt: new Date(Date.now() + 100000).toISOString()
+        }
+      };
+
+      prismaService.aiAssistant.findFirst.mockResolvedValue({
+        tenantId: 'tenant1',
+        tools: [{ toolType: 'order_placement', isEnabled: true }]
+      });
+
+      aiService.verifyPaymentReceiptScreenshot = jest.fn().mockResolvedValue({
+        isPaymentReceipt: true,
+        provider: 'bKash',
+        paidAmount: 50,
+        trxId: 'TRX12345',
+        senderPhone: '01711223344',
+        status: 'success'
+      });
+
+      const fs = require('fs');
+      jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+
+      const result = await (service as any).handleOrderPlacement(
+        'tenant1',
+        mockConv,
+        { replyText: 'paid', intent: 'general' } as any,
+        'c1',
+        'paid',
+        ['/path/to/screenshot.jpg']
+      );
+
+      expect(ordersService.createOrder).not.toHaveBeenCalled();
+      expect(result.overrideReplyText).toContain('৳50 পাঠিয়েছেন');
+      expect(result.overrideReplyText).toContain('বাকি ৳10 পরিশোধ');
+    });
+  });
 });
 
 

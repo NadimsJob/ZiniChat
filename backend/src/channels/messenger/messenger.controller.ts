@@ -77,13 +77,15 @@ export class MessengerController {
         const savedData = await this.inboxService.handleIncomingMessage({
           tenantId: msg.tenantId,
           channel: msg.channel,
+          channelConnectionId: (msg as any).channelConnectionId,
           externalContactId: msg.externalContactId,
           contactName: (msg as any).contactName,
+          avatarUrl: (msg as any).avatarUrl,
           messageType: msg.type,
           content: msg.content,
           externalMessageId: msg.messageId || `msg_${Date.now()}`,
           timestamp: msg.timestamp
-        });
+        } as any);
 
         if ((savedData as any).dropped) return;
 

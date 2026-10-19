@@ -108,6 +108,77 @@ describe('AiTrainingService', () => {
         allowByok: true,
       });
     });
+
+    it('should auto-save and load default persona prompt if assistant exists but systemPrompt is null or empty', async () => {
+      const mockAssistantWithoutPrompt = {
+        id: 'ast-1',
+        tenantId: 'tenant-1',
+        routingMode: 'system_only',
+        systemPrompt: null,
+        byokApiKeyEncrypted: null,
+        aiOrderEnabled: true,
+        isActive: true,
+        agentName: 'Zini',
+      };
+      const updatedAssistant = {
+        ...mockAssistantWithoutPrompt,
+        systemPrompt: 'You are a polite, helpful, and professional AI sales & customer support assistant for Acme Store.\n\n### MANDATORY ANTI-HALLUCINATION GUARDRAILS:\n...',
+      };
+
+      mockPrisma.aiAssistant.findFirst.mockResolvedValue(mockAssistantWithoutPrompt);
+      mockPrisma.aiAssistant.update.mockResolvedValue(updatedAssistant);
+      mockPrisma.aiAssistantTool.findMany.mockResolvedValue([]);
+      mockPrisma.tenant.findUnique.mockResolvedValue({
+        id: 'tenant-1',
+        businessName: 'Acme Store',
+        subscriptions: [],
+      });
+
+      const result = await service.getConfig('tenant-1');
+
+      // Verify update was called with the generated default prompt
+      expect(mockPrisma.aiAssistant.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'ast-1' },
+          data: expect.objectContaining({
+            systemPrompt: expect.stringContaining('Acme Store'),
+          }),
+        })
+      );
+      expect(result.systemPrompt).toContain('Acme Store');
+    });
+
+    it('should create new assistant with auto-saved default persona prompt if assistant does not exist', async () => {
+      mockPrisma.aiAssistant.findFirst.mockResolvedValue(null);
+      mockPrisma.aiAssistant.create.mockImplementation((args: any) => ({
+        id: 'ast-new',
+        tenantId: args.data.tenantId,
+        routingMode: args.data.routingMode,
+        systemPrompt: args.data.systemPrompt,
+        byokApiKeyEncrypted: null,
+        aiOrderEnabled: true,
+        isActive: true,
+        agentName: null,
+      }));
+      mockPrisma.aiAssistantTool.findMany.mockResolvedValue([]);
+      mockPrisma.tenant.findUnique.mockResolvedValue({
+        id: 'tenant-2',
+        businessName: 'Global Fashion',
+        subscriptions: [],
+      });
+
+      const result = await service.getConfig('tenant-2');
+
+      expect(mockPrisma.aiAssistant.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            tenantId: 'tenant-2',
+            systemPrompt: expect.stringContaining('Global Fashion'),
+          }),
+        })
+      );
+      expect(result.systemPrompt).toContain('Global Fashion');
+    });
   });
 
   describe('updateByokConfig encryption', () => {

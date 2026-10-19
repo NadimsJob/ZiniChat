@@ -33,20 +33,57 @@ export class AiTrainingService {
     private storageService: StorageService
   ) {}
 
+  getDefaultSystemPrompt(businessName?: string): string {
+    const name = businessName?.trim() || 'our store';
+    let prompt = `You are a polite, helpful, and professional AI sales & customer support assistant for ${name}.\n\n`;
+    prompt += `### MANDATORY ANTI-HALLUCINATION GUARDRAILS:\n`;
+    prompt += `1. ALWAYS use Q&A/Documents first as the source of truth.\n`;
+    prompt += `2. NEVER invent products, features, or prices.\n`;
+    prompt += `3. Never promise discounts or refunds without strict authorization.\n`;
+    prompt += `4. If uncertain, explicitly state that you do not know and suggest human handoff.\n\n`;
+    prompt += `### Core Persona Guidelines:\n`;
+    prompt += `- Warmly welcome customers and maintain a courteous, respectful tone at all times.\n`;
+    prompt += `- Guide customers through available products, prices, and stock from our catalog.\n`;
+    prompt += `- Answer store questions accurately based on official Q&A and business info.\n`;
+    prompt += `- Detect the customer's language and reply in the EXACT SAME language.`;
+    return prompt;
+  }
+
   private async ensureAiAssistantExists(tenantId: string) {
     let assistant = await this.prisma.aiAssistant.findFirst({
       where: { tenantId }
     });
 
+    const resolveDefaultPrompt = async (): Promise<string> => {
+      try {
+        const tenant = await this.prisma.tenant.findUnique({
+          where: { id: tenantId },
+          select: { businessName: true }
+        });
+        return this.getDefaultSystemPrompt(tenant?.businessName || 'our store');
+      } catch {
+        return this.getDefaultSystemPrompt('our store');
+      }
+    };
+
     if (!assistant) {
+      const defaultPrompt = await resolveDefaultPrompt();
       assistant = await this.prisma.aiAssistant.create({
         data: {
           tenantId,
           modelProvider: 'openai',
           modelName: 'gpt-4o-mini',
           apiKeyMode: 'platform', // Deprecated but required by schema
-          routingMode: 'system_only'
+          routingMode: 'system_only',
+          systemPrompt: defaultPrompt
         }
+      });
+    } else if (!assistant.systemPrompt || !assistant.systemPrompt.trim()) {
+      // Auto-save default prompt into database if assistant exists without prompt
+      const defaultPrompt = await resolveDefaultPrompt();
+      assistant = await this.prisma.aiAssistant.update({
+        where: { id: assistant.id },
+        data: { systemPrompt: defaultPrompt }
       });
     }
 
@@ -65,7 +102,7 @@ export class AiTrainingService {
       {
         toolType: 'order_placement',
         isEnabled: assistantAiOrderEnabled,
-        configJson: { requireExplicitConfirmation: true }
+        configJson: this.toolConfigValidator.getDefaultConfigForTool('order_placement')
       },
       {
         toolType: 'image_reading',
@@ -296,19 +333,7 @@ ${combinedText}`;
 
     if (!tenant) throw new NotFoundException('Tenant not found');
 
-    const businessName = tenant.businessName || 'our store';
-    let prompt = `You are a polite, helpful, and professional AI sales & customer support assistant for ${businessName}.\n\n`;
-    prompt += `### MANDATORY ANTI-HALLUCINATION GUARDRAILS:\n`;
-    prompt += `1. ALWAYS use Q&A/Documents first as the source of truth.\n`;
-    prompt += `2. NEVER invent products, features, or prices.\n`;
-    prompt += `3. Never promise discounts or refunds without strict authorization.\n`;
-    prompt += `4. If uncertain, explicitly state that you do not know and suggest human handoff.\n\n`;
-    prompt += `### Core Persona Guidelines:\n`;
-    prompt += `- Warmly welcome customers and maintain a courteous, respectful tone at all times.\n`;
-    prompt += `- Guide customers through available products, prices, and stock from our catalog.\n`;
-    prompt += `- Answer store questions accurately based on official Q&A and business info.\n`;
-    prompt += `- Detect the customer's language and reply in the EXACT SAME language.`;
-
+    const prompt = this.getDefaultSystemPrompt(tenant.businessName || 'our store');
     return { prompt };
   }
 
@@ -895,6 +920,45 @@ ${combinedText}`;
       tagsWithPrompts.forEach(tag => {
         prompt += `- Tag: "${tag.name}"\n  Rule/Instruction: "${tag.aiPrompt}"\n`;
       });
+    }
+
+    // ── Order Placement & Payment Policy (Rule 5 Simulator Parity) ─────────
+    const orderTool = await this.prisma.aiAssistantTool.findFirst({
+      where: {
+        assistantId: assistant.id,
+        toolType: 'order_placement',
+        isEnabled: true,
+      },
+    });
+
+    if (orderTool && orderTool.configJson) {
+      let cfg: any = {};
+      try {
+        cfg = typeof orderTool.configJson === 'string' ? JSON.parse(orderTool.configJson) : orderTool.configJson;
+      } catch {
+        cfg = {};
+      }
+      const paymentPolicy = cfg.paymentPolicy || 'cod';
+      const insideDhaka = cfg.deliveryChargeInsideDhaka ?? 60;
+      const outsideDhaka = cfg.deliveryChargeOutsideDhaka ?? 120;
+      const mfsAccounts: any[] = Array.isArray(cfg.mfsAccounts) ? cfg.mfsAccounts : [];
+      const mfsDetails = mfsAccounts.length > 0
+        ? mfsAccounts.map((a: any) => `${a.provider} (${a.accountType}): ${a.accountNumber}`).join(', ')
+        : 'bKash (Personal): 017XXXXXXXX';
+      const paymentNote = cfg.paymentInstructionNote ? ` Additional Payment Note: "${cfg.paymentInstructionNote}"` : '';
+
+      prompt += `\n=== ORDER PLACEMENT & PAYMENT POLICY DIRECTIVE ===\n`;
+      prompt += `The business accepts automated customer orders under the following mandatory policy:\n`;
+      prompt += `1. REQUIRED CUSTOMER DETAILS: Before confirming any physical order, you MUST collect: (a) Full Customer Name, (b) 11-digit Valid Mobile Phone, (c) Full Detailed Delivery Address, (d) Delivery Area (Inside Dhaka or Outside Dhaka).\n`;
+      prompt += `2. If any of these 4 details are missing, politely ask the customer ONLY for the missing details before proposing/confirming an order.\n`;
+      prompt += `3. DELIVERY CHARGES: Inside Dhaka: ৳${insideDhaka} | Outside Dhaka: ৳${outsideDhaka}.\n`;
+      if (paymentPolicy === 'cod') {
+        prompt += `4. PAYMENT POLICY: Cash on Delivery (COD). Product price + delivery charge will be paid upon delivery. Ask customer to explicitly CONFIRM.\n`;
+      } else if (paymentPolicy === 'delivery_advance') {
+        prompt += `4. PAYMENT POLICY: Delivery Charge Advance. The delivery charge (৳${insideDhaka} inside Dhaka / ৳${outsideDhaka} outside Dhaka) MUST be paid in advance via MFS (${mfsDetails}). The product price will be COD upon receipt. Instruct the customer to send the advance delivery charge and provide a screenshot of the payment.${paymentNote}\n`;
+      } else if (paymentPolicy === 'full_advance') {
+        prompt += `4. PAYMENT POLICY: Full Advance Payment. The entire total amount (Product price + delivery charge) MUST be paid in advance via MFS (${mfsDetails}). Instruct the customer to send the full advance payment and provide a screenshot of the payment.${paymentNote}\n`;
+      }
     }
 
     // ── DYNAMIC FOOTER ──────────────────────────────────────────────────────

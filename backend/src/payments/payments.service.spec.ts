@@ -143,4 +143,73 @@ describe('PaymentsService', () => {
       expect(res.promoMonthsRemaining).toBe(0);
     });
   });
+
+  describe('Addon Purchase Active Package Prerequisite', () => {
+    it('should throw BadRequestException when tenant has no active package subscription', async () => {
+      mockPrisma.subscription.findFirst.mockResolvedValue(null);
+      mockPrisma.tenant.findUnique.mockResolvedValue({ id: 't-no-pkg', customPlanName: null });
+
+      await expect(service.assertTenantHasActivePackage('t-no-pkg')).rejects.toThrow(
+        /সক্রিয় প্যাকেজ/
+      );
+    });
+
+    it('should throw BadRequestException when tenant only has Free plan', async () => {
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + 5);
+
+      mockPrisma.subscription.findFirst.mockResolvedValue({
+        id: 'sub-free',
+        status: 'active',
+        currentPeriodEnd: futureDate,
+        plan: { id: 'p-free', name: 'Free' },
+      });
+      mockPrisma.tenant.findUnique.mockResolvedValue({ id: 't-free', customPlanName: null });
+
+      await expect(service.assertTenantHasActivePackage('t-free')).rejects.toThrow(
+        /সক্রিয় প্যাকেজ/
+      );
+    });
+
+    it('should pass validation when tenant has an active paid package', async () => {
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + 25);
+
+      mockPrisma.subscription.findFirst.mockResolvedValue({
+        id: 'sub-active',
+        status: 'active',
+        currentPeriodEnd: futureDate,
+        plan: { id: 'p-starter', name: 'Starter' },
+      });
+      mockPrisma.tenant.findUnique.mockResolvedValue({ id: 't-active', customPlanName: null });
+
+      await expect(service.assertTenantHasActivePackage('t-active')).resolves.not.toThrow();
+    });
+
+    it('should pass validation when tenant has a custom enterprise plan', async () => {
+      mockPrisma.subscription.findFirst.mockResolvedValue(null);
+      mockPrisma.tenant.findUnique.mockResolvedValue({ id: 't-custom', customPlanName: 'Custom Enterprise' });
+
+      await expect(service.assertTenantHasActivePackage('t-custom')).resolves.not.toThrow();
+    });
+
+    it('submitManualPaymentForAddon should block purchase if no active package', async () => {
+      mockPrisma.subscription.findFirst.mockResolvedValue(null);
+      mockPrisma.tenant.findUnique.mockResolvedValue({ id: 't-no-pkg', customPlanName: null });
+
+      await expect(service.submitManualPaymentForAddon('t-no-pkg', 'addon-1', 'TRX123')).rejects.toThrow(
+        /সক্রিয় প্যাকেজ/
+      );
+    });
+
+    it('submitSandboxPaymentForAddon should block purchase if no active package', async () => {
+      mockPrisma.subscription.findFirst.mockResolvedValue(null);
+      mockPrisma.tenant.findUnique.mockResolvedValue({ id: 't-no-pkg', customPlanName: null });
+
+      await expect(service.submitSandboxPaymentForAddon('t-no-pkg', 'addon-1')).rejects.toThrow(
+        /সক্রিয় প্যাকেজ/
+      );
+    });
+  });
 });
+

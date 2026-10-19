@@ -324,7 +324,39 @@ export class PaymentsService {
     return payment;
   }
 
+  async assertTenantHasActivePackage(tenantId: string): Promise<void> {
+    const activeSubscription = await this.prisma.subscription.findFirst({
+      where: {
+        tenantId,
+        status: { in: ['active', 'trialing'] },
+        currentPeriodEnd: { gt: new Date() },
+      },
+      include: { plan: true },
+      orderBy: { currentPeriodEnd: 'desc' },
+    });
+
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      include: { plan: true },
+    });
+
+    if (!tenant) throw new BadRequestException('Tenant not found');
+
+    const hasActivePackage = Boolean(
+      (activeSubscription && activeSubscription.plan?.name !== 'Free') ||
+      tenant.customPlanName
+    );
+
+    if (!hasActivePackage) {
+      throw new BadRequestException(
+        'অ্যাড-অন সার্ভিস কিনতে হলে আপনার অ্যাকাউন্টে একটি সক্রিয় প্যাকেজ (Active Package) থাকতে হবে। অনুগ্রহ করে প্রথমে একটি প্যাকেজ সাবস্ক্রাইব করুন। (An active package subscription is required to purchase add-on services. Please subscribe to a package first.)'
+      );
+    }
+  }
+
   async submitManualPaymentForAddon(tenantId: string, addonId: string, trxId: string) {
+    await this.assertTenantHasActivePackage(tenantId);
+
     const addon = await this.prisma.addon.findUnique({ where: { id: addonId } });
     if (!addon) throw new BadRequestException('Addon not found');
 
@@ -369,6 +401,8 @@ export class PaymentsService {
   }
 
   async submitSandboxPaymentForAddon(tenantId: string, addonId: string) {
+    await this.assertTenantHasActivePackage(tenantId);
+
     const addon = await this.prisma.addon.findUnique({ where: { id: addonId } });
     if (!addon) throw new BadRequestException('Addon not found');
 

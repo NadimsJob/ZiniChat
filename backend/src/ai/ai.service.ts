@@ -451,6 +451,73 @@ export class AiService {
     return res.text;
   }
 
+  async verifyPaymentReceiptScreenshot(
+    imagePath: string,
+    expectedAmount?: number,
+    configId?: string
+  ): Promise<{
+    isPaymentReceipt: boolean;
+    provider: 'bKash' | 'Nagad' | 'Rocket' | 'Upay' | 'Bank' | 'Unknown';
+    paidAmount: number;
+    trxId: string;
+    senderPhone: string;
+    status: 'success' | 'failed' | 'pending' | 'unclear';
+    rawAiText?: string;
+  }> {
+    const prompt = `You are a financial transaction and mobile banking receipt verification specialist.
+Examine this image carefully. It may be a payment confirmation or money transfer receipt (such as bKash, Nagad, Rocket, Upay, or bank transfer in Bangladesh).
+Verify if this is a genuine, successful payment receipt and extract the exact details.
+${expectedAmount ? `Expected payment amount is: ৳${expectedAmount}.` : ''}
+
+CRITICAL: Output ONLY a valid JSON object with NO MARKDOWN OR BACKTICKS:
+{
+  "isPaymentReceipt": true,
+  "provider": "bKash" | "Nagad" | "Rocket" | "Upay" | "Bank" | "Unknown",
+  "paidAmount": 60,
+  "trxId": "transaction ID string found on receipt (or empty string)",
+  "senderPhone": "sender or recipient mobile number if visible (or empty string)",
+  "status": "success" | "failed" | "pending" | "unclear"
+}`;
+
+    try {
+      const rawText = await this.generateCompletion(prompt, configId, [imagePath]);
+      let cleaned = (rawText || '').trim();
+      if (cleaned.startsWith('```json')) {
+        cleaned = cleaned.replace(/```json/gi, '').replace(/```/g, '').trim();
+      } else if (cleaned.startsWith('```')) {
+        cleaned = cleaned.replace(/```/g, '').trim();
+      }
+
+      // Handle cases where model adds surrounding commentary
+      const jsonStart = cleaned.indexOf('{');
+      const jsonEnd = cleaned.lastIndexOf('}');
+      if (jsonStart !== -1 && jsonEnd !== -1) {
+        cleaned = cleaned.substring(jsonStart, jsonEnd + 1);
+      }
+
+      const parsed = JSON.parse(cleaned);
+      return {
+        isPaymentReceipt: Boolean(parsed.isPaymentReceipt),
+        provider: ['bKash', 'Nagad', 'Rocket', 'Upay', 'Bank'].includes(parsed.provider) ? parsed.provider : 'Unknown',
+        paidAmount: Number(parsed.paidAmount) || 0,
+        trxId: parsed.trxId ? String(parsed.trxId).trim() : '',
+        senderPhone: parsed.senderPhone ? String(parsed.senderPhone).trim() : '',
+        status: ['success', 'failed', 'pending', 'unclear'].includes(parsed.status) ? parsed.status : 'unclear',
+        rawAiText: rawText
+      };
+    } catch (err: any) {
+      this.logger.warn(`Failed to verify payment receipt screenshot: ${err.message}`);
+      return {
+        isPaymentReceipt: false,
+        provider: 'Unknown',
+        paidAmount: 0,
+        trxId: '',
+        senderPhone: '',
+        status: 'unclear'
+      };
+    }
+  }
+
   async recordUsageLog(tenantId: string, assistantId: string, usage: AiUsageMetrics, multiplier: number = 1) {
     const savingsPercent = usage.promptTokenCount > 0 
       ? ((usage.cachedContentTokenCount / usage.promptTokenCount) * 75).toFixed(1)

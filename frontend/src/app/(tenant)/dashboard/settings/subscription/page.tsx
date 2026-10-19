@@ -7,7 +7,7 @@ import { useCurrency } from '@/components/CurrencyProvider';
 import {
   Crown, Package, Puzzle, Check, Zap, RefreshCw, AlertCircle,
   MessageSquare, Bot, Users, HardDrive, Wifi, Globe, Tag, ShieldCheck,
-  BarChart2, Megaphone, Headphones, Star, Sparkles
+  BarChart2, Megaphone, Headphones, Star, Sparkles, Lock
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -73,6 +73,14 @@ export default function SubscriptionSettingsPage() {
   const currentSubscription = quotaData?.subscription;
   const activePlanId = currentSubscription?.planId;
 
+  const hasActivePackage = Boolean(
+    (currentSubscription &&
+      (currentSubscription.status === 'active' || currentSubscription.status === 'trialing') &&
+      new Date(currentSubscription.currentPeriodEnd) > new Date() &&
+      currentSubscription.plan?.name !== 'Free') ||
+    quotaData?.customPlanName
+  );
+
   const visiblePlans = plans.filter((p: any) => {
     if (quotaData?.hasUsedFreePlan && Number(p.priceMonthlyBdt) === 0) {
       return false;
@@ -108,6 +116,16 @@ export default function SubscriptionSettingsPage() {
   };
 
   const handleBuyAddon = (addonId: string) => {
+    if (!hasActivePackage) {
+      toast.error(
+        language === 'en'
+          ? 'An active package subscription is required to purchase add-ons. Please subscribe to a package first.'
+          : 'অ্যাড-অন সার্ভিস কিনতে হলে আপনার অ্যাকাউন্টে একটি সক্রিয় প্যাকেজ থাকতে হবে। অনুগ্রহ করে প্রথমে একটি প্ল্যান সাবস্ক্রাইব করুন।'
+      );
+      const el = document.getElementById('plans-section');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
     window.open(`/dashboard/billing/pay-mfs?addonId=${addonId}`, '_blank');
   };
 
@@ -333,7 +351,7 @@ export default function SubscriptionSettingsPage() {
       </div>
 
       {/* Available Plans */}
-      <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-5">
+      <div id="plans-section" className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
           <h2 className="text-[15px] font-bold flex items-center gap-2 text-foreground">
             <Zap className="w-4 h-4 text-secondary shrink-0" />
@@ -565,6 +583,36 @@ export default function SubscriptionSettingsPage() {
               ? 'Purchase additional limits on top of your current plan without upgrading.'
               : 'আপগ্রেড না করেই বর্তমান প্ল্যানের উপরে অতিরিক্ত লিমিট কিনুন।'}
           </p>
+
+          {!hasActivePackage && (
+            <div className="mb-5 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm animate-in fade-in duration-300">
+              <div className="flex items-start sm:items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0 text-amber-500">
+                  <Lock className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-[13px] font-bold text-amber-500">
+                    {language === 'en' ? 'Active Package Required to Purchase Add-ons' : 'অ্যাড-অন কেনার জন্য সক্রিয় প্যাকেজ আবশ্যক'}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    {language === 'en'
+                      ? 'Add-ons provide extra quota on top of an active package. Please subscribe to a plan to unlock add-on purchases.'
+                      : 'অ্যাড-অন সার্ভিসগুলো বিদ্যমান প্যাকেজের কোটার উপরে অতিরিক্ত লিমিট যোগ করে। অ্যাড-অন কিনতে প্রথমে একটি প্যাকেজে সাবস্ক্রাইব করুন।'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  const el = document.getElementById('plans-section');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-black font-bold text-[12px] rounded-xl shrink-0 transition-all cursor-pointer shadow-sm text-center"
+              >
+                {language === 'en' ? 'View Plans' : 'প্যাকেজসমূহ দেখুন'}
+              </button>
+            </div>
+          )}
+
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {addons.map(addon => (
               <div key={addon.id}
@@ -602,8 +650,15 @@ export default function SubscriptionSettingsPage() {
                 </div>
                 <button
                   onClick={() => handleBuyAddon(addon.id)}
-                  className="w-full py-2 bg-secondary/10 hover:bg-secondary/20 text-secondary border border-secondary/20 rounded-xl text-[12px] font-bold transition-all active:scale-[0.98]">
-                  {language === 'en' ? 'Purchase Add-on' : 'কিনুন'}
+                  className={`w-full py-2 rounded-xl text-[12px] font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    hasActivePackage
+                      ? 'bg-secondary/10 hover:bg-secondary/20 text-secondary border border-secondary/20 active:scale-[0.98]'
+                      : 'bg-muted/40 hover:bg-muted/60 text-muted-foreground border border-surface-hover'
+                  }`}>
+                  {!hasActivePackage && <Lock className="w-3.5 h-3.5 text-amber-500 shrink-0" />}
+                  {hasActivePackage
+                    ? (language === 'en' ? 'Purchase Add-on' : 'কিনুন')
+                    : (language === 'en' ? 'Active Plan Required' : 'প্যাকেজ আবশ্যক')}
                 </button>
               </div>
             ))}

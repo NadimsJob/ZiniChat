@@ -20,7 +20,9 @@ import {
  X,
  CreditCard,
  Building2,
- ChevronRight
+ ChevronRight,
+ Lock,
+ Zap
 } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageProvider';
 import { useCurrency } from '@/components/CurrencyProvider';
@@ -69,6 +71,7 @@ function PayMfsContent() {
  const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
  const [couponError, setCouponError] = useState('');
  const [applyingCoupon, setApplyingCoupon] = useState(false);
+ const [addonBlockedError, setAddonBlockedError] = useState('');
 
  const timerRef = useRef<any>(null);
  const autoCheckRef = useRef<any>(null);
@@ -261,8 +264,14 @@ function PayMfsContent() {
  if (res.ok) {
  const data = await res.json();
  setPayment(data);
+ setAddonBlockedError('');
  } else {
- toast.error('Failed to initialize checkout invoice');
+ const errData = await res.json().catch(() => ({}));
+ const errorMsg = errData.message || (language === 'en' ? 'Failed to initialize checkout invoice' : 'পেমেন্ট ইনভয়েস তৈরি করতে সমস্যা হয়েছে');
+ toast.error(errorMsg);
+ if (addonId) {
+   setAddonBlockedError(errorMsg);
+ }
  }
  } catch (err) {
  toast.error('Failed to connect to billing server');
@@ -394,6 +403,41 @@ function PayMfsContent() {
  { provider: 'UPAY', accountType: 'PERSONAL', number: '01800000000', name: 'Upay Send Money' },
  ])
  : (cardAccounts.length > 0 ? cardAccounts : [{ provider: 'BANK', accountType: 'BANK', number: '10000001', name: 'Paystation / Bank Card' }]);
+
+ if (addonBlockedError) {
+  return (
+   <div className="min-h-screen bg-background text-foreground py-8 px-4 flex flex-col items-center justify-center font-sans">
+    <div className="w-full max-w-md bg-card border border-border rounded-3xl p-6 sm:p-8 shadow-xl text-center space-y-5 animate-in zoom-in-95 duration-200">
+     <div className="w-16 h-16 rounded-3xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-500 mx-auto shadow-inner">
+      <Lock className="w-8 h-8" />
+     </div>
+     <div>
+      <h2 className="text-lg font-bold text-foreground">
+       {language === 'en' ? 'Active Package Required' : 'সক্রিয় প্যাকেজ আবশ্যক'}
+      </h2>
+      <p className="text-[13px] text-muted-foreground mt-2 leading-relaxed font-sans">
+       {addonBlockedError}
+      </p>
+     </div>
+     <div className="pt-2 flex flex-col gap-2.5">
+      <button
+       onClick={() => router.push('/dashboard/settings/subscription')}
+       className="w-full py-2.5 px-4 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl text-[13px] transition-all shadow-md cursor-pointer flex items-center justify-center gap-2"
+      >
+       <Zap className="w-4 h-4" />
+       {language === 'en' ? 'View & Subscribe to a Package' : 'প্যাকেজ সাবস্ক্রাইব করুন'}
+      </button>
+      <button
+       onClick={() => router.push('/dashboard')}
+       className="w-full py-2 px-4 bg-surface hover:bg-surface-hover text-muted-foreground hover:text-foreground font-medium rounded-xl text-[12px] transition-all cursor-pointer"
+      >
+       {language === 'en' ? 'Back to Dashboard' : 'ড্যাশবোর্ডে ফিরে যান'}
+      </button>
+     </div>
+    </div>
+   </div>
+  );
+ }
 
  return (
  <div className="min-h-screen bg-background text-foreground py-8 px-4 flex flex-col items-center justify-center font-sans">

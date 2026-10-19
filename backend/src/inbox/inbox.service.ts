@@ -385,15 +385,38 @@ export class InboxService implements OnModuleInit {
       orderBy: { lastMessageAt: 'desc' },
     });
 
-    // Auto-fetch Meta User Profile in background for any contact with generic default name
-    for (const conv of conversations) {
-      if (conv.contact && ['messenger', 'instagram'].includes(conv.contact.channel)) {
-        const isGeneric = !conv.contact.name || 
-          conv.contact.name === 'Messenger User' || 
-          conv.contact.name === 'Instagram User' || 
-          conv.contact.name === conv.contact.externalContactId;
-        if (isGeneric) {
-          this.fetchAndUpdateMetaUserProfile(tenantId, conv.contact.id, conv.contact.externalContactId, conv.contact.channel).catch(() => {});
+    // Auto-fetch Meta User Profile for any contact with generic default name
+    const genericConvs = conversations.filter(conv => {
+      if (!conv.contact || !['messenger', 'instagram'].includes(conv.contact.channel)) return false;
+      const name = conv.contact.name;
+      return !name || name === 'Messenger User' || name === 'Instagram User' || name === conv.contact.externalContactId;
+    });
+
+    if (genericConvs.length > 0) {
+      await Promise.allSettled(
+        genericConvs.slice(0, 5).map(async conv => {
+          const updated = await this.fetchAndUpdateMetaUserProfile(
+            tenantId,
+            conv.contact.id,
+            conv.contact.externalContactId,
+            conv.contact.channel,
+            conv.channelConnectionId || undefined
+          ).catch(() => null);
+          if (updated && updated.name) {
+            conv.contact.name = updated.name;
+          }
+        })
+      );
+      // Run background sync for remaining generic contacts
+      if (genericConvs.length > 5) {
+        for (const conv of genericConvs.slice(5)) {
+          this.fetchAndUpdateMetaUserProfile(
+            tenantId,
+            conv.contact.id,
+            conv.contact.externalContactId,
+            conv.contact.channel,
+            conv.channelConnectionId || undefined
+          ).catch(() => {});
         }
       }
     }
@@ -401,37 +424,174 @@ export class InboxService implements OnModuleInit {
     return conversations;
   }
 
-  async fetchAndUpdateMetaUserProfile(tenantId: string, contactId: string, externalContactId: string, channel: string) {
+  async fetchAndUpdateMetaUserProfile(
+    tenantId: string, 
+    contactId: string, 
+    externalContactId: string, 
+    channel: string,
+    channelConnectionId?: string
+  ) {
     try {
-      if (!['messenger', 'instagram'].includes(channel)) return;
+      if (!['messenger', 'instagram'].includes(channel)) return null;
 
-      const connection = await this.prisma.channelConnection.findFirst({
-        where: { tenantId, channelType: channel, status: { in: ['active', 'connected'] } }
-      });
+      let connection: any = null;
+      if (channelConnectionId) {
+        connection = await this.prisma.channelConnection.findUnique({
+          where: { id: channelConnectionId }
+        });
+      }
 
-      if (!connection || !connection.accessTokenEncrypted) return;
+      if (!connection) {
+        connection = await this.prisma.channelConnection.findFirst({
+          where: {
+            tenantId,
+            channelType: channel,
+            status: { in: ['active', 'connected', 'ACTIVE', 'CONNECTED'] }
+          }
+        });
+      }
+
+      if (!connection) {
+        connection = await this.prisma.channelConnection.findFirst({
+          where: { tenantId, channelType: channel }
+        });
+      }
+
+      if (!connection || !connection.accessTokenEncrypted) {
+        this.logger.debug(`No valid channel connection found for tenant ${tenantId} and channel ${channel}`);
+        return null;
+      }
 
       const pageToken = connection.accessTokenEncrypted;
+      const pageId = connection.externalAccountId;
       let fullName: string | null = null;
+      let profilePic: string | null = null;
 
       if (channel === 'messenger') {
-        const res = await fetch(`https://graph.facebook.com/v21.0/${externalContactId}?fields=first_name,last_name,name,profile_pic&access_token=${pageToken}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.name) {
-            fullName = data.name;
-          } else if (data.first_name || data.last_name) {
-            fullName = `${data.first_name || ''} ${data.last_name || ''}`.trim();
+        // Strategy 1: Direct PSID query with first_name,last_name,profile_pic
+        // NOTE: Do NOT include 'name' field as Meta Graph API rejects it with error 100 on PSID
+        try {
+          const res = await fetch(`https://graph.facebook.com/v21.0/${externalContactId}?fields=first_name,last_name,profile_pic&access_token=${pageToken}`, {
+            headers: { 'Accept': 'application/json' },
+            signal: AbortSignal.timeout(3500)
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.first_name || data.last_name) {
+              fullName = `${data.first_name || ''} ${data.last_name || ''}`.trim();
+            }
+            if (data.profile_pic) {
+              profilePic = data.profile_pic;
+            }
+          } else {
+            const errJson = await res.json().catch(() => ({}));
+            this.logger.debug(`Direct PSID query returned status ${res.status}: ${JSON.stringify(errJson)}`);
+          }
+        } catch (err: any) {
+          this.logger.debug(`Direct PSID profile fetch failed: ${err.message}`);
+        }
+
+        // Strategy 2: Query conversation thread participants via t_<PSID>
+        if (!fullName) {
+          try {
+            const threadRes = await fetch(`https://graph.facebook.com/v21.0/t_${externalContactId}?fields=participants,senders&access_token=${pageToken}`, {
+              headers: { 'Accept': 'application/json' },
+              signal: AbortSignal.timeout(3500)
+            });
+            if (threadRes.ok) {
+              const threadData = await threadRes.json();
+              const parts = threadData.participants?.data || threadData.senders?.data || [];
+              const userPart = parts.find((p: any) => p.id === externalContactId) || 
+                               parts.find((p: any) => p.id !== pageId && p.name && p.name !== 'Facebook User');
+              if (userPart?.name) {
+                fullName = userPart.name.trim();
+                this.logger.log(`Resolved Messenger name via thread t_${externalContactId}: "${fullName}"`);
+              }
+            }
+          } catch (err: any) {
+            this.logger.debug(`Thread lookup error: ${err.message}`);
+          }
+        }
+
+        // Strategy 3: Query Page's recent conversations list
+        if (!fullName && pageId) {
+          try {
+            const convRes = await fetch(`https://graph.facebook.com/v21.0/${pageId}/conversations?fields=participants,senders&limit=25&access_token=${pageToken}`, {
+              headers: { 'Accept': 'application/json' },
+              signal: AbortSignal.timeout(3500)
+            });
+            if (convRes.ok) {
+              const convData = await convRes.json();
+              for (const convItem of convData.data || []) {
+                const parts = convItem.participants?.data || convItem.senders?.data || [];
+                const match = parts.find((p: any) => p.id === externalContactId);
+                if (match?.name) {
+                  fullName = match.name.trim();
+                  this.logger.log(`Resolved Messenger name via Page conversations list: "${fullName}"`);
+                  break;
+                }
+              }
+            }
+          } catch (err: any) {
+            this.logger.debug(`Page conversations lookup error: ${err.message}`);
+          }
+        }
+
+        // Strategy 4: Check FacebookCommentLog
+        if (!fullName) {
+          try {
+            const commentLog = await this.prisma.facebookCommentLog.findFirst({
+              where: {
+                tenantId,
+                userExternalId: externalContactId,
+                userName: { notIn: ['Facebook User', 'Messenger User', 'Instagram User', ''] }
+              },
+              select: { userName: true }
+            });
+            if (commentLog?.userName) {
+              fullName = commentLog.userName.trim();
+              this.logger.log(`Resolved Messenger name via facebookCommentLog: "${fullName}"`);
+            }
+          } catch (err: any) {
+            // ignore
           }
         }
       } else if (channel === 'instagram') {
-        const res = await fetch(`https://graph.facebook.com/v21.0/${externalContactId}?fields=name,username,profile_pic&access_token=${pageToken}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.name) {
-            fullName = data.name;
-          } else if (data.username) {
-            fullName = data.username;
+        // Strategy 1: Direct Instagram User query
+        try {
+          const res = await fetch(`https://graph.facebook.com/v21.0/${externalContactId}?fields=name,username,profile_pic&access_token=${pageToken}`, {
+            headers: { 'Accept': 'application/json' },
+            signal: AbortSignal.timeout(3500)
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.name) fullName = data.name.trim();
+            else if (data.username) fullName = data.username.trim();
+            if (data.profile_pic) profilePic = data.profile_pic;
+          }
+        } catch (err: any) {
+          this.logger.debug(`Instagram direct profile fetch error: ${err.message}`);
+        }
+
+        // Strategy 2: Thread lookup via t_<PSID>
+        if (!fullName) {
+          try {
+            const threadRes = await fetch(`https://graph.facebook.com/v21.0/t_${externalContactId}?fields=participants&access_token=${pageToken}`, {
+              headers: { 'Accept': 'application/json' },
+              signal: AbortSignal.timeout(3500)
+            });
+            if (threadRes.ok) {
+              const threadData = await threadRes.json();
+              const parts = threadData.participants?.data || [];
+              const userPart = parts.find((p: any) => p.id === externalContactId) || 
+                               parts.find((p: any) => p.id !== pageId && (p.name || p.username));
+              const name = userPart?.name || userPart?.username;
+              if (name) {
+                fullName = name.trim();
+              }
+            }
+          } catch (err: any) {
+            // ignore
           }
         }
       }
@@ -441,15 +601,33 @@ export class InboxService implements OnModuleInit {
           where: { id: contactId },
           data: { name: fullName.trim() }
         });
-        this.logger.log(`Fetched Meta User Profile for ${channel} contact ${contactId}: ${fullName}`);
+        this.logger.log(`Successfully updated Meta User Profile for ${channel} contact ${contactId}: "${fullName}"`);
 
         if (this.inboxGateway) {
           this.inboxGateway.broadcastToTenant(tenantId, 'contact:updated', updatedContact);
         }
+        return updatedContact;
       }
     } catch (err: any) {
       this.logger.warn(`Failed fetching Meta user profile for ${externalContactId}: ${err.message}`);
     }
+    return null;
+  }
+
+  async syncContactMetaProfile(tenantId: string, contactId: string) {
+    const contact = await this.prisma.contact.findFirst({
+      where: { id: contactId, tenantId }
+    });
+    if (!contact) {
+      throw new NotFoundException('Contact not found');
+    }
+    const updated = await this.fetchAndUpdateMetaUserProfile(
+      tenantId,
+      contact.id,
+      contact.externalContactId,
+      contact.channel
+    );
+    return updated || contact;
   }
 
   extractPhoneFromText(text: string): string | null {
@@ -1063,9 +1241,19 @@ export class InboxService implements OnModuleInit {
         }
       });
     } else {
-      const newName = (!isOutboundFromPhone && data.contactName && data.contactName !== data.externalContactId) 
+      const isGenericCurrent = !contact.name || 
+        contact.name === 'Messenger User' || 
+        contact.name === 'Instagram User' || 
+        contact.name === contact.externalContactId;
+      const isNewNameReal = data.contactName && 
+        data.contactName !== data.externalContactId && 
+        data.contactName !== 'Messenger User' && 
+        data.contactName !== 'Instagram User';
+
+      const newName = (!isOutboundFromPhone && isNewNameReal)
                         ? data.contactName 
-                        : contact.name;
+                        : (isGenericCurrent && isNewNameReal ? data.contactName : contact.name);
+
       contact = await this.prisma.contact.update({
         where: { id: contact.id },
         data: { 
@@ -1102,7 +1290,7 @@ export class InboxService implements OnModuleInit {
         contact.name === 'Instagram User' || 
         contact.name === cleanId;
       if (isGeneric) {
-        this.fetchAndUpdateMetaUserProfile(data.tenantId, contact.id, cleanId, data.channel).catch(() => {});
+        this.fetchAndUpdateMetaUserProfile(data.tenantId, contact.id, cleanId, data.channel, data.channelConnectionId).catch(() => {});
       }
     }
 

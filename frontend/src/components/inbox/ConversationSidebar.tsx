@@ -286,6 +286,31 @@ export default function ConversationSidebar({
     }
   };
 
+  const [isSyncingMetaProfile, setIsSyncingMetaProfile] = useState(false);
+
+  const handleSyncMetaProfile = async () => {
+    if (!contact?.id) return;
+    setIsSyncingMetaProfile(true);
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/inbox/contacts/${contact.id}/sync-meta-profile`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        onUpdateContact(contact.id, updated);
+        toast.success(language === 'en' ? `Profile synced: ${updated.name}` : `প্রোফাইল সিঙ্ক হয়েছে: ${updated.name}`);
+      } else {
+        toast.error(language === 'en' ? 'Failed to sync profile' : 'প্রোফাইল সিঙ্ক করা যায়নি');
+      }
+    } catch (err) {
+      toast.error('Sync failed');
+    } finally {
+      setIsSyncingMetaProfile(false);
+    }
+  };
+
   // Notes state
   const [notes, setNotes] = useState<any[]>([]);
   const [newNoteText, setNewNoteText] = useState('');
@@ -637,9 +662,23 @@ export default function ConversationSidebar({
               </div>
             ) : (
               <div className="space-y-2 text-[11px]">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <User className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-                  <span className="text-foreground font-semibold">{contact?.name || 'Customer'}</span>
+                <div className="flex items-center justify-between gap-2 text-muted-foreground">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <User className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                    <span className="text-foreground font-semibold truncate">{contact?.name || 'Customer'}</span>
+                  </div>
+                  {['messenger', 'instagram'].includes(contact?.channel) && (
+                    <button
+                      type="button"
+                      onClick={handleSyncMetaProfile}
+                      disabled={isSyncingMetaProfile}
+                      className="px-1.5 py-0.5 rounded text-[10px] text-primary hover:bg-primary/10 transition-colors flex items-center gap-1 cursor-pointer shrink-0 disabled:opacity-50"
+                      title={language === 'en' ? 'Sync Facebook/Meta Profile' : 'মেটা প্রোফাইল সিঙ্ক করুন'}
+                    >
+                      <RefreshCw className={`w-3 h-3 ${isSyncingMetaProfile ? 'animate-spin' : ''}`} />
+                      <span>{language === 'en' ? 'Sync' : 'সিঙ্ক'}</span>
+                    </button>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Phone className="w-3.5 h-3.5 text-primary shrink-0" />

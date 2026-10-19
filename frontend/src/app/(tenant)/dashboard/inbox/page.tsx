@@ -897,6 +897,35 @@ export default function InboxPage() {
     }));
   };
 
+  const [isSyncingMetaProfile, setIsSyncingMetaProfile] = useState(false);
+
+  const handleSyncMetaProfile = async (contactId: string) => {
+    if (!contactId) return;
+    setIsSyncingMetaProfile(true);
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/inbox/contacts/${contactId}/sync-meta-profile`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setConversations(prev => prev.map(c => 
+          c.contactId === contactId || c.contact?.id === contactId
+            ? { ...c, contact: { ...(c.contact || {}), ...updated } }
+            : c
+        ));
+        toast.success(language === 'en' ? `Profile synced: ${updated.name}` : `প্রোফাইল সিঙ্ক হয়েছে: ${updated.name}`);
+      } else {
+        toast.error(language === 'en' ? 'Failed to sync profile' : 'প্রোফাইল সিঙ্ক করা যায়নি');
+      }
+    } catch (err) {
+      toast.error('Sync failed');
+    } finally {
+      setIsSyncingMetaProfile(false);
+    }
+  };
+
   const handleQuickFollowUpUpdate = async (conv: any, dateValue: string) => {
     if (!conv?.contact?.id) return;
     try {
@@ -1402,9 +1431,18 @@ export default function InboxPage() {
                     {/* Left Info: Avatar + Name + Snippet */}
                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
                       <div className="relative shrink-0">
-                        <div className="w-10 h-10 md:w-8 md:h-8 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-sm md:text-xs border border-primary/20">
-                          {conv.contact?.name ? conv.contact.name[0].toUpperCase() : 'C'}
-                        </div>
+                        {conv.contact?.avatarUrl ? (
+                          <img
+                            src={conv.contact.avatarUrl}
+                            alt={conv.contact.name || 'Customer'}
+                            className="w-10 h-10 md:w-8 md:h-8 rounded-full object-cover border border-primary/20"
+                            onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                          />
+                        ) : (
+                          <div className="w-10 h-10 md:w-8 md:h-8 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-sm md:text-xs border border-primary/20">
+                            {conv.contact?.name ? conv.contact.name[0].toUpperCase() : 'C'}
+                          </div>
+                        )}
                         <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 md:w-3 md:h-3 shrink-0">
                           <ChannelBrandIcon channelType={conv.channel} className="w-full h-full" />
                         </span>
@@ -1655,13 +1693,36 @@ export default function InboxPage() {
                 className="flex items-center gap-2 md:gap-2.5 min-w-0 cursor-pointer hover:opacity-80 active:opacity-60 transition-opacity group"
                 title={language === 'en' ? 'View CRM Details' : 'CRM ডিটেইলস দেখুন'}
               >
-                <div className="w-10 h-10 md:w-9 md:h-9 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-sm md:text-xs border border-primary/20 shrink-0 group-hover:border-primary/60 transition-colors">
-                  {activeConv.contact?.name ? activeConv.contact.name[0].toUpperCase() : 'C'}
+                <div className="relative shrink-0">
+                  {activeConv.contact?.avatarUrl ? (
+                    <img
+                      src={activeConv.contact.avatarUrl}
+                      alt={activeConv.contact.name || 'Customer'}
+                      className="w-10 h-10 md:w-9 md:h-9 rounded-full object-cover border border-primary/20 group-hover:border-primary/60 transition-colors"
+                      onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                    />
+                  ) : (
+                    <div className="w-10 h-10 md:w-9 md:h-9 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-sm md:text-xs border border-primary/20 shrink-0 group-hover:border-primary/60 transition-colors">
+                      {activeConv.contact?.name ? activeConv.contact.name[0].toUpperCase() : 'C'}
+                    </div>
+                  )}
                 </div>
                 <div className="min-w-0 text-left">
-                  <h3 className="text-sm md:text-xs font-bold text-foreground truncate flex items-center gap-2">
-                    {activeConv.contact?.name || activeConv.contact?.phone || 'Customer'}
+                  <h3 className="text-sm md:text-xs font-bold text-foreground truncate flex items-center gap-1.5">
+                    <span>{activeConv.contact?.name || activeConv.contact?.phone || 'Customer'}</span>
                     <span className="text-xs md:text-[10px] text-muted-foreground font-normal capitalize">({activeConv.channel})</span>
+                    {['messenger', 'instagram'].includes(activeConv.channel) && (
+                      <span
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (activeConv.contact?.id) handleSyncMetaProfile(activeConv.contact.id);
+                        }}
+                        className={`p-1 hover:bg-muted text-muted-foreground hover:text-primary rounded-md transition-colors cursor-pointer inline-flex items-center ${isSyncingMetaProfile ? 'pointer-events-none' : ''}`}
+                        title={language === 'en' ? 'Sync Meta Profile (Name & Photo)' : 'মেটা প্রোফাইল সিঙ্ক করুন'}
+                      >
+                        <RefreshCw className={`w-3 h-3 ${isSyncingMetaProfile ? 'animate-spin text-primary' : ''}`} />
+                      </span>
+                    )}
                   </h3>
                   <p className="text-[11px] md:text-[10px] text-muted-foreground flex items-center gap-2">
                     <span>{activeConv.contact?.phone ? activeConv.contact.phone : `ID: ${activeConv.contact?.externalContactId || ''}`}</span>

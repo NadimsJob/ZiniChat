@@ -437,4 +437,10 @@ export class InboxController {
     const tenantId = req.user.tenantId;
     return this.inboxService.deleteConversation(conversationId, tenantId);
   }
+
+  @Post('contacts/:id/sync-meta-profile')
+  async syncContactMetaProfile(@Request() req: any, @Param('id') contactId: string) {
+    const tenantId = req.user.tenantId;
+    return this.inboxService.syncContactMetaProfile(tenantId, contactId);
+  }
 }

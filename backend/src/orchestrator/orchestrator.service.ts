@@ -30,6 +30,12 @@ export interface StructuredAiClassification {
   interestedRfqProductName?: string; // Manufacturing mode: which wholesale product buyer inquired about
   interestedShipmentRoute?: string; // Logistics mode: which shipment route/fleet shipper inquired about
   sendProductPhotoIds?: string[]; // IDs of products to send photos for (1 to 10)
+  customerDetails?: {
+    name?: string;
+    phone?: string;
+    address?: string;
+    deliveryArea?: 'inside_dhaka' | 'outside_dhaka';
+  };
 }
 
 @Injectable()
@@ -312,6 +318,7 @@ export class OrchestratorService {
         isImage: canRunVision && imagePathsToPass.length > 0,
         caption: userCaption,
         isOrderPlacementActive,
+        orderPlacementConfig: toolMap['order_placement']?.configJson,
         isSupportDetectionActive,
         isPropertyMode,
         isHospitalityMode,
@@ -372,7 +379,14 @@ export class OrchestratorService {
       let finalReplyText = classification.replyText;
 
       if (isOrderPlacementActive) {
-        const orderResult = await this.handleOrderPlacement(tenantId, message.conversation, classification, message.conversationId, userText);
+        const orderResult = await this.handleOrderPlacement(
+          tenantId,
+          message.conversation,
+          classification,
+          message.conversationId,
+          userText,
+          imagePathsToPass
+        );
         if (orderResult?.overrideReplyText) {
           finalReplyText = orderResult.overrideReplyText;
         }
@@ -526,6 +540,12 @@ export class OrchestratorService {
           interestedCourseName: typeof parsed.interestedCourseName === 'string' ? parsed.interestedCourseName : undefined,
           interestedRfqProductName: typeof parsed.interestedRfqProductName === 'string' ? parsed.interestedRfqProductName : undefined,
           interestedShipmentRoute: typeof parsed.interestedShipmentRoute === 'string' ? parsed.interestedShipmentRoute : undefined,
+          customerDetails: (parsed.customerDetails && typeof parsed.customerDetails === 'object') ? {
+            name: typeof parsed.customerDetails.name === 'string' ? parsed.customerDetails.name.trim() : undefined,
+            phone: typeof parsed.customerDetails.phone === 'string' ? parsed.customerDetails.phone.trim() : undefined,
+            address: typeof parsed.customerDetails.address === 'string' ? parsed.customerDetails.address.trim() : undefined,
+            deliveryArea: ['inside_dhaka', 'outside_dhaka'].includes(parsed.customerDetails.deliveryArea) ? parsed.customerDetails.deliveryArea : undefined
+          } : undefined
         };
       }
     } catch (e) {
@@ -544,24 +564,203 @@ export class OrchestratorService {
     conversation: any,
     classification: StructuredAiClassification,
     conversationId: string,
-    userText?: string
+    userText?: string,
+    imagePaths?: string[]
   ): Promise<{ overrideReplyText?: string } | void> {
     this.assertBelongsToTenant(conversation, tenantId, 'Conversation');
 
-    // Path A: Customer confirms an existing order proposal
+    // Fetch assistant tools to get order_placement configuration
+    const assistant = await this.prisma.aiAssistant.findFirst({
+      where: { tenantId },
+      include: { tools: true }
+    });
+    const orderTool = (assistant?.tools || []).find((t: any) => t.toolType === 'order_placement');
+    const orderConfig: any = orderTool?.configJson || {};
+    const paymentPolicy: 'cod' | 'delivery_advance' | 'full_advance' = orderConfig.paymentPolicy || 'cod';
+    const chargeInsideDhaka = Number(orderConfig.deliveryChargeInsideDhaka ?? 60);
+    const chargeOutsideDhaka = Number(orderConfig.deliveryChargeOutsideDhaka ?? 120);
+    const mfsAccounts: any[] = orderConfig.mfsAccounts || [];
+    const paymentNote = orderConfig.paymentInstructionNote || '';
+
+    // Extract & sync customer contact info (name, phone, address)
+    const contact = (conversation.contactId && (this.prisma as any).contact)
+      ? await (this.prisma as any).contact.findUnique({
+          where: { id: conversation.contactId }
+        }).catch(() => null)
+      : null;
+
+    const rawUserText = (userText || '').trim();
+    const rawTextLower = rawUserText.toLowerCase();
+
+    // Phone detection: 11 digits Bangladesh mobile
+    const phoneMatch = rawUserText.match(/(?:^|\D)(01[3-9]\d{8})(?:\D|$)/);
+    const detectedPhone = phoneMatch ? phoneMatch[1] : null;
+    const cd = classification.customerDetails;
+    const phoneToSet = detectedPhone || (cd?.phone && /^01[3-9]\d{8}$/.test(cd.phone) ? cd.phone : null);
+
+    // Location / Delivery Area detection (inside vs outside Dhaka)
+    const isInsideDhaka = (
+      (rawTextLower.includes('ঢাকা') && !rawTextLower.includes('ঢাকার বাইরে')) ||
+      (rawTextLower.includes('dhaka') && !rawTextLower.includes('outside dhaka')) ||
+      ['মিরপুর', 'ধানমন্ডি', 'গুলশান', 'উত্তরা', 'মোহাম্মদপুর', 'মতিঝিল', 'বনানী', 'বাড্ডা', 'inside dhaka', 'dhaka city'].some(kw => rawTextLower.includes(kw)) ||
+      cd?.deliveryArea === 'inside_dhaka'
+    );
+    const isOutsideDhaka = (
+      rawTextLower.includes('ঢাকার বাইরে') ||
+      rawTextLower.includes('outside dhaka') ||
+      ['চট্টগ্রাম', 'সিলেট', 'রাজশাহী', 'খুলনা', 'বরিশাল', 'রংপুর', 'ময়মনসিংহ', 'কুমিল্লা', 'বগুড়া', 'গাজীপুর', 'নারায়ণগঞ্জ', 'সাভার', 'chittagong', 'sylhet', 'rajshahi', 'khulna', 'barishal'].some(kw => rawTextLower.includes(kw)) ||
+      cd?.deliveryArea === 'outside_dhaka'
+    );
+    const detectedArea: 'inside_dhaka' | 'outside_dhaka' | null = isInsideDhaka ? 'inside_dhaka' : isOutsideDhaka ? 'outside_dhaka' : null;
+
+    // Contact DB auto-sync
+    if (contact) {
+      const updates: any = {};
+      if (phoneToSet && (!contact.phone || contact.phone.length < 11)) {
+        updates.phone = phoneToSet;
+      }
+      if (cd?.address && (!contact.address || contact.address.length < 5)) {
+        updates.address = cd.address;
+      }
+      if (cd?.name && (!contact.name || contact.name.toLowerCase().includes('user') || contact.name.toLowerCase().includes('guest'))) {
+        updates.name = cd.name;
+      }
+
+      if (Object.keys(updates).length > 0) {
+        await this.prisma.contact.update({
+          where: { id: contact.id },
+          data: updates
+        }).catch(err => this.logger.warn(`Failed to auto-update contact: ${err.message}`));
+        Object.assign(contact, updates);
+      }
+    }
+
+    // =========================================================================
+    // Flow 1: Vision AI Payment Screenshot Verification (Awaiting Payment Proof)
+    // =========================================================================
+    if (conversation.pendingOrderProposal) {
+      const proposal = conversation.pendingOrderProposal as any;
+      const isExpired = proposal.expiresAt && new Date(proposal.expiresAt).getTime() < Date.now();
+
+      if (!isExpired && proposal.status === 'AWAITING_PAYMENT_PROOF') {
+        const candidateImagePath = imagePaths && imagePaths.length > 0 ? imagePaths[0] : null;
+
+        if (candidateImagePath && fs.existsSync(candidateImagePath)) {
+          this.logger.log(`Verifying payment screenshot for conversation ${conversationId}: ${candidateImagePath}`);
+          const verification = await this.aiService.verifyPaymentReceiptScreenshot(
+            candidateImagePath,
+            proposal.advanceAmountRequired
+          );
+
+          if (verification.isPaymentReceipt && verification.status === 'success') {
+            if (verification.paidAmount >= proposal.advanceAmountRequired) {
+              // Success! Confirm order and create record in Order table
+              const validatedItems: { productId: string; quantity: number; priceAtTime: number }[] = [];
+              let grandTotal = 0;
+
+              for (const item of (proposal.items || [])) {
+                const liveProduct = await this.prisma.product.findFirst({
+                  where: { id: item.productId, tenantId, isActive: true }
+                });
+                if (liveProduct) {
+                  const price = Number(liveProduct.price);
+                  validatedItems.push({
+                    productId: liveProduct.id,
+                    quantity: item.quantity || 1,
+                    priceAtTime: price
+                  });
+                  grandTotal += price * (item.quantity || 1);
+                }
+              }
+
+              const deliveryCharge = Number(proposal.deliveryCharge || 0);
+              const totalWithDelivery = grandTotal + deliveryCharge;
+              const dueAmount = proposal.paymentPolicy === 'delivery_advance' ? grandTotal : 0;
+              const policyLabel = proposal.paymentPolicy === 'delivery_advance' ? 'Delivery Advance' : 'Full Advance';
+              const areaLabel = proposal.deliveryArea === 'inside_dhaka' ? 'Inside Dhaka' : 'Outside Dhaka';
+
+              const createdOrder = await this.ordersService.createOrder(tenantId, {
+                contactId: conversation.contactId,
+                conversationId: conversation.id,
+                items: validatedItems.length > 0 ? validatedItems : proposal.items,
+                notes: `Policy: ${policyLabel} | Paid Advance: ৳${verification.paidAmount} (${verification.provider} TrxID: ${verification.trxId || 'N/A'}) | COD Due: ৳${dueAmount} | Area: ${areaLabel}`
+              });
+
+              await (this.prisma as any).order.update({
+                where: { id: createdOrder.id },
+                data: { createdBy: 'ai', status: 'confirmed' }
+              });
+
+              await (this.prisma as any).conversation.update({
+                where: { id: conversationId },
+                data: {
+                  pendingOrderProposal: null,
+                  hasOrderRequest: true
+                }
+              });
+
+              await this.activityLogService.record({
+                tenantId,
+                conversationId,
+                contactId: conversation.contactId,
+                type: 'ORDER_CREATED',
+                metadataJson: {
+                  orderId: createdOrder.id,
+                  source: 'ai_vision_verified',
+                  trxId: verification.trxId,
+                  provider: verification.provider,
+                  paidAmount: verification.paidAmount,
+                  totalAmount: totalWithDelivery
+                }
+              });
+
+              const orderNum = createdOrder.id.slice(0, 8);
+              const dueMsg = dueAmount > 0
+                ? `বাকি ৳${dueAmount} প্রোডাক্ট ডেলিভারির সময় ক্যাশ পরিশোধ করবেন।`
+                : `সম্পূর্ণ মূল্য পরিশোধিত হয়েছে।`;
+
+              return {
+                overrideReplyText: `ধন্যবাদ! আপনার ৳${verification.paidAmount} পেমেন্ট সফলভাবে ভেরিফাই হয়েছে (${verification.provider}${verification.trxId ? `, TrxID: ${verification.trxId}` : ''})। আপনার অর্ডারটি কনফার্ম করা হয়েছে (অর্ডার নম্বর: #${orderNum})। ${dueMsg}\n\nThank you! Your payment of BDT ${verification.paidAmount} has been verified (${verification.provider}${verification.trxId ? `, TrxID: ${verification.trxId}` : ''}). Your order has been placed (Order #${orderNum}).`
+              };
+            } else {
+              // Partial payment / underpaid
+              const remaining = proposal.advanceAmountRequired - verification.paidAmount;
+              return {
+                overrideReplyText: `আপনার স্ক্রিনশট পেয়েছি, তবে আপনি ৳${verification.paidAmount} পাঠিয়েছেন। আমাদের পলিসি অনুযায়ী প্রয়োজনীয় অগ্রিম ৳${proposal.advanceAmountRequired}। অনুগ্রহ করে বাকি ৳${remaining} পরিশোধ করে স্ক্রিনশট দিন।\n\nReceived BDT ${verification.paidAmount}. Required advance is BDT ${proposal.advanceAmountRequired}. Please send remaining BDT ${remaining} and share screenshot.`
+              };
+            }
+          } else {
+            // Unclear or not a payment screenshot
+            return {
+              overrideReplyText: `স্ক্রিনশটটি স্পষ্ট নয় বা পেমেন্টের তথ্য পড়া যায়নি। অনুগ্রহ করে বিকাশ/নগদ সফল পেমেন্টের স্পষ্ট স্ক্রিনশট অথবা ট্রানজেকশন আইডি দিন।\n\nThe screenshot is unclear or payment details could not be verified. Please provide a clear payment screenshot or Transaction ID.`
+            };
+          }
+        }
+      }
+    }
+
+    // =========================================================================
+    // Flow 2: Customer confirms an existing order proposal (COD confirmation)
+    // =========================================================================
     if (classification.intent === 'order_confirmation' && conversation.pendingOrderProposal) {
       const proposal = conversation.pendingOrderProposal as any;
-      
-      // Check expiration (30 minutes expiry)
       const isExpired = proposal.expiresAt && new Date(proposal.expiresAt).getTime() < Date.now();
-      if (!isExpired && proposal.items && Array.isArray(proposal.items) && proposal.items.length > 0) {
-        
-        // Strict Hard Confirmation Ritual Validation
-        const rawUserText = (userText || '').trim().toLowerCase();
-        const hardConfirmations = ['confirm', 'yes place order', 'confirm order', 'হ্যাঁ অর্ডার কনফার্ম', 'অর্ডার কনফার্ম', 'অর্ডার নিশ্চিত করুন'];
-        const isHardConfirmed = hardConfirmations.some(kw => rawUserText.includes(kw));
 
-        // Soft consent (e.g. 'sure', 'okay', 'ঠিক আছে', 'achha', 'hmm') requires explicit confirmation
+      if (!isExpired && proposal.items && Array.isArray(proposal.items) && proposal.items.length > 0) {
+        if (proposal.status === 'AWAITING_PAYMENT_PROOF') {
+          const mfsList = mfsAccounts
+            .filter((a: any) => a.accountNumber && a.accountNumber.trim())
+            .map((a: any) => `• ${a.provider} (${a.accountType}): ${a.accountNumber}`)
+            .join('\n');
+          return {
+            overrideReplyText: `আপনার অর্ডারটি নিশ্চিত করতে অনুগ্রহ করে ৳${proposal.advanceAmountRequired} অগ্রিম পরিশোধ করে ট্রানজেকশনের স্ক্রিনশট দিন।\n\nপেমেন্ট একাউন্ট:\n${mfsList || '• বিকাশ (পার্সোনাল): 01XXXXXXXXX'}`
+          };
+        }
+
+        // Strict Hard Confirmation Validation
+        const hardConfirmations = ['confirm', 'yes place order', 'confirm order', 'হ্যাঁ অর্ডার কনফার্ম', 'অর্ডার কনফার্ম', 'অর্ডার নিশ্চিত করুন', 'কনফার্ম'];
+        const isHardConfirmed = hardConfirmations.some(kw => rawTextLower.includes(kw));
+
         if (!isHardConfirmed) {
           this.logger.log(`Soft consent detected for conversation ${conversationId} ("${userText}"). Requiring explicit confirmation.`);
           return {
@@ -588,22 +787,23 @@ export class OrchestratorService {
           }
         }
 
+        const deliveryCharge = Number(proposal.deliveryCharge || 0);
+        const finalTotal = grandTotal + deliveryCharge;
+        const areaLabel = proposal.deliveryArea === 'inside_dhaka' ? 'Inside Dhaka' : 'Outside Dhaka';
+
         if (validatedItems.length > 0) {
-          // Create real order
           const createdOrder = await this.ordersService.createOrder(tenantId, {
             contactId: conversation.contactId,
             conversationId: conversation.id,
             items: validatedItems,
-            notes: 'Placed via AI Assistant'
+            notes: `Policy: Cash on Delivery (COD) | Delivery Charge: ৳${deliveryCharge} | Total: ৳${finalTotal} | Area: ${areaLabel}`
           });
 
-          // Update Order provenance
           await (this.prisma as any).order.update({
             where: { id: createdOrder.id },
-            data: { createdBy: 'ai' }
+            data: { createdBy: 'ai', status: 'confirmed' }
           });
 
-          // Clear proposal & set hasOrderRequest
           await (this.prisma as any).conversation.update({
             where: { id: conversationId },
             data: {
@@ -612,17 +812,17 @@ export class OrchestratorService {
             }
           });
 
-          // Activity Log
           await this.activityLogService.record({
             tenantId,
             conversationId,
             contactId: conversation.contactId,
             type: 'ORDER_CREATED',
-            metadataJson: { orderId: createdOrder.id, source: 'ai', totalAmount: grandTotal }
+            metadataJson: { orderId: createdOrder.id, source: 'ai_cod', totalAmount: finalTotal }
           });
 
+          const orderNum = createdOrder.id.slice(0, 8);
           return {
-            overrideReplyText: `ধন্যবাদ! আপনার অর্ডারটি নিশ্চিত করা হয়েছে (অর্ডার নম্বর: #${createdOrder.id.slice(0, 8)})। মোট মূল্য: BDT ${grandTotal}।\n\nThank you! Your order has been placed (Order #${createdOrder.id.slice(0, 8)}). Total: BDT ${grandTotal}.`
+            overrideReplyText: `ধন্যবাদ! আপনার ক্যাশ অন ডেলিভারি অর্ডারটি নিশ্চিত করা হয়েছে (অর্ডার নম্বর: #${orderNum})। মোট মূল্য: BDT ${finalTotal} (ডেলিভারি চার্জ সহ)। ডেলিভারির সময় সম্পূর্ণ টাকা ক্যাশ পরিশোধ করবেন।\n\nThank you! Your Cash on Delivery order has been confirmed (Order #${orderNum}). Total: BDT ${finalTotal}.`
           };
         }
       }
@@ -634,15 +834,16 @@ export class OrchestratorService {
       });
     }
 
-    // Path B: New order intent proposed by customer
+    // =========================================================================
+    // Flow 3: New order intent proposed by customer
+    // =========================================================================
     if (classification.intent === 'order_intent' && classification.orderProposal && classification.orderProposal.length > 0) {
       const proposalItems: { productId: string; name: string; price: number; quantity: number }[] = [];
       let totalAmount = 0;
 
       for (const item of classification.orderProposal) {
         if (!item.productNameGuess) continue;
-        
-        // Fuzzy search tenant products
+
         const matchedProduct = await this.prisma.product.findFirst({
           where: {
             tenantId,
@@ -668,37 +869,148 @@ export class OrchestratorService {
       }
 
       if (proposalItems.length > 0) {
-        const proposalJson = {
-          items: proposalItems,
-          totalAmount,
-          expiresAt: new Date(Date.now() + 30 * 60 * 1000).toISOString() // 30 mins
+        // Step 1: Check required 4 customer details
+        const missingFields: string[] = [];
+        const currentContact = contact || (conversation as any).contact;
+        const currentName = currentContact?.name;
+        const currentPhone = currentContact?.phone || phoneToSet;
+        const currentAddress = currentContact?.address || cd?.address;
+        const currentArea = detectedArea || (conversation.pendingOrderProposal as any)?.deliveryArea;
+
+        if (!currentName || currentName.toLowerCase().includes('user') || currentName.toLowerCase().includes('guest')) {
+          missingFields.push('আপনার নাম (Full Name)');
+        }
+        if (!currentPhone || !/^01[3-9]\d{8}$/.test(currentPhone.replace(/\D/g, ''))) {
+          missingFields.push('১১ ডিজিটের মোবাইল নম্বর (Mobile Number)');
+        }
+        if (!currentAddress || currentAddress.trim().length < 5) {
+          missingFields.push('সম্পূর্ণ ডেলিভারি ঠিকানা (Detailed Delivery Address)');
+        }
+        if (!currentArea) {
+          missingFields.push('ডেলিভারি লোকেশন (ঢাকার ভেতরে নাকি ঢাকার বাইরে)');
+        }
+
+        const itemsListStr = proposalItems.map(i => `${i.quantity}x ${i.name} (৳${i.price})`).join(', ');
+
+        // If information is missing, ask for missing details before proposing order
+        if (missingFields.length > 0) {
+          const missingBullets = missingFields.map(f => `• ${f}`).join('\n');
+          return {
+            overrideReplyText: `আপনার পছন্দের প্রোডাক্ট:\n📦 ${itemsListStr}\nমোট প্রোডাক্ট মূল্য: ৳${totalAmount}\n\nঅর্ডারটি প্রসেস করার জন্য অনুগ্রহ করে নিচের তথ্যগুলো দিন:\n${missingBullets}`
+          };
+        }
+
+        // Step 2: All 4 details are present! Calculate delivery charge & apply policy
+        const area = currentArea || 'inside_dhaka';
+        const deliveryCharge = area === 'inside_dhaka' ? chargeInsideDhaka : chargeOutsideDhaka;
+        const grandTotal = totalAmount + deliveryCharge;
+        const areaLabelBn = area === 'inside_dhaka' ? 'ঢাকার ভেতরে' : 'ঢাকার বাইরে';
+
+        const customerInfoSummary = {
+          name: currentName,
+          phone: currentPhone,
+          address: currentAddress,
+          deliveryArea: area
         };
 
-        await (this.prisma as any).conversation.update({
-          where: { id: conversationId },
-          data: { pendingOrderProposal: proposalJson }
-        });
-
         // Track CAPI Hub Intent (Purchase)
-        const contact = (conversation as any).contact;
         this.capiHubService.fireEvent(tenantId, 'Purchase', {
           event_source_url: 'inbox_ai',
           user_data: {
-            em: contact?.email || undefined,
-            ph: contact?.phone || undefined,
-            fn: contact?.name || undefined
+            em: currentContact?.email || undefined,
+            ph: currentPhone || undefined,
+            fn: currentName || undefined
           },
           custom_data: {
-            value: totalAmount,
+            value: grandTotal,
             currency: 'BDT',
             content_ids: proposalItems.map(i => i.productId)
           }
         }, 'inbox_ai').catch(err => this.logger.warn(`Failed to track CAPI Hub event for inbox_ai: ${err.message}`));
 
-        const itemsListStr = proposalItems.map(i => `${i.quantity}x ${i.name} (${i.price} BDT)`).join(', ');
-        return {
-          overrideReplyText: `আমি আপনার অর্ডার প্রপোজাল তৈরি করেছি:\n📦 ${itemsListStr}\n💰 মোট: BDT ${totalAmount}\n\nঅর্ডারটি নিশ্চিত করতে 'CONFIRM' অথবা 'YES PLACE ORDER' লিখে রিপ্লাই দিন।\n\nShall I place this order for ${itemsListStr}? Total: BDT ${totalAmount}. Reply 'CONFIRM' or 'YES PLACE ORDER' to confirm.`
-        };
+        if (paymentPolicy === 'cod') {
+          // COD Policy
+          const proposalJson = {
+            status: 'PROPOSED',
+            paymentPolicy: 'cod',
+            items: proposalItems,
+            subtotal: totalAmount,
+            deliveryCharge,
+            deliveryArea: area,
+            totalAmount: grandTotal,
+            advanceAmountRequired: 0,
+            dueAmountCod: grandTotal,
+            customerDetails: customerInfoSummary,
+            expiresAt: new Date(Date.now() + 30 * 60 * 1000).toISOString()
+          };
+
+          await (this.prisma as any).conversation.update({
+            where: { id: conversationId },
+            data: { pendingOrderProposal: proposalJson }
+          });
+
+          return {
+            overrideReplyText: `আমি আপনার অর্ডার প্রপোজাল তৈরি করেছি:\n📦 প্রোডাক্ট: ${itemsListStr}\n🚚 ডেলিভারি চার্জ (${areaLabelBn}): ৳${deliveryCharge}\n💰 সর্বমোট: ৳${grandTotal} (ক্যাশ অন ডেলিভারি)\n\n📍 ডেলিভারি ঠিকানা: ${currentAddress}\n📞 মোবাইল: ${currentPhone}\n\nঅর্ডারটি নিশ্চিত করতে অনুগ্রহ করে 'CONFIRM' অথবা 'YES PLACE ORDER' লিখে মেসেজ করুন।\n\nReply 'CONFIRM' or 'YES PLACE ORDER' to confirm.`
+          };
+        } else if (paymentPolicy === 'delivery_advance') {
+          // Delivery Charge Advance Policy
+          const proposalJson = {
+            status: 'AWAITING_PAYMENT_PROOF',
+            paymentPolicy: 'delivery_advance',
+            items: proposalItems,
+            subtotal: totalAmount,
+            deliveryCharge,
+            deliveryArea: area,
+            totalAmount: grandTotal,
+            advanceAmountRequired: deliveryCharge,
+            dueAmountCod: totalAmount,
+            customerDetails: customerInfoSummary,
+            expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString()
+          };
+
+          await (this.prisma as any).conversation.update({
+            where: { id: conversationId },
+            data: { pendingOrderProposal: proposalJson }
+          });
+
+          const mfsBullets = mfsAccounts
+            .filter((a: any) => a.accountNumber && a.accountNumber.trim())
+            .map((a: any) => `• ${a.provider} (${a.accountType}): ${a.accountNumber}`)
+            .join('\n');
+
+          return {
+            overrideReplyText: `আপনার অর্ডার সামারি:\n📦 প্রোডাক্ট: ${itemsListStr}\n💰 প্রোডাক্ট মূল্য: ৳${totalAmount}\n🚚 ডেলিভারি চার্জ (${areaLabelBn}): ৳${deliveryCharge}\n💵 সর্বমোট: ৳${grandTotal}\n\nআমাদের পলিসি অনুযায়ী ডেলিভারি চার্জ ৳${deliveryCharge} অগ্রিম বিকাশ/নগদে পরিশোধ করে অর্ডারটি কনফার্ম করতে হবে। বাকি ৳${totalAmount} প্রোডাক্ট হাতে পেয়ে ক্যাশ অন ডেলিভারি পরিশোধ করবেন।\n\nপেমেন্ট পাঠানোর একাউন্ট:\n${mfsBullets || '• বিকাশ (পার্সোনাল): আমাদের ইনবক্সে যোগাযোগ করুন'}${paymentNote ? `\n📌 ${paymentNote}` : ''}\n\nটাকা পাঠানোর পর ট্রানজেকশনের স্ক্রিনশট দিন। স্ক্রিনশট পেলেই আপনার অর্ডারটি স্বয়ংক্রিয়ভাবে কনফার্ম হয়ে যাবে!`
+          };
+        } else if (paymentPolicy === 'full_advance') {
+          // Full Advance Payment Policy
+          const proposalJson = {
+            status: 'AWAITING_PAYMENT_PROOF',
+            paymentPolicy: 'full_advance',
+            items: proposalItems,
+            subtotal: totalAmount,
+            deliveryCharge,
+            deliveryArea: area,
+            totalAmount: grandTotal,
+            advanceAmountRequired: grandTotal,
+            dueAmountCod: 0,
+            customerDetails: customerInfoSummary,
+            expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString()
+          };
+
+          await (this.prisma as any).conversation.update({
+            where: { id: conversationId },
+            data: { pendingOrderProposal: proposalJson }
+          });
+
+          const mfsBullets = mfsAccounts
+            .filter((a: any) => a.accountNumber && a.accountNumber.trim())
+            .map((a: any) => `• ${a.provider} (${a.accountType}): ${a.accountNumber}`)
+            .join('\n');
+
+          return {
+            overrideReplyText: `আপনার অর্ডার সামারি:\n📦 প্রোডাক্ট: ${itemsListStr}\n💰 প্রোডাক্ট মূল্য: ৳${totalAmount}\n🚚 ডেলিভারি চার্জ (${areaLabelBn}): ৳${deliveryCharge}\n💵 সর্বমোট: ৳${grandTotal}\n\nআমাদের পলিসি অনুযায়ী সম্পূর্ণ মূল্য ৳${grandTotal} অগ্রিম বিকাশ/নগদে পরিশোধ করে অর্ডারটি কনফার্ম করতে হবে।\n\nপেমেন্ট পাঠানোর একাউন্ট:\n${mfsBullets || '• বিকাশ (পার্সোনাল): আমাদের ইনবক্সে যোগাযোগ করুন'}${paymentNote ? `\n📌 ${paymentNote}` : ''}\n\nটাকা পাঠানোর পর ট্রানজেকশনের স্ক্রিনশট দিন। স্ক্রিনশট পেলেই আপনার অর্ডারটি স্বয়ংক্রিয়ভাবে কনফার্ম হয়ে যাবে!`
+          };
+        }
       }
     }
   }
@@ -889,6 +1201,7 @@ export class OrchestratorService {
       isImage: boolean;
       caption: string;
       isOrderPlacementActive: boolean;
+      orderPlacementConfig?: any;
       isSupportDetectionActive: boolean;
       isPropertyMode?: boolean;
       isHospitalityMode?: boolean;
@@ -1081,7 +1394,38 @@ export class OrchestratorService {
       prompt += `   - If the shipper requests a freight quote, truck booking, cargo shipping rate, container dispatch, or shipment tracking, set "intent": "shipment_quote_request".\n`;
       prompt += `   - Set "interestedShipmentRoute" to the origin-destination route or vehicle type the shipper is inquiring about.\n`;
       prompt += `   - For general questions, use "intent": "general".\n`;
-    } else if (!options?.isOrderPlacementActive) {
+    } else if (options?.isOrderPlacementActive) {
+      const cfg = options.orderPlacementConfig || {};
+      const policy = cfg.paymentPolicy || 'cod';
+      const insideDhaka = Number(cfg.deliveryChargeInsideDhaka ?? 60);
+      const outsideDhaka = Number(cfg.deliveryChargeOutsideDhaka ?? 120);
+      const mfsList = (cfg.mfsAccounts || [])
+        .filter((a: any) => a.accountNumber && a.accountNumber.trim())
+        .map((a: any) => `${a.provider} (${a.accountType}): ${a.accountNumber}`)
+        .join(', ');
+
+      prompt += `2. ORDER PLACEMENT & PAYMENT POLICY DIRECTIVE:\n`;
+      prompt += `   - MANDATORY CUSTOMER DETAILS FOR PHYSICAL PRODUCT ORDERS:\n`;
+      prompt += `     To complete an order, the following 4 customer details are strictly required:\n`;
+      prompt += `     1) Customer Full Name\n`;
+      prompt += `     2) 11-digit Phone Number (e.g., 017XXXXXXXX, 018XXXXXXXX, 019XXXXXXXX)\n`;
+      prompt += `     3) Detailed Delivery Address\n`;
+      prompt += `     4) Delivery Area: Inside Dhaka vs Outside Dhaka (ঢাকার ভেতরে নাকি ঢাকার বাইরে)\n`;
+      prompt += `     If any of these 4 details are missing from the message or CUSTOMER INFO, politely ask the customer ONLY for the missing details before proposing or confirming the order.\n`;
+      prompt += `     When the customer provides name, phone, address, or location, also extract them into "customerDetails" in the JSON response.\n`;
+      prompt += `   - DYNAMIC DELIVERY CHARGES:\n`;
+      prompt += `     Inside Dhaka: BDT ${insideDhaka} | Outside Dhaka: BDT ${outsideDhaka}\n`;
+      prompt += `   - STORE PAYMENT POLICY: ${policy.toUpperCase()}\n`;
+      if (policy === 'cod') {
+        prompt += `     Cash on Delivery (COD): 100% of bill (Products + Delivery) is paid in cash upon delivery. When details are complete, summarize order and ask customer to reply 'CONFIRM'.\n`;
+      } else if (policy === 'delivery_advance') {
+        prompt += `     Delivery Charge Advance: Delivery charge (BDT ${insideDhaka} inside Dhaka / BDT ${outsideDhaka} outside Dhaka) must be paid in advance via bKash/Nagad. Product price is COD.\n`;
+        prompt += `     Explain this policy clearly to customer. ${mfsList ? `Payment accounts: ${mfsList}.` : ''} ${cfg.paymentInstructionNote || ''} Instruct customer to send a screenshot or TrxID after paying.\n`;
+      } else if (policy === 'full_advance') {
+        prompt += `     Full Advance Payment: Entire total bill (Products + Delivery charge) must be paid in advance via bKash/Nagad before order is confirmed.\n`;
+        prompt += `     Explain this policy clearly to customer. ${mfsList ? `Payment accounts: ${mfsList}.` : ''} ${cfg.paymentInstructionNote || ''} Instruct customer to send a screenshot or TrxID after paying.\n`;
+      }
+    } else {
       prompt += `2. ORDER PLACEMENT IS DISABLED: Set "intent": "general" or "product_lookup" and do NOT generate order proposals.\n`;
     }
 
@@ -1116,6 +1460,7 @@ export class OrchestratorService {
     } else {
       prompt += `  "intent": "general | order_intent | order_confirmation | support_needed | product_lookup",\n`;
       prompt += `  "orderProposal": [ { "productNameGuess": "Product Name", "quantity": 1 } ],\n`;
+      prompt += `  "customerDetails": { "name": "Customer Name", "phone": "017XXXXXXXX", "address": "Detailed Address", "deliveryArea": "inside_dhaka | outside_dhaka" },\n`;
     }
     prompt += `  "imageProductDescription": "short description of product seen in image",\n`;
     prompt += `  "sendProductPhotoIds": ["id1", "id2"],\n`;

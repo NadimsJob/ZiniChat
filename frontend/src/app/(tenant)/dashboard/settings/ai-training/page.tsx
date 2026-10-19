@@ -8,7 +8,8 @@ import { useFeature } from '@/hooks/useFeature';
 import { 
   Bot, Key, Save, AlertCircle, RefreshCw, MessageSquare, Plus, Edit2, 
   Trash2, X, Check, Wand2, Eye, Lock, Sliders, Sparkles, ShieldCheck, 
-  FileText, AlertTriangle, Send, PlayCircle, HelpCircle, User, CornerDownLeft, Tag, Globe
+  FileText, AlertTriangle, Send, PlayCircle, HelpCircle, User, CornerDownLeft, Tag, Globe,
+  CreditCard, Truck, PlusCircle, CheckCircle2
 } from 'lucide-react';
 import InstructionBanner from '@/components/InstructionBanner';
 import LabelForm from '@/components/labels/LabelForm';
@@ -62,6 +63,29 @@ export default function AiTrainingPage() {
     support_detection: { isEnabled: false, configJson: { reasonCategories: ['general', 'complaint', 'refund_return', 'delivery_issue'] } },
     product_matching: { isEnabled: false, configJson: { minMatchConfidence: 0.6, maxProductsToSend: 10 } }
   });
+
+  // Order Placement & Payment Policy configuration state
+  const [orderConfig, setOrderConfig] = useState<{
+    paymentPolicy: 'cod' | 'delivery_advance' | 'full_advance';
+    deliveryChargeInsideDhaka: number;
+    deliveryChargeOutsideDhaka: number;
+    mfsAccounts: {
+      provider: 'bKash' | 'Nagad' | 'Rocket' | 'Upay' | 'Bank';
+      accountNumber: string;
+      accountType: 'Personal' | 'Merchant' | 'Agent';
+    }[];
+    paymentInstructionNote: string;
+  }>({
+    paymentPolicy: 'cod',
+    deliveryChargeInsideDhaka: 60,
+    deliveryChargeOutsideDhaka: 120,
+    mfsAccounts: [
+      { provider: 'bKash', accountNumber: '', accountType: 'Personal' },
+      { provider: 'Nagad', accountNumber: '', accountType: 'Personal' }
+    ],
+    paymentInstructionNote: ''
+  });
+  const [savingOrderConfig, setSavingOrderConfig] = useState(false);
 
   // Q&A state
   const [qnas, setQnas] = useState<any[]>([]);
@@ -134,6 +158,26 @@ export default function AiTrainingPage() {
         const cfgData = await configRes.json();
         setConfig(cfgData);
         if (cfgData.websiteUrl) setWebsiteInput(cfgData.websiteUrl);
+
+        // Client-side safeguard: Auto-load & silently save default prompt if empty on first visit
+        if (!cfgData.systemPrompt || !cfgData.systemPrompt.trim()) {
+          try {
+            const sampleRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai-training/generate-sample-prompt`, { headers });
+            if (sampleRes.ok) {
+              const sampleData = await sampleRes.json();
+              if (sampleData?.prompt) {
+                setConfig((prev: any) => ({ ...prev, systemPrompt: sampleData.prompt }));
+                await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai-training/prompt`, {
+                  method: 'PATCH',
+                  headers: { ...headers, 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ systemPrompt: sampleData.prompt })
+                });
+              }
+            }
+          } catch (silentErr) {
+            console.error('Silent prompt auto-init error:', silentErr);
+          }
+        }
       }
       if (toolsRes.ok) {
         const toolsList = await toolsRes.json();
@@ -142,6 +186,22 @@ export default function AiTrainingPage() {
           map[t.toolType] = { isEnabled: t.isEnabled, configJson: t.configJson || {} };
         });
         setTools(prev => ({ ...prev, ...map }));
+
+        if (map['order_placement']?.configJson) {
+          const cfg = map['order_placement'].configJson;
+          setOrderConfig({
+            paymentPolicy: cfg.paymentPolicy || 'cod',
+            deliveryChargeInsideDhaka: cfg.deliveryChargeInsideDhaka ?? 60,
+            deliveryChargeOutsideDhaka: cfg.deliveryChargeOutsideDhaka ?? 120,
+            mfsAccounts: Array.isArray(cfg.mfsAccounts) && cfg.mfsAccounts.length > 0
+              ? cfg.mfsAccounts
+              : [
+                  { provider: 'bKash', accountNumber: '', accountType: 'Personal' },
+                  { provider: 'Nagad', accountNumber: '', accountType: 'Personal' }
+                ],
+            paymentInstructionNote: cfg.paymentInstructionNote || ''
+          });
+        }
       }
       if (qnaRes.ok) setQnas(await qnaRes.json());
       if (docsRes.ok) setDocuments(await docsRes.json());
@@ -291,6 +351,23 @@ export default function AiTrainingPage() {
       console.error('Failed to toggle AI tool', err);
       toast.error(language === 'en' ? 'Failed to update tool setting' : 'টুল সেটিংস সংরক্ষণ করতে সমস্যা হয়েছে');
       fetchData();
+    }
+  };
+
+  const handleSaveOrderPlacementConfig = async () => {
+    setSavingOrderConfig(true);
+    try {
+      const mergedConfig = {
+        ...(tools['order_placement']?.configJson || {}),
+        ...orderConfig,
+        requireExplicitConfirmation: true
+      };
+      await handleToggleTool('order_placement', true, mergedConfig);
+    } catch (err) {
+      console.error(err);
+      toast.error(language === 'en' ? 'Failed to save policy settings' : 'পলিসি সেটিংস সেভ করতে সমস্যা হয়েছে');
+    } finally {
+      setSavingOrderConfig(false);
     }
   };
 
@@ -1075,7 +1152,9 @@ export default function AiTrainingPage() {
                 return (
                   <div 
                     key={tool.type} 
-                    className={`border rounded-xl p-3 flex flex-col justify-between transition-colors ${
+                    className={`border rounded-xl p-3 flex flex-col justify-between transition-all ${
+                      tool.type === 'order_placement' && isAllowed && toolState.isEnabled ? 'sm:col-span-2 shadow-sm' : ''
+                    } ${
                       !isAllowed 
                         ? 'bg-muted/40 border-zinc-300 dark:border-zinc-800 opacity-75' 
                         : toolState.isEnabled 
@@ -1102,7 +1181,7 @@ export default function AiTrainingPage() {
                           type="checkbox" 
                           disabled={!isAllowed}
                           checked={isAllowed && toolState.isEnabled}
-                          onChange={(e) => handleToggleTool(tool.type, e.target.checked)}
+                          onChange={(e) => handleToggleTool(tool.type, e.target.checked, tool.type === 'order_placement' ? orderConfig : undefined)}
                           className="sr-only peer" 
                         />
                         <div className={`w-8 h-4.5 bg-slate-300 dark:bg-zinc-700 peer-focus:outline-none rounded-full peer ${
@@ -1110,6 +1189,253 @@ export default function AiTrainingPage() {
                         } after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all`}></div>
                       </label>
                     </div>
+
+                    {/* Order Placement Payment Policy & Delivery Charges Configuration Panel */}
+                    {tool.type === 'order_placement' && isAllowed && toolState.isEnabled && (
+                      <div className="mt-3 pt-3 border-t border-zinc-200 dark:border-zinc-800 space-y-3">
+                        {/* 1. Payment Policy Selection */}
+                        <div>
+                          <label className="block text-[11px] font-bold text-foreground mb-1.5 flex items-center gap-1.5">
+                            <CreditCard className="w-3.5 h-3.5 text-primary" />
+                            {language === 'en' ? 'Payment Policy Mode' : 'পেমেন্ট পলিসি মোড'}
+                          </label>
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            {/* Option 1: COD */}
+                            <button
+                              type="button"
+                              onClick={() => setOrderConfig(prev => ({ ...prev, paymentPolicy: 'cod' }))}
+                              className={`p-2.5 rounded-xl border text-left transition-all relative ${
+                                orderConfig.paymentPolicy === 'cod'
+                                  ? 'bg-emerald-500/10 border-emerald-500/60 ring-1 ring-emerald-500/30'
+                                  : 'bg-zinc-100/50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-[12px] font-bold text-foreground flex items-center gap-1.5">
+                                  <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                  {language === 'en' ? 'Cash on Delivery (COD)' : 'ক্যাশ অন ডেলিভারি (COD)'}
+                                </span>
+                                {orderConfig.paymentPolicy === 'cod' && (
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                                )}
+                              </div>
+                              <p className="text-[10px] text-muted-foreground leading-tight">
+                                {language === 'en'
+                                  ? 'No advance required. Total amount collected upon delivery.'
+                                  : 'কোনো অগ্রিম নেওয়া হবে না। সম্পূর্ণ টাকা প্রোডাক্ট ডেলিভারির সময় ক্যাশ পরিশোধ হবে।'}
+                              </p>
+                            </button>
+
+                            {/* Option 2: Delivery Advance */}
+                            <button
+                              type="button"
+                              onClick={() => setOrderConfig(prev => ({ ...prev, paymentPolicy: 'delivery_advance' }))}
+                              className={`p-2.5 rounded-xl border text-left transition-all relative ${
+                                orderConfig.paymentPolicy === 'delivery_advance'
+                                  ? 'bg-amber-500/10 border-amber-500/60 ring-1 ring-amber-500/30'
+                                  : 'bg-zinc-100/50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-[12px] font-bold text-foreground flex items-center gap-1.5">
+                                  <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                                  {language === 'en' ? 'Delivery Charge Advance' : 'ডেলিভারি চার্জ অগ্রিম'}
+                                </span>
+                                {orderConfig.paymentPolicy === 'delivery_advance' && (
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                                )}
+                              </div>
+                              <p className="text-[10px] text-muted-foreground leading-tight">
+                                {language === 'en'
+                                  ? 'Delivery charge paid via bKash/Nagad screenshot. Product price COD.'
+                                  : 'ডেলিভারি চার্জ অগ্রিম বিকাশ/নগদে পরিশোধ করে স্ক্রিনশট দিতে হবে। প্রোডাক্টের দাম COD.'}
+                              </p>
+                            </button>
+
+                            {/* Option 3: Full Advance */}
+                            <button
+                              type="button"
+                              onClick={() => setOrderConfig(prev => ({ ...prev, paymentPolicy: 'full_advance' }))}
+                              className={`p-2.5 rounded-xl border text-left transition-all relative ${
+                                orderConfig.paymentPolicy === 'full_advance'
+                                  ? 'bg-blue-500/10 border-blue-500/60 ring-1 ring-blue-500/30'
+                                  : 'bg-zinc-100/50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-[12px] font-bold text-foreground flex items-center gap-1.5">
+                                  <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                                  {language === 'en' ? 'Full Advance Payment' : 'সম্পূর্ণ মূল্য অগ্রিম'}
+                                </span>
+                                {orderConfig.paymentPolicy === 'full_advance' && (
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                                )}
+                              </div>
+                              <p className="text-[10px] text-muted-foreground leading-tight">
+                                {language === 'en'
+                                  ? 'Product price + delivery charge paid in full via bKash/Nagad screenshot.'
+                                  : 'প্রোডাক্ট মূল্য + ডেলিভারি চার্জ পুরোটাই অগ্রিম দিয়ে স্ক্রিনশট দিতে হবে।'}
+                              </p>
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* 2. Delivery Charges */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div className="bg-zinc-100/60 dark:bg-zinc-900/40 p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800">
+                            <label className="block text-[11px] font-semibold text-foreground mb-1 flex items-center gap-1">
+                              <Truck className="w-3.5 h-3.5 text-emerald-600" />
+                              {language === 'en' ? 'Inside Dhaka Delivery Charge (BDT)' : 'ঢাকার ভেতরে ডেলিভারি চার্জ (টাকা)'}
+                            </label>
+                            <div className="relative">
+                              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">৳</span>
+                              <input
+                                type="number"
+                                min="0"
+                                step="1"
+                                value={orderConfig.deliveryChargeInsideDhaka}
+                                onChange={(e) => setOrderConfig(prev => ({ ...prev, deliveryChargeInsideDhaka: Math.max(0, Number(e.target.value) || 0) }))}
+                                className="w-full bg-card border border-zinc-300 dark:border-zinc-700 rounded-lg pl-7 pr-3 py-1.5 text-xs font-semibold text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                                placeholder="60"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="bg-zinc-100/60 dark:bg-zinc-900/40 p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800">
+                            <label className="block text-[11px] font-semibold text-foreground mb-1 flex items-center gap-1">
+                              <Truck className="w-3.5 h-3.5 text-orange-600" />
+                              {language === 'en' ? 'Outside Dhaka Delivery Charge (BDT)' : 'ঢাকার বাইরে ডেলিভারি চার্জ (টাকা)'}
+                            </label>
+                            <div className="relative">
+                              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">৳</span>
+                              <input
+                                type="number"
+                                min="0"
+                                step="1"
+                                value={orderConfig.deliveryChargeOutsideDhaka}
+                                onChange={(e) => setOrderConfig(prev => ({ ...prev, deliveryChargeOutsideDhaka: Math.max(0, Number(e.target.value) || 0) }))}
+                                className="w-full bg-card border border-zinc-300 dark:border-zinc-700 rounded-lg pl-7 pr-3 py-1.5 text-xs font-semibold text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                                placeholder="120"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 3. MFS Accounts Management */}
+                        <div className="bg-zinc-100/60 dark:bg-zinc-900/40 p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <label className="text-[11px] font-semibold text-foreground flex items-center gap-1.5">
+                              <CreditCard className="w-3.5 h-3.5 text-primary" />
+                              {language === 'en' ? 'MFS Payment Accounts & Instructions' : 'MFS পেমেন্ট অ্যাকাউন্ট ও নির্দেশনা'}
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => setOrderConfig(prev => ({
+                                ...prev,
+                                mfsAccounts: [...prev.mfsAccounts, { provider: 'bKash', accountNumber: '', accountType: 'Personal' }]
+                              }))}
+                              className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline font-semibold"
+                            >
+                              <PlusCircle className="w-3 h-3" />
+                              {language === 'en' ? 'Add Account' : 'অ্যাকাউন্ট যোগ করুন'}
+                            </button>
+                          </div>
+
+                          <div className="space-y-2">
+                            {orderConfig.mfsAccounts.map((acc, idx) => (
+                              <div key={idx} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-1.5 bg-card p-1.5 rounded-lg border border-zinc-300 dark:border-zinc-700/80">
+                                <select
+                                  value={acc.provider}
+                                  onChange={(e) => {
+                                    const updated = [...orderConfig.mfsAccounts];
+                                    updated[idx].provider = e.target.value as any;
+                                    setOrderConfig(prev => ({ ...prev, mfsAccounts: updated }));
+                                  }}
+                                  className="bg-background border border-zinc-300 dark:border-zinc-700 rounded-md px-2 py-1 text-xs font-semibold text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                                >
+                                  <option value="bKash">bKash (বিকাশ)</option>
+                                  <option value="Nagad">Nagad (নগদ)</option>
+                                  <option value="Rocket">Rocket (রকেট)</option>
+                                  <option value="Upay">Upay (উপায়)</option>
+                                  <option value="Bank">Bank (ব্যাংক)</option>
+                                </select>
+
+                                <input
+                                  type="text"
+                                  value={acc.accountNumber}
+                                  onChange={(e) => {
+                                    const updated = [...orderConfig.mfsAccounts];
+                                    updated[idx].accountNumber = e.target.value;
+                                    setOrderConfig(prev => ({ ...prev, mfsAccounts: updated }));
+                                  }}
+                                  placeholder={language === 'en' ? 'Account / Mobile No (e.g. 017XXXXXXXX)' : 'অ্যাকাউন্ট বা মোবাইল নম্বর (যেমন: 017XXXXXXXX)'}
+                                  className="flex-1 bg-background border border-zinc-300 dark:border-zinc-700 rounded-md px-2.5 py-1 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                                />
+
+                                <select
+                                  value={acc.accountType}
+                                  onChange={(e) => {
+                                    const updated = [...orderConfig.mfsAccounts];
+                                    updated[idx].accountType = e.target.value as any;
+                                    setOrderConfig(prev => ({ ...prev, mfsAccounts: updated }));
+                                  }}
+                                  className="bg-background border border-zinc-300 dark:border-zinc-700 rounded-md px-2 py-1 text-xs font-semibold text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                                >
+                                  <option value="Personal">{language === 'en' ? 'Personal' : 'পার্সোনাল'}</option>
+                                  <option value="Merchant">{language === 'en' ? 'Merchant' : 'মার্চেন্ট'}</option>
+                                  <option value="Agent">{language === 'en' ? 'Agent' : 'এজেন্ট'}</option>
+                                </select>
+
+                                {orderConfig.mfsAccounts.length > 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const updated = orderConfig.mfsAccounts.filter((_, i) => i !== idx);
+                                      setOrderConfig(prev => ({ ...prev, mfsAccounts: updated }));
+                                    }}
+                                    className="p-1 text-muted-foreground hover:text-red-500 rounded transition-colors self-end sm:self-auto"
+                                    title={language === 'en' ? 'Remove account' : 'মুছে ফেলুন'}
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* 4. Payment Instruction Note */}
+                          <div className="pt-1">
+                            <label className="block text-[10px] font-medium text-muted-foreground mb-1">
+                              {language === 'en' ? 'Additional Payment Note / Instruction:' : 'অতিরিক্ত পেমেন্ট নোট / নির্দেশনা:'}
+                            </label>
+                            <input
+                              type="text"
+                              value={orderConfig.paymentInstructionNote}
+                              onChange={(e) => setOrderConfig(prev => ({ ...prev, paymentInstructionNote: e.target.value }))}
+                              placeholder={language === 'en' ? 'e.g. Please send money and provide transaction screenshot.' : 'যেমন: সেন্ড মানি করার পর ট্রানজেকশনের স্ক্রিনশট দিন বা TrxID মেসেজ করুন।'}
+                              className="w-full bg-card border border-zinc-300 dark:border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Save Button */}
+                        <div className="flex items-center justify-end pt-1">
+                          <button
+                            type="button"
+                            disabled={savingOrderConfig}
+                            onClick={handleSaveOrderPlacementConfig}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-lg shadow hover:opacity-90 transition-all disabled:opacity-50 cursor-pointer"
+                          >
+                            {savingOrderConfig ? (
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <Save className="w-3.5 h-3.5" />
+                            )}
+                            {language === 'en' ? 'Save Policy Settings' : 'পলিসি সেটিংস সেভ করুন'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
 
                     {tool.type === 'product_matching' && isAllowed && toolState.isEnabled && (
                       <div className="mt-2.5 pt-2 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between gap-2">

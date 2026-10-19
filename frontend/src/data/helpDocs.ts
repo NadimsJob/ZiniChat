@@ -281,6 +281,65 @@ Before enabling live AI auto-replies on customer channels, you can test how your
 ![AI Simulator Guide](/docs/ai-training-setup.svg)
 `
   },
+  {
+    id: 'ai-payment-and-order-policy',
+    titleEn: 'AI Payment Policies, Delivery Charges & Vision Screenshot Verification',
+    titleBn: 'এআই পেমেন্ট পলিসি, ডেলিভারি চার্জ ও ভিশন পেমেন্ট ভেরিফিকেশন',
+    category: 'ai-training',
+    tags: ['order placement', 'payment policy', 'cod', 'delivery advance', 'full advance', 'vision ai', 'bKash', 'Nagad', 'delivery charge'],
+    excerptEn: 'Configure automated order placement with 3 payment policies (COD, Delivery Advance, Full Advance), dynamic Inside/Outside Dhaka delivery charges, and Vision AI payment screenshot verification.',
+    excerptBn: 'অটোমেটেড অর্ডার প্লেসমেন্ট, ৩টি পেমেন্ট পলিসি (ক্যাশ অন ডেলিভারি, ডেলিভারি চার্জ অগ্রিম, ফুল পেমেন্ট অগ্রিম), ঢাকা ভেতরে/বাইরে ডেলিভারি চার্জ ও ভিশন এআই স্ক্রিনশট ভেরিফিকেশন সেটআপের পূর্ণাঙ্গ গাইড।',
+    planConditions: 'Available on all active plans with the AI Order Placement feature.',
+    aiCreditCost: '1 AI Response for text conversation, 5 AI Responses for Vision Screenshot Verification.',
+    contentEn: `
+### Overview
+The **AI Payment & Order Policy Engine** gives merchants granular control over how their AI assistant proposes, prices, and confirms customer orders across Facebook Messenger, WhatsApp, Instagram DM, and Web Chat.
+
+### The 3 Supported Payment Policies:
+1. 🟢 **Cash on Delivery (COD)**: No advance payment required. The AI calculates product price + delivery charge, presents the full summary, and confirms the order immediately when the customer responds with explicit confirmation (e.g., 'CONFIRM').
+2. 🟡 **Delivery Charge Advance**: The delivery charge (e.g. ৳60 Inside Dhaka / ৳120 Outside Dhaka) must be paid in advance via MFS (bKash, Nagad, Rocket). The customer sends a screenshot of the payment receipt. Once Vision AI verifies the payment, the order is automatically confirmed in the Orders table with the advance paid and the remaining balance marked as COD Due.
+3. 🔵 **Full Advance Payment**: The entire order total (product price + delivery charge) must be paid in advance via MFS. The AI awaits a payment receipt screenshot and confirms the order once full payment is verified.
+
+### Mandatory 4 Customer Details:
+Before creating an order proposal for physical goods, the AI strictly verifies:
+1. **Full Customer Name**
+2. **11-digit Valid Mobile Phone**
+3. **Detailed Delivery Address**
+4. **Delivery Area**: Inside Dhaka vs. Outside Dhaka
+
+If any detail is missing, the AI politely asks ONLY for the missing information.
+
+### Vision AI Receipt Verification:
+When a customer sends an image while an order proposal is in \`AWAITING_PAYMENT_PROOF\` status:
+- Vision AI analyzes the receipt extracting the provider (bKash/Nagad/Rocket), paid amount, TrxID, and sender mobile.
+- If the paid amount matches or exceeds the required advance: The order is confirmed immediately with a unique Order ID (#ODR-XXXX), the pending proposal is cleared, and an activity log is recorded.
+- If underpaid: The AI informs the customer of the amount received vs. the required balance and requests the remainder.
+- If the receipt is illegible: The AI politely asks for a clear receipt screenshot or the TrxID.
+
+![AI Training Setup](/docs/ai-training-setup.svg)
+`,
+    contentBn: `
+### সারসংক্ষেপ
+**এআই পেমেন্ট ও অর্ডার পলিসি ইঞ্জিন** টিনেন্টদের জন্য চ্যাট চ্যানেলে (হোয়াটসঅ্যাপ, ফেসবুক মেসেঞ্জার, ইনস্টাগ্রাম ডিএম, ওয়েবচ্যাট) স্বয়ংক্রিয় অর্ডার নেওয়া ও পেমেন্ট রিসিভ করার একটি পূর্ণাঙ্গ সমাধান।
+
+### ৩টি পেমেন্ট পলিসি মোড:
+১. 🟢 **ক্যাশ অন ডেলিভারি (COD)**: কোনো অগ্রিম পেমেন্টের প্রয়োজন নেই। এআই প্রোডাক্ট মূল্য + ডেলিভারি চার্জ হিসাব করে সামারি দিবে এবং কাস্টমার সম্মতি ('CONFIRM' বা 'হ্যাঁ') জানালেই সরাসরি অর্ডার তৈরি হয়ে যাবে।
+২. 🟡 **শুধুমাত্র ডেলিভারি চার্জ অগ্রিম (Delivery Charge Advance)**: ডেলিভারি চার্জ (যেমন: ঢাকার ভেতরে ৳৬০ / ঢাকার বাইরে ৳১২০) অগ্রিম বিকাশ/নগদে পরিশোধ করতে হবে। কাস্টমার টাকা পাঠিয়ে স্ক্রিনশট দিলে ভিশন এআই স্ক্রিনশট পড়ে ট্রানজেকশন আইডি ও টাকা মিলিয়ে স্বয়ংক্রিয়ভাবে অর্ডার কনফার্ম করে। বাকি প্রোডাক্টের মূল্য ডেলিভারির সময় ক্যাশ পরিশোধ হবে।
+৩. 🔵 **সম্পূর্ণ মূল্য অগ্রিম (Full Advance Payment)**: প্রোডাক্ট মূল্য + ডেলিভারি চার্জ পুরো বিলটি বিকাশ/নগদে অগ্রিম পরিশোধ করতে হবে। স্ক্রিনশট ভেরিফাই হওয়ার পর অর্ডার চূড়ান্ত হবে।
+
+### ৪টি বাধ্যতামূলক কাস্টমার তথ্য:
+অর্ডার নিশ্চিত করার আগে এআই নিশ্চিত করে:
+১. কাস্টমারের সম্পূর্ণ নাম
+২. ১১ ডিজিটের সঠিক মোবাইল নম্বর
+৩. বিস্তারিত ডেলিভারি ঠিকানা
+৪. ডেলিভারি এলাকা (ঢাকার ভেতরে নাকি ঢাকার বাইরে)
+
+### ভিশন এআই স্ক্রিনশট ভেরিফিকেশন:
+কাস্টমার স্ক্রিনশট পাঠালে ভিশন এআই স্বয়ংক্রিয়ভাবে পেমেন্ট অ্যাপ (বিকাশ/নগদ), প্রদেয় টাকা, TrxID এবং স্ট্যাটাস পড়ে মিলিয়ে অর্ডার এন্ট্রি করে এবং কাস্টমারকে অর্ডার নম্বর সহ নিশ্চিতকরণ মেসেজ পাঠায়।
+
+![AI Training Setup](/docs/ai-training-setup.svg)
+`
+  },
 
   /* ---------------- INBOX & MESSAGING ---------------- */
   {

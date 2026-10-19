@@ -47,7 +47,17 @@ export class ToolConfigValidatorService {
 
   getDefaultConfigForTool(toolType: string): any {
     const defaults: Record<string, any> = {
-      order_placement: { requireExplicitConfirmation: true },
+      order_placement: {
+        requireExplicitConfirmation: true,
+        paymentPolicy: 'cod',
+        deliveryChargeInsideDhaka: 60,
+        deliveryChargeOutsideDhaka: 120,
+        mfsAccounts: [
+          { provider: 'bKash', accountNumber: '', accountType: 'Personal' },
+          { provider: 'Nagad', accountNumber: '', accountType: 'Personal' }
+        ],
+        paymentInstructionNote: ''
+      },
       image_reading: {},
       support_detection: { reasonCategories: ['general', 'complaint', 'refund_return', 'delivery_issue'] },
       product_matching: { minMatchConfidence: 0.8, maxProductsToSend: 10 }
