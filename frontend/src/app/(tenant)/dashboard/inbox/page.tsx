@@ -72,6 +72,29 @@ export default function InboxPage() {
   // Mobile WhatsApp-style panel navigation: 'list' | 'chat' | 'crm'
   const [mobilePanelView, setMobilePanelView] = useState<'list' | 'chat' | 'crm'>('list');
 
+  // Mobile hardware/gesture back button support (WhatsApp-style navigation)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handlePopState = () => {
+      if (mobilePanelView === 'crm') {
+        setMobilePanelView('chat');
+      } else if (mobilePanelView === 'chat') {
+        setMobilePanelView('list');
+        setSelectedConvId(null);
+      }
+    };
+
+    if (mobilePanelView === 'chat' || mobilePanelView === 'crm') {
+      window.history.pushState({ panel: mobilePanelView }, '');
+      window.addEventListener('popstate', handlePopState);
+    }
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [mobilePanelView]);
+
   // Quote, Forward, Block & Search States
   const [replyingToMessage, setReplyingToMessage] = useState<any | null>(null);
   const [forwardingMessage, setForwardingMessage] = useState<any | null>(null);
@@ -992,7 +1015,7 @@ export default function InboxPage() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)] md:h-[calc(100vh-4rem)] overflow-hidden bg-background text-foreground">
+    <div className="flex flex-col h-full md:h-[calc(100vh-4rem)] overflow-hidden bg-background text-foreground">
       
       {/* FULL-WIDTH TOP HEADER */}
       <div className="w-full flex items-center justify-between border-b border-border bg-surface/90 backdrop-blur-md shrink-0 px-2 sm:px-4 py-2 z-20 shadow-2xs gap-3">
@@ -1275,7 +1298,7 @@ export default function InboxPage() {
           </div>
 
         {/* Conversation Items List */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar divide-y divide-border/40">
+        <div className="flex-1 overflow-y-auto custom-scrollbar divide-y divide-border/40 pb-20 md:pb-0">
           {channelFilter === 'facebook_comments' ? (
             commentLogsLoading ? (
               <div className="p-4 text-center text-xs text-muted-foreground animate-pulse">
@@ -1506,8 +1529,10 @@ export default function InboxPage() {
         (() => {
           const selectedComment = commentLogs.find(c => c.commentId === selectedCommentId);
           return selectedComment ? (
-            <div className={`flex-1 flex-col min-w-0 bg-card md:border border-border/80 md:shadow-sm dark:shadow-[0_0_15px_rgba(0,0,0,0.2)] md:rounded-2xl overflow-hidden ${
-              mobilePanelView === 'chat' ? 'flex' : 'hidden md:flex'
+            <div className={`min-w-0 bg-background md:bg-card md:border border-border/80 md:shadow-sm dark:shadow-[0_0_15px_rgba(0,0,0,0.2)] md:rounded-2xl overflow-hidden ${
+              mobilePanelView === 'chat' 
+                ? 'fixed inset-0 z-[55] flex flex-col h-[100dvh] md:static md:h-auto md:flex-1 md:z-auto' 
+                : 'hidden md:flex md:flex-1'
             }`}>
               {/* Header */}
               <div className="h-14 px-3 md:px-4 border-b border-border bg-surface/80 backdrop-blur-xl flex items-center justify-between shrink-0 shadow-2xs">
@@ -1531,7 +1556,7 @@ export default function InboxPage() {
               </div>
 
               {/* Main Comment & Reply View (Thread View) */}
-              <div className="flex-1 p-4 overflow-y-auto space-y-4 font-sans bg-muted/10">
+              <div className="flex-1 p-4 overflow-y-auto overscroll-contain space-y-4 font-sans bg-muted/10">
                 {/* Customer Original Comment (Left Bubble) */}
                 <div className="p-4 bg-card rounded-2xl border border-border/70 shadow-2xs max-w-xl">
                   <div className="flex items-center justify-between gap-2 mb-1">
@@ -1590,7 +1615,7 @@ export default function InboxPage() {
               </div>
 
               {/* Human Re-comment Form with Mode Selector */}
-              <div className="p-3 border-t border-border bg-surface/80 backdrop-blur-md space-y-2">
+              <div className="p-3 border-t border-border bg-surface/95 backdrop-blur-md shrink-0 space-y-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
                 {/* Reply Type Mode Selector */}
                 <div className="flex items-center justify-between text-[11px]">
                   <span className="text-muted-foreground font-medium">
@@ -1666,10 +1691,12 @@ export default function InboxPage() {
           );
         })()
       ) : selectedConvId && activeConv ? (
-        <div className={`flex-1 flex-col min-w-0 bg-card md:border border-zinc-300 dark:border-zinc-700/80 md:shadow-sm dark:shadow-[0_0_15px_rgba(0,0,0,0.2)] md:rounded-2xl overflow-hidden ${
-          // On mobile: show only when mobilePanelView === 'chat'
-          // On desktop: always show when conversation selected
-          mobilePanelView === 'chat' ? 'flex' : 'hidden md:flex'
+        <div className={`min-w-0 bg-background md:bg-card md:border border-zinc-300 dark:border-zinc-700/80 md:shadow-sm dark:shadow-[0_0_15px_rgba(0,0,0,0.2)] md:rounded-2xl overflow-hidden ${
+          // On mobile: take full screen as fixed overlay (WhatsApp-style) so bottom bar doesn't cover or push typing box
+          // On desktop: standard flex-1 column
+          mobilePanelView === 'chat' 
+            ? 'fixed inset-0 z-[55] flex flex-col h-[100dvh] md:static md:h-auto md:flex-1 md:z-auto' 
+            : 'hidden md:flex md:flex-1'
         }`}>
           
           {/* Header */}
@@ -1864,7 +1891,7 @@ export default function InboxPage() {
           </div>
 
           {/* Messages Feed */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar bg-background">
+          <div className="flex-1 overflow-y-auto overscroll-contain p-4 space-y-3 custom-scrollbar bg-background">
             {messages.map((m, idx) => {
               const isInbound = m.direction === 'inbound';
               const isAi = m.senderType === 'ai';
@@ -1994,7 +2021,7 @@ export default function InboxPage() {
           </div>
 
           {/* Compose Bar */}
-          <div className="p-3 border-t border-border bg-surface/80 backdrop-blur-xl shrink-0 space-y-2">
+          <div className="p-2.5 sm:p-3 border-t border-border bg-surface/95 backdrop-blur-xl shrink-0 space-y-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             
             {/* Replying Preview Banner */}
             {replyingToMessage && (
@@ -2164,7 +2191,7 @@ export default function InboxPage() {
 
           {/* Mobile Full-Screen CRM Panel — WhatsApp style, triggered by PanelRight icon */}
           {mobilePanelView === 'crm' && (
-            <div className="lg:hidden fixed inset-0 z-50 flex flex-col bg-background animate-in slide-in-from-right duration-200">
+            <div className="lg:hidden fixed inset-0 z-[60] flex flex-col bg-background animate-in slide-in-from-right duration-200">
               {/* CRM Header with back button */}
               <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-surface/80 backdrop-blur-xl shrink-0 shadow-sm">
                 <button
