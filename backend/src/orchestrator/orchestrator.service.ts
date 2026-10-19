@@ -520,7 +520,7 @@ export class OrchestratorService {
 
       if (typeof parsed.replyText === 'string') {
         return {
-          replyText: parsed.replyText,
+          replyText: this.formatSpaciousResponse(parsed.replyText),
           intent: ['general', 'order_intent', 'order_confirmation', 'support_needed', 'product_lookup', 'property_inquiry', 'room_booking_inquiry', 'demo_request', 'software_inquiry', 'consultation_request', 'appointment_request', 'doctor_inquiry', 'course_admission_inquiry', 'course_inquiry', 'bulk_rfq_inquiry', 'rfq_inquiry', 'shipment_quote_request', 'shipment_tracking_inquiry', 'logistics_inquiry'].includes(parsed.intent)
             ? parsed.intent
             : 'general',
@@ -553,7 +553,7 @@ export class OrchestratorService {
     }
 
     return {
-      replyText: rawText,
+      replyText: this.formatSpaciousResponse(rawText),
       intent: 'general',
       supportSignal: false
     };
@@ -894,9 +894,9 @@ export class OrchestratorService {
 
         // If information is missing, ask for missing details before proposing order
         if (missingFields.length > 0) {
-          const missingBullets = missingFields.map(f => `• ${f}`).join('\n');
+          const missingPoints = missingFields.map((f, idx) => `${idx + 1}. ${f}`).join('\n\n');
           return {
-            overrideReplyText: `আপনার পছন্দের প্রোডাক্ট:\n📦 ${itemsListStr}\nমোট প্রোডাক্ট মূল্য: ৳${totalAmount}\n\nঅর্ডারটি প্রসেস করার জন্য অনুগ্রহ করে নিচের তথ্যগুলো দিন:\n${missingBullets}`
+            overrideReplyText: `আপনার পছন্দের প্রোডাক্ট:\n📦 ${itemsListStr}\nমোট প্রোডাক্ট মূল্য: ৳${totalAmount}\n\nঅর্ডারটি প্রসেস করার জন্য অনুগ্রহ করে নিচের তথ্যগুলো দিন:\n\n${missingPoints}\n\nদয়া করে তথ্যগুলো পাঠিয়ে দিন, আমরা সাথে সাথে আপনার অর্ডারটি প্রসেস করব!`
           };
         }
 
@@ -1407,11 +1407,12 @@ export class OrchestratorService {
       prompt += `2. ORDER PLACEMENT & PAYMENT POLICY DIRECTIVE:\n`;
       prompt += `   - MANDATORY CUSTOMER DETAILS FOR PHYSICAL PRODUCT ORDERS:\n`;
       prompt += `     To complete an order, the following 4 customer details are strictly required:\n`;
-      prompt += `     1) Customer Full Name\n`;
-      prompt += `     2) 11-digit Phone Number (e.g., 017XXXXXXXX, 018XXXXXXXX, 019XXXXXXXX)\n`;
-      prompt += `     3) Detailed Delivery Address\n`;
-      prompt += `     4) Delivery Area: Inside Dhaka vs Outside Dhaka (ঢাকার ভেতরে নাকি ঢাকার বাইরে)\n`;
+      prompt += `     ১. কাস্টমারের পুরো নাম (Customer Full Name)\n\n`;
+      prompt += `     ২. ১১ ডিজিটের মোবাইল নম্বর (11-digit Valid Mobile Phone)\n\n`;
+      prompt += `     ৩. বিস্তারিত ডেলিভারি ঠিকানা (Detailed Delivery Address)\n\n`;
+      prompt += `     ৪. ডেলিভারি এলাকা (ঢাকার ভেতরে নাকি ঢাকার বাইরে)\n\n`;
       prompt += `     If any of these 4 details are missing from the message or CUSTOMER INFO, politely ask the customer ONLY for the missing details before proposing or confirming the order.\n`;
+      prompt += `     MANDATORY FORMAT: Whenever asking for missing details or listing points, format each detail as a numbered point (১., ২., ৩., ৪.) and ALWAYS leave an empty line (\\n\\n) between every point so they are clean, spacious, and easily readable on mobile ("ফাঁকা ফাঁকা পয়েন্ট আকারে").\n`;
       prompt += `     When the customer provides name, phone, address, or location, also extract them into "customerDetails" in the JSON response.\n`;
       prompt += `   - DYNAMIC DELIVERY CHARGES:\n`;
       prompt += `     Inside Dhaka: BDT ${insideDhaka} | Outside Dhaka: BDT ${outsideDhaka}\n`;
@@ -2428,5 +2429,30 @@ export class OrchestratorService {
     } catch (err: any) {
       this.logger.error(`handleShipmentInquiry failed: ${err.message}`);
     }
+  }
+
+  private formatSpaciousResponse(text: string): string {
+    if (!text) return '';
+    let cleaned = String(text).trim();
+    if (cleaned.startsWith('```json')) {
+      cleaned = cleaned.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
+    } else if (cleaned.startsWith('```')) {
+      cleaned = cleaned.replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
+    }
+    try {
+      const parsed = JSON.parse(cleaned);
+      if (parsed && typeof parsed === 'object') {
+        cleaned = parsed.response || parsed.replyText || parsed.reply || parsed.message || parsed.text || cleaned;
+      }
+    } catch {
+      // not a json object
+    }
+    if (typeof cleaned === 'string') {
+      cleaned = cleaned.replace(/\\n/g, '\n');
+      cleaned = cleaned.replace(/([^\n])\n([১-৯1-9]\.|\([a-zA-Z0-9]\)|[a-zA-Z]\)|•)\s*/g, '$1\n\n$2 ');
+      cleaned = cleaned.replace(/([১-৯1-9]\.[^\n]+|[•][^\n]+)\n([^\n\s1-9১-৯•\-*])/g, '$1\n\n$2');
+      cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
+    }
+    return typeof cleaned === 'string' ? cleaned.trim() : JSON.stringify(cleaned);
   }
 }

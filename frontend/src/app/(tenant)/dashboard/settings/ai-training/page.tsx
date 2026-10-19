@@ -737,7 +737,31 @@ export default function AiTrainingPage() {
         setSimulatorMessages(prev => [...prev, { id: (Date.now() + 1).toString(), sender: 'ai' as const, text: `⚠️ [Error]: ${errMsg}` }]);
       } else {
         const data = await res.json();
-        setSimulatorMessages(prev => [...prev, { id: (Date.now() + 1).toString(), sender: 'ai' as const, text: data.reply }]);
+        let cleanReply = data.reply || '';
+        if (typeof cleanReply === 'string') {
+          let trimmed = cleanReply.trim();
+          if (trimmed.startsWith('```json')) {
+            trimmed = trimmed.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
+          } else if (trimmed.startsWith('```')) {
+            trimmed = trimmed.replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
+          }
+          try {
+            const parsed = JSON.parse(trimmed);
+            if (parsed && typeof parsed === 'object') {
+              trimmed = parsed.response || parsed.replyText || parsed.reply || parsed.message || parsed.text || trimmed;
+            }
+          } catch {
+            // not a json string
+          }
+          if (typeof trimmed === 'string') {
+            trimmed = trimmed.replace(/\\n/g, '\n');
+            trimmed = trimmed.replace(/([^\n])\n([১-৯1-9]\.|\([a-zA-Z0-9]\)|[a-zA-Z]\)|•)\s*/g, '$1\n\n$2 ');
+            trimmed = trimmed.replace(/([১-৯1-9]\.[^\n]+|[•][^\n]+)\n([^\n\s1-9১-৯•\-*])/g, '$1\n\n$2');
+            trimmed = trimmed.replace(/\n{3,}/g, '\n\n');
+          }
+          cleanReply = trimmed;
+        }
+        setSimulatorMessages(prev => [...prev, { id: (Date.now() + 1).toString(), sender: 'ai' as const, text: cleanReply }]);
       }
     } catch (err: any) {
       setSimulatorMessages(prev => [...prev, {

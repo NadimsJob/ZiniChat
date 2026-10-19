@@ -912,15 +912,23 @@ ${combinedText}`;
     prompt += `2. HELPFUL CALL TO ACTION: Conclude your message by warmly inviting the customer to pick any item or ask any questions.\n`;
     prompt += `VIOLATION OF THIS MULTI-PRODUCT DIRECTIVE IS STRICTLY FORBIDDEN.\n`;
 
-    // ── Labels / Tag Rules (was MISSING — now added for parity) ─────────────
+    // ── Labels / Tag Rules (for Simulator parity) ───────────────────────────
     const tagsWithPrompts = activeLabels.filter(t => t.aiPrompt);
     if (tagsWithPrompts.length > 0) {
       prompt += `\n--- CONVERSATION TAGS RULES ---\n`;
-      prompt += `The following tags are active. If the customer's query matches any of these tag rules, you MUST apply its instruction/prompt to compose your response and return the matched tag name inside the "matchedTags" JSON array:\n`;
+      prompt += `The following tag rules are active. If the customer's query matches any of these tag rules, apply its instruction/prompt to compose your conversational response:\n`;
       tagsWithPrompts.forEach(tag => {
         prompt += `- Tag: "${tag.name}"\n  Rule/Instruction: "${tag.aiPrompt}"\n`;
       });
     }
+
+    // MANDATORY SPACIOUS POINT-WISE FORMATTING DIRECTIVE
+    prompt += `\n=== MANDATORY SPACIOUS POINT-WISE FORMATTING DIRECTIVE ===\n`;
+    prompt += `Whenever asking for customer details, order information, listing items, or outlining steps:\n`;
+    prompt += `1. Format each item or required information clearly as a numbered point (১., ২., ৩., ৪. or 1., 2., 3., 4.).\n`;
+    prompt += `2. You MUST ALWAYS leave an empty line (double newline \\n\\n) between every numbered point so that each point is completely isolated, spacious, and easily readable ("ফাঁকা ফাঁকা পয়েন্ট আকারে").\n`;
+    prompt += `3. NEVER write points on adjacent lines without an empty line between them.\n`;
+    prompt += `4. ALWAYS separate the introductory sentence from the first point with an empty line, and separate the last point from the closing text with an empty line.\n`;
 
     // ── Order Placement & Payment Policy (Rule 5 Simulator Parity) ─────────
     const orderTool = await this.prisma.aiAssistantTool.findFirst({
@@ -949,8 +957,12 @@ ${combinedText}`;
 
       prompt += `\n=== ORDER PLACEMENT & PAYMENT POLICY DIRECTIVE ===\n`;
       prompt += `The business accepts automated customer orders under the following mandatory policy:\n`;
-      prompt += `1. REQUIRED CUSTOMER DETAILS: Before confirming any physical order, you MUST collect: (a) Full Customer Name, (b) 11-digit Valid Mobile Phone, (c) Full Detailed Delivery Address, (d) Delivery Area (Inside Dhaka or Outside Dhaka).\n`;
-      prompt += `2. If any of these 4 details are missing, politely ask the customer ONLY for the missing details before proposing/confirming an order.\n`;
+      prompt += `1. REQUIRED CUSTOMER DETAILS: Before confirming any physical order, you MUST collect the following 4 customer details:\n`;
+      prompt += `   ১. কাস্টমারের পুরো নাম (Full Name)\n\n`;
+      prompt += `   ২. ১১ ডিজিটের মোবাইল নম্বর (11-digit Valid Mobile Phone)\n\n`;
+      prompt += `   ৩. বিস্তারিত ডেলিভারি ঠিকানা (Detailed Delivery Address)\n\n`;
+      prompt += `   ৪. ডেলিভারি এলাকা (ঢাকার ভেতরে নাকি ঢাকার বাইরে)\n\n`;
+      prompt += `2. If any of these 4 details are missing, politely ask the customer ONLY for the missing details. You MUST format each missing detail as a numbered point (১., ২., ৩., ৪.) with an empty line (double newline \\n\\n) between every point so they are spaced out and clear ("ফাঁকা ফাঁকা পয়েন্ট আকারে").\n`;
       prompt += `3. DELIVERY CHARGES: Inside Dhaka: ৳${insideDhaka} | Outside Dhaka: ৳${outsideDhaka}.\n`;
       if (paymentPolicy === 'cod') {
         prompt += `4. PAYMENT POLICY: Cash on Delivery (COD). Product price + delivery charge will be paid upon delivery. Ask customer to explicitly CONFIRM.\n`;
@@ -1157,11 +1169,16 @@ ${combinedText}`;
       }
     }
 
-    prompt += `\n--- CUSTOMER TEST QUERY ---\n${message}\n\nPlease reply directly to the customer in the EXACT SAME LANGUAGE they used (e.g., German if German, English if English, Bengali if Bengali) as the trained AI assistant.`;
+    prompt += `\n--- CUSTOMER TEST QUERY ---\n${message}\n\n`;
+    prompt += `MANDATORY RESPONSE INSTRUCTIONS:\n`;
+    prompt += `1. Reply directly to the customer in the EXACT SAME LANGUAGE they used (e.g., German if German, English if English, Bengali if Bengali) as the trained AI assistant.\n`;
+    prompt += `2. Output PLAIN TEXT ONLY. DO NOT output JSON. DO NOT wrap your response in \`\`\`json or \`\`\` code fences. DO NOT include keys like "response" or "matchedTags".\n`;
+    prompt += `3. When listing required details or points, ALWAYS use empty lines (double newline \\n\\n) between points for spacious readability ("ফাঁকা ফাঁকা পয়েন্ট আকারে").\n`;
 
     let reply = '';
     try {
-      reply = await this.aiService.generateCompletion(prompt);
+      const rawCompletion = await this.aiService.generateCompletion(prompt);
+      reply = this.formatSpaciousResponse(rawCompletion);
     } catch (err: any) {
       reply = `Sorry, unable to process AI request (${err.message || 'AI service error'}). Please verify your AI configuration.`;
     }
@@ -1207,5 +1224,30 @@ ${combinedText}`;
     `;
 
     return chunks;
+  }
+
+  private formatSpaciousResponse(text: string): string {
+    if (!text) return '';
+    let cleaned = String(text).trim();
+    if (cleaned.startsWith('```json')) {
+      cleaned = cleaned.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
+    } else if (cleaned.startsWith('```')) {
+      cleaned = cleaned.replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
+    }
+    try {
+      const parsed = JSON.parse(cleaned);
+      if (parsed && typeof parsed === 'object') {
+        cleaned = parsed.response || parsed.replyText || parsed.reply || parsed.message || parsed.text || cleaned;
+      }
+    } catch {
+      // not a json object
+    }
+    if (typeof cleaned === 'string') {
+      cleaned = cleaned.replace(/\\n/g, '\n');
+      cleaned = cleaned.replace(/([^\n])\n([১-৯1-9]\.|\([a-zA-Z0-9]\)|[a-zA-Z]\)|•)\s*/g, '$1\n\n$2 ');
+      cleaned = cleaned.replace(/([১-৯1-9]\.[^\n]+|[•][^\n]+)\n([^\n\s1-9১-৯•\-*])/g, '$1\n\n$2');
+      cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
+    }
+    return typeof cleaned === 'string' ? cleaned.trim() : JSON.stringify(cleaned);
   }
 }
