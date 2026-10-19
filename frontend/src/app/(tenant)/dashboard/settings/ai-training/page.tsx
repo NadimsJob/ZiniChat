@@ -23,6 +23,9 @@ export default function AiTrainingPage() {
   const { language } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingName, setSavingName] = useState(false);
+  const [savingPrompt, setSavingPrompt] = useState(false);
+  const [savingQna, setSavingQna] = useState(false);
   const [activeTab, setActiveTab] = useState<'default' | 'custom' | 'api'>('default');
   
   // Feature Gating Checks
@@ -77,13 +80,14 @@ export default function AiTrainingPage() {
       if (res.ok) {
         const data = await res.json();
         fetchData();
-        alert(language === 'en' ? data.message || 'Imported vertical Q&A presets!' : 'ভার্টিক্যাল Q&A টেমপ্লেট সফলভাবে যুক্ত করা হয়েছে!');
+        toast.success(language === 'en' ? data.message || 'Imported vertical Q&A presets!' : 'ভার্টিক্যাল Q&A টেমপ্লেট সফলভাবে যুক্ত করা হয়েছে!');
       } else {
-        const err = await res.json();
-        alert(err.message || 'Failed to import presets');
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.message || (language === 'en' ? 'Failed to import presets' : 'টেমপ্লেট লোড করতে ব্যর্থ হয়েছে'));
       }
     } catch (err) {
       console.error(err);
+      toast.error(language === 'en' ? 'Failed to import presets' : 'টেমপ্লেট লোড করতে ব্যর্থ হয়েছে');
     } finally {
       setImportingPresets(false);
     }
@@ -276,13 +280,16 @@ export default function AiTrainingPage() {
         },
         body: JSON.stringify({ isEnabled: newEnabled, configJson: targetConfig })
       });
-      if (!res.ok) {
-        const err = await res.json();
-        alert(err.message || 'Failed to update tool setting');
+      if (res.ok) {
+        toast.success(language === 'en' ? 'Tool settings updated!' : 'টুল সেটিংস আপডেট হয়েছে!');
+      } else {
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.message || (language === 'en' ? 'Failed to update tool setting' : 'টুল সেটিংস সংরক্ষণ করতে ব্যর্থ হয়েছে'));
         fetchData();
       }
     } catch (err) {
       console.error('Failed to toggle AI tool', err);
+      toast.error(language === 'en' ? 'Failed to update tool setting' : 'টুল সেটিংস সংরক্ষণ করতে সমস্যা হয়েছে');
       fetchData();
     }
   };
@@ -312,19 +319,21 @@ export default function AiTrainingPage() {
       if (res.ok) {
         setApiKey('');
         fetchData();
-        alert(language === 'en' ? 'Settings saved successfully' : 'সেটিংস সফলভাবে সংরক্ষিত হয়েছে');
+        toast.success(language === 'en' ? 'Settings saved successfully!' : 'সেটিংস সফলভাবে সংরক্ষিত হয়েছে!');
       } else {
-        const err = await res.json();
-        alert(err.message || 'Failed to save configuration');
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.message || (language === 'en' ? 'Failed to save configuration' : 'সেটিংস সংরক্ষণ করতে ব্যর্থ হয়েছে'));
       }
     } catch (err) {
       console.error(err);
+      toast.error(language === 'en' ? 'Failed to save configuration' : 'সেটিংস সংরক্ষণ করতে সমস্যা হয়েছে');
     } finally {
       setSaving(false);
     }
   };
 
-  const handleQuickSave = async (updates: any) => {
+  const handleQuickSave = async (updates: any, customSuccessMsg?: string) => {
+    if (updates.agentName !== undefined) setSavingName(true);
     try {
       const token = Cookies.get('access_token');
       const body: any = { 
@@ -345,21 +354,28 @@ export default function AiTrainingPage() {
         body: JSON.stringify(body)
       });
 
-      if (!res.ok) {
-        const err = await res.json();
-        alert(err.message || 'Failed to save changes');
+      if (res.ok) {
+        toast.success(customSuccessMsg || (language === 'en' ? 'Settings saved successfully!' : 'সেটিংস সফলভাবে সংরক্ষিত হয়েছে!'));
+        fetchData();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.message || (language === 'en' ? 'Failed to save changes' : 'পরিবর্তন সংরক্ষণ করতে ব্যর্থ হয়েছে'));
       }
     } catch (err) {
       console.error(err);
+      toast.error(language === 'en' ? 'Failed to save changes' : 'পরিবর্তন সংরক্ষণ করতে ব্যর্থ হয়েছে');
+    } finally {
+      if (updates.agentName !== undefined) setSavingName(false);
     }
   };
 
   const handleSavePrompt = async () => {
     if (config.systemPrompt && config.systemPrompt.length > MAX_PROMPT_LENGTH) {
-      alert(`System prompt cannot exceed ${MAX_PROMPT_LENGTH.toLocaleString()} characters.`);
+      toast.error(language === 'en' ? `System prompt cannot exceed ${MAX_PROMPT_LENGTH.toLocaleString()} characters.` : `প্রম্পট সর্বোচ্চ ${MAX_PROMPT_LENGTH.toLocaleString()} অক্ষরের হতে পারে।`);
       return;
     }
 
+    setSavingPrompt(true);
     try {
       const token = Cookies.get('access_token');
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai-training/prompt`, {
@@ -372,27 +388,39 @@ export default function AiTrainingPage() {
       });
 
       if (res.ok) {
-        alert(language === 'en' ? 'System prompt saved!' : 'প্রম্পট সেভ হয়েছে!');
+        toast.success(language === 'en' ? 'System prompt saved successfully!' : 'পারসোনা প্রম্পট সফলভাবে সেভ হয়েছে!');
         fetchData();
       } else {
-        const err = await res.json();
-        alert(err.message || 'Failed to save prompt');
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.message || (language === 'en' ? 'Failed to save prompt' : 'প্রম্পট সেভ করতে ব্যর্থ হয়েছে'));
       }
     } catch (err) {
       console.error(err);
+      toast.error(language === 'en' ? 'Failed to save prompt' : 'প্রম্পট সেভ করতে সমস্যা হয়েছে');
+    } finally {
+      setSavingPrompt(false);
     }
   };
 
   const handleSaveQna = async () => {
+    if (!qnaForm.question || !qnaForm.question.trim()) {
+      toast.error(language === 'en' ? 'Question is required' : 'প্রশ্ন লেখা আবশ্যক');
+      return;
+    }
+    if (!qnaForm.answer || !qnaForm.answer.trim()) {
+      toast.error(language === 'en' ? 'Answer is required' : 'উত্তর লেখা আবশ্যক');
+      return;
+    }
     if (qnaForm.question.length > MAX_QUESTION_LENGTH) {
-      alert(`Question cannot exceed ${MAX_QUESTION_LENGTH} characters.`);
+      toast.error(language === 'en' ? `Question cannot exceed ${MAX_QUESTION_LENGTH} characters.` : `প্রশ্ন সর্বোচ্চ ${MAX_QUESTION_LENGTH} অক্ষরের হতে পারে।`);
       return;
     }
     if (qnaForm.answer.length > MAX_ANSWER_LENGTH) {
-      alert(`Answer cannot exceed ${MAX_ANSWER_LENGTH} characters.`);
+      toast.error(language === 'en' ? `Answer cannot exceed ${MAX_ANSWER_LENGTH} characters.` : `উত্তর সর্বোচ্চ ${MAX_ANSWER_LENGTH} অক্ষরের হতে পারে।`);
       return;
     }
 
+    setSavingQna(true);
     try {
       const token = Cookies.get('access_token');
       const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
@@ -402,25 +430,31 @@ export default function AiTrainingPage() {
         res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai-training/qna/${qnaForm.id}`, {
           method: 'PATCH',
           headers,
-          body: JSON.stringify({ question: qnaForm.question, answer: qnaForm.answer })
+          body: JSON.stringify({ question: qnaForm.question.trim(), answer: qnaForm.answer.trim() })
         });
       } else {
         res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/ai-training/qna`, {
           method: 'POST',
           headers,
-          body: JSON.stringify({ question: qnaForm.question, answer: qnaForm.answer })
+          body: JSON.stringify({ question: qnaForm.question.trim(), answer: qnaForm.answer.trim() })
         });
       }
 
       if (res.ok) {
         setIsQnaModalOpen(false);
         fetchData();
+        toast.success(qnaForm.id 
+          ? (language === 'en' ? 'Q&A updated successfully!' : 'প্রশ্নোত্তর সফলভাবে আপডেট হয়েছে!') 
+          : (language === 'en' ? 'Q&A added successfully!' : 'নতুন প্রশ্নোত্তর সফলভাবে যোগ হয়েছে!'));
       } else {
-        const data = await res.json();
-        alert(Array.isArray(data.message) ? data.message.join('; ') : (data.message || 'Error saving Q&A'));
+        const data = await res.json().catch(() => ({}));
+        toast.error(Array.isArray(data.message) ? data.message.join('; ') : (data.message || (language === 'en' ? 'Error saving Q&A' : 'প্রশ্নোত্তর সেভ করতে সমস্যা হয়েছে')));
       }
     } catch (err) {
       console.error(err);
+      toast.error(language === 'en' ? 'Error saving Q&A' : 'প্রশ্নোত্তর সেভ করতে সমস্যা হয়েছে');
+    } finally {
+      setSavingQna(false);
     }
   };
 
@@ -432,9 +466,16 @@ export default function AiTrainingPage() {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      if (res.ok) fetchData();
+      if (res.ok) {
+        fetchData();
+        toast.success(language === 'en' ? 'Q&A deleted successfully' : 'প্রশ্নোত্তর মুছে ফেলা হয়েছে');
+      } else {
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.message || (language === 'en' ? 'Failed to delete Q&A' : 'প্রশ্নোত্তর মুছতে ব্যর্থ হয়েছে'));
+      }
     } catch (err) {
       console.error(err);
+      toast.error(language === 'en' ? 'Failed to delete Q&A' : 'প্রশ্নোত্তর মুছতে সমস্যা হয়েছে');
     }
   };
 
@@ -443,7 +484,7 @@ export default function AiTrainingPage() {
     if (!file) return;
 
     if (file.size > 500 * 1024) {
-      alert(language === 'en' ? 'File size must be 500KB or less' : 'ফাইলের সাইজ অবশ্যই ৫০০KB বা তার কম হতে হবে');
+      toast.error(language === 'en' ? 'File size must be 500KB or less' : 'ফাইলের সাইজ অবশ্যই ৫০০KB বা তার কম হতে হবে');
       return;
     }
 
@@ -461,14 +502,17 @@ export default function AiTrainingPage() {
 
       if (res.ok) {
         fetchData();
+        toast.success(language === 'en' ? 'Document uploaded and indexed successfully!' : 'ডকুমেন্ট সফলভাবে আপলোড ও ইনডেক্স করা হয়েছে!');
       } else {
-        const data = await res.json();
-        alert(data.message || 'Upload failed');
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.message || (language === 'en' ? 'Upload failed' : 'ডকুমেন্ট আপলোড ব্যর্থ হয়েছে'));
       }
     } catch (err) {
       console.error(err);
+      toast.error(language === 'en' ? 'Upload failed' : 'ডকুমেন্ট আপলোড ব্যর্থ হয়েছে');
     } finally {
       setUploadingDoc(false);
+      e.target.value = '';
     }
   };
 
@@ -480,9 +524,16 @@ export default function AiTrainingPage() {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      if (res.ok) fetchData();
+      if (res.ok) {
+        fetchData();
+        toast.success(language === 'en' ? 'Document deleted successfully' : 'ডকুমেন্ট মুছে ফেলা হয়েছে');
+      } else {
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.message || (language === 'en' ? 'Failed to delete document' : 'ডকুমেন্ট মুছতে ব্যর্থ হয়েছে'));
+      }
     } catch (err) {
       console.error(err);
+      toast.error(language === 'en' ? 'Failed to delete document' : 'ডকুমেন্ট মুছতে সমস্যা হয়েছে');
     }
   };
 
@@ -506,13 +557,16 @@ export default function AiTrainingPage() {
         setIsLabelFormOpen(false);
         setEditingLabel(null);
         fetchData();
-        toast.success(id ? 'Tag updated' : 'Tag created');
+        toast.success(id 
+          ? (language === 'en' ? 'Tag updated successfully' : 'ট্যাগ সফলভাবে আপডেট হয়েছে') 
+          : (language === 'en' ? 'Tag created successfully' : 'ট্যাগ সফলভাবে তৈরি হয়েছে'));
       } else {
-        toast.error('Failed to save tag');
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.message || (language === 'en' ? 'Failed to save tag' : 'ট্যাগ সেভ করতে ব্যর্থ হয়েছে'));
       }
     } catch (err) {
       console.error(err);
-      toast.error('Error saving tag');
+      toast.error(language === 'en' ? 'Error saving tag' : 'ট্যাগ সেভ করতে সমস্যা হয়েছে');
     }
   };
 
@@ -728,7 +782,12 @@ export default function AiTrainingPage() {
                   onChange={(e) => {
                     const val = e.target.checked;
                     setConfig({ ...config, isActive: val });
-                    handleQuickSave({ isActive: val });
+                    handleQuickSave(
+                      { isActive: val }, 
+                      val 
+                        ? (language === 'en' ? 'AI Agent activated!' : 'এআই এজেন্ট চালু করা হয়েছে!') 
+                        : (language === 'en' ? 'AI Agent paused!' : 'এআই এজেন্ট বন্ধ করা হয়েছে!')
+                    );
                   }}
                   className="sr-only peer" 
                 />
@@ -741,18 +800,29 @@ export default function AiTrainingPage() {
               <label className="block text-[12px] font-bold text-foreground mb-1">
                 {language === 'en' ? 'AI Agent Name' : 'এআই এজেন্টের নাম'}
               </label>
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <input 
                   type="text" 
                   placeholder={language === 'en' ? 'e.g., Zini, Sarah, SupportBot' : 'যেমন: জিনী, সারা, সাপোর্টবট'}
                   value={config.agentName || ''}
                   onChange={(e) => setConfig({ ...config, agentName: e.target.value })}
-                  className="w-full bg-background border border-zinc-300 dark:border-zinc-700/80 rounded-xl px-3 py-1.5 text-[13px] text-foreground focus:outline-none focus:border-primary"
+                  className="w-full bg-background border border-zinc-300 dark:border-zinc-700/80 rounded-xl px-3 py-2 text-[13px] text-foreground focus:outline-none focus:border-primary"
                 />
                 <button 
-                  onClick={() => handleQuickSave({ agentName: config.agentName })}
-                  className="px-4 py-1.5 bg-secondary text-white rounded-xl text-[12px] font-bold hover:bg-secondary/90 transition-all shrink-0 cursor-pointer"
+                  onClick={() => {
+                    if (!config.agentName || !config.agentName.trim()) {
+                      toast.error(language === 'en' ? 'Please enter an agent name' : 'দয়া করে একটি এজেন্টের নাম দিন');
+                      return;
+                    }
+                    handleQuickSave(
+                      { agentName: config.agentName.trim() }, 
+                      language === 'en' ? 'AI Agent name saved!' : 'এআই এজেন্টের নাম সেভ হয়েছে!'
+                    );
+                  }}
+                  disabled={savingName}
+                  className="w-full sm:w-auto px-4 py-2 bg-secondary text-white rounded-xl text-[12px] font-bold hover:bg-secondary/90 transition-all shrink-0 cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
                 >
+                  {savingName && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
                   {language === 'en' ? 'Save Name' : 'নাম সেভ করুন'}
                 </button>
               </div>
@@ -797,9 +867,10 @@ export default function AiTrainingPage() {
                 </div>
                 <button
                   onClick={handleSavePrompt}
-                  className="px-4 py-1.5 bg-primary text-white font-bold rounded-xl text-[12px] hover:bg-primary/90 transition-all flex items-center gap-1.5 cursor-pointer"
+                  disabled={savingPrompt}
+                  className="px-4 py-1.5 bg-primary text-white font-bold rounded-xl text-[12px] hover:bg-primary/90 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                 >
-                  <Save className="w-3.5 h-3.5" />
+                  {savingPrompt ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                   {language === 'en' ? 'Save Prompt' : 'প্রম্পট সেভ করুন'}
                 </button>
               </div>
@@ -808,7 +879,7 @@ export default function AiTrainingPage() {
 
           {/* Section 2: Knowledge Base Q&As & Documents (#tour-faq) */}
           <div id="tour-faq" className="bg-card border border-zinc-300 dark:border-zinc-700/80 shadow-md rounded-2xl p-4 space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h2 className="text-sm font-bold flex items-center gap-2 text-foreground">
                   <MessageSquare className="w-4 h-4 text-primary" />
@@ -820,11 +891,11 @@ export default function AiTrainingPage() {
                     : `এআই কেবল এই তথ্যের উপর ভিত্তি করে কাস্টমার প্রশ্নের উত্তর দেবে (সর্বোচ্চ ২০টি প্রশ্নোত্তর, বর্তমান: ${qnas.length}/২০)।`}
                 </p>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap shrink-0">
                 <button
                   onClick={handleImportPresets}
                   disabled={importingPresets || qnas.length >= 20}
-                  className="px-3 py-1.5 bg-secondary text-secondary-foreground font-bold rounded-xl text-[12px] hover:bg-secondary/80 transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                  className="flex-1 sm:flex-none px-3 py-1.5 bg-secondary text-secondary-foreground font-bold rounded-xl text-[12px] hover:bg-secondary/80 transition-all flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50"
                   title={language === 'en' ? 'Load pre-configured AI FAQ templates for your vertical' : 'আপনার ইন্ডাস্ট্রির উপযোগী AI FAQ টেমপ্লেট লোড করুন'}
                 >
                   {importingPresets ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 text-amber-500" />}
@@ -833,13 +904,13 @@ export default function AiTrainingPage() {
                 <button
                   onClick={() => {
                     if (qnas.length >= 20) {
-                      alert(language === 'en' ? 'Maximum 20 Q&As allowed' : 'সর্বোচ্চ ২০টি প্রশ্নোত্তর যোগ করা যাবে');
+                      toast.error(language === 'en' ? 'Maximum 20 Q&As allowed' : 'সর্বোচ্চ ২০টি প্রশ্নোত্তর যোগ করা যাবে');
                       return;
                     }
                     setQnaForm({ id: '', question: '', answer: '', isDefault: false });
                     setIsQnaModalOpen(true);
                   }}
-                  className="px-3 py-1.5 bg-primary text-white font-bold rounded-xl text-[12px] hover:bg-primary/90 transition-all flex items-center gap-1 cursor-pointer shrink-0"
+                  className="flex-1 sm:flex-none px-3 py-1.5 bg-primary text-white font-bold rounded-xl text-[12px] hover:bg-primary/90 transition-all flex items-center justify-center gap-1 cursor-pointer shrink-0"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   {language === 'en' ? 'Add Q&A' : 'প্রশ্ন যোগ করুন'}
@@ -1069,7 +1140,7 @@ export default function AiTrainingPage() {
 
           {/* Section 4: AI Response Tags / Conversation Tags (#tour-tags-section) */}
           <div id="tour-tags-section" className="bg-card border border-zinc-300 dark:border-zinc-700/80 shadow-md rounded-2xl p-4 space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
               <div>
                 <h2 className="text-sm font-bold flex items-center gap-2 text-foreground">
                   <Tag className="w-4 h-4 text-primary" />
@@ -1085,13 +1156,13 @@ export default function AiTrainingPage() {
                 <button
                   onClick={() => { 
                     if (labels.length >= 10) {
-                      alert(language === 'en' ? 'Maximum 10 tags allowed' : 'সর্বোচ্চ ১০টি ট্যাগ যোগ করা যাবে');
+                      toast.error(language === 'en' ? 'Maximum 10 tags allowed' : 'সর্বোচ্চ ১০টি ট্যাগ যোগ করা যাবে');
                       return;
                     }
                     setEditingLabel(null); 
                     setIsLabelFormOpen(true); 
                   }}
-                  className="px-3 py-1.5 bg-primary text-white font-bold rounded-xl text-[12px] hover:bg-primary/90 transition-all flex items-center gap-1 cursor-pointer shrink-0"
+                  className="w-full sm:w-auto px-3 py-1.5 bg-primary text-white font-bold rounded-xl text-[12px] hover:bg-primary/90 transition-all flex items-center justify-center gap-1 cursor-pointer shrink-0"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   {language === 'en' ? 'New Tag' : 'নতুন ট্যাগ'}
@@ -1365,8 +1436,10 @@ export default function AiTrainingPage() {
               </button>
               <button
                 onClick={handleSaveQna}
-                className="px-4 py-2 bg-primary text-white font-bold rounded-xl text-[12px] hover:bg-primary/90 cursor-pointer"
+                disabled={savingQna}
+                className="px-4 py-2 bg-primary text-white font-bold rounded-xl text-[12px] hover:bg-primary/90 cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
               >
+                {savingQna && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
                 {language === 'en' ? 'Save Q&A' : 'সেভ করুন'}
               </button>
             </div>

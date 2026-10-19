@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useLanguage } from '@/components/LanguageProvider';
+import toast from 'react-hot-toast';
 import { Wand2, Check, RefreshCw } from 'lucide-react';
 
 interface LabelFormProps {
@@ -30,10 +31,13 @@ export default function LabelForm({ initialData, onSave, onCancel }: LabelFormPr
   }, [initialData]);
 
   const handleSave = async () => {
-    if (!name.trim()) return;
+    if (!name.trim()) {
+      toast.error(language === 'en' ? 'Tag name is required' : 'ট্যাগের নাম দেওয়া আবশ্যক');
+      return;
+    }
     setIsSaving(true);
     try {
-      await onSave({ name, color, aiPrompt, description, isActive }, initialData?.id);
+      await onSave({ name: name.trim(), color, aiPrompt, description, isActive }, initialData?.id);
     } finally {
       setIsSaving(false);
     }
