@@ -29,6 +29,7 @@ export interface StructuredAiClassification {
   interestedCourseName?: string; // Education mode: which course/batch student mentioned
   interestedRfqProductName?: string; // Manufacturing mode: which wholesale product buyer inquired about
   interestedShipmentRoute?: string; // Logistics mode: which shipment route/fleet shipper inquired about
+  sendProductPhotoIds?: string[]; // IDs of products to send photos for (1 to 10)
 }
 
 @Injectable()
@@ -176,7 +177,7 @@ export class OrchestratorService {
         (toolMap['order_placement']?.isEnabled ?? assistant.aiOrderEnabled) && planOrderPlacement;
       const isImageReadingActive = (toolMap['image_reading']?.isEnabled ?? true) && planImageReading;
       const isSupportDetectionActive = (toolMap['support_detection']?.isEnabled ?? false) && planSupportDetection;
-      const isProductMatchingActive = !isSpecialModeActive && (toolMap['product_matching']?.isEnabled ?? false) && planProductMatching;
+      const isProductMatchingActive = !isSpecialModeActive && (toolMap['product_matching']?.isEnabled ?? true) && planProductMatching;
 
       // Resolve AI Config
       const customAiConfigId = assistant.tenant?.customAiConfigId || undefined;
@@ -294,7 +295,7 @@ export class OrchestratorService {
         }
       }
 
-      const retrievedProducts = await this.aiService.searchRelevantProducts(tenantId, ragQuery, 5);
+      const retrievedProducts = await this.aiService.searchRelevantProducts(tenantId, ragQuery, 10);
       const retrievedQnas = await this.aiService.searchRelevantQnas(tenantId, ragQuery, 5);
       let retrievedChunks: any[] = [];
       try {
@@ -406,10 +407,11 @@ export class OrchestratorService {
         }
       }
 
-      // Handler 3: Product Photo Matching
-      if (isProductMatchingActive) {
+      // Handler 3: Product Photo Matching & Multi-Product Dispatch
+      if (isProductMatchingActive || (classification.intent === 'product_lookup' && classification.sendProductPhotoIds?.length)) {
         const minConf = toolMap['product_matching']?.configJson?.minMatchConfidence ?? 0.6;
-        await this.handleProductMatching(tenantId, message.conversationId, classification, minConf);
+        const maxPhotos = Math.min(Math.max(toolMap['product_matching']?.configJson?.maxProductsToSend ?? 10, 1), 10);
+        await this.handleProductMatching(tenantId, message.conversationId, classification, minConf, maxPhotos, assistant.id, userText);
       }
 
       // Handler 4: Auto-Tagging / Conversation Labels Sync
@@ -510,6 +512,7 @@ export class OrchestratorService {
             : 'general',
           orderProposal: Array.isArray(parsed.orderProposal) ? parsed.orderProposal : undefined,
           imageProductDescription: parsed.imageProductDescription,
+          sendProductPhotoIds: Array.isArray(parsed.sendProductPhotoIds) ? parsed.sendProductPhotoIds.map(String) : undefined,
           supportSignal: !!parsed.supportSignal,
           supportReason: ['general', 'complaint', 'refund_return', 'delivery_issue'].includes(parsed.supportReason)
             ? parsed.supportReason
@@ -735,76 +738,147 @@ export class OrchestratorService {
     tenantId: string,
     conversationId: string,
     classification: StructuredAiClassification,
-    minConfidence: number = 0.8
+    minConfidence: number = 0.6,
+    maxProductsToSend: number = 10,
+    assistantId?: string,
+    userText?: string
   ) {
+    const maxPhotos = Math.min(Math.max(maxProductsToSend || 10, 1), 10);
     const searchQuery = classification.imageProductDescription;
-    if (!searchQuery && classification.intent !== 'product_lookup') return;
+    const isExplicitPhotoLookup = classification.intent === 'product_lookup';
+    const hasExplicitPhotoIds = Array.isArray(classification.sendProductPhotoIds) && classification.sendProductPhotoIds.length > 0;
 
-    const queryStr = searchQuery || classification.replyText;
-    if (!queryStr || queryStr.length < 3) return;
+    // Check if user text asked for photos, catalog or product list
+    const lowerUserText = (userText || '').toLowerCase();
+    const photoOrListTerms = [
+      'ছবি', 'photo', 'photos', 'pic', 'pics', 'picture', 'pictures', 'image', 'images',
+      'লিস্ট', 'তালিকা', 'list', 'catalog', 'ক্যাটালগ', 'collection', 'কালেকশন', 'সবগুলো',
+      'কি কি আছে', 'কী কী আছে', 'what do you have', 'show'
+    ];
+    const isPhotoOrListInquiry = photoOrListTerms.some(term => lowerUserText.includes(term));
 
-    // Search tenant product catalog for photo
-    const products = await this.prisma.product.findMany({
+    if (!searchQuery && !isExplicitPhotoLookup && !hasExplicitPhotoIds && !isPhotoOrListInquiry) {
+      return;
+    }
+
+    // Search tenant product catalog for active products with photos
+    const allProductsWithImages = await this.prisma.product.findMany({
       where: {
         tenantId,
         isActive: true,
         imageUrl: { not: null }
-      }
+      },
+      orderBy: { createdAt: 'desc' }
     });
 
-    if (products.length === 0) return;
+    if (allProductsWithImages.length === 0) return;
 
-    const qTokens = queryStr.toLowerCase().split(/\s+/).filter(t => t.length > 2);
-    if (qTokens.length === 0) return;
+    let matchedProducts: any[] = [];
 
-    let bestMatch: any = null;
-    let bestScore = 0;
-
-    for (const p of products) {
-      const pText = `${p.name} ${p.description || ''}`.toLowerCase();
-      const pTokens = pText.split(/\s+/).filter(t => t.length > 2);
-
-      let matches = 0;
-      for (const q of qTokens) {
-        if (pTokens.some(pt => pt.includes(q) || q.includes(pt))) {
-          matches++;
+    // Strategy 1: Explicit IDs chosen by AI Stage A classification
+    if (hasExplicitPhotoIds) {
+      const explicitIds = classification.sendProductPhotoIds!;
+      for (const id of explicitIds) {
+        const found = allProductsWithImages.find(p => p.id === id || p.id.startsWith(id));
+        if (found && !matchedProducts.some(m => m.id === found.id)) {
+          matchedProducts.push(found);
         }
-      }
-
-      const score = matches / qTokens.length;
-      if (score > bestScore) {
-        bestScore = score;
-        bestMatch = p;
       }
     }
 
-    if (bestMatch && bestMatch.imageUrl) {
-      if (bestScore >= minConfidence) {
-        // High confidence match (>= 80%)
+    // Strategy 2: If explicit IDs didn't yield enough, or not provided:
+    // Search by relevance tokens from searchQuery, userText, and classification.replyText
+    let moderateMatch: any = null;
+    let bestScore = 0;
+
+    if (matchedProducts.length === 0) {
+      const queryStr = searchQuery || (isPhotoOrListInquiry ? userText : classification.replyText) || '';
+      const qTokens = queryStr.toLowerCase()
+        .replace(/[^\w\s\u0980-\u09FF]/gi, ' ')
+        .split(/\s+/)
+        .filter(t => t.length > 2 && !['the', 'and', 'for', 'you', 'have', 'what', 'price', 'cost', 'dam', 'koto', 'naki', 'ache', 'apnader', 'আপনাদের', 'ছবি', 'photo', 'photos', 'image'].includes(t));
+
+      if (qTokens.length > 0) {
+        const scoredProducts: { product: any; score: number }[] = [];
+
+        for (const p of allProductsWithImages) {
+          const pText = `${p.name} ${p.description || ''} ${JSON.stringify(p.attributes || {})}`.toLowerCase();
+          const pTokens = pText.split(/\s+/).filter(t => t.length > 2);
+
+          let matches = 0;
+          for (const q of qTokens) {
+            if (pTokens.some(pt => pt.includes(q) || q.includes(pt))) {
+              matches++;
+            }
+          }
+
+          const score = matches / qTokens.length;
+          if (score > bestScore) {
+            bestScore = score;
+            if (score >= 0.6 && score < minConfidence) {
+              moderateMatch = p;
+            }
+          }
+          if (score >= minConfidence) {
+            scoredProducts.push({ product: p, score });
+          }
+        }
+
+        // Sort by score descending
+        scoredProducts.sort((a, b) => b.score - a.score);
+        matchedProducts = scoredProducts.map(s => s.product);
+      }
+    }
+
+    // Moderate confidence clarifying question (60% - 79%): Only if no high-confidence matches and not a general list/catalog inquiry
+    if (matchedProducts.length === 0 && moderateMatch && !isPhotoOrListInquiry && searchQuery) {
+      const priceStr = (!moderateMatch.price || Number(moderateMatch.price) <= 0) ? 'Price on Request' : `BDT ${moderateMatch.price}`;
+      await this.inboxService.saveOutboundMessage(
+        tenantId,
+        conversationId,
+        `আপনি কি '${moderateMatch.name}' প্রোডাক্টটি খুঁজছেন? (মূল্য: BDT ${moderateMatch.price})\n\nAre you looking for '${moderateMatch.name}' (Price: BDT ${moderateMatch.price})? Please confirm so I can share details.`
+      );
+      return;
+    }
+
+    // Strategy 3: If customer specifically asked for product list, catalog or photos ("লিস্ট", "ছবি", "catalog"),
+    // but specific keyword score was 0 (e.g. "আপনাদের সব প্রোডাক্টের ছবি দেখান"):
+    // Take top available products with photos up to maxPhotos!
+    if (matchedProducts.length === 0 && (isPhotoOrListInquiry || isExplicitPhotoLookup)) {
+      matchedProducts = allProductsWithImages.slice(0, maxPhotos);
+    }
+
+    // Limit to configured maxProductsToSend (1 to 10)
+    const finalProductsToSend = matchedProducts.slice(0, maxPhotos);
+
+    if (finalProductsToSend.length > 0) {
+      this.logger.log(`Dispatching ${finalProductsToSend.length} product photo(s) (limit: ${maxPhotos}) to conversation ${conversationId}`);
+
+      for (const product of finalProductsToSend) {
+        const priceStr = (!product.price || Number(product.price) <= 0) ? 'Price on Request' : `BDT ${product.price}`;
         await this.inboxService.saveOutboundMessage(
           tenantId,
           conversationId,
           JSON.stringify({
-            mediaUrl: bestMatch.imageUrl,
-            body: `📸 ${bestMatch.name} — BDT ${bestMatch.price}`
+            mediaUrl: product.imageUrl,
+            body: `📸 ${product.name} — ${priceStr}`
           }),
-          'image'
-        );
-
-        await this.activityLogService.record({
-          tenantId,
-          conversationId,
-          type: 'PRODUCT_MATCH_SENT',
-          metadataJson: { productId: bestMatch.id, name: bestMatch.name, confidenceScore: bestScore }
-        });
-      } else if (bestScore >= 0.6 && bestScore < minConfidence) {
-        // Moderate confidence (60% - 79%): Clarifying question fallback
-        await this.inboxService.saveOutboundMessage(
-          tenantId,
-          conversationId,
-          `আপনি কি '${bestMatch.name}' প্রোডাক্টটি খুঁজছেন? (মূল্য: BDT ${bestMatch.price})\n\nAre you looking for '${bestMatch.name}' (Price: BDT ${bestMatch.price})? Please confirm so I can share details.`
+          'image',
+          undefined,
+          assistantId
         );
       }
+
+      await this.activityLogService.record({
+        tenantId,
+        conversationId,
+        type: 'PRODUCT_MATCH_SENT',
+        metadataJson: {
+          productCount: finalProductsToSend.length,
+          productIds: finalProductsToSend.map(p => p.id),
+          productNames: finalProductsToSend.map(p => p.name)
+        }
+      });
     }
   }
 
@@ -922,6 +996,24 @@ export class OrchestratorService {
     prompt += `5. NEVER respond as if you have lost track of the conversation or don't know what the customer is referring to.\n`;
     prompt += `VIOLATION OF THIS RULE IS NOT ALLOWED.\n`;
 
+    // =========================================================================
+    // MANDATORY PRODUCT CATALOG PRESENTATION & MULTI-PRODUCT DIRECTIVE
+    // =========================================================================
+    prompt += `\n=== MANDATORY PRODUCT CATALOG PRESENTATION & MULTI-PRODUCT DIRECTIVE ===\n`;
+    prompt += `1. MULTI-PRODUCT LISTING (CRITICAL): When the customer asks for a product list, catalog, available items, collection, or what products you have (e.g. "প্রোডাক্ট লিস্ট দিন", "আপনাদের কী কী প্রোডাক্ট আছে", "show product list", "catalog", "collection", "সবগুলো দেখান", "সব প্রোডাক্ট দেখান", "ছবি পাঠান"):\n`;
+    prompt += `   - You MUST list ALL matching products from the PRODUCT CATALOG below (from 1 up to 10 products).\n`;
+    prompt += `   - NEVER show or mention only 1 product when multiple products exist in the catalog!\n`;
+    prompt += `   - Format each product clearly with:\n`;
+    prompt += `     1. [Product Name] - Price: BDT [Price]\n`;
+    prompt += `        - Short description or key attributes\n`;
+    prompt += `        - Stock availability (if tracked)\n`;
+    prompt += `2. PRODUCT PHOTO DISPATCH: If the customer asks to see photos, pictures, images, or asks for the catalog/list with pictures (e.g., "ছবি দেখান", "ছবি পাঠান", "ছবি সহ প্রোডাক্ট লিস্ট দিন", "send photos", "show pictures", "সবগুলোর ছবি দিন"):\n`;
+    prompt += `   - Set "intent": "product_lookup".\n`;
+    prompt += `   - In "sendProductPhotoIds", provide an array of the Product IDs (from "[ID: ...]") for the products you are presenting (from 1 up to 10 products).\n`;
+    prompt += `   - The system will automatically dispatch high-resolution photos of these products directly to the customer's chat!\n`;
+    prompt += `3. HELPFUL CALL TO ACTION: Conclude your message by warmly inviting the customer to pick any item to place an order or ask any questions.\n`;
+    prompt += `VIOLATION OF THIS MULTI-PRODUCT DIRECTIVE IS STRICTLY FORBIDDEN.\n`;
+
     if (activeTags.length > 0) {
       prompt += `\n--- CONVERSATION TAGS RULES ---\n`;
       prompt += `The following tags are active. If the customer's query matches any of these tag rules, you MUST apply its instruction/prompt to compose your response and return the matched tag name inside the "matchedTags" JSON array. Ignore any tags not listed below:\n`;
@@ -1026,6 +1118,7 @@ export class OrchestratorService {
       prompt += `  "orderProposal": [ { "productNameGuess": "Product Name", "quantity": 1 } ],\n`;
     }
     prompt += `  "imageProductDescription": "short description of product seen in image",\n`;
+    prompt += `  "sendProductPhotoIds": ["id1", "id2"],\n`;
     prompt += `  "supportSignal": false,\n`;
     prompt += `  "supportReason": "general | complaint | refund_return | delivery_issue",\n`;
     prompt += `  "matchedTags": ["tag name 1", "tag name 2"]\n`;
@@ -1313,7 +1406,8 @@ export class OrchestratorService {
         products.forEach(p => {
           const attrs = (p.attributes as any) || {};
           const priceStr = (!p.price || Number(p.price) <= 0) ? 'Price on Request' : `BDT ${p.price.toString()}`;
-          prompt += `- ${p.name} | 💰 ${priceStr}`;
+          const photoBadge = p.imageUrl ? ' | 📸 [Photo Available]' : '';
+          prompt += `- [ID: ${p.id}] ${p.name} | 💰 ${priceStr}${photoBadge}`;
           if (p.sku) prompt += ` | SKU: ${p.sku}`;
           if (p.description) prompt += ` | 📝 ${p.description}`;
           if (p.trackInventory) prompt += ` | 📦 Stock: ${p.stockCount ?? 0}`;

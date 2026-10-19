@@ -86,6 +86,17 @@ export class WhatsappProcessor extends WorkerHost {
         }
       }
 
+      let parsedMediaContent: any = null;
+      if (typeof content === 'string') {
+        try {
+          parsedMediaContent = JSON.parse(content);
+        } catch {
+          parsedMediaContent = null;
+        }
+      } else if (typeof content === 'object' && content !== null) {
+        parsedMediaContent = content;
+      }
+
       // 3. Prepare payload for Meta Graph API
       const isMarketingType = type === 'marketing_template' || job.data.isMarketing === true || (type === 'template' && job.data.templateName);
       
@@ -108,6 +119,13 @@ export class WhatsappProcessor extends WorkerHost {
           language: { code: tLang },
           ...(tComp ? { components: tComp } : {})
         };
+      } else if (type === 'image' && parsedMediaContent) {
+        payload.type = 'image';
+        const mUrl = parsedMediaContent.mediaUrl || parsedMediaContent.url || '';
+        const appUrl = process.env.APP_URL || process.env.FRONTEND_URL || 'https://zinichat.com';
+        const fullLink = mUrl.startsWith('/') ? `${appUrl.replace(/\/$/, '')}${mUrl}` : mUrl;
+        const caption = parsedMediaContent.body || parsedMediaContent.caption || parsedMediaContent.text || undefined;
+        payload.image = { link: fullLink, ...(caption ? { caption } : {}) };
       } else {
         payload.type = type;
         payload[type] = content;
@@ -137,7 +155,13 @@ export class WhatsappProcessor extends WorkerHost {
         // Send via Baileys
         let textContent = '';
         let mediaPath = '';
-        if (typeof finalContentText === 'string') {
+        if (parsedMediaContent && (parsedMediaContent.mediaUrl || parsedMediaContent.url)) {
+          textContent = parsedMediaContent.body || parsedMediaContent.caption || parsedMediaContent.text || '';
+          const mUrl = parsedMediaContent.mediaUrl || parsedMediaContent.url;
+          const path = require('path');
+          const cleanUrl = mUrl.startsWith('/') ? mUrl.substring(1) : mUrl;
+          mediaPath = path.isAbsolute(mUrl) ? mUrl : path.join(process.cwd(), cleanUrl);
+        } else if (typeof finalContentText === 'string') {
           textContent = finalContentText;
         } else if (content) {
           textContent = content.body || '';

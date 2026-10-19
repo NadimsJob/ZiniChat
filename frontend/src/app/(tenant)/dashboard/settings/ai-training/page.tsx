@@ -57,7 +57,7 @@ export default function AiTrainingPage() {
     order_placement: { isEnabled: true, configJson: { requireExplicitConfirmation: true } },
     image_reading: { isEnabled: true, configJson: {} },
     support_detection: { isEnabled: false, configJson: { reasonCategories: ['general', 'complaint', 'refund_return', 'delivery_issue'] } },
-    product_matching: { isEnabled: false, configJson: { minMatchConfidence: 0.6 } }
+    product_matching: { isEnabled: false, configJson: { minMatchConfidence: 0.6, maxProductsToSend: 10 } }
   });
 
   // Q&A state
@@ -657,10 +657,10 @@ export default function AiTrainingPage() {
     },
     {
       type: 'product_matching',
-      titleEn: 'Product Photo Matching',
-      titleBn: 'প্রডাক্ট ফটো ম্যাচিং',
-      descEn: 'AI will match and send product photos from your catalog when a customer sends an image. (Uses Image Reading: 5 AI Responses per image)',
-      descBn: 'কাস্টমার পণ্যের ছবি পাঠালে ক্যাটালগ থেকে মিলিয়ে সঠিক প্রডাক্টের ছবি ও বিবরণ পাঠাবে। (ইমেজ রিডিং কোটা: প্রতি ইমেজে ৫টি এআই রেসপন্স)',
+      titleEn: 'Product Photo & Catalog Matching',
+      titleBn: 'প্রোডাক্ট ফটো ও ক্যাটালগ ম্যাচিং',
+      descEn: 'AI automatically matches and sends 1 to 10 product details and photos when a customer asks for a product list, catalog or sends an image.',
+      descBn: 'কাস্টমার প্রোডাক্টের লিস্ট চাইলে, ছবি দেখতে চাইলে বা কোনো ছবি পাঠালে এআই ক্যাটালগ থেকে মিলিয়ে ১ থেকে ১০টি প্রোডাক্টের বিবরণ ও ছবি একসাথে পাঠাবে।',
       allowed: canProductMatching
     }
   ];
@@ -1039,6 +1039,28 @@ export default function AiTrainingPage() {
                         } after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all`}></div>
                       </label>
                     </div>
+
+                    {tool.type === 'product_matching' && isAllowed && toolState.isEnabled && (
+                      <div className="mt-2.5 pt-2 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between gap-2">
+                        <span className="text-[11px] font-medium text-foreground">
+                          {language === 'en' ? 'Max items/photos sent at once:' : 'একবারে সর্বোচ্চ পাঠানো আইটেম/ছবি:'}
+                        </span>
+                        <select
+                          value={toolState.configJson?.maxProductsToSend ?? 10}
+                          onChange={(e) => handleToggleTool(tool.type, true, {
+                            ...toolState.configJson,
+                            maxProductsToSend: Number(e.target.value)
+                          })}
+                          className="bg-card border border-zinc-300 dark:border-zinc-700 rounded-lg px-2 py-0.5 text-xs font-semibold text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+                        >
+                          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+                            <option key={num} value={num} className="bg-card text-foreground">
+                              {num} {language === 'en' ? (num === 1 ? 'item' : 'items') : 'টি'}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
                   </div>
                 );
               })}

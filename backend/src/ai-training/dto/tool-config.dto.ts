@@ -18,6 +18,12 @@ export class ProductMatchingConfigDto {
   @Min(0, { message: 'minMatchConfidence must be >= 0' })
   @Max(1, { message: 'minMatchConfidence must be <= 1' })
   minMatchConfidence: number;
+
+  @IsOptional()
+  @IsNumber({}, { message: 'maxProductsToSend must be a number' })
+  @Min(1, { message: 'maxProductsToSend must be >= 1' })
+  @Max(10, { message: 'maxProductsToSend must be <= 10' })
+  maxProductsToSend?: number;
 }
 
 export class UpdateToolDto {

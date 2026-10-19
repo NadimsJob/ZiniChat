@@ -62,10 +62,28 @@ export class MessengerProcessor extends WorkerHost {
       if (type === 'text') {
         payload.message.text = finalContentText;
       } else {
-        // e.g., type === 'image', content === { url: '...' }
+        // e.g., type === 'image'
+        let mediaUrl = '';
+        if (typeof content === 'object' && content !== null) {
+          mediaUrl = content.url || content.mediaUrl || '';
+        } else if (typeof content === 'string') {
+          try {
+            const parsed = JSON.parse(content);
+            mediaUrl = parsed.url || parsed.mediaUrl || content;
+          } catch {
+            mediaUrl = content;
+          }
+        }
+
+        // If mediaUrl is relative (e.g. /uploads/products/...), prefix with APP_URL
+        if (mediaUrl && mediaUrl.startsWith('/')) {
+          const appUrl = process.env.APP_URL || process.env.FRONTEND_URL || 'https://zinichat.com';
+          mediaUrl = `${appUrl.replace(/\/$/, '')}${mediaUrl}`;
+        }
+
         payload.message.attachment = {
           type: type,
-          payload: { url: content.url, is_reusable: true }
+          payload: { url: mediaUrl, is_reusable: true }
         };
       }
 

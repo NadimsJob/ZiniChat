@@ -832,7 +832,7 @@ ${combinedText}`;
       include: { chunks: { take: 5 } },
       take: 5
     });
-    const products = await this.aiService.searchRelevantProducts(tenantId, message, 5);
+    const products = await this.aiService.searchRelevantProducts(tenantId, message, 10);
 
     // Fetch Active Labels/Tag Rules (PARITY WITH ORCHESTRATOR — was missing!)
     const activeLabels = await this.prisma.label.findMany({
@@ -889,6 +889,18 @@ ${combinedText}`;
     prompt += `3. If customer said NO / negative → acknowledge politely and ask how else you may assist.\n`;
     prompt += `4. NEVER respond as if you have lost track of what the customer is responding to.\n`;
     prompt += `VIOLATION OF THIS RULE IS NOT ALLOWED.\n`;
+
+    // MANDATORY PRODUCT CATALOG PRESENTATION & MULTI-PRODUCT DIRECTIVE
+    prompt += `\n=== MANDATORY PRODUCT CATALOG PRESENTATION & MULTI-PRODUCT DIRECTIVE ===\n`;
+    prompt += `1. MULTI-PRODUCT LISTING (CRITICAL): When the customer asks for a product list, catalog, available items, collection, or what products you have (e.g. "প্রোডাক্ট লিস্ট দিন", "আপনাদের কী কী প্রোডাক্ট আছে", "show product list", "catalog", "collection", "সবগুলো দেখান", "সব প্রোডাক্ট দেখান", "ছবি পাঠান"):\n`;
+    prompt += `   - You MUST list ALL matching products from the PRODUCT CATALOG below (from 1 up to 10 products).\n`;
+    prompt += `   - NEVER show or mention only 1 product when multiple products exist in the catalog!\n`;
+    prompt += `   - Format each product clearly with:\n`;
+    prompt += `     1. [Product Name] - Price: BDT [Price]\n`;
+    prompt += `        - Short description or key attributes\n`;
+    prompt += `        - Stock availability (if tracked)\n`;
+    prompt += `2. HELPFUL CALL TO ACTION: Conclude your message by warmly inviting the customer to pick any item or ask any questions.\n`;
+    prompt += `VIOLATION OF THIS MULTI-PRODUCT DIRECTIVE IS STRICTLY FORBIDDEN.\n`;
 
     // ── Labels / Tag Rules (was MISSING — now added for parity) ─────────────
     const tagsWithPrompts = activeLabels.filter(t => t.aiPrompt);
@@ -1083,7 +1095,8 @@ ${combinedText}`;
         products.forEach((p: any) => {
           const attrs = (p.attributes as any) || {};
           const priceStr = (!p.price || Number(p.price) <= 0) ? 'Price on Request' : `BDT ${p.price}`;
-          prompt += `- ${p.name} | 💰 ${priceStr}`;
+          const photoBadge = p.imageUrl ? ' | 📸 [Photo Available]' : '';
+          prompt += `- [ID: ${p.id}] ${p.name} | 💰 ${priceStr}${photoBadge}`;
           if (p.sku) prompt += ` | SKU: ${p.sku}`;
           if (p.description) prompt += ` | 📝 ${p.description}`;
           if (p.trackInventory) prompt += ` | 📦 Stock: ${p.stockCount ?? 0}`;

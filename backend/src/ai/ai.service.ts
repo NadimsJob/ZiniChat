@@ -748,7 +748,7 @@ export class AiService {
    * Dynamically search tenant products based on customer query to minimize token usage.
    * If query is generic greeting, returns empty array.
    */
-  async searchRelevantProducts(tenantId: string, queryText: string, limit = 5): Promise<any[]> {
+  async searchRelevantProducts(tenantId: string, queryText: string, limit = 10): Promise<any[]> {
     if (!tenantId || !queryText) return [];
 
     try {
@@ -760,11 +760,21 @@ export class AiService {
         return [];
       }
 
+      // Check if user is asking for product list, catalog, collection, or all products
+      const listTerms = [
+        'list', 'লিস্ট', 'তালিকা', 'সব', 'সকল', 'all', 'catalog', 'ক্যাটালগ', 'collection', 'কালেকশন',
+        'কি কি', 'কী কী', 'available', 'products', 'প্রোডাক্ট', 'আইটেম', 'items', 'ছবি', 'photo', 'photos',
+        'image', 'images', 'দাম', 'price', 'ক্যাটলগ', 'দেখাও', 'দেখান', 'show', 'menu', 'মেনু', 'সবগুলো',
+        'কালেকশান', 'কি আছে', 'কী আছে', 'what do you have', 'what you sell'
+      ];
+      const isListOrCatalogRequest = listTerms.some(term => cleanText.includes(term));
+      const targetLimit = isListOrCatalogRequest ? Math.max(limit, 10) : limit;
+
       // Extract significant search keywords (>2 chars)
       const keywords = cleanText
         .replace(/[^\w\s\u0980-\u09FF]/gi, ' ')
         .split(/\s+/)
-        .filter(w => w.length > 2 && !['the', 'and', 'for', 'you', 'have', 'what', 'price', 'cost', 'dam', 'koto', 'naki', 'ache'].includes(w));
+        .filter(w => w.length > 2 && !['the', 'and', 'for', 'you', 'have', 'what', 'price', 'cost', 'dam', 'koto', 'naki', 'ache', 'apnader', 'আপনাদের', 'আছে'].includes(w));
 
       const orConditions: any[] = [];
       keywords.forEach(kw => {
@@ -781,13 +791,13 @@ export class AiService {
             isActive: true,
             OR: orConditions
           },
-          take: limit * 2
+          take: targetLimit * 2
         });
 
         // Also search within custom attributes JSON string for any keyword matches
         const allActiveProducts = await this.prisma.product.findMany({
           where: { tenantId, isActive: true },
-          take: 30
+          take: 40
         });
 
         const attrMatched = allActiveProducts.filter(p => {
@@ -804,18 +814,19 @@ export class AiService {
         });
 
         if (combined.length > 0) {
-          return combined.slice(0, limit);
+          return combined.slice(0, targetLimit);
         }
       }
 
-      // Fallback: If query mentions product/catalog terms, return top `limit` products
+      // Fallback: If query mentions product/catalog terms or list request, return top `targetLimit` products
       const productIntentTerms = ['product', 'item', 'catalog', 'price', 'list', 'buy', 'order', 'room', 'property', 'doctor', 'course', 'package', 'shipping', 'দাম', 'প্রোডাক্ট', 'মাল', 'অর্ডার', 'ক্যাটালগ', 'তালিকা', 'সার্ভিস', 'service'];
       const looksLikeProductQuery = productIntentTerms.some(term => cleanText.includes(term));
 
-      if (looksLikeProductQuery) {
+      if (looksLikeProductQuery || isListOrCatalogRequest) {
         return await this.prisma.product.findMany({
           where: { tenantId, isActive: true },
-          take: limit
+          take: targetLimit,
+          orderBy: { createdAt: 'desc' }
         });
       }
 
