@@ -1529,10 +1529,10 @@ export default function InboxPage() {
         (() => {
           const selectedComment = commentLogs.find(c => c.commentId === selectedCommentId);
           return selectedComment ? (
-            <div className={`min-w-0 bg-background md:bg-card md:border border-border/80 md:shadow-sm dark:shadow-[0_0_15px_rgba(0,0,0,0.2)] md:rounded-2xl overflow-hidden ${
+            <div className={`flex-1 flex-col min-w-0 bg-background md:bg-card md:border border-border/80 md:shadow-sm dark:shadow-[0_0_15px_rgba(0,0,0,0.2)] md:rounded-2xl overflow-hidden ${
               mobilePanelView === 'chat' 
-                ? 'fixed inset-0 z-[55] flex flex-col h-[100dvh] md:static md:h-auto md:flex-1 md:z-auto' 
-                : 'hidden md:flex md:flex-1'
+                ? 'fixed inset-0 z-[55] flex h-[100dvh] md:static md:h-full md:z-auto' 
+                : 'hidden md:flex md:h-full'
             }`}>
               {/* Header */}
               <div className="h-14 px-3 md:px-4 border-b border-border bg-surface/80 backdrop-blur-xl flex items-center justify-between shrink-0 shadow-2xs">
@@ -1691,12 +1691,12 @@ export default function InboxPage() {
           );
         })()
       ) : selectedConvId && activeConv ? (
-        <div className={`min-w-0 bg-background md:bg-card md:border border-zinc-300 dark:border-zinc-700/80 md:shadow-sm dark:shadow-[0_0_15px_rgba(0,0,0,0.2)] md:rounded-2xl overflow-hidden ${
+        <div className={`flex-1 flex-col min-w-0 bg-background md:bg-card md:border border-zinc-300 dark:border-zinc-700/80 md:shadow-sm dark:shadow-[0_0_15px_rgba(0,0,0,0.2)] md:rounded-2xl overflow-hidden ${
           // On mobile: take full screen as fixed overlay (WhatsApp-style) so bottom bar doesn't cover or push typing box
           // On desktop: standard flex-1 column
           mobilePanelView === 'chat' 
-            ? 'fixed inset-0 z-[55] flex flex-col h-[100dvh] md:static md:h-auto md:flex-1 md:z-auto' 
-            : 'hidden md:flex md:flex-1'
+            ? 'fixed inset-0 z-[55] flex h-[100dvh] md:static md:h-full md:z-auto' 
+            : 'hidden md:flex md:h-full'
         }`}>
           
           {/* Header */}
