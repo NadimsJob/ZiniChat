@@ -1351,6 +1351,73 @@ describe('OrchestratorService', () => {
       );
     });
   });
+
+  describe('Product Photo Deduplication & Order Flow Suppression', () => {
+    it('should skip photo matching when user expresses order intent without asking for pictures', async () => {
+      const classification: any = {
+        intent: 'order_intent',
+        replyText: 'আপনার অর্ডারটি কনফার্ম করার জন্য তথ্য দিন',
+        imageProductDescription: 'টি শার্ট',
+        sendProductPhotoIds: ['p1', 'p2']
+      };
+
+      await (service as any).handleProductMatching(
+        'tenant1',
+        'c1',
+        classification,
+        0.6,
+        10,
+        'ai1',
+        'টি শার্ট নিব'
+      );
+
+      // Verify no outbound photo messages were saved
+      expect(inboxService.saveOutboundMessage).not.toHaveBeenCalled();
+    });
+
+    it('should deduplicate and skip already sent photos in conversation unless user explicitly demands resend', async () => {
+      prismaService.product.findMany.mockResolvedValue([
+        { id: 'p1', name: 'Black T-Shirt', price: 500, imageUrl: 'https://example.com/black.jpg', isActive: true },
+        { id: 'p2', name: 'White T-Shirt', price: 600, imageUrl: 'https://example.com/white.jpg', isActive: true }
+      ]);
+
+      // p1 was already sent previously
+      prismaService.message.findMany.mockResolvedValue([
+        {
+          id: 'm_prev_1',
+          type: 'image',
+          content: JSON.stringify({ productId: 'p1', mediaUrl: 'https://example.com/black.jpg' })
+        }
+      ]);
+
+      const classification: any = {
+        intent: 'product_lookup',
+        replyText: 'এখানে টি শার্টের ছবি দেওয়া হলো',
+        sendProductPhotoIds: ['p1', 'p2']
+      };
+
+      await (service as any).handleProductMatching(
+        'tenant1',
+        'c1',
+        classification,
+        0.6,
+        10,
+        'ai1',
+        'টি শার্টের ছবি দেখান'
+      );
+
+      // Only p2 should be dispatched (p1 was skipped because it was already sent)
+      expect(inboxService.saveOutboundMessage).toHaveBeenCalledTimes(1);
+      expect(inboxService.saveOutboundMessage).toHaveBeenCalledWith(
+        'tenant1',
+        'c1',
+        expect.stringContaining('White T-Shirt'),
+        'image',
+        undefined,
+        'ai1'
+      );
+    });
+  });
 });
 
 

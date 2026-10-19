@@ -910,17 +910,16 @@ ${combinedText}`;
     prompt += `5. NEVER ask the customer "Which product are you talking about?" or "Please tell me the product name" when a product was just quoted or presented.\n`;
     prompt += `VIOLATION OF THIS DIRECTIVE IS STRICTLY FORBIDDEN.\n`;
 
-    // MANDATORY PRODUCT CATALOG PRESENTATION & MULTI-PRODUCT DIRECTIVE
-    prompt += `\n=== MANDATORY PRODUCT CATALOG PRESENTATION & MULTI-PRODUCT DIRECTIVE ===\n`;
-    prompt += `1. MULTI-PRODUCT LISTING (CRITICAL): When the customer asks for a product list, catalog, available items, collection, or what products you have (e.g. "প্রোডাক্ট লিস্ট দিন", "আপনাদের কী কী প্রোডাক্ট আছে", "show product list", "catalog", "collection", "সবগুলো দেখান", "সব প্রোডাক্ট দেখান", "ছবি পাঠান"):\n`;
-    prompt += `   - You MUST list ALL matching products from the PRODUCT CATALOG below (from 1 up to 10 products).\n`;
-    prompt += `   - NEVER show or mention only 1 product when multiple products exist in the catalog!\n`;
-    prompt += `   - Format each product clearly with:\n`;
-    prompt += `     1. [Product Name] - Price: BDT [Price]\n`;
-    prompt += `        - Short description or key attributes\n`;
-    prompt += `        - Stock availability (if tracked)\n`;
-    prompt += `2. HELPFUL CALL TO ACTION: Conclude your message by warmly inviting the customer to pick any item or ask any questions.\n`;
-    prompt += `VIOLATION OF THIS MULTI-PRODUCT DIRECTIVE IS STRICTLY FORBIDDEN.\n`;
+    // MANDATORY PRODUCT CATALOG PRESENTATION & PHOTO DISPATCH DIRECTIVES
+    prompt += `\n=== MANDATORY PRODUCT CATALOG PRESENTATION & PHOTO DISPATCH DIRECTIVES ===\n`;
+    prompt += `1. MULTI-PRODUCT LISTING: When the customer asks for a product list, catalog, available items, collection, or what products you have (e.g. "প্রোডাক্ট লিস্ট দিন", "আপনাদের কী কী প্রোডাক্ট আছে", "show product list", "catalog", "collection", "সবগুলো দেখান", "সব প্রোডাক্ট দেখান", "ছবি পাঠান"):\n`;
+    prompt += `   - You MUST list matching products from the PRODUCT CATALOG below (from 1 up to 10 products).\n`;
+    prompt += `   - Format each product clearly with Name, Price, and Short description.\n`;
+    prompt += `2. NEVER SEND PHOTOS ON ORDER INTENT ("নিব / অর্ডার করব"): When the customer says "নিব", "অর্ডার করব", "নিতে চাই", "কিনব", or is providing delivery details (name, phone, address), their intent is to BUY, NOT to browse. Do NOT send or recommend photos during ordering. Focus entirely on order details and confirmation.\n`;
+    prompt += `3. DO NOT RE-SEND ALREADY SENT PHOTOS ("একবার পাঠালে আর পাঠাবে না"): If a product photo was already sent earlier in the conversation history, do NOT show it again. Tell the customer politely: "প্রোডাক্টের ছবিটি ইতিমধ্যে উপরে পাঠানো হয়েছে, দয়া করে একটু উপরে স্ক্রল করে দেখে নিন। আর কোনো তথ্য জানার থাকলে বলুন।"\n`;
+    prompt += `4. ONLY SEND REMAINING UNSENT PHOTOS: If the customer asks for other or more pictures ("বাকিগুলো দেখান", "আরও ছবি দিন"), only mention items whose photos have NOT been sent yet.\n`;
+    prompt += `5. RESEND ONLY ON EXPLICIT DEMAND: Only if the customer explicitly and insistently demands to re-send the picture ("আবার পাঠান", "আবার দিন", "আরেকবার পাঠান", "send again", "resend"), only then send that photo.\n`;
+    prompt += `VIOLATION OF THIS PHOTO DISPATCH DIRECTIVE IS STRICTLY FORBIDDEN.\n`;
 
     // ── Labels / Tag Rules (for Simulator parity) ───────────────────────────
     const tagsWithPrompts = activeLabels.filter(t => t.aiPrompt);

@@ -1169,6 +1169,18 @@ export class OrchestratorService {
     ];
     const isPhotoOrListInquiry = photoOrListTerms.some(term => lowerUserText.includes(term));
 
+    // RULE 1: Never dispatch photos during order placement / buying intent ("নিব / অর্ডার করব / confirm")
+    // If the customer is ordering, buying, or confirming, their goal is checkout, NOT receiving photos!
+    const isOrdering = ['order_intent', 'order_confirmation'].includes(classification.intent);
+    const orderKeywords = ['নিব', 'নিতে চাই', 'অর্ডার', 'কিনব', 'কিনতে চাই', 'order', 'buy', 'confirm'];
+    const isOrderAction = isOrdering || orderKeywords.some(k => lowerUserText.includes(k));
+    const explicitPhotoRequest = ['ছবি', 'photo', 'photos', 'pic', 'pics', 'picture', 'pictures', 'image', 'images'].some(k => lowerUserText.includes(k));
+
+    if (isOrderAction && !explicitPhotoRequest) {
+      this.logger.log(`Skipping product photo matching for conversation ${conversationId}: Customer is in ordering flow without explicit photo request.`);
+      return;
+    }
+
     if (!searchQuery && !isExplicitPhotoLookup && !hasExplicitPhotoIds && !isPhotoOrListInquiry) {
       return;
     }
@@ -1260,8 +1272,51 @@ export class OrchestratorService {
       matchedProducts = allProductsWithImages.slice(0, maxPhotos);
     }
 
+    // RULE 2: Photo Deduplication Check Against Conversation History
+    // "একবার পাঠালে ওই একই ইমেজ আর পাঠাবে না"
+    const sentImageMessages = await this.prisma.message.findMany({
+      where: {
+        conversationId,
+        type: 'image'
+      },
+      select: {
+        content: true
+      }
+    });
+
+    const alreadySentProductIds = new Set<string>();
+    const alreadySentMediaUrls = new Set<string>();
+
+    for (const msg of sentImageMessages) {
+      if (typeof msg.content === 'string') {
+        try {
+          const parsed = JSON.parse(msg.content);
+          if (parsed.productId) alreadySentProductIds.add(String(parsed.productId));
+          if (parsed.mediaUrl) alreadySentMediaUrls.add(String(parsed.mediaUrl));
+        } catch {
+          if (msg.content.includes('"productId"')) {
+            const m = msg.content.match(/"productId"\s*:\s*"?([^",\s}]+)"?/);
+            if (m) alreadySentProductIds.add(m[1]);
+          }
+          if (msg.content.includes('"mediaUrl"')) {
+            const m = msg.content.match(/"mediaUrl"\s*:\s*"([^"]+)"/);
+            if (m) alreadySentMediaUrls.add(m[1]);
+          }
+        }
+      }
+    }
+
+    // RULE 3: Resend ONLY on explicit, insistent customer demand ("খুব জোর করে চাইলে তবেই দিন")
+    const isExplicitResendDemand = ['আবার পাঠান', 'আবার দিন', 'আরেকবার দিন', 'আরেকবার পাঠান', 'আবার দেখান', 'আরেকবার দেখান', 'send again', 'resend', 'show again'].some(k => lowerUserText.includes(k));
+
+    // Filter out products that have already been sent to this customer unless explicitly demanded
+    let productsToDispatch = matchedProducts;
+    if (!isExplicitResendDemand && (alreadySentProductIds.size > 0 || alreadySentMediaUrls.size > 0)) {
+      productsToDispatch = matchedProducts.filter(p => !alreadySentProductIds.has(String(p.id)) && (!p.imageUrl || !alreadySentMediaUrls.has(String(p.imageUrl))));
+    }
+
     // Limit to configured maxProductsToSend (1 to 10)
-    const finalProductsToSend = matchedProducts.slice(0, maxPhotos);
+    const finalProductsToSend = productsToDispatch.slice(0, maxPhotos);
 
     if (finalProductsToSend.length > 0) {
       this.logger.log(`Dispatching ${finalProductsToSend.length} product photo(s) (limit: ${maxPhotos}) to conversation ${conversationId}`);
@@ -1427,20 +1482,15 @@ export class OrchestratorService {
     // =========================================================================
     // MANDATORY PRODUCT CATALOG PRESENTATION & MULTI-PRODUCT DIRECTIVE
     // =========================================================================
-    prompt += `\n=== MANDATORY PRODUCT CATALOG PRESENTATION & MULTI-PRODUCT DIRECTIVE ===\n`;
-    prompt += `1. MULTI-PRODUCT LISTING (CRITICAL): When the customer asks for a product list, catalog, available items, collection, or what products you have (e.g. "প্রোডাক্ট লিস্ট দিন", "আপনাদের কী কী প্রোডাক্ট আছে", "show product list", "catalog", "collection", "সবগুলো দেখান", "সব প্রোডাক্ট দেখান", "ছবি পাঠান"):\n`;
-    prompt += `   - You MUST list ALL matching products from the PRODUCT CATALOG below (from 1 up to 10 products).\n`;
-    prompt += `   - NEVER show or mention only 1 product when multiple products exist in the catalog!\n`;
-    prompt += `   - Format each product clearly with:\n`;
-    prompt += `     1. [Product Name] - Price: BDT [Price]\n`;
-    prompt += `        - Short description or key attributes\n`;
-    prompt += `        - Stock availability (if tracked)\n`;
-    prompt += `2. PRODUCT PHOTO DISPATCH: If the customer asks to see photos, pictures, images, or asks for the catalog/list with pictures (e.g., "ছবি দেখান", "ছবি পাঠান", "ছবি সহ প্রোডাক্ট লিস্ট দিন", "send photos", "show pictures", "সবগুলোর ছবি দিন"):\n`;
-    prompt += `   - Set "intent": "product_lookup".\n`;
-    prompt += `   - In "sendProductPhotoIds", provide an array of the Product IDs (from "[ID: ...]") for the products you are presenting (from 1 up to 10 products).\n`;
-    prompt += `   - The system will automatically dispatch high-resolution photos of these products directly to the customer's chat!\n`;
-    prompt += `3. HELPFUL CALL TO ACTION: Conclude your message by warmly inviting the customer to pick any item to place an order or ask any questions.\n`;
-    prompt += `VIOLATION OF THIS MULTI-PRODUCT DIRECTIVE IS STRICTLY FORBIDDEN.\n`;
+    prompt += `\n=== MANDATORY PRODUCT CATALOG PRESENTATION & PHOTO DISPATCH DIRECTIVES ===\n`;
+    prompt += `1. MULTI-PRODUCT LISTING: When the customer asks for a product list, catalog, available items, collection, or what products you have (e.g. "প্রোডাক্ট লিস্ট দিন", "আপনাদের কী কী প্রোডাক্ট আছে", "show product list", "catalog", "collection", "সবগুলো দেখান", "সব প্রোডাক্ট দেখান", "ছবি পাঠান"):\n`;
+    prompt += `   - You MUST list matching products from the PRODUCT CATALOG below (from 1 up to 10 products).\n`;
+    prompt += `   - Format each product clearly with Name, Price, and Short description.\n`;
+    prompt += `2. NEVER SEND PHOTOS ON ORDER INTENT ("নিব / অর্ডার করব"): When the customer says "নিব", "অর্ডার করব", "নিতে চাই", "কিনব", or is providing delivery details (name, phone, address), their intent is to BUY, NOT to browse. You MUST set "sendProductPhotoIds": []! Do NOT send photos during ordering.\n`;
+    prompt += `3. DO NOT RE-SEND ALREADY SENT PHOTOS ("একবার পাঠালে আর পাঠাবে না"): If a product photo was already sent earlier in the conversation history, do NOT request it again in "sendProductPhotoIds". Tell the customer politely: "প্রোডাক্টের ছবিটি ইতিমধ্যে উপরে পাঠানো হয়েছে, দয়া করে একটু উপরে স্ক্রল করে দেখে নিন। আর কোনো তথ্য জানার থাকলে বলুন।"\n`;
+    prompt += `4. ONLY SEND REMAINING UNSENT PHOTOS: If the customer asks for other or more pictures ("বাকিগুলো দেখান", "আরও ছবি দিন"), only provide product IDs in "sendProductPhotoIds" for items whose photos have NOT been sent yet.\n`;
+    prompt += `5. RESEND ONLY ON EXPLICIT DEMAND: Only if the customer explicitly and insistently demands to re-send the picture ("আবার পাঠান", "আবার দিন", "আরেকবার পাঠান", "send again", "resend"), then and only then include that photo ID.\n`;
+    prompt += `VIOLATION OF THIS PHOTO DISPATCH DIRECTIVE IS STRICTLY FORBIDDEN.\n`;
 
     if (activeTags.length > 0) {
       prompt += `\n--- CONVERSATION TAGS RULES ---\n`;
