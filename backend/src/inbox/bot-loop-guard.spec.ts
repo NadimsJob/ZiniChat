@@ -168,4 +168,38 @@ describe('BotLoopGuard (InboxService)', () => {
     expect(isLoopDetected).toBe(false);
     expect(prismaService.conversation.update).not.toHaveBeenCalled();
   });
+
+  it('should NOT disable AI if 5 rapid messages are batch product photos (type: image)', async () => {
+    const baseTime = new Date();
+    prismaService.message.findMany.mockResolvedValue([
+      { id: 'm5', type: 'text', senderType: 'ai', createdAt: new Date(baseTime.getTime() - 0) },
+      { id: 'm4', type: 'image', senderType: 'ai', createdAt: new Date(baseTime.getTime() - 200) },
+      { id: 'm3', type: 'image', senderType: 'ai', createdAt: new Date(baseTime.getTime() - 400) },
+      { id: 'm2', type: 'image', senderType: 'ai', createdAt: new Date(baseTime.getTime() - 600) },
+      { id: 'm1', type: 'image', senderType: 'ai', createdAt: new Date(baseTime.getTime() - 800) },
+    ]);
+
+    const isLoopDetected = await service.checkBotLoopSafeguard('conv_photos');
+    expect(isLoopDetected).toBe(false);
+    expect(prismaService.conversation.update).not.toHaveBeenCalled();
+  });
+
+  it('should disable AI if external customer bot sends repeated identical auto-replies', async () => {
+    const baseTime = new Date();
+    prismaService.message.findMany.mockResolvedValue([
+      { id: 'm4', direction: 'inbound', type: 'text', content: 'We are currently away from the office.', createdAt: new Date(baseTime.getTime() - 0) },
+      { id: 'm3', direction: 'outbound', type: 'text', senderType: 'ai', createdAt: new Date(baseTime.getTime() - 2000) },
+      { id: 'm2', direction: 'inbound', type: 'text', content: 'We are currently away from the office.', createdAt: new Date(baseTime.getTime() - 4000) },
+      { id: 'm1', direction: 'inbound', type: 'text', content: 'We are currently away from the office.', createdAt: new Date(baseTime.getTime() - 6000) },
+      { id: 'm0', direction: 'outbound', type: 'text', senderType: 'ai', createdAt: new Date(baseTime.getTime() - 8000) },
+    ]);
+    prismaService.conversation.update.mockResolvedValue({ id: 'conv_ext_bot', tenantId: 'tenant_123', isAiEnabled: false });
+
+    const isLoopDetected = await service.checkBotLoopSafeguard('conv_ext_bot');
+    expect(isLoopDetected).toBe(true);
+    expect(prismaService.conversation.update).toHaveBeenCalledWith({
+      where: { id: 'conv_ext_bot' },
+      data: { isAiEnabled: false }
+    });
+  });
 });

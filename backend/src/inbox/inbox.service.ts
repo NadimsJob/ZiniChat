@@ -1431,26 +1431,75 @@ export class InboxService implements OnModuleInit {
 
   async checkBotLoopSafeguard(conversationId: string): Promise<boolean> {
     try {
-      const last5Messages = await this.prisma.message.findMany({
+      const recentMessages = await this.prisma.message.findMany({
         where: { conversationId },
         orderBy: { createdAt: 'desc' },
-        take: 5
+        take: 10
       });
 
-      if (last5Messages.length < 5) {
+      if (recentMessages.length < 5) {
         return false;
       }
 
-      const allAi = last5Messages.every(
+      // Filter out media/image messages (e.g. multi-product photo catalog dispatches)
+      // Batch product photos sent in a single customer inquiry turn must NEVER count as runaway bot loop
+      const nonMediaMessages = recentMessages.filter(
+        (m: any) => m.type !== 'image' && m.type !== 'audio' && m.type !== 'video'
+      );
+
+      if (nonMediaMessages.length < 5) {
+        return false;
+      }
+
+      const last5 = nonMediaMessages.slice(0, 5);
+
+      const allAi = last5.every(
         (m: any) => m.senderType === 'ai' || m.senderType === 'bot' || Boolean(m.aiAssistantId)
       );
 
       if (!allAi) {
+        // Also check: Is there a ping-pong loop with an external customer bot?
+        // E.g. alternating messages where customer bot sends the exact same text 3+ times in a row within 30s
+        const inboundTextMessages = recentMessages.filter((m: any) => m.direction === 'inbound' && m.type === 'text');
+        if (inboundTextMessages.length >= 3) {
+          const firstText = (typeof inboundTextMessages[0].content === 'string' ? inboundTextMessages[0].content : '').trim().toLowerCase();
+          const isIdenticalBotSpam = firstText.length > 5 && inboundTextMessages.slice(0, 3).every(
+            (m: any) => (typeof m.content === 'string' ? m.content : '').trim().toLowerCase() === firstText
+          );
+          const timeSpan = Math.abs(new Date(inboundTextMessages[0].createdAt).getTime() - new Date(inboundTextMessages[2].createdAt).getTime());
+          if (isIdenticalBotSpam && timeSpan <= 30000) {
+            const conversation = await this.prisma.conversation.update({
+              where: { id: conversationId },
+              data: { isAiEnabled: false }
+            });
+
+            this.logger.warn(`AI Auto-Reply paused due to external bot auto-responder ping-pong loop for conversation ${conversationId}`);
+
+            await this.notificationsService.createNotificationForTenantAdmins(
+              conversation.tenantId,
+              'AI Auto-Reply Paused',
+              'AI Auto-Reply paused: External automated bot auto-responder loop detected.',
+              'warning'
+            ).catch(() => {});
+
+            await this.activityLogService.record({
+              tenantId: conversation.tenantId,
+              conversationId,
+              contactId: conversation.contactId,
+              type: 'AI_HANDOVER',
+              actorUserId: undefined,
+              metadataJson: { isAiEnabled: false, reason: 'external_bot_loop_detected' }
+            }).catch(() => {});
+
+            return true;
+          }
+        }
+
         return false;
       }
 
-      const newestTime = new Date(last5Messages[0].createdAt).getTime();
-      const oldestTime = new Date(last5Messages[4].createdAt).getTime();
+      const newestTime = new Date(last5[0].createdAt).getTime();
+      const oldestTime = new Date(last5[4].createdAt).getTime();
       const timeDiffMs = Math.abs(newestTime - oldestTime);
 
       if (timeDiffMs <= 30000) {
