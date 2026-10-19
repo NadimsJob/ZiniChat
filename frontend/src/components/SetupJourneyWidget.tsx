@@ -18,6 +18,33 @@ import {
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+const checkIsDismissed = (tenantId?: string): boolean => {
+  if (typeof window === 'undefined') return false;
+  try {
+    if (Cookies.get('zinichat_setup_banner_dismissed') === 'true' || localStorage.getItem('zinichat_setup_banner_dismissed') === 'true') {
+      return true;
+    }
+    if (tenantId) {
+      if (Cookies.get(`zinichat_setup_banner_dismissed_${tenantId}`) === 'true' || localStorage.getItem(`zinichat_setup_banner_dismissed_${tenantId}`) === 'true') {
+        return true;
+      }
+    }
+  } catch {}
+  return false;
+};
+
+const markBannerAsDismissed = (tenantId?: string) => {
+  if (typeof window === 'undefined') return;
+  try {
+    Cookies.set('zinichat_setup_banner_dismissed', 'true', { expires: 365, path: '/' });
+    localStorage.setItem('zinichat_setup_banner_dismissed', 'true');
+    if (tenantId) {
+      Cookies.set(`zinichat_setup_banner_dismissed_${tenantId}`, 'true', { expires: 365, path: '/' });
+      localStorage.setItem(`zinichat_setup_banner_dismissed_${tenantId}`, 'true');
+    }
+  } catch {}
+};
+
 export default function SetupJourneyWidget({ 
   initialStatus 
 }: { 
@@ -28,6 +55,9 @@ export default function SetupJourneyWidget({
   const [status, setStatus] = useState<any>(initialStatus || null);
   const [dismissed, setDismissed] = useState(false);
   const [checkedInbox, setCheckedInbox] = useState(false);
+
+  // Check if banner was already dismissed or viewed in a previous session
+  const [wasDismissedAtMount] = useState<boolean>(() => checkIsDismissed(initialStatus?.tenantId));
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -62,9 +92,7 @@ export default function SetupJourneyWidget({
 
   const handleDismissCompleted = () => {
     setDismissed(true);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('zinichat_setup_banner_dismissed', 'true');
-    }
+    markBannerAsDismissed(status?.tenantId);
   };
 
   const handleInboxStepClick = () => {
@@ -73,8 +101,6 @@ export default function SetupJourneyWidget({
       localStorage.setItem('zinichat_inbox_visited', 'true');
     }
   };
-
-  if (loading) return null;
 
   const step1Done = Boolean(status?.hasConnectedChannel);
   const step2Done = Boolean(status?.hasConfiguredAi && (status?.aiTrainingScore >= 50));
@@ -115,26 +141,20 @@ export default function SetupJourneyWidget({
   const progressPercent = Math.round((completedCount / totalCount) * 100);
   const isAllCompleted = completedCount === totalCount;
 
-  // Clear dismissal if workspace is NOT completed so banner shows on every login
-  if (!isAllCompleted && typeof window !== 'undefined') {
-    try {
-      localStorage.removeItem('zinichat_setup_banner_dismissed');
-    } catch (e) {
-      // Ignore storage errors in restricted contexts
+  // Once 100% completed and displayed in this view session, mark as viewed in the background
+  // so that on subsequent reloads, navigation, or logins, it is never shown again!
+  useEffect(() => {
+    if (isAllCompleted) {
+      markBannerAsDismissed(status?.tenantId);
     }
-  }
+  }, [isAllCompleted, status?.tenantId]);
 
-  // If 100% completed and user explicitly dismissed the congratulations banner, hide it
+  if (loading) return null;
+
+  // If 100% completed and already viewed or dismissed, hide it permanently
   if (isAllCompleted) {
-    let isDismissed = false;
-    if (typeof window !== 'undefined') {
-      try {
-        isDismissed = localStorage.getItem('zinichat_setup_banner_dismissed') === 'true';
-      } catch (e) {
-        // Ignore storage errors
-      }
-    }
-    if (isDismissed || dismissed) return null;
+    const isDismissed = dismissed || wasDismissedAtMount || checkIsDismissed(status?.tenantId);
+    if (isDismissed) return null;
 
     return (
       <div className="w-full bg-gradient-to-r from-emerald-900/90 via-teal-900/90 to-emerald-950/90 border border-emerald-500/40 rounded-2xl p-4 shadow-lg backdrop-blur-xl mb-6 relative animate-in fade-in duration-500 flex items-center justify-between gap-3 text-white">

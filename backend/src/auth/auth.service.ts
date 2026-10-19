@@ -635,6 +635,7 @@ export class AuthService {
     if (productCount > 0) aiTrainingScore += 20;
 
     return {
+      tenantId,
       hasBusinessProfile: tenant?.isOnboarded || false,
       businessNature: tenant?.businessNature || null,
       hasConnectedChannel: channelCount > 0,
