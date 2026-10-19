@@ -6,10 +6,20 @@ import { useLanguage } from '@/components/LanguageProvider';
 import {
   ShoppingCart, Building2, Hotel, Cpu, Briefcase, Stethoscope, GraduationCap, Factory, PackageCheck, FileText, BookOpen, Clock, Calendar, Plus, Edit2, Trash2, X, Image as ImageIcon,
   Save, RefreshCw, ChevronLeft, ChevronRight, MapPin, Home, BedDouble,
-  Bath, Layers, Compass, Sofa, Users, Wifi, Tv, Coffee, Sparkles, Truck, Navigation, Weight
+  Bath, Layers, Compass, Sofa, Users, Wifi, Tv, Coffee, Sparkles, Truck, Navigation, Weight,
+  Tag, ZoomIn
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+function getProductImageUrl(url?: string | null): string {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) return url;
+  const baseUrl = API.endsWith('/') ? API.slice(0, -1) : API;
+  const path = url.startsWith('/') ? url : `/${url}`;
+  return `${baseUrl}${path}`;
+}
 
 const LISTING_TYPES = [
   { value: 'sale', labelEn: 'For Sale', labelBn: 'বিক্রয়' },
@@ -79,6 +89,7 @@ export default function ProductsPage() {
   const [newDefType, setNewDefType] = useState<'text' | 'textarea' | 'dropdown' | 'date' | 'number' | 'checkbox'>('text');
   const [newDefOptions, setNewDefOptions] = useState('');
   const [savingDef, setSavingDef] = useState(false);
+  const [activeLightboxImage, setActiveLightboxImage] = useState<{ url: string; name: string } | null>(null);
 
   useEffect(() => {
     fetchModeAndProducts();
@@ -205,7 +216,7 @@ export default function ProductsPage() {
         location: product.location || '',
         propertyStatus: (product.attributes as any)?.propertyStatus || 'available',
       });
-      setImagePreview(product.imageUrl ? `${API}${product.imageUrl}` : null);
+      setImagePreview(product.imageUrl ? getProductImageUrl(product.imageUrl) : null);
       const imgs: string[] = Array.isArray(product.images) ? product.images : [];
       setGalleryImages(imgs);
       setGallerySlide(0);
@@ -305,10 +316,11 @@ export default function ProductsPage() {
       }
 
       setIsEditing(false);
+      toast.success(formData.id ? (language === 'en' ? 'Product updated successfully' : 'প্রডাক্ট সফলভাবে আপডেট হয়েছে') : (language === 'en' ? 'Product created successfully' : 'নতুন প্রডাক্ট সফলভাবে যুক্ত হয়েছে'));
       fetchProducts();
     } catch (err) {
       console.error(err);
-      alert('Error saving');
+      toast.error(language === 'en' ? 'Failed to save product' : 'প্রডাক্ট সেভ করতে ব্যর্থ হয়েছে');
     } finally {
       setSaving(false);
     }
@@ -360,9 +372,11 @@ export default function ProductsPage() {
       const token = Cookies.get('access_token');
       await fetch(`${API}/products/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
       if (formData.id === id) setIsEditing(false);
+      toast.success(language === 'en' ? 'Product deleted successfully' : 'প্রডাক্ট সফলভাবে মুছে ফেলা হয়েছে');
       fetchProducts();
     } catch (err) {
       console.error(err);
+      toast.error(language === 'en' ? 'Failed to delete product' : 'প্রডাক্ট মুছতে ব্যর্থ হয়েছে');
     }
   };
 
@@ -376,6 +390,18 @@ export default function ProductsPage() {
     if (status === 'available') return 'text-emerald-400';
     if (status === 'rented') return 'text-orange-400';
     return 'text-red-400';
+  };
+
+  const getCategoryIcon = () => {
+    if (isHospitalityMode) return <Hotel className="w-5 h-5 text-amber-500" />;
+    if (isTechSoftwareMode) return <Cpu className="w-5 h-5 text-indigo-500" />;
+    if (isFinancialServiceMode) return <Briefcase className="w-5 h-5 text-emerald-500" />;
+    if (isHealthcareMode) return <Stethoscope className="w-5 h-5 text-teal-500" />;
+    if (isEducationMode) return <GraduationCap className="w-5 h-5 text-purple-500" />;
+    if (isManufacturingMode) return <Factory className="w-5 h-5 text-amber-500" />;
+    if (isLogisticsMode) return <Truck className="w-5 h-5 text-sky-500" />;
+    if (isPropertyMode) return <Building2 className="w-5 h-5 text-primary" />;
+    return <ShoppingCart className="w-5 h-5 text-primary" />;
   };
 
   const pageTitle = isPropertyMode
@@ -480,18 +506,10 @@ export default function ProductsPage() {
             <div className="px-3 py-2 bg-muted/70 dark:bg-zinc-800/80 border border-zinc-300 dark:border-zinc-700/80 rounded-xl text-[11px] font-bold text-muted-foreground flex items-center justify-between uppercase tracking-wider mb-2 shadow-xs">
               <div className="flex items-center gap-2 flex-1 min-w-0">
                 <span>
-                  {isPropertyMode ? (language === 'en' ? 'Property Name & Location' : 'প্রপার্টি নাম ও লোকেশন') :
-                   isHospitalityMode ? (language === 'en' ? 'Room / Suite Name' : 'রুম / স্যুট নাম') :
-                   isTechSoftwareMode ? (language === 'en' ? 'Plan / Software Name' : 'সফটওয়্যার ও প্রাইসিং প্ল্যান') :
-                   isFinancialServiceMode ? (language === 'en' ? 'Service Package' : 'সার্ভিস প্যাকেজ') :
-                   isHealthcareMode ? (language === 'en' ? 'Doctor / Specialty' : 'ডাক্তার ও সার্ভিস') :
-                   isEducationMode ? (language === 'en' ? 'Course / Batch' : 'কোর্স ও ব্যাচ') :
-                   isManufacturingMode ? (language === 'en' ? 'Wholesale Product' : 'পাইকারি প্রডাক্ট নাম') :
-                   isLogisticsMode ? (language === 'en' ? 'Route / Vehicle' : 'ফ্রেট রুট ও যানবাহন') :
-                   (language === 'en' ? 'Product Name & SKU' : 'প্রডাক্ট নাম ও আইডি')}
+                  {language === 'en' ? 'Product Info & Specifications' : 'প্রডাক্ট ছবি, তথ্য ও বিবরণ'}
                 </span>
               </div>
-              <div className="text-right shrink-0 pr-6">
+              <div className="text-right shrink-0 pr-2 sm:pr-4">
                 {isPropertyMode ? (language === 'en' ? 'Price / Rent' : 'মূল্য / ভাড়া') :
                  isHospitalityMode ? (language === 'en' ? 'Rate / Night' : 'ভাড়া / রাত') :
                  isTechSoftwareMode ? (language === 'en' ? 'Monthly Price' : 'মাসিক মূল্য') :
@@ -500,7 +518,7 @@ export default function ProductsPage() {
                  isEducationMode ? (language === 'en' ? 'Course Fee' : 'কোর্স ফি') :
                  isManufacturingMode ? (language === 'en' ? 'Unit Price' : 'একক মূল্য') :
                  isLogisticsMode ? (language === 'en' ? 'Freight Rate' : 'ভাড়া / রেট') :
-                 (language === 'en' ? 'Price' : 'মূল্য')}
+                 (language === 'en' ? 'Price & Actions' : 'মূল্য ও অ্যাকশন')}
               </div>
             </div>
           )}
@@ -518,6 +536,8 @@ export default function ProductsPage() {
             <div className="flex flex-col gap-1">
               {products.map(product => {
                 const imgs: string[] = Array.isArray(product.images) ? product.images : [];
+                const primaryImg = product.imageUrl || imgs[0];
+                const hasImage = Boolean(primaryImg);
                 const attrs = (product.attributes as any) || {};
                 const propertyStatus = attrs.propertyStatus || 'available';
                 const isSelected = formData.id === product.id && isEditing;
@@ -539,159 +559,242 @@ export default function ProductsPage() {
                   <div
                     key={product.id}
                     onClick={() => openEditor(product)}
-                    className={`group flex items-center gap-2 px-2.5 py-2 rounded-xl border cursor-pointer transition-all hover:shadow-sm
+                    className={`group flex items-center gap-2.5 sm:gap-3 px-3 py-2.5 rounded-xl border cursor-pointer transition-all hover:shadow-sm
                       ${isSelected ? 'border-primary bg-primary/5 ring-1 ring-primary/20' : 'border-border bg-card hover:border-border/80 hover:bg-muted/30'}`}
                   >
-                    {/* Thumbnail — only Property & Hospitality if image exists */}
-                    {(isPropertyMode || isHospitalityMode) && (imgs.length > 0 || product.imageUrl) ? (
-                      <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 border border-border">
+                    {/* Thumbnail — show for ANY category when image is present */}
+                    {hasImage ? (
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveLightboxImage({ url: getProductImageUrl(primaryImg), name: product.name });
+                        }}
+                        className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden shrink-0 border border-zinc-300 dark:border-zinc-700/80 bg-background/60 shadow-xs group/thumb cursor-zoom-in"
+                        title={language === 'en' ? 'Click to preview photo' : 'ছবি বড় করে দেখতে ক্লিক করুন'}
+                      >
                         <img
-                          src={`${API}${imgs[0] || product.imageUrl}`}
+                          src={getProductImageUrl(primaryImg)}
                           alt={product.name}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover/thumb:scale-110"
+                          onError={(e) => {
+                            (e.target as HTMLElement).style.display = 'none';
+                            const fallback = (e.target as HTMLElement).nextElementSibling as HTMLElement;
+                            if (fallback) fallback.style.display = 'flex';
+                          }}
                         />
+                        <div className="hidden w-full h-full items-center justify-center bg-muted/40">
+                          {getCategoryIcon()}
+                        </div>
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex items-center justify-center text-white">
+                          <ZoomIn className="w-4 h-4 drop-shadow" />
+                        </div>
+                        {imgs.length > 1 && (
+                          <span className="absolute bottom-1 right-1 px-1 py-0.2 bg-black/75 backdrop-blur-xs text-[9px] font-bold text-white rounded">
+                            +{imgs.length}
+                          </span>
+                        )}
                       </div>
                     ) : (
-                      /* Icon avatar instead of image for non-image categories */
-                      <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center text-white text-[10px] font-bold
-                        ${isHospitalityMode ? 'bg-amber-500/20 border border-amber-500/30' :
-                          isTechSoftwareMode ? 'bg-indigo-500/15 border border-indigo-500/30' :
-                          isFinancialServiceMode ? 'bg-emerald-500/15 border border-emerald-500/30' :
-                          isHealthcareMode ? 'bg-teal-500/15 border border-teal-500/30' :
-                          isEducationMode ? 'bg-purple-500/15 border border-purple-500/30' :
-                          isManufacturingMode ? 'bg-amber-500/15 border border-amber-500/30' :
-                          isLogisticsMode ? 'bg-sky-500/15 border border-sky-500/30' :
-                          isPropertyMode ? 'bg-primary/15 border border-primary/30' :
-                          'bg-primary/10 border border-primary/20'}`}
+                      /* Icon avatar when no image is available */
+                      <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-xl shrink-0 flex flex-col items-center justify-center border border-border/60 transition-colors
+                        ${isHospitalityMode ? 'bg-amber-500/10 border-amber-500/30 text-amber-500' :
+                          isTechSoftwareMode ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-500' :
+                          isFinancialServiceMode ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500' :
+                          isHealthcareMode ? 'bg-teal-500/10 border-teal-500/30 text-teal-500' :
+                          isEducationMode ? 'bg-purple-500/10 border-purple-500/30 text-purple-500' :
+                          isManufacturingMode ? 'bg-amber-500/10 border-amber-500/30 text-amber-500' :
+                          isLogisticsMode ? 'bg-sky-500/10 border-sky-500/30 text-sky-500' :
+                          isPropertyMode ? 'bg-primary/10 border-primary/30 text-primary' :
+                          'bg-primary/10 border-primary/20 text-primary'}`}
                       >
-                        {isHospitalityMode ? <Hotel className="w-4 h-4 text-amber-500" /> :
-                         isTechSoftwareMode ? <Cpu className="w-4 h-4 text-indigo-500" /> :
-                         isFinancialServiceMode ? <Briefcase className="w-4 h-4 text-emerald-500" /> :
-                         isHealthcareMode ? <Stethoscope className="w-4 h-4 text-teal-500" /> :
-                         isEducationMode ? <GraduationCap className="w-4 h-4 text-purple-500" /> :
-                         isManufacturingMode ? <Factory className="w-4 h-4 text-amber-500" /> :
-                         isLogisticsMode ? <Truck className="w-4 h-4 text-sky-500" /> :
-                         isPropertyMode ? <Building2 className="w-4 h-4 text-primary" /> :
-                         <ShoppingCart className="w-4 h-4 text-primary" />}
+                        {getCategoryIcon()}
+                        <span className="text-[8px] font-semibold tracking-tight opacity-70 mt-1 uppercase">
+                          {language === 'en' ? 'No Pic' : 'ছবি নেই'}
+                        </span>
                       </div>
                     )}
 
-                    {/* Name + Key Attributes */}
+                    {/* Name + Detailed Specifications */}
                     <div className="flex-1 min-w-0">
+                      {/* Row 1: Name, Active Status, SKU & Category Badges */}
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="font-semibold text-[13px] text-foreground truncate max-w-[160px]">{product.name}</span>
+                        <span className="font-bold text-[13px] sm:text-[14px] text-foreground hover:text-primary transition-colors truncate max-w-full sm:max-w-md">
+                          {product.name}
+                        </span>
+
+                        {/* Active Status Badge */}
+                        {product.isActive ? (
+                          <span className="px-1.5 py-0.2 text-[9px] font-extrabold rounded bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                            {language === 'en' ? 'ACTIVE' : 'সক্রিয়'}
+                          </span>
+                        ) : (
+                          <span className="px-1.5 py-0.2 text-[9px] font-extrabold rounded bg-zinc-800 text-zinc-400 border border-zinc-700">
+                            {language === 'en' ? 'INACTIVE' : 'নিষ্ক্রিয়'}
+                          </span>
+                        )}
+
+                        {/* SKU Badge */}
+                        {product.sku && (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.2 text-[10px] font-mono font-medium rounded bg-muted/80 text-muted-foreground border border-border">
+                            <Tag className="w-2.5 h-2.5 opacity-70" />
+                            SKU: {product.sku}
+                          </span>
+                        )}
 
                         {/* Category-specific badge/tag */}
                         {isPropertyMode && product.listingType && (
-                          <span className={`px-1.5 py-0.5 text-[9px] font-bold rounded border ${getListingBadge(product.listingType)}`}>
+                          <span className={`px-1.5 py-0.2 text-[9px] font-bold rounded border ${getListingBadge(product.listingType)}`}>
                             {product.listingType.toUpperCase()}
                           </span>
                         )}
                         {isHospitalityMode && attrs.roomType && (
-                          <span className="px-1.5 py-0.5 text-[9px] font-bold rounded border bg-amber-500/10 text-amber-500 border-amber-500/20">
+                          <span className="px-1.5 py-0.2 text-[9px] font-bold rounded border bg-amber-500/10 text-amber-500 border-amber-500/20">
                             {String(attrs.roomType).toUpperCase()}
                           </span>
                         )}
                         {isTechSoftwareMode && attrs.tier && (
-                          <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-indigo-500/10 text-indigo-500">
+                          <span className="px-1.5 py-0.2 text-[9px] font-bold rounded bg-indigo-500/10 text-indigo-500">
                             {String(attrs.tier).toUpperCase()}
                           </span>
                         )}
-                        {!product.isActive && !isPropertyMode && (
-                          <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-muted text-muted-foreground">INACTIVE</span>
-                        )}
                       </div>
 
-                      {/* Key fields row */}
-                      <div className="flex items-center gap-2 flex-wrap mt-0.5 text-[10px] text-muted-foreground">
+                      {/* Row 2: Product Description (Gives instant understanding without opening editor!) */}
+                      {product.description && (
+                        <p className="text-[11px] text-muted-foreground/90 line-clamp-1 sm:line-clamp-2 mt-0.5 leading-relaxed">
+                          {product.description}
+                        </p>
+                      )}
+
+                      {/* Row 3: Key fields, Stock Status & Dynamic Specifications */}
+                      <div className="flex items-center gap-1.5 flex-wrap mt-1 text-[10px]">
+                        {/* Stock / Inventory */}
+                        {product.trackInventory ? (
+                          product.stockCount > 0 ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                              {language === 'en' ? `${product.stockCount} in stock` : `স্টক: ${product.stockCount} টি`}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-bold bg-rose-500/10 text-rose-500 border border-rose-500/20">
+                              <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                              {language === 'en' ? 'Out of stock' : 'স্টক শেষ'}
+                            </span>
+                          )
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md font-medium bg-muted/60 text-muted-foreground border border-border/50">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/70" />
+                            {language === 'en' ? 'Unlimited Stock' : 'আনলিমিটেড স্টক'}
+                          </span>
+                        )}
+
+                        {/* Vertical Mode Attributes */}
                         {isPropertyMode && (
                           <>
-                            {product.location && <span className="flex items-center gap-0.5"><MapPin className="w-2.5 h-2.5" />{product.location}</span>}
-                            {attrs.area && <span className="flex items-center gap-0.5"><Layers className="w-2.5 h-2.5" />{attrs.area} sqft</span>}
-                            {attrs.bedrooms && <span className="flex items-center gap-0.5"><BedDouble className="w-2.5 h-2.5" />{attrs.bedrooms} BR</span>}
-                            {attrs.bathrooms && <span>{attrs.bathrooms} Ba</span>}
-                            <span className={`font-medium ${getStatusColor(propertyStatus)}`}>● {propertyStatus}</span>
+                            {product.location && <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-muted/50 border border-border"><MapPin className="w-2.5 h-2.5 text-primary" />{product.location}</span>}
+                            {attrs.area && <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-muted/50 border border-border"><Layers className="w-2.5 h-2.5" />{attrs.area} sqft</span>}
+                            {attrs.bedrooms && <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-muted/50 border border-border"><BedDouble className="w-2.5 h-2.5" />{attrs.bedrooms} BR</span>}
+                            {attrs.bathrooms && <span className="px-1.5 py-0.5 rounded bg-muted/50 border border-border">{attrs.bathrooms} Ba</span>}
+                            <span className={`font-semibold ${getStatusColor(propertyStatus)}`}>● {propertyStatus}</span>
                           </>
                         )}
                         {isHospitalityMode && (
                           <>
-                            {attrs.capacity && <span className="flex items-center gap-0.5"><Users className="w-2.5 h-2.5 text-amber-500" />Max {attrs.capacity}</span>}
-                            {attrs.bedType && <span className="flex items-center gap-0.5"><BedDouble className="w-2.5 h-2.5 text-amber-500" />{attrs.bedType}</span>}
-                            {attrs.amenities && <span className="truncate max-w-[100px]">{typeof attrs.amenities === 'string' ? attrs.amenities.split(',').slice(0,2).join(', ') : ''}</span>}
+                            {attrs.capacity && <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20"><Users className="w-2.5 h-2.5" />Max {attrs.capacity}</span>}
+                            {attrs.bedType && <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-muted/50 border border-border"><BedDouble className="w-2.5 h-2.5 text-amber-500" />{attrs.bedType}</span>}
+                            {attrs.amenities && <span className="truncate max-w-[120px] text-muted-foreground">{typeof attrs.amenities === 'string' ? attrs.amenities.split(',').slice(0,2).join(', ') : ''}</span>}
                           </>
                         )}
                         {isTechSoftwareMode && (
                           <>
-                            {attrs.features && <span className="truncate max-w-[140px]">{Array.isArray(attrs.features) ? attrs.features.slice(0,2).join(', ') : String(attrs.features).substring(0, 40)}</span>}
-                            {attrs.maxUsers && <span className="flex items-center gap-0.5"><Users className="w-2.5 h-2.5" />Max {attrs.maxUsers}</span>}
+                            {attrs.maxUsers && <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-500 border border-indigo-500/20"><Users className="w-2.5 h-2.5" />Max {attrs.maxUsers} Users</span>}
+                            {attrs.features && <span className="truncate max-w-[160px] text-muted-foreground">{Array.isArray(attrs.features) ? attrs.features.slice(0,2).join(', ') : String(attrs.features).substring(0, 40)}</span>}
                           </>
                         )}
                         {isFinancialServiceMode && (
                           <>
-                            {attrs.scope && <span className="truncate max-w-[140px] flex items-center gap-0.5"><Briefcase className="w-2.5 h-2.5 text-emerald-500 shrink-0" />{String(attrs.scope)}</span>}
-                            {attrs.duration && <span className="flex items-center gap-0.5"><Clock className="w-2.5 h-2.5" />{attrs.duration}</span>}
+                            {attrs.scope && <span className="truncate max-w-[140px] flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"><Briefcase className="w-2.5 h-2.5 shrink-0" />{String(attrs.scope)}</span>}
+                            {attrs.duration && <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-muted/50 border border-border"><Clock className="w-2.5 h-2.5" />{attrs.duration}</span>}
                           </>
                         )}
                         {isHealthcareMode && (
                           <>
-                            {(attrs.specialty || attrs.specialization) && <span className="flex items-center gap-0.5"><Stethoscope className="w-2.5 h-2.5 text-teal-500" />{String(attrs.specialty || attrs.specialization)}</span>}
-                            {attrs.visitingHours && <span className="flex items-center gap-0.5"><Clock className="w-2.5 h-2.5" />{attrs.visitingHours}</span>}
+                            {(attrs.specialty || attrs.specialization) && <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-teal-500/10 text-teal-500 border border-teal-500/20"><Stethoscope className="w-2.5 h-2.5" />{String(attrs.specialty || attrs.specialization)}</span>}
+                            {attrs.visitingHours && <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-muted/50 border border-border"><Clock className="w-2.5 h-2.5" />{attrs.visitingHours}</span>}
                           </>
                         )}
                         {isEducationMode && (
                           <>
-                            {(attrs.duration || attrs.courseDuration) && <span className="flex items-center gap-0.5"><Clock className="w-2.5 h-2.5 text-purple-500" />{String(attrs.duration || attrs.courseDuration)}</span>}
-                            {attrs.batchSchedule && <span className="flex items-center gap-0.5"><Calendar className="w-2.5 h-2.5" />{attrs.batchSchedule}</span>}
-                            {attrs.instructor && <span>{attrs.instructor}</span>}
+                            {(attrs.duration || attrs.courseDuration) && <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-500 border border-purple-500/20"><Clock className="w-2.5 h-2.5" />{String(attrs.duration || attrs.courseDuration)}</span>}
+                            {attrs.batchSchedule && <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-muted/50 border border-border"><Calendar className="w-2.5 h-2.5" />{attrs.batchSchedule}</span>}
                           </>
                         )}
                         {isManufacturingMode && (
                           <>
-                            {(attrs.moq || attrs.minimumOrderQty) && <span className="flex items-center gap-0.5"><PackageCheck className="w-2.5 h-2.5 text-amber-500" />MOQ: {String(attrs.moq || attrs.minimumOrderQty)}</span>}
-                            {attrs.material && <span>{attrs.material}</span>}
-                            {attrs.leadTime && <span className="flex items-center gap-0.5"><Clock className="w-2.5 h-2.5" />{attrs.leadTime}</span>}
+                            {(attrs.moq || attrs.minimumOrderQty) && <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20"><PackageCheck className="w-2.5 h-2.5" />MOQ: {String(attrs.moq || attrs.minimumOrderQty)}</span>}
+                            {attrs.leadTime && <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-muted/50 border border-border"><Clock className="w-2.5 h-2.5" />{attrs.leadTime}</span>}
                           </>
                         )}
                         {isLogisticsMode && (
                           <>
-                            {(attrs.route || attrs.originDestination) && <span className="flex items-center gap-0.5"><Navigation className="w-2.5 h-2.5 text-sky-500 shrink-0" />{String(attrs.route || attrs.originDestination)}</span>}
-                            {(attrs.capacity || attrs.vehicleType) && <span className="flex items-center gap-0.5"><Truck className="w-2.5 h-2.5 text-sky-500 shrink-0" />{String(attrs.capacity || attrs.vehicleType)}</span>}
+                            {(attrs.route || attrs.originDestination) && <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-500 border border-sky-500/20"><Navigation className="w-2.5 h-2.5 shrink-0" />{String(attrs.route || attrs.originDestination)}</span>}
+                            {(attrs.capacity || attrs.vehicleType) && <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-muted/50 border border-border"><Truck className="w-2.5 h-2.5 text-sky-500 shrink-0" />{String(attrs.capacity || attrs.vehicleType)}</span>}
                           </>
                         )}
-                        {/* Default retail */}
-                        {!isPropertyMode && !isHospitalityMode && !isTechSoftwareMode && !isFinancialServiceMode && !isHealthcareMode && !isEducationMode && !isManufacturingMode && !isLogisticsMode && (
-                          <>
-                            {product.sku && <span>SKU: {product.sku}</span>}
-                            {product.trackInventory && (
-                              <span className={`font-medium ${product.stockCount > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                                Stock: {product.stockCount}
-                              </span>
-                            )}
-                          </>
-                        )}
+
+                        {/* Custom Dynamic Fields / Attributes Pills (Size, Color, Brand, Fabric, etc.) */}
+                        {attrs && typeof attrs === 'object' && Object.entries(attrs).filter(([k, v]) => 
+                          !['propertyStatus', 'roomType', 'tier', 'scope', 'duration', 'specialty', 'specialization', 'visitingHours', 'courseDuration', 'batchSchedule', 'instructor', 'moq', 'minimumOrderQty', 'material', 'leadTime', 'route', 'originDestination', 'capacity', 'vehicleType', 'features', 'maxUsers', 'bedType', 'amenities', 'area', 'bedrooms', 'bathrooms'].includes(k) &&
+                          v !== '' && v !== null && v !== undefined &&
+                          typeof v !== 'object'
+                        ).slice(0, 4).map(([k, v]) => (
+                          <span key={k} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-zinc-200/70 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700/60 text-[10px]">
+                            <span className="font-semibold text-muted-foreground capitalize">{k}:</span>
+                            <span className="font-bold text-foreground">{String(v)}</span>
+                          </span>
+                        ))}
                       </div>
                     </div>
 
-                    {/* Price + Delete */}
-                    <div className="flex items-center gap-1.5 shrink-0 ml-auto">
-                      <div className={`text-right
-                        ${isHospitalityMode ? 'text-amber-500' :
-                          isTechSoftwareMode ? 'text-indigo-500' :
-                          isFinancialServiceMode ? 'text-emerald-500' :
-                          isHealthcareMode ? 'text-teal-500' :
-                          isEducationMode ? 'text-purple-500' :
-                          isManufacturingMode ? 'text-amber-500' :
-                          isLogisticsMode ? 'text-sky-500' :
-                          'text-primary'}`}
-                      >
-                        {priceDisplay}
+                    {/* Price & Quick Actions */}
+                    <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-auto pl-2">
+                      <div className="text-right">
+                        <div className={`font-black text-[13px] sm:text-[15px]
+                          ${isHospitalityMode ? 'text-amber-500' :
+                            isTechSoftwareMode ? 'text-indigo-500' :
+                            isFinancialServiceMode ? 'text-emerald-500' :
+                            isHealthcareMode ? 'text-teal-500' :
+                            isEducationMode ? 'text-purple-500' :
+                            isManufacturingMode ? 'text-amber-500' :
+                            isLogisticsMode ? 'text-sky-500' :
+                            'text-primary'}`}
+                        >
+                          {priceDisplay}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground hidden sm:block">
+                          {product.createdAt ? new Date(product.createdAt).toLocaleDateString(language === 'bn' ? 'bn-BD' : 'en-US', { day: 'numeric', month: 'short' }) : ''}
+                        </div>
                       </div>
-                      <button
-                        onClick={(e) => handleDelete(product.id, e)}
-                        className="p-1.5 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+
+                      {/* Action buttons */}
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); openEditor(product); }}
+                          className="p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-colors cursor-pointer"
+                          title={language === 'en' ? 'Edit Details' : 'এডিট করুন'}
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => handleDelete(product.id, e)}
+                          className="p-1.5 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
+                          title={language === 'en' ? 'Delete' : 'মুছে ফেলুন'}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -1373,6 +1476,48 @@ export default function ProductsPage() {
             <div className="p-3 border-t border-border bg-muted/20 flex justify-end">
               <button onClick={() => setIsCustomFieldsModalOpen(false)} className="px-4 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors cursor-pointer">
                 {language === 'en' ? 'Done' : 'সম্পন্ন'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Product Image Lightbox Modal */}
+      {activeLightboxImage && (
+        <div
+          onClick={() => setActiveLightboxImage(null)}
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative max-w-xl w-full bg-card border border-border rounded-2xl overflow-hidden shadow-2xl flex flex-col"
+          >
+            <div className="p-3 px-4 border-b border-border flex items-center justify-between bg-surface/90">
+              <h3 className="font-bold text-foreground text-[14px] truncate pr-4">
+                {activeLightboxImage.name}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setActiveLightboxImage(null)}
+                className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-3 flex items-center justify-center bg-black/60 min-h-[260px] max-h-[70vh] overflow-hidden">
+              <img
+                src={activeLightboxImage.url}
+                alt={activeLightboxImage.name}
+                className="max-h-[65vh] max-w-full object-contain rounded-lg shadow-lg"
+              />
+            </div>
+            <div className="p-3 border-t border-border bg-surface/90 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setActiveLightboxImage(null)}
+                className="px-4 py-1.5 bg-primary text-primary-foreground font-bold rounded-lg text-xs hover:bg-primary/90 transition-colors cursor-pointer"
+              >
+                {language === 'en' ? 'Close' : 'বন্ধ করুন'}
               </button>
             </div>
           </div>
