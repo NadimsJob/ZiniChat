@@ -119,6 +119,14 @@ export class StorageService {
       totalUsedBytes += file.sizeBytes;
     }
 
+    // Auto-sync tenant.storageUsedBytes in DB if different
+    if (tenant && (tenant.storageUsedBytes !== BigInt(totalUsedBytes))) {
+      this.prisma.tenant.update({
+        where: { id: tenantId },
+        data: { storageUsedBytes: BigInt(totalUsedBytes) }
+      }).catch(err => this.logger.warn(`Failed to auto-sync storageUsedBytes: ${err.message}`));
+    }
+
     return {
       categories: stats,
       totalUsedBytes,
@@ -198,10 +206,12 @@ export class StorageService {
       // Check potential physical file locations on VPS disk
       const candidatePaths = [
         path.join(this.uploadDir, 'tenants', tenantId, fileName),
-        path.join(process.cwd(), publicUrl),
-        path.join(this.uploadDir, fileName),
+        path.join(this.uploadDir, 'products', fileName),
+        path.join(this.uploadDir, 'tickets', fileName),
         path.join(this.uploadDir, 'media', fileName),
-        path.join(this.uploadDir, 'tickets', fileName)
+        path.join(this.uploadDir, fileName),
+        path.join(process.cwd(), publicUrl.startsWith('/') ? publicUrl.slice(1) : publicUrl),
+        path.join(process.cwd(), publicUrl)
       ];
 
       let freedBytes = 0;
@@ -286,11 +296,11 @@ export class StorageService {
     const [docs, products, ticketMsgs, chatMessages] = await Promise.all([
       this.prisma.knowledgeDocument.findMany({
         where: { tenantId },
-        select: { id: true, filename: true, uploadedAt: true }
+        select: { id: true, filename: true, fileSizeBytes: true, uploadedAt: true }
       }),
       this.prisma.product.findMany({
-        where: { tenantId, imageUrl: { not: null } },
-        select: { id: true, imageUrl: true, createdAt: true }
+        where: { tenantId },
+        select: { id: true, name: true, imageUrl: true, images: true, createdAt: true }
       }),
       this.prisma.ticketMessage.findMany({
         where: { ticket: { tenantId }, attachmentUrl: { not: null } },
@@ -305,11 +315,116 @@ export class StorageService {
       })
     ]);
 
-    const docNameMap = new Map(docs.map(d => [d.filename.toLowerCase(), d.uploadedAt]));
-    const productUrlMap = new Map(products.map(p => [(p.imageUrl || '').toLowerCase(), p.createdAt]));
-    const ticketUrlMap = new Map(ticketMsgs.map(t => [(t.attachmentUrl || '').toLowerCase(), t.createdAt]));
+    // 2. Process Products (Product Photos & Gallery)
+    for (const prod of products) {
+      const urls: string[] = [];
+      if (prod.imageUrl) urls.push(prod.imageUrl);
+      if (Array.isArray(prod.images)) {
+        for (const img of prod.images) {
+          if (typeof img === 'string' && img.trim()) urls.push(img.trim());
+        }
+      }
 
-    // 2. Scan disk files in uploads/tenants/${tenantId}
+      for (const url of urls) {
+        if (!url || itemsMap.has(url)) continue;
+        if (!url.startsWith('/uploads/')) continue;
+
+        const fileName = url.split('/').pop() || `prod_${prod.id}.webp`;
+        const candidatePaths = [
+          path.join(this.uploadDir, 'products', fileName),
+          path.join(this.uploadDir, 'tenants', tenantId, fileName),
+          path.join(this.uploadDir, fileName),
+          path.join(process.cwd(), url.startsWith('/') ? url.slice(1) : url)
+        ];
+
+        let sizeBytes = 0;
+        for (const cp of candidatePaths) {
+          if (fs.existsSync(cp)) {
+            try {
+              sizeBytes = fs.statSync(cp).size;
+              break;
+            } catch {}
+          }
+        }
+
+        itemsMap.set(url, {
+          id: `${prod.id}_${fileName}`,
+          url,
+          name: `${prod.name || 'Product'} (${fileName})`,
+          sizeBytes,
+          createdAt: prod.createdAt ? prod.createdAt.toISOString() : new Date().toISOString(),
+          category: 'products'
+        });
+      }
+    }
+
+    // 3. Process AI Knowledge Documents
+    for (const doc of docs) {
+      const docUrl = `/uploads/tenants/${tenantId}/${doc.filename}`;
+      if (itemsMap.has(docUrl) || itemsMap.has(doc.filename)) continue;
+
+      const candidatePaths = [
+        path.join(this.uploadDir, 'tenants', tenantId, doc.filename),
+        path.join(this.uploadDir, 'documents', doc.filename),
+        path.join(this.uploadDir, doc.filename),
+        path.join(process.cwd(), doc.filename)
+      ];
+
+      let sizeBytes = doc.fileSizeBytes || 0;
+      for (const cp of candidatePaths) {
+        if (fs.existsSync(cp)) {
+          try {
+            sizeBytes = fs.statSync(cp).size;
+            break;
+          } catch {}
+        }
+      }
+
+      itemsMap.set(docUrl, {
+        id: doc.id,
+        url: docUrl,
+        name: doc.filename,
+        sizeBytes,
+        createdAt: doc.uploadedAt ? doc.uploadedAt.toISOString() : new Date().toISOString(),
+        category: 'aiDocuments'
+      });
+    }
+
+    // 4. Process Support Ticket Messages
+    for (const tm of ticketMsgs) {
+      if (!tm.attachmentUrl || !tm.attachmentUrl.startsWith('/uploads/')) continue;
+      const url = tm.attachmentUrl;
+      if (itemsMap.has(url)) continue;
+
+      const fileName = url.split('/').pop() || `ticket_${tm.id}`;
+      const candidatePaths = [
+        path.join(this.uploadDir, 'tickets', fileName),
+        path.join(this.uploadDir, 'tenants', tenantId, fileName),
+        path.join(this.uploadDir, fileName),
+        path.join(process.cwd(), url.startsWith('/') ? url.slice(1) : url)
+      ];
+
+      let sizeBytes = 0;
+      for (const cp of candidatePaths) {
+        if (fs.existsSync(cp)) {
+          try {
+            sizeBytes = fs.statSync(cp).size;
+            break;
+          } catch {}
+        }
+      }
+
+      itemsMap.set(url, {
+        id: tm.id,
+        url,
+        name: fileName,
+        sizeBytes,
+        createdAt: tm.createdAt ? tm.createdAt.toISOString() : new Date().toISOString(),
+        category: 'tickets'
+      });
+    }
+
+    // 5. Scan disk files in uploads/tenants/${tenantId} (for chat media and direct uploads)
     const tenantDir = path.join(this.uploadDir, 'tenants', tenantId);
     if (fs.existsSync(tenantDir)) {
       const fileNames = fs.readdirSync(tenantDir);
@@ -317,33 +432,18 @@ export class StorageService {
         const filePath = path.join(tenantDir, fileName);
         if (!fs.existsSync(filePath)) continue;
 
+        const publicUrl = `/uploads/tenants/${tenantId}/${fileName}`;
+        if (itemsMap.has(publicUrl)) continue;
+
         try {
           const stats = fs.statSync(filePath);
-          const publicUrl = `/uploads/tenants/${tenantId}/${fileName}`;
-          const lowerUrl = publicUrl.toLowerCase();
-          const lowerName = fileName.toLowerCase();
-
-          let category: 'chatMedia' | 'aiDocuments' | 'products' | 'tickets' = 'chatMedia';
-          let createdAt = stats.birthtime ? stats.birthtime.toISOString() : stats.mtime.toISOString();
-
-          if (docNameMap.has(lowerName) || docNameMap.has(lowerUrl)) {
-            category = 'aiDocuments';
-            createdAt = docNameMap.get(lowerName)?.toISOString() || createdAt;
-          } else if (productUrlMap.has(lowerUrl)) {
-            category = 'products';
-            createdAt = productUrlMap.get(lowerUrl)?.toISOString() || createdAt;
-          } else if (ticketUrlMap.has(lowerUrl)) {
-            category = 'tickets';
-            createdAt = ticketUrlMap.get(lowerUrl)?.toISOString() || createdAt;
-          }
-
           itemsMap.set(publicUrl, {
             id: publicUrl,
             url: publicUrl,
             name: fileName,
             sizeBytes: stats.size,
-            createdAt,
-            category
+            createdAt: stats.birthtime ? stats.birthtime.toISOString() : stats.mtime.toISOString(),
+            category: 'chatMedia'
           });
         } catch (err) {
           this.logger.warn(`Error statting file ${fileName}: ${err.message}`);
@@ -351,54 +451,58 @@ export class StorageService {
       }
     }
 
-    // 3. Scan chat media messages from DB to catch files in legacy uploads paths
+    // 6. Scan chat media messages from DB (to catch files stored in /uploads/media/ or other legacy paths)
     for (const msg of chatMessages) {
       let mediaUrl: string | undefined;
       const content = msg.content as any;
 
       if (typeof content === 'object' && content !== null) {
         mediaUrl = content.mediaUrl || content.url || content.fileUrl || content.localUrl;
-      } else if (typeof content === 'string' && content.startsWith('/uploads/')) {
-        mediaUrl = content;
+      } else if (typeof content === 'string') {
+        if (content.startsWith('/uploads/')) {
+          mediaUrl = content;
+        } else {
+          try {
+            const parsed = JSON.parse(content);
+            if (typeof parsed === 'object' && parsed !== null) {
+              mediaUrl = parsed.mediaUrl || parsed.url || parsed.fileUrl || parsed.localUrl;
+            }
+          } catch {}
+        }
       }
 
       if (!mediaUrl || !mediaUrl.startsWith('/uploads/')) continue;
-      if (itemsMap.has(mediaUrl)) continue; // Already scanned from tenant dir
+      if (itemsMap.has(mediaUrl)) continue; // Already counted
 
       const fileName = mediaUrl.split('/').pop() || `chat_file_${msg.id}`;
-
-      // Check physical file existence across uploads locations
       const candidatePaths = [
-        path.join(process.cwd(), mediaUrl),
+        path.join(process.cwd(), mediaUrl.startsWith('/') ? mediaUrl.slice(1) : mediaUrl),
         path.join(this.uploadDir, fileName),
         path.join(this.uploadDir, 'media', fileName),
-        path.join(this.uploadDir, 'tenants', tenantId, fileName)
+        path.join(this.uploadDir, 'tenants', tenantId, fileName),
+        path.join(this.uploadDir, 'products', fileName)
       ];
 
       let sizeBytes = 0;
-      let foundPath: string | null = null;
-
       for (const p of candidatePaths) {
         if (fs.existsSync(p)) {
           try {
-            const stats = fs.statSync(p);
-            sizeBytes = stats.size;
-            foundPath = p;
+            sizeBytes = fs.statSync(p).size;
             break;
           } catch (e) {}
         }
       }
 
-      if (foundPath || sizeBytes > 0) {
-        itemsMap.set(mediaUrl, {
-          id: mediaUrl,
-          url: mediaUrl,
-          name: fileName,
-          sizeBytes,
-          createdAt: msg.createdAt ? msg.createdAt.toISOString() : new Date().toISOString(),
-          category: 'chatMedia'
-        });
-      }
+      const category = mediaUrl.includes('/products/') ? 'products' : 'chatMedia';
+
+      itemsMap.set(mediaUrl, {
+        id: mediaUrl,
+        url: mediaUrl,
+        name: fileName,
+        sizeBytes,
+        createdAt: msg.createdAt ? msg.createdAt.toISOString() : new Date().toISOString(),
+        category
+      });
     }
 
     return Array.from(itemsMap.values());

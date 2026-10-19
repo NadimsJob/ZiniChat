@@ -39,6 +39,7 @@ export default function StorageSettingsPage() {
   const { language } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<StorageStatsResponse | null>(null);
+  const [recalculating, setRecalculating] = useState(false);
   
   // Active Management state
   const [activeCategory, setActiveCategory] = useState<CategoryKey | null>(null);
@@ -67,6 +68,30 @@ export default function StorageSettingsPage() {
       toast.error('Error fetching storage stats');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRecalculate = async () => {
+    setRecalculating(true);
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/storage/recalculate`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        toast.success(language === 'en' ? 'Storage recalculated successfully' : 'স্টোরেজ সফলভাবে পুনঃগণনা করা হয়েছে');
+      }
+      await fetchStats();
+      if (activeCategory) {
+        await fetchCategoryFiles(activeCategory);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to recalculate storage');
+      await fetchStats();
+    } finally {
+      setRecalculating(false);
     }
   };
 
@@ -308,16 +333,27 @@ export default function StorageSettingsPage() {
   return (
     <div className="max-w-5xl mx-auto space-y-6 text-foreground pb-12">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <HardDrive className="w-6 h-6 text-primary" />
-          {language === 'en' ? 'Smart Storage Manager' : 'স্মার্ট স্টোরেজ ম্যানেজার'}
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1 font-sans">
-          {language === 'en' 
-            ? 'Monitor categorized disk usage, perform quick age cleanup, and permanently free up server storage.' 
-            : 'ক্যাটাগরি-ভিত্তিক স্টোরেজ ব্যবহার দেখুন, পুরোনো ফাইল ক্লিনআপ করুন এবং সার্ভার স্পেস খালি করুন।'}
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <HardDrive className="w-6 h-6 text-primary" />
+            {language === 'en' ? 'Smart Storage Manager' : 'স্মার্ট স্টোরেজ ম্যানেজার'}
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1 font-sans">
+            {language === 'en' 
+              ? 'Monitor categorized disk usage, perform quick age cleanup, and permanently free up server storage.' 
+              : 'ক্যাটাগরি-ভিত্তিক স্টোরেজ ব্যবহার দেখুন, পুরোনো ফাইল ক্লিনআপ করুন এবং সার্ভার স্পেস খালি করুন।'}
+          </p>
+        </div>
+        <button
+          onClick={handleRecalculate}
+          disabled={recalculating || loading}
+          className="self-start sm:self-auto px-4 py-2 text-xs font-semibold rounded-xl bg-card border border-border hover:bg-muted text-foreground transition-all flex items-center gap-2 shadow-xs cursor-pointer disabled:opacity-50"
+          title={language === 'en' ? 'Recalculate disk usage' : 'স্টোরেজ পুনঃগণনা করুন'}
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${recalculating ? 'animate-spin text-primary' : 'text-muted-foreground'}`} />
+          <span>{recalculating ? (language === 'en' ? 'Calculating...' : 'গণনা হচ্ছে...') : (language === 'en' ? 'Recalculate Usage' : 'স্টোরেজ রিফ্রেশ')}</span>
+        </button>
       </div>
 
       {/* Google Drive Style Visual Usage Dashboard */}

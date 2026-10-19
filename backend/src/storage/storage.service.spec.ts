@@ -19,9 +19,11 @@ describe('StorageService', () => {
     tenant: {
       findUnique: jest.fn().mockResolvedValue({
         id: 'tenant-1',
+        storageUsedBytes: BigInt(0),
         customStorageLimitMb: 500,
         subscriptions: [{ plan: { storageLimitMb: 500 } }]
       }),
+      update: jest.fn().mockResolvedValue({ id: 'tenant-1' }),
     },
     knowledgeDocument: {
       findMany: jest.fn().mockResolvedValue([]),
