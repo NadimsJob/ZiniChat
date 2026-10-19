@@ -247,13 +247,41 @@ export class AiService {
           bodyPayload.cachedContent = cacheKey;
         }
 
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
+        let geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(bodyPayload)
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error?.message || 'Gemini generation error');
+        let data = await geminiRes.json();
+
+        // Automatic fallback when primary model experiences temporary high demand / 503 spikes
+        if (!geminiRes.ok && (geminiRes.status === 503 || data.error?.code === 503 || (data.error?.message && (data.error.message.includes('high demand') || data.error.message.includes('Spikes in demand'))))) {
+          const fallbackModels = ['gemini-3.5-flash', 'gemini-3.5-flash-lite'].filter(m => m !== modelName);
+          for (const fallbackModel of fallbackModels) {
+            this.logger.warn(`Gemini model "${modelName}" returned 503 (high demand). Attempting graceful fallback to "${fallbackModel}"...`);
+            const fallbackPayload = { ...bodyPayload };
+            delete fallbackPayload.cachedContent; // Strip cachedContent as cache is model-bound
+
+            try {
+              const fallbackRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${fallbackModel}:generateContent?key=${apiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(fallbackPayload)
+              });
+              const fallbackData = await fallbackRes.json();
+              if (fallbackRes.ok && fallbackData.candidates?.[0]?.content?.parts?.[0]?.text) {
+                this.logger.log(`Gemini fallback to "${fallbackModel}" succeeded.`);
+                geminiRes = fallbackRes;
+                data = fallbackData;
+                break;
+              }
+            } catch (fallbackErr: any) {
+              this.logger.warn(`Fallback attempt to "${fallbackModel}" failed: ${fallbackErr.message}`);
+            }
+          }
+        }
+
+        if (!geminiRes.ok) throw new Error(data.error?.message || 'Gemini generation error');
         
         const promptTokenCount = data.usageMetadata?.promptTokenCount || 0;
         const cachedContentTokenCount = data.usageMetadata?.cachedContentTokenCount || 0;

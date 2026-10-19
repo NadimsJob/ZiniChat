@@ -255,6 +255,42 @@ describe('AiService', () => {
       }));
       expect(fs.readFileSync).toHaveBeenCalledWith('test.jpeg');
     });
+
+    it('should gracefully fallback to gemini-3.5-flash when primary Gemini model returns 503 high demand', async () => {
+      mockPrisma.aiConfig.findFirst.mockResolvedValueOnce({
+        modelName: 'gemini-3.1-flash-lite',
+        apiKey: 'gemini-key',
+        provider: 'gemini',
+      });
+
+      // 1st call returns 503 high demand
+      globalFetchMock.mockResolvedValueOnce({
+        ok: false,
+        status: 503,
+        json: async () => ({
+          error: {
+            code: 503,
+            message: 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.'
+          }
+        }),
+      });
+
+      // 2nd fallback call to gemini-3.5-flash succeeds
+      globalFetchMock.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          candidates: [{ content: { parts: [{ text: 'fallback response from gemini-3.5-flash' }] } }],
+          usageMetadata: { promptTokenCount: 10, candidatesTokenCount: 5 }
+        }),
+      });
+
+      const res = await service.generateCompletionDetailed('hello');
+      expect(res.text).toBe('fallback response from gemini-3.5-flash');
+      expect(globalFetchMock).toHaveBeenCalledTimes(2);
+      expect(globalFetchMock.mock.calls[0][0]).toContain('gemini-3.1-flash-lite:generateContent');
+      expect(globalFetchMock.mock.calls[1][0]).toContain('gemini-3.5-flash:generateContent');
+    });
   });
 
   // ─────────────────────────────────────────────────────────────────────────

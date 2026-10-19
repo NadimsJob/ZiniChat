@@ -185,27 +185,38 @@ export class MessengerAuthService {
       // Step 2: Retrieve user's pages trying multiple Meta Graph API paths & tokens
       let rawPagesList: any[] = [];
 
-      // Path A: /me/accounts with short-lived access token directly
-      const pagesResA = await fetch(`https://graph.facebook.com/v21.0/me/accounts?fields=id,name,access_token,tasks,category&access_token=${accessToken}`);
-      const pagesDataA = await pagesResA.json();
-      if (pagesDataA.data && Array.isArray(pagesDataA.data) && pagesDataA.data.length > 0) {
-        rawPagesList = pagesDataA.data;
-        this.logger.log(`Path A (/me/accounts short-lived) returned ${rawPagesList.length} pages`);
+      // Priority 1: /me/accounts with final/long-lived access token
+      // When /me/accounts is queried using a long-lived user token (obtained via fb_exchange_token),
+      // Meta Graph API returns PERMANENT Never-Expiring Page Access Tokens (Expires: Never).
+      try {
+        const pagesResLongLived = await fetch(`https://graph.facebook.com/v21.0/me/accounts?fields=id,name,access_token,tasks,category&access_token=${finalToken}`);
+        const pagesDataLongLived = await pagesResLongLived.json();
+        if (pagesDataLongLived.data && Array.isArray(pagesDataLongLived.data) && pagesDataLongLived.data.length > 0) {
+          rawPagesList = pagesDataLongLived.data;
+          this.logger.log(`Path A (/me/accounts long-lived) returned ${rawPagesList.length} pages (Permanent Page Tokens)`);
+        }
+      } catch (err: any) {
+        this.logger.warn(`Path A long-lived token accounts lookup warning: ${err.message}`);
       }
 
-      // Path B: /me/accounts with final/long-lived access token
-      if (rawPagesList.length === 0 && finalToken !== accessToken) {
-        const pagesResB = await fetch(`https://graph.facebook.com/v21.0/me/accounts?fields=id,name,access_token,tasks,category&access_token=${finalToken}`);
-        const pagesDataB = await pagesResB.json();
-        if (pagesDataB.data && Array.isArray(pagesDataB.data) && pagesDataB.data.length > 0) {
-          rawPagesList = pagesDataB.data;
-          this.logger.log(`Path B (/me/accounts long-lived) returned ${rawPagesList.length} pages`);
+      // Priority 2: Fallback to short-lived token only if long-lived returned 0 pages
+      if (rawPagesList.length === 0 && accessToken && accessToken !== finalToken) {
+        try {
+          const pagesResShortLived = await fetch(`https://graph.facebook.com/v21.0/me/accounts?fields=id,name,access_token,tasks,category&access_token=${accessToken}`);
+          const pagesDataShortLived = await pagesResShortLived.json();
+          if (pagesDataShortLived.data && Array.isArray(pagesDataShortLived.data) && pagesDataShortLived.data.length > 0) {
+            rawPagesList = pagesDataShortLived.data;
+            this.logger.log(`Path B (/me/accounts short-lived fallback) returned ${rawPagesList.length} pages`);
+          }
+        } catch (err: any) {
+          this.logger.warn(`Path B short-lived fallback lookup warning: ${err.message}`);
         }
       }
 
-      // Path D: /me/businesses (Fetch pages linked via Meta Business Manager / Portfolios)
+      // Path D: /me/businesses (Fetch pages linked via Meta Business Manager / Portfolios with long-lived token)
       try {
-        const bizRes = await fetch(`https://graph.facebook.com/v21.0/me/businesses?fields=id,name,owned_pages{id,name,access_token,tasks,category},client_pages{id,name,access_token,tasks,category}&access_token=${accessToken}`);
+        const bizTok = finalToken || accessToken;
+        const bizRes = await fetch(`https://graph.facebook.com/v21.0/me/businesses?fields=id,name,owned_pages{id,name,access_token,tasks,category},client_pages{id,name,access_token,tasks,category}&access_token=${bizTok}`);
         const bizData = await bizRes.json();
         if (bizData.data && Array.isArray(bizData.data)) {
           for (const biz of bizData.data) {
@@ -308,31 +319,47 @@ export class MessengerAuthService {
         where: { tenantId, channelType: 'messenger', externalAccountId: pageId }
       });
 
-      if (existing) {
-        throw new BadRequestException('This Messenger Page is already connected');
-      }
+      let connection: any;
+      let isReconnected = false;
 
-      const connection = await this.prisma.channelConnection.create({
-        data: {
-          tenantId,
-          channelType: 'messenger',
-          externalAccountId: pageId,
-          accessTokenEncrypted: pageToken,
-          displayName: pageName,
-          connectionMethod: 'facebook_login',
-          status: 'active',
-          isCommentAutoReplyEnabled: true,
-          hasCommentPermissions: true,
-        }
-      });
+      if (existing) {
+        // Reconnect / refresh existing connection with the fresh permanent page token
+        connection = await this.prisma.channelConnection.update({
+          where: { id: existing.id },
+          data: {
+            accessTokenEncrypted: pageToken,
+            displayName: pageName,
+            status: 'active',
+            connectionMethod: 'facebook_login',
+            isCommentAutoReplyEnabled: true,
+            hasCommentPermissions: true,
+          }
+        });
+        isReconnected = true;
+        this.logger.log(`Refreshed existing Messenger Page "${pageName}" (${pageId}) with new permanent token for tenant ${tenantId}`);
+      } else {
+        connection = await this.prisma.channelConnection.create({
+          data: {
+            tenantId,
+            channelType: 'messenger',
+            externalAccountId: pageId,
+            accessTokenEncrypted: pageToken,
+            displayName: pageName,
+            connectionMethod: 'facebook_login',
+            status: 'active',
+            isCommentAutoReplyEnabled: true,
+            hasCommentPermissions: true,
+          }
+        });
+      }
 
       // Auto-subscribe Meta App to Page Webhooks so Meta forwards incoming Page messages to ZiniChat
       await this.subscribePageToWebhooks(pageId, pageToken);
 
       const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
       this.notificationsService.createSystemNotificationForSuperadmins(
-        'New Messenger Connection',
-        `Tenant "${tenant?.businessName}" connected a new Messenger Page (${pageName}) via Facebook OAuth.`,
+        isReconnected ? 'Messenger Connection Refreshed' : 'New Messenger Connection',
+        `Tenant "${tenant?.businessName}" ${isReconnected ? 'refreshed' : 'connected'} Messenger Page (${pageName}) via Facebook OAuth with permanent token.`,
         'info'
       ).catch(e => this.logger.error('Failed to send notification', e));
 
@@ -341,13 +368,13 @@ export class MessengerAuthService {
       for (const admin of tenantAdmins) {
         this.notificationsService.createNotification(
           admin.id,
-          '✅ Messenger Page Connected',
-          `Your Messenger Page "${pageName}" has been successfully connected via Facebook.`,
+          isReconnected ? '✅ Messenger Page Token Refreshed' : '✅ Messenger Page Connected',
+          `Your Messenger Page "${pageName}" has been successfully ${isReconnected ? 'refreshed with an active permanent token' : 'connected via Facebook'}.`,
           'system'
         ).catch(() => {});
       }
 
-      return { success: true, connectionId: connection.id };
+      return { success: true, connectionId: connection.id, reconnected: isReconnected };
     } catch (error: any) {
       this.logger.error('Failed to exchange Messenger token', error);
       if (error instanceof BadRequestException || error instanceof ForbiddenException) throw error;

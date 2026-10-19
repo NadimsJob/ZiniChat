@@ -203,27 +203,37 @@ export class InstagramAuthService {
       // Step 2: Retrieve user's pages trying multiple Meta Graph API paths & tokens
       let rawPagesList: any[] = [];
 
-      // Path A: /me/accounts with short-lived access token directly
-      const pagesResA = await fetch(`https://graph.facebook.com/v21.0/me/accounts?fields=id,name,access_token,tasks,category&access_token=${accessToken}`);
-      const pagesDataA = await pagesResA.json();
-      if (pagesDataA.data && Array.isArray(pagesDataA.data) && pagesDataA.data.length > 0) {
-        rawPagesList = pagesDataA.data;
-        this.logger.log(`Path A (/me/accounts short-lived for IG) returned ${rawPagesList.length} pages`);
+      // Priority 1: /me/accounts with final/long-lived access token
+      // Querying /me/accounts with the long-lived user token generates permanent Page Access Tokens.
+      try {
+        const pagesResLongLived = await fetch(`https://graph.facebook.com/v21.0/me/accounts?fields=id,name,access_token,tasks,category&access_token=${finalToken}`);
+        const pagesDataLongLived = await pagesResLongLived.json();
+        if (pagesDataLongLived.data && Array.isArray(pagesDataLongLived.data) && pagesDataLongLived.data.length > 0) {
+          rawPagesList = pagesDataLongLived.data;
+          this.logger.log(`Path A (/me/accounts long-lived for IG) returned ${rawPagesList.length} pages (Permanent Page Tokens)`);
+        }
+      } catch (err: any) {
+        this.logger.warn(`Path A long-lived token accounts lookup warning for IG: ${err.message}`);
       }
 
-      // Path B: /me/accounts with final/long-lived access token
-      if (rawPagesList.length === 0 && finalToken !== accessToken) {
-        const pagesResB = await fetch(`https://graph.facebook.com/v21.0/me/accounts?fields=id,name,access_token,tasks,category&access_token=${finalToken}`);
-        const pagesDataB = await pagesResB.json();
-        if (pagesDataB.data && Array.isArray(pagesDataB.data) && pagesDataB.data.length > 0) {
-          rawPagesList = pagesDataB.data;
-          this.logger.log(`Path B (/me/accounts long-lived for IG) returned ${rawPagesList.length} pages`);
+      // Priority 2: Fallback to short-lived token only if long-lived returned 0 pages
+      if (rawPagesList.length === 0 && accessToken && accessToken !== finalToken) {
+        try {
+          const pagesResShortLived = await fetch(`https://graph.facebook.com/v21.0/me/accounts?fields=id,name,access_token,tasks,category&access_token=${accessToken}`);
+          const pagesDataShortLived = await pagesResShortLived.json();
+          if (pagesDataShortLived.data && Array.isArray(pagesDataShortLived.data) && pagesDataShortLived.data.length > 0) {
+            rawPagesList = pagesDataShortLived.data;
+            this.logger.log(`Path B (/me/accounts short-lived fallback for IG) returned ${rawPagesList.length} pages`);
+          }
+        } catch (err: any) {
+          this.logger.warn(`Path B short-lived fallback lookup warning for IG: ${err.message}`);
         }
       }
 
-      // Path D: /me/businesses (Fetch pages linked via Meta Business Manager / Portfolios)
+      // Path D: /me/businesses (Fetch pages linked via Meta Business Manager / Portfolios with long-lived token)
       try {
-        const bizRes = await fetch(`https://graph.facebook.com/v21.0/me/businesses?fields=id,name,owned_pages{id,name,access_token,tasks,category},client_pages{id,name,access_token,tasks,category}&access_token=${accessToken}`);
+        const bizTok = finalToken || accessToken;
+        const bizRes = await fetch(`https://graph.facebook.com/v21.0/me/businesses?fields=id,name,owned_pages{id,name,access_token,tasks,category},client_pages{id,name,access_token,tasks,category}&access_token=${bizTok}`);
         const bizData = await bizRes.json();
         if (bizData.data && Array.isArray(bizData.data)) {
           for (const biz of bizData.data) {
@@ -292,7 +302,7 @@ export class InstagramAuthService {
       const pagesData = { data: rawPagesList };
 
       // Step 3: Collect all Instagram Business Accounts linked to those pages
-      const igAccounts: Array<{ igId: string; username: string; pageId: string; pageToken: string; pageName: string }> = [];
+      const igAccounts: Array<{ igId: string; username: string; pageId: string; pageToken: string; pageName: string; isAlreadyConnected?: boolean }> = [];
 
       for (const page of pagesData.data) {
         const pageToken = page.access_token;
@@ -343,13 +353,12 @@ export class InstagramAuthService {
           }
           username = username || `ig_${igId}`;
 
-          // Skip already-connected accounts
+          // Check if already-connected for logging/display
           const alreadyConnected = await this.prisma.channelConnection.findFirst({
             where: { tenantId, channelType: 'instagram', externalAccountId: igId }
           });
           if (alreadyConnected) {
-            this.logger.log(`IG account @${username} (${igId}) is already connected for tenant ${tenantId}`);
-            continue;
+            this.logger.log(`IG account @${username} (${igId}) is previously connected for tenant ${tenantId}. Allowing token refresh.`);
           }
 
           igAccounts.push({
@@ -358,56 +367,76 @@ export class InstagramAuthService {
             pageId: page.id,
             pageToken: pageToken || finalToken || accessToken,
             pageName: page.name,
+            isAlreadyConnected: !!alreadyConnected,
           });
         }
       }
 
       if (igAccounts.length === 0) {
-        throw new BadRequestException('No Instagram Business Accounts found (they may already be connected, or no Instagram account is linked to your Facebook Pages).');
+        throw new BadRequestException('No Instagram Business Accounts found linked to your Facebook Pages. Please ensure your Instagram professional account is linked to your Facebook Page.');
       }
 
       // Step 4: If no specific account selected, return list for user to choose
       if (!selectedIgAccountId) {
         return {
           requiresSelection: true,
-          accounts: igAccounts.map(a => ({ id: a.igId, username: a.username, pageName: a.pageName, pageId: a.pageId })),
+          accounts: igAccounts.map(a => ({ id: a.igId, username: a.username, pageName: a.pageName, pageId: a.pageId, isAlreadyConnected: a.isAlreadyConnected })),
           token: finalToken, // Pass token back to use in step 2
         };
       }
 
-      // Step 5: Connect the selected Instagram account
+      // Step 5: Connect or refresh the selected Instagram account
       const selected = igAccounts.find(a => a.igId === selectedIgAccountId);
       if (!selected) {
         throw new BadRequestException('Selected Instagram account not found. Please try again.');
       }
 
-      const connection = await this.prisma.channelConnection.create({
-        data: {
-          tenantId,
-          channelType: 'instagram',
-          externalAccountId: selected.igId,
-          // IMPORTANT: Store the Page Access Token (NOT the user token).
-          // Instagram Messaging API (/{ig-id}/messages) requires a Page Access Token.
-          // The pageToken from /me/accounts (called with a long-lived user token)
-          // is itself a long-lived Page Access Token (no expiry).
-          accessTokenEncrypted: selected.pageToken,
-          displayName: selected.username,
-          // Store the Facebook Page ID in verifyToken for webhook resubscription.
-          verifyToken: selected.pageId,
-          connectionMethod: 'facebook_login',
-          status: 'active',
-          isCommentAutoReplyEnabled: true,
-          hasCommentPermissions: true,
-        }
+      const existing = await this.prisma.channelConnection.findFirst({
+        where: { tenantId, channelType: 'instagram', externalAccountId: selected.igId }
       });
+
+      let connection: any;
+      let isReconnected = false;
+
+      if (existing) {
+        connection = await this.prisma.channelConnection.update({
+          where: { id: existing.id },
+          data: {
+            accessTokenEncrypted: selected.pageToken,
+            displayName: selected.username,
+            verifyToken: selected.pageId,
+            connectionMethod: 'facebook_login',
+            status: 'active',
+            isCommentAutoReplyEnabled: true,
+            hasCommentPermissions: true,
+          }
+        });
+        isReconnected = true;
+        this.logger.log(`Refreshed existing Instagram account @${selected.username} (${selected.igId}) with permanent token for tenant ${tenantId}`);
+      } else {
+        connection = await this.prisma.channelConnection.create({
+          data: {
+            tenantId,
+            channelType: 'instagram',
+            externalAccountId: selected.igId,
+            accessTokenEncrypted: selected.pageToken,
+            displayName: selected.username,
+            verifyToken: selected.pageId,
+            connectionMethod: 'facebook_login',
+            status: 'active',
+            isCommentAutoReplyEnabled: true,
+            hasCommentPermissions: true,
+          }
+        });
+      }
 
       // Subscribe the linked Facebook Page to Instagram messaging webhooks
       await this.subscribePageForInstagram(selected.pageId, selected.pageToken);
 
       const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
       this.notificationsService.createSystemNotificationForSuperadmins(
-        'New Instagram Connection',
-        `Tenant "${tenant?.businessName}" connected Instagram (@${selected.username}) via Facebook Login.`,
+        isReconnected ? 'Instagram Connection Refreshed' : 'New Instagram Connection',
+        `Tenant "${tenant?.businessName}" ${isReconnected ? 'refreshed' : 'connected'} Instagram (@${selected.username}) via Facebook Login with permanent token.`,
         'info'
       ).catch(e => this.logger.error('Failed to send notification', e));
 
@@ -416,13 +445,13 @@ export class InstagramAuthService {
       for (const admin of tenantAdmins) {
         this.notificationsService.createNotification(
           admin.id,
-          '✅ Instagram Account Connected',
-          `Your Instagram account "@${selected.username}" has been successfully connected via Facebook.`,
+          isReconnected ? '✅ Instagram Account Token Refreshed' : '✅ Instagram Account Connected',
+          `Your Instagram account "@${selected.username}" has been successfully ${isReconnected ? 'refreshed with an active permanent token' : 'connected via Facebook'}.`,
           'system'
         ).catch(() => {});
       }
 
-      return { success: true, connectionId: connection.id };
+      return { success: true, connectionId: connection.id, reconnected: isReconnected };
 
     } catch (error: any) {
       this.logger.error('Facebook Login Error:', error);
