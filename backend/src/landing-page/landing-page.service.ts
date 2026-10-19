@@ -183,6 +183,20 @@ const OFFICIAL_FEATURES_JSON = [
       en: ['Supports OpenAI, Gemini, Claude, Groq & DeepSeek', 'Zero Vendor Lock-in with complete cost independence', 'Switch models anytime from dashboard settings'],
       bn: ['OpenAI, Gemini, Claude ও DeepSeek কী সাপোর্ট', 'নিজের এপিআই ভলিউম ডিসকাউন্ট ব্যবহারে সুযোগ', 'যেকোনো সময় ড্যাশবোর্ড থেকে মডেল পরিবর্তনের সুবিধা']
     }
+  },
+  { 
+    id: 'zini_mail',
+    iconName: 'Mail',
+    colorTheme: 'orange',
+    title: { en: 'Zini-Mail Autonomous AI Outreach', bn: 'জিনি-মেইল: অটোনোমাস এআই কোল্ড আউটরিচ' }, 
+    description: { 
+      en: 'Upload a promotional flyer, discover verified B2B leads via Google SERP, and let AI compose and dispatch safe 1/min personalized cold emails with full revenue attribution.', 
+      bn: 'প্রমোশনাল ব্যানার আপলোড করলেই এআই গুগল থেকে বি২বি লিড সংগ্রহ করে মিনিটে ১টি করে নিরাপদ কোল্ড ইমেইল পাঠাবে এবং অর্ডার ও রেভিনিউ ট্র্যাক করবে।' 
+    },
+    bullets: {
+      en: ['Multimodal AI Vision flyer reading & Gemini context caching', '1 email/min safe pacing with organic jitter & bounce tripwire', '1-Click "Clicked (No Order Yet)" audience WhatsApp retargeting'],
+      bn: ['মাল্টিমোডাল এআই ভিশন ব্যানার রিডিং ও জেমিনি কনটেক্সট ক্যাশিং', 'মিনিটে ১টি মেইল প্রেরণ, অর্গানিক জিটার ও বাউন্স রেট প্রোটেকশন', '১-ক্লিকে "Clicked (No Order Yet)" কাস্টমারদের হোয়াটসঅ্যাপে রিটার্গেট']
+    }
   }
 ];
 
@@ -192,6 +206,7 @@ const OFFICIAL_FAQS_JSON = {
     { id: 'general', icon: 'MessageCircleQuestion', en: 'General & Overview', bn: 'সাধারণ ধারণা' },
     { id: 'channels', icon: 'Share2', en: 'Messaging Channels', bn: 'মেসেজিং চ্যানেলসমূহ' },
     { id: 'ai', icon: 'Bot', en: 'AI Assistant & Training', bn: 'এআই অ্যাসিস্ট্যান্ট ও ট্রেনিং' },
+    { id: 'outreach', icon: 'Mail', en: 'Zini-Mail AI Outreach', bn: 'জিনি-মেইল এআই আউটরিচ' },
     { id: 'verticals', icon: 'Building2', en: 'Industry Solutions', bn: 'ইন্ডাস্ট্রি ও সিস্টেম' },
     { id: 'pricing', icon: 'Receipt', en: 'Pricing & Quota', bn: 'বিলিং ও পেমেন্ট' },
     { id: 'security', icon: 'ShieldCheck', en: 'Security & Team', bn: 'সিকিউরিটি ও টিম' }
@@ -291,6 +306,48 @@ const OFFICIAL_FAQS_JSON = {
       } 
     },
 
+    // Zini-Mail Autonomous AI Outreach
+    { 
+      categoryId: 'outreach',
+      question: { en: 'What is Zini-Mail and how does it automate cold B2B outreach?', bn: 'জিনি-মেইল (Zini-Mail) কী এবং এটি কীভাবে কোল্ড আউটরিচ অটোমেট করে?' }, 
+      answer: { 
+        en: 'Zini-Mail is an autonomous, end-to-end B2B lead generation and cold email marketing ecosystem built into ZiniChat. You simply upload your promotional banner/offer flyer, enter your target business keywords, and select channels (Facebook, Instagram, LinkedIn). ZiniChat uses Google SERP discovery to harvest active merchant leads, uses Multimodal Vision AI to extract offer context from your poster, and drafts hyper-personalized pain-point emails in English, Bangla, or Banglish.', 
+        bn: 'Zini-Mail হলো জিনিচ্যাটে যুক্ত একটি স্বয়ংক্রিয় বি২বি লিড জেনারেশন ও কোল্ড ইমেইল মার্কেটিং ইকোসিস্টেম। প্রমোশনাল ব্যানার আপলোড করে টার্গেট কি-ওয়ার্ড লিখে দিলে সিস্টেম গুগল থেকে ফেসবুক/ইনস্টাগ্রাম/লিঙ্কডইন পেজের ব্যবসায়িক লিড সংগ্রহ করে, পোস্টার থেকে অফার বুঝে নিয়ে স্বয়ংক্রিয়ভাবে পার্সোনালাইজড কোল্ড ইমেইল ড্রাফট ও সেন্ড করে।' 
+      } 
+    },
+    { 
+      categoryId: 'outreach',
+      question: { en: 'How does Zini-Mail protect my domain and email reputation from spam bans?', bn: 'জিনি-মেইল কীভাবে আমার ইমেইল ও ডোমেইনকে স্প্যাম ব্যান বা ব্ল্যাকলিস্ট হওয়া থেকে রক্ষা করে?' }, 
+      answer: { 
+        en: 'Zini-Mail enforces strict Enterprise Reputation Armor: (1) Paced dispatching at 1 email per minute with random jitter (+0 to +15s delay) to eliminate bot timing signatures. (2) Automated Bounce Rate Tripwire that auto-pauses campaigns if bounce rate exceeds 8% over 50 emails. (3) 30-day cross-campaign cooldown preventing prospect fatigue. (4) 1-Click CAN-SPAM compliant unsubscribe portal adding opted-out leads to your suppression blacklist.', 
+        bn: 'জিনি-মেইলে রয়েছে ডোমেইন রেপুটেশন গার্ড: (১) প্রতি ৬০ সেকেন্ডে ১টি ইমেইল এবং সাথে ০-১৫ সেকেন্ডের র্যান্ডম জিটার যাতে স্প্যাম ফিল্টারে না পড়ে। (২) ৫০টি মেইলের মধ্যে বাউন্স রেট ৮% ছাড়ালে স্বয়ংক্রিয় অটো-পজ ট্রিপওয়্যার। (৩) ৩০ দিনের ক্রস-ক্যাম্পেইন কুলডাউন। (৪) ক্যান-স্প্যাম অনুমোদিত ১-ক্লিক আনসাবস্ক্রাইব পোর্টাল যা অটোমেটিক সাপ্রেশন ব্ল্যাকলিস্ট ম্যানেজ করে।' 
+      } 
+    },
+    { 
+      categoryId: 'outreach',
+      question: { en: 'What is the "Clicked (No Order Yet)" high-intent audience filter?', bn: '"Clicked (No Order Yet)" হাই-ইনটেন্ট অডিয়েন্স ফিল্টার কী এবং এটি কীভাবে কাজ করে?' }, 
+      answer: { 
+        en: 'In cold email marketing, prospects who clicked your offer link are your highest-intent buyers. Zini-Mail isolates these prospects with 1-click in the campaign manager (`🔥 Clicked (No Order Yet)`). With a single click, you can push their phone numbers directly into ZiniChat\'s WhatsApp Broadcast Hub (/dashboard/broadcasts) with an AI-suggested conversational template or auto-tag them as Warm Leads in your CRM!', 
+        bn: 'কোল্ড আউটরিচে যারা অফার লিংকে ক্লিক করেছে কিন্তু এখনও অর্ডার করেনি, তারাই সবচেয়ে হট বায়ার। Zini-Mail এদের ১-ক্লিকে আলাদা করে চিহ্নিত করে (`🔥 Clicked (No Order Yet)`)। একটি ক্লিকেই আপনি এই ফোন নম্বরগুলো সরাসরি হোয়াটসঅ্যাপ ব্রডকাস্টে পাঠিয়ে পার্সোনালাইজড চ্যাট শুরু করতে পারেন অথবা সিআরএমে Warm Lead হিসেবে ট্যাগ করতে পারেন।' 
+      } 
+    },
+    { 
+      categoryId: 'outreach',
+      question: { en: 'How are AI credits charged and refunded during outreach campaigns?', bn: 'আউটরিচ ক্যাম্পেইনে এআই ক্রেডিট কীভাবে কাটা হয় এবং রিফান্ড কীভাবে কাজ করে?' }, 
+      answer: { 
+        en: 'Zini-Mail utilizes a fair Saga transaction model: 5 AI Response Credits are billed once for reading the promotional flyer with Vision AI, and exactly 1 credit is reserved per delivered cold email. If an email fails to dispatch due to network or SMTP issues, the reserved credit is immediately and atomically refunded back to your account.', 
+        bn: 'জিনি-মেইলে রয়েছে স্বচ্ছ সাগা ক্রেডিট সিস্টেম: ব্যানার এআই ভিশন দিয়ে ১-বার পড়ার জন্য ৫টি ক্রেডিট এবং সফলভাবে মেইল পাঠানোর জন্য প্রতিটি মেইলে ১টি ক্রেডিট কাটা হয়। নেটওয়ার্ক বা এসএমটিপি ত্রুটির কারণে কোনো মেইল ফেইল করলে সাথে সাথে সম্পূর্ণ ক্রেডিট স্বয়ংক্রিয়ভাবে একাউন্টে রিফান্ড হয়।' 
+      } 
+    },
+    { 
+      categoryId: 'outreach',
+      question: { en: 'What happens to scraped leads that have a phone number but no public email?', bn: 'যেসব লিডের ফোন নম্বর পাওয়া যায় কিন্তু পাবলিক ইমেইল থাকে না তাদের কী হয়?' }, 
+      answer: { 
+        en: 'They are never wasted! ZiniChat\'s No-Email Phone Harvester automatically segregates these contacts, flags them as `phoneOnly: true`, and stores them safely in your CRM. They never consume email sending quotas, and you can export them or launch targeted WhatsApp broadcast promotions to them with 1 click.', 
+        bn: 'এগুলো কখনোই নষ্ট হয় না! জিনিচ্যাটের No-Email Phone Harvester স্বয়ংক্রিয়ভাবে এদের আলাদা করে সিআরএমে সেভ করে রাখে। এরা কোনো ইমেইল ক্রেডিট নষ্ট করে না এবং ১-ক্লিকেই এদের নিয়ে হোয়াটসঅ্যাপ মার্কেটিং ক্যাম্পেইন চালানো যায়।' 
+      } 
+    },
+
     // Verticals
     { 
       categoryId: 'verticals',
@@ -379,6 +436,7 @@ export class LandingPageService {
               { id: 'features_hdr', type: 'header', en: 'Features', bn: 'ফিচারসমূহ' },
               { id: 'ai_assistant', type: 'boolean', featureKey: 'ai_assistant', en: 'AI Assistant', bn: 'এআই অ্যাসিস্ট্যান্ট' },
               { id: 'lead_manage', type: 'boolean', featureKey: 'lead_manage', en: 'Leads CRM', bn: 'লিডস সিআরএম' },
+              { id: 'ai_email_outreach', type: 'boolean', featureKey: 'ai_email_outreach', en: 'Zini-Mail (AI Cold Email & B2B Leads)', bn: 'জিনি-মেইল (AI কোল্ড ইমেইল ও B2B লিড)' },
               { id: 'contact_labels', type: 'boolean', featureKey: 'contact_labels', en: 'Custom Contact Labels', bn: 'কাস্টম কন্টাক্ট লেবেল' },
               { id: 'team_management', type: 'boolean', featureKey: 'team_management', en: 'Team Members & Roles', bn: 'টিম মেম্বার ও রোলস' },
               { id: 'commerce', type: 'boolean', featureKey: 'commerce', en: 'Products & Orders', bn: 'প্রোডাক্টস ও অর্ডার' },
@@ -421,17 +479,37 @@ export class LandingPageService {
       // Ensure latest official features and FAQs are synced in DB if DB contains older/outdated feature items
       const existingFeatures = (config.featuresJson as any[]) || [];
       const existingFaqs = ((config.faqsJson as any)?.faqs as any[]) || [];
+      const compareFeats = (config.pricingJson as any)?.compareFeatures as any[] || [];
       
       let needsUpdate = false;
       const updatedData: any = {};
 
-      if (existingFeatures.length < 8) {
+      const hasZiniMailFeature = existingFeatures.some((f: any) => f.id === 'zini_mail');
+      if (!hasZiniMailFeature || existingFeatures.length < 8) {
         updatedData.featuresJson = OFFICIAL_FEATURES_JSON;
         needsUpdate = true;
       }
 
-      if (existingFaqs.length < 8) {
+      const hasOutreachFaqs = existingFaqs.some((f: any) => f.categoryId === 'outreach');
+      if (!hasOutreachFaqs || existingFaqs.length < 8) {
         updatedData.faqsJson = OFFICIAL_FAQS_JSON;
+        needsUpdate = true;
+      }
+
+      const hasOutreachCompare = compareFeats.some((c: any) => c.id === 'ai_email_outreach');
+      if (!hasOutreachCompare) {
+        const featsHdrIdx = compareFeats.findIndex((c: any) => c.id === 'features_hdr');
+        const updatedCompare = [...compareFeats];
+        const newFeat = { id: 'ai_email_outreach', type: 'boolean', featureKey: 'ai_email_outreach', en: 'Zini-Mail (AI Cold Email & B2B Leads)', bn: 'জিনি-মেইল (AI কোল্ড ইমেইল ও B2B লিড)' };
+        if (featsHdrIdx >= 0) {
+          updatedCompare.splice(featsHdrIdx + 1, 0, newFeat);
+        } else {
+          updatedCompare.push(newFeat);
+        }
+        updatedData.pricingJson = {
+          ...(config.pricingJson as any || {}),
+          compareFeatures: updatedCompare
+        };
         needsUpdate = true;
       }
 

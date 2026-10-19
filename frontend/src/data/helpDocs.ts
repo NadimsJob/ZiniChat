@@ -629,6 +629,150 @@ Automated AI Follow-ups allow merchants to set a future date, time, and custom f
 > [!NOTE]
 > আপনি যদি ফলো-আপের তারিখ পরিবর্তন বা বাদ দেন, তাহলে আগের শিডিউল করা মেসেজটি স্বয়ংক্রিয়ভাবে আপডেট বা বাতিল হয়ে যাবে।
 `
+  },
+  {
+    id: 'zini-mail-autonomous-outreach',
+    titleEn: 'Zini-Mail: Autonomous AI Cold Email Outreach & High-Intent Retargeting',
+    titleBn: 'জিনি-মেইল: অটোনোমাস এআই কোল্ড ইমেইল আউটরিচ ও হাই-ইনটেন্ট রিটার্গেটিং গাইড',
+    category: 'marketing-ads',
+    tags: ['zini-mail', 'cold-email', 'b2b-outreach', 'lead-generation', 'smtp', 'ai-vision', 'attribution', 'retargeting', 'whatsapp'],
+    excerptEn: 'Learn how to configure custom SMTP, scrape B2B prospects, draft AI vision personalized emails, track conversion attribution, and retarget clickers via WhatsApp.',
+    excerptBn: 'কাস্টম এসএমটিপি কনফিগার, লিড হার্ভেস্ট, এআই ভিশন ড্রাফটার, কনভার্শন অ্যাট্রিবিউশন এবং ক্লিককারী গ্রাহকদের হোয়াটসঅ্যাপে রিটার্গেট করার সম্পূর্ণ গাইড।',
+    planConditions: 'Available on plans with AI Cold Email Outreach (ai_email_outreach) enabled.',
+    aiCreditCost: '1 AI Unit per delivered email (Automatically refunded on failure or bounce).',
+    contentEn: `
+### Overview & Architecture
+**Zini-Mail** is an autonomous, end-to-end B2B cold email outreach and conversion acceleration engine built directly into ZiniChat. It bridges multi-channel lead discovery, multimodal AI visual copywriting, strict reputation protection, and closed-loop revenue attribution.
+
+![Zini-Mail Autonomous AI Outreach Guide](/docs/zini-mail-outreach-guide.svg)
+
+---
+
+### Step 1: Connecting & Verifying Custom SMTP
+Before launching campaigns, connect your custom business email domain or Google Workspace account to protect your sender reputation:
+1. Navigate to **Zini-Mail > Settings & SMTP** (\`/dashboard/zini-mail/settings\`).
+2. Enter your **Sender Name**, **Sender Email**, **SMTP Host** (\`smtp.gmail.com\` or \`mail.yourdomain.com\`), **Port** (\`587\` / \`465\`), and password/app password.
+3. Click **Verify & Send Test Email**. ZiniChat performs a real-time SMTP socket handshake and verifies that the mailbox accepts outbound messages.
+
+> [!NOTE]
+> Ensure your domain DNS has valid SPF (\`v=spf1 ... ~all\`) and DKIM records configured to guarantee 99%+ inbox placement and eliminate spam penalties.
+
+---
+
+### Step 2: Creating an Autonomous Outreach Campaign
+Navigate to **Zini-Mail > Campaigns** (\`/dashboard/zini-mail\`) and click **+ New Campaign**:
+1. **Details & Hero Banner**: Enter your campaign title, target persona, and destination catalog URL. Upload a JPG/PNG flyer or poster. Multimodal AI Vision automatically extracts headline copy, discount terms, and product highlights.
+2. **Audience Sourcing**: Enter search terms (e.g. *craft retail store dhanmondi*). The built-in SerpAPI engine automatically scrapes business domains, emails, and phone numbers. Or upload your own CSV list.
+3. **AI Tone & Language**: Select from *Professional B2B*, *Friendly & Casual*, *Urgent / Limited Offer*, or *Founder-to-Founder*, and choose English, Bengali, or Banglish.
+4. **Credit Safeguard**: The wizard calculates required AI units. If your balance is low, use the 1-click **[ Auto-Adjust to Max Affordable ]** button to instantly downscale your target count.
+
+---
+
+### Step 3: Audience Sourcing & No-Email Phone Harvester
+During discovery, leads with phone numbers but missing emails are never discarded:
+* **Email Leads**: Enqueued into the throttled BullMQ email dispatch queue.
+* **Phone-Only Leads**: Filtered with status \`bypassed_phone_only\`. They do not consume email quotas or trigger SMTP errors.
+* **WhatsApp Cohort**: Filtered phone-only leads are aggregated and prepped for 1-click routing into the **WhatsApp Broadcast Hub** (\`/dashboard/broadcasts\`).
+
+---
+
+### Step 4: Outbound Dispatcher & Reputation Armor
+* **Strict Pacing**: Dispatches 1 email every 60 seconds with an organic jitter (+0 to +15s delay) to eliminate bot timing signatures.
+* **Saga Unit Lock**: 1 AI credit is reserved upon queuing and committed on delivery. If dispatch fails, the unit is atomically refunded.
+* **Bounce Rate Tripwire**: Automatically pauses the campaign and alerts admins if bounce rate exceeds 8% over 50 emails.
+* **Emergency Kill-Switch**: Superadmins can instantly freeze all outbound queues globally during maintenance.
+
+---
+
+### Step 5: Full-Funnel Conversion Attribution
+* **42-Byte 1x1 GIF Pixel**: Embedded in each HTML email to record exact open times and open counts.
+* **Smart URL Redirector**: Replaces raw links with \`/track/click/:trackingToken\`. Sets a 30-day attribution cookie on the visitor's browser.
+* **Atomic Order Hook**: When an order is created through storefront checkout, ZiniChat matches the attribution cookie and credits the order and GMV directly back to the campaign dashboard.
+
+---
+
+### Step 6: Retargeting the "Clicked (No Order Yet)" Audience
+The highest-converting audience in any cold outreach campaign is the group of prospects who clicked your link but have not yet purchased:
+1. Open any campaign and click the **\`🔥 Clicked (No Order Yet) [Count]\`** highlight pill.
+2. The table isolates prospects who opened and clicked without purchasing.
+3. **📢 Push to WA Broadcast**: Click to send this cohort directly into \`/dashboard/broadcasts\` with an AI-suggested conversational template.
+4. **🏷️ Tag in CRM**: Automatically assigns the \`Warm Lead\` tag and moves prospects to the Negotiation stage on your Leads Kanban board.
+5. **📥 Export CSV**: Download clean contact lists with full engagement telemetry.
+
+---
+
+### Step 7: CAN-SPAM Compliance & Public Unsubscribe Portal
+* Every email includes your physical business address and a 1-click unsubscribe link.
+* Clicking the link opens the dedicated, dark glassmorphic unsubscribe page (\`/unsubscribe\`).
+* Unsubscribed emails are immediately added to the tenant's \`OutreachSuppression\` table and automatically bypassed in all future campaigns.
+`,
+    contentBn: `
+### ওভারভিউ ও আর্কিটেকচার
+**জিনি-মেইল (Zini-Mail)** হলো জিনিচ্যাটে যুক্ত একটি সম্পূর্ণ অটোনোমাস বি২বি কোল্ড ইমেইল আউটরিচ এবং কনভার্শন ইঞ্জিন। এটি মাল্টি-চ্যানেল লিড সংগ্রহ, মাল্টিমোডাল এআই ভিশন কপিরাইটিং, কঠোর ডোমেইন রেপুটেশন সুরক্ষা এবং সেলস কনভার্শন অ্যাট্রিবিউশন নিশ্চিত করে।
+
+![Zini-Mail Autonomous AI Outreach Guide](/docs/zini-mail-outreach-guide.svg)
+
+---
+
+### ধাপ ১: কাস্টম এসএমটিপি (SMTP) কানেক্ট ও ভেরিফিকেশন
+ক্যাম্পেইন শুরু করার আগে আপনার ব্যবসায়িক ডোমেইন বা গুগল ওয়ার্কস্পেস অ্যাকাউন্ট কানেক্ট করুন:
+১. **Zini-Mail > Settings & SMTP** (\`/dashboard/zini-mail/settings\`) এ যান।
+২. প্রেরকের নাম, ইমেইল, এসএমটিপি হোস্ট (\`smtp.gmail.com\` বা \`mail.yourdomain.com\`), পোর্ট (\`587\` / \`465\`) এবং অ্যাপ পাসওয়ার্ড লিখুন।
+৩. **Verify & Send Test Email** বাটনে ক্লিক করুন। সিস্টেম রিয়েল-টাইম সকেট হ্যান্ডশেক করে ভেরিফাই করবে।
+
+> [!NOTE]
+> আপনার ডোমেইনে অবশ্যই SPF ও DKIM রেকর্ড সেটআপ রাখুন যাতে ৯৯%+ ইমেইল সরাসরি ইনবক্সে পৌঁছায় এবং কোনো স্প্যাম সমস্যা না হয়।
+
+---
+
+### ধাপ ২: অটোনোমাস ক্যাম্পেইন তৈরি
+**Zini-Mail > Campaigns** (\`/dashboard/zini-mail\`) এ গিয়ে **+ New Campaign** ক্লিক করুন:
+১. **ক্যাম্পেইন তথ্য ও ব্যানার**: নাম, টার্গেট অডিয়েন্স ও ক্যাটালগ ইউআরএল দিন। প্রমোশনাল ব্যানার আপলোড করলে এআই ভিশন স্বয়ংক্রিয়ভাবে টাইটেল, অফার ও ডিসকাউন্ট কোড বের করে কার্ড প্রিভিউ দেখাবে।
+২. **লিড সোর্সিং**: সার্চ কি-ওয়ার্ড লিখুন (যেমন: *craft retail store dhanmondi*)। SerpAPI স্বয়ংক্রিয়ভাবে ব্যবসায়িক ডোমেইন, ইমেইল ও ফোন নম্বর সংগ্রহ করবে। অথবা নিজস্ব CSV আপলোড করুন।
+৩. **এআই টোন ও ভাষা**: প্রফেশনাল বি২বি, ফ্রেন্ডলি, আর্জেন্ট বা ফাউন্ডার টোন সিলেক্ট করে ইংরেজি, বাংলা বা বাংলিশ নির্বাচন করুন।
+৪. **ক্রেডিট সেফগার্ড**: কাঙ্ক্ষিত লিডের বিপরীতে প্রয়োজনীয় এআই ইউনিট হিসাব করা হয়। ব্যালেন্স কম থাকলে **[ Auto-Adjust to Max Affordable ]** বাটনে ১-ক্লিকেই বাজেট অনুযায়ী লিড সংখ্যা অ্যাডজাস্ট করা যায়।
+
+---
+
+### ধাপ ৩: ফোন-অনলি লিড হার্ভেস্টার
+যেসব লিডের ফোন নম্বর আছে কিন্তু ইমেইল পাওয়া যায়নি, সেগুলো কখনো মুছে ফেলা হয় না:
+* **ইমেইল লিড**: নিরাপদ বুল-এমকিউ (BullMQ) আউটবাউন্ড কিউতে পাঠানো হয়।
+* **ফোন-অনলি লিড**: \`bypassed_phone_only\` হিসেবে আলাদা সংরক্ষিত থাকে। এগুলো কোনো ইমেইল ক্রেডিট নষ্ট করে না।
+* **হোয়াটসঅ্যাপ ব্রডকাস্ট**: ১-ক্লিকেই এই ফোন নম্বরগুলো **WhatsApp Broadcast Hub** (\`/dashboard/broadcasts\`) এ পাঠিয়ে কাস্টমারদের সাথে সরাসরি চ্যাট শুরু করা যায়।
+
+---
+
+### ধাপ ৪: নিরাপদ ডেলিভারি ও রেপুটেশন গার্ড
+* **কঠোর থ্রটলিং**: প্রতি ৬০ সেকেন্ডে ১টি ইমেইল পাঠানো হয় এবং সাথে +০ থেকে +১৫ সেকেন্ডের অর্গানিক জিটার যুক্ত থাকে।
+* **সাগা ক্রেডিট সিস্টেম**: প্রতিটি সফল ডেলিভারিতে ১টি এআই ক্রেডিট কাটা হয়। কোনো কারণে ডেলিভারি ব্যর্থ হলে সাথে সাথে সম্পূর্ণ ক্রেডিট রিফান্ড হয়।
+* **বাউন্স ট্রিপওয়্যার**: ৫০টি ইমেইলের মধ্যে বাউন্স রেট ৮% ছাড়ালে স্বয়ংক্রিয়ভাবে ক্যাম্পেইন পজ হয়ে অ্যাডমিনদের নোটিফিকেশন পাঠায়।
+* **গ্লোবাল কিল-সুইচ**: সুপারঅ্যাডমিন প্রয়োজনে এক ক্লিকেই পুরো প্ল্যাটফর্মের আউটরিচ কিউ ফ্রিজ করতে পারেন।
+
+---
+
+### ধাপ ৫: ফুল-ফানেল কনভার্শন অ্যাট্রিবিউশন
+* **৪২-বাইট পিক্সেল**: প্রতিটি ইমেইলে লুকায়িত ওপেন-ট্র্যাকিং পিক্সেল থাকে।
+* **স্মার্ট রিডাইরেক্ট**: লিংকে ৩০-দিনের ট্র্যাকিং কুকি সেট করে মূল ক্যাটালগে রিডাইরেক্ট করা হয়।
+* **অ্যাটোমিক অর্ডার হুক**: গ্রাহক ওয়েবসাইট থেকে অর্ডার প্লেস করলে সিস্টেম স্বয়ংক্রিয়ভাবে সেই সেলস ও রাজস্ব (GMV) উক্ত ক্যাম্পেইনের হিসেবে জমা করে।
+
+---
+
+### ধাপ ৬: "Clicked (No Order Yet)" হাই-ইনটেন্ট রিটার্গেটিং
+কোল্ড আউটরিচে যারা লিংকে ক্লিক করেছে কিন্তু এখনও অর্ডার করেনি, তারাই সবচেয়ে দ্রুত ক্রেতায় পরিণত হয়:
+১. ক্যাম্পেইনে গিয়ে **\`🔥 Clicked (No Order Yet) [Count]\`** হাইলাইট পিলটিতে ক্লিক করুন।
+২. টেবিলটিতে শুধুমাত্র ক্লিককারী কিন্তু অর্ডার না করা গ্রাহকদের আলাদা করে দেখানো হবে।
+৩. **📢 Push to WA Broadcast**: ১-ক্লিকেই এদের নিয়ে হোয়াটসঅ্যাপে পার্সোনালাইজড ফলো-আপ মেসেজ পাঠানো যায়।
+৪. **🏷️ Tag in CRM**: লিডদের স্বয়ংক্রিয়ভাবে \`Warm Lead\` ট্যাগ দিয়ে কানবান বোর্ডে মুভ করা যায়।
+৫. **📥 Export CSV**: ফিল্টার করা লিড তালিকা এক ক্লিকেই ডাউনলোড করা যায়।
+
+---
+
+### ধাপ ৭: ক্যান-স্প্যাম কমপ্লায়েন্স ও আনসাবস্ক্রাইব পোর্টাল
+* প্রতিটি ইমেইলে ফিজিক্যাল অ্যাড্রেস ও আনসাবস্ক্রাইব লিংক সংযুক্ত থাকে।
+* কাস্টমার আনসাবস্ক্রাইব পেজে (\`/unsubscribe\`) গিয়ে সহজেই অপ্ট-আউট করতে পারেন।
+* আনসাবস্ক্রাইব করা ইমেইলগুলো স্বয়ংক্রিয়ভাবে \`OutreachSuppression\` তালিকায় যুক্ত হয় এবং ভবিষ্যতের সকল ক্যাম্পেইনে বাদ পড়ে।
+`
   }
 ];
+
 

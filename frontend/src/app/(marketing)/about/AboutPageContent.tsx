@@ -36,6 +36,14 @@ const pillars = [
     descBn: 'দ্বিভাষিক সমর্থন থেকে শুরু করে শক্তিশালী পরিকাঠামো পর্যন্ত, আমরা আধুনিক ব্যবসাকে বিশ্বব্যাপী বাড়াতে সাহায্য করার জন্য বিশেষভাবে ডিজাইন করা হয়েছি।',
     color: 'from-orange-500/10 to-amber-500/10 border-orange-500/20 text-orange-500 bg-orange-500/10',
   },
+  {
+    icon: '🎯',
+    titleEn: 'Autonomous B2B Growth',
+    titleBn: 'স্বয়ংক্রিয় B2B গ্রোথ',
+    descEn: 'From autonomous SERP lead discovery to cold email outreach (Zini-Mail) and 1-click WhatsApp retargeting, we help businesses build scalable outbound revenue pipelines.',
+    descBn: 'স্বয়ংক্রিয় SERP লিড খোঁজা থেকে শুরু করে কোল্ড ইমেইল আউটরিচ (Zini-Mail) এবং ১-ক্লিক WhatsApp রিটার্গেটিং — আউটবাউন্ড রেভিনিউ পাইপলাইন তৈরিতে আমরা পাশে আছি।',
+    color: 'from-amber-500/10 to-orange-500/10 border-amber-500/20 text-amber-500 bg-amber-500/10',
+  },
 ];
 
 const values = [
@@ -66,8 +74,9 @@ const techStack = [
   { name: 'NestJS', color: 'bg-red-500/10 border-red-500/20 text-red-600' },
   { name: 'Next.js', color: 'bg-zinc-500/10 border-zinc-500/20 text-zinc-600' },
   { name: 'PostgreSQL', color: 'bg-blue-500/10 border-blue-500/20 text-blue-600' },
-  { name: 'OpenAI GPT', color: 'bg-teal-500/10 border-teal-500/20 text-teal-600' },
+  { name: 'OpenAI GPT & Gemini', color: 'bg-teal-500/10 border-teal-500/20 text-teal-600' },
   { name: 'WhatsApp API', color: 'bg-green-500/10 border-green-500/20 text-green-600' },
+  { name: 'BYO-SMTP Engine', color: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600' },
   { name: 'Socket.io', color: 'bg-purple-500/10 border-purple-500/20 text-purple-600' },
   { name: 'BullMQ', color: 'bg-orange-500/10 border-orange-500/20 text-orange-600' },
   { name: 'Docker', color: 'bg-cyan-500/10 border-cyan-500/20 text-cyan-600' },
@@ -145,8 +154,8 @@ export default function AboutPageContent() {
                 </p>
                 <p>
                   {language === 'en'
-                    ? 'With seamless integrations for WhatsApp, Meta Messenger, and Instagram, we help you connect with your customers where they already are — automatically handling inquiries 24/7 while your team focuses on what matters most.'
-                    : 'WhatsApp, Meta Messenger এবং Instagram-এর সাথে নিরবচ্ছিন্ন ইন্টিগ্রেশনের মাধ্যমে, আমরা আপনাকে আপনার গ্রাহকদের সাথে সংযুক্ত করতে সাহায্য করি।'}
+                    ? 'With seamless integrations for WhatsApp, Meta Messenger, Instagram, and AI Cold Email Outreach, we help you connect with your customers where they already are — automatically handling inquiries 24/7 while your team focuses on what matters most.'
+                    : 'WhatsApp, Meta Messenger, Instagram এবং AI কোল্ড ইমেইল আউটরিচের সাথে নিরবচ্ছিন্ন ইন্টিগ্রেশনের মাধ্যমে, আমরা আপনাকে আপনার গ্রাহকদের সাথে সংযুক্ত করতে এবং নতুন পাইপলাইন তৈরি করতে সাহায্য করি।'}
                 </p>
               </div>
             </div>

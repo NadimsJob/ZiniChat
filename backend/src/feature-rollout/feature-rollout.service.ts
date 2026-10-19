@@ -8,7 +8,7 @@ export class FeatureRolloutService {
   constructor(private prisma: PrismaService) {}
 
   async isFeatureEnabled(arg1: string, arg2: string): Promise<boolean> {
-    const knownKeys = ['capi_hub', 'meta_ads_agent', 'meta_ads_account', 'ads_auto_scaling'];
+    const knownKeys = ['capi_hub', 'meta_ads_agent', 'meta_ads_account', 'ads_auto_scaling', 'ai_email_outreach'];
     const isFirstArgKey = knownKeys.includes(arg1) || (arg2 && arg2.includes('-') && !arg1.includes('-'));
     const tenantId = isFirstArgKey ? arg2 : arg1;
     const featureKey = isFirstArgKey ? arg1 : arg2;

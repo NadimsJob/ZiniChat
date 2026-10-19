@@ -158,6 +158,26 @@ const scenarios = [
       bn: 'স্ট্যাটাস কলে ১ FTE বাঁচানো + ৪০% দ্রুত কোটেশন = মাসে ২৫টি অতিরিক্ত শিপমেন্ট',
     },
   },
+  {
+    tag: { en: 'B2B Wholesale & Cold Outreach', bn: 'B2B হোলসেল ও কোল্ড আউটরিচ' },
+    title: {
+      en: 'Handicrafts & Lifestyle Exporter — 500 Global Boutique Targets',
+      bn: 'হস্তশিল্প ও লাইফস্টাইল রপ্তানিকারক — ৫০০ গ্লোবাল বুটিক টার্গেট',
+    },
+    problem: {
+      en: 'Found prospective overseas buyers manually on Google and Instagram. Sending individual emails was exhausting, 80% landed in spam due to lack of warmup, and phone leads had no follow-up channel.',
+      bn: 'গুগল ও ইনস্টাগ্রামে ম্যানুয়ালি বিদেশি বায়ার খুঁজতেন। একে একে ইমেইল পাঠাতে প্রচণ্ড সময় লাগত, ওয়ার্মআপের অভাবে ৮০% স্প্যামে যেত এবং ফোন লিডগুলোর কোনো ফলো-আপ হতো না।',
+    },
+    fix: {
+      en: 'Zini-Mail discovered 350+ verified boutique emails via SERP & flyer analysis. Automated 1/min safe delivery with zero spam penalty. Filtered 45 "Clicked (No Order Yet)" prospects and retargeted via WhatsApp with 1-click.',
+      bn: 'Zini-Mail SERP ও ফ্লায়ার স্ক্যানের মাধ্যমে ৩৫০+ ভেরিফায়েড বুটিক ইমেইল সংগ্রহ করে। ১/মিনিট নিরাপদ ডেলিভারিতে কোনো স্প্যাম সমস্যা ছাড়াই পাঠানো হয়। "Clicked (No Order Yet)" ফিল্টারে ৪৫ জনকে শনাক্ত করে ১-ক্লিকে WhatsApp-এ ফলো-আপ করা হয়।',
+    },
+    result: { en: '+৳4,50,000/yr', bn: '+৳৪,৫০,০০০/বছর' },
+    resultLabel: {
+      en: '12 new international bulk wholesale orders closed + 60 hrs/mo manual outreach saved',
+      bn: '১২টি নতুন আন্তর্জাতিক বাল্ক হোলসেল অর্ডার সফল + মাসে ৬০ ঘণ্টা ম্যানুয়াল কাজ সাশ্রয়',
+    },
+  },
 ];
 
 export default function ResultsSection() {
@@ -187,8 +207,8 @@ export default function ResultsSection() {
           </h2>
           <p className="text-muted-foreground text-lg max-w-2xl">
             {language === 'en'
-              ? 'One featured scenario and six industry models — built on realistic numbers from businesses like yours.'
-              : 'একটি ফিচার্ড সিনারিও এবং ছয়টি ইন্ডাস্ট্রি মডেল — আপনার মতো ব্যবসার বাস্তবসম্মত সংখ্যার উপর ভিত্তি করে তৈরি।'}
+              ? 'One featured scenario and seven industry models — built on realistic numbers from businesses like yours.'
+              : 'একটি ফিচার্ড সিনারিও এবং সাতটি ইন্ডাস্ট্রি মডেল — আপনার মতো ব্যবসার বাস্তবসম্মত সংখ্যার উপর ভিত্তি করে তৈরি।'}
           </p>
         </div>
 

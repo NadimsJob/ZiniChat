@@ -228,6 +228,7 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
         { name: language === 'en' ? 'SMTP Settings' : 'এসএমটিপি সেটিংস', icon: Mail, href: '/sp@dmin/settings/smtp', show: hasPermission('view:settings') },
         { name: language === 'en' ? 'Business Nature' : 'বিজনেস নেচার', icon: ClipboardList, href: '/sp@dmin/settings/business-nature', show: hasPermission('view:settings') },
         { name: language === 'en' ? 'AI Integrations' : 'এআই ইন্টিগ্রেশন', icon: Bot, href: '/sp@dmin/settings/ai', show: hasPermission('view:settings') },
+        { name: language === 'en' ? 'AI Outreach (Zini-Mail)' : 'এআই আউটরিচ (জিনি-মেইল)', icon: Mail, href: '/sp@dmin/settings/ai-outreach', show: hasPermission('view:settings') },
         { name: language === 'en' ? 'MFS & Bank Gateway' : 'এমএফএস ও ব্যাংক গেটওয়ে', icon: Landmark, href: '/sp@dmin/settings/mfs', show: hasPermission('view:settings') },
         { name: language === 'en' ? 'Google Login' : 'গুগল লগইন সেটিংস', icon: Key, href: '/sp@dmin/settings/google-auth', show: hasPermission('view:settings') },
         { name: language === 'en' ? 'Facebook Login' : 'ফেসবুক লগিন এক্সেস', icon: Globe, href: '/sp@dmin/settings/facebook-auth', show: hasPermission('view:settings') },

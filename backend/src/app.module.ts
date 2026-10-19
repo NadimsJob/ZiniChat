@@ -55,6 +55,7 @@ import { MetaMarketingConfigModule } from './meta-marketing-config/meta-marketin
 import { MetaAdsAccountModule } from './meta-ads-account/meta-ads-account.module';
 import { McpAdsModule } from './mcp-ads/mcp-ads.module';
 import { AdsAgentModule } from './ads-agent/ads-agent.module';
+import { OutreachModule } from './outreach/outreach.module';
 
 @Module({
   imports: [
@@ -123,7 +124,8 @@ import { AdsAgentModule } from './ads-agent/ads-agent.module';
     ClientBrandsModule,
     FeatureRolloutModule,
     CapiHubModule,
-    AdsAgentModule
+    AdsAgentModule,
+    OutreachModule
   ],
   controllers: [AppController],
   providers: [

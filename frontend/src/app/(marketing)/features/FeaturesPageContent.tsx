@@ -4,7 +4,7 @@ import { useLanguage } from '@/components/LanguageProvider';
 import Link from 'next/link';
 import { InteractiveFeatureTabs, processFeatures } from '@/components/InteractiveFeatureTabs';
 import { useEffect, useState } from 'react';
-import { ArrowRight, CheckCircle2, PlayCircle, Timer } from 'lucide-react';
+import { ArrowRight, CheckCircle2, PlayCircle, Timer, Mail } from 'lucide-react';
 import SetupWidgetMockup from '@/components/SetupWidgetMockup';
 import { WhatsAppBadgeIcon, MessengerBadgeIcon, InstagramBadgeIcon, FacebookCommentBadgeIcon, WebChatBadgeIcon, MetaLogo } from '@/components/BrandIcons';
 
@@ -14,6 +14,7 @@ const integrations = [
   { name: 'Instagram DM', icon: <InstagramBadgeIcon className="w-9 h-9" />, desc: { en: 'Direct Message integration', bn: 'ডাইরেক্ট মেসেজ ইন্টিগ্রেশন' }, color: 'bg-pink-500/10 border-pink-500/30 text-pink-500' },
   { name: 'FB Comment Auto', icon: <FacebookCommentBadgeIcon className="w-9 h-9" />, desc: { en: 'Public & Private DM Reply', bn: 'কমেন্ট অটো-রিপ্লাই ও DM' }, color: 'bg-orange-500/10 border-orange-500/30 text-orange-500' },
   { name: 'Website Chat', icon: <WebChatBadgeIcon className="w-9 h-9" />, desc: { en: 'Live Chat Widget', bn: 'লাইভ চ্যাট উইজেট' }, color: 'bg-cyan-500/10 border-cyan-500/30 text-cyan-500' },
+  { name: 'Zini-Mail Outreach', icon: <Mail className="w-9 h-9" />, desc: { en: 'B2B Cold Email & Leads', bn: 'B2B কোল্ড ইমেইল ও লিড' }, color: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500' },
   { name: 'Meta API Platform', icon: <MetaLogo className="w-9 h-9" />, desc: { en: 'Official Partner', bn: 'মেটা অফিশিয়াল এপ্রুভড' }, color: 'bg-purple-500/10 border-purple-500/30 text-purple-500' },
 ];
 
@@ -134,7 +135,7 @@ export default function FeaturesPageContent() {
               {language === 'en' ? 'Connect with the tools you already use' : 'আপনার পরিচিত টুলসের সাথে সংযুক্ত করুন'}
             </p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4 sm:gap-6">
             {integrations.map((intg, idx) => (
               <div key={idx} className={`${intg.color} border bg-card/50 backdrop-blur-sm rounded-2xl p-5 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-primary/5`}>
                 <div className="text-3xl sm:text-4xl mb-3 flex justify-center animate-float" style={{ animationDelay: `${idx * 0.1}s` }}>{intg.icon}</div>

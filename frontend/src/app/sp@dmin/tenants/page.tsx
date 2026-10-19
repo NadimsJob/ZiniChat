@@ -809,7 +809,8 @@ export default function TenantsPage() {
                       { id: 'capi_hub', label: 'Server-Side Tracking (CAPI)' },
                       { id: 'meta_ads_agent', label: 'Ads Copilot AI' },
                       { id: 'meta_ads_account', label: 'Meta Ads Account Connection' },
-                      { id: 'ads_auto_scaling', label: 'Ads Auto-Scaling' }
+                      { id: 'ads_auto_scaling', label: 'Ads Auto-Scaling' },
+                      { id: 'ai_email_outreach', label: 'Zini-Mail AI Cold Outreach' }
                     ].map(feature => (
                       <label key={feature.id} className="flex items-center gap-2 cursor-pointer bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-2.5 rounded-xl hover:border-emerald-500/50 transition-colors">
                         <input 

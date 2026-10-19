@@ -389,6 +389,45 @@ export function FeatureMockup({ featureId, language, iconColor, color }: { featu
     </div>
   );
 
+  if (featureId === 'zini_mail') return (
+    <div className="space-y-2 text-xs">
+      <div className="p-2.5 bg-gradient-to-r from-orange-500/10 to-amber-500/10 border border-orange-500/30 rounded-xl space-y-1.5">
+        <div className="flex items-center justify-between text-orange-400 font-bold text-[11px]">
+          <span className="flex items-center gap-1.5">✉️ Zini-Mail AI Outreach</span>
+          <span className="bg-orange-500/20 text-orange-300 text-[9px] px-2 py-0.5 rounded-full font-bold">Safe 1/min</span>
+        </div>
+        <div className="flex justify-between text-[10px] text-zinc-400">
+          <span>{language === 'en' ? 'Discovered: 350 Leads' : 'সংগৃহীত: ৩৫০ লিড'}</span>
+          <span className="text-emerald-400 font-bold">{language === 'en' ? 'Bounce: 0.8% (Safe)' : 'বাউন্স: ০.৮% (নিরাপদ)'}</span>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between p-2 bg-amber-500/15 border border-amber-500/30 rounded-lg text-[10px]">
+        <span className="text-amber-300 font-extrabold flex items-center gap-1">
+          🔥 {language === 'en' ? 'Clicked (No Order Yet) [3]' : 'ক্লিক করেছে কিন্তু অর্ডার করেনি [৩ জন]'}
+        </span>
+        <span className="text-[9px] px-2 py-0.5 rounded bg-emerald-600 text-white font-bold">
+          {language === 'en' ? 'Push to WA' : 'হোয়াটসঅ্যাপে পাঠান'}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-3 gap-1 text-center">
+        <div className="p-1.5 bg-surface rounded border border-surface-hover">
+          <div className="text-xs font-bold text-blue-400">42%</div>
+          <div className="text-[8px] text-zinc-500">{language === 'en' ? 'Opens' : 'ওপেন'}</div>
+        </div>
+        <div className="p-1.5 bg-surface rounded border border-surface-hover">
+          <div className="text-xs font-bold text-orange-400">18%</div>
+          <div className="text-[8px] text-zinc-500">{language === 'en' ? 'Clicks' : 'ক্লিক'}</div>
+        </div>
+        <div className="p-1.5 bg-surface rounded border border-surface-hover">
+          <div className="text-xs font-bold text-emerald-400">৳24.5k</div>
+          <div className="text-[8px] text-zinc-500">{language === 'en' ? 'Revenue' : 'রেভিনিউ'}</div>
+        </div>
+      </div>
+    </div>
+  );
+
   // Generic Mockup for new dynamically added features
   return (
     <div className="space-y-2 text-xs">

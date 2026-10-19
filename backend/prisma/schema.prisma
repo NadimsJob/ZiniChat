@@ -90,6 +90,10 @@ model Tenant {
   metaAdAccounts       TenantMetaAdAccount[]
   adCampaignDrafts     AdCampaignDraft[]
   aiTokenUsageLogs     AiTokenUsageLog[]
+  smtpSetting          TenantSmtpSetting?
+  emailCampaigns       EmailCampaign[]
+  campaignLeads        CampaignLead[]
+  suppressions         OutreachSuppression[]
 
   @@map("tenants")
 }
@@ -334,6 +338,7 @@ model Contact {
   stage               KanbanStage?         @relation(fields: [stageId], references: [id], onDelete: SetNull)
   assignedUser        User?                @relation("AssignedContacts", fields: [assignedUserId], references: [id], onDelete: SetNull)
   notes               ContactNote[]
+  campaignLeads       CampaignLead[]
 
   @@index([tenantId, followUpAt, automatedFollowUpSent])
   @@map("contacts")
@@ -673,6 +678,8 @@ model Order {
   notes          String?  @db.Text
   createdBy      String   @default("agent") // agent, ai, customer_widget
   aiAssistantId  String?  @db.Uuid
+  outreachCampaignId String?        @db.Uuid
+  outreachLeadId     String?        @db.Uuid
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -680,6 +687,7 @@ model Order {
   conversation Conversation? @relation(fields: [conversationId], references: [id])
   contact      Contact       @relation(fields: [contactId], references: [id], onDelete: Cascade)
   aiAssistant  AiAssistant?  @relation(fields: [aiAssistantId], references: [id], onDelete: SetNull)
+  outreachCampaign EmailCampaign? @relation(fields: [outreachCampaignId], references: [id], onDelete: SetNull)
   items        OrderItem[]
 
   @@map("orders")
@@ -1542,4 +1550,154 @@ model AiTokenUsageLog {
   @@index([tenantId, createdAt])
   @@map("ai_token_usage_logs")
 }
+
+// ==========================================
+// 1. TENANT SMTP CONFIGURATION (ZINI-MAIL)
+// ==========================================
+model TenantSmtpSetting {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId          String    @unique @db.Uuid
+  tenant            Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  host              String
+  port              Int       @default(587)
+  secure            Boolean   @default(false)
+  username          String
+  passwordEncrypted String    // AES-256-CBC encrypted
+  fromEmail         String
+  fromName          String
+  replyToEmail      String?
+  isVerified        Boolean   @default(false)
+  lastVerifiedAt    DateTime?
+  dailySentCount    Int       @default(0)
+  lastSentDate      String?   // YYYY-MM-DD for quota reset
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@map("tenant_smtp_settings")
+}
+
+// ==========================================
+// 2. EMAIL OUTREACH CAMPAIGNS (ZINI-MAIL)
+// ==========================================
+model EmailCampaign {
+  id                  String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId            String         @db.Uuid
+  tenant              Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name                String
+  bannerImageUrl      String
+  bannerClickUrl      String         // Final destination URL (e.g. https://mybrand.com/offer)
+  bannerSizeBytes     Int            @default(0)         // Physical image size in bytes
+  storageUsedBytes    BigInt         @default(0)         // Total storage consumed (image + leads data)
+  bannerSummary       String?        @db.Text
+  geminiCacheId       String?        // Context Caching TTL ID
+  language            String         @default("bn")      // bn, en, banglish
+  tone                String         @default("consultative") // consultative, friendly, urgent, pas
+  targetKeywords      String[]       // ["craft", "honey", "pottery"]
+  channels            String[]       // ["facebook", "instagram", "linkedin"]
+  targetCountry       String         @default("Bangladesh")
+  targetCity          String?
+  totalLimit          Int            @default(1000)
+  sentCount           Int            @default(0)
+  failedCount         Int            @default(0)
+  bouncedCount        Int            @default(0)
+  opensCount          Int            @default(0)
+  clicksCount         Int            @default(0)
+  ordersCount         Int            @default(0)
+  revenueGenerated    Decimal        @default(0.0) @db.Decimal(12, 2)
+  phoneOnlyLeadsCount Int            @default(0)
+  throttleIntervalSec Int            @default(60)
+  status              String         @default("draft") // draft, collecting, running, paused, completed, cancelled
+  startedAt           DateTime?
+  completedAt         DateTime?
+  leads               CampaignLead[]
+  orders              Order[]
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  @@index([tenantId, status])
+  @@map("email_campaigns")
+}
+
+// ==========================================
+// 3. CAMPAIGN LEADS & PROSPECTS (ZINI-MAIL)
+// ==========================================
+model CampaignLead {
+  id                    String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  campaignId            String        @db.Uuid
+  campaign              EmailCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  tenantId              String        @db.Uuid
+  tenant                Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  trackingToken         String        @unique @default(dbgenerated("gen_random_uuid()")) // For click redirect, web widget sync & unsubscribe
+  businessName          String
+  sourceChannel         String        // facebook, instagram, linkedin
+  sourcePageUrl         String?
+  sourceWebsiteUrl      String?
+  email                 String?       // Nullable if harvested via Phone Only
+  phone                 String?       // Scraped Mobile / WhatsApp Number
+  phoneOnly             Boolean       @default(false) // Harvested without email; reserved for WhatsApp Broadcast
+  contactId             String?       @db.Uuid        // Linked to CRM Contact table
+  personalizedSubject   String?
+  personalizedBodyHtml  String?       @db.Text
+  status                String        @default("pending") // pending, sent, opened, clicked, bounced, failed, unsubscribed, ordered
+  sentAt                DateTime?
+  openedAt              DateTime?
+  clickedAt             DateTime?
+  orderedAt             DateTime?
+  orderId               String?       @db.Uuid
+  orderAmount           Decimal?      @db.Decimal(12, 2)
+  errorMessage          String?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  contact               Contact?      @relation(fields: [contactId], references: [id], onDelete: SetNull)
+
+  @@unique([campaignId, email])
+  @@index([campaignId, status])
+  @@index([campaignId, clickedAt, orderedAt]) // Fast index for "Clicked No Order Yet" filter
+  @@index([tenantId, email])
+  @@index([tenantId, phone])
+  @@map("campaign_leads")
+}
+
+// ==========================================
+// 4. GLOBAL & TENANT SUPPRESSION LIST (ZINI-MAIL)
+// ==========================================
+model OutreachSuppression {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String?   @db.Uuid // null means Global Superadmin Blocklist
+  tenant      Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  email       String
+  reason      String    @default("unsubscribed") // unsubscribed, bounced, complaint, admin_blocked
+  createdAt   DateTime  @default(now())
+
+  @@index([tenantId, email])
+  @@map("outreach_suppressions")
+}
+
+// ==========================================
+// 5. GLOBAL SUPERADMIN OUTREACH CONFIGURATION (ZINI-MAIL)
+// ==========================================
+model GlobalOutreachConfig {
+  id                      String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  serpApiKeyEncrypted     String?   // Serper.dev / ValueSERP master API key
+  serpApiProvider         String    @default("serper") // serper, valueserp
+  visionAiProvider        String    @default("gemini") // gemini, openai
+  visionAiModel           String    @default("gemini-1.5-flash") // gemini-1.5-flash, gemini-1.5-pro, gpt-4o-mini, gpt-4o
+  draftAiProvider         String    @default("gemini") // gemini, openai, anthropic
+  draftAiModel            String    @default("gemini-1.5-flash") // gemini-1.5-flash, gemini-1.5-pro, gpt-4o-mini, claude-3-5-haiku
+  masterVisionPrompt      String?   @db.Text
+  masterDraftPrompt       String?   @db.Text
+  isEmergencyPaused       Boolean   @default(false) // Global Kill-Switch
+  emergencyPausedAt       DateTime?
+  emergencyPausedReason   String?
+  minThrottleIntervalSec  Int       @default(60) // Safety minimum limit
+  dailyMaxEmailsPerTenant Int       @default(1000)
+  visionCreditCost        Int       @default(5)
+  draftCreditCost         Int       @default(1)
+  updatedByUserId         String?   @db.Uuid
+  updatedAt               DateTime  @updatedAt
+
+  @@map("global_outreach_configs")
+}
+
 

@@ -69,6 +69,21 @@ export class OrdersService {
         }
       }
 
+      // Outreach Attribution Hook (REQ-Phase 7)
+      let outreachCampaignId = data.outreachCampaignId;
+      let outreachLeadId = data.outreachLeadId;
+      const trackingToken = data.outreachTrackingToken || data.trackingToken;
+
+      if (trackingToken && !outreachLeadId && tx.campaignLead) {
+        const lead = await tx.campaignLead.findUnique({
+          where: { trackingToken },
+        });
+        if (lead) {
+          outreachLeadId = lead.id;
+          outreachCampaignId = lead.campaignId;
+        }
+      }
+
       const createdOrder = await tx.order.create({
         data: {
           tenantId,
@@ -78,11 +93,34 @@ export class OrdersService {
           notes,
           createdBy: createdBy || 'agent',
           status: 'pending',
+          outreachCampaignId,
+          outreachLeadId,
           items: {
             create: validatedItems
           }
         }
       });
+
+      // Update Outreach Campaign & Lead Metrics if attributed
+      if (outreachCampaignId && outreachLeadId && tx.campaignLead && tx.emailCampaign) {
+        await tx.campaignLead.update({
+          where: { id: outreachLeadId },
+          data: {
+            orderedAt: new Date(),
+            orderId: createdOrder.id,
+            orderAmount: totalAmount,
+            status: 'ordered',
+          },
+        }).catch(() => {});
+
+        await tx.emailCampaign.update({
+          where: { id: outreachCampaignId },
+          data: {
+            ordersCount: { increment: 1 },
+            revenueGenerated: { increment: totalAmount },
+          },
+        }).catch(() => {});
+      }
 
       if (conversationId) {
         await tx.conversation.update({

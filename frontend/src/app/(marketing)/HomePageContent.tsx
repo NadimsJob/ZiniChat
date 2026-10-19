@@ -6,7 +6,7 @@ import { useCurrency } from '@/components/CurrencyProvider';
 import { useMetaPixel } from '@/context/MetaPixelContext';
 import { useGoogleAnalytics } from '@/context/GoogleAnalyticsContext';
 import Link from 'next/link';
-import { Bot, ShieldCheck, ArrowRight, CheckCircle2, MessageSquare, Zap, Globe, Users, ShoppingCart, Star, Send, CheckCheck, PlayCircle, Timer, Sparkles } from 'lucide-react';
+import { Bot, ShieldCheck, ArrowRight, CheckCircle2, MessageSquare, Zap, Globe, Users, ShoppingCart, Star, Send, CheckCheck, PlayCircle, Timer, Sparkles, Mail } from 'lucide-react';
 import { InteractiveFeatureTabs, processFeatures } from '@/components/InteractiveFeatureTabs';
 import { PricingSection } from '@/components/PricingSection';
 import SetupWidgetMockup from '@/components/SetupWidgetMockup';
@@ -633,6 +633,31 @@ export default function HomePageContent() {
               </ul>
             </div>
 
+            {/* Zini-Mail: Autonomous AI Cold Email & B2B Lead Outreach */}
+            <div className="group rounded-3xl border border-border bg-card p-6 shadow-sm hover:border-amber-500/50 hover:shadow-xl hover:shadow-amber-500/10 transition-all duration-300 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20 shadow-xs">
+                    <Mail className="w-7 h-7 text-amber-500" />
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-500 text-[10px] font-extrabold border border-amber-500/20">
+                    B2B Autonomous AI
+                  </span>
+                </div>
+                <h3 className="text-lg font-bold text-foreground mb-2">Zini-Mail AI Cold Outreach</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed mb-4">
+                  {language === 'en' 
+                    ? 'Upload any promotional poster, scrape targeted B2B merchant leads from Google SERP, and let AI dispatch safe 1/min cold emails with full revenue attribution.' 
+                    : 'প্রমোশনাল ব্যানার আপলোড করলেই এআই গুগল থেকে বি২বি লিড সংগ্রহ করে মিনিটে ১টি করে নিরাপদ কোল্ড ইমেইল পাঠাবে এবং অর্ডার ও রেভিনিউ ট্র্যাক করবে।'}
+                </p>
+              </div>
+              <ul className="space-y-2 border-t border-border/60 pt-4 text-xs font-semibold text-foreground/80">
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-amber-500" /> AI Vision Poster Reading</li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-amber-500" /> 1/min Safe Throttle & Jitter</li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-amber-500" /> 🔥 Clicked Retargeting on WA</li>
+              </ul>
+            </div>
+
           </div>
         </div>
       </section>
@@ -658,6 +683,141 @@ export default function HomePageContent() {
           <Link href="/features" className="inline-flex items-center gap-2 text-primary font-bold hover:gap-3 transition-all px-6 py-3 rounded-xl bg-primary/10 hover:bg-primary/20">
             {language === 'en' ? 'View all features' : 'সব ফিচার দেখুন'} <ArrowRight className="w-4 h-4" />
           </Link>
+        </div>
+      </section>
+
+      {/* Zini-Mail Autonomous AI Outreach Spotlight Banner */}
+      <section className="relative w-full bg-gradient-to-b from-background via-amber-950/10 to-background py-20 px-4 sm:px-6 lg:px-8 border-t border-border/40 overflow-hidden">
+        <div className="pointer-events-none absolute -right-24 top-1/2 w-96 h-96 -translate-y-1/2 rounded-full bg-amber-500/10 blur-[120px]" />
+        <div className="pointer-events-none absolute -left-24 top-1/2 w-96 h-96 -translate-y-1/2 rounded-full bg-primary/10 blur-[120px]" />
+
+        <div className="max-w-7xl mx-auto">
+          <div className="rounded-3xl border border-amber-500/30 bg-card/80 backdrop-blur-xl p-8 sm:p-12 shadow-2xl shadow-amber-500/5 relative z-10">
+            <div className="grid lg:grid-cols-12 gap-10 items-center">
+              
+              {/* Left Column: Story & Highlights */}
+              <div className="lg:col-span-7 space-y-6">
+                <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3.5 py-1 text-xs font-extrabold uppercase tracking-widest text-amber-500">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  {language === 'en' ? 'NEW: Zini-Mail Autonomous Outreach' : 'নতুন: জিনি-মেইল অটোনোমাস আউটরিচ'}
+                </div>
+
+                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-foreground leading-tight">
+                  {language === 'en' ? (
+                    <>Stop Waiting for Inquiries. <br /><span className="bg-gradient-to-r from-amber-400 via-orange-500 to-emerald-500 bg-clip-text text-transparent">Autonomously Win B2B Clients</span></>
+                  ) : (
+                    <>কাস্টমার আসার অপেক্ষায় বসে থাকা নয়। <br /><span className="bg-gradient-to-r from-amber-400 via-orange-500 to-emerald-500 bg-clip-text text-transparent">এআই দিয়ে আনুন নিশ্চিত বি২বি সেলস</span></>
+                  )}
+                </h2>
+
+                <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
+                  {language === 'en'
+                    ? 'Upload any product flyer or offer poster. Zini-Mail automatically harvests verified merchant leads from Google SERP, drafts pain-point cold emails with Gemini vision caching, and isolates hot clickers for 1-click WhatsApp follow-ups with full revenue attribution.'
+                    : 'প্রমোশনাল ব্যানার বা অফার আপলোড করলেই জিনি-মেইল স্বয়ংক্রিয়ভাবে গুগল থেকে ব্যবসায়িক লিড সংগ্রহ করে, এআই ভিশন দিয়ে পোস্টার বুঝে মিনিটে ১টি করে নিরাপদ মেইল পাঠায় এবং ক্লিক করা হট লিডদের ১-ক্লিকে হোয়াটসঅ্যাপে নিয়ে আসে।'}
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                  {[
+                    { en: 'SERP Discovery + Phone Harvester', bn: 'গুগল সার্চ ও নো-ইমেইল ফোন হার্ভেস্টার' },
+                    { en: 'AI Vision Poster Card Extractor', bn: 'এআই ভিশন ব্যানার ও অফার রিডার' },
+                    { en: '1/min Safe Throttle & Jitter', bn: 'মিনিটে ১টি মেইল ও বাউন্স ট্রিপওয়্যার' },
+                    { en: '1-Click "Clicked" WhatsApp Retargeting', bn: 'ক্লিক করা হট লিডদের হোয়াটসঅ্যাপে রূপান্তর' }
+                  ].map((feat, i) => (
+                    <div key={i} className="flex items-center gap-2.5 text-xs sm:text-sm font-semibold text-foreground/90">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                      <span>{language === 'en' ? feat.en : feat.bn}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-center gap-4 pt-4">
+                  <Link
+                    href="/features"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-orange-500/20 hover:scale-105 transition-all"
+                  >
+                    {language === 'en' ? 'Learn About Zini-Mail' : 'জিনি-মেইল বিস্তারিত দেখুন'}
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                  <Link
+                    href="/signup"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-card/60 px-6 py-3.5 text-sm font-bold text-foreground hover:bg-surface-hover hover:border-amber-500/30 transition-all"
+                  >
+                    {language === 'en' ? 'Try Free Today' : 'আজই ফ্রিতে ট্রাই করুন'}
+                  </Link>
+                </div>
+              </div>
+
+              {/* Right Column: Live Mockup Card */}
+              <div className="lg:col-span-5">
+                <div className="rounded-2xl border border-border/80 bg-surface/90 backdrop-blur-md p-5 space-y-4 shadow-xl">
+                  {/* Mock Card Header */}
+                  <div className="flex items-center justify-between pb-3 border-b border-border/60">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500 font-bold">
+                        ✉️
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-foreground">Boutique Retail Outreach</div>
+                        <div className="text-[10px] text-muted-foreground">Status: Running (Throttled 1/min)</div>
+                      </div>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-bold border border-emerald-500/20">
+                      Active
+                    </span>
+                  </div>
+
+                  {/* Funnel Progress Simulation */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-[11px] font-semibold text-muted-foreground">
+                      <span>{language === 'en' ? 'Discovered: 350 Leads' : 'সংগৃহীত: ৩৫০ লিড'}</span>
+                      <span className="text-foreground">Sent: 300</span>
+                    </div>
+                    <div className="h-2 w-full rounded-full bg-surface-hover overflow-hidden flex">
+                      <div className="h-full bg-blue-500 w-[42%]" title="Opens" />
+                      <div className="h-full bg-amber-500 w-[18%]" title="Clicks" />
+                      <div className="h-full bg-emerald-500 w-[8%]" title="Orders" />
+                    </div>
+                    <div className="flex justify-between text-[10px] text-muted-foreground">
+                      <span className="text-blue-400 font-bold">42% Opened</span>
+                      <span className="text-amber-400 font-bold">18% Clicked</span>
+                      <span className="text-emerald-400 font-bold">12 Orders</span>
+                    </div>
+                  </div>
+
+                  {/* Hot Leads Highlight Pill */}
+                  <div className="p-3 rounded-xl bg-gradient-to-r from-amber-500/15 via-orange-500/15 to-transparent border border-orange-500/30 flex items-center justify-between gap-2">
+                    <div>
+                      <div className="text-xs font-extrabold text-amber-400 flex items-center gap-1.5">
+                        🔥 {language === 'en' ? 'Clicked (No Order Yet) [42]' : 'ক্লিক করেছে কিন্তু অর্ডার করেনি [৪২ জন]'}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground mt-0.5">
+                        {language === 'en' ? 'High-intent prospects ready to convert' : 'অফারে আগ্রহী হট বায়ার'}
+                      </div>
+                    </div>
+                    <Link
+                      href="/signup"
+                      className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] shrink-0 shadow-sm transition-all"
+                    >
+                      {language === 'en' ? 'Push to WA' : 'হোয়াটসঅ্যাপে পাঠান'}
+                    </Link>
+                  </div>
+
+                  {/* Telemetry Metric Box */}
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <div className="p-2.5 rounded-xl bg-card border border-border/60 text-center">
+                      <div className="text-base font-black text-emerald-400">৳1,85,000</div>
+                      <div className="text-[10px] text-muted-foreground">{language === 'en' ? 'Attributed GMV' : 'অর্জিত রেভিনিউ'}</div>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-card border border-border/60 text-center">
+                      <div className="text-base font-black text-amber-400">1,420%</div>
+                      <div className="text-[10px] text-muted-foreground">{language === 'en' ? 'ROI on AI Credits' : 'এআই ক্রেডিট ROI'}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
         </div>
       </section>
 

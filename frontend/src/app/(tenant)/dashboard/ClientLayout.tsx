@@ -55,7 +55,8 @@ import {
  Factory,
  Truck,
  BookOpen,
- Server
+ Server,
+  Mail
 } from 'lucide-react';
 import NotificationBell from '@/components/NotificationBell';
 import SupportWidget from '@/components/SupportWidget';
@@ -503,6 +504,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
    '/dashboard/ads-agent': ['meta_ads_agent', 'capi_hub'],
    '/dashboard/settings/capi-hub': ['capi_hub'],
    '/dashboard/settings/meta-ads': ['meta_ads_account', 'capi_hub'],
+    '/dashboard/zini-mail': ['ai_email_outreach'],
  };
 
  const hasAccess = (href: string) => {
@@ -591,6 +593,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
     {
       title: language === 'en' ? 'MARKETING & ADS' : 'মার্কেটিং ও এডস',
       items: [
+        { name: language === 'en' ? 'Zini-Mail' : 'জিনি-মেইল', icon: Mail, href: '/dashboard/zini-mail', hiddenUnlessAllowed: true },
         { name: language === 'en' ? 'Ads Copilot' : 'অ্যাডস কোপাইলট', icon: Bot, href: '/dashboard/ads-agent', hiddenUnlessAllowed: true },
         { name: language === 'en' ? 'CAPI Hub' : 'CAPI Hub', icon: Server, href: '/dashboard/settings/capi-hub', hiddenUnlessAllowed: true },
         { name: language === 'en' ? 'Meta Ads Account' : 'মেটা অ্যাডস অ্যাকাউন্ট', icon: Facebook, href: '/dashboard/settings/meta-ads', hiddenUnlessAllowed: true },
