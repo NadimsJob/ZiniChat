@@ -242,6 +242,47 @@ export class MessengerService implements IChannelAdapter {
           };
         }
 
+        // Resolve Quoted Message if user replied to a previous message (reply_to.mid)
+        if (msg.reply_to?.mid) {
+          const mid = msg.reply_to.mid;
+          let qText = '';
+          let referencedProductId: string | undefined = undefined;
+          let referencedProductName: string | undefined = undefined;
+          let referencedProductPrice: number | undefined = undefined;
+
+          try {
+            const origDbMsg = await this.prisma.message.findFirst({
+              where: { externalMessageId: mid }
+            });
+            if (origDbMsg?.content) {
+              let parsedContent: any = origDbMsg.content;
+              if (typeof origDbMsg.content === 'string') {
+                try { parsedContent = JSON.parse(origDbMsg.content); } catch { parsedContent = { text: origDbMsg.content }; }
+              }
+              if (parsedContent && typeof parsedContent === 'object') {
+                qText = parsedContent.body || parsedContent.text || parsedContent.caption || '';
+                if (parsedContent.productId) referencedProductId = parsedContent.productId;
+                if (parsedContent.productName) referencedProductName = parsedContent.productName;
+                if (parsedContent.productPrice) referencedProductPrice = parsedContent.productPrice;
+              }
+            }
+          } catch (dbErr: any) {
+            this.logger.debug(`Messenger quoted message DB lookup failed for mid ${mid}: ${dbErr.message}`);
+          }
+
+          if (qText) {
+            const quotedMsg = {
+              id: mid,
+              text: qText,
+              mid,
+              ...(referencedProductId ? { productId: referencedProductId } : {}),
+              ...(referencedProductName ? { productName: referencedProductName } : {}),
+              ...(referencedProductPrice ? { productPrice: referencedProductPrice } : {})
+            };
+            finalContent = { ...finalContent, quotedMsg };
+          }
+        }
+
         // Resolve Real Sender Profile Name & Avatar
         let resolvedName: string | undefined = undefined;
         let resolvedAvatar: string | undefined = undefined;

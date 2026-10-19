@@ -34,6 +34,7 @@ describe('OrchestratorService', () => {
     prismaService = {
       message: {
         findUnique: jest.fn(),
+        findFirst: jest.fn().mockResolvedValue(null),
         count: jest.fn().mockResolvedValue(0),
         findMany: jest.fn().mockResolvedValue([]),
       },
@@ -1153,6 +1154,201 @@ describe('OrchestratorService', () => {
       expect(ordersService.createOrder).not.toHaveBeenCalled();
       expect(result.overrideReplyText).toContain('৳50 পাঠিয়েছেন');
       expect(result.overrideReplyText).toContain('বাকি ৳10 পরিশোধ');
+    });
+  });
+
+  describe('Quoted Message & Referenced Photo Product Resolution', () => {
+    it('T-Q1: Explicit Quote — should augment RAG query and prepend quoted product context to userText', async () => {
+      prismaService.message.findUnique.mockResolvedValue({
+        id: 'msg_quoted_1',
+        direction: 'inbound',
+        type: 'text',
+        content: {
+          text: 'এইটার দাম কত?',
+          quotedMsg: {
+            text: '📸 Premium Silk Panjabi — BDT 2,200',
+            productId: 'prod_silk_1',
+            productName: 'Premium Silk Panjabi',
+            productPrice: 2200,
+          },
+        },
+        conversationId: 'c1',
+        conversation: {
+          tenantId: 'tenant1',
+          id: 'c1',
+          channelConnection: { id: 'conn1', isAiAutoReplyEnabled: true },
+        },
+      });
+
+      prismaService.aiAssistant.findFirst.mockResolvedValue({
+        id: 'ai1',
+        tenantId: 'tenant1',
+        isActive: true,
+        routingMode: 'ai_first',
+        systemPrompt: 'You are helpful assistant.',
+        tools: [],
+      });
+
+      await service.processMessage('msg_quoted_1');
+
+      // Verify that RAG product search was invoked with augmented query containing the quoted product text
+      expect(aiService.searchRelevantProducts).toHaveBeenCalledWith(
+        'tenant1',
+        expect.stringContaining('📸 Premium Silk Panjabi — BDT 2,200'),
+        expect.any(Number)
+      );
+
+      // Verify that generateCompletion was called with prompt containing the quoted context and customer reply
+      expect(aiService.generateCompletion).toHaveBeenCalledWith(
+        expect.stringContaining('[Replying to Product/Message: "📸 Premium Silk Panjabi — BDT 2,200"]')
+      );
+    });
+
+    it('T-Q2: Implicit Demonstrative Inquiry — should resolve recent outbound product photo when user asks without quoting', async () => {
+      prismaService.message.findUnique.mockResolvedValue({
+        id: 'msg_demonstrative_1',
+        direction: 'inbound',
+        type: 'text',
+        content: { text: 'এইটার দাম কত?' }, // No explicit quotedMsg
+        conversationId: 'c1',
+        conversation: {
+          tenantId: 'tenant1',
+          id: 'c1',
+          channelConnection: { id: 'conn1', isAiAutoReplyEnabled: true },
+        },
+      });
+
+      // Mock recent outbound product image sent to this customer
+      prismaService.message.findFirst.mockResolvedValue({
+        id: 'outbound_img_1',
+        conversationId: 'c1',
+        direction: 'outbound',
+        type: 'image',
+        content: JSON.stringify({
+          body: '📸 Smart Watch Ultra — BDT 3,500',
+          productId: 'prod_watch_1',
+          productName: 'Smart Watch Ultra',
+          productPrice: 3500,
+        }),
+      });
+
+      prismaService.aiAssistant.findFirst.mockResolvedValue({
+        id: 'ai1',
+        tenantId: 'tenant1',
+        isActive: true,
+        routingMode: 'ai_first',
+        systemPrompt: 'You are helpful assistant.',
+        tools: [],
+      });
+
+      await service.processMessage('msg_demonstrative_1');
+
+      // Verify RAG search was augmented with the referenced photo title
+      expect(aiService.searchRelevantProducts).toHaveBeenCalledWith(
+        'tenant1',
+        expect.stringContaining('Smart Watch Ultra'),
+        expect.any(Number)
+      );
+
+      // Verify prompt contains Referenced Recent Product Photo directive
+      expect(aiService.generateCompletion).toHaveBeenCalledWith(
+        expect.stringContaining('[Referenced Recent Product Photo: "📸 Smart Watch Ultra — BDT 3,500"]')
+      );
+    });
+
+    it('T-Q3: Context History Formatting — correctly extracts body from stringified JSON image messages and displays quotes', async () => {
+      prismaService.message.findUnique.mockResolvedValue({
+        id: 'msg_flow_1',
+        direction: 'inbound',
+        type: 'text',
+        content: { text: 'সাইজ কি কি আছে?' },
+        conversationId: 'c1',
+        conversation: {
+          tenantId: 'tenant1',
+          id: 'c1',
+          channelConnection: { id: 'conn1', isAiAutoReplyEnabled: true },
+        },
+      });
+
+      // Mock history with an outbound image message having stringified JSON content
+      prismaService.message.findMany.mockResolvedValue([
+        {
+          id: 'hist_img_1',
+          sender: 'assistant',
+          direction: 'outbound',
+          type: 'image',
+          content: JSON.stringify({
+            body: '📸 Casual Linen Shirt — BDT 1,200',
+            mediaUrl: 'https://cdn.zinichat.com/shirt.jpg',
+          }),
+          createdAt: new Date('2026-10-20T00:00:00Z'),
+        },
+        {
+          id: 'hist_inbound_1',
+          sender: 'user',
+          direction: 'inbound',
+          type: 'text',
+          content: {
+            text: 'এইটার দাম কত?',
+            quotedMsg: { text: '📸 Casual Linen Shirt — BDT 1,200' },
+          },
+          createdAt: new Date('2026-10-20T00:01:00Z'),
+        },
+      ]);
+
+      prismaService.aiAssistant.findFirst.mockResolvedValue({
+        id: 'ai1',
+        tenantId: 'tenant1',
+        isActive: true,
+        routingMode: 'ai_first',
+        systemPrompt: 'You are helpful assistant.',
+        tools: [],
+      });
+
+      await service.processMessage('msg_flow_1');
+
+      // Verify generateCompletion was called and prompt includes history with parsed body and quoting line
+      expect(aiService.generateCompletion).toHaveBeenCalledWith(
+        expect.stringContaining('📸 Casual Linen Shirt — BDT 1,200')
+      );
+      expect(aiService.generateCompletion).toHaveBeenCalledWith(
+        expect.stringContaining('[Quoting: "📸 Casual Linen Shirt — BDT 1,200"]')
+      );
+    });
+
+    it('T-Q4: Regular Inquiry — does NOT trigger demonstrative photo lookup when inquiry is general', async () => {
+      prismaService.message.findUnique.mockResolvedValue({
+        id: 'msg_regular_1',
+        direction: 'inbound',
+        type: 'text',
+        content: { text: 'আপনাদের শোরুমের ঠিকানা কোথায়?' }, // General location inquiry, > 3 words, no demonstrative
+        conversationId: 'c1',
+        conversation: {
+          tenantId: 'tenant1',
+          id: 'c1',
+          channelConnection: { id: 'conn1', isAiAutoReplyEnabled: true },
+        },
+      });
+
+      prismaService.message.findFirst.mockResolvedValue(null);
+
+      prismaService.aiAssistant.findFirst.mockResolvedValue({
+        id: 'ai1',
+        tenantId: 'tenant1',
+        isActive: true,
+        routingMode: 'ai_first',
+        systemPrompt: 'You are helpful assistant.',
+        tools: [],
+      });
+
+      await service.processMessage('msg_regular_1');
+
+      // Verify RAG search query is the original user query without photo prefix
+      expect(aiService.searchRelevantProducts).toHaveBeenCalledWith(
+        'tenant1',
+        'আপনাদের শোরুমের ঠিকানা কোথায়?',
+        expect.any(Number)
+      );
     });
   });
 });

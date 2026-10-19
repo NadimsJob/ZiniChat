@@ -56,13 +56,48 @@ export class WhatsappService implements IChannelAdapter {
 
             let finalContent = msg[msg.type] || msg.text;
 
-            // If it's a media message, download the media
-            if (['image', 'audio', 'document', 'video', 'voice'].includes(msg.type) && finalContent?.id) {
+            // Resolve Quoted Message if user replied to a previous message
+            if (msg.context?.id) {
+              const stanzaId = msg.context.id;
+              let qText = '';
+              let referencedProductId: string | undefined = undefined;
+              let referencedProductName: string | undefined = undefined;
+              let referencedProductPrice: number | undefined = undefined;
+
               try {
-                const localUrl = await this.downloadMedia(finalContent.id, connection.accessTokenEncrypted, msg.type, finalContent.mime_type);
-                finalContent = { ...finalContent, localUrl };
-              } catch (err) {
-                this.logger.error(`Failed to download media ${finalContent.id}: ${err.message}`);
+                const origDbMsg = await this.prisma.message.findFirst({
+                  where: { externalMessageId: stanzaId }
+                });
+                if (origDbMsg?.content) {
+                  let parsedContent: any = origDbMsg.content;
+                  if (typeof origDbMsg.content === 'string') {
+                    try { parsedContent = JSON.parse(origDbMsg.content); } catch { parsedContent = { text: origDbMsg.content }; }
+                  }
+                  if (parsedContent && typeof parsedContent === 'object') {
+                    qText = parsedContent.body || parsedContent.text || parsedContent.caption || '';
+                    if (parsedContent.productId) referencedProductId = parsedContent.productId;
+                    if (parsedContent.productName) referencedProductName = parsedContent.productName;
+                    if (parsedContent.productPrice) referencedProductPrice = parsedContent.productPrice;
+                  }
+                }
+              } catch (dbErr: any) {
+                this.logger.debug(`Cloud API quoted message DB lookup failed for stanza ${stanzaId}: ${dbErr.message}`);
+              }
+
+              if (qText) {
+                const quotedMsg = {
+                  id: stanzaId,
+                  text: qText,
+                  stanzaId,
+                  ...(referencedProductId ? { productId: referencedProductId } : {}),
+                  ...(referencedProductName ? { productName: referencedProductName } : {}),
+                  ...(referencedProductPrice ? { productPrice: referencedProductPrice } : {})
+                };
+                if (typeof finalContent === 'object' && finalContent !== null) {
+                  finalContent = { ...finalContent, quotedMsg };
+                } else {
+                  finalContent = { body: finalContent, quotedMsg };
+                }
               }
             }
 

@@ -40,6 +40,9 @@ const mockPrisma = {
     deleteMany: jest.fn().mockResolvedValue({ count: 1 }),
     count: jest.fn().mockResolvedValue(0),
   },
+  message: {
+    findFirst: jest.fn(),
+  },
 };
 
 
@@ -172,4 +175,61 @@ describe('WhatsappWebService', () => {
       expect((service as any).connectionIds.has('tenant-logout')).toBe(false);
     });
   });
+
+  describe('resolveQuotedMessage', () => {
+    it('should return null if no quotedMessage and no stanzaId', async () => {
+      const result = await (service as any).resolveQuotedMessage({});
+      expect(result).toBeNull();
+    });
+
+    it('should resolve quoted message text from DB when stanzaId matches an outbound product photo', async () => {
+      mockPrisma.message.findFirst.mockResolvedValue({
+        id: 'db-msg-1',
+        externalMessageId: 'stanza-123',
+        content: JSON.stringify({
+          body: '📸 Premium Panjabi — BDT 1,850',
+          productId: 'prod-panjabi-1',
+          productName: 'Premium Panjabi',
+          productPrice: 1850,
+        }),
+      });
+
+      const result = await (service as any).resolveQuotedMessage({
+        stanzaId: 'stanza-123',
+        participant: '8801700000000@s.whatsapp.net',
+      });
+
+      expect(result).toEqual({
+        text: '📸 Premium Panjabi — BDT 1,850',
+        participant: '8801700000000@s.whatsapp.net',
+        stanzaId: 'stanza-123',
+        productId: 'prod-panjabi-1',
+        productName: 'Premium Panjabi',
+        productPrice: 1850,
+      });
+      expect(mockPrisma.message.findFirst).toHaveBeenCalledWith({
+        where: { externalMessageId: 'stanza-123' },
+      });
+    });
+
+    it('should fallback to inline quotedMessage caption if DB record is not found', async () => {
+      mockPrisma.message.findFirst.mockResolvedValue(null);
+
+      const result = await (service as any).resolveQuotedMessage({
+        stanzaId: 'stanza-unknown',
+        quotedMessage: {
+          imageMessage: {
+            caption: 'Original Photo Caption',
+          },
+        },
+      });
+
+      expect(result).toEqual({
+        text: 'Original Photo Caption',
+        stanzaId: 'stanza-unknown',
+        participant: undefined,
+      });
+    });
+  });
 });
+

@@ -16,6 +16,9 @@ describe('MessengerService', () => {
     facebookCommentLog: {
       findFirst: jest.fn(),
     },
+    message: {
+      findFirst: jest.fn(),
+    },
   };
 
   beforeEach(async () => {
@@ -191,6 +194,63 @@ describe('MessengerService', () => {
 
       const messages = await service.parseWebhookPayload(payload);
       expect(messages).toHaveLength(0);
+    });
+
+    it('should resolve quoted message when user quotes a product via reply_to.mid', async () => {
+      mockPrisma.channelConnection.findFirst.mockResolvedValue({
+        id: 'conn_1',
+        tenantId: 'tenant_1',
+        accessTokenEncrypted: 'mock_token',
+        externalAccountId: 'page_456',
+      });
+      mockPrisma.contact.findFirst.mockResolvedValue({
+        name: 'Nadim Chowdhury',
+      });
+      mockPrisma.message.findFirst.mockResolvedValue({
+        id: 'db_mid_orig',
+        externalMessageId: 'mid_quoted_456',
+        content: JSON.stringify({
+          body: '📸 Premium Panjabi — BDT 1,850',
+          productId: 'prod_panjabi_1',
+          productName: 'Premium Panjabi',
+          productPrice: 1850,
+        }),
+      });
+
+      const payload = {
+        object: 'page',
+        entry: [
+          {
+            id: 'page_456',
+            messaging: [
+              {
+                sender: { id: 'psid_999' },
+                recipient: { id: 'page_456' },
+                timestamp: 1729350000000,
+                message: {
+                  mid: 'mid_123',
+                  text: 'এইটার দাম কত?',
+                  reply_to: { mid: 'mid_quoted_456' },
+                },
+              },
+            ],
+          },
+        ],
+      };
+
+      const messages = await service.parseWebhookPayload(payload);
+
+      expect(messages).toHaveLength(1);
+      expect(messages[0].content).toMatchObject({
+        text: 'এইটার দাম কত?',
+        quotedMsg: {
+          id: 'mid_quoted_456',
+          text: '📸 Premium Panjabi — BDT 1,850',
+          productId: 'prod_panjabi_1',
+          productName: 'Premium Panjabi',
+          productPrice: 1850,
+        },
+      });
     });
   });
 });

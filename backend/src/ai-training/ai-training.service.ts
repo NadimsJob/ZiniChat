@@ -900,6 +900,16 @@ ${combinedText}`;
     prompt += `4. NEVER respond as if you have lost track of what the customer is responding to.\n`;
     prompt += `VIOLATION OF THIS RULE IS NOT ALLOWED.\n`;
 
+    // MANDATORY QUOTED MESSAGE & REFERENCED PRODUCT DIRECTIVE
+    prompt += `\n=== MANDATORY QUOTED MESSAGE & REFERENCED PRODUCT DIRECTIVE ===\n`;
+    prompt += `When the customer quotes a message or photo (e.g., "[Replying to Product/Message: ...]" or "[Quoting: ...]") or asks about an item using demonstratives (e.g. "এইটার দাম কত?", "দাম কত?", "এটা সাইজ কি কি আছে?", "এটা নিব", "কত দাম", "how much is this?", "price of this?"):\n`;
+    prompt += `1. Look directly at the quoted product or the referenced product photo in the prompt/catalog.\n`;
+    prompt += `2. IMMEDIATELY identify that exact product from the PRODUCT CATALOG below.\n`;
+    prompt += `3. State its EXACT price, stock availability, and available options/sizes directly.\n`;
+    prompt += `4. If the customer indicates purchase intent ("এটা নিব", "অর্ডার করব", "how to buy"), guide them directly to complete the order for that specific product.\n`;
+    prompt += `5. NEVER ask the customer "Which product are you talking about?" or "Please tell me the product name" when a product was just quoted or presented.\n`;
+    prompt += `VIOLATION OF THIS DIRECTIVE IS STRICTLY FORBIDDEN.\n`;
+
     // MANDATORY PRODUCT CATALOG PRESENTATION & MULTI-PRODUCT DIRECTIVE
     prompt += `\n=== MANDATORY PRODUCT CATALOG PRESENTATION & MULTI-PRODUCT DIRECTIVE ===\n`;
     prompt += `1. MULTI-PRODUCT LISTING (CRITICAL): When the customer asks for a product list, catalog, available items, collection, or what products you have (e.g. "প্রোডাক্ট লিস্ট দিন", "আপনাদের কী কী প্রোডাক্ট আছে", "show product list", "catalog", "collection", "সবগুলো দেখান", "সব প্রোডাক্ট দেখান", "ছবি পাঠান"):\n`;

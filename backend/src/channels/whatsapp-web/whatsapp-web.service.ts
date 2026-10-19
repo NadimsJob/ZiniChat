@@ -10,6 +10,18 @@ import { Boom } from '@hapi/boom';
 import * as fs from 'fs';
 import * as path from 'path';
 import sharp from 'sharp';
+function unwrapBaileysMessage(raw: any): any {
+  if (!raw) return null;
+  if (raw.ephemeralMessage?.message) return unwrapBaileysMessage(raw.ephemeralMessage.message);
+  if (raw.viewOnceMessage?.message) return unwrapBaileysMessage(raw.viewOnceMessage.message);
+  if (raw.viewOnceMessageV2?.message) return unwrapBaileysMessage(raw.viewOnceMessageV2.message);
+  if (raw.viewOnceMessageV2Extension?.message) return unwrapBaileysMessage(raw.viewOnceMessageV2Extension.message);
+  if (raw.documentWithCaptionMessage?.message) return unwrapBaileysMessage(raw.documentWithCaptionMessage.message);
+  if (raw.editedMessage?.message?.protocolMessage?.editedMessage) {
+    return unwrapBaileysMessage(raw.editedMessage.message.protocolMessage.editedMessage);
+  }
+  return raw;
+}
 
 @Injectable()
 export class WhatsappWebService implements OnModuleInit {
@@ -310,20 +322,6 @@ export class WhatsappWebService implements OnModuleInit {
 
         if (!msg.message) continue;
 
-        // Unpack inner message if wrapped in ephemeral/viewOnce/documentWithCaption/editedMessage
-        const unwrapBaileysMessage = (raw: any): any => {
-          if (!raw) return null;
-          if (raw.ephemeralMessage?.message) return unwrapBaileysMessage(raw.ephemeralMessage.message);
-          if (raw.viewOnceMessage?.message) return unwrapBaileysMessage(raw.viewOnceMessage.message);
-          if (raw.viewOnceMessageV2?.message) return unwrapBaileysMessage(raw.viewOnceMessageV2.message);
-          if (raw.viewOnceMessageV2Extension?.message) return unwrapBaileysMessage(raw.viewOnceMessageV2Extension.message);
-          if (raw.documentWithCaptionMessage?.message) return unwrapBaileysMessage(raw.documentWithCaptionMessage.message);
-          if (raw.editedMessage?.message?.protocolMessage?.editedMessage) {
-            return unwrapBaileysMessage(raw.editedMessage.message.protocolMessage.editedMessage);
-          }
-          return raw;
-        };
-
         const messageContent = unwrapBaileysMessage(msg.message);
         if (!messageContent) continue;
 
@@ -353,18 +351,15 @@ export class WhatsappWebService implements OnModuleInit {
         } else if (messageContent.extendedTextMessage?.text) {
           contentStr = messageContent.extendedTextMessage.text;
           const contextInfo = messageContent.extendedTextMessage.contextInfo;
-          if (contextInfo?.quotedMessage) {
-            const qMsg = unwrapBaileysMessage(contextInfo.quotedMessage);
-            let qText = '[Media message]';
-            if (qMsg.conversation) qText = qMsg.conversation;
-            else if (qMsg.extendedTextMessage?.text) qText = qMsg.extendedTextMessage.text;
-            else if (qMsg.imageMessage?.caption) qText = qMsg.imageMessage.caption;
-            else if (qMsg.videoMessage?.caption) qText = qMsg.videoMessage.caption;
-            quotedMsg = { text: qText, participant: contextInfo.participant };
+          if (contextInfo) {
+            quotedMsg = await this.resolveQuotedMessage(contextInfo);
           }
         } else if (messageContent.imageMessage) {
           messageType = 'image';
           contentStr = messageContent.imageMessage.caption || '[Photo]';
+          if (messageContent.imageMessage.contextInfo) {
+            quotedMsg = await this.resolveQuotedMessage(messageContent.imageMessage.contextInfo);
+          }
           try {
             const buffer = await downloadMediaMessage(effectiveMsg as any, 'buffer', {});
             thumbnail = buffer.toString('base64');
@@ -656,5 +651,57 @@ export class WhatsappWebService implements OnModuleInit {
     } catch (err: any) {
       this.debugLog(`Failed to send read receipt to ${remoteJid}: ${err.message}`);
     }
+  }
+
+  private async resolveQuotedMessage(contextInfo: any): Promise<any> {
+    if (!contextInfo?.quotedMessage && !contextInfo?.stanzaId) return null;
+    let qText = '';
+    if (contextInfo.quotedMessage) {
+      const qMsg = unwrapBaileysMessage(contextInfo.quotedMessage);
+      if (qMsg.conversation) qText = qMsg.conversation;
+      else if (qMsg.extendedTextMessage?.text) qText = qMsg.extendedTextMessage.text;
+      else if (qMsg.imageMessage?.caption) qText = qMsg.imageMessage.caption;
+      else if (qMsg.videoMessage?.caption) qText = qMsg.videoMessage.caption;
+    }
+
+    const stanzaId = contextInfo.stanzaId;
+    let referencedProductId: string | undefined = undefined;
+    let referencedProductName: string | undefined = undefined;
+    let referencedProductPrice: number | undefined = undefined;
+
+    if (stanzaId) {
+      try {
+        const origDbMsg = await this.prisma.message.findFirst({
+          where: { externalMessageId: stanzaId }
+        });
+        if (origDbMsg?.content) {
+          let parsedContent: any = origDbMsg.content;
+          if (typeof origDbMsg.content === 'string') {
+            try { parsedContent = JSON.parse(origDbMsg.content); } catch { parsedContent = { text: origDbMsg.content }; }
+          }
+          if (parsedContent && typeof parsedContent === 'object') {
+            if (parsedContent.body && (!qText || qText === '[Media message]')) qText = parsedContent.body;
+            else if (parsedContent.text && (!qText || qText === '[Media message]')) qText = parsedContent.text;
+            else if (parsedContent.caption && (!qText || qText === '[Media message]')) qText = parsedContent.caption;
+
+            if (parsedContent.productId) referencedProductId = parsedContent.productId;
+            if (parsedContent.productName) referencedProductName = parsedContent.productName;
+            if (parsedContent.productPrice) referencedProductPrice = parsedContent.productPrice;
+          }
+        }
+      } catch (dbErr: any) {
+        this.logger.debug(`Quoted message DB lookup failed for stanza ${stanzaId}: ${dbErr.message}`);
+      }
+    }
+
+    if (!qText) qText = '[Media message]';
+    return {
+      text: qText,
+      participant: contextInfo.participant,
+      stanzaId,
+      ...(referencedProductId ? { productId: referencedProductId } : {}),
+      ...(referencedProductName ? { productName: referencedProductName } : {}),
+      ...(referencedProductPrice ? { productPrice: referencedProductPrice } : {})
+    };
   }
 }

@@ -261,12 +261,20 @@ export class OrchestratorService {
       }
 
       let userText = '';
+      let quotedContextText = '';
       if (isAudioMessage) {
         // Use the Whisper transcript as the user's text input
         userText = `[Voice Message Transcription]: "${(message.content as any).transcript}"`;
       } else if (!isImageMessage) {
         if (typeof message.content === 'object' && message.content !== null) {
-          userText = (message.content as any).text || JSON.stringify(message.content);
+          const cnt = message.content as any;
+          const rawText = cnt.body || cnt.text || cnt.caption || '';
+          if (cnt.quotedMsg?.text) {
+            quotedContextText = `[Replying to Product/Message: "${cnt.quotedMsg.text}"]`;
+            userText = `${quotedContextText}\n${rawText}`;
+          } else {
+            userText = rawText || JSON.stringify(message.content);
+          }
         } else {
           userText = String(message.content);
         }
@@ -275,29 +283,68 @@ export class OrchestratorService {
       }
 
       // Stage 0 — Context-aware RAG Augmentation & Dynamic Indexing
-      // If the customer's message is short (≤5 words), e.g. "হ্যাঁ", "জানতে চাই", "yes", "ok",
-      // these cannot match products/Q&As via vector search alone. We augment the RAG query
-      // with the last AI message so the relevant product/catalog context is retrieved.
-      const ragWordCount = userText.trim().split(/\s+/).filter(Boolean).length;
       let ragQuery = userText;
-      if (ragWordCount <= 5 && !isAudioMessage) {
-        try {
-          const lastAiMsg = await this.prisma.message.findFirst({
-            where: { conversationId: message.conversationId, direction: 'outbound' },
-            orderBy: { createdAt: 'desc' },
-            select: { content: true }
-          });
-          if (lastAiMsg) {
-            const lastAiText =
-              typeof lastAiMsg.content === 'object' && lastAiMsg.content !== null
-                ? (lastAiMsg.content as any).text || ''
-                : String(lastAiMsg.content);
-            if (lastAiText.trim()) {
-              ragQuery = `${lastAiText.slice(0, 300)} ${userText}`;
+
+      // Case 1: If an explicit quoted message text exists, prioritize it in the RAG search query
+      if (typeof message.content === 'object' && message.content !== null && (message.content as any).quotedMsg?.text) {
+        const qText = (message.content as any).quotedMsg.text;
+        ragQuery = `${qText} ${userText}`;
+      } else {
+        // Case 2: Short inquiry, acknowledgment, or demonstrative pronoun reference ("এইটার দাম কত?", "দাম কত?", "এটা নিব", "ok", "yes", etc.)
+        const lowerUser = userText.toLowerCase();
+        const isDemonstrativeProductInquiry = [
+          'এইটা', 'এটার', 'এইটার', 'ঐটা', 'ঐটার', 'এটা', 'দাম কত', 'কত দাম',
+          'দাম', 'সাইজ কি', 'অর্ডার করব', 'নিব', 'নিতে চাই', 'অর্ডার করতে চাই',
+          'price', 'cost', 'how much', 'this one', 'order this'
+        ].some(term => lowerUser.includes(term));
+
+        const ragWordCount = userText.trim().split(/\s+/).filter(Boolean).length;
+        if ((ragWordCount <= 6 || isDemonstrativeProductInquiry) && !isAudioMessage) {
+          try {
+            // Check for recent outbound image message (product photo sent by AI in this conversation)
+            const lastOutboundImage = await this.prisma.message.findFirst({
+              where: {
+                conversationId: message.conversationId,
+                direction: 'outbound',
+                type: 'image'
+              },
+              orderBy: { createdAt: 'desc' }
+            });
+
+            let referencedPhotoText = '';
+            if (lastOutboundImage?.content) {
+              let parsedImgContent: any = lastOutboundImage.content;
+              if (typeof lastOutboundImage.content === 'string') {
+                try { parsedImgContent = JSON.parse(lastOutboundImage.content); } catch { parsedImgContent = { body: lastOutboundImage.content }; }
+              }
+              referencedPhotoText = parsedImgContent?.body || parsedImgContent?.text || parsedImgContent?.productName || '';
             }
+
+            if (referencedPhotoText) {
+              ragQuery = `${referencedPhotoText} ${userText}`;
+              if (!quotedContextText && isDemonstrativeProductInquiry) {
+                userText = `[Referenced Recent Product Photo: "${referencedPhotoText}"]\n${userText}`;
+              }
+            } else {
+              // Fallback to last outbound message
+              const lastAiMsg = await this.prisma.message.findFirst({
+                where: { conversationId: message.conversationId, direction: 'outbound' },
+                orderBy: { createdAt: 'desc' },
+                select: { content: true }
+              });
+              if (lastAiMsg?.content) {
+                const lastAiText =
+                  typeof lastAiMsg.content === 'object' && lastAiMsg.content !== null
+                    ? (lastAiMsg.content as any).text || (lastAiMsg.content as any).body || ''
+                    : String(lastAiMsg.content);
+                if (lastAiText.trim()) {
+                  ragQuery = `${lastAiText.slice(0, 300)} ${userText}`;
+                }
+              }
+            }
+          } catch (e) {
+            this.logger.debug('Context-aware RAG augmentation skipped:', e);
           }
-        } catch (e) {
-          this.logger.debug('Context-aware RAG augmentation skipped:', e);
         }
       }
 
@@ -1173,7 +1220,10 @@ export class OrchestratorService {
           conversationId,
           JSON.stringify({
             mediaUrl: product.imageUrl,
-            body: `📸 ${product.name} — ${priceStr}`
+            body: `📸 ${product.name} — ${priceStr}`,
+            productId: product.id,
+            productName: product.name,
+            productPrice: Number(product.price) || 0
           }),
           'image',
           undefined,
@@ -1308,6 +1358,18 @@ export class OrchestratorService {
     prompt += `4. If customer said NO / negative → acknowledge politely and ask how else you may assist.\n`;
     prompt += `5. NEVER respond as if you have lost track of the conversation or don't know what the customer is referring to.\n`;
     prompt += `VIOLATION OF THIS RULE IS NOT ALLOWED.\n`;
+
+    // =========================================================================
+    // MANDATORY QUOTED MESSAGE & REFERENCED PRODUCT DIRECTIVE
+    // =========================================================================
+    prompt += `\n=== MANDATORY QUOTED MESSAGE & REFERENCED PRODUCT DIRECTIVE ===\n`;
+    prompt += `When the customer quotes a message or photo (e.g., "[Replying to Product/Message: ...]" or "[Quoting: ...]") or asks about an item using demonstratives (e.g. "এইটার দাম কত?", "দাম কত?", "এটা সাইজ কি কি আছে?", "এটা নিব", "কত দাম", "how much is this?", "price of this?"):\n`;
+    prompt += `1. Look directly at the quoted product or the recent product photo listed in CONVERSATION HISTORY.\n`;
+    prompt += `2. IMMEDIATELY identify that exact product from the PRODUCT CATALOG below.\n`;
+    prompt += `3. State its EXACT price, stock availability, and available options/sizes directly.\n`;
+    prompt += `4. If the customer indicates purchase intent ("এটা নিব", "অর্ডার করব", "how to buy"), guide them directly to complete the order for that specific product.\n`;
+    prompt += `5. NEVER ask the customer "Which product are you talking about?" or "Please tell me the product name" when a product was just quoted or presented in the immediately preceding messages.\n`;
+    prompt += `VIOLATION OF THIS DIRECTIVE IS STRICTLY FORBIDDEN.\n`;
 
     // =========================================================================
     // MANDATORY PRODUCT CATALOG PRESENTATION & MULTI-PRODUCT DIRECTIVE
@@ -1773,9 +1835,25 @@ export class OrchestratorService {
       const sender = msg.direction === 'inbound' ? 'Customer' : 'Assistant';
       let text = '';
       if (typeof msg.content === 'object' && msg.content !== null) {
-        text = (msg.content as any).text || (msg.content as any).caption || '';
-      } else {
-        text = String(msg.content);
+        const cnt = msg.content as any;
+        text = cnt.body || cnt.text || cnt.caption || '';
+        if (cnt.quotedMsg?.text) {
+          text = `[Quoting: "${cnt.quotedMsg.text}"] ${text}`;
+        }
+      } else if (typeof msg.content === 'string') {
+        try {
+          const parsed = JSON.parse(msg.content);
+          if (parsed && typeof parsed === 'object') {
+            text = parsed.body || parsed.text || parsed.caption || msg.content;
+            if (parsed.quotedMsg?.text) {
+              text = `[Quoting: "${parsed.quotedMsg.text}"] ${text}`;
+            }
+          } else {
+            text = msg.content;
+          }
+        } catch {
+          text = msg.content;
+        }
       }
       if (text) {
         prompt += `${sender}: ${text}\n`;
