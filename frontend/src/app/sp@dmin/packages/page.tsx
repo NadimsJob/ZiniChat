@@ -27,7 +27,7 @@ const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function PackagesPage() {
   const { language } = useLanguage();
-  const { toCurrency, formatBDT, formatPrice } = useCurrency();
+  const { rate, formatBDT, formatPrice, formatBdtDirect } = useCurrency();
   const [activeTab, setActiveTab] = useState<'plans' | 'addons'>('plans');
   
   const [plans, setPlans] = useState<any[]>([]);
@@ -280,7 +280,13 @@ export default function PackagesPage() {
                         {plan.name}
                         {plan.allowWeekly && <span className="text-[10px] font-medium bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 px-1.5 py-0.5 rounded">Weekly</span>}
                       </h3>
-                      <div className="text-[13px] font-black mt-2 text-primary">{formatPrice(plan.priceMonthlyBdt)}<span className="text-[12px] text-slate-500 dark:text-zinc-500 font-normal"> / monthly</span></div>
+                      <div className="text-[13px] font-black mt-2 text-primary flex items-baseline gap-1.5 flex-wrap">
+                        <span>{formatBDT(plan.priceMonthlyBdt)}</span>
+                        <span className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400 font-mono">
+                          (≈ ${(Number(plan.priceMonthlyBdt) / (rate || 121)).toFixed(2)} USD)
+                        </span>
+                        <span className="text-[12px] text-slate-500 dark:text-zinc-500 font-normal"> / monthly</span>
+                      </div>
                       
                       <div className="mt-2 space-y-2 text-[12px] text-slate-600 dark:text-zinc-400">
                         <div className="flex justify-between"><span>Team Members:</span> <span className="font-medium text-slate-900 dark:text-zinc-200">{plan.seatLimit}</span></div>
@@ -343,7 +349,12 @@ export default function PackagesPage() {
                       </div>
                       <h3 className="text-[13px] font-bold text-slate-900 dark:text-white">{addon.name}</h3>
                       <p className="text-[12px] text-slate-600 dark:text-zinc-400 mt-1 line-clamp-2">{addon.description}</p>
-                      <div className="text-[15px] font-black mt-2 text-primary">{formatBDT(addon.priceBdt)}</div>
+                      <div className="text-[15px] font-black mt-2 text-primary flex items-baseline gap-1.5 flex-wrap">
+                        <span>{formatBDT(addon.priceBdt)}</span>
+                        <span className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400 font-mono">
+                          (≈ ${(Number(addon.priceBdt) / (rate || 121)).toFixed(2)} USD)
+                        </span>
+                      </div>
                       <div className="text-xs text-slate-500 dark:text-zinc-500 mt-1 uppercase tracking-wide font-bold">{addon.value} {addon.type.replace('_', ' ')}</div>
                       
                       <div className="flex items-center gap-2 mt-3 pt-4 border-t border-slate-200 dark:border-surface-hover">
@@ -659,42 +670,7 @@ export default function PackagesPage() {
         </div>
       )}
 
-      {!isEditing && activeTab === 'addons' && (
-        <div className="space-y-3">
-          <div className="flex justify-end">
-            <button onClick={() => openAddonForm()} className="flex items-center gap-2 px-2.5 py-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/90 transition-colors font-medium shadow-lg shadow-secondary/20">
-              <Plus className="w-4 h-4" /> Create New Add-on
-            </button>
-          </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-3">
-            {addons.map(addon => (
-              <div key={addon.id} className="bg-surface border border-surface-hover rounded-xl p-3 relative group">
-                {!addon.isActive && <div className="absolute top-2.5 right-4 text-xs font-bold bg-red-500/10 text-red-500 px-2 py-1 rounded">Inactive</div>}
-                <div className="w-7 h-7 rounded-xl bg-secondary/10 flex items-center justify-center text-secondary mb-2">
-                  <Puzzle className="w-4 h-4" />
-                </div>
-                <h3 className="text-[13px] font-bold">{addon.name}</h3>
-                <p className="text-[12px] text-zinc-400 mt-1 line-clamp-2">{addon.description}</p>
-                <div className="text-[15px] font-black mt-2 text-primary">{formatBDT(addon.priceBdt)}</div>
-                <div className="text-xs text-zinc-500 mt-1 uppercase tracking-wide font-bold">{addon.value} {addon.type.replace('_', ' ')}</div>
-                
-                <div className="flex items-center gap-2 mt-3 pt-4 border-t border-surface-hover">
-                  <button onClick={() => openAddonForm(addon)} className="flex-1 flex justify-center items-center gap-2 px-3 py-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-xs font-medium">
-                    <Edit className="w-3.5 h-3.5" /> Edit
-                  </button>
-                  <button onClick={() => handleDelete('addons', addon.id)} className="p-2 text-zinc-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            ))}
-            {addons.length === 0 && !loading && (
-              <div className="col-span-full py-12 text-center text-zinc-500">No add-ons created yet.</div>
-            )}
-          </div>
-        </div>
-      )}
+
 
       {isEditing && activeTab === 'addons' && (
         <div className="bg-surface border border-surface-hover rounded-xl p-3 max-w-2xl mx-auto animate-in zoom-in-95 duration-200">
@@ -744,6 +720,9 @@ export default function PackagesPage() {
               <div>
                 <label className="block text-[12px] font-medium mb-1 text-zinc-400">Price (BDT)</label>
                 <input type="number" step="1" value={addonForm.priceBdt} onChange={e => setAddonForm({...addonForm, priceBdt: Number(e.target.value)})} className="w-full bg-background border border-surface-hover rounded-lg px-2.5 py-2 focus:border-secondary focus:outline-none" />
+                <p className="text-[11px] text-zinc-400 mt-1 font-mono">
+                  ≈ ${(Number(addonForm.priceBdt || 0) / (rate || 121)).toFixed(2)} USD (Exchange Rate: $1 = ৳{rate || 121})
+                </p>
               </div>
             </div>
 

@@ -15,9 +15,11 @@ interface CurrencyContextType {
   displayCurrency: 'BDT' | 'USD';
   setDisplayCurrency: (currency: 'BDT' | 'USD') => void;
   formatPrice: (bdtAmount: number) => string;
-  formatBDT: (usdAmount: number) => string;
+  formatBDT: (bdtAmount: number) => string;
   formatBdtDirect: (bdtAmount: number) => string;
+  formatBdtFromUSD: (usdAmount: number) => string;
   convertToBDT: (usdAmount: number) => number;
+  convertToUSD: (bdtAmount: number) => number;
   formatNumber: (num: number) => string;
   refresh: () => void;
 }
@@ -34,7 +36,9 @@ const CurrencyContext = createContext<CurrencyContextType>({
   formatPrice: () => '৳0',
   formatBDT: () => '৳0',
   formatBdtDirect: () => '৳0',
+  formatBdtFromUSD: () => '৳0',
   convertToBDT: () => 0,
+  convertToUSD: () => 0,
   formatNumber: (num) => String(num),
   refresh: () => {},
 });
@@ -128,17 +132,11 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
   };
 
   const convertToBDT = (usdAmount: number): number => {
-    return Math.round(usdAmount * rate * 100) / 100;
+    return Math.round(Number(usdAmount || 0) * rate * 100) / 100;
   };
 
-  const formatBDT = (usdAmount: number): string => {
-    const bdtAmount = convertToBDT(usdAmount);
-    const formattedNum = bdtAmount.toLocaleString('en-IN');
-    
-    if (language === 'bn') {
-      return `৳${toBengaliNumerals(formattedNum)}`;
-    }
-    return `৳${formattedNum}`;
+  const convertToUSD = (bdtAmount: number): number => {
+    return Math.round((Number(bdtAmount || 0) / (rate || 121)) * 100) / 100;
   };
 
   const formatBdtDirect = (bdtAmount: number): string => {
@@ -150,13 +148,24 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
     return `৳${formattedNum}`;
   };
 
+  // formatBDT formats an amount that is already in BDT (Direct BDT formatting)
+  const formatBDT = (bdtAmount: number): string => {
+    return formatBdtDirect(bdtAmount);
+  };
+
+  // formatBdtFromUSD takes a USD amount, converts to BDT at current exchange rate, and formats
+  const formatBdtFromUSD = (usdAmount: number): string => {
+    const bdtAmount = convertToBDT(usdAmount);
+    return formatBdtDirect(bdtAmount);
+  };
+
   const formatPrice = (bdtAmount: number): string => {
     if (displayCurrency === 'USD') {
-      const usdAmount = bdtAmount / rate;
+      const usdAmount = Number(bdtAmount || 0) / rate;
       const formattedUsd = usdAmount % 1 === 0 ? usdAmount.toLocaleString('en-US') : usdAmount.toFixed(2);
       return `$${formattedUsd}`;
     }
-    const formattedNum = bdtAmount.toLocaleString('en-IN');
+    const formattedNum = Number(bdtAmount || 0).toLocaleString('en-IN');
     return language === 'bn' ? `৳${toBengaliNumerals(formattedNum)}` : `৳${formattedNum}`;
   };
 
@@ -188,7 +197,9 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
         formatPrice,
         formatBDT,
         formatBdtDirect,
+        formatBdtFromUSD,
         convertToBDT,
+        convertToUSD,
         formatNumber,
         refresh: fetchCurrentRate,
       }}
