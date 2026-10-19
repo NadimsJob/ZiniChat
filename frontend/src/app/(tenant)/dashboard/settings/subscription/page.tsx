@@ -135,6 +135,46 @@ export default function SubscriptionSettingsPage() {
     try { return JSON.parse(raw); } catch { return []; }
   };
 
+  const getAddonBenefit = (addon: any) => {
+    const val = Number(addon.value ?? addon.limit ?? 0);
+    const type = String(addon.type || '').toLowerCase();
+
+    if (type.includes('ai') || type.includes('token') || type.includes('response')) {
+      return {
+        icon: <Bot className="w-4 h-4 text-secondary shrink-0" />,
+        text: `+${formatNumber(val)} ${language === 'en' ? 'AI Responses' : 'এআই রেসপন্স'}`,
+        badge: language === 'en' ? 'AI Quota' : 'এআই রেসপন্স কোটা',
+      };
+    }
+    if (type.includes('msg') || type.includes('message')) {
+      return {
+        icon: <MessageSquare className="w-4 h-4 text-secondary shrink-0" />,
+        text: `+${formatNumber(val)} ${language === 'en' ? 'Messages' : 'মেসেজ'}`,
+        badge: language === 'en' ? 'Message Quota' : 'মেসেজ কোটা',
+      };
+    }
+    if (type.includes('seat') || type.includes('member') || type.includes('user')) {
+      return {
+        icon: <Users className="w-4 h-4 text-secondary shrink-0" />,
+        text: `+${formatNumber(val)} ${language === 'en' ? 'Team Members' : 'টিম মেম্বার'}`,
+        badge: language === 'en' ? 'Team Seats' : 'টিম মেম্বার সিট',
+      };
+    }
+    if (type.includes('storage') || type.includes('file')) {
+      const formatted = val >= 1024 ? `${(val / 1024).toFixed(val % 1024 === 0 ? 0 : 1)} GB` : `${val} MB`;
+      return {
+        icon: <HardDrive className="w-4 h-4 text-secondary shrink-0" />,
+        text: `+${formatted} ${language === 'en' ? 'Storage' : 'স্টোরেজ'}`,
+        badge: language === 'en' ? 'Storage Quota' : 'স্টোরেজ কোটা',
+      };
+    }
+    return {
+      icon: <Sparkles className="w-4 h-4 text-secondary shrink-0" />,
+      text: val > 0 ? `+${formatNumber(val)} ${type.replace(/_/g, ' ')}` : (language === 'en' ? 'Additional Quota' : 'অতিরিক্ত কোটা'),
+      badge: language === 'en' ? 'Add-on' : 'অ্যাড-অন',
+    };
+  };
+
   if (loading) {
     return (
       <div className="max-w-5xl mx-auto p-4 space-y-4 animate-pulse">
@@ -576,7 +616,7 @@ export default function SubscriptionSettingsPage() {
         <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-5">
           <h2 className="text-[15px] font-bold flex items-center gap-2 text-foreground mb-4">
             <Puzzle className="w-4 h-4 text-secondary shrink-0" />
-            {language === 'en' ? 'Available Add-ons' : 'উপলব্ধ অ্যাড-অনসমূহ'}
+            {language === 'en' ? 'Other Add-ons' : 'অন্যান্য অ্যাড-অন'}
           </h2>
           <p className="text-[12px] text-muted-foreground mb-4">
             {language === 'en'
@@ -614,54 +654,50 @@ export default function SubscriptionSettingsPage() {
           )}
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {addons.map(addon => (
-              <div key={addon.id}
-                className="bg-surface/50 border border-surface-hover rounded-2xl p-4 flex flex-col hover:border-secondary/30 transition-colors">
-                <h3 className="text-[13px] font-bold text-foreground">
-                  {language === 'en' ? addon.name : (addon.nameBn || addon.name)}
-                </h3>
-                <div className="text-2xl font-black text-secondary mt-1">
-                  {formatBdtDirect(addon.priceBdt)}
+            {addons.map(addon => {
+              const benefit = getAddonBenefit(addon);
+              return (
+                <div key={addon.id}
+                  className="bg-surface/50 border border-surface-hover rounded-2xl p-4 flex flex-col hover:border-secondary/30 transition-colors">
+                  <h3 className="text-[13px] font-bold text-foreground">
+                    {language === 'en' ? addon.name : (addon.nameBn || addon.name)}
+                  </h3>
+                  <div className="text-2xl font-black text-secondary mt-1">
+                    {formatBdtDirect(addon.priceBdt)}
+                  </div>
+
+                  {/* Prominent Quota / Value Benefit Badge */}
+                  <div className="my-2.5 px-3 py-2 rounded-xl bg-secondary/10 border border-secondary/20 flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-lg bg-secondary/20 flex items-center justify-center shrink-0 text-secondary">
+                      {benefit.icon}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-[10px] uppercase font-bold tracking-wider text-secondary/80">
+                        {benefit.badge}
+                      </div>
+                      <div className="text-[13px] font-black text-foreground tracking-tight">
+                        {benefit.text}
+                      </div>
+                    </div>
+                  </div>
+
+                  <p className="text-[11px] text-muted-foreground mb-3 flex-1">
+                    {language === 'en' ? addon.description : (addon.descriptionBn || addon.description)}
+                  </p>
+
+                  <button
+                    onClick={() => handleBuyAddon(addon.id)}
+                    className={`w-full py-2.5 rounded-xl text-[12px] font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm ${
+                      hasActivePackage
+                        ? 'bg-secondary hover:bg-secondary/90 text-white active:scale-[0.98]'
+                        : 'bg-surface-hover/70 hover:bg-surface-hover text-foreground/90 border border-amber-500/30 hover:border-amber-500/50'
+                    }`}>
+                    {!hasActivePackage && <Lock className="w-3.5 h-3.5 text-amber-500 shrink-0" />}
+                    {language === 'en' ? 'Purchase Add-on' : 'কিনতে চাই'}
+                  </button>
                 </div>
-                <p className="text-[11px] text-muted-foreground mt-1 mb-3 flex-1">
-                  {language === 'en' ? addon.description : (addon.descriptionBn || addon.description)}
-                </p>
-                <div className="space-y-1 mb-4">
-                  {addon.type === 'seat' && (
-                    <div className="flex items-center gap-1.5 text-[12px] text-foreground/90">
-                      <Users className="w-3.5 h-3.5 text-secondary" /> +{formatNumber(addon.limit)} {language === 'en' ? 'Team Members' : 'টিম মেম্বার'}
-                    </div>
-                  )}
-                  {addon.type === 'message' && (
-                    <div className="flex items-center gap-1.5 text-[12px] text-foreground/90">
-                      <MessageSquare className="w-3.5 h-3.5 text-secondary" /> +{formatNumber(addon.limit)} {language === 'en' ? 'Messages' : 'মেসেজ'}
-                    </div>
-                  )}
-                  {addon.type === 'ai_response' && (
-                    <div className="flex items-center gap-1.5 text-[12px] text-foreground/90">
-                      <Bot className="w-3.5 h-3.5 text-secondary" /> +{formatNumber(addon.limit)} {language === 'en' ? 'AI Responses' : 'এআই রেসপন্স'}
-                    </div>
-                  )}
-                  {addon.type === 'storage' && (
-                    <div className="flex items-center gap-1.5 text-[12px] text-foreground/90">
-                      <HardDrive className="w-3.5 h-3.5 text-secondary" /> +{addon.limit >= 1024 ? `${(addon.limit / 1024).toFixed(1)} GB` : `${addon.limit} MB`} {language === 'en' ? 'Storage' : 'স্টোরেজ'}
-                    </div>
-                  )}
-                </div>
-                <button
-                  onClick={() => handleBuyAddon(addon.id)}
-                  className={`w-full py-2 rounded-xl text-[12px] font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                    hasActivePackage
-                      ? 'bg-secondary/10 hover:bg-secondary/20 text-secondary border border-secondary/20 active:scale-[0.98]'
-                      : 'bg-muted/40 hover:bg-muted/60 text-muted-foreground border border-surface-hover'
-                  }`}>
-                  {!hasActivePackage && <Lock className="w-3.5 h-3.5 text-amber-500 shrink-0" />}
-                  {hasActivePackage
-                    ? (language === 'en' ? 'Purchase Add-on' : 'কিনুন')
-                    : (language === 'en' ? 'Active Plan Required' : 'প্যাকেজ আবশ্যক')}
-                </button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
