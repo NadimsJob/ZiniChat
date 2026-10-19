@@ -1426,12 +1426,26 @@ export default function InboxPage() {
               if (lastMsg) {
                 let parsed: any = lastMsg.content;
                 if (typeof lastMsg.content === 'string' && lastMsg.content.trim().startsWith('{')) {
-                  try { parsed = JSON.parse(lastMsg.content); } catch (e) {}
+                  try {
+                    parsed = JSON.parse(lastMsg.content);
+                  } catch (e) {
+                    try {
+                      const sanitized = lastMsg.content.replace(/"((?:[^"\\]|\\[\s\S])*)"/g, (_: any, c: string) => '"' + c.replace(/\r\n/g, '\\n').replace(/\n/g, '\\n').replace(/\r/g, '\\n') + '"');
+                      parsed = JSON.parse(sanitized);
+                    } catch {}
+                  }
                 }
                 if (typeof parsed === 'object' && parsed !== null) {
-                  lastText = parsed.body || parsed.text || parsed.caption || (lastMsg.type === 'image' ? '📷 Photo' : lastMsg.type === 'video' ? '🎥 Video' : lastMsg.type === 'audio' ? '🎤 Voice' : lastMsg.type === 'document' ? '📄 Document' : '');
+                  lastText = parsed.body || parsed.text || parsed.caption || parsed.replyText || parsed.replytext || parsed.reply_text || parsed.response || parsed.message || (lastMsg.type === 'image' ? '📷 Photo' : lastMsg.type === 'video' ? '🎥 Video' : lastMsg.type === 'audio' ? '🎤 Voice' : lastMsg.type === 'document' ? '📄 Document' : '');
                 } else if (typeof lastMsg.content === 'string') {
-                  if (lastMsg.content.trim().startsWith('{') && lastMsg.content.includes('"mediaUrl"')) {
+                  if (lastMsg.content.trim().startsWith('{') && /"(?:reply_?text|response|reply|message|text)"\s*:/i.test(lastMsg.content)) {
+                    const replyMatch = lastMsg.content.match(/"(?:reply_?text|response|reply|message|text)"\s*:\s*"((?:[^"\\]|\\[\s\S])*)"/i);
+                    if (replyMatch) {
+                      lastText = replyMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"');
+                    } else {
+                      lastText = lastMsg.content;
+                    }
+                  } else if (lastMsg.content.trim().startsWith('{') && lastMsg.content.includes('"mediaUrl"')) {
                     lastText = lastMsg.type === 'image' ? '📷 Photo' : lastMsg.type === 'video' ? '🎥 Video' : lastMsg.type === 'audio' ? '🎤 Voice' : '📄 Document';
                   } else {
                     lastText = lastMsg.content;
@@ -1899,16 +1913,30 @@ export default function InboxPage() {
               if (typeof m.content === 'string' && m.content.trim().startsWith('{')) {
                 try {
                   parsedContent = JSON.parse(m.content);
-                } catch (e) {}
+                } catch (e) {
+                  try {
+                    const sanitized = m.content.replace(/"((?:[^"\\]|\\[\s\S])*)"/g, (_: any, c: string) => '"' + c.replace(/\r\n/g, '\\n').replace(/\n/g, '\\n').replace(/\r/g, '\\n') + '"');
+                    parsedContent = JSON.parse(sanitized);
+                  } catch {}
+                }
               }
 
               const mediaUrl = m.mediaUrl || (typeof parsedContent === 'object' && parsedContent !== null ? (parsedContent.mediaUrl || parsedContent.localUrl) : null);
 
               let contentText = '';
               if (typeof parsedContent === 'object' && parsedContent !== null) {
-                contentText = parsedContent.body || parsedContent.text || parsedContent.caption || '';
+                contentText = parsedContent.body || parsedContent.text || parsedContent.caption || parsedContent.replyText || parsedContent.replytext || parsedContent.reply_text || parsedContent.response || parsedContent.message || '';
               } else if (typeof m.content === 'string') {
-                contentText = m.content;
+                if (m.content.trim().startsWith('{') && /"(?:reply_?text|response|reply|message|text)"\s*:/i.test(m.content)) {
+                  const replyMatch = m.content.match(/"(?:reply_?text|response|reply|message|text)"\s*:\s*"((?:[^"\\]|\\[\s\S])*)"/i);
+                  if (replyMatch) {
+                    contentText = replyMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"');
+                  } else {
+                    contentText = m.content;
+                  }
+                } else {
+                  contentText = m.content;
+                }
               }
 
               if (contentText.trim().startsWith('{') && contentText.includes('"mediaUrl"')) {

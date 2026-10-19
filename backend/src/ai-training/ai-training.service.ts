@@ -1236,28 +1236,76 @@ ${combinedText}`;
     return chunks;
   }
 
-  private formatSpaciousResponse(text: string): string {
-    if (!text) return '';
-    let cleaned = String(text).trim();
+  private safeParseLlmJson(rawText: string): any {
+    if (!rawText) return {};
+    let cleaned = String(rawText).trim();
+
     if (cleaned.startsWith('```json')) {
       cleaned = cleaned.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
     } else if (cleaned.startsWith('```')) {
       cleaned = cleaned.replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
     }
-    try {
-      const parsed = JSON.parse(cleaned);
-      if (parsed && typeof parsed === 'object') {
-        cleaned = parsed.response || parsed.replyText || parsed.reply || parsed.message || parsed.text || cleaned;
-      }
-    } catch {
-      // not a json object
+
+    const firstBrace = cleaned.indexOf('{');
+    const lastBrace = cleaned.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace > firstBrace) {
+      cleaned = cleaned.substring(firstBrace, lastBrace + 1).trim();
     }
+
+    try {
+      return JSON.parse(cleaned);
+    } catch (e1) {
+      try {
+        const sanitized = cleaned.replace(/"((?:[^"\\]|\\.)*)"/gs, (match, content) => {
+          return '"' + content
+            .replace(/\r\n/g, '\\n')
+            .replace(/\n/g, '\\n')
+            .replace(/\r/g, '\\n')
+            .replace(/\t/g, '\\t') + '"';
+        });
+        return JSON.parse(sanitized);
+      } catch (e2) {
+        const result: any = {};
+        const replyMatch = cleaned.match(/"(?:reply_?text|response|reply|message|text)"\s*:\s*"((?:[^"\\]|\\.)*)"/si);
+        if (replyMatch) {
+          result.replyText = replyMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"');
+        }
+        if (Object.keys(result).length > 0) {
+          return result;
+        }
+        throw e1;
+      }
+    }
+  }
+
+  private formatSpaciousResponse(text: string): string {
+    if (!text) return '';
+    let cleaned = String(text).trim();
+
+    // If text is JSON or contains JSON, extract reply text safely
+    if (cleaned.startsWith('{') || cleaned.startsWith('```') || /"(?:reply_?text|response|reply|message|text)"\s*:/i.test(cleaned)) {
+      try {
+        const parsed = this.safeParseLlmJson(cleaned);
+        if (parsed && typeof parsed === 'object') {
+          const extracted = parsed.replyText ?? parsed.replytext ?? parsed.reply_text ?? parsed.response ?? parsed.reply ?? parsed.message ?? parsed.text;
+          if (typeof extracted === 'string') {
+            cleaned = extracted;
+          }
+        }
+      } catch {
+        const replyMatch = cleaned.match(/"(?:reply_?text|response|reply|message|text)"\s*:\s*"((?:[^"\\]|\\.)*)"/si);
+        if (replyMatch) {
+          cleaned = replyMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"');
+        }
+      }
+    }
+
     if (typeof cleaned === 'string') {
       cleaned = cleaned.replace(/\\n/g, '\n');
       cleaned = cleaned.replace(/([^\n])\n([১-৯1-9]\.|\([a-zA-Z0-9]\)|[a-zA-Z]\)|•)\s*/g, '$1\n\n$2 ');
       cleaned = cleaned.replace(/([১-৯1-9]\.[^\n]+|[•][^\n]+)\n([^\n\s1-9১-৯•\-*])/g, '$1\n\n$2');
       cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
     }
-    return typeof cleaned === 'string' ? cleaned.trim() : JSON.stringify(cleaned);
+    return typeof cleaned === 'string' ? cleaned.trim() : '';
   }
 }
