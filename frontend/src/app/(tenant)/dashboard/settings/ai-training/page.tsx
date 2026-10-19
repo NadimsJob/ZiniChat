@@ -15,7 +15,7 @@ import LabelForm from '@/components/labels/LabelForm';
 import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
 
-const MAX_PROMPT_LENGTH = 2000;
+const MAX_PROMPT_LENGTH = 4000;
 const MAX_QUESTION_LENGTH = 100;
 const MAX_ANSWER_LENGTH = 300;
 

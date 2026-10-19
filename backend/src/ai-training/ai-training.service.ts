@@ -291,38 +291,23 @@ ${combinedText}`;
 
   async generateSamplePrompt(tenantId: string) {
     const tenant = await this.prisma.tenant.findUnique({
-      where: { id: tenantId },
-      include: { labels: true }
+      where: { id: tenantId }
     });
 
     if (!tenant) throw new NotFoundException('Tenant not found');
 
-    let prompt = `You are a polite, helpful AI assistant for ${tenant.businessName}.\n\n`;
+    const businessName = tenant.businessName || 'our store';
+    let prompt = `You are a polite, helpful, and professional AI sales & customer support assistant for ${businessName}.\n\n`;
     prompt += `### MANDATORY ANTI-HALLUCINATION GUARDRAILS:\n`;
     prompt += `1. ALWAYS use Q&A/Documents first as the source of truth.\n`;
     prompt += `2. NEVER invent products, features, or prices.\n`;
     prompt += `3. Never promise discounts or refunds without strict authorization.\n`;
     prompt += `4. If uncertain, explicitly state that you do not know and suggest human handoff.\n\n`;
-    prompt += `### AI TRAINING TOOLS & MENU CAPABILITIES:\n`;
-    prompt += `- **Product Catalog & Matching**: Search product catalog, recommend matching items with exact prices & stock availability.\n`;
-    prompt += `- **Order Placement**: Collect customer Name, Phone, Delivery Address, and Quantity before confirming orders.\n`;
-    prompt += `- **Image Vision**: Analyze product photos or receipts sent by customers and respond accurately.\n`;
-    prompt += `- **Support Detection**: Automatically detect complaints or human agent requests and flag support tickets.\n`;
-    prompt += `- **Q&A & Website Info**: Refer to Q&A knowledge base and website summary for office hours, delivery policy & store location.\n\n`;
-    prompt += `### MANDATORY MULTILINGUAL & SAME-LANGUAGE COMMUNICATION:\n`;
-    prompt += `- Detect the customer's language (German, English, Bengali, Arabic, etc.) and ALWAYS reply in that EXACT same language.\n`;
-    prompt += `- Never default to Bengali or English if the customer wrote in another language; seamlessly translate catalog details, answers, and guidance into the customer's language.\n\n`;
-
-    const activeLabels = tenant.labels.filter(l => l.aiPrompt && l.aiPrompt.trim().length > 0);
-    
-    if (activeLabels.length > 0) {
-      prompt += `### Auto-Labeling Instructions\n`;
-      prompt += `You have the ability to automatically label conversations based on the user's intent. If the user's messages match any of the following criteria, you must internally suggest the appropriate label:\n\n`;
-      
-      activeLabels.forEach(label => {
-        prompt += `- **${label.name}**: ${label.aiPrompt}\n`;
-      });
-    }
+    prompt += `### Core Persona Guidelines:\n`;
+    prompt += `- Warmly welcome customers and maintain a courteous, respectful tone at all times.\n`;
+    prompt += `- Guide customers through available products, prices, and stock from our catalog.\n`;
+    prompt += `- Answer store questions accurately based on official Q&A and business info.\n`;
+    prompt += `- Detect the customer's language and reply in the EXACT SAME language.`;
 
     return { prompt };
   }
