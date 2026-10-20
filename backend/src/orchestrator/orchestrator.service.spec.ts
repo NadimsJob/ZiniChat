@@ -64,12 +64,17 @@ describe('OrchestratorService', () => {
         }),
         update: jest.fn().mockResolvedValue({ id: 'c1', tenantId: 'tenant1' }),
       },
+      contact: {
+        findUnique: jest.fn().mockResolvedValue(null),
+        update: jest.fn().mockResolvedValue({}),
+      },
       product: {
         findMany: jest.fn().mockResolvedValue([]),
         findFirst: jest.fn(),
       },
       order: {
         update: jest.fn().mockResolvedValue({ id: 'ord1' }),
+        findFirst: jest.fn().mockResolvedValue(null),
       },
       qnAKnowledgeBase: {
         findMany: jest.fn().mockResolvedValue([]),
@@ -113,6 +118,13 @@ describe('OrchestratorService', () => {
       searchRelevantQnas: jest.fn().mockResolvedValue([]),
       generateEmbedding: jest.fn().mockResolvedValue(new Array(768).fill(0)),
       searchRelevantChunks: jest.fn().mockResolvedValue([]),
+      verifyPaymentReceiptScreenshot: jest.fn().mockResolvedValue({
+        isPaymentReceipt: true,
+        status: 'verified',
+        paidAmount: 120,
+        provider: 'bKash',
+        trxId: 'TRX123'
+      }),
     };
 
     inboxService = {
@@ -1577,6 +1589,161 @@ describe('OrchestratorService', () => {
       const dummyPath = path.join(process.cwd(), 'package.json');
       const resolved = await service.ensureLocalImage(dummyPath, 'tenant1');
       expect(resolved).toBe(dummyPath);
+    });
+
+    it('T-FS3: multi-turn detail resumption should transition AWAITING_CUSTOMER_DETAILS to AWAITING_PAYMENT_PROOF', async () => {
+      const mockConversation: any = {
+        id: 'c_multiturn',
+        tenantId: 'tenant1',
+        contactId: 'contact_1',
+        pendingOrderProposal: {
+          status: 'AWAITING_CUSTOMER_DETAILS',
+          paymentPolicy: 'delivery_advance',
+          items: [{ productId: 'prod_1', name: 'টি সাঁট', price: 499, quantity: 1 }],
+          subtotal: 499,
+          expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString()
+        }
+      };
+
+      prismaService.contact.findUnique.mockResolvedValue({
+        id: 'contact_1',
+        name: 'Sig Ma Rakib',
+        phone: null,
+        address: null
+      });
+
+      const classification: any = {
+        intent: 'general',
+        customerDetails: {
+          address: 'নোয়াখালী সোনাপুর বড় বাজার'
+        },
+        replyText: 'ধন্যবাদ!'
+      };
+
+      const result = await (service as any).handleOrderPlacement(
+        'tenant1',
+        mockConversation,
+        classification,
+        'c_multiturn',
+        'লোকেশন নোয়াখালী সোনাপুর বড় বাজার 01856750599',
+        []
+      );
+
+      expect(prismaService.conversation.update).toHaveBeenCalledWith(expect.objectContaining({
+        where: { id: 'c_multiturn' },
+        data: expect.objectContaining({
+          pendingOrderProposal: expect.objectContaining({
+            status: 'AWAITING_PAYMENT_PROOF',
+            totalAmount: 499 + 120, // 499 + 120 delivery charge outside dhaka
+            advanceAmountRequired: 120
+          })
+        })
+      }));
+      expect(result?.overrideReplyText).toContain('৳120');
+      expect(result?.overrideReplyText).toContain('অর্ডার সামারি');
+    });
+
+    it('T-FS4: Flow 1 vision payment receipt should recover product from history and create order even when proposal is null', async () => {
+      const mockConversation: any = {
+        id: 'c_null_proposal',
+        tenantId: 'tenant1',
+        contactId: 'contact_1',
+        pendingOrderProposal: null
+      };
+
+      // Mock recent messages with quoted product
+      prismaService.message.findMany.mockResolvedValue([
+        {
+          content: {
+            text: 'নিতে চাই',
+            quotedMsg: { productId: 'prod_1', productName: 'টি সাঁট', productPrice: 499 }
+          },
+          senderType: 'customer'
+        }
+      ]);
+
+      prismaService.product.findMany.mockResolvedValue([
+        { id: 'prod_1', name: 'টি সাঁট', price: 499, isActive: true }
+      ]);
+      prismaService.product.findFirst.mockResolvedValue({
+        id: 'prod_1',
+        name: 'টি সাঁট',
+        price: 499,
+        isActive: true
+      });
+
+      aiService.verifyPaymentReceiptScreenshot.mockResolvedValue({
+        isPaymentReceipt: true,
+        status: 'verified',
+        paidAmount: 150,
+        provider: 'bKash',
+        trxId: 'CK283NL18L'
+      });
+
+      ordersService.createOrder.mockResolvedValue({
+        id: 'ord_recov_12345678',
+        tenantId: 'tenant1',
+        totalAmount: 649
+      });
+
+      const dummyImagePath = path.join(process.cwd(), 'package.json');
+      const result = await (service as any).handleOrderPlacement(
+        'tenant1',
+        mockConversation,
+        { intent: 'general', replyText: '' } as any,
+        'c_null_proposal',
+        '',
+        [dummyImagePath]
+      );
+
+      expect(ordersService.createOrder).toHaveBeenCalledWith('tenant1', expect.objectContaining({
+        conversationId: 'c_null_proposal',
+        items: expect.arrayContaining([expect.objectContaining({ productId: 'prod_1' })])
+      }));
+      expect(result?.overrideReplyText).toContain('ord_reco');
+      expect(result?.overrideReplyText).toContain('150');
+    });
+
+    it('T-FS5: enforceOrderConfirmationIntegrity should create order if reply asserts confirmation but DB has 0 orders', async () => {
+      prismaService.order.findFirst.mockResolvedValue(null); // No order in DB
+      prismaService.message.findMany.mockResolvedValue([
+        {
+          content: 'আপনার পছন্দের প্রোডাক্ট: 📦 1x টি সাঁট (৳499)',
+          senderType: 'ai'
+        }
+      ]);
+      prismaService.product.findMany.mockResolvedValue([
+        { id: 'prod_1', name: 'টি সাঁট', price: 499, isActive: true }
+      ]);
+      prismaService.product.findFirst.mockResolvedValue({
+        id: 'prod_1',
+        name: 'টি সাঁট',
+        price: 499,
+        isActive: true
+      });
+      prismaService.contact.findUnique.mockResolvedValue({
+        id: 'cnt_rakib',
+        name: 'Sig Ma Rakib',
+        phone: '01856750599',
+        address: 'নোয়াখালী সোনাপুর বড় বাজার'
+      });
+      ordersService.createOrder.mockResolvedValue({
+        id: 'ord_emergency_99999',
+        tenantId: 'tenant1',
+        totalAmount: 619
+      });
+
+      const replyText = 'আপনার অর্ডারটি কনফার্ম হয়ে গেছে, রাকিব ফ্যাশনের সাথে থাকার জন্য ধন্যবাদ।';
+      const output = await service.enforceOrderConfirmationIntegrity(
+        'tenant1',
+        { id: 'c_emergency', contactId: 'cnt_rakib', pendingOrderProposal: null },
+        'c_emergency',
+        replyText,
+        'asst_1'
+      );
+
+      expect(ordersService.createOrder).toHaveBeenCalled();
+      expect(output).toContain('ord_emer');
     });
   });
 });
