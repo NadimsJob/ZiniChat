@@ -116,6 +116,7 @@ export class MetaPixelController {
     clientIp?: string;
     clientUserAgent?: string;
     referrerUrl?: string;
+    metaEventId?: string;
     customData?: any;
   }) {
     try {
@@ -132,6 +133,7 @@ export class MetaPixelController {
         clientIp: body.clientIp,
         clientUserAgent: body.clientUserAgent,
         referrerUrl: body.referrerUrl,
+        metaEventId: body.metaEventId,
         customData: body.customData || {},
       }, {
         attempts: 3,

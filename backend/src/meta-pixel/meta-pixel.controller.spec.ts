@@ -128,6 +128,7 @@ describe('MetaPixelController', () => {
         eventName: 'PageView',
         tenantEmail: 'user@example.com',
         fbClickId: 'fb.1.123',
+        metaEventId: 'evt_test_123',
       });
 
       expect(res.success).toBe(true);
@@ -136,6 +137,7 @@ describe('MetaPixelController', () => {
         expect.objectContaining({
           eventName: 'PageView',
           tenantEmail: 'user@example.com',
+          metaEventId: 'evt_test_123',
         }),
         expect.objectContaining({ attempts: 3 }),
       );

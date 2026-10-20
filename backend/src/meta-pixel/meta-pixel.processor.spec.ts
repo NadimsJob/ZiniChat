@@ -137,11 +137,11 @@ describe('MetaPixelProcessor', () => {
     expect(service.logAcquisitionEvent).toHaveBeenCalled();
   });
 
-  it('7. should check trackSignup for SignUp and Lead events', async () => {
+  it('7. should check trackSignup for SignUp, Lead, and StartTrial events', async () => {
     service.getPixelConfig.mockResolvedValue({ ...mockConfig, trackSignup: false });
     const job: any = {
       name: 'trackAcquisitionEvent',
-      data: { eventName: 'Lead' },
+      data: { eventName: 'StartTrial' },
       attemptsMade: 0,
     };
 

@@ -128,6 +128,13 @@ export const MetaPixelProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       s.parentNode.insertBefore(t, s);
     })(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
 
+    // STRICT PRIVACY & ATTRIBUTION GUARD:
+    // Explicitly disable Meta's automatic button click scraping, form field auto-detection,
+    // and heuristic event guessing ('autoConfig: false').
+    // This stops Meta Pixel from falsely logging button clicks (e.g. 'Start your free trial')
+    // as completed 'StartTrial' conversions before a user even registers!
+    (window as any).fbq('set', 'autoConfig', false, pixelId);
+
     // fbq('init') will automatically read fbclid from the URL and create _fbc cookie
     (window as any).fbq('init', pixelId);
     (window as any).fbq('track', 'PageView');
@@ -135,9 +142,12 @@ export const MetaPixelProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const trackEvent = async (eventName: string, data: any = {}) => {
     try {
-      // 1. Browser Meta Pixel track if available
+      // Deterministic deduplication ID shared between browser Meta Pixel and server CAPI
+      const metaEventId = data?.metaEventId || `evt_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+
+      // 1. Browser Meta Pixel track if available (with eventID for 1:1 server deduplication)
       if (typeof window !== 'undefined' && (window as any).fbq && pixelConfig?.isActive) {
-        (window as any).fbq('track', eventName, data);
+        (window as any).fbq('track', eventName, data, { eventID: metaEventId });
       }
 
       // 2. Dual dispatch via internal CAPI proxy route
@@ -154,6 +164,7 @@ export const MetaPixelProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           tenantId: data?.tenantId || undefined,
           fbClickId: activeFbc,  // _fbc cookie value (set by Meta Pixel SDK, not us)
           fbPageId: activeFbp,   // _fbp cookie value (set by Meta Pixel SDK)
+          metaEventId,
           customData: data,
         }),
       });

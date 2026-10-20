@@ -244,10 +244,6 @@ export default function SignupPage() {
 
     setLoading(true);
 
-    // Track analytics events
-    trackEvent('Lead', { email: formData.email });
-    trackGaEvent('sign_up', { method: 'email', email: formData.email });
-
     let planId = '';
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -278,6 +274,8 @@ export default function SignupPage() {
       const data = await res.json();
 
       if (data.requiresOtp) {
+        // Track verified lead only after email is validated and OTP is generated
+        trackEvent('Lead', { email: formData.email });
         setStep('otp');
         setResendTimer(60);
       }
@@ -318,8 +316,36 @@ export default function SignupPage() {
 
       const data = await res.json();
 
-      // Track conversion
-      trackEvent('SignUp', { email: formData.email, tenantId: data?.user?.tenantId });
+      // Track genuine verified trial & registration conversions with shared deduplication event IDs
+      const baseEventId = `evt_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+
+      // 1. Primary conversion for Facebook Ad Set: StartTrial (Only fired when real account & workspace are created!)
+      trackEvent('StartTrial', {
+        email: formData.email,
+        tenantId: data?.user?.tenantId,
+        currency: 'BDT',
+        value: 0,
+        metaEventId: `${baseEventId}_trial`,
+      });
+
+      // 2. CompleteRegistration conversion (Meta standard)
+      trackEvent('CompleteRegistration', {
+        email: formData.email,
+        tenantId: data?.user?.tenantId,
+        currency: 'BDT',
+        value: 0,
+        metaEventId: `${baseEventId}_reg`,
+      });
+
+      // 3. Platform SignUp conversion
+      trackEvent('SignUp', {
+        email: formData.email,
+        tenantId: data?.user?.tenantId,
+        metaEventId: `${baseEventId}_signup`,
+      });
+
+      // 4. GA4 sign_up event fired at genuine completion
+      trackGaEvent('sign_up', { method: 'email', email: formData.email });
 
       Cookies.set('access_token', data.access_token, { expires: 7 });
       Cookies.set('user_role', data.user.role, { expires: 7 });

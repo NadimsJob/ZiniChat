@@ -35,7 +35,7 @@ export class MetaPixelProcessor extends WorkerHost {
     // Check event specific tracking toggles
     let isTracked = true;
     if (eventName === 'PageView' && !config.trackPageView) isTracked = false;
-    if ((eventName === 'SignUp' || eventName === 'Lead') && !config.trackSignup) isTracked = false;
+    if ((eventName === 'SignUp' || eventName === 'Lead' || eventName === 'StartTrial') && !config.trackSignup) isTracked = false;
     if (eventName === 'CompleteRegistration' && !config.trackCompleteReg) isTracked = false;
     if ((eventName === 'Login' || eventName === 'Purchase') && !config.trackLogin) isTracked = false;
 
