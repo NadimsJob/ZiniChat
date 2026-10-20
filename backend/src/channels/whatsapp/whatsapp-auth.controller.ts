@@ -18,7 +18,7 @@ export class WhatsappAuthController {
     }
   }
 
-  @Post('connect/manual')
+  @Post(['connect/manual', 'connect-manual'])
   async connectManual(@Req() req: any, @Body() data: any, @Res() res: Response) {
     try {
       const result = await this.authService.connectManual(req.user.tenantId, data);
@@ -39,7 +39,7 @@ export class WhatsappAuthController {
     }
   }
 
-  @Post('connect/facebook')
+  @Post(['connect/facebook', 'connect-oauth'])
   async connectFacebook(@Req() req: any, @Body() data: any, @Res() res: Response) {
     const payload = typeof data === 'string' ? { code: data } : data;
     if (!payload || !payload.code) {

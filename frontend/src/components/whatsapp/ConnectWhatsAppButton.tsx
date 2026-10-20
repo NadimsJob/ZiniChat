@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 
+import Cookies from 'js-cookie';
+
 declare global {
   interface Window {
     fbAsyncInit: () => void;
@@ -83,8 +85,8 @@ export default function ConnectWhatsAppButton({ onConnected }: ConnectWhatsAppBu
     window.FB.login(
       (response: any) => {
         if (response.authResponse) {
-          const accessToken = response.authResponse.accessToken;
-          sendTokenToBackend(accessToken);
+          const code = response.authResponse.code || response.authResponse.accessToken;
+          sendTokenToBackend(code);
         } else {
           setMessage('User cancelled login or did not fully authorize.');
           setIsLoading(false);
@@ -103,23 +105,28 @@ export default function ConnectWhatsAppButton({ onConnected }: ConnectWhatsAppBu
 
   const sendTokenToBackend = async (code: string) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/webhooks/whatsapp/connect`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const token = Cookies.get('access_token');
+      const response = await fetch(`${apiUrl}/channels/whatsapp/connect/facebook`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ code }), // Meta Embedded Signup returns a code to be exchanged
+        body: JSON.stringify({ code }),
       });
+
+      const data = await response.json().catch(() => ({}));
 
       if (response.ok) {
         setMessage('WhatsApp connected successfully!');
         if (onConnected) onConnected();
       } else {
-        setMessage('Failed to connect WhatsApp to the platform.');
+        setMessage(data.error || data.message || 'Failed to connect WhatsApp to the platform.');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      setMessage('Network error occurred.');
+      setMessage(error.message || 'Network error occurred.');
     } finally {
       setIsLoading(false);
     }

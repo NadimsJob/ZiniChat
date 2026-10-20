@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit, ForbiddenException } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { InboxGateway } from '../../inbox/inbox.gateway';
 import { InboxService } from '../../inbox/inbox.service';
@@ -560,9 +560,17 @@ export class WhatsappWebService implements OnModuleInit {
     await this.checkWhatsappWebQuota(tenantId);
     await this.destroySocket(tenantId);
 
+    let cleanPhone = (phoneNumber || '').replace(/\D/g, '');
+    if (cleanPhone.length === 11 && cleanPhone.startsWith('01')) {
+      cleanPhone = `88${cleanPhone}`;
+    }
+    if (!cleanPhone) {
+      throw new BadRequestException('A valid phone number is required for pairing code generation');
+    }
+
     const sock = await this.initSocket(tenantId);
     await new Promise(resolve => setTimeout(resolve, 3000));
-    return await sock.requestPairingCode(phoneNumber);
+    return await sock.requestPairingCode(cleanPhone);
   }
 
   async startQr(tenantId: string): Promise<void> {

@@ -66,19 +66,34 @@ export class WhatsappAuthService {
 
     const { phoneNumberId, wabaId, accessToken, phoneNumber, displayName, verifyToken } = data;
 
-    if (!phoneNumberId || !wabaId || !accessToken) {
-      throw new BadRequestException('Missing required Meta API credentials');
+    if (!phoneNumberId || !accessToken) {
+      throw new BadRequestException('Missing required Meta API credentials: Phone Number ID and Permanent Access Token are required');
     }
 
+    let resolvedWabaId = wabaId?.trim();
+    let resolvedPhone = phoneNumber?.trim() || null;
+    let resolvedDisplayName = displayName?.trim() || null;
+
     try {
-      const response = await fetch(`https://graph.facebook.com/v21.0/${phoneNumberId}`, {
+      const response = await fetch(`https://graph.facebook.com/v21.0/${phoneNumberId}?fields=id,display_phone_number,verified_name,whatsapp_business_account`, {
         headers: { Authorization: `Bearer ${accessToken}` }
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({}));
         this.logger.error('Meta API verification failed:', errorData);
         throw new BadRequestException(`Meta API Error: ${errorData.error?.message || 'Invalid credentials'}`);
+      }
+
+      const metaData = await response.json().catch(() => ({}));
+      if (!resolvedWabaId) {
+        resolvedWabaId = metaData.whatsapp_business_account?.id || phoneNumberId;
+      }
+      if (!resolvedPhone && metaData.display_phone_number) {
+        resolvedPhone = metaData.display_phone_number;
+      }
+      if (!resolvedDisplayName && metaData.verified_name) {
+        resolvedDisplayName = metaData.verified_name;
       }
 
       const existing = await this.prisma.channelConnection.findFirst({
@@ -93,12 +108,12 @@ export class WhatsappAuthService {
         data: {
           tenantId,
           channelType: 'whatsapp',
-          externalAccountId: wabaId,
+          externalAccountId: resolvedWabaId,
           accessTokenEncrypted: accessToken,
-          displayName: displayName || 'WhatsApp Business',
-          phoneNumber: phoneNumber || null,
+          displayName: resolvedDisplayName || 'WhatsApp Business',
+          phoneNumber: resolvedPhone,
           phoneNumberId,
-          wabaId,
+          wabaId: resolvedWabaId,
           verifyToken: verifyToken || null,
           connectionMethod: 'manual',
           status: 'active'

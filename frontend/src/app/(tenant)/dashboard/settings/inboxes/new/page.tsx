@@ -376,9 +376,7 @@ export default function NewInboxStepper() {
     if (socketRef.current?.connected) return;
     
     const token = Cookies.get('access_token');
-    const wsUrl = API.replace(/^http/, 'ws');
-    
-    const socket = io(`${wsUrl}/inbox`, {
+    const socket = io(`${API}/inbox`, {
       auth: { token },
       transports: ['websocket', 'polling']
     });
@@ -425,6 +423,14 @@ export default function NewInboxStepper() {
       toast.error(language === 'en' ? 'Please enter a phone number' : 'ফোন নম্বর দিন');
       return;
     }
+
+    const digitsOnly = pairingPhone.replace(/\D/g, '');
+    const cleanNumber = digitsOnly.length === 11 && digitsOnly.startsWith('01') ? `88${digitsOnly}` : digitsOnly;
+    if (!cleanNumber) {
+      toast.error(language === 'en' ? 'Invalid phone number' : 'সঠিক ফোন নম্বর দিন');
+      return;
+    }
+
     setPairingLoading(true);
     setPairingCode(null);
     initWebSocket();
@@ -437,7 +443,7 @@ export default function NewInboxStepper() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}` 
         },
-        body: JSON.stringify({ phoneNumber: pairingPhone })
+        body: JSON.stringify({ phoneNumber: cleanNumber })
       });
       const data = await res.json();
       if (!res.ok) {
@@ -838,7 +844,7 @@ export default function NewInboxStepper() {
                           <div>
                             <span className="text-slate-600 dark:text-zinc-400 block">{language === 'en' ? 'Callback URL:' : 'কলব্যাক ইউআরএল:'}</span>
                             <code className="text-slate-900 dark:text-zinc-200 bg-white dark:bg-background/80 px-2 py-1 rounded block font-mono text-[10.5px] mt-0.5 border border-slate-200 dark:border-surface-hover select-all">
-                              {`${API}/channels/whatsapp`}
+                              {`${API}/webhooks/whatsapp`}
                             </code>
                           </div>
                           <div>
