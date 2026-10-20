@@ -1214,6 +1214,8 @@ export class InboxService implements OnModuleInit {
           { externalContactId: cleanId },
           { externalContactId: strippedId },
           { externalContactId: withPlusId },
+          { tags: { has: `ext:${cleanId}` } },
+          { tags: { has: `ext:${strippedId}` } },
           ...(data.channel === 'whatsapp' ? [
             { phone: cleanId },
             { phone: strippedId },
@@ -1281,6 +1283,56 @@ export class InboxService implements OnModuleInit {
           this.inboxGateway.broadcastToTenant(data.tenantId, 'contact:updated', contact);
         }
       }
+    }
+
+    // Auto-consolidation: Check if another contact exists in the same tenant with the same phone on this channel
+    if (contact.phone) {
+      try {
+        const normalizedPhone = contact.phone.replace(/[\s\-\+]/g, '').slice(-10);
+        const existingSamePhoneContact: any = await this.prisma.contact.findFirst({
+          where: {
+            tenantId: data.tenantId,
+            channel: data.channel,
+            id: { not: contact.id },
+            OR: [
+              { phone: contact.phone },
+              { phone: { endsWith: normalizedPhone } }
+            ]
+          },
+          include: {
+            conversations: {
+              where: { channel: data.channel },
+              orderBy: { lastMessageAt: 'asc' }
+            }
+          }
+        });
+
+        if (existingSamePhoneContact && existingSamePhoneContact.conversations?.length > 0) {
+          const primaryConv = existingSamePhoneContact.conversations[0];
+          const currentConv = await this.prisma.conversation.findFirst({
+            where: { tenantId: data.tenantId, contactId: contact.id, channel: data.channel }
+          });
+
+          if (currentConv && currentConv.id !== primaryConv.id) {
+            this.logger.log(`Auto-consolidating duplicate conversation ${currentConv.id} into primary conversation ${primaryConv.id} for phone ${contact.phone}`);
+            await this.mergeConversations(data.tenantId, primaryConv.id, currentConv.id);
+            if (this.inboxGateway) {
+              this.inboxGateway.broadcastToTenant(data.tenantId, 'conversation:deleted', { id: currentConv.id });
+              this.inboxGateway.broadcastToTenant(data.tenantId, 'conversation:merged', {
+                primaryConversationId: primaryConv.id,
+                secondaryConversationId: currentConv.id
+              });
+            }
+          }
+          contact = existingSamePhoneContact;
+        }
+      } catch (autoMergeErr: any) {
+        this.logger.warn(`Auto-consolidation by phone warning: ${autoMergeErr.message}`);
+      }
+    }
+
+    if (!contact) {
+      return { dropped: true, reason: 'contact_not_found' };
     }
 
     // Trigger Meta User Profile fetch (name) asynchronously if generic or missing
@@ -1782,6 +1834,178 @@ export class InboxService implements OnModuleInit {
       });
       
       return { success: true };
+    });
+  }
+
+  async mergeConversations(
+    tenantId: string,
+    primaryConversationId: string,
+    secondaryConversationId: string,
+    actorUser?: any
+  ) {
+    if (!primaryConversationId || !secondaryConversationId || primaryConversationId === secondaryConversationId) {
+      throw new BadRequestException('Cannot merge a conversation into itself or invalid conversation IDs');
+    }
+
+    const [primary, secondary] = await Promise.all([
+      this.prisma.conversation.findFirst({
+        where: { id: primaryConversationId, tenantId },
+        include: { contact: true, labels: true }
+      }),
+      this.prisma.conversation.findFirst({
+        where: { id: secondaryConversationId, tenantId },
+        include: { contact: true, labels: true }
+      })
+    ]);
+
+    if (!primary) throw new NotFoundException('Primary conversation not found');
+    if (!secondary) throw new NotFoundException('Secondary conversation not found');
+
+    const primaryContactId = primary.contactId;
+    const secondaryContactId = secondary.contactId;
+
+    return this.prisma.$transaction(async (tx) => {
+      // 1. Re-point messages from secondary conversation to primary conversation
+      await tx.message.updateMany({
+        where: { conversationId: secondaryConversationId },
+        data: { conversationId: primaryConversationId }
+      });
+
+      // 2. Re-point orders linked to secondary conversation
+      await tx.order.updateMany({
+        where: { conversationId: secondaryConversationId },
+        data: { conversationId: primaryConversationId, contactId: primaryContactId }
+      });
+
+      // 3. Merge conversation labels
+      const existingLabelIds = new Set(primary.labels.map(l => l.labelId));
+      for (const secLabel of secondary.labels) {
+        if (!existingLabelIds.has(secLabel.labelId)) {
+          try {
+            await tx.conversationLabel.create({
+              data: {
+                conversationId: primaryConversationId,
+                labelId: secLabel.labelId
+              }
+            });
+          } catch (e) {}
+        }
+      }
+
+      // 4. Update primary conversation timestamps & unread count
+      const primaryLast = new Date(primary.lastMessageAt).getTime();
+      const secondaryLast = new Date(secondary.lastMessageAt).getTime();
+      const latestMessageAt = new Date(Math.max(primaryLast, secondaryLast));
+
+      const updatedPrimaryConv = await tx.conversation.update({
+        where: { id: primaryConversationId },
+        data: {
+          lastMessageAt: latestMessageAt,
+          unreadCount: (primary.unreadCount || 0) + (secondary.unreadCount || 0),
+          hasOrderRequest: primary.hasOrderRequest || secondary.hasOrderRequest,
+          requiresFollowUp: primary.requiresFollowUp || secondary.requiresFollowUp
+        },
+        include: {
+          contact: true,
+          labels: { include: { label: true } },
+          assignedAgent: { select: { id: true, name: true, email: true, profilePicUrl: true } }
+        }
+      });
+
+      // 5. Delete secondary conversation records (collaborators & activities cascade)
+      try {
+        await (tx as any).conversationCollaborator?.deleteMany?.({
+          where: { conversationId: secondaryConversationId }
+        });
+      } catch (e) {}
+
+      try {
+        await (tx as any).conversationActivity?.deleteMany?.({
+          where: { conversationId: secondaryConversationId }
+        });
+      } catch (e) {}
+
+      await tx.conversationLabel.deleteMany({
+        where: { conversationId: secondaryConversationId }
+      });
+
+      await tx.conversation.delete({
+        where: { id: secondaryConversationId }
+      });
+
+      // 6. If secondary contact differs from primary contact, merge contact records
+      if (primaryContactId !== secondaryContactId) {
+        // Transfer notes
+        await tx.contactNote.updateMany({
+          where: { contactId: secondaryContactId },
+          data: { contactId: primaryContactId }
+        });
+
+        // Transfer campaign leads
+        await tx.campaignLead.updateMany({
+          where: { contactId: secondaryContactId },
+          data: { contactId: primaryContactId }
+        });
+
+        // Transfer broadcast recipients
+        await tx.broadcastRecipient.updateMany({
+          where: { contactId: secondaryContactId },
+          data: { contactId: primaryContactId }
+        });
+
+        // Transfer any remaining orders on secondary contact
+        await tx.order.updateMany({
+          where: { contactId: secondaryContactId },
+          data: { contactId: primaryContactId }
+        });
+
+        // Consolidate contact profile info (phone, address, email)
+        const secContact = secondary.contact;
+        const priContact = primary.contact;
+        const updateData: any = {};
+        if (!priContact.phone && secContact.phone) updateData.phone = secContact.phone;
+        if (!priContact.email && secContact.email) updateData.email = secContact.email;
+        if (!priContact.address && secContact.address) updateData.address = secContact.address;
+        if (!priContact.company && secContact.company) updateData.company = secContact.company;
+
+        // Preserve external ID alias as tags on primary contact so future incoming messages auto-route here
+        const priTags = Array.isArray(priContact.tags) ? [...priContact.tags] : [];
+        if (secContact.externalContactId && !priTags.includes(`ext:${secContact.externalContactId}`)) {
+          priTags.push(`ext:${secContact.externalContactId}`);
+          updateData.tags = priTags;
+        }
+
+        if (Object.keys(updateData).length > 0) {
+          await tx.contact.update({
+            where: { id: primaryContactId },
+            data: updateData
+          });
+        }
+
+        // Check if secondary contact has any other conversations
+        const remainingConvs = await tx.conversation.count({
+          where: { contactId: secondaryContactId }
+        });
+
+        if (remainingConvs === 0) {
+          try {
+            await tx.contact.delete({
+              where: { id: secondaryContactId }
+            });
+          } catch (err: any) {
+            this.logger.warn(`Could not delete orphaned contact ${secondaryContactId}: ${err.message}`);
+          }
+        }
+      }
+
+      this.logger.log(`Merged conversation ${secondaryConversationId} into ${primaryConversationId} for tenant ${tenantId}`);
+
+      return {
+        success: true,
+        primaryConversationId,
+        secondaryConversationId,
+        conversation: updatedPrimaryConv
+      };
     });
   }
 

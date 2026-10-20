@@ -37,12 +37,14 @@ describe('InboxService', () => {
         findFirst: jest.fn(),
         create: jest.fn(),
         update: jest.fn(),
+        delete: jest.fn(),
       },
       message: {
         findMany: jest.fn(),
         create: jest.fn(),
         deleteMany: jest.fn(),
         count: jest.fn(),
+        updateMany: jest.fn(),
       },
       kanbanStage: {
         findFirst: jest.fn(),
@@ -75,6 +77,13 @@ describe('InboxService', () => {
       },
       contactNote: {
         create: jest.fn(),
+        updateMany: jest.fn(),
+      },
+      campaignLead: {
+        updateMany: jest.fn(),
+      },
+      broadcastRecipient: {
+        updateMany: jest.fn(),
       },
       notification: {
         create: jest.fn(),
@@ -400,6 +409,83 @@ describe('InboxService', () => {
       expect(aiService.transcribeAudio).not.toHaveBeenCalled();
       expect(aiService.transcribeFromUrl).not.toHaveBeenCalled();
       expect(prismaService.message.create).toHaveBeenCalled();
+    });
+  });
+
+  describe('mergeConversations', () => {
+    it('should throw BadRequestException if primary and secondary IDs are identical', async () => {
+      await expect(
+        service.mergeConversations('tenant1', 'conv1', 'conv1')
+      ).rejects.toThrow('Cannot merge a conversation into itself');
+    });
+
+    it('should throw NotFoundException if primary conversation does not exist', async () => {
+      prismaService.conversation.findFirst
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({ id: 'conv2', tenantId: 'tenant1' });
+
+      await expect(
+        service.mergeConversations('tenant1', 'conv1', 'conv2')
+      ).rejects.toThrow('Primary conversation not found');
+    });
+
+    it('should successfully merge secondary into primary and delete secondary', async () => {
+      const mockPrimary = {
+        id: 'conv1',
+        tenantId: 'tenant1',
+        contactId: 'contact1',
+        lastMessageAt: new Date('2026-10-20T10:00:00Z'),
+        unreadCount: 1,
+        hasOrderRequest: false,
+        requiresFollowUp: false,
+        contact: { id: 'contact1', phone: '01856750599', tags: [] },
+        labels: [{ labelId: 'label1' }]
+      };
+
+      const mockSecondary = {
+        id: 'conv2',
+        tenantId: 'tenant1',
+        contactId: 'contact2',
+        lastMessageAt: new Date('2026-10-20T11:00:00Z'),
+        unreadCount: 2,
+        hasOrderRequest: true,
+        requiresFollowUp: false,
+        contact: { id: 'contact2', phone: '01856750599', externalContactId: '39142342862077938', tags: [] },
+        labels: [{ labelId: 'label2' }]
+      };
+
+      prismaService.conversation.findFirst
+        .mockResolvedValueOnce(mockPrimary)
+        .mockResolvedValueOnce(mockSecondary);
+
+      prismaService.conversation.update.mockResolvedValue({
+        ...mockPrimary,
+        lastMessageAt: mockSecondary.lastMessageAt,
+        unreadCount: 3,
+        hasOrderRequest: true
+      });
+
+      prismaService.conversation.count.mockResolvedValue(0);
+
+      const result = await service.mergeConversations('tenant1', 'conv1', 'conv2');
+
+      expect(result.success).toBe(true);
+      expect(result.primaryConversationId).toBe('conv1');
+      expect(result.secondaryConversationId).toBe('conv2');
+      expect(prismaService.message.updateMany).toHaveBeenCalledWith({
+        where: { conversationId: 'conv2' },
+        data: { conversationId: 'conv1' }
+      });
+      expect(prismaService.order.updateMany).toHaveBeenCalledWith({
+        where: { conversationId: 'conv2' },
+        data: { conversationId: 'conv1', contactId: 'contact1' }
+      });
+      expect(prismaService.conversation.delete).toHaveBeenCalledWith({
+        where: { id: 'conv2' }
+      });
+      expect(prismaService.contact.delete).toHaveBeenCalledWith({
+        where: { id: 'contact2' }
+      });
     });
   });
 });

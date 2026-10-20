@@ -11,7 +11,8 @@ import {
   Check, CheckCheck, MessageCircle, MoreVertical, X, UserCircle, UserPlus, Mail, Building, 
   MapPin, AlertCircle, Paperclip, File as FileIcon, Trash2, Bot, ToggleLeft, 
   ToggleRight, Wand2, RefreshCw, ChevronLeft, PanelRight, Eye, Star, Archive, 
-  CheckCircle2, Flag, UserCheck, Sparkles, Calendar, Download, Reply, Share2, Ban, Filter, Globe, ChevronDown
+  CheckCircle2, Flag, UserCheck, Sparkles, Calendar, Download, Reply, Share2, Ban, Filter, Globe, ChevronDown,
+  GitMerge
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
@@ -103,6 +104,12 @@ export default function InboxPage() {
   const [isDeletingConv, setIsDeletingConv] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterParam, setFilterParam] = useState('all'); // all, starred, unassigned, blocked, order_requests
+
+  // Merge Conversation States
+  const [showMergeModal, setShowMergeModal] = useState(false);
+  const [selectedMergeTargetId, setSelectedMergeTargetId] = useState<string>('');
+  const [isMerging, setIsMerging] = useState(false);
+  const [mergeSearchQuery, setMergeSearchQuery] = useState('');
 
   // FB Comments State
   const [commentLogs, setCommentLogs] = useState<any[]>([]);
@@ -412,6 +419,25 @@ export default function InboxPage() {
       setCommentLogs(prev => prev.map(c => c.commentId === updatedComment.commentId ? updatedComment : c));
     });
 
+    socket.on('conversation:merged', ({ primaryConversationId, secondaryConversationId, primaryConversation }: any) => {
+      setConversations(prev => {
+        const filtered = prev.filter(c => c.id !== secondaryConversationId);
+        if (primaryConversation) {
+          return filtered.map(c => c.id === primaryConversationId ? { ...c, ...primaryConversation } : c);
+        }
+        return filtered;
+      });
+      setSelectedConvId(curr => (curr === secondaryConversationId ? primaryConversationId : curr));
+      fetchConversations();
+      fetchCounts();
+    });
+
+    socket.on('conversation:deleted', ({ id }: any) => {
+      setConversations(prev => prev.filter(c => c.id !== id));
+      setSelectedConvId(curr => (curr === id ? null : curr));
+      fetchCounts();
+    });
+
     // Fetch initial auxiliary metadata
     Promise.all([
       fetch(`${API}/labels`, { headers: { Authorization: `Bearer ${token}` } }),
@@ -465,6 +491,57 @@ export default function InboxPage() {
   }, [messages]);
 
   const activeConv = conversations.find(c => c.id === selectedConvId);
+
+  const duplicateConversations = (activeConv?.contact?.phone && selectedConvId)
+    ? conversations.filter(c => 
+        c.id !== selectedConvId && 
+        c.contact?.phone && 
+        c.contact.phone.replace(/[\s\-\+]/g, '').slice(-10) === activeConv.contact.phone.replace(/[\s\-\+]/g, '').slice(-10)
+      )
+    : [];
+
+  const handleMergeSubmit = async (targetConvId?: string) => {
+    const secondaryId = targetConvId || selectedMergeTargetId;
+    if (!selectedConvId || !secondaryId || selectedConvId === secondaryId) {
+      toast.error(language === 'en' ? 'Please select a conversation to merge' : 'মার্জ করার জন্য একটি চ্যাট নির্বাচন করুন');
+      return;
+    }
+
+    setIsMerging(true);
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/inbox/conversations/${selectedConvId}/merge`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ secondaryConversationId: secondaryId })
+      });
+
+      if (res.ok) {
+        toast.success(language === 'en' ? 'Conversations merged successfully!' : 'চ্যাট সফলভাবে মার্জ করা হয়েছে!');
+        setShowMergeModal(false);
+        setSelectedMergeTargetId('');
+        fetchConversations();
+        fetchCounts();
+        const msgRes = await fetch(`${API}/inbox/conversations/${selectedConvId}/messages`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (msgRes.ok) {
+          const newMsgs = await msgRes.json();
+          if (Array.isArray(newMsgs)) setMessages(newMsgs);
+        }
+      } else {
+        const err = await res.json();
+        toast.error(err.message || 'Failed to merge conversations');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Error merging conversations');
+    } finally {
+      setIsMerging(false);
+    }
+  };
 
   const selectedCommentForSidebar = commentLogs.find(c => c.commentId === selectedCommentId);
   const activeCommentConv = (channelFilter === 'facebook_comments' && selectedCommentForSidebar) ? {
@@ -1892,6 +1969,22 @@ export default function InboxPage() {
                   <PanelRight className="w-4 h-4" />
                 </button>
 
+                {/* Merge Conversation */}
+                <button
+                  onClick={() => {
+                    setSelectedMergeTargetId(duplicateConversations[0]?.id || '');
+                    setShowMergeModal(true);
+                  }}
+                  className={`p-1.5 rounded-lg transition-all shrink-0 cursor-pointer ${
+                    duplicateConversations.length > 0 
+                      ? 'text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 ring-1 ring-amber-500/30' 
+                      : 'hover:bg-muted text-muted-foreground'
+                  }`}
+                  title={language === 'en' ? 'Merge Conversation' : 'কনভারসেশন মার্জ করুন'}
+                >
+                  <GitMerge className="w-4 h-4" />
+                </button>
+
                 {/* Delete */}
                 <button
                   onClick={() => setShowDeleteConfirmModal(true)}
@@ -1903,6 +1996,28 @@ export default function InboxPage() {
               </div>
             </div>
           </div>
+
+          {/* Duplicate Customer Notice Banner */}
+          {duplicateConversations.length > 0 && (
+            <div className="mx-4 mt-2.5 mb-1 px-3.5 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-2 text-xs text-amber-200 shadow-sm shrink-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                <span className="truncate">
+                  {language === 'en'
+                    ? `Duplicate chat detected for phone ${activeConv.contact?.phone} (${duplicateConversations.length} other chat)`
+                    : `একই কাস্টমারের (ফোন: ${activeConv.contact?.phone}) আরও ${duplicateConversations.length}টি চ্যাট রয়েছে।`}
+                </span>
+              </div>
+              <button
+                onClick={() => handleMergeSubmit(duplicateConversations[0].id)}
+                disabled={isMerging}
+                className="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-black font-bold rounded-lg text-[11px] flex items-center gap-1.5 transition shrink-0 cursor-pointer shadow-xs disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3 h-3 ${isMerging ? 'animate-spin' : ''}`} />
+                <span>{language === 'en' ? 'Merge Chats' : 'একসাথে মার্জ করুন'}</span>
+              </button>
+            </div>
+          )}
 
           {/* Messages Feed */}
           <div className="flex-1 overflow-y-auto overscroll-contain p-4 space-y-3 custom-scrollbar bg-background">
@@ -2361,6 +2476,156 @@ export default function InboxPage() {
                     </button>
                   </div>
                 ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Merge Conversation Modal */}
+      {showMergeModal && activeConv && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+          <div className="bg-card border border-border rounded-2xl shadow-xl max-w-lg w-full p-5 space-y-4 animate-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3 text-amber-500">
+                <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0 border border-amber-500/20">
+                  <GitMerge className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-foreground">
+                    {language === 'en' ? 'Merge Conversations' : 'কনভারসেশন মার্জ করুন'}
+                  </h3>
+                  <p className="text-[11px] text-muted-foreground">
+                    {language === 'en'
+                      ? 'Consolidate multiple chat threads for this customer into one.'
+                      : 'এই কাস্টমারের একাধিক চ্যাট বক্সকে একটিমাত্র চ্যাটে একীভূত করুন।'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowMergeModal(false)}
+                className="p-1 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Current Primary Target */}
+            <div className="p-3 bg-muted/30 border border-border/80 rounded-xl space-y-1">
+              <span className="text-[10px] uppercase font-bold text-primary tracking-wider">
+                {language === 'en' ? 'Keep this active chat (Primary):' : 'মূল সক্রিয় চ্যাট (যেটিতে যুক্ত হবে):'}
+              </span>
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-bold text-foreground">
+                  {activeConv.contact?.name || activeConv.contact?.phone || 'Customer'} ({activeConv.channel})
+                </span>
+                <span className="text-muted-foreground text-[11px]">
+                  {activeConv.contact?.phone || activeConv.contact?.externalContactId}
+                </span>
+              </div>
+            </div>
+
+            {/* Select Secondary to Merge into Primary */}
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-foreground block">
+                {language === 'en' ? 'Select duplicate chat to merge into this one:' : 'যে ডুপ্লিকেট চ্যাটটি মার্জ করবেন নির্বাচন করুন:'}
+              </label>
+
+              <div className="max-h-60 overflow-y-auto space-y-2 custom-scrollbar">
+                {duplicateConversations.length > 0 && (
+                  <div className="text-[11px] font-bold text-amber-400 flex items-center gap-1 mb-1">
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    <span>{language === 'en' ? 'Auto-detected matching phone chats:' : 'একই ফোন নম্বরের সম্ভাব্য চ্যাট:'}</span>
+                  </div>
+                )}
+
+                {conversations
+                  .filter(c => c.id !== selectedConvId)
+                  .map(c => {
+                    const isDup = duplicateConversations.some(d => d.id === c.id);
+                    const isSelected = selectedMergeTargetId === c.id;
+                    return (
+                      <div
+                        key={c.id}
+                        onClick={() => setSelectedMergeTargetId(c.id)}
+                        className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
+                          isSelected
+                            ? 'bg-amber-500/10 border-amber-500/50 shadow-xs'
+                            : isDup
+                            ? 'bg-amber-500/5 border-amber-500/30 hover:bg-amber-500/10'
+                            : 'bg-card border-border hover:bg-muted/40'
+                        }`}
+                      >
+                        <div className="min-w-0 flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center shrink-0">
+                            {c.contact?.name ? c.contact.name[0].toUpperCase() : 'C'}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-xs font-bold text-foreground truncate flex items-center gap-1.5">
+                              <span>{c.contact?.name || 'Customer'}</span>
+                              <span className="text-[10px] text-muted-foreground capitalize">({c.channel})</span>
+                              {isDup && (
+                                <span className="text-[9px] px-1.5 py-0.2 bg-amber-500/20 text-amber-400 font-bold rounded-full border border-amber-500/30">
+                                  Matching Phone
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[10px] text-muted-foreground truncate">
+                              {c.contact?.phone ? `Phone: ${c.contact.phone}` : `ID: ${c.contact?.externalContactId}`}
+                            </div>
+                          </div>
+                        </div>
+                        <input
+                          type="radio"
+                          name="mergeTarget"
+                          checked={isSelected}
+                          onChange={() => setSelectedMergeTargetId(c.id)}
+                          className="text-amber-500 focus:ring-amber-500 shrink-0"
+                        />
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+
+            <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 text-xs text-amber-300 space-y-1">
+              <p className="font-semibold flex items-center gap-1.5">
+                <AlertCircle className="w-4 h-4 shrink-0 text-amber-400" />
+                <span>{language === 'en' ? 'Safe Merge Guarantee' : 'নিরাপদ মার্জ নিশ্চয়তা'}</span>
+              </p>
+              <p className="text-[11px] opacity-90 leading-relaxed text-amber-200/90">
+                {language === 'en'
+                  ? 'All messages, customer orders, notes, and labels will be moved into this active conversation. The duplicate empty thread will be cleanly removed so your inbox stays clean.'
+                  : 'নির্বাচিত চ্যাটের সমস্ত মেসেজ, অর্ডার, কাস্টমার নোট ও লেবেল স্বয়ংক্রিয়ভাবে বর্তমান চ্যাটে স্থানান্তরিত হবে এবং ডুপ্লিকেট চ্যাটটি মুছে যাবে। কোনো মেসেজ বা অর্ডার হারাবে না।'}
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                disabled={isMerging}
+                onClick={() => setShowMergeModal(false)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold border border-border hover:bg-muted text-muted-foreground hover:text-foreground transition-all cursor-pointer"
+              >
+                {language === 'en' ? 'Cancel' : 'বাতিল'}
+              </button>
+              <button
+                type="button"
+                disabled={isMerging || !selectedMergeTargetId}
+                onClick={() => handleMergeSubmit()}
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-black transition-all shadow-sm cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+              >
+                {isMerging ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>{language === 'en' ? 'Merging...' : 'মার্জ হচ্ছে...'}</span>
+                  </>
+                ) : (
+                  <>
+                    <GitMerge className="w-3.5 h-3.5" />
+                    <span>{language === 'en' ? 'Confirm Merge' : 'মার্জ নিশ্চিত করুন'}</span>
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>

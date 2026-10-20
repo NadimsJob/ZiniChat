@@ -443,4 +443,26 @@ export class InboxController {
     const tenantId = req.user.tenantId;
     return this.inboxService.syncContactMetaProfile(tenantId, contactId);
   }
+
+  @Post('conversations/:id/merge')
+  async mergeConversations(
+    @Request() req: any,
+    @Param('id') primaryConversationId: string,
+    @Body() body: { secondaryConversationId: string }
+  ) {
+    const tenantId = req.user.tenantId;
+    const result = await this.inboxService.mergeConversations(tenantId, primaryConversationId, body.secondaryConversationId, req.user);
+    if (this.inboxGateway) {
+      this.inboxGateway.broadcastToTenant(tenantId, 'conversation:merged', {
+        primaryConversationId,
+        secondaryConversationId: body.secondaryConversationId,
+        primaryConversation: result.conversation,
+        deletedConversationId: body.secondaryConversationId
+      });
+      this.inboxGateway.broadcastToTenant(tenantId, 'conversation:deleted', {
+        id: body.secondaryConversationId
+      });
+    }
+    return result;
+  }
 }
