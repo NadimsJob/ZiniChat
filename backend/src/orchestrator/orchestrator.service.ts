@@ -401,7 +401,16 @@ export class OrchestratorService {
         }
       }
 
-      const retrievedProducts = await this.aiService.searchRelevantProducts(tenantId, ragQuery, 10);
+      let retrievedProducts = await this.aiService.searchRelevantProducts(tenantId, ragQuery, 10);
+      // When customer sends an image, if RAG on generic text returned 0 products,
+      // load the tenant's top active catalog products so Vision AI has real store items to compare against!
+      if (isImageMessage && retrievedProducts.length === 0) {
+        retrievedProducts = await this.prisma.product.findMany({
+          where: { tenantId, isActive: true },
+          orderBy: { createdAt: 'desc' },
+          take: 20
+        });
+      }
       const retrievedQnas = await this.aiService.searchRelevantQnas(tenantId, ragQuery, 5);
       let retrievedChunks: any[] = [];
       try {
@@ -521,7 +530,12 @@ export class OrchestratorService {
         }
       }
 
-      // Handler 3: Product Photo Matching & Multi-Product Dispatch
+      // 6. Response Dispatch (Text Reply First)
+      if (finalReplyText && finalReplyText.trim() !== '') {
+        await this.inboxService.saveOutboundMessage(tenantId, message.conversationId, finalReplyText, 'text', undefined, assistant.id);
+      }
+
+      // Handler 3: Product Photo Matching & Multi-Product Dispatch (Runs after text reply)
       if (isProductMatchingActive || (classification.intent === 'product_lookup' && classification.sendProductPhotoIds?.length)) {
         const minConf = toolMap['product_matching']?.configJson?.minMatchConfidence ?? 0.6;
         const maxPhotos = Math.min(Math.max(toolMap['product_matching']?.configJson?.maxProductsToSend ?? 10, 1), 10);
@@ -575,11 +589,6 @@ export class OrchestratorService {
           classification.interestedPropertyName,
           userText
         );
-      }
-
-      // 6. Response Dispatch
-      if (finalReplyText && finalReplyText.trim() !== '') {
-        await this.inboxService.saveOutboundMessage(tenantId, message.conversationId, finalReplyText, 'text', undefined, assistant.id);
       }
 
       // 7. Log AI Usage Credits
@@ -1383,26 +1392,46 @@ export class OrchestratorService {
     const isExplicitPhotoLookup = classification.intent === 'product_lookup';
     const hasExplicitPhotoIds = Array.isArray(classification.sendProductPhotoIds) && classification.sendProductPhotoIds.length > 0;
 
-    // Check if user text asked for photos, catalog or product list
-    const lowerUserText = (userText || '').toLowerCase();
-    const photoOrListTerms = [
-      'ছবি', 'photo', 'photos', 'pic', 'pics', 'picture', 'pictures', 'image', 'images',
-      'লিস্ট', 'তালিকা', 'list', 'catalog', 'ক্যাটালগ', 'collection', 'কালেকশন', 'সবগুলো',
-      'কি কি আছে', 'কী কী আছে', 'what do you have', 'show'
-    ];
-    const isPhotoOrListInquiry = photoOrListTerms.some(term => lowerUserText.includes(term));
+    // Clean user query text to strip system wrappers like [Image Sent by Customer] or [Image Sent] Caption:
+    const rawUserText = userText || '';
+    const isCustomerInboundImage = rawUserText.includes('[Image Sent');
+    const cleanUserQuery = rawUserText
+      .replace(/^\[Image Sent(?: by Customer)?\](?:\s*Caption:\s*)?/i, '')
+      .trim();
+    const lowerUserText = cleanUserQuery.toLowerCase();
 
-    // RULE 1: Never dispatch photos during order placement / buying intent ("নিব / অর্ডার করব / confirm")
+    // RULE 1: If the inbound message was an IMAGE sent by the customer:
+    // The customer is SHOWING an item to the business. They did NOT ask for a blast of 5 catalog photos!
+    // Real human behavior: The assistant discusses the photo in text (replyText) and does NOT dump catalog photos.
+    // Photos should ONLY be dispatched if the customer explicitly demanded photos in their caption/message!
+    const explicitPhotoRequest = [
+      'ছবি পাঠান', 'ছবি দিন', 'ছবি দেন', 'ছবি দেখান', 'আরও ছবি', 'আর ছবি', 'বাকি ছবি', 'অন্য কালার', 'অন্যান্য কালার',
+      'send photo', 'send photos', 'send pic', 'send pics', 'show photo', 'show photos', 'send more', 'show more pictures'
+    ].some(k => lowerUserText.includes(k));
+
+    if (isCustomerInboundImage && !explicitPhotoRequest) {
+      this.logger.log(`Skipping product photo matching for conversation ${conversationId}: Customer sent an inbound image without explicit photo request. Human-like discussion will be handled via replyText.`);
+      return;
+    }
+
+    // RULE 2: Never dispatch photos during order placement / buying intent ("নিব / অর্ডার করব / confirm")
     // If the customer is ordering, buying, or confirming, their goal is checkout, NOT receiving photos!
     const isOrdering = ['order_intent', 'order_confirmation'].includes(classification.intent);
     const orderKeywords = ['নিব', 'নিতে চাই', 'অর্ডার', 'কিনব', 'কিনতে চাই', 'order', 'buy', 'confirm'];
     const isOrderAction = isOrdering || orderKeywords.some(k => lowerUserText.includes(k));
-    const explicitPhotoRequest = ['ছবি', 'photo', 'photos', 'pic', 'pics', 'picture', 'pictures', 'image', 'images'].some(k => lowerUserText.includes(k));
 
     if (isOrderAction && !explicitPhotoRequest) {
       this.logger.log(`Skipping product photo matching for conversation ${conversationId}: Customer is in ordering flow without explicit photo request.`);
       return;
     }
+
+    // Check if user text asked for photos, catalog or product list
+    const photoOrListTerms = [
+      'ছবি', 'photo', 'photos', 'pic', 'pics', 'picture', 'pictures',
+      'লিস্ট', 'তালিকা', 'list', 'catalog', 'ক্যাটালগ', 'collection', 'কালেকশন', 'সবগুলো',
+      'কি কি আছে', 'কী কী আছে', 'what do you have', 'show'
+    ];
+    const isPhotoOrListInquiry = photoOrListTerms.some(term => lowerUserText.includes(term));
 
     if (!searchQuery && !isExplicitPhotoLookup && !hasExplicitPhotoIds && !isPhotoOrListInquiry) {
       return;
@@ -1716,6 +1745,23 @@ export class OrchestratorService {
     prompt += `VIOLATION OF THIS PHOTO DISPATCH DIRECTIVE IS STRICTLY FORBIDDEN.\n`;
 
     // =========================================================================
+    // MANDATORY INBOUND CUSTOMER IMAGE & HUMAN-LIKE VISION DIRECTIVE
+    // =========================================================================
+    prompt += `\n=== MANDATORY INBOUND CUSTOMER IMAGE & HUMAN-LIKE VISION DIRECTIVE ===\n`;
+    prompt += `When the customer sends a photo/image (with or without caption):\n`;
+    prompt += `1. REAL HUMAN BEHAVIOR — ACKNOWLEDGE & EXPLAIN: Always acknowledge and discuss the customer's photo politely in your conversational "replyText" like an attentive, helpful human shopkeeper. Describe what you see in the photo naturally in the customer's language. NEVER ignore the photo or act like you didn't receive it.\n`;
+    prompt += `2. NEVER DUMP UNPROMPTED PHOTOS: When a customer sends a photo, they are SHOWING an item to you. You MUST set "sendProductPhotoIds": []! NEVER blast 5 product photos back unless the customer's caption explicitly demanded pictures (e.g. "আরও ছবি দিন", "অন্য কালার দেখান").\n`;
+    prompt += `3. CATALOG MATCHING & AVAILABILITY:\n`;
+    prompt += `   - Carefully check if the item in the photo matches any item in the PRODUCT CATALOG below.\n`;
+    prompt += `   - MATCHED IN CATALOG: Confirm it is our product ("জি, এটি আমাদের কালেকশনের '[Product Name]'!"), state its exact catalog price (BDT), mention stock/size availability, and ask if they wish to order it.\n`;
+    prompt += `   - NOT MATCHED IN CATALOG: Politely clarify that this exact design/model is not currently available in our stock ("ছবিটি দেখলাম। দুঃখিত, এই নির্দিষ্ট ডিজাইনের প্রোডাক্টটি বর্তমানে আমাদের স্টকে নেই।"), but mention if similar items exist in our store and offer to show available options if they want.\n`;
+    prompt += `   - PAYMENT SCREENSHOT: If the image is a payment screenshot (bKash/Nagad/Rocket), acknowledge receipt politely ("পেমেন্টের স্ক্রিনশটটি পেয়েছি, ধন্যবাদ!...") without fabricating premature order confirmation.\n`;
+    prompt += `4. CUSTOMER QUESTIONS ON IMAGE:\n`;
+    prompt += `   - If customer asked "দাম কত?" / "কত দাম?": Quote the exact catalog price if matched; if not in catalog, explain that since it is not our item, price cannot be stated.\n`;
+    prompt += `   - If customer sent the photo with NO text: Describe what you see in the photo and ask how you can help them (price, size, stock, or ordering).\n`;
+    prompt += `VIOLATION OF THIS INBOUND IMAGE DIRECTIVE IS STRICTLY FORBIDDEN.\n`;
+
+    // =========================================================================
     // MANDATORY TEMPORAL AWARENESS & STALE SCHEDULE/APPOINTMENT GUARDRAIL
     // =========================================================================
     prompt += `\n=== MANDATORY TEMPORAL AWARENESS & STALE SCHEDULE/APPOINTMENT GUARDRAIL ===\n`;
@@ -1882,10 +1928,22 @@ export class OrchestratorService {
     // SECTION 2: DYNAMIC FOOTER (DYNAMIC RETRIEVED DATA + CUSTOMER CONTEXT)
     // =========================================================================
     if (options?.isImage) {
-      prompt += `\n--- IMAGE ANALYSIS INSTRUCTIONS ---\n`;
-      prompt += `The customer sent an image. Examine it carefully and describe the product seen in 'imageProductDescription'.\n`;
+      prompt += `\n--- INBOUND CUSTOMER IMAGE ANALYSIS & CONVERSATION INSTRUCTIONS ---\n`;
+      prompt += `The customer sent an image (attached). You MUST behave like a warm, attentive human shopkeeper:\n`;
+      prompt += `1. ACKNOWLEDGE & DISCUSS IN REPLYTEXT: In your conversational "replyText", directly acknowledge and discuss the customer's photo (e.g. "আপনার পাঠানো ছবিটি দেখলাম, এটি একটি [পণ্য/পোশাকের বিবরণ/রং]..." or "Thank you for the picture! I see this is a [description]..."). NEVER ignore the image!\n`;
+      prompt += `2. CATALOG COMPARISON & AVAILABILITY:\n`;
+      prompt += `   - Carefully check if the item in the image matches any item in the PRODUCT CATALOG below.\n`;
+      prompt += `   - IF MATCHED (Our product): State clearly that it is from our collection: "জি, এটি আমাদের কালেকশনের '[Product Name]'! এর মূল্য ৳[Price]।" State availability/sizes/colors and ask if they would like to place an order or know anything else.\n`;
+      prompt += `   - IF NOT MATCHED (External / Not in catalog): Politely explain: "ছবিটি দেখলাম। দুঃখিত, এই নির্দিষ্ট ডিজাইনের প্রোডাক্টটি বর্তমানে আমাদের স্টকে নেই।" Mention if we have similar category products in our store, and offer to share our available collection.\n`;
+      prompt += `   - IF PAYMENT RECEIPT (bKash/Nagad screenshot): Politely acknowledge: "পেমেন্টের স্ক্রিনশটটি পেয়েছি, ধন্যবাদ! আমাদের টিম/সিস্টেম এটি যাচাই করছে..."\n`;
+      prompt += `3. CUSTOMER INQUIRY ON IMAGE:\n`;
+      prompt += `   - If customer asked "দাম কত?" / "কত দাম?" / "দাম": Quote the exact catalog price if matched; if not in catalog, explain that since it is not our item, price cannot be stated.\n`;
+      prompt += `   - If customer sent the image with NO text/caption: Describe what is in the photo and ask how you may assist them (price, size, stock, or ordering).\n`;
+      prompt += `4. STRICT NO-PHOTO-BLAST RULE: You MUST set "sendProductPhotoIds": []! DO NOT request or send product photos when the customer sends an image, unless the customer's caption explicitly demanded more photos.\n`;
       if (options.caption) {
-        prompt += `Caption: "${options.caption}"\n`;
+        prompt += `Customer Caption: "${options.caption}"\n`;
+      } else {
+        prompt += `Customer Caption: (None provided — customer sent image alone. Describe what you see and politely ask what they need regarding this item).\n`;
       }
     }
 

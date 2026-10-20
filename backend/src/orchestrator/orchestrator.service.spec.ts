@@ -1419,6 +1419,97 @@ describe('OrchestratorService', () => {
       );
     });
 
+    it('should skip photo matching when customer sends an inbound image without explicit photo request', async () => {
+      inboxService.saveOutboundMessage.mockClear();
+
+      prismaService.product.findMany.mockResolvedValue([
+        { id: 'p1', name: 'Black Polo Shirt', price: 800, imageUrl: 'https://example.com/polo.jpg', isActive: true },
+        { id: 'p2', name: 'Blue Polo Shirt', price: 850, imageUrl: 'https://example.com/blue-polo.jpg', isActive: true }
+      ]);
+
+      const classification: any = {
+        intent: 'general',
+        replyText: 'আপনার ছবিটি দেখলাম। এটি একটি সুন্দর ব্ল্যাক পোলো শার্ট!',
+        imageProductDescription: 'Black Polo Shirt',
+        sendProductPhotoIds: ['p1']
+      };
+
+      // Customer sent image with caption "দাম কত?"
+      await (service as any).handleProductMatching(
+        'tenant1',
+        'c1',
+        classification,
+        0.6,
+        10,
+        'ai1',
+        '[Image Sent] Caption: দাম কত?'
+      );
+
+      // Verify ZERO outbound photo messages were saved (no blast of 5 photos)
+      expect(inboxService.saveOutboundMessage).not.toHaveBeenCalled();
+    });
+
+    it('should skip photo matching when customer sends an image with no caption at all', async () => {
+      inboxService.saveOutboundMessage.mockClear();
+
+      prismaService.product.findMany.mockResolvedValue([
+        { id: 'p1', name: 'Sneakers Shoes', price: 2500, imageUrl: 'https://example.com/sneakers.jpg', isActive: true }
+      ]);
+
+      const classification: any = {
+        intent: 'general',
+        replyText: 'আপনার পাঠানো ছবিটি পেয়েছি! এটি একটি স্নিকার্স জুতো...',
+        imageProductDescription: 'Sneakers Shoes',
+        sendProductPhotoIds: ['p1']
+      };
+
+      // Customer sent image alone with no text
+      await (service as any).handleProductMatching(
+        'tenant1',
+        'c1',
+        classification,
+        0.6,
+        10,
+        'ai1',
+        '[Image Sent by Customer]'
+      );
+
+      // Verify ZERO outbound photo messages were saved
+      expect(inboxService.saveOutboundMessage).not.toHaveBeenCalled();
+    });
+
+    it('should allow photo matching when customer image caption explicitly requests more photos', async () => {
+      inboxService.saveOutboundMessage.mockClear();
+
+      prismaService.product.findMany.mockResolvedValue([
+        { id: 'p1', name: 'Red Panjabi', price: 1500, imageUrl: 'https://example.com/red.jpg', isActive: true },
+        { id: 'p2', name: 'Blue Panjabi', price: 1600, imageUrl: 'https://example.com/blue.jpg', isActive: true }
+      ]);
+
+      prismaService.message.findMany.mockResolvedValue([]);
+
+      const classification: any = {
+        intent: 'product_lookup',
+        replyText: 'এখানে অন্যান্য কালারের ছবি দেওয়া হলো',
+        imageProductDescription: 'Panjabi',
+        sendProductPhotoIds: ['p1', 'p2']
+      };
+
+      // Customer sent image and explicitly asked for other colors
+      await (service as any).handleProductMatching(
+        'tenant1',
+        'c1',
+        classification,
+        0.6,
+        10,
+        'ai1',
+        '[Image Sent] Caption: এইটার অন্য কালারের ছবি দেখান'
+      );
+
+      // Verify photos were dispatched because explicit photo request was present in caption
+      expect(inboxService.saveOutboundMessage).toHaveBeenCalled();
+    });
+
     it('T-FS1: should trigger Flow 1.8 failsafe and create order when LLM replies that order is confirmed while pendingOrderProposal exists', async () => {
       const proposal = {
         status: 'AWAITING_PAYMENT_PROOF',

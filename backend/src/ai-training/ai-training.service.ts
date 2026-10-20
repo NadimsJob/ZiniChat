@@ -937,6 +937,23 @@ ${combinedText}`;
     prompt += `5. RESEND ONLY ON EXPLICIT DEMAND: Only if the customer explicitly and insistently demands to re-send the picture ("আবার পাঠান", "আবার দিন", "আরেকবার পাঠান", "send again", "resend"), only then send that photo.\n`;
     prompt += `VIOLATION OF THIS PHOTO DISPATCH DIRECTIVE IS STRICTLY FORBIDDEN.\n`;
 
+    // =========================================================================
+    // MANDATORY INBOUND CUSTOMER IMAGE & HUMAN-LIKE VISION DIRECTIVE
+    // =========================================================================
+    prompt += `\n=== MANDATORY INBOUND CUSTOMER IMAGE & HUMAN-LIKE VISION DIRECTIVE ===\n`;
+    prompt += `When the customer sends a photo/image (with or without caption):\n`;
+    prompt += `1. REAL HUMAN BEHAVIOR — ACKNOWLEDGE & EXPLAIN: Always acknowledge and discuss the customer's photo politely in your conversational "replyText" like an attentive, helpful human shopkeeper. Describe what you see in the photo naturally in the customer's language. NEVER ignore the photo or act like you didn't receive it.\n`;
+    prompt += `2. NEVER DUMP UNPROMPTED PHOTOS: When a customer sends a photo, they are SHOWING an item to you. You MUST NOT send multiple unprompted product photos back unless the customer explicitly demanded pictures (e.g. "আরও ছবি দিন", "অন্য কালার দেখান").\n`;
+    prompt += `3. CATALOG MATCHING & AVAILABILITY:\n`;
+    prompt += `   - Carefully check if the item in the photo matches any item in the PRODUCT CATALOG below.\n`;
+    prompt += `   - MATCHED IN CATALOG: Confirm it is our product ("জি, এটি আমাদের কালেকশনের '[Product Name]'!"), state its exact catalog price (BDT), mention stock/size availability, and ask if they wish to order it.\n`;
+    prompt += `   - NOT MATCHED IN CATALOG: Politely clarify that this exact design/model is not currently available in our stock ("ছবিটি দেখলাম। দুঃখিত, এই নির্দিষ্ট ডিজাইনের প্রোডাক্টটি বর্তমানে আমাদের স্টকে নেই।"), but mention if similar items exist in our store and offer to show available options if they want.\n`;
+    prompt += `   - PAYMENT SCREENSHOT: If the image is a payment screenshot (bKash/Nagad/Rocket), acknowledge receipt politely ("পেমেন্টের স্ক্রিনশটটি পেয়েছি, ধন্যবাদ!...") without fabricating premature order confirmation.\n`;
+    prompt += `4. CUSTOMER QUESTIONS ON IMAGE:\n`;
+    prompt += `   - If customer asked "দাম কত?" / "কত দাম?": Quote the exact catalog price if matched; if not in catalog, explain that since it is not our item, price cannot be stated.\n`;
+    prompt += `   - If customer sent the photo with NO text: Describe what you see in the photo and ask how you can help them (price, size, stock, or ordering).\n`;
+    prompt += `VIOLATION OF THIS INBOUND IMAGE DIRECTIVE IS STRICTLY FORBIDDEN.\n`;
+
     // ── Labels / Tag Rules (for Simulator parity) ───────────────────────────
     const tagsWithPrompts = activeLabels.filter(t => t.aiPrompt);
     if (tagsWithPrompts.length > 0) {
