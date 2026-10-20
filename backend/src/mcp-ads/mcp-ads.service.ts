@@ -12,7 +12,7 @@ export class McpAdsService {
     private readonly marketingConfig: MetaMarketingConfigService,
   ) {}
 
-  private async getDecryptedTokenAndAccount(tenantId: string, adAccountId: string) {
+  private async getDecryptedTokenAndAccount(tenantId: string, adAccountId?: string) {
     const config = await this.marketingConfig.getConfig();
     if (!config.isEnabled) {
       throw new ForbiddenException('Meta Marketing API is currently disabled platform-wide.');
@@ -21,19 +21,24 @@ export class McpAdsService {
     const account = await this.prisma.tenantMetaAdAccount.findFirst({
       where: {
         tenantId,
-        adAccountId,
+        ...(adAccountId ? { adAccountId } : {}),
         status: 'active',
       },
     });
 
     if (!account) {
-      throw new NotFoundException(`Ad account ${adAccountId} not found or inactive for this tenant.`);
+      throw new NotFoundException(
+        adAccountId
+          ? `Ad account ${adAccountId} not found or inactive for this tenant.`
+          : 'No active Meta Ad Account found for this tenant.'
+      );
     }
 
     const decryptedToken = this.crypto.decrypt(account.accessToken);
     const apiVersion = config.apiVersion || 'v21.0';
     // Meta ad account IDs require 'act_' prefix if not already prefixed
-    const formattedAdAccountId = adAccountId.startsWith('act_') ? adAccountId : `act_${adAccountId}`;
+    const effectiveAdAccountId = account.adAccountId || adAccountId || '';
+    const formattedAdAccountId = effectiveAdAccountId.startsWith('act_') ? effectiveAdAccountId : `act_${effectiveAdAccountId}`;
 
     return { account, token: decryptedToken, apiVersion, formattedAdAccountId };
   }
@@ -406,6 +411,313 @@ export class McpAdsService {
     } catch (error: any) {
       console.error('Error pausing ad set:', error.response?.data || error.message);
       throw new InternalServerErrorException('Failed to pause ad set on Meta');
+    }
+  }
+
+  // =========================================================================
+  // PAGE POST PROMOTION & LIVE AD SCALING ENGINE (ANTI-GRAVITY / CLAUDE MCP)
+  // =========================================================================
+
+  /**
+   * Fetches recent Facebook Page posts with images, text, and engagement metrics
+   * without requiring tenant to configure any external MCP server.
+   */
+  async getPagePosts(tenantId: string, adAccountId?: string, pageId?: string, limit: number = 25) {
+    let tenantAccount: any;
+    if (adAccountId) {
+      tenantAccount = await this.prisma.tenantMetaAdAccount.findFirst({
+        where: { tenantId, adAccountId, status: 'active' },
+      });
+    } else {
+      tenantAccount = await this.prisma.tenantMetaAdAccount.findFirst({
+        where: { tenantId, status: 'active' },
+      });
+    }
+
+    const messengerChannel = await this.prisma.channelConnection.findFirst({
+      where: {
+        tenantId,
+        channelType: 'messenger',
+        status: 'active',
+      },
+    });
+
+    const targetPageId = pageId || tenantAccount?.facebookPageId || messengerChannel?.externalAccountId;
+    if (!targetPageId) {
+      throw new BadRequestException('No Facebook Page found. Please connect a Facebook Page in Channel Integration first.');
+    }
+
+    const config = await this.marketingConfig.getConfig();
+    const apiVersion = config.apiVersion || 'v21.0';
+
+    let accessToken: string;
+    if (messengerChannel?.accessTokenEncrypted) {
+      accessToken = this.crypto.decrypt(messengerChannel.accessTokenEncrypted);
+    } else if (tenantAccount?.accessToken) {
+      accessToken = this.crypto.decrypt(tenantAccount.accessToken);
+    } else {
+      throw new BadRequestException('No active token found for the connected Facebook Page.');
+    }
+
+    try {
+      const response = await axios.get(`https://graph.facebook.com/${apiVersion}/${targetPageId}/posts`, {
+        params: {
+          access_token: accessToken,
+          fields: 'id,message,created_time,full_picture,permalink_url,shares,reactions.summary(true)',
+          limit: Math.min(limit, 50),
+        },
+      });
+
+      const rawPosts = response.data.data || [];
+      return {
+        pageId: targetPageId,
+        pageName: messengerChannel?.displayName || tenantAccount?.facebookPageName || 'Facebook Page',
+        posts: rawPosts.map((p: any) => ({
+          id: p.id,
+          message: p.message || '',
+          createdTime: p.created_time,
+          fullPicture: p.full_picture || null,
+          permalinkUrl: p.permalink_url || null,
+          reactionsCount: p.reactions?.summary?.total_count || 0,
+          sharesCount: p.shares?.count || 0,
+        })),
+      };
+    } catch (error: any) {
+      console.error('Error fetching Facebook Page posts:', error.response?.data || error.message);
+      throw new InternalServerErrorException(error.response?.data?.error?.message || 'Failed to fetch Facebook Page posts');
+    }
+  }
+
+  /**
+   * Promotes an existing Facebook Page post in 1 click using native object_story_id,
+   * preserving all existing social proof (likes, comments, reactions, shares).
+   */
+  async boostPagePost(tenantId: string, dto: {
+    adAccountId: string;
+    pagePostId: string;
+    pageId: string;
+    dailyBudget: number;
+    durationDays?: number;
+    campaignName?: string;
+    targeting?: {
+      countries?: string[];
+      ageMin?: number;
+      ageMax?: number;
+      genders?: number[];
+    };
+  }) {
+    if (!dto.pagePostId) throw new BadRequestException('pagePostId is required.');
+    if (!dto.dailyBudget || dto.dailyBudget <= 0) throw new BadRequestException('A positive daily budget is required.');
+
+    const { token, apiVersion, formattedAdAccountId } = await this.getDecryptedTokenAndAccount(tenantId, dto.adAccountId);
+
+    try {
+      // 1. Create Campaign
+      const rawPostId = dto.pagePostId.includes('_') ? dto.pagePostId.split('_')[1] : dto.pagePostId;
+      const cleanName = dto.campaignName || `Boost Post ${rawPostId}`;
+      const campaignPayload: any = {
+        access_token: token,
+        name: `${cleanName} - ${new Date().toISOString().slice(0, 10)}`,
+        objective: 'OUTCOME_ENGAGEMENT',
+        status: 'ACTIVE',
+        special_ad_categories: [],
+      };
+
+      const campaignRes = await axios.post(`https://graph.facebook.com/${apiVersion}/${formattedAdAccountId}/campaigns`, null, {
+        params: campaignPayload,
+      });
+      const campaignId = campaignRes.data.id;
+
+      // 2. Create Ad Set with targeting and budget
+      const countries = dto.targeting?.countries?.length ? dto.targeting.countries : ['BD'];
+      const targeting: any = {
+        geo_locations: { countries },
+        age_min: dto.targeting?.ageMin || 18,
+        age_max: dto.targeting?.ageMax || 65,
+      };
+      if (dto.targeting?.genders?.length) {
+        targeting.genders = dto.targeting.genders;
+      }
+
+      const now = new Date();
+      const durationDays = dto.durationDays && dto.durationDays > 0 ? dto.durationDays : 7;
+      const stopTime = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000);
+
+      const adSetPayload: any = {
+        access_token: token,
+        name: `${cleanName} AdSet`,
+        campaign_id: campaignId,
+        daily_budget: Math.round(dto.dailyBudget * 100),
+        billing_event: 'IMPRESSIONS',
+        optimization_goal: 'POST_ENGAGEMENT',
+        bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
+        targeting: JSON.stringify(targeting),
+        promoted_object: JSON.stringify({ page_id: dto.pageId }),
+        status: 'ACTIVE',
+        start_time: now.toISOString(),
+        end_time: stopTime.toISOString(),
+      };
+
+      const adSetRes = await axios.post(`https://graph.facebook.com/${apiVersion}/${formattedAdAccountId}/adsets`, null, {
+        params: adSetPayload,
+      });
+      const adSetId = adSetRes.data.id;
+
+      // 3. Create AdCreative with object_story_id (Directly links existing organic Page Post)
+      const creativeRes = await axios.post(`https://graph.facebook.com/${apiVersion}/${formattedAdAccountId}/adcreatives`, null, {
+        params: {
+          access_token: token,
+          name: `Creative: ${dto.pagePostId}`,
+          object_story_id: dto.pagePostId,
+        },
+      });
+      const creativeId = creativeRes.data.id;
+
+      // 4. Create Ad
+      const adRes = await axios.post(`https://graph.facebook.com/${apiVersion}/${formattedAdAccountId}/ads`, null, {
+        params: {
+          access_token: token,
+          name: `${cleanName} Ad`,
+          adset_id: adSetId,
+          creative: JSON.stringify({ creative_id: creativeId }),
+          status: 'ACTIVE',
+        },
+      });
+      const adId = adRes.data.id;
+
+      return {
+        success: true,
+        campaignId,
+        adSetId,
+        creativeId,
+        adId,
+        dailyBudget: dto.dailyBudget,
+        durationDays,
+      };
+    } catch (error: any) {
+      console.error('Error boosting page post:', error.response?.data || error.message);
+      throw new InternalServerErrorException(error.response?.data?.error?.message || 'Failed to boost Facebook Page post on Meta');
+    }
+  }
+
+  /**
+   * Updates daily budget for a Campaign or Ad Set directly on Meta.
+   */
+  async updateDailyBudget(tenantId: string, adAccountId: string, objectId: string, newDailyBudget: number) {
+    if (!newDailyBudget || newDailyBudget <= 0) {
+      throw new BadRequestException('Daily budget must be greater than 0.');
+    }
+
+    const { token, apiVersion } = await this.getDecryptedTokenAndAccount(tenantId, adAccountId);
+
+    try {
+      const budgetInCents = Math.round(newDailyBudget * 100);
+      await axios.post(`https://graph.facebook.com/${apiVersion}/${objectId}`, null, {
+        params: {
+          access_token: token,
+          daily_budget: budgetInCents,
+        },
+      });
+
+      return { success: true, objectId, newDailyBudget };
+    } catch (error: any) {
+      console.error('Error updating daily budget:', error.response?.data || error.message);
+      throw new InternalServerErrorException(error.response?.data?.error?.message || 'Failed to update daily budget on Meta');
+    }
+  }
+
+  /**
+   * Scales daily budget up or down by percentage (e.g. +20% or -10%).
+   */
+  async scaleBudgetByPercentage(tenantId: string, adAccountId: string, objectId: string, percentage: number) {
+    if (!percentage || isNaN(percentage)) {
+      throw new BadRequestException('A valid percentage number is required.');
+    }
+
+    const { token, apiVersion } = await this.getDecryptedTokenAndAccount(tenantId, adAccountId);
+
+    try {
+      // 1. Fetch current daily budget
+      const getRes = await axios.get(`https://graph.facebook.com/${apiVersion}/${objectId}`, {
+        params: {
+          access_token: token,
+          fields: 'daily_budget,name',
+        },
+      });
+
+      const currentBudgetInCents = Number(getRes.data.daily_budget);
+      if (!currentBudgetInCents || isNaN(currentBudgetInCents)) {
+        throw new BadRequestException('This object does not have an active daily budget configured.');
+      }
+
+      // 2. Calculate new budget with minimum 100 cents safety
+      const factor = 1 + percentage / 100;
+      const newBudgetInCents = Math.max(100, Math.round(currentBudgetInCents * factor));
+
+      // 3. Update Meta
+      await axios.post(`https://graph.facebook.com/${apiVersion}/${objectId}`, null, {
+        params: {
+          access_token: token,
+          daily_budget: newBudgetInCents,
+        },
+      });
+
+      return {
+        success: true,
+        objectId,
+        oldDailyBudget: currentBudgetInCents / 100,
+        newDailyBudget: newBudgetInCents / 100,
+        percentage,
+      };
+    } catch (error: any) {
+      console.error('Error scaling budget by percentage:', error.response?.data || error.message);
+      throw new InternalServerErrorException(error.response?.data?.error?.message || 'Failed to scale budget on Meta');
+    }
+  }
+
+  /**
+   * Toggles status between ACTIVE and PAUSED for Campaign, AdSet, or Ad.
+   */
+  async updateStatus(tenantId: string, adAccountId: string, objectId: string, status: 'ACTIVE' | 'PAUSED') {
+    if (status !== 'ACTIVE' && status !== 'PAUSED') {
+      throw new BadRequestException("Status must be either 'ACTIVE' or 'PAUSED'.");
+    }
+
+    const { token, apiVersion } = await this.getDecryptedTokenAndAccount(tenantId, adAccountId);
+
+    try {
+      await axios.post(`https://graph.facebook.com/${apiVersion}/${objectId}`, null, {
+        params: {
+          access_token: token,
+          status,
+        },
+      });
+
+      return { success: true, objectId, status };
+    } catch (error: any) {
+      console.error('Error updating status:', error.response?.data || error.message);
+      throw new InternalServerErrorException(error.response?.data?.error?.message || 'Failed to update status on Meta');
+    }
+  }
+
+  /**
+   * Updates targeting settings (countries, age min/max, genders) for an Ad Set.
+   */
+  async updateAdSetTargeting(tenantId: string, adAccountId: string, adSetId: string, targeting: any) {
+    const { token, apiVersion } = await this.getDecryptedTokenAndAccount(tenantId, adAccountId);
+
+    try {
+      await axios.post(`https://graph.facebook.com/${apiVersion}/${adSetId}`, null, {
+        params: {
+          access_token: token,
+          targeting: typeof targeting === 'string' ? targeting : JSON.stringify(targeting),
+        },
+      });
+
+      return { success: true, adSetId, targeting };
+    } catch (error: any) {
+      console.error('Error updating ad set targeting:', error.response?.data || error.message);
+      throw new InternalServerErrorException(error.response?.data?.error?.message || 'Failed to update targeting on Meta');
     }
   }
 }

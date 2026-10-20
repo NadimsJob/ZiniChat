@@ -25,6 +25,9 @@ describe('McpAdsService', () => {
       tenantMetaAdAccount: {
         findFirst: jest.fn(),
       },
+      channelConnection: {
+        findFirst: jest.fn(),
+      },
     };
 
     crypto = {
@@ -179,4 +182,188 @@ describe('McpAdsService', () => {
       });
     });
   });
+
+  describe('getPagePosts', () => {
+    it('should fetch Facebook Page posts and return formatted items', async () => {
+      prisma.tenantMetaAdAccount.findFirst.mockResolvedValueOnce({
+        accessToken: mockEncryptedToken,
+        facebookPageId: 'page_123',
+        facebookPageName: 'Fashion Store',
+      });
+      prisma.channelConnection.findFirst.mockResolvedValueOnce({
+        externalAccountId: 'page_123',
+        displayName: 'Fashion Store',
+        accessTokenEncrypted: mockEncryptedToken,
+      });
+
+      mockedAxios.get.mockResolvedValueOnce({
+        data: {
+          data: [
+            {
+              id: 'page_123_post_999',
+              message: 'Check out our new summer collection!',
+              created_time: '2026-10-20T10:00:00+0000',
+              full_picture: 'https://fbcdn.net/photo.jpg',
+              permalink_url: 'https://facebook.com/post/999',
+              reactions: { summary: { total_count: 85 } },
+              shares: { count: 12 },
+            },
+          ],
+        },
+      });
+
+      const result = await service.getPagePosts(mockTenantId, mockAdAccountId);
+
+      expect(result.pageId).toBe('page_123');
+      expect(result.posts).toHaveLength(1);
+      expect(result.posts[0]).toEqual({
+        id: 'page_123_post_999',
+        message: 'Check out our new summer collection!',
+        createdTime: '2026-10-20T10:00:00+0000',
+        fullPicture: 'https://fbcdn.net/photo.jpg',
+        permalinkUrl: 'https://facebook.com/post/999',
+        reactionsCount: 85,
+        sharesCount: 12,
+      });
+    });
+  });
+
+  describe('boostPagePost', () => {
+    it('should create campaign, ad set with targeting, ad creative with object_story_id, and ad', async () => {
+      prisma.tenantMetaAdAccount.findFirst.mockResolvedValueOnce({
+        accessToken: mockEncryptedToken,
+        adAccountId: '123456789',
+      });
+
+      // 1. Campaign response
+      mockedAxios.post.mockResolvedValueOnce({ data: { id: 'camp_boost_1' } });
+      // 2. AdSet response
+      mockedAxios.post.mockResolvedValueOnce({ data: { id: 'adset_boost_1' } });
+      // 3. AdCreative response
+      mockedAxios.post.mockResolvedValueOnce({ data: { id: 'creative_boost_1' } });
+      // 4. Ad response
+      mockedAxios.post.mockResolvedValueOnce({ data: { id: 'ad_boost_1' } });
+
+      const result = await service.boostPagePost(mockTenantId, {
+        adAccountId: mockAdAccountId,
+        pagePostId: 'page_123_post_999',
+        pageId: 'page_123',
+        dailyBudget: 500,
+        durationDays: 7,
+        campaignName: 'Summer Sale Boost',
+        targeting: {
+          countries: ['BD'],
+          ageMin: 18,
+          ageMax: 55,
+          genders: [1, 2],
+        },
+      });
+
+      expect(result).toEqual({
+        success: true,
+        campaignId: 'camp_boost_1',
+        adSetId: 'adset_boost_1',
+        creativeId: 'creative_boost_1',
+        adId: 'ad_boost_1',
+        dailyBudget: 500,
+        durationDays: 7,
+      });
+
+      // Verify that creative payload included object_story_id
+      expect(mockedAxios.post).toHaveBeenCalledWith(
+        expect.stringContaining('/adcreatives'),
+        null,
+        expect.objectContaining({
+          params: expect.objectContaining({
+            object_story_id: 'page_123_post_999',
+          }),
+        }),
+      );
+    });
+  });
+
+  describe('updateDailyBudget', () => {
+    it('should update daily budget in cents on Meta Graph API', async () => {
+      prisma.tenantMetaAdAccount.findFirst.mockResolvedValueOnce({
+        accessToken: mockEncryptedToken,
+        adAccountId: '123456789',
+      });
+
+      mockedAxios.post.mockResolvedValueOnce({ data: { success: true } });
+
+      const result = await service.updateDailyBudget(mockTenantId, mockAdAccountId, 'camp_1', 750);
+
+      expect(result).toEqual({ success: true, objectId: 'camp_1', newDailyBudget: 750 });
+      expect(mockedAxios.post).toHaveBeenCalledWith(
+        expect.stringContaining('/camp_1'),
+        null,
+        expect.objectContaining({
+          params: expect.objectContaining({
+            daily_budget: 75000,
+          }),
+        }),
+      );
+    });
+  });
+
+  describe('scaleBudgetByPercentage', () => {
+    it('should fetch current budget, apply +20% scaling and update Meta', async () => {
+      prisma.tenantMetaAdAccount.findFirst.mockResolvedValueOnce({
+        accessToken: mockEncryptedToken,
+        adAccountId: '123456789',
+      });
+
+      mockedAxios.get.mockResolvedValueOnce({
+        data: {
+          daily_budget: '50000', // 500
+          name: 'Summer Campaign',
+        },
+      });
+      mockedAxios.post.mockResolvedValueOnce({ data: { success: true } });
+
+      const result = await service.scaleBudgetByPercentage(mockTenantId, mockAdAccountId, 'camp_1', 20);
+
+      expect(result).toEqual({
+        success: true,
+        objectId: 'camp_1',
+        oldDailyBudget: 500,
+        newDailyBudget: 600,
+        percentage: 20,
+      });
+      expect(mockedAxios.post).toHaveBeenCalledWith(
+        expect.stringContaining('/camp_1'),
+        null,
+        expect.objectContaining({
+          params: expect.objectContaining({
+            daily_budget: 60000,
+          }),
+        }),
+      );
+    });
+  });
+
+  describe('updateStatus', () => {
+    it('should toggle status to PAUSED', async () => {
+      prisma.tenantMetaAdAccount.findFirst.mockResolvedValueOnce({
+        accessToken: mockEncryptedToken,
+        adAccountId: '123456789',
+      });
+
+      mockedAxios.post.mockResolvedValueOnce({ data: { success: true } });
+
+      const result = await service.updateStatus(mockTenantId, mockAdAccountId, 'camp_1', 'PAUSED');
+
+      expect(result).toEqual({ success: true, objectId: 'camp_1', status: 'PAUSED' });
+      expect(mockedAxios.post).toHaveBeenCalledWith(
+        expect.stringContaining('/camp_1'),
+        null,
+        expect.objectContaining({
+          params: expect.objectContaining({
+            status: 'PAUSED',
+          }),
+        }),
+      );
+    });
+  });
 });
+

@@ -168,7 +168,7 @@ export default function MetaMarketingApiPage() {
             Meta Marketing API Configuration
           </h1>
           <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-            Configure system-wide Meta Marketing API credentials for MCP Ads Agent.
+            Configure system-wide Meta Marketing API credentials for Meta Ads Manager.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -315,10 +315,10 @@ export default function MetaMarketingApiPage() {
         <div className="space-y-6 bg-white dark:bg-surface/70 backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-xl p-6 shadow-sm">
           <h2 className="text-lg font-medium text-slate-900 dark:text-white flex items-center gap-2 mb-4">
             <List className="w-5 h-5 text-brand-green" />
-            MCP Tool Registry
+            Meta Ad Tools Registry
           </h2>
           <p className="text-xs text-slate-600 dark:text-slate-400 mb-4">
-            Enable or disable specific tools for the AI Ads Copilot. This gives you granular control over what the AI is allowed to do.
+            Enable or disable specific tools for the Meta Ads Manager. This gives you granular control over what automated tools are allowed.
           </p>
 
           <div className="space-y-3">

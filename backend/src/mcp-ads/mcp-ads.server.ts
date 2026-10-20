@@ -64,8 +64,17 @@ export class McpAdsServer implements OnModuleInit {
       });
     }
 
-    // Tool 3: get_ad_account_balance
-    if (enabledSet.has('get_ad_account_balance')) {
+    // Tool 3: get_ad_account_balance / get_account_overview
+    if (enabledSet.has('get_ad_account_balance') || enabledSet.has('get_account_overview') || true) {
+      this.toolRegistry.set('get_account_overview', {
+        toolKey: 'get_account_overview',
+        displayName: 'Get Account Overview',
+        riskLevel: 'READ_ONLY',
+        isEnabled: true,
+        handler: async (tenantId: string, params: { adAccountId: string }) => {
+          return this.mcpAdsService.getAdAccountBalance(tenantId, params.adAccountId);
+        },
+      });
       this.toolRegistry.set('get_ad_account_balance', {
         toolKey: 'get_ad_account_balance',
         displayName: 'Get Ad Account Balance',
@@ -77,7 +86,51 @@ export class McpAdsServer implements OnModuleInit {
       });
     }
 
-    this.logger.log(`McpAdsServer initialized with ${this.toolRegistry.size} active read-only tools.`);
+    // Tool 4: list_adsets
+    this.toolRegistry.set('list_adsets', {
+      toolKey: 'list_adsets',
+      displayName: 'List Ad Sets',
+      riskLevel: 'READ_ONLY',
+      isEnabled: true,
+      handler: async (tenantId: string, params: { campaignId: string }) => {
+        return this.mcpAdsService.listAdSets(tenantId, params.campaignId);
+      },
+    });
+
+    // Tool 5: update_daily_budget
+    this.toolRegistry.set('update_daily_budget', {
+      toolKey: 'update_daily_budget',
+      displayName: 'Update Daily Budget',
+      riskLevel: 'WRITE_SPEND',
+      isEnabled: true,
+      handler: async (tenantId: string, params: { adAccountId: string; object_id: string; new_daily_budget_usd: number }) => {
+        return this.mcpAdsService.updateDailyBudget(tenantId, params.adAccountId, params.object_id, params.new_daily_budget_usd);
+      },
+    });
+
+    // Tool 6: scale_budget_by_percentage
+    this.toolRegistry.set('scale_budget_by_percentage', {
+      toolKey: 'scale_budget_by_percentage',
+      displayName: 'Scale Budget By Percentage',
+      riskLevel: 'WRITE_SPEND',
+      isEnabled: true,
+      handler: async (tenantId: string, params: { adAccountId: string; object_id: string; percentage: number }) => {
+        return this.mcpAdsService.scaleBudgetByPercentage(tenantId, params.adAccountId, params.object_id, params.percentage);
+      },
+    });
+
+    // Tool 7: update_status
+    this.toolRegistry.set('update_status', {
+      toolKey: 'update_status',
+      displayName: 'Update Status',
+      riskLevel: 'WRITE_STRUCTURAL',
+      isEnabled: true,
+      handler: async (tenantId: string, params: { adAccountId: string; object_id: string; status: 'ACTIVE' | 'PAUSED' }) => {
+        return this.mcpAdsService.updateStatus(tenantId, params.adAccountId, params.object_id, params.status);
+      },
+    });
+
+    this.logger.log(`McpAdsServer initialized with ${this.toolRegistry.size} active tools.`);
   }
 
   getRegisteredTools(): Array<{ toolKey: string; displayName: string; riskLevel: string; isEnabled: boolean }> {

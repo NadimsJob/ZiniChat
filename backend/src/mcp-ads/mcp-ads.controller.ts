@@ -1,9 +1,9 @@
-import { Controller, Get, Param, Query, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { McpAdsService } from './mcp-ads.service';
 import { McpAdsServer } from './mcp-ads.server';
 
-@Controller('mcp-ads')
+@Controller(['meta-ads', 'mcp-ads'])
 @UseGuards(JwtAuthGuard)
 export class McpAdsController {
   constructor(
@@ -39,8 +39,96 @@ export class McpAdsController {
     return this.mcpAdsService.getAdInsights(req.user.tenantId, adAccountId, datePreset);
   }
 
+  @Get('page-posts')
+  async getPagePosts(
+    @Request() req: any,
+    @Query('adAccountId') adAccountId?: string,
+    @Query('pageId') pageId?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.mcpAdsService.getPagePosts(
+      req.user.tenantId,
+      adAccountId,
+      pageId,
+      limit ? parseInt(limit, 10) : 25,
+    );
+  }
+
+  @Post('boost-post')
+  async boostPagePost(
+    @Request() req: any,
+    @Body() dto: {
+      adAccountId: string;
+      pagePostId: string;
+      pageId: string;
+      dailyBudget: number;
+      durationDays?: number;
+      campaignName?: string;
+      targeting?: any;
+    },
+  ) {
+    return this.mcpAdsService.boostPagePost(req.user.tenantId, dto);
+  }
+
+  @Patch('objects/:objectId/budget')
+  async updateDailyBudget(
+    @Request() req: any,
+    @Param('objectId') objectId: string,
+    @Body() body: { adAccountId: string; newDailyBudget: number },
+  ) {
+    return this.mcpAdsService.updateDailyBudget(
+      req.user.tenantId,
+      body.adAccountId,
+      objectId,
+      body.newDailyBudget,
+    );
+  }
+
+  @Patch('objects/:objectId/scale')
+  async scaleBudgetByPercentage(
+    @Request() req: any,
+    @Param('objectId') objectId: string,
+    @Body() body: { adAccountId: string; percentage: number },
+  ) {
+    return this.mcpAdsService.scaleBudgetByPercentage(
+      req.user.tenantId,
+      body.adAccountId,
+      objectId,
+      body.percentage,
+    );
+  }
+
+  @Patch('objects/:objectId/status')
+  async updateStatus(
+    @Request() req: any,
+    @Param('objectId') objectId: string,
+    @Body() body: { adAccountId: string; status: 'ACTIVE' | 'PAUSED' },
+  ) {
+    return this.mcpAdsService.updateStatus(
+      req.user.tenantId,
+      body.adAccountId,
+      objectId,
+      body.status,
+    );
+  }
+
+  @Patch('adsets/:adSetId/targeting')
+  async updateAdSetTargeting(
+    @Request() req: any,
+    @Param('adSetId') adSetId: string,
+    @Body() body: { adAccountId: string; targeting: any },
+  ) {
+    return this.mcpAdsService.updateAdSetTargeting(
+      req.user.tenantId,
+      body.adAccountId,
+      adSetId,
+      body.targeting,
+    );
+  }
+
   @Get('tools')
   async getRegisteredTools() {
     return this.mcpAdsServer.getRegisteredTools();
   }
 }
+

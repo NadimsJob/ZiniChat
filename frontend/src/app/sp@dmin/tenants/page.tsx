@@ -807,8 +807,7 @@ export default function TenantsPage() {
                       { id: 'ai_tool_support_detection', label: 'AI Tool: Support Detection' },
                       { id: 'ai_tool_product_matching', label: 'AI Tool: Product Photo Matching' },
                       { id: 'capi_hub', label: 'Server-Side Tracking (CAPI)' },
-                      { id: 'meta_ads_agent', label: 'Ads Copilot AI' },
-                      { id: 'meta_ads_account', label: 'Meta Ads Account Connection' },
+                      { id: 'meta_ads_account', label: 'Meta Ads Manager' },
                       { id: 'ads_auto_scaling', label: 'Ads Auto-Scaling' },
                       { id: 'ai_email_outreach', label: 'Zini-Mail AI Cold Outreach' }
                     ].map(feature => (

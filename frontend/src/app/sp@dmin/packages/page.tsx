@@ -603,8 +603,7 @@ export default function PackagesPage() {
                     { id: 'ai_tool_support_detection', label: 'AI Tool: Support Detection', labelBn: 'এআই টুল: সাপোর্ট ডিটেকশন' },
                     { id: 'ai_tool_product_matching', label: 'AI Tool: Product Photo Matching', labelBn: 'এআই টুল: প্রোডাক্ট ফটো ম্যাচিং' },
                     { id: 'capi_hub', label: 'Server-Side Tracking (CAPI)', labelBn: 'সার্ভার-সাইড ট্র্যাকিং (CAPI)' },
-                    { id: 'meta_ads_agent', label: 'Ads Copilot AI', labelBn: 'অ্যাডস কোপাইলট এআই' },
-                    { id: 'meta_ads_account', label: 'Meta Ads Account Connection', labelBn: 'মেটা অ্যাডস অ্যাকাউন্ট ইন্টিগ্রেশন' },
+                    { id: 'meta_ads_account', label: 'Meta Ads Manager', labelBn: 'মেটা অ্যাডস ম্যানেজার' },
                     { id: 'ads_auto_scaling', label: 'Ads Auto-Scaling', labelBn: 'অ্যাডস অটো-স্কেলিং' },
                     { id: 'ai_email_outreach', label: 'Zini-Mail AI Cold Outreach', labelBn: 'জিনি-মেইল এআই কোল্ড আউটরিচ' }
                   ].map(feature => (
