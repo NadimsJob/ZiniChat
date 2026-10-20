@@ -140,6 +140,8 @@ export class BillingService {
           NOT: {
             OR: [
               { content: { path: ['isExternalSync'], equals: true } },
+              { senderType: 'ai' },
+              { aiAssistantId: { not: null } },
               {
                 AND: [
                   { senderUserId: null },

@@ -275,7 +275,7 @@ export default function SubscriptionSettingsPage() {
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-center">
                 {[
                   { 
-                    label: language === 'en' ? 'Messages' : 'মেসেজ', 
+                    label: language === 'en' ? 'Agent Messages' : 'এজেন্ট মেসেজ', 
                     value: formatNumber(quotaData.messageQuota),
                     used: quotaData.messagesUsed ?? 0,
                     limit: quotaData.messageQuota,
@@ -341,6 +341,19 @@ export default function SubscriptionSettingsPage() {
                 })}
               </div>
             )}
+          </div>
+
+          {/* Independent Quotas Clarity Banner */}
+          <div className="mt-4 p-3 bg-primary/10 border border-primary/20 rounded-xl flex items-center gap-2.5 text-xs text-foreground/90">
+            <Sparkles className="w-4 h-4 text-primary shrink-0" />
+            <p className="leading-relaxed">
+              <strong className="text-primary font-bold">
+                {language === 'en' ? 'Independent Quotas:' : 'স্বতন্ত্র কোটা পুল:'}
+              </strong>{' '}
+              {language === 'en'
+                ? 'Automated AI responses and human agent messages belong to separate pools. AI replies do NOT reduce your agent message quota.'
+                : 'এআই-এর স্বয়ংক্রিয় উত্তর এবং এজেন্টদের মেসেজ সম্পূর্ণ আলাদা দুটি পুলে পরিচালিত হয়। এআই উত্তর দিলে আপনার মূল মেসেজ কোটা কাটা যায় না।'}
+            </p>
           </div>
 
           {quotaData?.quotaResetInfo?.subPeriodEnd && currentSubscription?.billingCycle === 'yearly' && (
@@ -620,8 +633,8 @@ export default function SubscriptionSettingsPage() {
           </h2>
           <p className="text-[12px] text-muted-foreground mb-4">
             {language === 'en'
-              ? 'Purchase additional limits on top of your current plan without upgrading.'
-              : 'আপগ্রেড না করেই বর্তমান প্ল্যানের উপরে অতিরিক্ত লিমিট কিনুন।'}
+              ? 'Purchase additional limits on top of your current plan without upgrading. Message Add-ons expand your Agent/Broadcast pool, while AI Add-ons expand your automated AI response pool independently.'
+              : 'আপগ্রেড না করেই বর্তমান প্ল্যানের উপরে অতিরিক্ত লিমিট কিনুন। মেসেজ অ্যাড-অন এজেন্টের মেসেজ পুল বাড়ায় এবং এআই অ্যাড-অন এআই উত্তরের পুল বৃদ্ধি করে (কোনোটি অপরটিকে সংকুচিত করে না)।'}
           </p>
 
           {!hasActivePackage && (

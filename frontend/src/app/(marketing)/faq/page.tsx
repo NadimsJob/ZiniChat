@@ -31,6 +31,14 @@ const faqPageSchema = {
     },
     {
       '@type': 'Question',
+      name: 'How do Message Quota and AI Response Quota work? Are they separate pools?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Yes! In ZiniChat, Message Quota and AI Response Quota are two 100% independent pools. Automated AI customer replies are deducted exclusively from your AI Response Quota and NEVER reduce or cannibalize your Message Quota. Your Message Quota is reserved strictly for human agent manual replies and WhatsApp bulk broadcasts.',
+      },
+    },
+    {
+      '@type': 'Question',
       name: 'What is Zini-Mail AI Email Marketing and do I need my own email list?',
       acceptedAnswer: {
         '@type': 'Answer',

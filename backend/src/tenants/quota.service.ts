@@ -125,7 +125,7 @@ export class QuotaService {
    */
   async getMessageUsage(tenantId: string, periodStart: Date): Promise<number> {
     const [directMessages, broadcastMessages] = await Promise.all([
-      // Direct outbound messages (agent + AI replies sent via ZiniChat system, excluding external phone app sync)
+      // Direct outbound messages: only human agent replies are counted (AI auto-replies belong to independent aiQuota pool)
       this.prisma.message.count({
         where: {
           direction: 'outbound',
@@ -134,6 +134,8 @@ export class QuotaService {
           NOT: {
             OR: [
               { content: { path: ['isExternalSync'], equals: true } },
+              { senderType: 'ai' },
+              { aiAssistantId: { not: null } },
               {
                 AND: [
                   { senderUserId: null },

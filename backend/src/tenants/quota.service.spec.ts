@@ -303,6 +303,29 @@ describe('QuotaService', () => {
       );
     });
 
+    it('excludes AI messages (senderType ai and aiAssistantId) from direct outbound message count for Independent Quota Pools', async () => {
+      prisma.message.count.mockResolvedValue(15);
+      prisma.broadcastRecipient.count.mockResolvedValue(5);
+
+      const result = await service.getMessageUsage(TENANT_ID, PERIOD_START);
+      expect(result).toBe(20);
+
+      expect(prisma.message.count).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            direction: 'outbound',
+            conversation: { tenantId: TENANT_ID },
+            NOT: expect.objectContaining({
+              OR: expect.arrayContaining([
+                { senderType: 'ai' },
+                { aiAssistantId: { not: null } },
+              ]),
+            }),
+          }),
+        })
+      );
+    });
+
     it('returns 0 when no messages sent', async () => {
       prisma.message.count.mockResolvedValue(0);
       prisma.broadcastRecipient.count.mockResolvedValue(0);

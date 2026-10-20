@@ -328,7 +328,7 @@ export default function ExecutiveDashboardPage() {
         <div className="bg-emerald-500/5 backdrop-blur-xl border-2 border-emerald-500/45 dark:border-emerald-500/30 rounded-2xl p-4 flex flex-col justify-between hover:border-emerald-500/60 hover:bg-emerald-500/10 transition-all shadow-sm">
           <div>
             <div className="flex items-center justify-between text-muted-foreground mb-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">{language === 'en' ? 'Messages Sent' : 'মেসেজ সেন্ড'}</span>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">{language === 'en' ? 'Agent Messages' : 'এজেন্ট মেসেজ'}</span>
               <MessageSquare className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             </div>
             <div className="text-2xl sm:text-3xl font-black text-foreground">{formatNumber(kpis.messages?.month || 0)}</div>

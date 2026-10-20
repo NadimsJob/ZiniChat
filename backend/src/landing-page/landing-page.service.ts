@@ -403,10 +403,21 @@ const OFFICIAL_FAQS_JSON = {
     },
     { 
       categoryId: 'pricing',
+      question: { 
+        en: 'How do Message Quota and AI Response Quota work? Are they separate pools?', 
+        bn: 'মেসেজ কোটা ও এআই রেসপন্স কোটা কীভাবে কাজ করে? দুটি কি আলাদা?' 
+      }, 
+      answer: { 
+        en: 'Yes! In ZiniChat, Message Quota and AI Response Quota are two 100% independent pools. Automated AI customer replies are deducted exclusively from your AI Response Quota and NEVER reduce or cannibalize your Message Quota. Your Message Quota is reserved strictly for human agent manual replies and WhatsApp bulk broadcasts. You can use your full AI responses without worrying about exhausting your human agent message capacity.', 
+        bn: 'হ্যাঁ! ZiniChat-এ মেসেজ কোটা ও এআই রেসপন্স কোটা সম্পূর্ণ দুটি আলাদা ও স্বাধীন পুল (Independent Pools)। এআই-এর প্রতিটি স্বয়ংক্রিয় উত্তর শুধুমাত্র আপনার "এআই রেসপন্স কোটা" থেকে খরচ হয় এবং মূল মেসেজ কোটায় কোনো প্রভাব ফেলে না। আর আপনার টিম মেম্বারদের পাঠানো ইনবক্স মেসেজ ও ব্রডকাস্ট ক্যাম্পেইন "মেসেজ কোটা" থেকে পরিচালিত হয়। ফলে এআই যত বেশি উত্তরই দিক না কেন, এজেন্টদের মেসেজ কোটা কখনোই সংকুচিত বা শেষ হবে না।' 
+      } 
+    },
+    { 
+      categoryId: 'pricing',
       question: { en: 'Does unused message or AI quota carry forward to the next month?', bn: 'অব্যবহৃত মেসেজ বা এআই রেসপন্স কোটা কি পরের মাসে ক্যারি ফরওয়ার্ড (Carry Forward) হবে?' }, 
       answer: { 
-        en: 'Yes! For all paid plans, any unused AI response or total message balance will automatically carry forward when you renew your subscription for the next month. However, for the Free (0 BDT) plan, unused quotas reset each month.', 
-        bn: 'হ্যাঁ! যেকোনো পেইড প্ল্যানে রিনিউ করলে আপনার আগের মাসের অব্যবহৃত এআই রেসপন্স ও মেসেজ কোটা স্বয়ংক্রিয়ভাবে পরের মাসে যোগ (Carry Forward) হবে। তবে ফ্রি (০ টাকা) প্ল্যানের ক্ষেত্রে অব্যবহৃত কোটা পরবর্তী মাসে রিসেট হয়ে যাবে।' 
+        en: 'Yes! For all paid plans, any unused AI response and agent message balance will automatically carry forward independently when you renew your subscription for the next month. However, for the Free (0 BDT) plan, unused quotas reset each month.', 
+        bn: 'হ্যাঁ! যেকোনো পেইড প্ল্যানে রিনিউ করলে আপনার আগের মাসের অব্যবহৃত এআই রেসপন্স ও এজেন্ট মেসেজ কোটা আলাদাভাবে স্বয়ংক্রিয়ভাবে পরের মাসে যোগ (Carry Forward) হবে। তবে ফ্রি (০ টাকা) প্ল্যানের ক্ষেত্রে অব্যবহৃত কোটা পরবর্তী মাসে রিসেট হয়ে যাবে।' 
       } 
     },
 
@@ -517,7 +528,8 @@ export class LandingPageService {
       }
 
       const hasUpdatedOutreachFaqs = existingFaqs.some((f: any) => f.categoryId === 'outreach' && f.question?.bn?.includes('ইমেইল লিস্ট'));
-      if (!hasUpdatedOutreachFaqs || existingFaqs.length < 8) {
+      const hasIndependentQuotaFaq = existingFaqs.some((f: any) => f.categoryId === 'pricing' && f.question?.bn?.includes('আলাদা'));
+      if (!hasUpdatedOutreachFaqs || !hasIndependentQuotaFaq || existingFaqs.length < 9) {
         updatedData.faqsJson = OFFICIAL_FAQS_JSON;
         needsUpdate = true;
       }
