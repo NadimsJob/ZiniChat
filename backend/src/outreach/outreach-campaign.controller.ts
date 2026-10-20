@@ -9,18 +9,26 @@ import {
   UseGuards,
   Request,
   Res,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import {
   OutreachCampaignService,
   CreateCampaignDto,
   CampaignLeadsQueryOptions,
 } from './outreach-campaign.service';
+import { StorageService } from '../storage/storage.service';
 
 @Controller(['tenant/outreach', 'outreach'])
 @UseGuards(JwtAuthGuard)
 export class OutreachCampaignController {
-  constructor(private readonly campaignService: OutreachCampaignService) {}
+  constructor(
+    private readonly campaignService: OutreachCampaignService,
+    private readonly storageService: StorageService,
+  ) {}
 
   /**
    * Aggregate dashboard overview telemetry
@@ -47,6 +55,45 @@ export class OutreachCampaignController {
       limit: limit ? parseInt(limit, 10) : 20,
       search,
     });
+  }
+
+  /**
+   * Upload campaign hero banner image, accounting against tenant's storage quota
+   */
+  @Post('campaigns/upload-banner')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+      fileFilter: (req, file, cb) => {
+        if (file.mimetype.match(/\/(jpg|jpeg|png|webp|gif)$/i)) {
+          cb(null, true);
+        } else {
+          cb(new BadRequestException('Only image files (JPEG, PNG, WebP) are allowed'), false);
+        }
+      },
+    }),
+  )
+  async uploadBanner(
+    @UploadedFile() file: Express.Multer.File,
+    @Request() req: any,
+  ) {
+    const tenantId = req.user?.tenantId;
+    if (!tenantId) {
+      throw new BadRequestException('Tenant ID is missing from user context');
+    }
+    if (!file) {
+      throw new BadRequestException('No image file uploaded');
+    }
+
+    const publicUrl = await this.storageService.uploadMedia(file, tenantId);
+
+    return {
+      success: true,
+      url: publicUrl,
+      sizeBytes: file.size,
+      fileName: file.originalname,
+      mimeType: file.mimetype,
+    };
   }
 
   /**

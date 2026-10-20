@@ -27,10 +27,17 @@ import {
   Info,
   Smartphone,
   ExternalLink,
+  Coins,
+  Server,
   ShieldCheck,
   RefreshCw,
-  Coins
+  UploadCloud,
+  HardDrive,
+  ImageIcon,
+  Trash2
 } from 'lucide-react';
+import SmtpSetupGuide, { SmtpGuideTab } from '@/components/outreach/SmtpSetupGuideModal';
+import { COUNTRIES } from '@/lib/countryData';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -47,6 +54,15 @@ export default function NewCampaignWizardPage() {
   // SMTP accounts & quota telemetry
   const [smtpSetting, setSmtpSetting] = useState<any>(null);
   const [availableAiCredits, setAvailableAiCredits] = useState<number>(0);
+  const [isByok, setIsByok] = useState(false);
+  const [quotaDetails, setQuotaDetails] = useState<{ total: number; used: number } | null>(null);
+  const [showSmtpGuide, setShowSmtpGuide] = useState(false);
+  const [smtpGuideTab, setSmtpGuideTab] = useState<SmtpGuideTab>('gmail');
+
+  // Banner Upload State
+  const [bannerMode, setBannerMode] = useState<'upload' | 'url'>('upload');
+  const [uploadingBanner, setUploadingBanner] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
 
   // Form State
   const [form, setForm] = useState({
@@ -82,19 +98,46 @@ export default function NewCampaignWizardPage() {
         const token = Cookies.get('access_token');
         const headers = { Authorization: `Bearer ${token}` };
 
-        const [smtpRes, overviewRes] = await Promise.all([
+        const [smtpRes, overviewRes, quotasRes] = await Promise.all([
           fetch(`${API}/tenant/smtp`, { headers }),
           fetch(`${API}/tenant/outreach/overview`, { headers }),
+          fetch(`${API}/billing/quotas`, { headers }),
         ]);
 
         if (smtpRes.ok) {
           const smtpData = await smtpRes.json();
           setSmtpSetting(smtpData);
         }
+
+        let credits = 0;
+        let byokActive = false;
+
         if (overviewRes.ok) {
           const ovData = await overviewRes.json();
-          setAvailableAiCredits(ovData.availableAiCredits ?? 100);
+          if (ovData.isByok) byokActive = true;
+          if (typeof ovData.availableAiCredits === 'number') {
+            credits = Math.max(credits, ovData.availableAiCredits);
+          }
         }
+
+        if (quotasRes.ok) {
+          const qData = await quotasRes.json();
+          if (qData.allowByok) byokActive = true;
+
+          const totalQuota = Number(qData.aiQuota || 0);
+          const usedQuota = Number(qData.aiUsed || 0);
+          setQuotaDetails({ total: totalQuota, used: usedQuota });
+
+          const remaining = Math.max(0, totalQuota - usedQuota);
+          credits = Math.max(credits, remaining);
+        }
+
+        if (byokActive) {
+          setIsByok(true);
+          credits = 999999;
+        }
+
+        setAvailableAiCredits(credits);
       } catch (err) {
         console.error('Failed to load outreach prerequisites', err);
       }
@@ -132,6 +175,59 @@ export default function NewCampaignWizardPage() {
       }
     } else {
       setForm({ ...form, channels: [...form.channels, ch] });
+    }
+  };
+
+  const handleBannerFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error(language === 'en' ? 'Image exceeds 5MB limit' : 'ছবির সাইজ সর্বোচ্চ ৫ মেগাবাইট হতে পারবে');
+      return;
+    }
+
+    setUploadingBanner(true);
+    const toastId = toast.loading(
+      language === 'en' ? 'Uploading banner to your tenant storage...' : 'ব্যানার ছবি আপনার টেন্যান্ট স্টোরেজে আপলোড হচ্ছে...'
+    );
+
+    try {
+      const token = Cookies.get('access_token');
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch(`${API}/tenant/outreach/campaigns/upload-banner`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.message || (language === 'en' ? 'Failed to upload image' : 'ছবি আপলোড করতে ব্যর্থ হয়েছে'));
+      }
+
+      const data = await res.json();
+      setForm((prev) => ({
+        ...prev,
+        bannerImageUrl: data.url,
+        bannerSizeBytes: data.sizeBytes || file.size,
+      }));
+
+      toast.success(
+        language === 'en'
+          ? 'Banner uploaded & saved to your storage!'
+          : 'ব্যানার সফলভাবে আপলোড হয়েছে ও আপনার স্টোরেজে যুক্ত হয়েছে!',
+        { id: toastId }
+      );
+    } catch (err: any) {
+      toast.error(err.message || 'Upload failed', { id: toastId });
+    } finally {
+      setUploadingBanner(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -214,9 +310,9 @@ export default function NewCampaignWizardPage() {
   const requiredVisionCredits = 5;
   const requiredEmailCredits = form.totalLimit;
   const totalRequiredCredits = requiredVisionCredits + requiredEmailCredits;
-  const creditDeficit = Math.max(0, totalRequiredCredits - availableAiCredits);
-  const isBalanceSufficient = availableAiCredits >= totalRequiredCredits;
-  const maxAffordableEmails = Math.max(0, availableAiCredits - requiredVisionCredits);
+  const isBalanceSufficient = isByok || availableAiCredits >= totalRequiredCredits;
+  const creditDeficit = isByok ? 0 : Math.max(0, totalRequiredCredits - availableAiCredits);
+  const maxAffordableEmails = isByok ? 5000 : Math.max(0, availableAiCredits - requiredVisionCredits);
 
   // Auto-Adjust to Max Affordable
   const handleAutoAdjust = () => {
@@ -294,7 +390,30 @@ export default function NewCampaignWizardPage() {
   };
 
   if (isFeatureLoading) {
-    return <div className="p-8 text-center text-zinc-500 animate-pulse">Loading wizard...</div>;
+    return (
+      <div className="p-3 sm:p-6 max-w-4xl mx-auto space-y-6">
+        <div className="flex items-center justify-between animate-pulse">
+          <div className="h-4 w-28 bg-surface-hover/80 rounded" />
+          <div className="h-4 w-16 bg-surface-hover/80 rounded" />
+        </div>
+        <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-4 shadow-sm animate-pulse">
+          <div className="grid grid-cols-4 gap-2">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-9 bg-surface-hover/70 rounded-xl" />
+            ))}
+          </div>
+        </div>
+        <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-6 shadow-sm space-y-4 animate-pulse">
+          <div className="h-6 w-48 bg-surface-hover/80 rounded-xl" />
+          <div className="h-4 w-72 bg-surface-hover/60 rounded" />
+          <div className="space-y-3 pt-4">
+            <div className="h-10 bg-surface-hover/60 rounded-xl" />
+            <div className="h-10 bg-surface-hover/60 rounded-xl" />
+            <div className="h-24 bg-surface-hover/60 rounded-xl" />
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (!isFeatureEnabled) {
@@ -324,8 +443,8 @@ export default function NewCampaignWizardPage() {
       </div>
 
       {/* Wizard Progress Bar */}
-      <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-4 shadow-sm">
-        <div className="grid grid-cols-4 gap-2 text-center text-[11px] font-bold">
+      <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-2.5 sm:p-4 shadow-sm">
+        <div className="grid grid-cols-4 gap-1.5 sm:gap-2 text-center text-[10px] sm:text-[11px] font-bold">
           <button
             onClick={() => setCurrentStep(1)}
             className={`py-2 px-1 rounded-xl transition-all ${
@@ -336,7 +455,8 @@ export default function NewCampaignWizardPage() {
                 : 'text-muted-foreground hover:bg-surface-hover'
             }`}
           >
-            1. {language === 'en' ? 'Audience & Sourcing' : 'টার্গেট অডিয়েন্স'}
+            1. <span className="hidden sm:inline">{language === 'en' ? 'Audience & Sourcing' : 'টার্গেট অডিয়েন্স'}</span>
+            <span className="sm:hidden">{language === 'en' ? 'Audience' : 'অডিয়েন্স'}</span>
           </button>
 
           <button
@@ -349,7 +469,8 @@ export default function NewCampaignWizardPage() {
                 : 'text-muted-foreground hover:bg-surface-hover'
             }`}
           >
-            2. {language === 'en' ? 'Banner & Offer' : 'ব্যানার ও অফার'}
+            2. <span className="hidden sm:inline">{language === 'en' ? 'Banner & Offer' : 'ব্যানার ও অফার'}</span>
+            <span className="sm:hidden">{language === 'en' ? 'Banner' : 'ব্যানার'}</span>
           </button>
 
           <button
@@ -362,7 +483,8 @@ export default function NewCampaignWizardPage() {
                 : 'text-muted-foreground hover:bg-surface-hover'
             }`}
           >
-            3. {language === 'en' ? 'AI Vision & Preview' : 'এআই ভিশন ড্রাফট'}
+            3. <span className="hidden sm:inline">{language === 'en' ? 'AI Vision & Preview' : 'এআই ভিশন ড্রাফট'}</span>
+            <span className="sm:hidden">{language === 'en' ? 'Draft' : 'ড্রাফট'}</span>
           </button>
 
           <button
@@ -373,7 +495,8 @@ export default function NewCampaignWizardPage() {
                 : 'text-muted-foreground hover:bg-surface-hover'
             }`}
           >
-            4. {language === 'en' ? 'SMTP & Quota Launch' : 'কোটা ও লঞ্চ'}
+            4. <span className="hidden sm:inline">{language === 'en' ? 'SMTP & Quota Launch' : 'কোটা ও লঞ্চ'}</span>
+            <span className="sm:hidden">{language === 'en' ? 'Launch' : 'লঞ্চ'}</span>
           </button>
         </div>
       </div>
@@ -410,15 +533,37 @@ export default function NewCampaignWizardPage() {
             {/* Target Country & City */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="font-semibold text-foreground">
-                  {language === 'en' ? 'Target Country' : 'টার্গেট দেশ'}
+                <label className="font-semibold text-foreground flex items-center justify-between">
+                  <span>{language === 'en' ? 'Target Country *' : 'টার্গেট দেশ *'}</span>
+                  <span className="text-[10px] text-muted-foreground font-normal">
+                    {language === 'en' ? 'Select from list' : 'তালিকা থেকে সিলেক্ট করুন'}
+                  </span>
                 </label>
-                <input
-                  type="text"
+                <select
                   value={form.targetCountry}
                   onChange={(e) => setForm({ ...form, targetCountry: e.target.value })}
-                  className="w-full px-3.5 py-2 rounded-xl bg-surface border border-surface-hover text-foreground focus:outline-none focus:border-[#1F824A]"
-                />
+                  className="w-full px-3.5 py-2 rounded-xl bg-surface border border-surface-hover text-foreground focus:outline-none focus:border-[#1F824A] cursor-pointer"
+                >
+                  <optgroup label={language === 'en' ? '★ Popular Targets' : '★ জনপ্রিয় দেশসমূহ'}>
+                    {['Bangladesh', 'United States', 'United Kingdom', 'Canada', 'Australia', 'United Arab Emirates', 'Saudi Arabia', 'India', 'Singapore', 'Malaysia', 'Germany', 'France', 'Italy'].map((cName) => {
+                      const c = COUNTRIES.find((x) => x.name === cName);
+                      if (!c) return null;
+                      return (
+                        <option key={`pop-${c.code}`} value={c.name}>
+                          {c.flag} {language === 'en' ? c.name : `${c.nameBn} (${c.name})`}
+                        </option>
+                      );
+                    })}
+                  </optgroup>
+
+                  <optgroup label={language === 'en' ? 'All Countries (A-Z)' : 'সকল দেশ (A-Z)'}>
+                    {COUNTRIES.map((c) => (
+                      <option key={`all-${c.code}`} value={c.name}>
+                        {c.flag} {language === 'en' ? c.name : `${c.nameBn} (${c.name})`}
+                      </option>
+                    ))}
+                  </optgroup>
+                </select>
               </div>
 
               <div className="space-y-1">
@@ -427,7 +572,15 @@ export default function NewCampaignWizardPage() {
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Dhaka, Chittagong, Sylhet"
+                  placeholder={
+                    form.targetCountry === 'Bangladesh'
+                      ? 'e.g. Dhaka, Chittagong, Sylhet'
+                      : form.targetCountry === 'United States'
+                      ? 'e.g. New York, California, Texas'
+                      : form.targetCountry === 'United Kingdom'
+                      ? 'e.g. London, Manchester, Birmingham'
+                      : 'e.g. Capital / Major Cities'
+                  }
                   value={form.targetCity}
                   onChange={(e) => setForm({ ...form, targetCity: e.target.value })}
                   className="w-full px-3.5 py-2 rounded-xl bg-surface border border-surface-hover text-foreground focus:outline-none focus:border-[#1F824A]"
@@ -576,41 +729,176 @@ export default function NewCampaignWizardPage() {
           </div>
 
           <div className="space-y-4 text-[12px]">
-            {/* Banner URL input */}
-            <div className="space-y-1">
-              <label className="font-semibold text-foreground">
-                {language === 'en' ? 'Hero Banner Image URL *' : 'হিরো ব্যানার ছবির লিংক *'}
-              </label>
-              <input
-                type="text"
-                placeholder="https://yourdomain.com/banners/summer_offer.jpg"
-                value={form.bannerImageUrl}
-                onChange={(e) => setForm({ ...form, bannerImageUrl: e.target.value })}
-                className="w-full px-3.5 py-2 rounded-xl bg-surface border border-surface-hover text-foreground focus:outline-none focus:border-[#1F824A]"
-              />
-              <span className="text-[10px] text-muted-foreground">
-                {language === 'en'
-                  ? 'Recommended dimensions: 1200x630 or 800x800 px (JPEG/PNG under 1MB).'
-                  : 'সুপারিশকৃত সাইজ: ১২০০x৬৩০ বা ৮০০x৮০০ পিক্সেল (১ মেগাবাইটের নিচে)।'}
-              </span>
-            </div>
+            {/* Banner Mode Toggle */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="font-semibold text-foreground flex items-center gap-1.5">
+                  <ImageIcon className="w-4 h-4 text-[#1F824A]" />
+                  <span>{language === 'en' ? 'Hero Banner Image *' : 'হিরো ব্যানার ছবি *'}</span>
+                </label>
 
-            {/* Banner Preview Card */}
-            {form.bannerImageUrl && (
-              <div className="p-3 rounded-xl border border-surface-hover bg-surface/50 space-y-2">
-                <span className="text-[11px] font-semibold text-muted-foreground">
-                  {language === 'en' ? 'Banner Preview' : 'ব্যানার প্রিভিউ'}:
-                </span>
-                <div className="max-h-48 rounded-lg overflow-hidden border border-surface-hover flex items-center justify-center bg-black/20">
-                  <img
-                    src={form.bannerImageUrl}
-                    alt="Hero Banner"
-                    className="max-h-48 object-contain"
-                    onError={() => toast.error('Failed to load banner image from provided URL')}
-                  />
+                {/* Mode Selector Tabs */}
+                <div className="flex items-center gap-1 p-0.5 bg-surface border border-surface-hover rounded-xl text-[11px]">
+                  <button
+                    type="button"
+                    onClick={() => setBannerMode('upload')}
+                    className={`px-3 py-1 rounded-lg font-semibold flex items-center gap-1 transition-all ${
+                      bannerMode === 'upload'
+                        ? 'bg-[#1F824A] text-white shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    <UploadCloud className="w-3.5 h-3.5" />
+                    <span>{language === 'en' ? 'Upload Image' : 'স্টোরেজে আপলোড'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBannerMode('url')}
+                    className={`px-3 py-1 rounded-lg font-semibold flex items-center gap-1 transition-all ${
+                      bannerMode === 'url'
+                        ? 'bg-[#1F824A] text-white shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    <Globe className="w-3.5 h-3.5" />
+                    <span>{language === 'en' ? 'Image URL' : 'ইমেজ লিংক'}</span>
+                  </button>
                 </div>
               </div>
-            )}
+
+              {/* UPLOAD MODE */}
+              {bannerMode === 'upload' && (
+                <div className="space-y-3">
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept="image/png,image/jpeg,image/webp,image/jpg"
+                    onChange={handleBannerFileUpload}
+                    className="hidden"
+                  />
+
+                  {form.bannerImageUrl ? (
+                    <div className="p-4 rounded-2xl border border-surface-hover bg-surface/80 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-[11px] font-bold flex items-center gap-1.5">
+                            <HardDrive className="w-3 h-3" />
+                            {language === 'en' ? 'Saved to Tenant Storage' : 'আপনার টেন্যান্ট স্টোরেজে সংরক্ষিত'}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground font-mono">
+                            {(form.bannerSizeBytes / 1024).toFixed(1)} KB
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={uploadingBanner}
+                            className="px-2.5 py-1 rounded-lg bg-surface border border-surface-hover hover:border-[#1F824A] text-foreground text-[11px] font-medium transition-colors"
+                          >
+                            {language === 'en' ? 'Change Image' : 'ছবি পরিবর্তন'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setForm((prev) => ({ ...prev, bannerImageUrl: '', bannerSizeBytes: 0 }))}
+                            className="p-1 rounded-lg border border-surface-hover hover:border-rose-500/40 text-rose-500 transition-colors"
+                            title="Remove image"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="max-h-56 rounded-xl overflow-hidden border border-surface-hover flex items-center justify-center bg-black/30">
+                        <img
+                          src={
+                            form.bannerImageUrl.startsWith('http') || form.bannerImageUrl.startsWith('data:') || form.bannerImageUrl.startsWith('blob:')
+                              ? form.bannerImageUrl
+                              : `${API}${form.bannerImageUrl}`
+                          }
+                          alt="Hero Banner"
+                          className="max-h-56 w-full object-contain"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      onClick={() => !uploadingBanner && fileInputRef.current?.click()}
+                      className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2 group ${
+                        uploadingBanner
+                          ? 'border-emerald-500 bg-emerald-500/5 cursor-wait'
+                          : 'border-surface-hover hover:border-[#1F824A] bg-surface/40 hover:bg-surface/80'
+                      }`}
+                    >
+                      <div className="w-12 h-12 rounded-2xl bg-[#1F824A]/10 text-[#1F824A] flex items-center justify-center group-hover:scale-110 transition-transform shadow-inner">
+                        {uploadingBanner ? (
+                          <RefreshCw className="w-6 h-6 animate-spin" />
+                        ) : (
+                          <UploadCloud className="w-6 h-6" />
+                        )}
+                      </div>
+
+                      <div className="space-y-0.5">
+                        <div className="font-bold text-foreground text-xs">
+                          {uploadingBanner
+                            ? (language === 'en' ? 'Uploading & saving to your storage...' : 'ছবি প্রসেস ও স্টোরেজে সংরক্ষণ হচ্ছে...')
+                            : (language === 'en' ? 'Click to browse or drag & drop banner flyer' : 'ব্যানার ছবি আপলোড করতে এখানে ক্লিক করুন')}
+                        </div>
+                        <p className="text-[11px] text-muted-foreground">
+                          {language === 'en'
+                            ? 'PNG, JPG or WebP (Max 5MB) • Automatically saved to your workspace storage'
+                            : 'পিএনজি, জেপিজি বা ওয়েবপি (সর্বোচ্চ ৫ মেগাবাইট) • আপনার স্টোরেজ কোটায় হিসাব হবে'}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 text-[10px] text-emerald-600 dark:text-emerald-400 font-medium pt-1">
+                        <HardDrive className="w-3 h-3" />
+                        <span>{language === 'en' ? 'Counts towards your Tenant Storage quota' : 'আপনার টেন্যান্ট স্টোরেজে যুক্ত হবে'}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* URL MODE */}
+              {bannerMode === 'url' && (
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    placeholder="https://yourdomain.com/banners/summer_offer.jpg"
+                    value={form.bannerImageUrl}
+                    onChange={(e) => setForm({ ...form, bannerImageUrl: e.target.value })}
+                    className="w-full px-3.5 py-2 rounded-xl bg-surface border border-surface-hover text-foreground focus:outline-none focus:border-[#1F824A]"
+                  />
+                  <span className="text-[10px] text-muted-foreground block">
+                    {language === 'en'
+                      ? 'Recommended dimensions: 1200x630 or 800x800 px (JPEG/PNG under 1MB).'
+                      : 'সুপারিশকৃত সাইজ: ১২০০x৬৩০ বা ৮০০x৮০০ পিক্সেল (১ মেগাবাইটের নিচে)।'}
+                  </span>
+
+                  {form.bannerImageUrl && (
+                    <div className="p-3 rounded-xl border border-surface-hover bg-surface/50 space-y-2">
+                      <span className="text-[11px] font-semibold text-muted-foreground">
+                        {language === 'en' ? 'Banner Preview' : 'ব্যানার প্রিভিউ'}:
+                      </span>
+                      <div className="max-h-48 rounded-lg overflow-hidden border border-surface-hover flex items-center justify-center bg-black/20">
+                        <img
+                          src={
+                            form.bannerImageUrl.startsWith('http') || form.bannerImageUrl.startsWith('data:') || form.bannerImageUrl.startsWith('blob:')
+                              ? form.bannerImageUrl
+                              : `${API}${form.bannerImageUrl}`
+                          }
+                          alt="Hero Banner"
+                          className="max-h-48 object-contain"
+                          onError={() => toast.error('Failed to load banner image from provided URL')}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
             {/* Destination URL */}
             <div className="space-y-1">
@@ -680,8 +968,8 @@ export default function NewCampaignWizardPage() {
                 if (!form.bannerImageUrl.trim() || !form.bannerClickUrl.trim()) {
                   toast.error(
                     language === 'en'
-                      ? 'Please provide both banner image URL and destination click URL'
-                      : 'ব্যানার ইমেজ ও ল্যান্ডিং পেজ লিংক দিন',
+                      ? 'Please provide both banner image and destination click URL'
+                      : 'ব্যানার ছবি ও ল্যান্ডিং পেজ লিংক উভয়ই পূরণ করুন',
                   );
                   return;
                 }
@@ -880,37 +1168,195 @@ export default function NewCampaignWizardPage() {
                 </div>
               </div>
 
-              {!smtpSetting?.isVerified && (
-                <Link
-                  href="/dashboard/zini-mail/settings"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500 text-white font-bold text-[11px] hover:bg-rose-600 transition-colors shrink-0"
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowSmtpGuide(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface border border-surface-hover hover:border-emerald-500/40 text-foreground font-semibold text-[11px] transition-colors shrink-0 shadow-sm"
                 >
-                  <Settings className="w-3.5 h-3.5" />
-                  {language === 'en' ? 'Setup SMTP' : 'এসএমটিপি সেটআপ করুন'}
-                </Link>
-              )}
+                  <HelpCircle className="w-3.5 h-3.5 text-emerald-500" />
+                  {language === 'en' ? 'Credentials Guide (Gmail, cPanel, Outlook)' : 'পাসওয়ার্ড ও হোস্ট গাইড (জিমেইল, সিপ্যানেল, আউটলুক)'}
+                </button>
+                {!smtpSetting?.isVerified && (
+                  <Link
+                    href="/dashboard/zini-mail/settings"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500 text-white font-bold text-[11px] hover:bg-rose-600 transition-colors shrink-0"
+                  >
+                    <Settings className="w-3.5 h-3.5" />
+                    {language === 'en' ? 'Setup SMTP' : 'এসএমটিপি সেটআপ করুন'}
+                  </Link>
+                )}
+              </div>
             </div>
 
-            {/* Campaign Target Limit Slider */}
-            <div className="space-y-2 p-4 rounded-xl border border-surface-hover bg-surface">
-              <div className="flex items-center justify-between font-semibold text-foreground">
-                <span>{language === 'en' ? 'Target Email Quantity' : 'টার্গেট ইমেইল সংখ্যা'}</span>
-                <span className="text-[#1F824A] font-bold text-base">{form.totalLimit} Emails</span>
+            {/* Assistance Banner when SMTP not connected */}
+            {!smtpSetting?.isVerified && (
+              <div className="p-4 rounded-xl border border-amber-500/30 bg-amber-500/5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-amber-500 font-bold text-xs">
+                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                    <span>
+                      {language === 'en'
+                        ? 'Action Required: Connect SMTP Before Dispatching'
+                        : 'প্রয়োজনীয় পদক্ষেপ: ইমেইল পাঠানোর পূর্বে এসএমটিপি কানেক্ট করুন'}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowSmtpGuide(true)}
+                    className="text-[11px] text-emerald-500 hover:text-emerald-400 font-bold underline flex items-center gap-1"
+                  >
+                    {language === 'en' ? 'Open Detailed Guide' : 'পূর্ণাঙ্গ গাইড দেখুন'}
+                    <ExternalLink className="w-3 h-3" />
+                  </button>
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  {language === 'en'
+                    ? 'You can connect Google Workspace/Gmail (with 16-char App Password), Microsoft 365 / Outlook (Port 587), or your Custom Hosting cPanel Webmail (mail.yourdomain.com, Port 465). Click the button above to view step-by-step instructions for each provider.'
+                    : 'আপনি গুগল জিমেইল (১৬ অক্ষরের অ্যাপ পাসওয়ার্ড সহ), মাইক্রোসফট ৩৬৫ / আউটলুক (পোর্ট ৫৮৭), অথবা আপনার হোস্টিং সিপ্যানেল ওয়েবমেইল (mail.yourdomain.com, পোর্ট ৪৬৫) ব্যবহার করতে পারেন। প্রতিটি প্রোভাইডারের পাসওয়ার্ড ও হোস্ট কোথায় পাবেন তা জানতে নিচের বাটনে ক্লিক করুন।'}
+                </p>
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => { setSmtpGuideTab('gmail'); setShowSmtpGuide(true); }}
+                    className="px-2.5 py-1 rounded-lg bg-surface border border-surface-hover hover:border-red-500/40 text-[11px] font-medium text-foreground flex items-center gap-1"
+                  >
+                    <Mail className="w-3 h-3 text-red-500" />
+                    <span>Google / Gmail Guide</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setSmtpGuideTab('outlook'); setShowSmtpGuide(true); }}
+                    className="px-2.5 py-1 rounded-lg bg-surface border border-surface-hover hover:border-blue-500/40 text-[11px] font-medium text-foreground flex items-center gap-1"
+                  >
+                    <Server className="w-3 h-3 text-blue-500" />
+                    <span>Microsoft 365 Guide</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setSmtpGuideTab('cpanel'); setShowSmtpGuide(true); }}
+                    className="px-2.5 py-1 rounded-lg bg-surface border border-surface-hover hover:border-orange-500/40 text-[11px] font-medium text-foreground flex items-center gap-1"
+                  >
+                    <Zap className="w-3 h-3 text-orange-500" />
+                    <span>cPanel Webmail Guide</span>
+                  </button>
+                  <Link
+                    href="/dashboard/zini-mail/settings"
+                    className="ml-auto inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] transition-colors"
+                  >
+                    <Settings className="w-3 h-3" />
+                    <span>{language === 'en' ? 'Go to SMTP Settings' : 'এসএমটিপি সেটিংস-এ যান'}</span>
+                  </Link>
+                </div>
               </div>
-              <input
-                type="range"
-                min="50"
-                max="5000"
-                step="50"
-                value={form.totalLimit}
-                onChange={(e) => setForm({ ...form, totalLimit: parseInt(e.target.value, 10) })}
-                className="w-full accent-[#1F824A] cursor-pointer"
-              />
-              <div className="flex justify-between text-[10px] text-muted-foreground">
-                <span>50</span>
-                <span>1,000</span>
-                <span>2,500</span>
-                <span>5,000</span>
+            )}
+
+            {/* Campaign Target Limit Slider & Visual Accuracy Engine */}
+            <div className="space-y-3 p-4 rounded-xl border border-surface-hover bg-surface shadow-sm">
+              <div className="flex items-center justify-between font-semibold text-foreground">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2">
+                  <span className="text-[13px]">{language === 'en' ? 'Target Email Quantity' : 'টার্গেট ইমেইল সংখ্যা'}</span>
+                  <span className="text-[10px] text-muted-foreground font-normal">
+                    ({language === 'en' ? 'Range: 50 – 5,000' : 'সীমা: ৫০ – ৫,০০০'})
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="number"
+                    min="50"
+                    max="5000"
+                    step="50"
+                    value={form.totalLimit}
+                    onChange={(e) => {
+                      const v = parseInt(e.target.value, 10);
+                      if (!isNaN(v)) {
+                        setForm({ ...form, totalLimit: Math.min(5000, Math.max(50, v)) });
+                      }
+                    }}
+                    className="w-20 px-2 py-1 text-right font-black text-sm text-[#1F824A] bg-surface-hover/80 border border-surface-hover rounded-lg focus:outline-none focus:border-[#1F824A] transition-colors"
+                  />
+                  <span className="text-xs font-bold text-foreground">{language === 'en' ? 'Emails' : 'ইমেইল'}</span>
+                </div>
+              </div>
+
+              {/* Progress Slider with mathematical fill */}
+              {(() => {
+                const sliderMin = 50;
+                const sliderMax = 5000;
+                const sliderPct = Math.min(100, Math.max(0, ((form.totalLimit - sliderMin) / (sliderMax - sliderMin)) * 100));
+                return (
+                  <div className="space-y-1.5 pt-1">
+                    <input
+                      type="range"
+                      min={sliderMin}
+                      max={sliderMax}
+                      step="50"
+                      value={form.totalLimit}
+                      onChange={(e) => setForm({ ...form, totalLimit: parseInt(e.target.value, 10) || 50 })}
+                      className="w-full h-2 rounded-lg appearance-none cursor-pointer accent-[#1F824A]"
+                      style={{
+                        background: `linear-gradient(to right, #1F824A 0%, #1F824A ${sliderPct}%, rgba(255, 255, 255, 0.12) ${sliderPct}%, rgba(255, 255, 255, 0.12) 100%)`
+                      }}
+                    />
+
+                    {/* Mathematically Aligned Tick Marks (no fake justify-between spacing) */}
+                    <div className="relative w-full h-4 text-[10px] text-muted-foreground select-none">
+                      <span className="absolute left-0 top-0 cursor-pointer hover:text-foreground" onClick={() => setForm({ ...form, totalLimit: 50 })}>
+                        50
+                      </span>
+                      <span
+                        className="absolute top-0 -translate-x-1/2 cursor-pointer hover:text-foreground hover:underline"
+                        style={{ left: `${((1000 - 50) / 4950) * 100}%` }}
+                        onClick={() => setForm({ ...form, totalLimit: 1000 })}
+                        title="1,000 Emails"
+                      >
+                        1,000
+                      </span>
+                      <span
+                        className="absolute top-0 -translate-x-1/2 cursor-pointer hover:text-foreground hover:underline"
+                        style={{ left: `${((2500 - 50) / 4950) * 100}%` }}
+                        onClick={() => setForm({ ...form, totalLimit: 2500 })}
+                        title="2,500 Emails"
+                      >
+                        2,500
+                      </span>
+                      <span
+                        className="absolute top-0 -translate-x-1/2 cursor-pointer hover:text-foreground hover:underline"
+                        style={{ left: `${((4000 - 50) / 4950) * 100}%` }}
+                        onClick={() => setForm({ ...form, totalLimit: 4000 })}
+                        title="4,000 Emails"
+                      >
+                        4,000
+                      </span>
+                      <span
+                        className="absolute right-0 top-0 cursor-pointer hover:text-foreground"
+                        onClick={() => setForm({ ...form, totalLimit: 5000 })}
+                        title="5,000 Emails"
+                      >
+                        5,000
+                      </span>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Quick Select Preset Buttons */}
+              <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-surface-hover/60">
+                <span className="text-[10px] text-muted-foreground mr-1">{language === 'en' ? 'Quick Presets:' : 'দ্রুত নির্বাচন:'}</span>
+                {[100, 500, 1000, 1650, 2500, 5000].map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => setForm({ ...form, totalLimit: preset })}
+                    className={`px-2 py-0.5 rounded-md text-[10px] font-semibold transition-all ${
+                      form.totalLimit === preset
+                        ? 'bg-[#1F824A] text-white shadow-sm ring-1 ring-[#1F824A]'
+                        : 'bg-surface-hover/70 hover:bg-surface-hover text-muted-foreground hover:text-foreground border border-surface-hover'
+                    }`}
+                  >
+                    {preset.toLocaleString()}
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -940,15 +1386,33 @@ export default function NewCampaignWizardPage() {
             {/* AI Credit Safeguard & Balance Matching Engine */}
             {isBalanceSufficient ? (
               <div className="p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 space-y-1">
-                <div className="font-bold flex items-center gap-1.5 text-[13px]">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                  {language === 'en' ? 'AI Balance Sufficient!' : 'আপনার এআই ক্রেডিট ব্যালেন্স পর্যাপ্ত রয়েছে!'}
+                <div className="font-bold flex items-center justify-between text-[13px]">
+                  <div className="flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                    <span>{language === 'en' ? 'AI Balance Sufficient!' : 'আপনার এআই ক্রেডিট ব্যালেন্স পর্যাপ্ত রয়েছে!'}</span>
+                  </div>
+                  {isByok && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/20 text-purple-400 border border-purple-500/30">
+                      BYOK Active
+                    </span>
+                  )}
                 </div>
                 <p className="text-[11px]">
-                  {language === 'en'
-                    ? `Available: ${availableAiCredits} Credits | Required: ${totalRequiredCredits} Credits. Launching will safely queue the emails.`
-                    : `ব্যালেন্স আছে: ${availableAiCredits} ক্রেডিট | প্রয়োজন: ${totalRequiredCredits} ক্রেডিট। ক্যাম্পেইন নিরাপদে চালু করার জন্য প্রস্তুত।`}
+                  {isByok
+                    ? (language === 'en'
+                        ? `BYOK / Enterprise AI is active (Unlimited AI responses). Campaign requires ${totalRequiredCredits} credits.`
+                        : `নিজস্ব এপিআই / এন্টারপ্রাইজ এআই সক্রিয় আছে (আনলিমিটেড এআই রেসপন্স)। ক্যাম্পেইনের জন্য প্রয়োজন ${totalRequiredCredits} ক্রেডিট।`)
+                    : (language === 'en'
+                        ? `Available: ${availableAiCredits.toLocaleString()} Credits | Required: ${totalRequiredCredits.toLocaleString()} Credits. Launching will safely queue the emails.`
+                        : `ব্যালেন্স আছে: ${availableAiCredits.toLocaleString()} ক্রেডিট | প্রয়োজন: ${totalRequiredCredits.toLocaleString()} ক্রেডিট। ক্যাম্পেইন নিরাপদে চালু করার জন্য প্রস্তুত।`)}
                 </p>
+                {quotaDetails && !isByok && (
+                  <p className="text-[10px] text-muted-foreground pt-0.5">
+                    {language === 'en'
+                      ? `Monthly Plan Quota: ${quotaDetails.total.toLocaleString()} | Used this period: ${quotaDetails.used.toLocaleString()}`
+                      : `মাসিক প্ল্যান কোটা: ${quotaDetails.total.toLocaleString()} | এই মেয়াদে ব্যবহৃত: ${quotaDetails.used.toLocaleString()}`}
+                  </p>
+                )}
               </div>
             ) : (
               <div className="p-4 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-300 space-y-3">
@@ -958,9 +1422,16 @@ export default function NewCampaignWizardPage() {
                 </div>
                 <p className="text-[11px]">
                   {language === 'en'
-                    ? `You have ${availableAiCredits} credits, but this campaign requires ${totalRequiredCredits} credits (Shortage: ${creditDeficit} credits).`
-                    : `আপনার ব্যালেন্সে ${availableAiCredits} ক্রেডিট আছে, কিন্তু প্রয়োজন ${totalRequiredCredits} ক্রেডিট (ঘাটতি: ${creditDeficit} ক্রেডিট)।`}
+                    ? `You have ${availableAiCredits.toLocaleString()} credits, but this campaign requires ${totalRequiredCredits.toLocaleString()} credits (Shortage: ${creditDeficit.toLocaleString()} credits).`
+                    : `আপনার ব্যালেন্সে ${availableAiCredits.toLocaleString()} ক্রেডিট আছে, কিন্তু প্রয়োজন ${totalRequiredCredits.toLocaleString()} ক্রেডিট (ঘাটতি: ${creditDeficit.toLocaleString()} ক্রেডিট)।`}
                 </p>
+                {quotaDetails && (
+                  <p className="text-[10px] text-muted-foreground">
+                    {language === 'en'
+                      ? `Plan Quota: ${quotaDetails.total.toLocaleString()} | Used this period: ${quotaDetails.used.toLocaleString()}`
+                      : `প্ল্যান কোটা: ${quotaDetails.total.toLocaleString()} | এই মেয়াদে ব্যবহৃত: ${quotaDetails.used.toLocaleString()}`}
+                  </p>
+                )}
 
                 {/* Instant Resolution Buttons */}
                 <div className="flex flex-wrap items-center gap-2 pt-1">
@@ -970,7 +1441,7 @@ export default function NewCampaignWizardPage() {
                       onClick={handleAutoAdjust}
                       className="px-3 py-1.5 rounded-lg bg-surface border border-surface-hover text-foreground hover:bg-surface-hover font-bold text-[11px] transition-all"
                     >
-                      ⚡ {language === 'en' ? `Auto-Adjust to Max Affordable: ${maxAffordableEmails} Emails` : `অটো-অ্যাডজাস্ট করুন (${maxAffordableEmails} ইমেইল)`}
+                      ⚡ {language === 'en' ? `Auto-Adjust to Max Affordable: ${maxAffordableEmails.toLocaleString()} Emails` : `অটো-অ্যাডজাস্ট করুন (${maxAffordableEmails.toLocaleString()} ইমেইল)`}
                     </button>
                   )}
 
@@ -1017,6 +1488,15 @@ export default function NewCampaignWizardPage() {
           </div>
         </div>
       )}
+
+      {/* Reusable Tabbed SMTP Credentials Guide Modal */}
+      <SmtpSetupGuide
+        mode="modal"
+        isOpen={showSmtpGuide}
+        onClose={() => setShowSmtpGuide(false)}
+        activeTab={smtpGuideTab}
+        onTabChange={setSmtpGuideTab}
+      />
     </div>
   );
 }

@@ -252,10 +252,52 @@ export default function CampaignDetailsPage() {
 
   if (isFeatureLoading || loading) {
     return (
-      <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
-        <div className="h-28 bg-surface/70 rounded-2xl animate-pulse" />
-        <div className="h-32 bg-surface/70 rounded-2xl animate-pulse" />
-        <div className="h-96 bg-surface/70 rounded-2xl animate-pulse" />
+      <div className="p-3 sm:p-6 max-w-7xl mx-auto space-y-6">
+        {/* Header Skeleton */}
+        <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-4 sm:p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 animate-pulse">
+          <div className="space-y-2">
+            <div className="h-4 w-32 bg-surface-hover/80 rounded" />
+            <div className="h-7 w-64 bg-surface-hover/80 rounded-xl" />
+            <div className="h-3 w-48 bg-surface-hover/60 rounded" />
+          </div>
+          <div className="flex gap-2">
+            <div className="h-9 w-28 bg-surface-hover/80 rounded-xl" />
+            <div className="h-9 w-32 bg-surface-hover/80 rounded-xl" />
+          </div>
+        </div>
+
+        {/* Funnel Skeleton */}
+        <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-4 sm:p-5 shadow-sm space-y-3 animate-pulse">
+          <div className="flex justify-between">
+            <div className="h-4 w-40 bg-surface-hover/80 rounded" />
+            <div className="h-4 w-24 bg-surface-hover/80 rounded" />
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="p-3 rounded-xl bg-surface border border-surface-hover h-20 space-y-2">
+                <div className="h-3 w-16 bg-surface-hover/60 rounded" />
+                <div className="h-6 w-12 bg-surface-hover/80 rounded" />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Filter Pills Skeleton */}
+        <div className="flex gap-2 overflow-x-auto pb-1 animate-pulse">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="h-8 w-24 bg-surface/70 border border-surface-hover rounded-xl shrink-0" />
+          ))}
+        </div>
+
+        {/* Table / Cards Skeleton */}
+        <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-4 shadow-sm space-y-3 animate-pulse">
+          <div className="h-9 w-full max-w-md bg-surface-hover/80 rounded-xl" />
+          <div className="space-y-2 pt-2">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="h-14 bg-surface/50 border border-surface-hover rounded-xl" />
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -319,9 +361,9 @@ export default function CampaignDetailsPage() {
             <button
               onClick={handleTriggerHarvest}
               disabled={actionLoading}
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-[12px] font-semibold rounded-xl bg-surface border border-surface-hover hover:bg-surface-hover text-foreground transition-colors shadow-sm"
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-[12px] font-semibold rounded-xl bg-surface border border-surface-hover hover:bg-surface-hover text-foreground transition-colors shadow-sm disabled:opacity-50"
             >
-              <Search className="w-3.5 h-3.5 text-blue-500" />
+              <Search className={`w-3.5 h-3.5 text-blue-500 ${actionLoading ? 'animate-spin' : ''}`} />
               {language === 'en' ? 'Harvest Leads' : 'লিড হার্ভেস্ট করুন'}
             </button>
 
@@ -329,27 +371,27 @@ export default function CampaignDetailsPage() {
               <button
                 onClick={handlePauseCampaign}
                 disabled={actionLoading}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-[12px] font-bold rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border border-amber-500/30 transition-colors shadow-sm"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-[12px] font-bold rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border border-amber-500/30 transition-colors shadow-sm disabled:opacity-50"
               >
-                <Pause className="w-4 h-4" />
+                {actionLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Pause className="w-4 h-4" />}
                 {language === 'en' ? 'Pause Sending' : 'স্থগিত করুন'}
               </button>
             ) : campaign?.status === 'paused' ? (
               <button
                 onClick={handleResumeCampaign}
                 disabled={actionLoading}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-[12px] font-bold rounded-xl bg-emerald-500 text-white hover:bg-emerald-600 transition-colors shadow-sm"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-[12px] font-bold rounded-xl bg-emerald-500 text-white hover:bg-emerald-600 transition-colors shadow-sm disabled:opacity-50"
               >
-                <Play className="w-4 h-4" />
+                {actionLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
                 {language === 'en' ? 'Resume Queue' : 'চালু করুন'}
               </button>
             ) : (
               <button
                 onClick={handleStartCampaign}
                 disabled={actionLoading}
-                className="inline-flex items-center gap-1.5 px-4 py-2 text-[12px] font-bold rounded-xl bg-[#1F824A] text-white hover:bg-[#1F824A]/90 transition-all shadow-sm"
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-[12px] font-bold rounded-xl bg-[#1F824A] text-white hover:bg-[#1F824A]/90 transition-all shadow-sm disabled:opacity-50"
               >
-                <Play className="w-4 h-4" />
+                {actionLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
                 {language === 'en' ? 'Launch Campaign' : 'ক্যাম্পেইন চালু করুন'}
               </button>
             )}
@@ -377,7 +419,7 @@ export default function CampaignDetailsPage() {
           </span>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
           {/* Stage 1: Discovered / Harvested */}
           <div className="p-3 rounded-xl bg-surface border border-surface-hover space-y-1">
             <span className="text-[10px] uppercase font-bold text-muted-foreground flex items-center justify-between">
@@ -435,7 +477,7 @@ export default function CampaignDetailsPage() {
           </div>
 
           {/* Stage 5: Ordered */}
-          <div className="p-3 rounded-xl bg-surface border border-[#1F824A]/30 bg-[#1F824A]/5 space-y-1">
+          <div className="col-span-2 sm:col-span-1 p-3 rounded-xl bg-surface border border-[#1F824A]/30 bg-[#1F824A]/5 space-y-1">
             <span className="text-[10px] uppercase font-bold text-[#1F824A] flex items-center justify-between">
               5. {language === 'en' ? 'Ordered' : 'অর্ডার'}
               <ShoppingBag className="w-3.5 h-3.5 text-[#1F824A]" />
@@ -602,8 +644,15 @@ export default function CampaignDetailsPage() {
           </div>
         </div>
 
-        {/* Table Rows */}
-        {leads.length === 0 ? (
+        {/* Table / Card Rows */}
+        {refreshing ? (
+          <div className="p-8 text-center space-y-3">
+            <RefreshCw className="w-6 h-6 animate-spin text-[#1F824A] mx-auto" />
+            <p className="text-xs text-muted-foreground">
+              {language === 'en' ? 'Updating leads list...' : 'লিড তালিকা আপডেট হচ্ছে...'}
+            </p>
+          </div>
+        ) : leads.length === 0 ? (
           <div className="p-12 text-center text-muted-foreground space-y-2 text-[12px]">
             <Users className="w-8 h-8 mx-auto text-muted-foreground/50" />
             <p>
@@ -613,108 +662,199 @@ export default function CampaignDetailsPage() {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-[12px]">
-              <thead className="bg-surface/50 border-b border-surface-hover text-muted-foreground uppercase text-[10px] tracking-wider font-semibold">
-                <tr>
-                  <th className="py-3 px-4">{language === 'en' ? 'Business / Contact' : 'ব্যবসা / কন্টাক্ট'}</th>
-                  <th className="py-3 px-3">{language === 'en' ? 'Channel' : 'চ্যানেল'}</th>
-                  <th className="py-3 px-3">{language === 'en' ? 'Phone' : 'ফোন'}</th>
-                  <th className="py-3 px-3">{language === 'en' ? 'Status' : 'অবস্থা'}</th>
-                  <th className="py-3 px-3">{language === 'en' ? 'Activity Timeline' : 'অ্যাক্টিভিটি টাইমলাইন'}</th>
-                  <th className="py-3 px-4 text-right">{language === 'en' ? 'Preview' : 'প্রিভিউ'}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-surface-hover/60">
-                {leads.map((l) => (
-                  <tr key={l.id} className="hover:bg-surface-hover/30 transition-colors">
-                    {/* Business Name & Email */}
-                    <td className="py-3 px-4">
-                      <div className="font-bold text-foreground">
+          <>
+            {/* Mobile-First Card View (Visible on < md) */}
+            <div className="md:hidden divide-y divide-surface-hover/60">
+              {leads.map((l) => (
+                <div key={l.id} className="p-4 space-y-2.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="font-bold text-foreground text-sm truncate">
                         {l.businessName}
                       </div>
-                      <div className="text-[11px] text-muted-foreground">
+                      <div className="text-[11px] text-muted-foreground truncate">
                         {l.email ? l.email : (
                           <span className="text-amber-500 font-medium">#No-Email (Phone Only)</span>
                         )}
                       </div>
-                    </td>
+                    </div>
 
-                    {/* Channel */}
-                    <td className="py-3 px-3">
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-surface-hover text-muted-foreground border border-surface-hover">
-                        {l.sourceChannel}
-                      </span>
-                    </td>
-
-                    {/* Phone */}
-                    <td className="py-3 px-3 text-muted-foreground font-mono text-[11px]">
-                      {l.phone || '—'}
-                    </td>
-
-                    {/* Status */}
-                    <td className="py-3 px-3">
-                      <span
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${
-                          l.orderedAt
-                            ? 'bg-[#1F824A]/10 text-[#1F824A] border-[#1F824A]/20'
-                            : l.clickedAt
-                            ? 'bg-amber-500/10 text-amber-500 border-amber-500/20'
-                            : l.openedAt
-                            ? 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20'
-                            : l.status === 'sent'
-                            ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
-                            : 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20'
-                        }`}
-                      >
-                        {l.orderedAt
-                          ? 'ORDERED'
+                    <span
+                      className={`inline-flex items-center shrink-0 px-2 py-0.5 rounded-full text-[9px] font-bold border ${
+                        l.orderedAt
+                          ? 'bg-[#1F824A]/10 text-[#1F824A] border-[#1F824A]/20'
                           : l.clickedAt
-                          ? 'CLICKED'
+                          ? 'bg-amber-500/10 text-amber-500 border-amber-500/20'
                           : l.openedAt
-                          ? 'OPENED'
-                          : l.status.toUpperCase()}
-                      </span>
-                    </td>
+                          ? 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20'
+                          : l.status === 'sent'
+                          ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                          : 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20'
+                      }`}
+                    >
+                      {l.orderedAt
+                        ? 'ORDERED'
+                        : l.clickedAt
+                        ? 'CLICKED'
+                        : l.openedAt
+                        ? 'OPENED'
+                        : l.status?.toUpperCase()}
+                    </span>
+                  </div>
 
-                    {/* Timestamps */}
-                    <td className="py-3 px-3 text-[11px] text-muted-foreground space-y-0.5">
-                      {l.clickedAt && (
-                        <div className="text-amber-500 font-medium">
+                  <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1">
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-surface-hover border border-surface-hover">
+                      {l.sourceChannel}
+                    </span>
+
+                    {l.phone ? (
+                      <a
+                        href={`tel:${l.phone}`}
+                        className="font-mono text-emerald-500 hover:underline flex items-center gap-1"
+                      >
+                        <Smartphone className="w-3 h-3" />
+                        {l.phone}
+                      </a>
+                    ) : (
+                      <span className="text-muted-foreground/60">—</span>
+                    )}
+
+                    {l.personalizedSubject ? (
+                      <button
+                        onClick={() => setPreviewLead(l)}
+                        className="inline-flex items-center gap-1 text-[11px] text-[#1F824A] font-semibold hover:underline"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        {language === 'en' ? 'Preview' : 'প্রিভিউ'}
+                      </button>
+                    ) : null}
+                  </div>
+
+                  {(l.clickedAt || l.openedAt || l.sentAt) && (
+                    <div className="text-[10px] text-muted-foreground pt-0.5">
+                      {l.clickedAt ? (
+                        <span className="text-amber-500 font-medium">
                           Clicked: {new Date(l.clickedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </div>
-                      )}
-                      {l.openedAt && !l.clickedAt && (
-                        <div>
+                        </span>
+                      ) : l.openedAt ? (
+                        <span>
                           Opened: {new Date(l.openedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </div>
-                      )}
-                      {l.sentAt && !l.openedAt && (
-                        <div>
-                          Sent: {new Date(l.sentAt).toLocaleDateString()}
-                        </div>
-                      )}
-                    </td>
-
-                    {/* Action: Preview */}
-                    <td className="py-3 px-4 text-right">
-                      {l.personalizedSubject ? (
-                        <button
-                          onClick={() => setPreviewLead(l)}
-                          className="p-1.5 rounded-lg border border-surface-hover hover:bg-surface-hover text-muted-foreground hover:text-foreground transition-colors"
-                          title="View Personalized Email"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                        </button>
+                        </span>
                       ) : (
-                        <span className="text-[10px] text-muted-foreground/60">—</span>
+                        <span>
+                          Sent: {new Date(l.sentAt).toLocaleDateString()}
+                        </span>
                       )}
-                    </td>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Table View (Visible on >= md) */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left text-[12px]">
+                <thead className="bg-surface/50 border-b border-surface-hover text-muted-foreground uppercase text-[10px] tracking-wider font-semibold">
+                  <tr>
+                    <th className="py-3 px-4">{language === 'en' ? 'Business / Contact' : 'ব্যবসা / কন্টাক্ট'}</th>
+                    <th className="py-3 px-3">{language === 'en' ? 'Channel' : 'চ্যানেল'}</th>
+                    <th className="py-3 px-3">{language === 'en' ? 'Phone' : 'ফোন'}</th>
+                    <th className="py-3 px-3">{language === 'en' ? 'Status' : 'অবস্থা'}</th>
+                    <th className="py-3 px-3">{language === 'en' ? 'Activity Timeline' : 'অ্যাক্টিভিটি টাইমলাইন'}</th>
+                    <th className="py-3 px-4 text-right">{language === 'en' ? 'Preview' : 'প্রিভিউ'}</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-surface-hover/60">
+                  {leads.map((l) => (
+                    <tr key={l.id} className="hover:bg-surface-hover/30 transition-colors">
+                      {/* Business Name & Email */}
+                      <td className="py-3 px-4">
+                        <div className="font-bold text-foreground">
+                          {l.businessName}
+                        </div>
+                        <div className="text-[11px] text-muted-foreground">
+                          {l.email ? l.email : (
+                            <span className="text-amber-500 font-medium">#No-Email (Phone Only)</span>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Channel */}
+                      <td className="py-3 px-3">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-surface-hover text-muted-foreground border border-surface-hover">
+                          {l.sourceChannel}
+                        </span>
+                      </td>
+
+                      {/* Phone */}
+                      <td className="py-3 px-3 text-muted-foreground font-mono text-[11px]">
+                        {l.phone || '—'}
+                      </td>
+
+                      {/* Status */}
+                      <td className="py-3 px-3">
+                        <span
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                            l.orderedAt
+                              ? 'bg-[#1F824A]/10 text-[#1F824A] border-[#1F824A]/20'
+                              : l.clickedAt
+                              ? 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                              : l.openedAt
+                              ? 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20'
+                              : l.status === 'sent'
+                              ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                              : 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20'
+                          }`}
+                        >
+                          {l.orderedAt
+                            ? 'ORDERED'
+                            : l.clickedAt
+                            ? 'CLICKED'
+                            : l.openedAt
+                            ? 'OPENED'
+                            : l.status.toUpperCase()}
+                        </span>
+                      </td>
+
+                      {/* Timestamps */}
+                      <td className="py-3 px-3 text-[11px] text-muted-foreground space-y-0.5">
+                        {l.clickedAt && (
+                          <div className="text-amber-500 font-medium">
+                            Clicked: {new Date(l.clickedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                        )}
+                        {l.openedAt && !l.clickedAt && (
+                          <div>
+                            Opened: {new Date(l.openedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                        )}
+                        {l.sentAt && !l.openedAt && (
+                          <div>
+                            Sent: {new Date(l.sentAt).toLocaleDateString()}
+                          </div>
+                        )}
+                      </td>
+
+                      {/* Action: Preview */}
+                      <td className="py-3 px-4 text-right">
+                        {l.personalizedSubject ? (
+                          <button
+                            onClick={() => setPreviewLead(l)}
+                            className="p-1.5 rounded-lg border border-surface-hover hover:bg-surface-hover text-muted-foreground hover:text-foreground transition-colors"
+                            title="View Personalized Email"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                          </button>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground/60">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 

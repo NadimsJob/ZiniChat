@@ -14,7 +14,7 @@ const integrations = [
   { name: 'Instagram DM', icon: <InstagramBadgeIcon className="w-9 h-9" />, desc: { en: 'Direct Message integration', bn: 'ডাইরেক্ট মেসেজ ইন্টিগ্রেশন' }, color: 'bg-pink-500/10 border-pink-500/30 text-pink-500' },
   { name: 'FB Comment Auto', icon: <FacebookCommentBadgeIcon className="w-9 h-9" />, desc: { en: 'Public & Private DM Reply', bn: 'কমেন্ট অটো-রিপ্লাই ও DM' }, color: 'bg-orange-500/10 border-orange-500/30 text-orange-500' },
   { name: 'Website Chat', icon: <WebChatBadgeIcon className="w-9 h-9" />, desc: { en: 'Live Chat Widget', bn: 'লাইভ চ্যাট উইজেট' }, color: 'bg-cyan-500/10 border-cyan-500/30 text-cyan-500' },
-  { name: 'Zini-Mail Outreach', icon: <Mail className="w-9 h-9" />, desc: { en: 'B2B Cold Email & Leads', bn: 'B2B কোল্ড ইমেইল ও লিড' }, color: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500' },
+  { name: 'Zini-Mail Marketing', icon: <Mail className="w-9 h-9" />, desc: { en: 'Zero-List AI Email Marketing', bn: 'লিস্ট ছাড়াই অটোমেটেড ইমেইল' }, color: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500' },
   { name: 'Meta API Platform', icon: <MetaLogo className="w-9 h-9" />, desc: { en: 'Official Partner', bn: 'মেটা অফিশিয়াল এপ্রুভড' }, color: 'bg-purple-500/10 border-purple-500/30 text-purple-500' },
 ];
 

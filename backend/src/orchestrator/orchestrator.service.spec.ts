@@ -11,6 +11,7 @@ import { ActivityLogService } from '../inbox/activity-log.service';
 import { InboxGateway } from '../inbox/inbox.gateway';
 import { AiCacheService } from '../ai/ai-cache.service';
 
+import * as path from 'path';
 import { CapiHubService } from '../capi-hub/capi-hub.service';
 
 describe('OrchestratorService', () => {
@@ -1416,6 +1417,75 @@ describe('OrchestratorService', () => {
         undefined,
         'ai1'
       );
+    });
+
+    it('T-FS1: should trigger Flow 1.8 failsafe and create order when LLM replies that order is confirmed while pendingOrderProposal exists', async () => {
+      const proposal = {
+        status: 'AWAITING_PAYMENT_PROOF',
+        paymentPolicy: 'delivery_advance',
+        deliveryArea: 'inside_dhaka',
+        deliveryCharge: 60,
+        items: [{ productId: 'prod_1', quantity: 1, price: 1200 }],
+        advanceAmountRequired: 60,
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString()
+      };
+
+      const mockConversation = {
+        id: 'c_failsafe_1',
+        tenantId: 'tenant1',
+        contactId: 'contact_1',
+        pendingOrderProposal: proposal,
+        contact: { id: 'contact_1', name: 'Rakib', phone: '01885637678' }
+      };
+
+      prismaService.product.findFirst.mockResolvedValue({
+        id: 'prod_1',
+        name: 'Black Panjabi',
+        price: 1200,
+        tenantId: 'tenant1',
+        isActive: true
+      });
+
+      ordersService.createOrder.mockResolvedValue({
+        id: 'ord_12345678abcdef',
+        tenantId: 'tenant1',
+        totalAmount: 1260
+      });
+
+      const classification: any = {
+        intent: 'general',
+        replyText: 'ধন্যবাদ পেমেন্টের স্ক্রিনশট পাঠানোর জন্য! ✅ আপনার পেমেন্ট সফলভাবে যাচাই করা হয়েছে এবং অর্ডারটি কনফার্ম করা হয়েছে।'
+      };
+
+      const result = await (service as any).handleOrderPlacement(
+        'tenant1',
+        mockConversation,
+        classification,
+        'c_failsafe_1',
+        '[Image Sent by Customer]',
+        []
+      );
+
+      expect(ordersService.createOrder).toHaveBeenCalledWith('tenant1', expect.objectContaining({
+        contactId: 'contact_1',
+        conversationId: 'c_failsafe_1',
+        items: expect.arrayContaining([expect.objectContaining({ productId: 'prod_1' })])
+      }));
+      expect(prismaService.order.update).toHaveBeenCalledWith(expect.objectContaining({
+        where: { id: 'ord_12345678abcdef' },
+        data: { createdBy: 'ai', status: 'confirmed' }
+      }));
+      expect(result?.overrideReplyText).toContain('ord_1234');
+      expect(activityLogService.record).toHaveBeenCalledWith(expect.objectContaining({
+        type: 'ORDER_CREATED',
+        metadataJson: expect.objectContaining({ source: 'ai_confirmation_failsafe' })
+      }));
+    });
+
+    it('T-FS2: ensureLocalImage should resolve local existing paths and return absolute path', async () => {
+      const dummyPath = path.join(process.cwd(), 'package.json');
+      const resolved = await service.ensureLocalImage(dummyPath, 'tenant1');
+      expect(resolved).toBe(dummyPath);
     });
   });
 });

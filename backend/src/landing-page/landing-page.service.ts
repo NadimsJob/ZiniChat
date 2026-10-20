@@ -188,14 +188,14 @@ const OFFICIAL_FEATURES_JSON = [
     id: 'zini_mail',
     iconName: 'Mail',
     colorTheme: 'orange',
-    title: { en: 'Zini-Mail Autonomous AI Outreach', bn: 'জিনি-মেইল: অটোনোমাস এআই কোল্ড আউটরিচ' }, 
+    title: { en: 'Zini-Mail: Fully Automated AI Email Marketing', bn: 'জিনি-মেইল: অটোমেটেড এআই ইমেইল মার্কেটিং (জিরো লিস্ট)' }, 
     description: { 
-      en: 'Upload a promotional flyer, discover verified B2B leads via Google SERP, and let AI compose and dispatch safe 1/min personalized cold emails with full revenue attribution.', 
-      bn: 'প্রমোশনাল ব্যানার আপলোড করলেই এআই গুগল থেকে বি২বি লিড সংগ্রহ করে মিনিটে ১টি করে নিরাপদ কোল্ড ইমেইল পাঠাবে এবং অর্ডার ও রেভিনিউ ট্র্যাক করবে।' 
+      en: 'No email list or database needed! Simply enter your business type and location—AI automatically searches and finds verified target businesses, reads your offer poster, and sends personalized 1-on-1 marketing emails automatically.', 
+      bn: 'আপনার নিজস্ব কোনো ইমেইল লিস্ট বা ডেটাবেজ থাকা লাগবে না! শুধু ব্যবসার ক্যাটাগরি ও শহর লিখে দিন—AI নিজ থেকেই টার্গেট বায়ারদের ইমেইল ও ফোন খুঁজে বের করে অফার ব্যানার অনুযায়ী অটোমেটিক পার্সোনালাইজড ইমেইল পাঠিয়ে সেলস আনবে।' 
     },
     bullets: {
-      en: ['Multimodal AI Vision flyer reading & Gemini context caching', '1 email/min safe pacing with organic jitter & bounce tripwire', '1-Click "Clicked (No Order Yet)" audience WhatsApp retargeting'],
-      bn: ['মাল্টিমোডাল এআই ভিশন ব্যানার রিডিং ও জেমিনি কনটেক্সট ক্যাশিং', 'মিনিটে ১টি মেইল প্রেরণ, অর্গানিক জিটার ও বাউন্স রেট প্রোটেকশন', '১-ক্লিকে "Clicked (No Order Yet)" কাস্টমারদের হোয়াটসঅ্যাপে রিটার্গেট']
+      en: ['Zero Email List Needed — AI discovers real target businesses automatically', 'Vision AI scans your offer flyer/poster to craft 1-on-1 personalized emails', '1 email/min safe delivery + 1-Click WhatsApp follow-up for interested leads'],
+      bn: ['নিজের কোনো ইমেইল লিস্ট বা পূর্ব অভিজ্ঞতার প্রয়োজন নেই — AI নিজ থেকেই টার্গেট লিড খুঁজে নেয়', 'প্রমোশনাল পোস্টার/ব্যানার রিড করে স্বয়ংক্রিয় প্রফেশনাল ১-টু-১ সেলস ইমেইল তৈরি', 'মিনিটে ১টি করে নিরাপদ মেইল সেন্ড ও লিংকে ক্লিক করা কাস্টমারদের ১-ক্লিকে হোয়াটসঅ্যাপে মেসেজ']
     }
   }
 ];
@@ -306,45 +306,71 @@ const OFFICIAL_FAQS_JSON = {
       } 
     },
 
-    // Zini-Mail Autonomous AI Outreach
+    // Zini-Mail Fully Automated AI Email Marketing (Zero List Required)
     { 
       categoryId: 'outreach',
-      question: { en: 'What is Zini-Mail and how does it automate cold B2B outreach?', bn: 'জিনি-মেইল (Zini-Mail) কী এবং এটি কীভাবে কোল্ড আউটরিচ অটোমেট করে?' }, 
+      question: { 
+        en: 'What is Zini-Mail and how does this automated email marketing work?', 
+        bn: 'জিনি-মেইল (Zini-Mail) কী জিনিস এবং এটি কীভাবে স্বয়ংক্রিয়ভাবে ইমেইল মার্কেটিং করে?' 
+      }, 
       answer: { 
-        en: 'Zini-Mail is an autonomous, end-to-end B2B lead generation and cold email marketing ecosystem built into ZiniChat. You simply upload your promotional banner/offer flyer, enter your target business keywords, and select channels (Facebook, Instagram, LinkedIn). ZiniChat uses Google SERP discovery to harvest active merchant leads, uses Multimodal Vision AI to extract offer context from your poster, and drafts hyper-personalized pain-point emails in English, Bangla, or Banglish.', 
-        bn: 'Zini-Mail হলো জিনিচ্যাটে যুক্ত একটি স্বয়ংক্রিয় বি২বি লিড জেনারেশন ও কোল্ড ইমেইল মার্কেটিং ইকোসিস্টেম। প্রমোশনাল ব্যানার আপলোড করে টার্গেট কি-ওয়ার্ড লিখে দিলে সিস্টেম গুগল থেকে ফেসবুক/ইনস্টাগ্রাম/লিঙ্কডইন পেজের ব্যবসায়িক লিড সংগ্রহ করে, পোস্টার থেকে অফার বুঝে নিয়ে স্বয়ংক্রিয়ভাবে পার্সোনালাইজড কোল্ড ইমেইল ড্রাফট ও সেন্ড করে।' 
+        en: 'Zini-Mail is a 100% automated AI email marketing system. You do NOT need your own email list, prospect database, or prior technical knowledge. Simply specify who your target customers are (e.g., "Clothing Wholesalers in Dhaka") and upload your promotional flyer. The AI searches Google and social pages, finds verified business emails & phone numbers, reads your offer poster, and sends tailored 1-on-1 marketing emails directly to their inbox.', 
+        bn: 'জিনি-মেইল হলো এআই দিয়ে চালিত একটি সম্পূর্ণ অটোমেটেড ইমেইল মার্কেটিং সিস্টেম। এর জন্য আপনার আগে থেকে কোনো ইমেইল লিস্ট, ডেটাবেজ বা টেকনিক্যাল জ্ঞান থাকার প্রয়োজন নেই। আপনি শুধু লিখে দেবেন আপনার টার্গেট কারা (যেমন: "পাইকারি কাপড়ের দোকান" বা "রেস্টুরেন্ট") এবং আপনার অফার ব্যানারটি দিয়ে দেবেন। AI নিজ দায়িত্বে গুগল ও সোশ্যাল পেজ সার্চ করে ভেরিফায়েড ইমেইল ও ফোন খুঁজে বের করবে এবং তাদের কাছে আকর্ষণীয় সেলস মেইল পাঠিয়ে কাস্টমার নিয়ে আসবে।' 
       } 
     },
     { 
       categoryId: 'outreach',
-      question: { en: 'How does Zini-Mail protect my domain and email reputation from spam bans?', bn: 'জিনি-মেইল কীভাবে আমার ইমেইল ও ডোমেইনকে স্প্যাম ব্যান বা ব্ল্যাকলিস্ট হওয়া থেকে রক্ষা করে?' }, 
+      question: { 
+        en: 'Do I need my own email list or database of customers to start?', 
+        bn: 'মার্কেটিং শুরু করার জন্য কি আমার নিজস্ব কোনো ইমেইল লিস্ট বা ডেটাবেজ থাকা লাগবে?' 
+      }, 
       answer: { 
-        en: 'Zini-Mail enforces strict Enterprise Reputation Armor: (1) Paced dispatching at 1 email per minute with random jitter (+0 to +15s delay) to eliminate bot timing signatures. (2) Automated Bounce Rate Tripwire that auto-pauses campaigns if bounce rate exceeds 8% over 50 emails. (3) 30-day cross-campaign cooldown preventing prospect fatigue. (4) 1-Click CAN-SPAM compliant unsubscribe portal adding opted-out leads to your suppression blacklist.', 
-        bn: 'জিনি-মেইলে রয়েছে ডোমেইন রেপুটেশন গার্ড: (১) প্রতি ৬০ সেকেন্ডে ১টি ইমেইল এবং সাথে ০-১৫ সেকেন্ডের র্যান্ডম জিটার যাতে স্প্যাম ফিল্টারে না পড়ে। (২) ৫০টি মেইলের মধ্যে বাউন্স রেট ৮% ছাড়ালে স্বয়ংক্রিয় অটো-পজ ট্রিপওয়্যার। (৩) ৩০ দিনের ক্রস-ক্যাম্পেইন কুলডাউন। (৪) ক্যান-স্প্যাম অনুমোদিত ১-ক্লিক আনসাবস্ক্রাইব পোর্টাল যা অটোমেটিক সাপ্রেশন ব্ল্যাকলিস্ট ম্যানেজ করে।' 
+        en: 'No! You don\'t need any pre-collected emails. Traditional email marketing fails because merchants don\'t have customer lists. Zini-Mail solves this by having AI autonomously discover live, active business emails based on your keywords and target country/city.', 
+        bn: 'একদমই না! আপনার কোনো ইমেইল লিস্ট থাকা লাগবে না। সাধারণ ইমেইল মার্কেটিংয়ে মানুষ আটকে যায় কারণ তাদের কাছে কোনো কাস্টমারের ইমেইল থাকে না। জিনি-মেইলের সবচেয়ে বড় সুবিধা হলো—AI নিজেই ইন্টারনেট সার্চ করে আপনার টার্গেট ব্যবসার রিয়েল ও ভেরিফায়েড ইমেইল খুঁজে নিয়ে মার্কেটিং করবে।' 
       } 
     },
     { 
       categoryId: 'outreach',
-      question: { en: 'What is the "Clicked (No Order Yet)" high-intent audience filter?', bn: '"Clicked (No Order Yet)" হাই-ইনটেন্ট অডিয়েন্স ফিল্টার কী এবং এটি কীভাবে কাজ করে?' }, 
+      question: { 
+        en: 'How does AI write and send emails from my promotional poster?', 
+        bn: 'AI কীভাবে আমার অফার পোস্টার দেখে ইমেইল লেখে এবং পাঠায়?' 
+      }, 
       answer: { 
-        en: 'In cold email marketing, prospects who clicked your offer link are your highest-intent buyers. Zini-Mail isolates these prospects with 1-click in the campaign manager (`🔥 Clicked (No Order Yet)`). With a single click, you can push their phone numbers directly into ZiniChat\'s WhatsApp Broadcast Hub (/dashboard/broadcasts) with an AI-suggested conversational template or auto-tag them as Warm Leads in your CRM!', 
-        bn: 'কোল্ড আউটরিচে যারা অফার লিংকে ক্লিক করেছে কিন্তু এখনও অর্ডার করেনি, তারাই সবচেয়ে হট বায়ার। Zini-Mail এদের ১-ক্লিকে আলাদা করে চিহ্নিত করে (`🔥 Clicked (No Order Yet)`)। একটি ক্লিকেই আপনি এই ফোন নম্বরগুলো সরাসরি হোয়াটসঅ্যাপ ব্রডকাস্টে পাঠিয়ে পার্সোনালাইজড চ্যাট শুরু করতে পারেন অথবা সিআরএমে Warm Lead হিসেবে ট্যাগ করতে পারেন।' 
+        en: 'Zini-Mail has built-in Vision AI. When you upload your flyer or offer banner, the AI "looks" at the design, extracts your discounts, terms, and key selling points, and crafts high-converting, professional 1-on-1 emails in English or Bangla. Each recipient gets an email written specifically for their business, not a generic mass spam blast.', 
+        bn: 'জিনি-মেইলে রয়েছে ভিশন এআই (Vision AI)। আপনার অফার ব্যানার বা পোস্টার আপলোড করলেই এআই ছবির লেখা ও অফার বুঝে নেয়। এরপর প্রতিটি টার্গেট ব্যবসার ধরন অনুযায়ী আলাদা আলাদা প্রফেশনাল ও আকর্ষণীয় ইমেইল লিখে এক এক করে পাঠায়, যা দেখতে সাধারণ মানুষের পাঠানো ব্যক্তিগত মেইলের মতো লাগে।' 
       } 
     },
     { 
       categoryId: 'outreach',
-      question: { en: 'How are AI credits charged and refunded during outreach campaigns?', bn: 'আউটরিচ ক্যাম্পেইনে এআই ক্রেডিট কীভাবে কাটা হয় এবং রিফান্ড কীভাবে কাজ করে?' }, 
+      question: { 
+        en: 'Will my emails go to Spam or get blocked?', 
+        bn: 'আমার ইমেইল কি স্প্যাম ফোল্ডারে যাবে বা ডোমেইন ব্লক হওয়ার কোনো ভয় আছে?' 
+      }, 
       answer: { 
-        en: 'Zini-Mail utilizes a fair Saga transaction model: 5 AI Response Credits are billed once for reading the promotional flyer with Vision AI, and exactly 1 credit is reserved per delivered cold email. If an email fails to dispatch due to network or SMTP issues, the reserved credit is immediately and atomically refunded back to your account.', 
-        bn: 'জিনি-মেইলে রয়েছে স্বচ্ছ সাগা ক্রেডিট সিস্টেম: ব্যানার এআই ভিশন দিয়ে ১-বার পড়ার জন্য ৫টি ক্রেডিট এবং সফলভাবে মেইল পাঠানোর জন্য প্রতিটি মেইলে ১টি ক্রেডিট কাটা হয়। নেটওয়ার্ক বা এসএমটিপি ত্রুটির কারণে কোনো মেইল ফেইল করলে সাথে সাথে সম্পূর্ণ ক্রেডিট স্বয়ংক্রিয়ভাবে একাউন্টে রিফান্ড হয়।' 
+        en: 'No. Zini-Mail is built with strict Anti-Spam Safety: (1) It sends safely at a human pace (1 email per minute with random delays) so mail providers see it as organic correspondence. (2) It includes an automatic bounce protector that pauses if invalid emails are detected. (3) It includes a 1-click legal unsubscribe link that keeps your sender reputation 100% clean.', 
+        bn: 'না, কোনো ভয় নেই। জিনি-মেইল শত শত মেইল একসাথে ব্লাস্ট করে না। এটি সাধারণ মানুষের মতো মিনিটে মাত্র ১টি করে মেইল পাঠায় এবং সাথে স্বয়ংক্রিয় বিরতি দেয়। ফলে জিমেইল বা ইয়াহু এটাকে স্প্যাম মনে করে না এবং সরাসরি প্রাইমারি ইনবক্সে ডেলিভারি হয়। সাথে অটোমেটিক বাউন্স গার্ড ও আনসাবস্ক্রাইব সুবিধা থাকায় আপনার ডোমেইন সম্পূর্ণ সুরক্ষিত থাকে।' 
       } 
     },
     { 
       categoryId: 'outreach',
-      question: { en: 'What happens to scraped leads that have a phone number but no public email?', bn: 'যেসব লিডের ফোন নম্বর পাওয়া যায় কিন্তু পাবলিক ইমেইল থাকে না তাদের কী হয়?' }, 
+      question: { 
+        en: 'How do I close sales when someone opens or clicks my email?', 
+        bn: 'ইমেইল পেয়ে কেউ আগ্রহী হলে বা লিংকে ক্লিক করলে আমি কীভাবে সেলস ক্লোজ করব?' 
+      }, 
       answer: { 
-        en: 'They are never wasted! ZiniChat\'s No-Email Phone Harvester automatically segregates these contacts, flags them as `phoneOnly: true`, and stores them safely in your CRM. They never consume email sending quotas, and you can export them or launch targeted WhatsApp broadcast promotions to them with 1 click.', 
-        bn: 'এগুলো কখনোই নষ্ট হয় না! জিনিচ্যাটের No-Email Phone Harvester স্বয়ংক্রিয়ভাবে এদের আলাদা করে সিআরএমে সেভ করে রাখে। এরা কোনো ইমেইল ক্রেডিট নষ্ট করে না এবং ১-ক্লিকেই এদের নিয়ে হোয়াটসঅ্যাপ মার্কেটিং ক্যাম্পেইন চালানো যায়।' 
+        en: 'Zini-Mail tags high-intent leads who clicked your link as "🔥 Clicked (No Order Yet)". With a single click, you can push their verified phone numbers directly into ZiniChat\'s WhatsApp Broadcast or initiate an AI-assisted WhatsApp conversation to answer questions, send product catalogs, and confirm orders instantly!', 
+        bn: 'যারা আপনার ইমেইলের লিংকে ক্লিক করবে তারা হলো আপনার সবচেয়ে আগ্রহী বায়ার। Zini-Mail তাদের "🔥 Clicked (No Order Yet)" হিসেবে আলাদা করে রাখে। আপনি এক ক্লিকেই এই বায়ারদের ফোন নম্বরে WhatsApp এ মেসেজ দিতে পারবেন এবং জিনিচ্যাটের এআই চ্যাটবট সরাসরি হোয়াটসঅ্যাপে তাদের অর্ডার ও পেমেন্ট কনফার্ম করবে।' 
+      } 
+    },
+    { 
+      categoryId: 'outreach',
+      question: { 
+        en: 'What if AI finds a target business phone number but no public email address?', 
+        bn: 'টার্গেট বিজনেসের ফোন নম্বর পাওয়া গেলে কিন্তু পাবলিক ইমেইল না থাকলে কী হবে?' 
+      }, 
+      answer: { 
+        en: 'Nothing is wasted! ZiniChat automatically saves those phone numbers into your CRM Lead Board. You can export them or launch targeted WhatsApp promotional campaigns with 1 click without consuming any email credits.', 
+        bn: 'কোনো লিডই নষ্ট হয় না! যেসব বিজনেসের ফোন নম্বর আছে কিন্তু ইমেইল পাওয়া যায়নি, তাদের ফোন নম্বরগুলো স্বয়ংক্রিয়ভাবে আপনার CRM বোর্ডে সেভ হয়ে যায়। পরবর্তীতে আপনি যেকোনো সময় ১-ক্লিকে তাদের হোয়াটসঅ্যাপে অফার পাঠাতে পারবেন।' 
       } 
     },
 
@@ -484,14 +510,14 @@ export class LandingPageService {
       let needsUpdate = false;
       const updatedData: any = {};
 
-      const hasZiniMailFeature = existingFeatures.some((f: any) => f.id === 'zini_mail');
-      if (!hasZiniMailFeature || existingFeatures.length < 8) {
+      const hasUpdatedZiniMail = existingFeatures.some((f: any) => f.id === 'zini_mail' && f.title?.bn?.includes('জিরো লিস্ট'));
+      if (!hasUpdatedZiniMail || existingFeatures.length < 8) {
         updatedData.featuresJson = OFFICIAL_FEATURES_JSON;
         needsUpdate = true;
       }
 
-      const hasOutreachFaqs = existingFaqs.some((f: any) => f.categoryId === 'outreach');
-      if (!hasOutreachFaqs || existingFaqs.length < 8) {
+      const hasUpdatedOutreachFaqs = existingFaqs.some((f: any) => f.categoryId === 'outreach' && f.question?.bn?.includes('ইমেইল লিস্ট'));
+      if (!hasUpdatedOutreachFaqs || existingFaqs.length < 8) {
         updatedData.faqsJson = OFFICIAL_FAQS_JSON;
         needsUpdate = true;
       }

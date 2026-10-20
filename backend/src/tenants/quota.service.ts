@@ -457,10 +457,25 @@ export class QuotaService {
     });
   }
 
+  private parseFeatures(raw: any): string[] {
+    if (!raw) return [];
+    if (Array.isArray(raw)) return raw;
+    if (typeof raw === 'string') {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed;
+      } catch {
+        return [raw];
+      }
+    }
+    return [];
+  }
+
   async checkFeature(tenantId: string, featureKey: string): Promise<boolean> {
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },
       include: {
+        plan: true,
         subscriptions: { where: { status: { in: ['active', 'trialing'] } }, include: { plan: true }, take: 1 }
       }
     });
@@ -468,16 +483,42 @@ export class QuotaService {
     if (!tenant) return false;
 
     if (tenant.customFeatures !== null) {
-      const customFeatures = tenant.customFeatures as string[];
-      return Array.isArray(customFeatures) && customFeatures.includes(featureKey);
-    }
-
-    const activePlan = tenant.subscriptions?.[0]?.plan;
-    if (activePlan?.features) {
-      const planFeatures = activePlan.features as string[];
-      if (Array.isArray(planFeatures) && planFeatures.includes(featureKey)) {
+      const customFeatures = this.parseFeatures(tenant.customFeatures);
+      if (customFeatures.includes(featureKey)) {
         return true;
       }
+    }
+
+    const activePlan = tenant.subscriptions?.[0]?.plan || tenant.plan;
+    if (activePlan) {
+      const planFeatures = this.parseFeatures(activePlan.features);
+      if (planFeatures.includes(featureKey)) {
+        return true;
+      }
+
+      // Feature mapping aliases:
+      // If plan has 'commerce', it automatically includes 'ai_tool_order_placement' & 'ai_tool_product_matching'
+      if (['ai_tool_order_placement', 'ai_tool_product_matching'].includes(featureKey) && planFeatures.includes('commerce')) {
+        return true;
+      }
+      // If plan has 'ai_assistant', it includes core AI tools
+      if (['ai_tool_order_placement', 'ai_tool_image_reading', 'ai_tool_support_detection', 'ai_tool_product_matching'].includes(featureKey) && planFeatures.includes('ai_assistant')) {
+        return true;
+      }
+
+      // If active plan is not Free, default core tools enabled
+      if (activePlan.name && activePlan.name.toLowerCase() !== 'free') {
+        if (['ai_tool_order_placement', 'ai_tool_image_reading', 'ai_tool_product_matching'].includes(featureKey)) {
+          return true;
+        }
+      }
+    }
+
+    // Fallback: If tenant is in active trial, allow core AI tools
+    const now = new Date();
+    const isWithinTrial = tenant.trialEndsAt ? new Date(tenant.trialEndsAt) > now : false;
+    if (isWithinTrial && ['ai_tool_order_placement', 'ai_tool_image_reading', 'ai_tool_product_matching'].includes(featureKey)) {
+      return true;
     }
 
     return false;

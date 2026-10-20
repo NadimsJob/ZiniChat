@@ -641,20 +641,22 @@ export default function HomePageContent() {
                     <Mail className="w-7 h-7 text-amber-500" />
                   </div>
                   <span className="px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-500 text-[10px] font-extrabold border border-amber-500/20">
-                    B2B Autonomous AI
+                    {language === 'en' ? 'Zero List Required' : 'কোনো ইমেইল লিস্ট লাগবে না'}
                   </span>
                 </div>
-                <h3 className="text-lg font-bold text-foreground mb-2">Zini-Mail AI Cold Outreach</h3>
+                <h3 className="text-lg font-bold text-foreground mb-2">
+                  {language === 'en' ? 'Zini-Mail AI Email Marketing' : 'জিনি-মেইল: অটোমেটেড এআই ইমেইল মার্কেটিং'}
+                </h3>
                 <p className="text-xs text-muted-foreground leading-relaxed mb-4">
                   {language === 'en' 
-                    ? 'Upload any promotional poster, scrape targeted B2B merchant leads from Google SERP, and let AI dispatch safe 1/min cold emails with full revenue attribution.' 
-                    : 'প্রমোশনাল ব্যানার আপলোড করলেই এআই গুগল থেকে বি২বি লিড সংগ্রহ করে মিনিটে ১টি করে নিরাপদ কোল্ড ইমেইল পাঠাবে এবং অর্ডার ও রেভিনিউ ট্র্যাক করবে।'}
+                    ? 'No email list or database needed! Simply enter your target business type and location—AI autonomously finds verified target leads, reads your offer poster, and sends tailored 1-on-1 marketing emails automatically.' 
+                    : 'আপনার কোনো কাস্টমার ইমেইল লিস্ট বা ডেটাবেজ থাকা লাগবে না! শুধু ব্যবসার ধরন ও শহর লিখে দিলেই AI নিজে থেকে টার্গেট বায়ারদের ইমেইল ও ফোন খুঁজে নিয়ে অফার পোস্টার অনুযায়ী পার্সোনালাইজড ইমেইল পাঠিয়ে সেলস আনবে।'}
                 </p>
               </div>
               <ul className="space-y-2 border-t border-border/60 pt-4 text-xs font-semibold text-foreground/80">
-                <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-amber-500" /> AI Vision Poster Reading</li>
-                <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-amber-500" /> 1/min Safe Throttle & Jitter</li>
-                <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-amber-500" /> 🔥 Clicked Retargeting on WA</li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-amber-500" /> {language === 'en' ? 'AI Auto-Discovers Real Target Leads' : 'AI নিজে টার্গেট বিজনেসের ইমেইল ও ফোন খুঁজে বের করে'}</li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-amber-500" /> {language === 'en' ? 'Vision AI Reads Offer Posters & Flyers' : 'অফার ব্যানার ও পোস্টার দেখে অটো প্রফেশনাল ইমেইল তৈরি'}</li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-amber-500" /> {language === 'en' ? '1-Click WhatsApp Chat with Hot Leads' : 'আগ্রহী বায়ারদের ১-ক্লিকে হোয়াটসঅ্যাপে এনে সেলস ক্লোজ'}</li>
               </ul>
             </div>
 

@@ -31,18 +31,18 @@ const faqPageSchema = {
     },
     {
       '@type': 'Question',
-      name: 'What is Zini-Mail AI Cold Email Outreach?',
+      name: 'What is Zini-Mail AI Email Marketing and do I need my own email list?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Zini-Mail is an autonomous lead generation and cold outreach ecosystem that discovers verified B2B leads via SERP and flyer scanning, generates personalized email copy using Gemini AI, delivers safely via your own SMTP, and enables 1-click WhatsApp retargeting for high-intent clickers.',
+        text: 'Zini-Mail is a 100% automated AI email marketing system where you do NOT need your own email list or database. Simply specify your target business keywords and upload your promotional poster. AI searches Google and social pages to discover verified target emails, reads your offer poster using Vision AI, and safely dispatches personalized 1-on-1 marketing emails.',
       },
     },
     {
       '@type': 'Question',
-      name: 'Can I retarget cold email clickers on WhatsApp?',
+      name: 'Can I retarget interested email clickers on WhatsApp?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Yes! ZiniChat tracks email link clicks via secure redirect attribution and provides an automated "Clicked (No Order Yet)" audience filter so you can engage hot prospects directly on WhatsApp with a single click.',
+        text: 'Yes! ZiniChat isolates high-intent leads who clicked your offer link as "Clicked (No Order Yet)" and allows you to initiate WhatsApp conversations with them in a single click.',
       },
     },
     {

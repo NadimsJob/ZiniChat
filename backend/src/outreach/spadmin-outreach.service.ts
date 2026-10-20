@@ -119,10 +119,30 @@ Always include clickable promotional link: {{clickUrl}} and CAN-SPAM unsubscribe
       }
     }
 
+    let connectedAiConfigs: any[] = [];
+    try {
+      if ((this.prisma as any).aiConfig) {
+        connectedAiConfigs = await (this.prisma as any).aiConfig.findMany({
+          orderBy: { createdAt: 'desc' },
+          select: {
+            id: true,
+            name: true,
+            provider: true,
+            modelName: true,
+            isActive: true,
+            isSupportDefault: true,
+          },
+        });
+      }
+    } catch (e) {
+      this.logger.debug('Could not fetch connected AI configs: ' + (e as any)?.message);
+    }
+
     return {
       ...config,
       hasSerpKey,
       maskedSerpKey,
+      connectedAiConfigs,
       serpApiKeyEncrypted: undefined, // Never leak encrypted payload directly
       telemetry: {
         activeCampaignsCount,

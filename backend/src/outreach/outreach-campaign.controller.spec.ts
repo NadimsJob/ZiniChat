@@ -1,10 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { OutreachCampaignController } from './outreach-campaign.controller';
 import { OutreachCampaignService } from './outreach-campaign.service';
+import { StorageService } from '../storage/storage.service';
 
 describe('OutreachCampaignController', () => {
   let controller: OutreachCampaignController;
   let service: OutreachCampaignService;
+  let storageService: StorageService;
 
   const mockService = {
     getOverview: jest.fn().mockResolvedValue({ totalCampaigns: 5, activeCampaigns: 2 }),
@@ -17,14 +19,22 @@ describe('OutreachCampaignController', () => {
     exportLeadsCsv: jest.fn().mockResolvedValue('Business Name,Channel\r\n"Shop","FB"'),
   };
 
+  const mockStorageService = {
+    uploadMedia: jest.fn().mockResolvedValue('/uploads/tenants/tenant-1/banner.webp'),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [OutreachCampaignController],
-      providers: [{ provide: OutreachCampaignService, useValue: mockService }],
+      providers: [
+        { provide: OutreachCampaignService, useValue: mockService },
+        { provide: StorageService, useValue: mockStorageService },
+      ],
     }).compile();
 
     controller = module.get<OutreachCampaignController>(OutreachCampaignController);
     service = module.get<OutreachCampaignService>(OutreachCampaignService);
+    storageService = module.get<StorageService>(StorageService);
   });
 
   it('should get overview', async () => {
@@ -96,5 +106,20 @@ describe('OutreachCampaignController', () => {
     expect(mockService.exportLeadsCsv).toHaveBeenCalledWith('c1', 'tenant-1', 'clicked_no_order');
     expect(mockRes.setHeader).toHaveBeenCalledWith('Content-Type', 'text/csv');
     expect(mockRes.send).toHaveBeenCalledWith('Business Name,Channel\r\n"Shop","FB"');
+  });
+
+  it('should upload banner image and return tenant storage URL', async () => {
+    const req = { user: { tenantId: 'tenant-1' } };
+    const mockFile: any = {
+      originalname: 'banner.png',
+      mimetype: 'image/png',
+      size: 150000,
+      buffer: Buffer.from('fake-image-bytes'),
+    };
+    const res = await controller.uploadBanner(mockFile, req);
+    expect(res.success).toBe(true);
+    expect(res.url).toBe('/uploads/tenants/tenant-1/banner.webp');
+    expect(res.sizeBytes).toBe(150000);
+    expect(mockStorageService.uploadMedia).toHaveBeenCalledWith(mockFile, 'tenant-1');
   });
 });

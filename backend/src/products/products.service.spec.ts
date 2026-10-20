@@ -3,6 +3,7 @@ import { ProductsService } from './products.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { QuotaService } from '../tenants/quota.service';
 import { NotFoundException } from '@nestjs/common';
+import { StorageService } from '../storage/storage.service';
 
 describe('ProductsService', () => {
   let service: ProductsService;
@@ -34,6 +35,7 @@ describe('ProductsService', () => {
         ProductsService,
         { provide: PrismaService, useValue: mockPrisma },
         { provide: QuotaService, useValue: mockQuotaService },
+        { provide: StorageService, useValue: { uploadMedia: jest.fn().mockResolvedValue('/uploads/mock.png'), deleteMedia: jest.fn().mockResolvedValue(true) } },
       ],
     }).compile();
 

@@ -1921,7 +1921,11 @@ export default function InboxPage() {
                 }
               }
 
-              const mediaUrl = m.mediaUrl || (typeof parsedContent === 'object' && parsedContent !== null ? (parsedContent.mediaUrl || parsedContent.localUrl) : null);
+              const mediaUrl = m.mediaUrl || (
+                typeof parsedContent === 'object' && parsedContent !== null 
+                  ? (parsedContent.mediaUrl || parsedContent.url || parsedContent.localUrl || parsedContent.imageUrl || parsedContent.attachmentUrl || parsedContent.fileUrl || parsedContent.link || (parsedContent.thumbnail ? `data:image/jpeg;base64,${parsedContent.thumbnail}` : null))
+                  : (typeof m.content === 'string' && (m.content.startsWith('http://') || m.content.startsWith('https://') || m.content.startsWith('/uploads/') || m.content.startsWith('data:')) ? m.content : null)
+              );
 
               let contentText = '';
               if (typeof parsedContent === 'object' && parsedContent !== null) {
@@ -1950,17 +1954,22 @@ export default function InboxPage() {
 
               const resolveMediaUrl = (url: string | null) => {
                 if (!url) return '';
-                if (url.startsWith('http://') || url.startsWith('https://')) return url;
+                if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('blob:')) return url;
                 const cleanUrl = url.startsWith('/') ? url : `/${url}`;
                 return `${API}${cleanUrl}`;
               };
 
-              // Hide raw URL string if it matches the mediaUrl
-              if (mediaUrl && (contentText === mediaUrl || contentText === m.mediaUrl || contentText === resolveMediaUrl(mediaUrl))) {
+              // Hide redundant raw URL or placeholder string if media is displayed
+              if (mediaUrl && (contentText === mediaUrl || contentText === m.mediaUrl || contentText === resolveMediaUrl(mediaUrl) || (typeof parsedContent === 'object' && contentText === parsedContent.url) || contentText === '[Photo]' || contentText === '[Image]')) {
                 contentText = '';
               }
 
-              const quoted = typeof parsedContent === 'object' && parsedContent !== null ? parsedContent.quotedMessage : null;
+              const isImage = m.type === 'image' || 
+                (typeof parsedContent === 'object' && parsedContent?.type === 'image') || 
+                (typeof mediaUrl === 'string' && (/\.(jpeg|jpg|gif|png|webp|svg)($|\?)/i.test(mediaUrl) || mediaUrl.startsWith('data:image/')));
+
+              const quoted = typeof parsedContent === 'object' && parsedContent !== null ? (parsedContent.quotedMsg || parsedContent.quotedMessage) : null;
+              const quotedMediaUrl = quoted ? (quoted.mediaUrl || quoted.imageUrl || quoted.url || (quoted.thumbnail ? `data:image/jpeg;base64,${quoted.thumbnail}` : null)) : null;
 
               return (
                 <div key={m.id || idx} className={`flex flex-col group ${isInbound ? 'items-start' : 'items-end'} w-full`}>
@@ -1980,20 +1989,43 @@ export default function InboxPage() {
                     }`}>
                     {/* Quoted Message Card */}
                     {quoted && (
-                      <div className={`mb-2 p-2 rounded-lg text-[11px] border-l-4 ${isInbound ? 'bg-background/80 border-primary text-foreground' : 'bg-black/20 border-white text-white'}`}>
-                        <div className="font-bold text-[10px] opacity-90">{quoted.senderName}</div>
-                        <div className="truncate opacity-80">{quoted.text || (quoted.type === 'image' ? '📷 Photo' : 'Attachment')}</div>
+                      <div className={`mb-2 p-2 rounded-lg text-[11px] border-l-4 flex items-center justify-between gap-2 max-w-full ${
+                        isInbound ? 'bg-background/80 border-primary text-foreground' : 'bg-black/20 border-white text-white'
+                      }`}>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-bold text-[10px] opacity-90 flex items-center gap-1.5">
+                            <Reply className="w-3 h-3 text-primary shrink-0" />
+                            <span className="truncate">{quoted.senderName || (quoted.productName ? quoted.productName : (quoted.productId ? 'Product Inquiry' : 'Quoted Message'))}</span>
+                            {quoted.productPrice ? <span className="text-primary font-semibold text-[9px] shrink-0">(BDT {quoted.productPrice})</span> : null}
+                          </div>
+                          <div className="truncate opacity-80 mt-0.5">
+                            {quoted.text || (quoted.type === 'image' || quotedMediaUrl ? '📷 Photo' : 'Attachment')}
+                          </div>
+                        </div>
+                        {quotedMediaUrl && (
+                          <div className="shrink-0">
+                            <img 
+                              src={resolveMediaUrl(quotedMediaUrl)} 
+                              alt="quoted thumbnail" 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setZoomedImage(resolveMediaUrl(quotedMediaUrl));
+                              }}
+                              className="w-10 h-10 rounded object-cover cursor-pointer hover:opacity-90 border border-border/40 shadow-sm" 
+                            />
+                          </div>
+                        )}
                       </div>
                     )}
 
                     {mediaUrl && (
                       <div className="mb-2">
-                        {m.type === 'image' ? (
+                        {isImage ? (
                           <img 
                             src={resolveMediaUrl(mediaUrl)} 
                             alt="attachment" 
                             onClick={() => setZoomedImage(resolveMediaUrl(mediaUrl))}
-                            className="max-h-48 rounded-lg cursor-pointer hover:opacity-90 object-cover" 
+                            className="max-h-56 max-w-full rounded-lg cursor-pointer hover:opacity-90 object-cover shadow-sm" 
                           />
                         ) : m.type === 'audio' ? (
                           <audio controls src={resolveMediaUrl(mediaUrl)} className="max-w-[220px] md:max-w-[280px] h-10 mt-1 outline-none">

@@ -98,7 +98,10 @@ export class BillingService {
   }
 
   async getTenantQuotas(tenantId: string) {
-    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      include: { plan: true },
+    });
     const activeSubscription = await this.prisma.subscription.findFirst({
       where: {
         tenantId,
@@ -109,7 +112,7 @@ export class BillingService {
       orderBy: { currentPeriodEnd: 'desc' }
     });
 
-    const plan = activeSubscription?.plan;
+    const plan = activeSubscription?.plan || tenant?.plan;
 
     // Current channel connection counts (active only)
     const [currentWhatsapp, currentMessenger, currentInstagram, currentWebsiteWidget] = await Promise.all([
@@ -244,7 +247,10 @@ export class BillingService {
     fullPeriodStart?: Date;
     fullPeriodEnd?: Date;
   }> {
-    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      include: { plan: true },
+    });
     const activeSubscription = await this.prisma.subscription.findFirst({
       where: {
         tenantId,
@@ -255,7 +261,7 @@ export class BillingService {
       orderBy: { currentPeriodEnd: 'desc' }
     });
 
-    const plan = activeSubscription?.plan;
+    const plan = activeSubscription?.plan || tenant?.plan;
 
     // Determine period boundaries
     let periodStart: Date;

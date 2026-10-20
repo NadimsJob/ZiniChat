@@ -56,39 +56,103 @@ export class WhatsappService implements IChannelAdapter {
 
             let finalContent = msg[msg.type] || msg.text;
 
+            // Automatically download media (image, audio, video, document) for Cloud API
+            if (['image', 'video', 'audio', 'document'].includes(msg.type) && msg[msg.type]?.id) {
+              const accessToken = connection.accessTokenEncrypted || 
+                                  (connection as any)?.pageAccessToken || 
+                                  process.env.META_ACCESS_TOKEN;
+              if (accessToken && !accessToken.startsWith('mock_')) {
+                try {
+                  const mediaId = msg[msg.type].id;
+                  const mimeType = msg[msg.type].mime_type || (msg.type === 'image' ? 'image/jpeg' : '');
+                  const localUrl = await this.downloadMedia(mediaId, accessToken, msg.type, mimeType);
+                  if (localUrl) {
+                    if (typeof finalContent === 'object' && finalContent !== null) {
+                      finalContent = { ...finalContent, mediaUrl: localUrl, url: localUrl, localUrl };
+                    } else {
+                      finalContent = { body: finalContent, mediaUrl: localUrl, url: localUrl, localUrl };
+                    }
+                  }
+                } catch (dErr: any) {
+                  this.logger.warn(`Failed to download Cloud API media ${msg[msg.type]?.id}: ${dErr.message}`);
+                }
+              }
+            }
+
             // Resolve Quoted Message if user replied to a previous message
             if (msg.context?.id) {
               const stanzaId = msg.context.id;
               let qText = '';
+              let qMediaUrl: string | undefined = undefined;
+              let qType: string | undefined = undefined;
               let referencedProductId: string | undefined = undefined;
               let referencedProductName: string | undefined = undefined;
               let referencedProductPrice: number | undefined = undefined;
+              let senderName: string | undefined = undefined;
 
               try {
-                const origDbMsg = await this.prisma.message.findFirst({
-                  where: { externalMessageId: stanzaId }
+                const origDbMsg: any = await this.prisma.message.findFirst({
+                  where: { externalMessageId: stanzaId },
+                  include: {
+                    senderUser: { select: { name: true } },
+                    aiAssistant: { select: { agentName: true } }
+                  } as any
                 });
-                if (origDbMsg?.content) {
-                  let parsedContent: any = origDbMsg.content;
-                  if (typeof origDbMsg.content === 'string') {
-                    try { parsedContent = JSON.parse(origDbMsg.content); } catch { parsedContent = { text: origDbMsg.content }; }
+                if (origDbMsg) {
+                  if (origDbMsg.senderType === 'ai') {
+                    senderName = origDbMsg.aiAssistant?.agentName || 'AI Assistant';
+                  } else if (origDbMsg.senderType === 'agent' && origDbMsg.senderUser?.name) {
+                    senderName = origDbMsg.senderUser.name;
+                  } else if (origDbMsg.direction === 'outbound') {
+                    senderName = 'Agent';
+                  } else {
+                    senderName = 'Customer';
                   }
-                  if (parsedContent && typeof parsedContent === 'object') {
-                    qText = parsedContent.body || parsedContent.text || parsedContent.caption || '';
-                    if (parsedContent.productId) referencedProductId = parsedContent.productId;
-                    if (parsedContent.productName) referencedProductName = parsedContent.productName;
-                    if (parsedContent.productPrice) referencedProductPrice = parsedContent.productPrice;
+
+                  if (origDbMsg.type) qType = origDbMsg.type;
+
+                  if (origDbMsg.content) {
+                    let parsedContent: any = origDbMsg.content;
+                    if (typeof origDbMsg.content === 'string') {
+                      try { parsedContent = JSON.parse(origDbMsg.content); } catch { parsedContent = { text: origDbMsg.content }; }
+                    }
+                    if (parsedContent && typeof parsedContent === 'object') {
+                      qText = parsedContent.body || parsedContent.text || parsedContent.caption || '';
+                      if (parsedContent.mediaUrl) qMediaUrl = parsedContent.mediaUrl;
+                      else if (parsedContent.url) qMediaUrl = parsedContent.url;
+                      else if (parsedContent.imageUrl) qMediaUrl = parsedContent.imageUrl;
+
+                      if (parsedContent.productId) referencedProductId = parsedContent.productId;
+                      if (parsedContent.productName) referencedProductName = parsedContent.productName;
+                      if (parsedContent.productPrice) referencedProductPrice = parsedContent.productPrice;
+                    }
                   }
                 }
               } catch (dbErr: any) {
                 this.logger.debug(`Cloud API quoted message DB lookup failed for stanza ${stanzaId}: ${dbErr.message}`);
               }
 
-              if (qText) {
+              if (referencedProductId && !qMediaUrl) {
+                try {
+                  const prod = await this.prisma.product.findUnique({
+                    where: { id: referencedProductId },
+                    select: { imageUrl: true, name: true, price: true }
+                  });
+                  if (prod?.imageUrl) qMediaUrl = prod.imageUrl;
+                  if (!referencedProductName && prod?.name) referencedProductName = prod.name;
+                } catch (pErr) {}
+              }
+
+              if (!qText && (qType === 'image' || qMediaUrl)) qText = '📷 Photo';
+
+              if (qText || qMediaUrl) {
                 const quotedMsg = {
                   id: stanzaId,
-                  text: qText,
+                  text: qText || 'Message',
                   stanzaId,
+                  ...(qMediaUrl ? { mediaUrl: qMediaUrl, imageUrl: qMediaUrl } : {}),
+                  ...(qType ? { type: qType } : {}),
+                  ...(senderName ? { senderName } : {}),
                   ...(referencedProductId ? { productId: referencedProductId } : {}),
                   ...(referencedProductName ? { productName: referencedProductName } : {}),
                   ...(referencedProductPrice ? { productPrice: referencedProductPrice } : {})

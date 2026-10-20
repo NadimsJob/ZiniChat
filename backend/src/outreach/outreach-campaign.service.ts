@@ -88,7 +88,7 @@ export class OutreachCampaignService {
     // Tenant storage details
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },
-      select: { storageUsedBytes: true, customStorageLimitMb: true },
+      select: { storageUsedBytes: true, customStorageLimitMb: true, customAllowByok: true },
     });
 
     const tenantStorageUsed = tenant?.storageUsedBytes ? Number(tenant.storageUsedBytes) : Number(totalCampaignStorageBytes);
@@ -97,15 +97,26 @@ export class OutreachCampaignService {
 
     // Available AI Response Credits from Quota / Billing Service
     let availableAiCredits = 0;
+    let isByok = false;
     try {
       const activePeriod = await this.billingService.getActivePeriod(tenantId);
-      const aiUsedCount = await this.prisma.aiUsageLog.count({
-        where: {
-          tenantId,
-          createdAt: { gte: activePeriod.periodStart },
-        },
-      });
-      availableAiCredits = Math.max(0, (activePeriod.aiQuota || 100) - aiUsedCount);
+      const quotas = await this.billingService.getTenantQuotas(tenantId);
+      isByok = !!(quotas?.allowByok || tenant?.customAllowByok);
+
+      if (isByok) {
+        availableAiCredits = 999999;
+      } else {
+        const totalAiQuota = quotas?.aiQuota ?? activePeriod?.aiQuota ?? 100;
+        const aiUsedCount = quotas?.aiUsed !== undefined
+          ? quotas.aiUsed
+          : await this.prisma.aiUsageLog.count({
+              where: {
+                tenantId,
+                createdAt: { gte: activePeriod.periodStart },
+              },
+            });
+        availableAiCredits = Math.max(0, totalAiQuota - aiUsedCount);
+      }
     } catch {
       availableAiCredits = 100; // Fallback estimate
     }
@@ -131,6 +142,7 @@ export class OutreachCampaignService {
       storageLimitBytes,
       storageUsedPercent: storageLimitBytes > 0 ? Number(((tenantStorageUsed / storageLimitBytes) * 100).toFixed(1)) : 0,
       availableAiCredits,
+      isByok,
     };
   }
 

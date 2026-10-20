@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { IChannelAdapter, UnifiedMessage } from '../interfaces/channel-adapter.interface';
 import { PrismaService } from '../../prisma/prisma.service';
+import * as fs from 'fs';
+import * as path from 'path';
+import sharp from 'sharp';
 
 @Injectable()
 export class MessengerService implements IChannelAdapter {
@@ -235,8 +238,21 @@ export class MessengerService implements IChannelAdapter {
         if (msg.attachments && msg.attachments.length > 0) {
           const attachment = msg.attachments[0];
           type = attachment.type; // image, video, audio, file
+          const remoteUrl = attachment.payload?.url;
+          let localUrl: string | undefined = undefined;
+
+          if (remoteUrl) {
+            try {
+              localUrl = await this.downloadAndSaveMedia(remoteUrl, tenantId, type);
+            } catch (dlErr: any) {
+              this.logger.warn(`Failed to download Messenger media (${remoteUrl}): ${dlErr.message}`);
+            }
+          }
+
           finalContent = {
-            url: attachment.payload?.url,
+            url: remoteUrl,
+            mediaUrl: localUrl || remoteUrl,
+            localUrl: localUrl,
             id: attachment.payload?.sticker_id || null,
             text: msg.text || ''
           };
@@ -246,35 +262,76 @@ export class MessengerService implements IChannelAdapter {
         if (msg.reply_to?.mid) {
           const mid = msg.reply_to.mid;
           let qText = '';
+          let qMediaUrl: string | undefined = undefined;
+          let qType: string | undefined = undefined;
           let referencedProductId: string | undefined = undefined;
           let referencedProductName: string | undefined = undefined;
           let referencedProductPrice: number | undefined = undefined;
+          let senderName: string | undefined = undefined;
 
           try {
-            const origDbMsg = await this.prisma.message.findFirst({
-              where: { externalMessageId: mid }
+            const origDbMsg: any = await this.prisma.message.findFirst({
+              where: { externalMessageId: mid },
+              include: {
+                senderUser: { select: { name: true } },
+                aiAssistant: { select: { agentName: true } }
+              } as any
             });
-            if (origDbMsg?.content) {
-              let parsedContent: any = origDbMsg.content;
-              if (typeof origDbMsg.content === 'string') {
-                try { parsedContent = JSON.parse(origDbMsg.content); } catch { parsedContent = { text: origDbMsg.content }; }
+            if (origDbMsg) {
+              if (origDbMsg.senderType === 'ai') {
+                senderName = origDbMsg.aiAssistant?.agentName || 'AI Assistant';
+              } else if (origDbMsg.senderType === 'agent' && origDbMsg.senderUser?.name) {
+                senderName = origDbMsg.senderUser.name;
+              } else if (origDbMsg.direction === 'outbound') {
+                senderName = 'Agent';
+              } else {
+                senderName = 'Customer';
               }
-              if (parsedContent && typeof parsedContent === 'object') {
-                qText = parsedContent.body || parsedContent.text || parsedContent.caption || '';
-                if (parsedContent.productId) referencedProductId = parsedContent.productId;
-                if (parsedContent.productName) referencedProductName = parsedContent.productName;
-                if (parsedContent.productPrice) referencedProductPrice = parsedContent.productPrice;
+
+              if (origDbMsg.type) qType = origDbMsg.type;
+
+              if (origDbMsg.content) {
+                let parsedContent: any = origDbMsg.content;
+                if (typeof origDbMsg.content === 'string') {
+                  try { parsedContent = JSON.parse(origDbMsg.content); } catch { parsedContent = { text: origDbMsg.content }; }
+                }
+                if (parsedContent && typeof parsedContent === 'object') {
+                  qText = parsedContent.body || parsedContent.text || parsedContent.caption || '';
+                  if (parsedContent.mediaUrl) qMediaUrl = parsedContent.mediaUrl;
+                  else if (parsedContent.url) qMediaUrl = parsedContent.url;
+                  else if (parsedContent.imageUrl) qMediaUrl = parsedContent.imageUrl;
+
+                  if (parsedContent.productId) referencedProductId = parsedContent.productId;
+                  if (parsedContent.productName) referencedProductName = parsedContent.productName;
+                  if (parsedContent.productPrice) referencedProductPrice = parsedContent.productPrice;
+                }
               }
             }
           } catch (dbErr: any) {
             this.logger.debug(`Messenger quoted message DB lookup failed for mid ${mid}: ${dbErr.message}`);
           }
 
-          if (qText) {
+          if (referencedProductId && !qMediaUrl) {
+            try {
+              const prod = await this.prisma.product.findUnique({
+                where: { id: referencedProductId },
+                select: { imageUrl: true, name: true, price: true }
+              });
+              if (prod?.imageUrl) qMediaUrl = prod.imageUrl;
+              if (!referencedProductName && prod?.name) referencedProductName = prod.name;
+            } catch (pErr) {}
+          }
+
+          if (!qText && (qType === 'image' || qMediaUrl)) qText = '📷 Photo';
+
+          if (qText || qMediaUrl) {
             const quotedMsg = {
               id: mid,
-              text: qText,
+              text: qText || 'Message',
               mid,
+              ...(qMediaUrl ? { mediaUrl: qMediaUrl, imageUrl: qMediaUrl } : {}),
+              ...(qType ? { type: qType } : {}),
+              ...(senderName ? { senderName } : {}),
               ...(referencedProductId ? { productId: referencedProductId } : {}),
               ...(referencedProductName ? { productName: referencedProductName } : {}),
               ...(referencedProductPrice ? { productPrice: referencedProductPrice } : {})
@@ -353,5 +410,58 @@ export class MessengerService implements IChannelAdapter {
   async sendMessage(tenantId: string, to: string, content: any): Promise<boolean> {
     this.logger.log(`Mock Sending Messenger to ${to} for tenant ${tenantId}`);
     return true;
+  }
+
+  private async downloadAndSaveMedia(mediaUrl: string, tenantId: string, type: string): Promise<string> {
+    const res = await fetch(mediaUrl);
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status} ${res.statusText}`);
+    }
+    const arrayBuffer = await res.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    const uploadDir = path.join(process.cwd(), 'uploads', 'tenants', tenantId);
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    let ext = 'jpg';
+    if (type === 'audio') ext = 'mp3';
+    else if (type === 'video') ext = 'mp4';
+    else if (type === 'file') ext = 'bin';
+
+    let fileName = `fb_${Date.now()}_${Math.round(Math.random() * 1e6)}.${ext}`;
+    let filePath = path.join(uploadDir, fileName);
+
+    if (type === 'image') {
+      try {
+        fileName = `fb_${Date.now()}_${Math.round(Math.random() * 1e6)}.webp`;
+        filePath = path.join(uploadDir, fileName);
+
+        let compressedBuffer = await sharp(buffer)
+          .resize({ width: 720, height: 720, fit: 'inside', withoutEnlargement: true })
+          .webp({ quality: 42, effort: 6, smartSubsample: true })
+          .toBuffer();
+
+        if (compressedBuffer.length > 25 * 1024) {
+          let quality = 35;
+          while (compressedBuffer.length > 20 * 1024 && quality >= 20) {
+            compressedBuffer = await sharp(buffer)
+              .resize({ width: 640, height: 640, fit: 'inside', withoutEnlargement: true })
+              .webp({ quality, effort: 6, smartSubsample: true })
+              .toBuffer();
+            quality -= 5;
+          }
+        }
+        fs.writeFileSync(filePath, compressedBuffer);
+      } catch (cErr: any) {
+        this.logger.warn(`Messenger image compression failed, writing raw: ${cErr.message}`);
+        fs.writeFileSync(filePath, buffer);
+      }
+    } else {
+      fs.writeFileSync(filePath, buffer);
+    }
+
+    return `/uploads/tenants/${tenantId}/${fileName}`;
   }
 }

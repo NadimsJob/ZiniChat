@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import Cookies from 'js-cookie';
 import { toast, Toaster } from 'react-hot-toast';
 import { useLanguage } from '@/components/LanguageProvider';
@@ -22,7 +23,8 @@ import {
   Search,
   Check,
   Layers,
-  Sparkles
+  Sparkles,
+  ExternalLink
 } from 'lucide-react';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -56,6 +58,11 @@ export default function SpadminAiOutreachPage() {
   const [newSuppressionReason, setNewSuppressionReason] = useState('admin_blocked');
   const [addingSuppression, setAddingSuppression] = useState(false);
 
+  // Connected Superadmin AI Models
+  const [connectedAiConfigs, setConnectedAiConfigs] = useState<any[]>([]);
+  const [selectedVisionConfigId, setSelectedVisionConfigId] = useState<string>('custom');
+  const [selectedDraftConfigId, setSelectedDraftConfigId] = useState<string>('custom');
+
   // Form State
   const [showSerpKey, setShowSerpKey] = useState(false);
   const [form, setForm] = useState({
@@ -86,6 +93,37 @@ export default function SpadminAiOutreachPage() {
 
       if (!res.ok) throw new Error('Failed to load global outreach settings');
       const data = await res.json();
+
+      let configs: any[] = [];
+      if (Array.isArray(data.connectedAiConfigs) && data.connectedAiConfigs.length > 0) {
+        configs = data.connectedAiConfigs;
+        setConnectedAiConfigs(configs);
+      } else {
+        try {
+          const aiRes = await fetch(`${API}/ai-config`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (aiRes.ok) {
+            const aiData = await aiRes.json();
+            if (Array.isArray(aiData)) {
+              configs = aiData;
+              setConnectedAiConfigs(aiData);
+            }
+          }
+        } catch (e) {}
+      }
+
+      const activeVision = configs.find(
+        (c: any) => c.provider?.toLowerCase() === (data.visionAiProvider || 'gemini').toLowerCase() && 
+             c.modelName?.toLowerCase() === (data.visionAiModel || 'gemini-1.5-flash').toLowerCase()
+      );
+      setSelectedVisionConfigId(activeVision ? activeVision.id : 'custom');
+
+      const activeDraft = configs.find(
+        (c: any) => c.provider?.toLowerCase() === (data.draftAiProvider || 'gemini').toLowerCase() && 
+             c.modelName?.toLowerCase() === (data.draftAiModel || 'gemini-1.5-flash').toLowerCase()
+      );
+      setSelectedDraftConfigId(activeDraft ? activeDraft.id : 'custom');
 
       setForm({
         serpApiKey: '',
@@ -379,18 +417,31 @@ export default function SpadminAiOutreachPage() {
         
         {/* Section 1: AI Provider & Multi-Model Router */}
         <div className="bg-surface/70 backdrop-blur-xl border border-border p-6 rounded-2xl shadow-xl space-y-6">
-          <div className="flex items-center gap-2.5 pb-4 border-b border-border/50">
-            <Bot className="w-5 h-5 text-emerald-500" />
-            <div>
-              <h2 className="text-sm md:text-base font-bold text-foreground">
-                {language === 'en' ? 'Multi-Model AI Engine Routing' : 'মাল্টি-মডেল এআই ইঞ্জিন রাউটিং'}
-              </h2>
-              <p className="text-[11px] text-muted-foreground">
-                {language === 'en'
-                  ? 'Configure isolated LLM models for creative banner vision extraction and personalized email drafting.'
-                  : 'ব্যানার ভিশন এক্সট্র্যাকশন ও কোল্ড ইমেইল ড্রাফটিং এর জন্য আলাদা এলএলএম মডেল নির্বাচন করুন।'}
-              </p>
+          <div className="flex items-center justify-between pb-4 border-b border-border/50 flex-wrap gap-3">
+            <div className="flex items-center gap-2.5">
+              <Bot className="w-5 h-5 text-emerald-500" />
+              <div>
+                <h2 className="text-sm md:text-base font-bold text-foreground">
+                  {language === 'en' ? 'Multi-Model AI Engine Routing' : 'মাল্টি-মডেল এআই ইঞ্জিন রাউটিং'}
+                </h2>
+                <p className="text-[11px] text-muted-foreground">
+                  {language === 'en'
+                    ? 'Connect and select from your configured AI models in AI Settings for banner vision and cold email copywriting.'
+                    : 'ব্যানার ভিশন এক্সট্র্যাকশন ও কোল্ড ইমেইল ড্রাফটিং এর জন্য আপনার কানেক্ট করা এআই মডেল নির্বাচন করুন।'}
+                </p>
+              </div>
             </div>
+
+            <Link
+              href="/sp@dmin/settings/ai"
+              target="_blank"
+              className="inline-flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 px-3 py-1.5 rounded-xl font-medium transition-colors shrink-0"
+              title={language === 'en' ? 'Connect AI API Keys in AI Settings' : 'এআই সেটিংস পেজে এপিআই কি কানেক্ট করুন'}
+            >
+              <Key className="w-3.5 h-3.5" />
+              <span>{language === 'en' ? 'Connect AI Models & API Keys' : 'এআই মডেল ও এপিআই কি কানেক্ট করুন'}</span>
+              <ExternalLink className="w-3 h-3 ml-0.5 opacity-80" />
+            </Link>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -408,33 +459,82 @@ export default function SpadminAiOutreachPage() {
               <div className="space-y-3">
                 <div>
                   <label className="text-[11px] font-medium text-muted-foreground block mb-1">
-                    {language === 'en' ? 'Provider' : 'প্রোভাইডার'}
+                    {language === 'en' ? 'Select Connected Model' : 'কানেক্ট করা এআই মডেল নির্বাচন করুন'}
                   </label>
                   <select
-                    value={form.visionAiProvider}
-                    onChange={(e) => setForm({ ...form, visionAiProvider: e.target.value })}
+                    value={selectedVisionConfigId}
+                    onChange={(e) => {
+                      const cid = e.target.value;
+                      setSelectedVisionConfigId(cid);
+                      if (cid !== 'custom') {
+                        const found = connectedAiConfigs.find((c: any) => c.id === cid);
+                        if (found) {
+                          setForm((prev) => ({
+                            ...prev,
+                            visionAiProvider: found.provider || 'gemini',
+                            visionAiModel: found.modelName || 'gemini-1.5-flash',
+                          }));
+                        }
+                      }
+                    }}
                     className="w-full bg-surface border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:ring-1 focus:ring-emerald-500 outline-none"
                   >
-                    <option value="gemini">Google Gemini (Recommended for Banner Vision)</option>
-                    <option value="openai">OpenAI</option>
-                    <option value="anthropic">Anthropic Claude</option>
+                    {connectedAiConfigs.length > 0 ? (
+                      <>
+                        <optgroup label={language === 'en' ? 'Connected Models (from AI Settings)' : 'কানেক্ট করা মডেলসমূহ (এআই সেটিংস থেকে)'}>
+                          {connectedAiConfigs.map((c: any) => (
+                            <option key={c.id} value={c.id}>
+                              [{c.provider?.toUpperCase()}] {c.name || c.modelName} ({c.modelName}) {c.isActive ? '• Active' : ''}
+                            </option>
+                          ))}
+                        </optgroup>
+                        <option value="custom">✏️ {language === 'en' ? 'Custom / Manual Model Name' : 'কাস্টম / ম্যানুয়াল মডেলের নাম'}</option>
+                      </>
+                    ) : (
+                      <option value="custom">✏️ {language === 'en' ? 'No connected models found — Custom Input' : 'কোনো মডেল কানেক্ট করা নেই — কাস্টম লিখুন'}</option>
+                    )}
                   </select>
                 </div>
-                <div>
-                  <label className="text-[11px] font-medium text-muted-foreground block mb-1">
-                    {language === 'en' ? 'Model Name' : 'মডেলের নাম'}
-                  </label>
-                  <input
-                    type="text"
-                    value={form.visionAiModel}
-                    onChange={(e) => setForm({ ...form, visionAiModel: e.target.value })}
-                    placeholder="e.g. gemini-1.5-flash"
-                    className="w-full bg-surface border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:ring-1 focus:ring-emerald-500 outline-none font-mono"
-                  />
-                  <span className="text-[10px] text-muted-foreground mt-1 block">
-                    Supported: <code className="text-emerald-400">gemini-1.5-flash</code>, <code className="text-emerald-400">gemini-1.5-pro</code>, <code className="text-emerald-400">gpt-4o</code>, <code className="text-emerald-400">claude-3-5-sonnet-20241022</code>
-                  </span>
-                </div>
+
+                {selectedVisionConfigId !== 'custom' ? (
+                  <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-400 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 font-medium">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <span>{language === 'en' ? 'Selected:' : 'নির্বাচিত:'}</span>
+                      <code className="text-foreground font-mono bg-black/30 px-1.5 py-0.5 rounded text-[11px]">{form.visionAiProvider} / {form.visionAiModel}</code>
+                    </div>
+                    <span className="text-[10px] text-emerald-300 font-semibold px-2 py-0.5 rounded bg-emerald-500/20">API Key Verified</span>
+                  </div>
+                ) : (
+                  <div className="space-y-3 pt-1 border-t border-border/40">
+                    <div>
+                      <label className="text-[11px] font-medium text-muted-foreground block mb-1">
+                        {language === 'en' ? 'Provider' : 'প্রোভাইডার'}
+                      </label>
+                      <select
+                        value={form.visionAiProvider}
+                        onChange={(e) => setForm({ ...form, visionAiProvider: e.target.value })}
+                        className="w-full bg-surface border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:ring-1 focus:ring-emerald-500 outline-none"
+                      >
+                        <option value="gemini">Google Gemini (Recommended for Banner Vision)</option>
+                        <option value="openai">OpenAI</option>
+                        <option value="anthropic">Anthropic Claude</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-medium text-muted-foreground block mb-1">
+                        {language === 'en' ? 'Model Name' : 'মডেলের নাম'}
+                      </label>
+                      <input
+                        type="text"
+                        value={form.visionAiModel}
+                        onChange={(e) => setForm({ ...form, visionAiModel: e.target.value })}
+                        placeholder="e.g. gemini-1.5-flash"
+                        className="w-full bg-surface border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:ring-1 focus:ring-emerald-500 outline-none font-mono"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -452,35 +552,155 @@ export default function SpadminAiOutreachPage() {
               <div className="space-y-3">
                 <div>
                   <label className="text-[11px] font-medium text-muted-foreground block mb-1">
-                    {language === 'en' ? 'Provider' : 'প্রোভাইডার'}
+                    {language === 'en' ? 'Select Connected Model' : 'কানেক্ট করা এআই মডেল নির্বাচন করুন'}
                   </label>
                   <select
-                    value={form.draftAiProvider}
-                    onChange={(e) => setForm({ ...form, draftAiProvider: e.target.value })}
+                    value={selectedDraftConfigId}
+                    onChange={(e) => {
+                      const cid = e.target.value;
+                      setSelectedDraftConfigId(cid);
+                      if (cid !== 'custom') {
+                        const found = connectedAiConfigs.find((c: any) => c.id === cid);
+                        if (found) {
+                          setForm((prev) => ({
+                            ...prev,
+                            draftAiProvider: found.provider || 'gemini',
+                            draftAiModel: found.modelName || 'gemini-1.5-flash',
+                          }));
+                        }
+                      }
+                    }}
                     className="w-full bg-surface border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:ring-1 focus:ring-emerald-500 outline-none"
                   >
-                    <option value="gemini">Google Gemini (Lowest Latency & Context Cache)</option>
-                    <option value="openai">OpenAI</option>
-                    <option value="anthropic">Anthropic Claude</option>
-                    <option value="groq">Groq (Ultra-fast Llama 3.3)</option>
+                    {connectedAiConfigs.length > 0 ? (
+                      <>
+                        <optgroup label={language === 'en' ? 'Connected Models (from AI Settings)' : 'কানেক্ট করা মডেলসমূহ (এআই সেটিংস থেকে)'}>
+                          {connectedAiConfigs.map((c: any) => (
+                            <option key={c.id} value={c.id}>
+                              [{c.provider?.toUpperCase()}] {c.name || c.modelName} ({c.modelName}) {c.isActive ? '• Active' : ''}
+                            </option>
+                          ))}
+                        </optgroup>
+                        <option value="custom">✏️ {language === 'en' ? 'Custom / Manual Model Name' : 'কাস্টম / ম্যানুয়াল মডেলের নাম'}</option>
+                      </>
+                    ) : (
+                      <option value="custom">✏️ {language === 'en' ? 'No connected models found — Custom Input' : 'কোনো মডেল কানেক্ট করা নেই — কাস্টম লিখুন'}</option>
+                    )}
                   </select>
                 </div>
-                <div>
-                  <label className="text-[11px] font-medium text-muted-foreground block mb-1">
-                    {language === 'en' ? 'Model Name' : 'মডেলের নাম'}
-                  </label>
-                  <input
-                    type="text"
-                    value={form.draftAiModel}
-                    onChange={(e) => setForm({ ...form, draftAiModel: e.target.value })}
-                    placeholder="e.g. gemini-1.5-flash"
-                    className="w-full bg-surface border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:ring-1 focus:ring-emerald-500 outline-none font-mono"
-                  />
-                  <span className="text-[10px] text-muted-foreground mt-1 block">
-                    Supported: <code className="text-orange-400">gemini-1.5-flash</code>, <code className="text-orange-400">gpt-4o-mini</code>, <code className="text-orange-400">claude-3-5-haiku-20241022</code>, <code className="text-orange-400">llama-3.3-70b-versatile</code>
-                  </span>
-                </div>
+
+                {selectedDraftConfigId !== 'custom' ? (
+                  <div className="p-2.5 rounded-lg bg-orange-500/10 border border-orange-500/20 text-[11px] text-orange-400 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 font-medium">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-orange-400 shrink-0" />
+                      <span>{language === 'en' ? 'Selected:' : 'নির্বাচিত:'}</span>
+                      <code className="text-foreground font-mono bg-black/30 px-1.5 py-0.5 rounded text-[11px]">{form.draftAiProvider} / {form.draftAiModel}</code>
+                    </div>
+                    <span className="text-[10px] text-orange-300 font-semibold px-2 py-0.5 rounded bg-orange-500/20">API Key Verified</span>
+                  </div>
+                ) : (
+                  <div className="space-y-3 pt-1 border-t border-border/40">
+                    <div>
+                      <label className="text-[11px] font-medium text-muted-foreground block mb-1">
+                        {language === 'en' ? 'Provider' : 'প্রোভাইডার'}
+                      </label>
+                      <select
+                        value={form.draftAiProvider}
+                        onChange={(e) => setForm({ ...form, draftAiProvider: e.target.value })}
+                        className="w-full bg-surface border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:ring-1 focus:ring-emerald-500 outline-none"
+                      >
+                        <option value="gemini">Google Gemini (Lowest Latency & Context Cache)</option>
+                        <option value="openai">OpenAI</option>
+                        <option value="anthropic">Anthropic Claude</option>
+                        <option value="groq">Groq (Ultra-fast Llama 3.3)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-medium text-muted-foreground block mb-1">
+                        {language === 'en' ? 'Model Name' : 'মডেলের নাম'}
+                      </label>
+                      <input
+                        type="text"
+                        value={form.draftAiModel}
+                        onChange={(e) => setForm({ ...form, draftAiModel: e.target.value })}
+                        placeholder="e.g. gemini-1.5-flash"
+                        className="w-full bg-surface border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:ring-1 focus:ring-emerald-500 outline-none font-mono"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
+            </div>
+          </div>
+
+          {/* AI Model Recommendation & Best Practice Suggestion Box */}
+          <div className="p-4 rounded-xl bg-gradient-to-br from-emerald-500/5 via-primary/5 to-amber-500/5 border border-emerald-500/20 space-y-3">
+            <div className="flex items-center gap-2 text-foreground font-bold text-xs">
+              <Sparkles className="w-4 h-4 text-emerald-400" />
+              <span>{language === 'en' ? 'AI Model Recommendations for Outreach Tasks' : 'আউটরিচ কাজের জন্য এআই মডেল ব্যবহারের সুপারিশ'}</span>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              {/* Vision Recommendations */}
+              <div className="bg-background/70 border border-border/60 p-3 rounded-lg space-y-2">
+                <div className="font-semibold text-emerald-400 flex items-center gap-1.5 text-[11px] uppercase tracking-wider">
+                  <Layers className="w-3.5 h-3.5" />
+                  {language === 'en' ? 'Best for Banner Vision Analysis' : 'ব্যানার/ছবি বিশ্লেষণের জন্য সেরা'}
+                </div>
+                <ul className="space-y-1.5 text-[11px] text-muted-foreground leading-relaxed">
+                  <li className="flex items-start gap-1.5">
+                    <span className="text-emerald-500 font-bold shrink-0">⭐ {language === 'en' ? 'Top Pick:' : 'সবচেয়ে সেরা:'}</span>
+                    <span><strong className="text-foreground">Google Gemini 1.5 Flash / 2.0 Flash</strong> — {language === 'en' ? 'Extremely fast, lowest cost, and excels at extracting Bengali & English text, pricing, and offers directly from marketing banners.' : 'অতিদ্রুত, সাশ্রয়ী এবং ব্যানার থেকে বাংলা ও ইংরেজি টেক্সট, অফার ও ক্যাটাগরি নিখুঁতভাবে রিড করতে পারে।'}</span>
+                  </li>
+                  <li className="flex items-start gap-1.5">
+                    <span className="text-blue-400 font-bold shrink-0">⚡ {language === 'en' ? 'Powerful:' : 'পাওয়ারফুল:'}</span>
+                    <span><strong className="text-foreground">OpenAI GPT-4o / GPT-4o mini</strong> — {language === 'en' ? 'High-accuracy object detection and complex multi-product layout understanding.' : 'জটিল আর্টওয়ার্ক বা মাল্টি-অফার ব্যানার নিখুঁতভাবে বিশ্লেষণ করতে পারদর্শী।'}</span>
+                  </li>
+                  <li className="flex items-start gap-1.5">
+                    <span className="text-purple-400 font-bold shrink-0">🎨 {language === 'en' ? 'Creative:' : 'ক্রিয়েটিভ:'}</span>
+                    <span><strong className="text-foreground">Claude 3.5 Sonnet</strong> — {language === 'en' ? 'Nuanced aesthetic appreciation and brand tone interpretation.' : 'ব্র্যান্ড নান্দনিকতা ও ক্রিয়েটিভ ভিজ্যুয়াল অ্যানালাইসিস।'}</span>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Copywriter Recommendations */}
+              <div className="bg-background/70 border border-border/60 p-3 rounded-lg space-y-2">
+                <div className="font-semibold text-orange-400 flex items-center gap-1.5 text-[11px] uppercase tracking-wider">
+                  <Mail className="w-3.5 h-3.5" />
+                  {language === 'en' ? 'Best for Cold Email Copywriting' : 'কোল্ড ইমেইল ড্রাফটিং এর জন্য সেরা'}
+                </div>
+                <ul className="space-y-1.5 text-[11px] text-muted-foreground leading-relaxed">
+                  <li className="flex items-start gap-1.5">
+                    <span className="text-orange-500 font-bold shrink-0">⭐ {language === 'en' ? 'Top Pick:' : 'সবচেয়ে সেরা:'}</span>
+                    <span><strong className="text-foreground">Gemini 1.5 Flash / GPT-4o mini</strong> — {language === 'en' ? 'Ultra-low latency, budget friendly, and writes crisp, consultative B2B cold emails.' : 'সর্বোচ্চ স্পিড, কম টোকেন খরচ এবং টু-দ্য-পয়েন্ট উচ্চ-রূপান্তরকারী B2B কোল্ড ইমেইল পার্সোনালাইজেশন।'}</span>
+                  </li>
+                  <li className="flex items-start gap-1.5">
+                    <span className="text-purple-400 font-bold shrink-0">✍️ {language === 'en' ? 'Human-Like:' : 'হিউম্যান টোন:'}</span>
+                    <span><strong className="text-foreground">Claude 3.5 Haiku / Sonnet</strong> — {language === 'en' ? 'Unmatched natural, non-robotic, persuasive cold outreach email copy.' : 'অত্যন্ত স্বাভাবিক, সাবলীল এবং আন্তরিক হিউম্যান-লাইক কোল্ড ইমেইল লেখার জন্য সেরা।'}</span>
+                  </li>
+                  <li className="flex items-start gap-1.5">
+                    <span className="text-emerald-400 font-bold shrink-0">🚀 {language === 'en' ? 'Ultra Fast:' : 'আল্ট্রা স্পিড:'}</span>
+                    <span><strong className="text-foreground">Groq (Llama 3.3 70B)</strong> — {language === 'en' ? 'Lightning-fast bulk drafting for large prospect queues.' : 'বিশাল লিড কিউয়ের জন্য চোখের পলকে বাল্ক ইমেইল ড্রাফটিং।'}</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-border/40 text-[11px] text-muted-foreground flex items-center justify-between flex-wrap gap-2">
+              <span>
+                {language === 'en'
+                  ? '💡 Tip: You can connect your preferred Gemini, OpenAI, Claude, or Groq API keys anytime in '
+                  : '💡 টিপ: আপনি যেকোনো প্রোভাইডারের API Key দিয়ে ইচ্ছামতো মডেল যুক্ত করতে পারবেন '}
+                <Link href="/sp@dmin/settings/ai" target="_blank" className="text-primary font-semibold hover:underline inline-flex items-center gap-0.5">
+                  {language === 'en' ? 'Superadmin AI Settings' : 'সুপার অ্যাডমিন এআই সেটিংস (/sp@dmin/settings/ai)'}
+                  <ExternalLink className="w-2.5 h-2.5" />
+                </Link>
+                {language === 'en' ? '. The connected models will immediately appear in the dropdowns above for selection.' : ' থেকে। কানেক্ট করা মডেলগুলো স্বয়ংক্রিয়ভাবে উপরের ড্রপডাউনে চলে আসবে।'}
+              </span>
+              <Link href="/sp@dmin/settings/ai" target="_blank" className="text-xs px-2.5 py-1 rounded-md bg-surface hover:bg-border text-foreground border border-border/70 font-medium transition-colors inline-flex items-center gap-1 shrink-0">
+                <Plus className="w-3 h-3 text-emerald-400" />
+                {language === 'en' ? 'Connect AI Model / API Key' : 'এআই মডেল / এপিআই কি যুক্ত করুন'}
+              </Link>
             </div>
           </div>
         </div>

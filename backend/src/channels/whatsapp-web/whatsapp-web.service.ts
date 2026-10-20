@@ -360,46 +360,60 @@ export class WhatsappWebService implements OnModuleInit {
           if (messageContent.imageMessage.contextInfo) {
             quotedMsg = await this.resolveQuotedMessage(messageContent.imageMessage.contextInfo);
           }
-          try {
-            const buffer = await downloadMediaMessage(effectiveMsg as any, 'buffer', {});
-            thumbnail = buffer.toString('base64');
-
-            // Compress and save high-clarity media file to disk (~10-30KB)
-            const uploadPath = path.join(process.cwd(), 'uploads', 'tenants', tenantId);
-            if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true });
-            const fileName = `wa_${Date.now()}_${Math.round(Math.random() * 1E6)}.webp`;
-            const filePath = path.join(uploadPath, fileName);
-
-            let compressedBuffer = buffer;
+          // Immediately preserve inline thumbnail if available from Baileys
+          if (messageContent.imageMessage.jpegThumbnail) {
             try {
-              // Stage 1: Resize to max 720px
-              let sharpInstance = sharp(buffer)
-                .resize({ width: 720, height: 720, fit: 'inside', withoutEnlargement: true });
-
-              // Stage 2: Compress to WebP targeting 10-25KB
-              compressedBuffer = await sharpInstance
-                .webp({ quality: 42, effort: 6, smartSubsample: true })
-                .toBuffer();
-
-              // Stage 3: Adaptive quality reduction if still over 25KB
-              if (compressedBuffer.length > 25 * 1024) {
-                let quality = 35;
-                while (compressedBuffer.length > 20 * 1024 && quality >= 20) {
-                  compressedBuffer = await sharp(buffer)
-                    .resize({ width: 640, height: 640, fit: 'inside', withoutEnlargement: true })
-                    .webp({ quality, effort: 6, smartSubsample: true })
-                    .toBuffer();
-                  quality -= 5;
-                }
-              }
-
-              this.logger.log(`Image compressed: ${buffer.length} → ${compressedBuffer.length} bytes (${Math.round(compressedBuffer.length / 1024)}KB)`);
-            } catch (cErr) {
-              this.logger.warn(`Image compression skipped, saving raw buffer: ${cErr.message}`);
+              thumbnail = Buffer.from(messageContent.imageMessage.jpegThumbnail).toString('base64');
+            } catch (tErr) {}
+          }
+          try {
+            let buffer: Buffer | null = null;
+            try {
+              buffer = await downloadMediaMessage(effectiveMsg as any, 'buffer', {});
+            } catch (e1) {
+              buffer = await downloadMediaMessage(msg as any, 'buffer', {});
             }
 
-            fs.writeFileSync(filePath, compressedBuffer);
-            mediaUrl = `/uploads/tenants/${tenantId}/${fileName}`;
+            if (buffer && buffer.length > 0) {
+              thumbnail = buffer.toString('base64');
+
+              // Compress and save high-clarity media file to disk (~10-30KB)
+              const uploadPath = path.join(process.cwd(), 'uploads', 'tenants', tenantId);
+              if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true });
+              const fileName = `wa_${Date.now()}_${Math.round(Math.random() * 1E6)}.webp`;
+              const filePath = path.join(uploadPath, fileName);
+
+              let compressedBuffer = buffer;
+              try {
+                // Stage 1: Resize to max 720px
+                let sharpInstance = sharp(buffer)
+                  .resize({ width: 720, height: 720, fit: 'inside', withoutEnlargement: true });
+
+                // Stage 2: Compress to WebP targeting 10-25KB
+                compressedBuffer = await sharpInstance
+                  .webp({ quality: 42, effort: 6, smartSubsample: true })
+                  .toBuffer();
+
+                // Stage 3: Adaptive quality reduction if still over 25KB
+                if (compressedBuffer.length > 25 * 1024) {
+                  let quality = 35;
+                  while (compressedBuffer.length > 20 * 1024 && quality >= 20) {
+                    compressedBuffer = await sharp(buffer)
+                      .resize({ width: 640, height: 640, fit: 'inside', withoutEnlargement: true })
+                      .webp({ quality, effort: 6, smartSubsample: true })
+                      .toBuffer();
+                    quality -= 5;
+                  }
+                }
+
+                this.logger.log(`Image compressed: ${buffer.length} → ${compressedBuffer.length} bytes (${Math.round(compressedBuffer.length / 1024)}KB)`);
+              } catch (cErr) {
+                this.logger.warn(`Image compression skipped, saving raw buffer: ${cErr.message}`);
+              }
+
+              fs.writeFileSync(filePath, compressedBuffer);
+              mediaUrl = `/uploads/tenants/${tenantId}/${fileName}`;
+            }
           } catch (err) {
             this.logger.error(`Failed to download image media for ${tenantId}: ${err.message}`);
           }
@@ -656,37 +670,73 @@ export class WhatsappWebService implements OnModuleInit {
   private async resolveQuotedMessage(contextInfo: any): Promise<any> {
     if (!contextInfo?.quotedMessage && !contextInfo?.stanzaId) return null;
     let qText = '';
+    let qMediaUrl: string | undefined = undefined;
+    let qType: string | undefined = undefined;
+
     if (contextInfo.quotedMessage) {
       const qMsg = unwrapBaileysMessage(contextInfo.quotedMessage);
       if (qMsg.conversation) qText = qMsg.conversation;
       else if (qMsg.extendedTextMessage?.text) qText = qMsg.extendedTextMessage.text;
-      else if (qMsg.imageMessage?.caption) qText = qMsg.imageMessage.caption;
-      else if (qMsg.videoMessage?.caption) qText = qMsg.videoMessage.caption;
+      else if (qMsg.imageMessage) {
+        qType = 'image';
+        if (qMsg.imageMessage.caption) qText = qMsg.imageMessage.caption;
+        if (qMsg.imageMessage.jpegThumbnail) {
+          try {
+            qMediaUrl = `data:image/jpeg;base64,${Buffer.from(qMsg.imageMessage.jpegThumbnail).toString('base64')}`;
+          } catch (tErr) {}
+        }
+      } else if (qMsg.videoMessage) {
+        qType = 'video';
+        if (qMsg.videoMessage.caption) qText = qMsg.videoMessage.caption;
+      }
     }
 
     const stanzaId = contextInfo.stanzaId;
     let referencedProductId: string | undefined = undefined;
     let referencedProductName: string | undefined = undefined;
     let referencedProductPrice: number | undefined = undefined;
+    let senderName: string | undefined = undefined;
 
     if (stanzaId) {
       try {
-        const origDbMsg = await this.prisma.message.findFirst({
-          where: { externalMessageId: stanzaId }
+        const origDbMsg: any = await this.prisma.message.findFirst({
+          where: { externalMessageId: stanzaId },
+          include: {
+            senderUser: { select: { name: true } },
+            aiAssistant: { select: { agentName: true } }
+          } as any
         });
-        if (origDbMsg?.content) {
-          let parsedContent: any = origDbMsg.content;
-          if (typeof origDbMsg.content === 'string') {
-            try { parsedContent = JSON.parse(origDbMsg.content); } catch { parsedContent = { text: origDbMsg.content }; }
+        if (origDbMsg) {
+          if (origDbMsg.senderType === 'ai') {
+            senderName = origDbMsg.aiAssistant?.agentName || 'AI Assistant';
+          } else if (origDbMsg.senderType === 'agent' && origDbMsg.senderUser?.name) {
+            senderName = origDbMsg.senderUser.name;
+          } else if (origDbMsg.direction === 'outbound') {
+            senderName = 'Agent';
+          } else {
+            senderName = 'Customer';
           }
-          if (parsedContent && typeof parsedContent === 'object') {
-            if (parsedContent.body && (!qText || qText === '[Media message]')) qText = parsedContent.body;
-            else if (parsedContent.text && (!qText || qText === '[Media message]')) qText = parsedContent.text;
-            else if (parsedContent.caption && (!qText || qText === '[Media message]')) qText = parsedContent.caption;
 
-            if (parsedContent.productId) referencedProductId = parsedContent.productId;
-            if (parsedContent.productName) referencedProductName = parsedContent.productName;
-            if (parsedContent.productPrice) referencedProductPrice = parsedContent.productPrice;
+          if (origDbMsg.type) qType = origDbMsg.type;
+
+          if (origDbMsg.content) {
+            let parsedContent: any = origDbMsg.content;
+            if (typeof origDbMsg.content === 'string') {
+              try { parsedContent = JSON.parse(origDbMsg.content); } catch { parsedContent = { text: origDbMsg.content }; }
+            }
+            if (parsedContent && typeof parsedContent === 'object') {
+              if (parsedContent.body && (!qText || qText === '[Media message]')) qText = parsedContent.body;
+              else if (parsedContent.text && (!qText || qText === '[Media message]')) qText = parsedContent.text;
+              else if (parsedContent.caption && (!qText || qText === '[Media message]')) qText = parsedContent.caption;
+
+              if (parsedContent.mediaUrl) qMediaUrl = parsedContent.mediaUrl;
+              else if (parsedContent.url) qMediaUrl = parsedContent.url;
+              else if (parsedContent.imageUrl) qMediaUrl = parsedContent.imageUrl;
+
+              if (parsedContent.productId) referencedProductId = parsedContent.productId;
+              if (parsedContent.productName) referencedProductName = parsedContent.productName;
+              if (parsedContent.productPrice) referencedProductPrice = parsedContent.productPrice;
+            }
           }
         }
       } catch (dbErr: any) {
@@ -694,11 +744,25 @@ export class WhatsappWebService implements OnModuleInit {
       }
     }
 
-    if (!qText) qText = '[Media message]';
+    if (referencedProductId && !qMediaUrl) {
+      try {
+        const prod = await this.prisma.product.findUnique({
+          where: { id: referencedProductId },
+          select: { imageUrl: true, name: true, price: true }
+        });
+        if (prod?.imageUrl) qMediaUrl = prod.imageUrl;
+        if (!referencedProductName && prod?.name) referencedProductName = prod.name;
+      } catch (pErr) {}
+    }
+
+    if (!qText) qText = qType === 'image' ? '📷 Photo' : '[Media message]';
     return {
       text: qText,
       participant: contextInfo.participant,
       stanzaId,
+      ...(qMediaUrl ? { mediaUrl: qMediaUrl, imageUrl: qMediaUrl } : {}),
+      ...(qType ? { type: qType } : {}),
+      ...(senderName ? { senderName } : {}),
       ...(referencedProductId ? { productId: referencedProductId } : {}),
       ...(referencedProductName ? { productName: referencedProductName } : {}),
       ...(referencedProductPrice ? { productPrice: referencedProductPrice } : {})

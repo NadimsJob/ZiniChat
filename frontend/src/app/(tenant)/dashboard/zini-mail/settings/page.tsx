@@ -24,8 +24,10 @@ import {
   ArrowLeft,
   Server,
   Zap,
-  Info
+  Info,
+  Key
 } from 'lucide-react';
+import SmtpSetupGuide, { SmtpGuideTab } from '@/components/outreach/SmtpSetupGuideModal';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -37,7 +39,8 @@ export default function TenantSmtpSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [showGoogleGuide, setShowGoogleGuide] = useState(false);
+  const [showGuideModal, setShowGuideModal] = useState(false);
+  const [guideTab, setGuideTab] = useState<SmtpGuideTab>('gmail');
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [testRecipient, setTestRecipient] = useState('');
 
@@ -90,6 +93,7 @@ export default function TenantSmtpSettingsPage() {
 
   const handleApplyPreset = (preset: 'gmail' | 'outlook' | 'cpanel') => {
     if (preset === 'gmail') {
+      setGuideTab('gmail');
       setForm((prev) => ({
         ...prev,
         host: 'smtp.gmail.com',
@@ -102,6 +106,7 @@ export default function TenantSmtpSettingsPage() {
           : 'জিমেইল প্রিসেট প্রয়োগ করা হয়েছে (পোর্ট ৪৬৫ SSL)। ১৬ অক্ষরের গুগল অ্যাপ পাসওয়ার্ড দিন!'
       );
     } else if (preset === 'outlook') {
+      setGuideTab('outlook');
       setForm((prev) => ({
         ...prev,
         host: 'smtp.office365.com',
@@ -114,6 +119,7 @@ export default function TenantSmtpSettingsPage() {
           : 'মাইক্রোসফট ৩৬৫ প্রিসেট প্রয়োগ করা হয়েছে (পোর্ট ৫৮৭ STARTTLS)'
       );
     } else if (preset === 'cpanel') {
+      setGuideTab('cpanel');
       setForm((prev) => ({
         ...prev,
         port: 465,
@@ -276,8 +282,24 @@ export default function TenantSmtpSettingsPage() {
 
   if (loading) {
     return (
-      <div className="flex h-96 items-center justify-center">
-        <RefreshCw className="w-8 h-8 animate-spin text-emerald-500" />
+      <div className="p-4 md:p-8 space-y-6 max-w-5xl mx-auto animate-pulse">
+        <div className="bg-surface/70 border border-border p-6 rounded-2xl h-24 space-y-3">
+          <div className="h-4 w-32 bg-surface-hover/80 rounded" />
+          <div className="h-6 w-56 bg-surface-hover/80 rounded-xl" />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-20 bg-surface/70 border border-border rounded-xl" />
+          ))}
+        </div>
+        <div className="bg-surface/70 border border-border p-6 rounded-2xl h-96 space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="h-10 bg-surface-hover/60 rounded-xl" />
+            <div className="h-10 bg-surface-hover/60 rounded-xl" />
+            <div className="h-10 bg-surface-hover/60 rounded-xl" />
+            <div className="h-10 bg-surface-hover/60 rounded-xl" />
+          </div>
+        </div>
       </div>
     );
   }
@@ -401,11 +423,11 @@ export default function TenantSmtpSettingsPage() {
           </div>
           <button
             type="button"
-            onClick={() => setShowGoogleGuide(true)}
-            className="text-[11px] text-emerald-500 hover:text-emerald-400 font-medium flex items-center gap-1 transition-colors"
+            onClick={() => setShowGuideModal(true)}
+            className="text-[11px] text-emerald-500 hover:text-emerald-400 font-semibold flex items-center gap-1.5 transition-colors px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 shadow-sm"
           >
             <HelpCircle className="w-3.5 h-3.5" />
-            {language === 'en' ? 'How to get Gmail App Password?' : 'গুগল অ্যাপ পাসওয়ার্ড কীভাবে পাবেন?'}
+            {language === 'en' ? 'Where to find credentials? (Setup Guide)' : 'পাসওয়ার্ড ও হোস্ট কোথায় পাবেন? (গাইড)'}
           </button>
         </div>
 
@@ -580,6 +602,13 @@ export default function TenantSmtpSettingsPage() {
         </div>
       </form>
 
+      {/* Inline Step-by-Step Instructions Card */}
+      <SmtpSetupGuide
+        mode="inline"
+        activeTab={guideTab}
+        onTabChange={setGuideTab}
+      />
+
       {/* Verification Modal */}
       {showVerifyModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
@@ -639,95 +668,14 @@ export default function TenantSmtpSettingsPage() {
         </div>
       )}
 
-      {/* Google App Password Guide Modal */}
-      {showGoogleGuide && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-card text-card-foreground border border-border max-w-lg w-full rounded-2xl p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-border">
-              <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                <HelpCircle className="w-4 h-4 text-emerald-500" />
-                {language === 'en' ? 'Creating a Google App Password (4 Steps)' : 'গুগল অ্যাপ পাসওয়ার্ড তৈরির ধাপসমূহ'}
-              </h3>
-              <button
-                onClick={() => setShowGoogleGuide(false)}
-                className="text-xs text-muted-foreground hover:text-foreground"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="space-y-3 text-xs text-muted-foreground leading-relaxed">
-              <div className="p-3 bg-background/60 rounded-xl border border-border/50 flex items-start gap-2.5">
-                <span className="w-5 h-5 rounded-full bg-emerald-500/10 text-emerald-500 font-bold text-[11px] flex items-center justify-center shrink-0">
-                  1
-                </span>
-                <div>
-                  <strong className="text-foreground block">
-                    {language === 'en' ? 'Enable 2-Step Verification' : '২-স্টেপ ভেরিফিকেশন অন করুন'}
-                  </strong>
-                  <span>Google requires 2FA enabled on your Google account before generating app passwords.</span>
-                </div>
-              </div>
-
-              <div className="p-3 bg-background/60 rounded-xl border border-border/50 flex items-start gap-2.5">
-                <span className="w-5 h-5 rounded-full bg-emerald-500/10 text-emerald-500 font-bold text-[11px] flex items-center justify-center shrink-0">
-                  2
-                </span>
-                <div>
-                  <strong className="text-foreground block">
-                    {language === 'en' ? 'Visit App Passwords Settings' : 'অ্যাপ পাসওয়ার্ডস পেজে যান'}
-                  </strong>
-                  <span>
-                    Open{' '}
-                    <a
-                      href="https://myaccount.google.com/apppasswords"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-emerald-500 underline inline-flex items-center gap-0.5"
-                    >
-                      myaccount.google.com/apppasswords <ExternalLink className="w-3 h-3" />
-                    </a>
-                  </span>
-                </div>
-              </div>
-
-              <div className="p-3 bg-background/60 rounded-xl border border-border/50 flex items-start gap-2.5">
-                <span className="w-5 h-5 rounded-full bg-emerald-500/10 text-emerald-500 font-bold text-[11px] flex items-center justify-center shrink-0">
-                  3
-                </span>
-                <div>
-                  <strong className="text-foreground block">
-                    {language === 'en' ? 'Name Your App' : 'অ্যাপের নাম দিন'}
-                  </strong>
-                  <span>Type &ldquo;ZiniChat Outreach&rdquo; and click &ldquo;Create&rdquo;.</span>
-                </div>
-              </div>
-
-              <div className="p-3 bg-background/60 rounded-xl border border-border/50 flex items-start gap-2.5">
-                <span className="w-5 h-5 rounded-full bg-emerald-500/10 text-emerald-500 font-bold text-[11px] flex items-center justify-center shrink-0">
-                  4
-                </span>
-                <div>
-                  <strong className="text-foreground block">
-                    {language === 'en' ? 'Copy 16-Character Password' : '১৬ অক্ষরের পাসওয়ার্ড কপি করুন'}
-                  </strong>
-                  <span>Copy the generated password (e.g. <code>abcd efgh ijkl mnop</code>) and paste it into the Password field above.</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-end pt-2">
-              <button
-                type="button"
-                onClick={() => setShowGoogleGuide(false)}
-                className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-semibold hover:bg-emerald-700 transition-colors"
-              >
-                {language === 'en' ? 'Got It' : 'বুঝেছি'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Reusable Tabbed SMTP Guide Modal */}
+      <SmtpSetupGuide
+        mode="modal"
+        isOpen={showGuideModal}
+        onClose={() => setShowGuideModal(false)}
+        activeTab={guideTab}
+        onTabChange={setGuideTab}
+      />
     </div>
   );
 }

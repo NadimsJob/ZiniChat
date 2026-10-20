@@ -159,23 +159,23 @@ const scenarios = [
     },
   },
   {
-    tag: { en: 'B2B Wholesale & Cold Outreach', bn: 'B2B হোলসেল ও কোল্ড আউটরিচ' },
+    tag: { en: 'Zero-List AI Email Marketing', bn: 'লিস্ট ছাড়াই অটোমেটেড ইমেইল মার্কেটিং' },
     title: {
-      en: 'Handicrafts & Lifestyle Exporter — 500 Global Boutique Targets',
-      bn: 'হস্তশিল্প ও লাইফস্টাইল রপ্তানিকারক — ৫০০ গ্লোবাল বুটিক টার্গেট',
+      en: 'Handicrafts & Wholesale Exporter — Zero Email List to Start',
+      bn: 'হস্তশিল্প ও পাইকারি রপ্তানিকারক — শুরুতে কোনো ইমেইল লিস্ট ছিল না',
     },
     problem: {
-      en: 'Found prospective overseas buyers manually on Google and Instagram. Sending individual emails was exhausting, 80% landed in spam due to lack of warmup, and phone leads had no follow-up channel.',
-      bn: 'গুগল ও ইনস্টাগ্রামে ম্যানুয়ালি বিদেশি বায়ার খুঁজতেন। একে একে ইমেইল পাঠাতে প্রচণ্ড সময় লাগত, ওয়ার্মআপের অভাবে ৮০% স্প্যামে যেত এবং ফোন লিডগুলোর কোনো ফলো-আপ হতো না।',
+      en: 'Had great products but zero email database of buyers. Manually searching Google took weeks, cold emails landed in spam, and tracking who was actually interested felt impossible.',
+      bn: 'ভালো পণ্য ছিল কিন্তু কোনো বায়ার বা দোকানের ইমেইল লিস্ট ছিল না। একে একে বায়ার খুঁজতে দিন পার হয়ে যেত, সাধারণ মেইলগুলো স্প্যামে যেত এবং কারা সত্যিই আগ্রহী তা জানার উপায় ছিল না।',
     },
     fix: {
-      en: 'Zini-Mail discovered 350+ verified boutique emails via SERP & flyer analysis. Automated 1/min safe delivery with zero spam penalty. Filtered 45 "Clicked (No Order Yet)" prospects and retargeted via WhatsApp with 1-click.',
-      bn: 'Zini-Mail SERP ও ফ্লায়ার স্ক্যানের মাধ্যমে ৩৫০+ ভেরিফায়েড বুটিক ইমেইল সংগ্রহ করে। ১/মিনিট নিরাপদ ডেলিভারিতে কোনো স্প্যাম সমস্যা ছাড়াই পাঠানো হয়। "Clicked (No Order Yet)" ফিল্টারে ৪৫ জনকে শনাক্ত করে ১-ক্লিকে WhatsApp-এ ফলো-আপ করা হয়।',
+      en: 'Uploaded offer poster to Zini-Mail with target keywords. AI autonomously found 350+ verified boutique emails, crafted 1-on-1 personalized emails, and sent them safely at 1/min. Interested clickers were pushed to WhatsApp with 1 click.',
+      bn: 'জিনি-মেইলে শুধু অফার পোস্টার ও টার্গেট ক্যাটাগরি লিখে দেওয়া হয়। AI নিজে থেকেই ৩৫০+ ভেরিফায়েড বায়ারের ইমেইল ও ফোন খুঁজে বের করে প্রফেশনাল ১-টু-১ মেইল পাঠায়। যারা লিংকে ক্লিক করে, ১-ক্লিকেই তাদের হোয়াটসঅ্যাপে চ্যাট শুরু করা হয়।',
     },
     result: { en: '+৳4,50,000/yr', bn: '+৳৪,৫০,০০০/বছর' },
     resultLabel: {
-      en: '12 new international bulk wholesale orders closed + 60 hrs/mo manual outreach saved',
-      bn: '১২টি নতুন আন্তর্জাতিক বাল্ক হোলসেল অর্ডার সফল + মাসে ৬০ ঘণ্টা ম্যানুয়াল কাজ সাশ্রয়',
+      en: '12 new bulk wholesale clients closed with zero prior email list + 60 hrs/mo manual work saved',
+      bn: 'নিজের কোনো ইমেইল লিস্ট ছাড়াই ১২টি নতুন পাইকারি ক্লায়েন্ট কনফার্ম + মাসে ৬০ ঘণ্টার পরিশ্রম সাশ্রয়',
     },
   },
 ];

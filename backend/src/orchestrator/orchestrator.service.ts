@@ -64,6 +64,53 @@ export class OrchestratorService {
     }
   }
 
+  /**
+   * Ensures that an image path or remote URL is available on local disk.
+   * If it is a remote HTTP/HTTPS URL, downloads it to /uploads/tenants/${tenantId}/.
+   * Returns the absolute path on disk, or null if unresolvable.
+   */
+  async ensureLocalImage(imagePathOrUrl: string, tenantId: string): Promise<string | null> {
+    if (!imagePathOrUrl || typeof imagePathOrUrl !== 'string') return null;
+
+    // Remote URL (Messenger, Instagram, external CDN)
+    if (imagePathOrUrl.startsWith('http://') || imagePathOrUrl.startsWith('https://')) {
+      try {
+        const uploadDir = path.join(process.cwd(), 'uploads', 'tenants', tenantId);
+        if (!fs.existsSync(uploadDir)) {
+          fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        const ext = imagePathOrUrl.includes('.png') ? '.png' : imagePathOrUrl.includes('.webp') ? '.webp' : '.jpg';
+        const fileName = `img_${Date.now()}_${Math.round(Math.random() * 1e6)}${ext}`;
+        const localPath = path.join(uploadDir, fileName);
+
+        const response = await fetch(imagePathOrUrl, { signal: AbortSignal.timeout(15000) });
+        if (!response.ok) {
+          this.logger.warn(`Failed to download remote image from ${imagePathOrUrl}: HTTP ${response.status}`);
+          return null;
+        }
+        const arrayBuffer = await response.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        fs.writeFileSync(localPath, buffer);
+        this.logger.log(`Downloaded remote image to ${localPath} (${buffer.length} bytes)`);
+        return localPath;
+      } catch (err: any) {
+        this.logger.warn(`ensureLocalImage failed to download from ${imagePathOrUrl}: ${err.message}`);
+        return null;
+      }
+    }
+
+    // Local path
+    const absolutePath = path.isAbsolute(imagePathOrUrl)
+      ? imagePathOrUrl
+      : path.join(process.cwd(), imagePathOrUrl.startsWith('/') ? imagePathOrUrl.substring(1) : imagePathOrUrl);
+
+    if (fs.existsSync(absolutePath)) {
+      return absolutePath;
+    }
+
+    return null;
+  }
+
   async processMessage(messageId: string) {
     try {
       // 1. Fetch message and relations
@@ -234,15 +281,21 @@ export class OrchestratorService {
         if (typeof message.content === 'object' && message.content !== null) {
           const cnt = message.content as any;
           userCaption = cnt.caption || cnt.text || '';
-          const relPath = cnt.localUrl || cnt.localPath || cnt.mediaUrl || cnt.url || cnt.path;
-          if (relPath) {
-            const absolutePath = path.isAbsolute(relPath) ? relPath : path.join(process.cwd(), relPath.startsWith('/') ? relPath.substring(1) : relPath);
-            if (fs.existsSync(absolutePath)) {
-              imagePathsToPass.push(absolutePath);
+          const candidate = cnt.localUrl || cnt.localPath || cnt.mediaUrl || cnt.url || cnt.path;
+          if (candidate) {
+            const resolvedPath = await this.ensureLocalImage(candidate, tenantId);
+            if (resolvedPath) {
+              imagePathsToPass.push(resolvedPath);
             }
           }
         } else if (typeof message.content === 'string') {
           userCaption = message.content;
+          if (message.content.startsWith('http://') || message.content.startsWith('https://')) {
+            const resolvedPath = await this.ensureLocalImage(message.content, tenantId);
+            if (resolvedPath) {
+              imagePathsToPass.push(resolvedPath);
+            }
+          }
         }
       }
 
@@ -425,7 +478,7 @@ export class OrchestratorService {
       // Handler 1: Order Placement Flow / Property Inquiry / Hospitality Booking
       let finalReplyText = classification.replyText;
 
-      if (isOrderPlacementActive) {
+      if (isOrderPlacementActive || (message.conversation as any)?.pendingOrderProposal) {
         const orderResult = await this.handleOrderPlacement(
           tenantId,
           message.conversation,
@@ -743,7 +796,15 @@ export class OrchestratorService {
       const isExpired = proposal.expiresAt && new Date(proposal.expiresAt).getTime() < Date.now();
 
       if (!isExpired && proposal.status === 'AWAITING_PAYMENT_PROOF') {
-        const candidateImagePath = imagePaths && imagePaths.length > 0 ? imagePaths[0] : null;
+        let candidateImagePath = imagePaths && imagePaths.length > 0 ? imagePaths[0] : null;
+
+        if (!candidateImagePath && (conversation as any)?.messages?.[0]?.content) {
+          const lastCnt = (conversation as any).messages[0].content;
+          const candidate = lastCnt?.localUrl || lastCnt?.localPath || lastCnt?.mediaUrl || lastCnt?.url;
+          if (candidate) {
+            candidateImagePath = await this.ensureLocalImage(candidate, tenantId);
+          }
+        }
 
         if (candidateImagePath && fs.existsSync(candidateImagePath)) {
           this.logger.log(`Verifying payment screenshot for conversation ${conversationId}: ${candidateImagePath}`);
@@ -752,7 +813,7 @@ export class OrchestratorService {
             proposal.advanceAmountRequired
           );
 
-          if (verification.isPaymentReceipt && verification.status === 'success') {
+          if (verification.isPaymentReceipt && verification.status !== 'failed') {
             if (verification.paidAmount >= proposal.advanceAmountRequired) {
               // Success! Confirm order and create record in Order table
               const validatedItems: { productId: string; quantity: number; priceAtTime: number }[] = [];
@@ -836,6 +897,168 @@ export class OrchestratorService {
             };
           }
         }
+
+        // Flow 1.2: Text-based Transaction ID submission for Awaiting Payment Proof
+        const trxMatch = rawTextLower.match(/(?:trx|trxid|transaction|txnid|ট্রানজেকশন|আইডি)[\s:]*([A-Za-z0-9]{6,16})/i) ||
+                         rawTextLower.match(/\b([A-Z0-9]{8,12})\b/);
+        const hasPaymentClaim = ['paid', 'টাকা পাঠিয়েছি', 'পেমেন্ট করেছি', 'পাঠাইছি', 'send', 'sent', 'done'].some(kw => rawTextLower.includes(kw));
+
+        if (trxMatch && (hasPaymentClaim || rawTextLower.includes('trx') || rawTextLower.includes('ট্রানজেকশন'))) {
+          const trxId = trxMatch[1];
+          this.logger.log(`Customer submitted text TrxID for conversation ${conversationId}: ${trxId}`);
+          
+          const validatedItems: { productId: string; quantity: number; priceAtTime: number }[] = [];
+          let grandTotal = 0;
+
+          for (const item of (proposal.items || [])) {
+            const liveProduct = await this.prisma.product.findFirst({
+              where: { id: item.productId, tenantId, isActive: true }
+            });
+            if (liveProduct) {
+              const price = Number(liveProduct.price);
+              validatedItems.push({
+                productId: liveProduct.id,
+                quantity: item.quantity || 1,
+                priceAtTime: price
+              });
+              grandTotal += price * (item.quantity || 1);
+            }
+          }
+
+          const deliveryCharge = Number(proposal.deliveryCharge || 0);
+          const totalWithDelivery = grandTotal + deliveryCharge;
+          const dueAmount = proposal.paymentPolicy === 'delivery_advance' ? grandTotal : 0;
+          const policyLabel = proposal.paymentPolicy === 'delivery_advance' ? 'Delivery Advance' : 'Full Advance';
+          const areaLabel = proposal.deliveryArea === 'inside_dhaka' ? 'Inside Dhaka' : 'Outside Dhaka';
+
+          const createdOrder = await this.ordersService.createOrder(tenantId, {
+            contactId: conversation.contactId,
+            conversationId: conversation.id,
+            items: validatedItems.length > 0 ? validatedItems : proposal.items,
+            notes: `Policy: ${policyLabel} | Paid Advance via TrxID: ${trxId} | COD Due: ৳${dueAmount} | Area: ${areaLabel}`
+          });
+
+          await (this.prisma as any).order.update({
+            where: { id: createdOrder.id },
+            data: { createdBy: 'ai', status: 'confirmed' }
+          });
+
+          await (this.prisma as any).conversation.update({
+            where: { id: conversationId },
+            data: {
+              pendingOrderProposal: null,
+              hasOrderRequest: true
+            }
+          });
+
+          await this.activityLogService.record({
+            tenantId,
+            conversationId,
+            contactId: conversation.contactId,
+            type: 'ORDER_CREATED',
+            metadataJson: {
+              orderId: createdOrder.id,
+              source: 'ai_text_trx_verified',
+              trxId,
+              totalAmount: totalWithDelivery
+            }
+          });
+
+          const orderNum = createdOrder.id.slice(0, 8);
+          const dueMsg = dueAmount > 0
+            ? `বাকি ৳${dueAmount} প্রোডাক্ট ডেলিভারির সময় ক্যাশ পরিশোধ করবেন।`
+            : `সম্পূর্ণ মূল্য পরিশোধিত হয়েছে।`;
+
+          return {
+            overrideReplyText: `ধন্যবাদ! আপনার ট্রানজেকশন আইডি (${trxId}) গ্রহণ করা হয়েছে এবং অর্ডারটি কনফার্ম করা হয়েছে (অর্ডার নম্বর: #${orderNum})। ${dueMsg}\n\nThank you! Your Transaction ID (${trxId}) has been received and your order has been placed (Order #${orderNum}).`
+          };
+        }
+      }
+    }
+
+    // =========================================================================
+    // Flow 1.8: AI LLM Confirmation Failsafe
+    // If the LLM generated a reply asserting payment verification or order confirmation,
+    // but no order was created yet in Flow 1/1.2, create the order from the pending proposal!
+    // This strictly prevents the disaster of AI confirming to customer while DB has 0 orders.
+    // =========================================================================
+    const confirmationPhrases = [
+      'অর্ডারটি কনফার্ম', 'অর্ডার কনফার্ম', 'পেমেন্ট সফলভাবে যাচাই', 'পেমেন্ট নিশ্চিত',
+      'অর্ডার নিশ্চিত', 'order confirmed', 'order has been confirmed', 'order has been placed'
+    ];
+    const replyContainsConfirmation = confirmationPhrases.some(phrase =>
+      classification.replyText?.toLowerCase().includes(phrase)
+    );
+
+    if (conversation.pendingOrderProposal && replyContainsConfirmation) {
+      const proposal = conversation.pendingOrderProposal as any;
+      if (proposal.items && Array.isArray(proposal.items) && proposal.items.length > 0) {
+        this.logger.log(`LLM asserted order confirmation for conversation ${conversationId}. Executing failsafe order creation.`);
+
+        const validatedItems: { productId: string; quantity: number; priceAtTime: number }[] = [];
+        let grandTotal = 0;
+
+        for (const item of proposal.items) {
+          const liveProduct = await this.prisma.product.findFirst({
+            where: { id: item.productId, tenantId, isActive: true }
+          });
+          if (liveProduct) {
+            const price = Number(liveProduct.price);
+            validatedItems.push({
+              productId: liveProduct.id,
+              quantity: item.quantity || 1,
+              priceAtTime: price
+            });
+            grandTotal += price * (item.quantity || 1);
+          }
+        }
+
+        const deliveryCharge = Number(proposal.deliveryCharge || 0);
+        const totalWithDelivery = grandTotal + deliveryCharge;
+        const dueAmount = proposal.paymentPolicy === 'delivery_advance' ? grandTotal : 0;
+        const policyLabel = proposal.paymentPolicy === 'delivery_advance' ? 'Delivery Advance' : (proposal.paymentPolicy === 'full_advance' ? 'Full Advance' : 'Cash on Delivery');
+        const areaLabel = proposal.deliveryArea === 'inside_dhaka' ? 'Inside Dhaka' : 'Outside Dhaka';
+
+        const createdOrder = await this.ordersService.createOrder(tenantId, {
+          contactId: conversation.contactId,
+          conversationId: conversation.id,
+          items: validatedItems.length > 0 ? validatedItems : proposal.items,
+          notes: `Policy: ${policyLabel} | Total: ৳${totalWithDelivery} | COD Due: ৳${dueAmount} | Area: ${areaLabel} | Source: AI Confirmation Safeguard`
+        });
+
+        await (this.prisma as any).order.update({
+          where: { id: createdOrder.id },
+          data: { createdBy: 'ai', status: 'confirmed' }
+        });
+
+        await (this.prisma as any).conversation.update({
+          where: { id: conversationId },
+          data: {
+            pendingOrderProposal: null,
+            hasOrderRequest: true
+          }
+        });
+
+        await this.activityLogService.record({
+          tenantId,
+          conversationId,
+          contactId: conversation.contactId,
+          type: 'ORDER_CREATED',
+          metadataJson: {
+            orderId: createdOrder.id,
+            source: 'ai_confirmation_failsafe',
+            totalAmount: totalWithDelivery
+          }
+        });
+
+        const orderNum = createdOrder.id.slice(0, 8);
+        const replyWithOrderNum = classification.replyText.includes(orderNum)
+          ? classification.replyText
+          : `${classification.replyText}\n\n(অর্ডার নম্বর: #${orderNum})`;
+
+        return {
+          overrideReplyText: replyWithOrderNum
+        };
       }
     }
 
@@ -1591,6 +1814,8 @@ export class OrchestratorService {
         prompt += `     Full Advance Payment: Entire total bill (Products + Delivery charge) must be paid in advance via bKash/Nagad before order is confirmed.\n`;
         prompt += `     Explain this policy clearly to customer. ${mfsList ? `Payment accounts: ${mfsList}.` : ''} ${cfg.paymentInstructionNote || ''} Instruct customer to send a screenshot or TrxID after paying.\n`;
       }
+      prompt += `   - PAYMENT SCREENSHOT & CONFIRMATION PROTOCOL:\n`;
+      prompt += `     CRITICAL: DO NOT claim or hallucinate that you have verified a payment screenshot or that an order is confirmed on your own in replyText! Automated background verification handles screenshot validation and order creation in the database. Never say "পেমেন্ট সফলভাবে যাচাই করা হয়েছে" or "অর্ডারটি কনফার্ম করা হয়েছে" unless an order number has already been provided in the chat.\n`;
     } else {
       prompt += `2. ORDER PLACEMENT IS DISABLED: Set "intent": "general" or "product_lookup" and do NOT generate order proposals.\n`;
     }

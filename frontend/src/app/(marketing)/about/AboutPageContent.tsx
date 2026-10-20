@@ -38,10 +38,10 @@ const pillars = [
   },
   {
     icon: '🎯',
-    titleEn: 'Autonomous B2B Growth',
-    titleBn: 'স্বয়ংক্রিয় B2B গ্রোথ',
-    descEn: 'From autonomous SERP lead discovery to cold email outreach (Zini-Mail) and 1-click WhatsApp retargeting, we help businesses build scalable outbound revenue pipelines.',
-    descBn: 'স্বয়ংক্রিয় SERP লিড খোঁজা থেকে শুরু করে কোল্ড ইমেইল আউটরিচ (Zini-Mail) এবং ১-ক্লিক WhatsApp রিটার্গেটিং — আউটবাউন্ড রেভিনিউ পাইপলাইন তৈরিতে আমরা পাশে আছি।',
+    titleEn: 'Automated AI Marketing (Zero List)',
+    titleBn: 'অটোমেটেড এআই ইমেইল মার্কেটিং',
+    descEn: 'No pre-collected customer list needed. Zini-Mail uses AI to discover verified target business leads, reads your promotional posters, and sends personalized 1-on-1 marketing emails automatically.',
+    descBn: 'কোনো ইমেইল লিস্ট বা ডেটাবেজ থাকা লাগবে না। জিনি-মেইল AI দিয়ে ইন্টারনেট সার্চ করে টার্গেট বায়ারদের ইমেইল ও ফোন খুঁজে বের করে অফার ব্যানার অনুযায়ী স্বয়ংক্রিয় প্রফেশনাল ইমেইল পাঠিয়ে সেলস এনে দেয়।',
     color: 'from-amber-500/10 to-orange-500/10 border-amber-500/20 text-amber-500 bg-amber-500/10',
   },
 ];

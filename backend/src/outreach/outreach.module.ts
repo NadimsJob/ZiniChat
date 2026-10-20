@@ -5,6 +5,7 @@ import { AuditLogsModule } from '../audit-logs/audit-logs.module';
 import { TenantsModule } from '../tenants/tenants.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { BillingModule } from '../billing/billing.module';
+import { StorageModule } from '../storage/storage.module';
 import { SpadminOutreachService } from './spadmin-outreach.service';
 import { SpadminOutreachController } from './spadmin-outreach.controller';
 import { TenantSmtpService } from './tenant-smtp.service';
@@ -29,6 +30,7 @@ import { OutreachCampaignController } from './outreach-campaign.controller';
     TenantsModule,
     NotificationsModule,
     BillingModule,
+    StorageModule,
     BullModule.registerQueue({
       name: 'outreach-email-queue',
     }),

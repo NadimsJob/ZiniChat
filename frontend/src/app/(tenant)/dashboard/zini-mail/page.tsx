@@ -200,14 +200,42 @@ export default function ZiniMailDashboardPage() {
 
   if (isFeatureLoading || loading) {
     return (
-      <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
-        <div className="h-28 bg-surface/70 backdrop-blur-xl rounded-2xl animate-pulse" />
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-24 bg-surface/70 rounded-2xl animate-pulse" />
+      <div className="p-3 sm:p-6 max-w-7xl mx-auto space-y-6">
+        {/* Header Skeleton */}
+        <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-4 sm:p-6 shadow-sm space-y-4 animate-pulse">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-2">
+              <div className="h-5 w-48 bg-surface-hover rounded-lg" />
+              <div className="h-4 w-72 bg-surface-hover/70 rounded-lg" />
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-9 w-28 bg-surface-hover rounded-xl" />
+              <div className="h-9 w-32 bg-[#1F824A]/30 rounded-xl" />
+            </div>
+          </div>
+          <div className="h-7 w-full bg-surface-hover/40 rounded-xl" />
+        </div>
+
+        {/* 6 KPI Cards Skeleton */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="bg-surface/70 border border-surface-hover rounded-2xl p-3.5 space-y-2 animate-pulse">
+              <div className="h-3 w-16 bg-surface-hover rounded" />
+              <div className="h-6 w-12 bg-surface-hover rounded" />
+              <div className="h-2.5 w-20 bg-surface-hover/60 rounded" />
+            </div>
           ))}
         </div>
-        <div className="h-96 bg-surface/70 rounded-2xl animate-pulse" />
+
+        {/* Campaign List Skeleton */}
+        <div className="bg-surface/70 border border-surface-hover rounded-2xl p-4 shadow-sm space-y-3 animate-pulse">
+          <div className="h-8 w-60 bg-surface-hover rounded-xl" />
+          <div className="space-y-2 pt-2">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-16 bg-surface-hover/50 rounded-xl" />
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -483,198 +511,366 @@ export default function ZiniMailDashboardPage() {
             </Link>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-[12px]">
-              <thead className="bg-surface/50 border-b border-surface-hover text-muted-foreground uppercase text-[10px] tracking-wider font-semibold">
-                <tr>
-                  <th className="py-3 px-4">{language === 'en' ? 'Campaign' : 'ক্যাম্পেইন'}</th>
-                  <th className="py-3 px-3">{language === 'en' ? 'Status' : 'অবস্থা'}</th>
-                  <th className="py-3 px-3">{language === 'en' ? 'Progress' : 'অগ্রগতি'}</th>
-                  <th className="py-3 px-3">{language === 'en' ? 'Opens' : 'ওপেন'}</th>
-                  <th className="py-3 px-3">{language === 'en' ? 'Clicks' : 'ক্লিক'}</th>
-                  <th className="py-3 px-3">{language === 'en' ? '🔥 Clicked (No Order)' : '🔥 ক্লিক (বাকি)'}</th>
-                  <th className="py-3 px-3">{language === 'en' ? 'Sales / Revenue' : 'বিক্রয়'}</th>
-                  <th className="py-3 px-4 text-right">{language === 'en' ? 'Actions' : 'অ্যাকশন'}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-surface-hover/60">
-                {filteredCampaigns.map((c) => {
-                  const isActionLoading = actionLoadingId === c.id;
-                  const isDeleting = deletingId === c.id;
+          <div>
+            {/* Mobile View: High-density Glassmorphic Cards (Rule 3) */}
+            <div className="md:hidden divide-y divide-surface-hover/60">
+              {filteredCampaigns.map((c) => {
+                const isActionLoading = actionLoadingId === c.id;
+                const isDeleting = deletingId === c.id;
+                const progressPercent = c.totalLimit > 0
+                  ? Math.min(100, Math.round((c.sentCount / c.totalLimit) * 100))
+                  : 0;
 
-                  const progressPercent = c.totalLimit > 0
-                    ? Math.min(100, Math.round((c.sentCount / c.totalLimit) * 100))
-                    : 0;
+                return (
+                  <div key={c.id} className="p-3.5 space-y-3 hover:bg-surface-hover/20 transition-colors">
+                    {/* Header Row: Title + Status */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="space-y-1 flex-1 min-w-0">
+                        <Link
+                          href={`/dashboard/zini-mail/${c.id}`}
+                          className="font-bold text-[13px] text-foreground hover:text-[#1F824A] transition-colors flex items-center gap-1"
+                        >
+                          <span className="truncate">{c.name}</span>
+                          <ChevronRight className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
+                        </Link>
+                        <div className="flex items-center gap-1.5 flex-wrap text-[10px] text-muted-foreground">
+                          <span>{new Date(c.createdAt).toLocaleDateString()}</span>
+                          <span>•</span>
+                          <div className="flex items-center gap-1">
+                            {(c.channels || []).map((ch: string) => (
+                              <span
+                                key={ch}
+                                className="px-1.5 py-0.2 rounded text-[9px] uppercase font-bold bg-surface-hover text-muted-foreground border border-surface-hover"
+                              >
+                                {ch}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
 
-                  return (
-                    <tr
-                      key={c.id}
-                      className="hover:bg-surface-hover/30 transition-colors group"
-                    >
-                      {/* Name & Channel */}
-                      <td className="py-3.5 px-4">
-                        <div className="space-y-0.5">
-                          <Link
-                            href={`/dashboard/zini-mail/${c.id}`}
-                            className="font-bold text-foreground hover:text-[#1F824A] transition-colors flex items-center gap-1.5"
-                          >
-                            {c.name}
-                            <ChevronRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                          </Link>
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="text-[10px] text-muted-foreground">
-                              {new Date(c.createdAt).toLocaleDateString()}
-                            </span>
-                            <span className="text-[10px] text-muted-foreground/40">•</span>
-                            <div className="flex items-center gap-1">
-                              {(c.channels || []).map((ch: string) => (
-                                <span
-                                  key={ch}
-                                  className="px-1.5 py-0.2 rounded text-[9px] uppercase font-bold bg-surface-hover text-muted-foreground border border-surface-hover"
-                                >
-                                  {ch}
-                                </span>
-                              ))}
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border shrink-0 ${
+                          c.status === 'running'
+                            ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 animate-pulse'
+                            : c.status === 'paused'
+                            ? 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                            : c.status === 'completed'
+                            ? 'bg-blue-500/10 text-blue-500 border-blue-500/20'
+                            : 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20'
+                        }`}
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                        {c.status.toUpperCase()}
+                      </span>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                        <span>
+                          {language === 'en' ? 'Sent:' : 'পাঠানো:'}{' '}
+                          <strong className="text-foreground">{c.sentCount}</strong> / {c.totalLimit}
+                        </span>
+                        <span className="font-bold text-foreground">{progressPercent}%</span>
+                      </div>
+                      <div className="w-full bg-surface-hover rounded-full h-1.5 overflow-hidden">
+                        <div
+                          className="bg-[#1F824A] h-full transition-all rounded-full"
+                          style={{ width: `${progressPercent}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Metrics 4-Grid */}
+                    <div className="grid grid-cols-4 gap-1.5 p-2 rounded-xl bg-surface/50 border border-surface-hover/80 text-center">
+                      <div>
+                        <span className="text-[9px] uppercase text-muted-foreground block">
+                          {language === 'en' ? 'Opens' : 'ওপেন'}
+                        </span>
+                        <span className="text-[11px] font-bold text-foreground block">{c.opensCount}</span>
+                        <span className="text-[9px] text-muted-foreground block">
+                          {c.sentCount > 0 ? ((c.opensCount / c.sentCount) * 100).toFixed(0) : 0}%
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[9px] uppercase text-muted-foreground block">
+                          {language === 'en' ? 'Clicks' : 'ক্লিক'}
+                        </span>
+                        <span className="text-[11px] font-bold text-foreground block">{c.clicksCount}</span>
+                        <span className="text-[9px] text-muted-foreground block">
+                          {c.sentCount > 0 ? ((c.clicksCount / c.sentCount) * 100).toFixed(0) : 0}%
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[9px] uppercase text-amber-500 font-bold block flex items-center justify-center gap-0.5">
+                          <Flame className="w-2.5 h-2.5" />
+                          {language === 'en' ? 'Hot' : 'হট'}
+                        </span>
+                        <span className="text-[11px] font-bold text-amber-500 block">{c.clickedNoOrderCount ?? 0}</span>
+                      </div>
+                      <div>
+                        <span className="text-[9px] uppercase text-[#1F824A] font-bold block">
+                          {language === 'en' ? 'Sales' : 'বিক্রয়'}
+                        </span>
+                        <span className="text-[11px] font-bold text-[#1F824A] block truncate">
+                          ৳{Number(c.revenueGenerated || 0).toLocaleString()}
+                        </span>
+                        <span className="text-[9px] text-muted-foreground block">
+                          {c.ordersCount} {language === 'en' ? 'orders' : 'অর্ডার'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Single-line Actions */}
+                    <div className="flex items-center justify-between gap-2 pt-1">
+                      <Link
+                        href={`/dashboard/zini-mail/${c.id}`}
+                        className="flex-1 py-1.5 px-3 rounded-xl bg-surface border border-surface-hover hover:bg-surface-hover text-foreground font-semibold text-[11px] flex items-center justify-center gap-1.5 transition-colors"
+                      >
+                        <Eye className="w-3.5 h-3.5 text-muted-foreground" />
+                        <span>{language === 'en' ? 'View Details' : 'বিস্তারিত দেখুন'}</span>
+                      </Link>
+
+                      {c.status === 'running' ? (
+                        <button
+                          onClick={() => handlePauseCampaign(c.id)}
+                          disabled={isActionLoading}
+                          className="py-1.5 px-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border border-amber-500/30 font-semibold text-[11px] flex items-center justify-center gap-1.5 transition-colors disabled:opacity-60"
+                        >
+                          {isActionLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Pause className="w-3.5 h-3.5" />}
+                          <span>{language === 'en' ? 'Pause' : 'স্থগিত'}</span>
+                        </button>
+                      ) : c.status === 'paused' ? (
+                        <button
+                          onClick={() => handleResumeCampaign(c.id)}
+                          disabled={isActionLoading}
+                          className="py-1.5 px-3 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border border-emerald-500/30 font-semibold text-[11px] flex items-center justify-center gap-1.5 transition-colors disabled:opacity-60"
+                        >
+                          {isActionLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
+                          <span>{language === 'en' ? 'Resume' : 'চালু করুন'}</span>
+                        </button>
+                      ) : c.status === 'draft' ? (
+                        <button
+                          onClick={() => handleStartCampaign(c.id)}
+                          disabled={isActionLoading}
+                          className="py-1.5 px-3 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border border-emerald-500/30 font-semibold text-[11px] flex items-center justify-center gap-1.5 transition-colors disabled:opacity-60"
+                        >
+                          {isActionLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
+                          <span>{language === 'en' ? 'Launch' : 'শুরু করুন'}</span>
+                        </button>
+                      ) : null}
+
+                      {c.status !== 'running' && (
+                        <button
+                          onClick={() => handleDeleteCampaign(c.id)}
+                          disabled={isDeleting}
+                          className="p-1.5 rounded-xl text-rose-500/80 hover:text-rose-500 hover:bg-rose-500/10 border border-surface-hover transition-colors disabled:opacity-60"
+                          title={language === 'en' ? 'Delete' : 'মুছে ফেলুন'}
+                        >
+                          {isDeleting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left text-[12px]">
+                <thead className="bg-surface/50 border-b border-surface-hover text-muted-foreground uppercase text-[10px] tracking-wider font-semibold">
+                  <tr>
+                    <th className="py-3 px-4">{language === 'en' ? 'Campaign' : 'ক্যাম্পেইন'}</th>
+                    <th className="py-3 px-3">{language === 'en' ? 'Status' : 'অবস্থা'}</th>
+                    <th className="py-3 px-3">{language === 'en' ? 'Progress' : 'অগ্রগতি'}</th>
+                    <th className="py-3 px-3">{language === 'en' ? 'Opens' : 'ওপেন'}</th>
+                    <th className="py-3 px-3">{language === 'en' ? 'Clicks' : 'ক্লিক'}</th>
+                    <th className="py-3 px-3">{language === 'en' ? '🔥 Clicked (No Order)' : '🔥 ক্লিক (বাকি)'}</th>
+                    <th className="py-3 px-3">{language === 'en' ? 'Sales / Revenue' : 'বিক্রয়'}</th>
+                    <th className="py-3 px-4 text-right">{language === 'en' ? 'Actions' : 'অ্যাকশন'}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-surface-hover/60">
+                  {filteredCampaigns.map((c) => {
+                    const isActionLoading = actionLoadingId === c.id;
+                    const isDeleting = deletingId === c.id;
+
+                    const progressPercent = c.totalLimit > 0
+                      ? Math.min(100, Math.round((c.sentCount / c.totalLimit) * 100))
+                      : 0;
+
+                    return (
+                      <tr
+                        key={c.id}
+                        className="hover:bg-surface-hover/30 transition-colors group"
+                      >
+                        {/* Name & Channel */}
+                        <td className="py-3.5 px-4">
+                          <div className="space-y-0.5">
+                            <Link
+                              href={`/dashboard/zini-mail/${c.id}`}
+                              className="font-bold text-foreground hover:text-[#1F824A] transition-colors flex items-center gap-1.5"
+                            >
+                              {c.name}
+                              <ChevronRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </Link>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-[10px] text-muted-foreground">
+                                {new Date(c.createdAt).toLocaleDateString()}
+                              </span>
+                              <span className="text-[10px] text-muted-foreground/40">•</span>
+                              <div className="flex items-center gap-1">
+                                {(c.channels || []).map((ch: string) => (
+                                  <span
+                                    key={ch}
+                                    className="px-1.5 py-0.2 rounded text-[9px] uppercase font-bold bg-surface-hover text-muted-foreground border border-surface-hover"
+                                  >
+                                    {ch}
+                                  </span>
+                                ))}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </td>
+                        </td>
 
-                      {/* Status */}
-                      <td className="py-3.5 px-3">
-                        <span
-                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${
-                            c.status === 'running'
-                              ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 animate-pulse'
-                              : c.status === 'paused'
-                              ? 'bg-amber-500/10 text-amber-500 border-amber-500/20'
-                              : c.status === 'completed'
-                              ? 'bg-blue-500/10 text-blue-500 border-blue-500/20'
-                              : 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20'
-                          }`}
-                        >
-                          <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                          {c.status.toUpperCase()}
-                        </span>
-                      </td>
-
-                      {/* Progress */}
-                      <td className="py-3.5 px-3">
-                        <div className="space-y-1 w-28">
-                          <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                            <span>{c.sentCount} sent</span>
-                            <span className="font-semibold text-foreground">{progressPercent}%</span>
-                          </div>
-                          <div className="w-full bg-surface-hover rounded-full h-1.5 overflow-hidden">
-                            <div
-                              className="bg-[#1F824A] h-full transition-all"
-                              style={{ width: `${progressPercent}%` }}
-                            />
-                          </div>
-                          <div className="text-[9px] text-muted-foreground/70">
-                            Limit: {c.totalLimit}
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Opens */}
-                      <td className="py-3.5 px-3">
-                        <div className="font-bold text-foreground">
-                          {c.opensCount}
-                        </div>
-                        <div className="text-[10px] text-muted-foreground">
-                          {c.sentCount > 0 ? ((c.opensCount / c.sentCount) * 100).toFixed(1) : 0}%
-                        </div>
-                      </td>
-
-                      {/* Clicks */}
-                      <td className="py-3.5 px-3">
-                        <div className="font-bold text-foreground">
-                          {c.clicksCount}
-                        </div>
-                        <div className="text-[10px] text-muted-foreground">
-                          {c.sentCount > 0 ? ((c.clicksCount / c.sentCount) * 100).toFixed(1) : 0}%
-                        </div>
-                      </td>
-
-                      {/* 🔥 Clicked No Order */}
-                      <td className="py-3.5 px-3">
-                        <Link
-                          href={`/dashboard/zini-mail/${c.id}?filter=clicked_no_order`}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border border-amber-500/20 transition-colors"
-                        >
-                          <Flame className="w-3.5 h-3.5 text-amber-500" />
-                          <span>{c.clickedNoOrderCount ?? 0}</span>
-                        </Link>
-                      </td>
-
-                      {/* Orders & Revenue */}
-                      <td className="py-3.5 px-3">
-                        <div className="font-bold text-[#1F824A]">
-                          ৳{Number(c.revenueGenerated || 0).toLocaleString()}
-                        </div>
-                        <div className="text-[10px] text-muted-foreground">
-                          {c.ordersCount} {language === 'en' ? 'orders' : 'অর্ডার'}
-                        </div>
-                      </td>
-
-                      {/* Actions */}
-                      <td className="py-3.5 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          {c.status === 'running' ? (
-                            <button
-                              onClick={() => handlePauseCampaign(c.id)}
-                              disabled={isActionLoading}
-                              className="p-1.5 rounded-lg text-amber-500 hover:bg-amber-500/10 transition-colors border border-surface-hover"
-                              title={language === 'en' ? 'Pause' : 'স্থগিত করুন'}
-                            >
-                              <Pause className="w-3.5 h-3.5" />
-                            </button>
-                          ) : c.status === 'paused' ? (
-                            <button
-                              onClick={() => handleResumeCampaign(c.id)}
-                              disabled={isActionLoading}
-                              className="p-1.5 rounded-lg text-emerald-500 hover:bg-emerald-500/10 transition-colors border border-surface-hover"
-                              title={language === 'en' ? 'Resume' : 'চালু করুন'}
-                            >
-                              <Play className="w-3.5 h-3.5" />
-                            </button>
-                          ) : c.status === 'draft' ? (
-                            <button
-                              onClick={() => handleStartCampaign(c.id)}
-                              disabled={isActionLoading}
-                              className="p-1.5 rounded-lg text-emerald-500 hover:bg-emerald-500/10 transition-colors border border-surface-hover"
-                              title={language === 'en' ? 'Launch' : 'ক্যাম্পেইন শুরু করুন'}
-                            >
-                              <Play className="w-3.5 h-3.5" />
-                            </button>
-                          ) : null}
-
-                          <Link
-                            href={`/dashboard/zini-mail/${c.id}`}
-                            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-colors border border-surface-hover"
-                            title={language === 'en' ? 'View Details' : 'বিস্তারিত দেখুন'}
+                        {/* Status */}
+                        <td className="py-3.5 px-3">
+                          <span
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                              c.status === 'running'
+                                ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 animate-pulse'
+                                : c.status === 'paused'
+                                ? 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                                : c.status === 'completed'
+                                ? 'bg-blue-500/10 text-blue-500 border-blue-500/20'
+                                : 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20'
+                            }`}
                           >
-                            <Eye className="w-3.5 h-3.5" />
-                          </Link>
+                            <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                            {c.status.toUpperCase()}
+                          </span>
+                        </td>
 
-                          {c.status !== 'running' && (
-                            <button
-                              onClick={() => handleDeleteCampaign(c.id)}
-                              disabled={isDeleting}
-                              className="p-1.5 rounded-lg text-rose-500/80 hover:text-rose-500 hover:bg-rose-500/10 transition-colors border border-surface-hover"
-                              title={language === 'en' ? 'Delete' : 'মুছে ফেলুন'}
+                        {/* Progress */}
+                        <td className="py-3.5 px-3">
+                          <div className="space-y-1 w-28">
+                            <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                              <span>{c.sentCount} sent</span>
+                              <span className="font-semibold text-foreground">{progressPercent}%</span>
+                            </div>
+                            <div className="w-full bg-surface-hover rounded-full h-1.5 overflow-hidden">
+                              <div
+                                className="bg-[#1F824A] h-full transition-all"
+                                style={{ width: `${progressPercent}%` }}
+                              />
+                            </div>
+                            <div className="text-[9px] text-muted-foreground/70">
+                              Limit: {c.totalLimit}
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Opens */}
+                        <td className="py-3.5 px-3">
+                          <div className="font-bold text-foreground">
+                            {c.opensCount}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground">
+                            {c.sentCount > 0 ? ((c.opensCount / c.sentCount) * 100).toFixed(1) : 0}%
+                          </div>
+                        </td>
+
+                        {/* Clicks */}
+                        <td className="py-3.5 px-3">
+                          <div className="font-bold text-foreground">
+                            {c.clicksCount}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground">
+                            {c.sentCount > 0 ? ((c.clicksCount / c.sentCount) * 100).toFixed(1) : 0}%
+                          </div>
+                        </td>
+
+                        {/* 🔥 Clicked No Order */}
+                        <td className="py-3.5 px-3">
+                          <Link
+                            href={`/dashboard/zini-mail/${c.id}?filter=clicked_no_order`}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border border-amber-500/20 transition-colors"
+                          >
+                            <Flame className="w-3.5 h-3.5 text-amber-500" />
+                            <span>{c.clickedNoOrderCount ?? 0}</span>
+                          </Link>
+                        </td>
+
+                        {/* Orders & Revenue */}
+                        <td className="py-3.5 px-3">
+                          <div className="font-bold text-[#1F824A]">
+                            ৳{Number(c.revenueGenerated || 0).toLocaleString()}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground">
+                            {c.ordersCount} {language === 'en' ? 'orders' : 'অর্ডার'}
+                          </div>
+                        </td>
+
+                        {/* Actions */}
+                        <td className="py-3.5 px-4 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            {c.status === 'running' ? (
+                              <button
+                                onClick={() => handlePauseCampaign(c.id)}
+                                disabled={isActionLoading}
+                                className="p-1.5 rounded-lg text-amber-500 hover:bg-amber-500/10 transition-colors border border-surface-hover disabled:opacity-60"
+                                title={language === 'en' ? 'Pause' : 'স্থগিত করুন'}
+                              >
+                                {isActionLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Pause className="w-3.5 h-3.5" />}
+                              </button>
+                            ) : c.status === 'paused' ? (
+                              <button
+                                onClick={() => handleResumeCampaign(c.id)}
+                                disabled={isActionLoading}
+                                className="p-1.5 rounded-lg text-emerald-500 hover:bg-emerald-500/10 transition-colors border border-surface-hover disabled:opacity-60"
+                                title={language === 'en' ? 'Resume' : 'চালু করুন'}
+                              >
+                                {isActionLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
+                              </button>
+                            ) : c.status === 'draft' ? (
+                              <button
+                                onClick={() => handleStartCampaign(c.id)}
+                                disabled={isActionLoading}
+                                className="p-1.5 rounded-lg text-emerald-500 hover:bg-emerald-500/10 transition-colors border border-surface-hover disabled:opacity-60"
+                                title={language === 'en' ? 'Launch' : 'ক্যাম্পেইন শুরু করুন'}
+                              >
+                                {isActionLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
+                              </button>
+                            ) : null}
+
+                            <Link
+                              href={`/dashboard/zini-mail/${c.id}`}
+                              className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-colors border border-surface-hover"
+                              title={language === 'en' ? 'View Details' : 'বিস্তারিত দেখুন'}
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                              <Eye className="w-3.5 h-3.5" />
+                            </Link>
+
+                            {c.status !== 'running' && (
+                              <button
+                                onClick={() => handleDeleteCampaign(c.id)}
+                                disabled={isDeleting}
+                                className="p-1.5 rounded-lg text-rose-500/80 hover:text-rose-500 hover:bg-rose-500/10 transition-colors border border-surface-hover disabled:opacity-60"
+                                title={language === 'en' ? 'Delete' : 'মুছে ফেলুন'}
+                              >
+                                {isDeleting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>

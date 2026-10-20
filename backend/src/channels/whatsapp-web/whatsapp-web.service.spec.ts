@@ -186,8 +186,12 @@ describe('WhatsappWebService', () => {
       mockPrisma.message.findFirst.mockResolvedValue({
         id: 'db-msg-1',
         externalMessageId: 'stanza-123',
+        senderType: 'ai',
+        aiAssistant: { agentName: 'Zini AI' },
+        type: 'image',
         content: JSON.stringify({
           body: '📸 Premium Panjabi — BDT 1,850',
+          mediaUrl: 'https://example.com/panjabi.jpg',
           productId: 'prod-panjabi-1',
           productName: 'Premium Panjabi',
           productPrice: 1850,
@@ -203,12 +207,20 @@ describe('WhatsappWebService', () => {
         text: '📸 Premium Panjabi — BDT 1,850',
         participant: '8801700000000@s.whatsapp.net',
         stanzaId: 'stanza-123',
+        mediaUrl: 'https://example.com/panjabi.jpg',
+        imageUrl: 'https://example.com/panjabi.jpg',
+        type: 'image',
+        senderName: 'Zini AI',
         productId: 'prod-panjabi-1',
         productName: 'Premium Panjabi',
         productPrice: 1850,
       });
       expect(mockPrisma.message.findFirst).toHaveBeenCalledWith({
         where: { externalMessageId: 'stanza-123' },
+        include: {
+          senderUser: { select: { name: true } },
+          aiAssistant: { select: { agentName: true } }
+        }
       });
     });
 
@@ -228,6 +240,7 @@ describe('WhatsappWebService', () => {
         text: 'Original Photo Caption',
         stanzaId: 'stanza-unknown',
         participant: undefined,
+        type: 'image',
       });
     });
   });

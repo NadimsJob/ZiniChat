@@ -44,6 +44,11 @@ describe('OutreachCampaignService', () => {
       periodStart: new Date('2026-10-01'),
       aiQuota: 1000,
     }),
+    getTenantQuotas: jest.fn().mockResolvedValue({
+      aiQuota: 1000,
+      aiUsed: 300,
+      allowByok: false,
+    }),
   };
 
   beforeEach(async () => {

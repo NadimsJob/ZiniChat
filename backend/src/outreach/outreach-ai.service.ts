@@ -1,4 +1,6 @@
 import { Injectable, Logger, NotFoundException, ForbiddenException, BadRequestException, Optional } from '@nestjs/common';
+import * as fs from 'fs';
+import * as path from 'path';
 import { PrismaService } from '../prisma/prisma.service';
 import { QuotaService } from '../tenants/quota.service';
 
@@ -109,10 +111,32 @@ export class OutreachAiService {
     let analysis!: BannerAnalysisResult;
 
     // Real API call attempt if API key is configured and not in test mode
-    const geminiKey = process.env.GEMINI_API_KEY;
-    const openaiKey = process.env.OPENAI_API_KEY;
+    let geminiKey = process.env.GEMINI_API_KEY;
+    let openaiKey = process.env.OPENAI_API_KEY;
     const provider = config?.visionAiProvider || 'gemini';
     const model = config?.visionAiModel || 'gemini-1.5-flash';
+
+    if (provider === 'gemini' && !geminiKey) {
+      try {
+        const conf = await this.prisma.aiConfig.findFirst({
+          where: { provider: { equals: 'gemini', mode: 'insensitive' }, isActive: true }
+        }) || await this.prisma.aiConfig.findFirst({
+          where: { provider: { equals: 'gemini', mode: 'insensitive' } }
+        });
+        if (conf?.apiKey) geminiKey = conf.apiKey;
+      } catch (err) {}
+    }
+    if (provider === 'openai' && !openaiKey) {
+      try {
+        const conf = await this.prisma.aiConfig.findFirst({
+          where: { provider: { equals: 'openai', mode: 'insensitive' }, isActive: true }
+        }) || await this.prisma.aiConfig.findFirst({
+          where: { provider: { equals: 'openai', mode: 'insensitive' } }
+        });
+        if (conf?.apiKey) openaiKey = conf.apiKey;
+      } catch (err) {}
+    }
+
     const masterPrompt = dto?.customPrompt || config?.masterVisionPrompt || 
       'Analyze this promotional banner and return structured JSON with productCategory, keyOffers, pricingAndDiscounts, and targetAudiencePainPoint';
 
@@ -121,6 +145,30 @@ export class OutreachAiService {
     if (!dto?.isTestMode) {
       if (provider === 'gemini' && geminiKey) {
         try {
+          let imagePart: any = { text: `Image URL: ${imageUrl}` };
+          if (imageUrl.startsWith('/uploads/') || !imageUrl.startsWith('http')) {
+            const localRelative = imageUrl.startsWith('/') ? imageUrl.slice(1) : imageUrl;
+            const localPath = path.join(process.cwd(), localRelative);
+            if (fs.existsSync(localPath)) {
+              try {
+                const buffer = fs.readFileSync(localPath);
+                const ext = path.extname(localPath).toLowerCase();
+                let mimeType = 'image/jpeg';
+                if (ext === '.png') mimeType = 'image/png';
+                else if (ext === '.webp') mimeType = 'image/webp';
+                else if (ext === '.gif') mimeType = 'image/gif';
+                imagePart = {
+                  inlineData: {
+                    mimeType,
+                    data: buffer.toString('base64'),
+                  },
+                };
+              } catch (readErr: any) {
+                this.logger.warn(`Failed to read local banner image: ${readErr.message}`);
+              }
+            }
+          }
+
           const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -130,7 +178,7 @@ export class OutreachAiService {
                   role: 'user',
                   parts: [
                     { text: `${masterPrompt}\nReturn pure JSON ONLY with keys: productCategory, keyOffers, pricingAndDiscounts, targetAudiencePainPoint.` },
-                    { text: `Image URL: ${imageUrl}` },
+                    imagePart,
                   ],
                 },
               ],
