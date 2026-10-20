@@ -1715,6 +1715,24 @@ export class OrchestratorService {
     prompt += `5. RESEND ONLY ON EXPLICIT DEMAND: Only if the customer explicitly and insistently demands to re-send the picture ("আবার পাঠান", "আবার দিন", "আরেকবার পাঠান", "send again", "resend"), then and only then include that photo ID.\n`;
     prompt += `VIOLATION OF THIS PHOTO DISPATCH DIRECTIVE IS STRICTLY FORBIDDEN.\n`;
 
+    // =========================================================================
+    // MANDATORY TEMPORAL AWARENESS & STALE SCHEDULE/APPOINTMENT GUARDRAIL
+    // =========================================================================
+    prompt += `\n=== MANDATORY TEMPORAL AWARENESS & STALE SCHEDULE/APPOINTMENT GUARDRAIL ===\n`;
+    prompt += `1. REAL-WORLD TIME ANCHOR: You MUST anchor all time-related responses to CURRENT REAL-WORLD DATE & TIME (stated in the prompt header below).\n`;
+    prompt += `2. PAST RELATIVE TIMEWORDS ("আগামীকাল", "কালকে", "আজকে", "পরশু", "tomorrow", "yesterday", "next Monday", etc.):\n`;
+    prompt += `   - Relative time expressions in CONVERSATION HISTORY belonged strictly to the exact day that past message was sent (check the message timestamp and relative age like "[7 days ago]"!).\n`;
+    prompt += `   - NEVER assume that an event, demo session, appointment, meeting, call, or delivery discussed in a past session is happening "tomorrow" or "today" relative to right now.\n`;
+    prompt += `   - If an appointment or demo was discussed hours or days ago, that scheduled time has ALREADY PASSED!\n`;
+    prompt += `   - NEVER say: "আগামীকাল সকাল ১০টায় আপনার নির্ধারিত ডেমো সেশনের জন্য সব প্রস্তুতি নেওয়া হচ্ছে" or "Tomorrow is your scheduled demo session" based on old past messages!\n`;
+    prompt += `3. RETURNING CUSTOMER AFTER A TIME GAP (hours, days, or weeks elapsed):\n`;
+    prompt += `   - When a returning customer messages ("Hi", "Hello", "Ki obostha?", "কেমন আছেন?", "What's up?"), greet them warmly and ask how you may assist them TODAY.\n`;
+    prompt += `   - DO NOT unpromptedly bring up old past appointments or claim they are scheduled for tomorrow.\n`;
+    prompt += `   - If the customer asks about a demo or service, politely ask if they would like to schedule a NEW session at their convenient time ("আপনি কি নতুন কোনো সময়ে ডেমো বা মিটিং শিডিউল করতে চান?").\n`;
+    prompt += `4. GENERAL CASUAL INQUIRIES ("Ki obostha?", "কেমন আছেন?", "how are you?"): Answer politely ("আলহামদুলিল্লাহ, আমি ভালো আছি! আপনি কেমন আছেন? আজ আপনাকে কীভাবে সাহায্য করতে পারি?"), WITHOUT falsely asserting stale past appointments.\n`;
+    prompt += `5. SCHEDULING NEW SESSIONS: An appointment or demo is ONLY scheduled for tomorrow if the customer EXPLICITLY books and confirms a date/time in the CURRENT active turn.\n`;
+    prompt += `VIOLATION OF THIS TEMPORAL GUARDRAIL IS STRICTLY FORBIDDEN.\n`;
+
     if (activeTags.length > 0) {
       prompt += `\n--- CONVERSATION TAGS RULES ---\n`;
       prompt += `The following tags are active. If the customer's query matches any of these tag rules, you MUST apply its instruction/prompt to compose your response and return the matched tag name inside the "matchedTags" JSON array. Ignore any tags not listed below:\n`;
@@ -2158,8 +2176,59 @@ export class OrchestratorService {
       }
     }
 
+    const now = new Date();
+    const currentDateTimeStr = now.toLocaleString('en-US', {
+      timeZone: 'Asia/Dhaka',
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+
+    prompt += `\n=== CURRENT REAL-WORLD DATE & TIME ===\n`;
+    prompt += `Current Timestamp: ${currentDateTimeStr} (Asia/Dhaka, GMT+6)\n`;
+
     prompt += `\n--- CONVERSATION HISTORY ---\n`;
-    [...history].reverse().forEach(msg => {
+    const sortedHistory = [...history].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    let prevMsgTime: Date | null = null;
+
+    sortedHistory.forEach(msg => {
+      const msgDate = new Date(msg.createdAt);
+      if (prevMsgTime) {
+        const gapMs = msgDate.getTime() - prevMsgTime.getTime();
+        const gapHours = Math.floor(gapMs / (1000 * 60 * 60));
+        const gapDays = Math.floor(gapHours / 24);
+        if (gapDays >= 1) {
+          prompt += `\n[--- TIME GAP: ${gapDays} DAY${gapDays > 1 ? 'S' : ''} (${gapHours} HOURS) ELAPSED BETWEEN CONVERSATIONS ---]\n\n`;
+        } else if (gapHours >= 6) {
+          prompt += `\n[--- TIME GAP: ${gapHours} HOURS ELAPSED ---]\n\n`;
+        }
+      }
+      prevMsgTime = msgDate;
+
+      // Calculate relative age from now
+      const ageMs = now.getTime() - msgDate.getTime();
+      const ageMin = Math.floor(ageMs / 60000);
+      const ageHours = Math.floor(ageMin / 60);
+      const ageDays = Math.floor(ageHours / 24);
+      let relativeAge = 'just now';
+      if (ageMin >= 2 && ageMin < 60) relativeAge = `${ageMin}m ago`;
+      else if (ageHours >= 1 && ageHours < 24) relativeAge = `${ageHours}h ago`;
+      else if (ageDays === 1) relativeAge = `yesterday`;
+      else if (ageDays > 1) relativeAge = `${ageDays} days ago`;
+
+      const msgTimeFormatted = msgDate.toLocaleString('en-US', {
+        timeZone: 'Asia/Dhaka',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+
       const sender = msg.direction === 'inbound' ? 'Customer' : 'Assistant';
       let text = '';
       if (typeof msg.content === 'object' && msg.content !== null) {
@@ -2184,7 +2253,7 @@ export class OrchestratorService {
         }
       }
       if (text) {
-        prompt += `${sender}: ${text}\n`;
+        prompt += `[${msgTimeFormatted} | ${relativeAge}] ${sender}: ${text}\n`;
       }
     });
 

@@ -177,6 +177,17 @@ If a "Prior Conversation Context Summary" is provided at the top of your system 
 - Action-oriented: tell the user what to do next, not what happened.
 
 --------------------------------------------------
+# MANDATORY TEMPORAL AWARENESS & STALE SCHEDULE/APPOINTMENT GUARDRAIL
+1. REAL-WORLD TIME ANCHOR: You MUST anchor all time-related responses to CURRENT REAL-WORLD DATE & TIME (stated in the workspace context).
+2. PAST RELATIVE TIMEWORDS ("আগামীকাল", "কালকে", "আজকে", "পরশু", "tomorrow", "yesterday", etc.):
+   - Relative time expressions in conversation history belonged strictly to that past interaction day.
+   - NEVER assume that an event, demo session, appointment, or meeting discussed in the past is happening "tomorrow" relative to right now.
+   - If an appointment or meeting was discussed hours or days ago, that scheduled time has ALREADY PASSED!
+3. RETURNING USER AFTER A TIME GAP:
+   - When a returning user messages after hours/days ("Hi", "Ki obostha?", "Hello"), greet them warmly and ask how to assist them TODAY. DO NOT unpromptedly bring up old past appointments.
+   - For general casual greetings ("Ki obostha?", "কেমন আছেন?"), reply politely and warmly without hallucinating stale appointments.
+
+--------------------------------------------------
 # BUSINESS VERTICAL AWARENESS
 ZiniChat supports multiple industry verticals. Each tenant may operate in a DIFFERENT vertical mode. When a tenant's BUSINESS VERTICAL CONTEXT is provided below, you MUST use the exact terminology, page labels, and navigation paths specific to that vertical.
 
@@ -329,7 +340,20 @@ export class SupportChatService {
     // Resolve Business Nature vertical context
     const verticalContext = await this.resolveBusinessNatureContext((tenant as any).businessNature);
 
+    const now = new Date();
+    const currentDateTimeStr = now.toLocaleString('en-US', {
+      timeZone: 'Asia/Dhaka',
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+
     return `CURRENT TENANT REAL-TIME WORKSPACE CONTEXT:
+- Current Real-World Timestamp: ${currentDateTimeStr} (Asia/Dhaka, GMT+6)
 - Business Name: ${tenant.businessName} (Tenant ID: ${tenant.id})
 - Active Subscription Plan: ${planName} | Price: ৳${planPrice}/month
 - Plan Renewal/Expiration Date: ${expirationDate}
@@ -788,12 +812,58 @@ A: Customer product নাম বললে AI stock check করে, confirm ন
 
     const fullSystemPrompt = `${cacheablePrefix}${priorSummaryBlock}\n\n${tenantContext}`;
 
+    const now = new Date();
+    const formattedHistory: any[] = [];
+    let prevMsgTime: Date | null = null;
+
+    history.forEach(msg => {
+      const msgDate = new Date(msg.createdAt);
+      if (prevMsgTime) {
+        const gapMs = msgDate.getTime() - prevMsgTime.getTime();
+        const gapHours = Math.floor(gapMs / (1000 * 60 * 60));
+        const gapDays = Math.floor(gapHours / 24);
+        if (gapDays >= 1) {
+          formattedHistory.push({
+            role: 'system',
+            content: `[--- TIME GAP: ${gapDays} DAY${gapDays > 1 ? 'S' : ''} (${gapHours} HOURS) ELAPSED BETWEEN CONVERSATIONS ---]`
+          });
+        } else if (gapHours >= 6) {
+          formattedHistory.push({
+            role: 'system',
+            content: `[--- TIME GAP: ${gapHours} HOURS ELAPSED ---]`
+          });
+        }
+      }
+      prevMsgTime = msgDate;
+
+      const ageMs = now.getTime() - msgDate.getTime();
+      const ageMin = Math.floor(ageMs / 60000);
+      const ageHours = Math.floor(ageMin / 60);
+      const ageDays = Math.floor(ageHours / 24);
+      let relativeAge = 'just now';
+      if (ageMin >= 2 && ageMin < 60) relativeAge = `${ageMin}m ago`;
+      else if (ageHours >= 1 && ageHours < 24) relativeAge = `${ageHours}h ago`;
+      else if (ageDays === 1) relativeAge = `yesterday`;
+      else if (ageDays > 1) relativeAge = `${ageDays} days ago`;
+
+      const msgTimeFormatted = msgDate.toLocaleString('en-US', {
+        timeZone: 'Asia/Dhaka',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+
+      formattedHistory.push({
+        role: msg.senderType === 'user' ? 'user' : 'assistant',
+        content: `[${msgTimeFormatted} | ${relativeAge}] ${msg.message}`
+      });
+    });
+
     const messages_payload = [
       { role: 'system', content: fullSystemPrompt },
-      ...history.map(msg => ({
-        role: msg.senderType === 'user' ? 'user' : 'assistant',
-        content: msg.message
-      }))
+      ...formattedHistory
     ];
 
     // Function Calling Tools

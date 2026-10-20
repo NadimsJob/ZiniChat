@@ -873,6 +873,22 @@ ${combinedText}`;
     prompt += `3. Never promise discounts or refunds without strict authorization.\n`;
     prompt += `4. If uncertain, explicitly state that you do not know and suggest human handoff.\n`;
 
+    // MANDATORY TEMPORAL AWARENESS & STALE SCHEDULE/APPOINTMENT GUARDRAIL (mirrors OrchestratorService)
+    prompt += `\n=== MANDATORY TEMPORAL AWARENESS & STALE SCHEDULE/APPOINTMENT GUARDRAIL ===\n`;
+    prompt += `1. REAL-WORLD TIME ANCHOR: You MUST anchor all time-related responses to CURRENT REAL-WORLD DATE & TIME (stated in the prompt header below).\n`;
+    prompt += `2. PAST RELATIVE TIMEWORDS ("আগামীকাল", "কালকে", "আজকে", "পরশু", "tomorrow", "yesterday", "next Monday", etc.):\n`;
+    prompt += `   - Relative time expressions in CONVERSATION HISTORY belonged strictly to the exact day that past message was sent.\n`;
+    prompt += `   - NEVER assume that an event, demo session, appointment, meeting, call, or delivery discussed in a past session is happening "tomorrow" or "today" relative to right now.\n`;
+    prompt += `   - If an appointment or demo was discussed hours or days ago, that scheduled time has ALREADY PASSED!\n`;
+    prompt += `   - NEVER say: "আগামীকাল সকাল ১০টায় আপনার নির্ধারিত ডেমো সেশনের জন্য সব প্রস্তুতি নেওয়া হচ্ছে" or "Tomorrow is your scheduled demo session" based on old past messages!\n`;
+    prompt += `3. RETURNING CUSTOMER AFTER A TIME GAP (hours, days, or weeks elapsed):\n`;
+    prompt += `   - When a returning customer messages ("Hi", "Hello", "Ki obostha?", "কেমন আছেন?", "What's up?"), greet them warmly and ask how you may assist them TODAY.\n`;
+    prompt += `   - DO NOT unpromptedly bring up old past appointments or claim they are scheduled for tomorrow.\n`;
+    prompt += `   - If the customer asks about a demo or service, politely ask if they would like to schedule a NEW session at their convenient time ("আপনি কি নতুন কোনো সময়ে ডেমো বা মিটিং শিডিউল করতে চান?").\n`;
+    prompt += `4. GENERAL CASUAL INQUIRIES ("Ki obostha?", "কেমন আছেন?", "how are you?"): Answer politely ("আলহামদুলিল্লাহ, আমি ভালো আছি! আপনি কেমন আছেন? আজ আপনাকে কীভাবে সাহায্য করতে পারি?"), WITHOUT falsely asserting stale past appointments.\n`;
+    prompt += `5. SCHEDULING NEW SESSIONS: An appointment or demo is ONLY scheduled for tomorrow if the customer EXPLICITLY books and confirms a date/time in the CURRENT active turn.\n`;
+    prompt += `VIOLATION OF THIS TEMPORAL GUARDRAIL IS STRICTLY FORBIDDEN.\n`;
+
     const systemPrompt = assistant.agentName
       ? `Your name is ${assistant.agentName}. ${assistant.systemPrompt || ''}`
       : (assistant.systemPrompt || '');
@@ -1177,6 +1193,21 @@ ${combinedText}`;
         });
       }
     }
+
+    const now = new Date();
+    const currentDateTimeStr = now.toLocaleString('en-US', {
+      timeZone: 'Asia/Dhaka',
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+
+    prompt += `\n=== CURRENT REAL-WORLD DATE & TIME ===\n`;
+    prompt += `Current Timestamp: ${currentDateTimeStr} (Asia/Dhaka, GMT+6)\n`;
 
     prompt += `\n--- CUSTOMER TEST QUERY ---\n${message}\n\n`;
     prompt += `MANDATORY RESPONSE INSTRUCTIONS:\n`;
