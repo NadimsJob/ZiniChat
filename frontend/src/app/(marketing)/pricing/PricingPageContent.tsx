@@ -504,17 +504,19 @@ export default function PricingPageContent() {
       </section>
 
       {/* Zini-Mail Cold Outreach Pricing Transparency Banner */}
-      <section className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-10">
+      <section className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
         <div className="relative overflow-hidden rounded-3xl border border-emerald-500/30 bg-gradient-to-br from-emerald-950/40 via-card/80 to-background/90 p-6 sm:p-8 md:p-10 backdrop-blur-xl shadow-2xl">
           <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-emerald-500/10 blur-3xl" />
+          <div className="pointer-events-none absolute -left-20 -bottom-20 h-64 w-64 rounded-full bg-primary/10 blur-3xl" />
           
-          <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8">
-            <div className="max-w-2xl">
-              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-400 mb-4">
+          <div className="relative z-10 flex flex-col gap-6 sm:gap-8">
+            {/* Header Content */}
+            <div className="max-w-3xl">
+              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-1.5 text-xs font-bold text-emerald-400 mb-4 shadow-sm">
                 <Mail className="w-3.5 h-3.5" />
                 <span>{language === 'en' ? 'Included in Growth & Scale Plans' : 'গ্রোথ ও স্কেল প্ল্যানে অন্তর্ভুক্ত'}</span>
               </div>
-              <h3 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight mb-3">
+              <h3 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-foreground tracking-tight mb-3">
                 {language === 'en' ? 'Zini-Mail: Autonomous AI Cold Email Outreach' : 'জিনি-মেইল: স্বয়ংক্রিয় এআই কোল্ড ইমেইল আউটরিচ'}
               </h3>
               <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
@@ -524,34 +526,53 @@ export default function PricingPageContent() {
               </p>
             </div>
 
-            <div className="w-full lg:w-auto grid grid-cols-1 sm:grid-cols-3 gap-3 shrink-0">
-              <div className="p-4 rounded-2xl bg-card/60 border border-border/60">
-                <div className="flex items-center gap-2 text-xs font-bold text-emerald-400 mb-1">
-                  <Sparkles className="w-4 h-4" />
-                  <span>{language === 'en' ? '1 AI Unit / Email' : '১ এআই রেসপন্স / ইমেইল'}</span>
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {language === 'en' ? 'Dispatched cold emails count directly towards your regular AI quota.' : 'পাঠানো প্রতিটি ইমেইল আপনার রেগুলার এআই কোটা থেকে সমন্বয় হয়।'}
-                </div>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-card/60 border border-border/60">
-                <div className="flex items-center gap-2 text-xs font-bold text-blue-400 mb-1">
-                  <RefreshCw className="w-4 h-4" />
-                  <span>{language === 'en' ? 'Atomic Saga Refund' : 'অটোমেটিক ইউনিট রিফান্ড'}</span>
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {language === 'en' ? 'If a dispatch fails or bounces, the AI unit is instantly refunded to your balance.' : 'কোনো ইমেইল বাউন্স বা ফেইল করলে এআই ইউনিট স্বয়ংক্রিয়ভাবে ফেরত দেওয়া হয়।'}
+            {/* 3 Pillars Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5 w-full">
+              <div className="p-5 sm:p-6 rounded-2xl bg-card/60 backdrop-blur-md border border-emerald-500/20 hover:border-emerald-500/40 transition-all duration-300 shadow-sm flex flex-col justify-between group">
+                <div>
+                  <div className="flex items-center gap-2.5 text-sm font-bold text-emerald-400 mb-2">
+                    <div className="p-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 group-hover:scale-110 transition-transform">
+                      <Sparkles className="w-4 h-4" />
+                    </div>
+                    <span>{language === 'en' ? '1 AI Unit / Email' : '১ এআই রেসপন্স / ইমেইল'}</span>
+                  </div>
+                  <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                    {language === 'en' 
+                      ? 'Dispatched cold emails count directly towards your regular AI quota with zero extra subscription fees.' 
+                      : 'পাঠানো প্রতিটি ইমেইল আপনার রেগুলার এআই কোটা থেকে সমন্বয় হয়। বাড়তি কোনো সফটওয়্যার ফি নেই।'}
+                  </p>
                 </div>
               </div>
 
-              <div className="p-4 rounded-2xl bg-card/60 border border-border/60">
-                <div className="flex items-center gap-2 text-xs font-bold text-amber-400 mb-1">
-                  <ShieldCheck className="w-4 h-4" />
-                  <span>{language === 'en' ? 'BYO SMTP (৳0 Fee)' : 'নিজস্ব SMTP (৳০ ফি)'}</span>
+              <div className="p-5 sm:p-6 rounded-2xl bg-card/60 backdrop-blur-md border border-blue-500/20 hover:border-blue-500/40 transition-all duration-300 shadow-sm flex flex-col justify-between group">
+                <div>
+                  <div className="flex items-center gap-2.5 text-sm font-bold text-blue-400 mb-2">
+                    <div className="p-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 group-hover:scale-110 transition-transform">
+                      <RefreshCw className="w-4 h-4" />
+                    </div>
+                    <span>{language === 'en' ? 'Atomic Saga Refund' : 'অটোমেটিক ইউনিট রিফান্ড'}</span>
+                  </div>
+                  <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                    {language === 'en' 
+                      ? 'If a dispatch fails or bounces, the AI unit is instantly refunded to your balance automatically.' 
+                      : 'কোনো ইমেইল বাউন্স বা ফেইল করলে এআই ইউনিট স্বয়ংক্রিয়ভাবে আপনার ব্যালেন্সে ফেরত দেওয়া হয়।'}
+                  </p>
                 </div>
-                <div className="text-xs text-muted-foreground">
-                  {language === 'en' ? 'Connect your own Google Workspace, Zoho, or private SMTP servers with zero markup.' : 'কোনো লুকানো খরচ ছাড়াই নিজের জিমেইল, জোহো বা এসএমটিপি কানেক্ট করুন।'}
+              </div>
+
+              <div className="p-5 sm:p-6 rounded-2xl bg-card/60 backdrop-blur-md border border-amber-500/20 hover:border-amber-500/40 transition-all duration-300 shadow-sm flex flex-col justify-between group">
+                <div>
+                  <div className="flex items-center gap-2.5 text-sm font-bold text-amber-400 mb-2">
+                    <div className="p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 group-hover:scale-110 transition-transform">
+                      <ShieldCheck className="w-4 h-4" />
+                    </div>
+                    <span>{language === 'en' ? 'BYO SMTP (৳0 Fee)' : 'নিজস্ব SMTP (৳০ ফি)'}</span>
+                  </div>
+                  <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                    {language === 'en' 
+                      ? 'Connect your own Google Workspace, Zoho, or private SMTP servers with zero markup.' 
+                      : 'কোনো লুকানো খরচ ছাড়াই নিজের জিমেইল, জোহো বা এসএমটিপি কানেক্ট করে আনলিমিটেড মেইল পাঠান।'}
+                  </p>
                 </div>
               </div>
             </div>
