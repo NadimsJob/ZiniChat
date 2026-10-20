@@ -76,10 +76,21 @@ function PayMfsContent() {
  const timerRef = useRef<any>(null);
  const autoCheckRef = useRef<any>(null);
  const trxIdRef = useRef('');
+ // BUG4 FIX: keep fresh refs so the setInterval closure is never stale
+ const paymentRef = useRef<any>(null);
+ const paymentSuccessRef = useRef(false);
 
  useEffect(() => {
  trxIdRef.current = trxId;
  }, [trxId]);
+
+ useEffect(() => {
+ paymentRef.current = payment;
+ }, [payment]);
+
+ useEffect(() => {
+ paymentSuccessRef.current = paymentSuccess;
+ }, [paymentSuccess]);
 
  // Load Active Payment Accounts configured by Superadmin
  useEffect(() => {
@@ -305,11 +316,18 @@ function PayMfsContent() {
  const startAutoCheck = () => {
  if (autoCheckRef.current) clearInterval(autoCheckRef.current);
  autoCheckRef.current = setInterval(async () => {
- if (!payment || paymentSuccess) return;
+ // BUG4 FIX: read from refs to avoid stale closure over payment/paymentSuccess state
+ const currentPayment = paymentRef.current;
+ if (!currentPayment || paymentSuccessRef.current) return;
+ // Stop polling if payment was resolved externally
+ if (currentPayment.status && currentPayment.status !== 'pending') {
+ clearInterval(autoCheckRef.current);
+ return;
+ }
  try {
  const token = Cookies.get('access_token');
  const currentTrx = trxIdRef.current.trim().toUpperCase();
- 
+
  const res = await fetch(`${API}/mfs-payments/verify`, {
  method: 'POST',
  headers: {
@@ -317,7 +335,7 @@ function PayMfsContent() {
  'Content-Type': 'application/json'
  },
  body: JSON.stringify({
- paymentId: payment.id,
+ paymentId: currentPayment.id,
  trxId: currentTrx || undefined
  })
  });
@@ -325,11 +343,12 @@ function PayMfsContent() {
  if (res.ok) {
  const data = await res.json();
  if (data.success) {
+ paymentSuccessRef.current = true;
  setPaymentSuccess(true);
- toast.success(language === 'en' ? 'Payment Verified & Activated!' : 'পেমেন্ট ভেরিফাই সফল হয়েছে!');
+ toast.success(language === 'en' ? 'Payment Verified & Activated!' : 'পেমেন্ট ভেরিফাই সফল হয়েছে!');
  clearInterval(autoCheckRef.current);
  setTimeout(() => {
- window.location.href = `/dashboard/settings/subscription?payment=success&id=${payment.id}`;
+ window.location.href = `/dashboard/settings/subscription?payment=success&id=${currentPayment.id}`;
  }, 1200);
  }
  }

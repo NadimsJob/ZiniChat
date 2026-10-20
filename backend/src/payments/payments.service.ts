@@ -612,8 +612,13 @@ export class PaymentsService {
         
         const updates: any = {};
         if (addon.type === 'messages') updates.customMessageQuota = currentMessageLimit + addon.value;
-        if (addon.type === 'ai_responses') updates.customAiQuota = currentAiLimit + addon.value;
+        if (addon.type === 'ai_responses' || addon.type === 'ai_tokens') updates.customAiQuota = currentAiLimit + addon.value;
         if (addon.type === 'storage') updates.customStorageLimitMb = currentStorageLimit + addon.value;
+        // ISSUE6 FIX: seats addon was missing — now applies customSeatLimit on manual approve
+        if (addon.type === 'seats') {
+          const currentSeatLimit = tenant.customSeatLimit ?? activeSub?.plan?.seatLimit ?? 0;
+          updates.customSeatLimit = currentSeatLimit + addon.value;
+        }
         
         await this.prisma.tenant.update({ where: { id: tenant.id }, data: updates });
 

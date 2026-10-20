@@ -34,8 +34,12 @@ describe('MfsPaymentsService', () => {
       updateMany: jest.fn(),
     },
     subscription: {
+      findFirst: jest.fn(),
       update: jest.fn(),
     },
+    aiUsageLog: { count: jest.fn().mockResolvedValue(0) },
+    message: { count: jest.fn().mockResolvedValue(0) },
+    broadcastRecipient: { count: jest.fn().mockResolvedValue(0) },
     user: {
       findFirst: jest.fn().mockResolvedValue({ id: 'user-1', email: 'test@example.com' }),
       findMany: jest.fn().mockResolvedValue([{ id: 'user-1', email: 'test@example.com' }]),
@@ -322,7 +326,8 @@ describe('MfsPaymentsService', () => {
         addonId: null,
       };
       mockPrismaService.payment.findUnique.mockResolvedValue(paymentStub);
-      mockPrismaService.mfsTransaction.findUnique.mockResolvedValue(null); // No SMS tx found
+      mockPrismaService.mfsTransaction.findFirst.mockResolvedValue(null); // No SMS tx found
+      mockPrismaService.subscription.findFirst.mockResolvedValue(null); // No previous sub
       mockPrismaService.tenant.findUnique.mockResolvedValue({ id: 'tenant-1', businessName: 'Test Biz', plan: null });
       mockPrismaService.user.findMany.mockResolvedValue([{ id: 'user-1', email: 'owner@test.com' }]);
       mockPrismaService.payment.update.mockResolvedValue({ ...paymentStub, status: 'success' });
@@ -345,5 +350,105 @@ describe('MfsPaymentsService', () => {
         'Starter Plan'
       );
     });
+
+    it('(BUG2 regression) should include carriedForwardAiQuota and carriedForwardMessageQuota in subscription update', async () => {
+      const paymentStub = {
+        id: 'pay-manual',
+        tenantId: 'tenant-2',
+        subscriptionId: 'sub-2',
+        amountBdt: 999.0,
+        status: 'pending',
+        subscription: { id: 'sub-2', billingCycle: 'monthly', plan: { name: 'Growth Plan' } },
+        addon: null,
+        addonId: null,
+      };
+      mockPrismaService.payment.findUnique.mockResolvedValue(paymentStub);
+      mockPrismaService.mfsTransaction.findFirst.mockResolvedValue(null);
+      // Simulate a previous active subscription with unused quota
+      mockPrismaService.subscription.findFirst.mockResolvedValue({
+        id: 'sub-prev',
+        status: 'active',
+        currentPeriodStart: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000),
+        carriedForwardAiQuota: 0,
+        carriedForwardMessageQuota: 0,
+        plan: { priceMonthlyBdt: '999', aiQuota: 200, messageQuota: 500 },
+      });
+      // Simulate 100 AI used, 200 messages used (so 100 AI and 300 messages carry forward)
+      mockPrismaService.aiUsageLog = { count: jest.fn().mockResolvedValue(100) };
+      mockPrismaService.message = { count: jest.fn().mockResolvedValue(200) };
+      mockPrismaService.broadcastRecipient = { count: jest.fn().mockResolvedValue(0) };
+      mockPrismaService.tenant.findUnique.mockResolvedValue({
+        id: 'tenant-2', businessName: 'Test Co', plan: null, customAiQuota: null, customMessageQuota: null,
+      });
+      mockPrismaService.user.findMany.mockResolvedValue([{ id: 'user-2', email: 'owner2@test.com' }]);
+      mockPrismaService.payment.update.mockResolvedValue({ ...paymentStub, status: 'success' });
+      mockPrismaService.payment.updateMany.mockResolvedValue({ count: 0 });
+      mockPrismaService.subscription.update.mockResolvedValue({ id: 'sub-2', status: 'active' });
+
+      await service.manualClaimTransaction('superadmin-1', 'TRXMANUAL', 'pay-manual');
+
+      expect(mockPrismaService.subscription.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            status: 'active',
+            carriedForwardAiQuota: expect.any(Number),
+            carriedForwardMessageQuota: expect.any(Number),
+          }),
+        })
+      );
+    });
+  });
+
+  describe('(BUG1 regression) verifyPayment should carry forward quota on SMS auto-verify', () => {
+    it('should include carriedForwardAiQuota and carriedForwardMessageQuota in subscription update', async () => {
+      const paymentStub = {
+        id: 'pay-sms',
+        tenantId: 'tenant-3',
+        subscriptionId: 'sub-3',
+        amountBdt: 500.0,
+        status: 'pending',
+        addonId: null,
+        addon: null,
+        subscription: { id: 'sub-3', billingCycle: 'monthly', plan: { name: 'Starter' } },
+      };
+      const smsTxStub = { id: 'tx-1', trxId: 'TRXSMS', amount: 500.0, isUsed: false };
+
+      mockPrismaService.payment.findFirst.mockResolvedValue(paymentStub);
+      mockPrismaService.mfsTransaction.findFirst.mockResolvedValue(smsTxStub);
+      mockPrismaService.mfsTransaction.update.mockResolvedValue({ ...smsTxStub, isUsed: true });
+      mockPrismaService.payment.update.mockResolvedValue({ ...paymentStub, status: 'success' });
+      mockPrismaService.tenant.findUnique.mockResolvedValue({
+        id: 'tenant-3', businessName: 'SMS Biz', plan: null, customAiQuota: null, customMessageQuota: null,
+      });
+      // Simulate a previous active sub so carry-forward logic fires
+      mockPrismaService.subscription.findFirst.mockResolvedValue({
+        id: 'sub-prev',
+        status: 'active',
+        currentPeriodStart: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000),
+        carriedForwardAiQuota: 0,
+        carriedForwardMessageQuota: 0,
+        plan: { priceMonthlyBdt: '500', aiQuota: 100, messageQuota: 300 },
+      });
+      mockPrismaService.aiUsageLog = { count: jest.fn().mockResolvedValue(50) };
+      mockPrismaService.message = { count: jest.fn().mockResolvedValue(100) };
+      mockPrismaService.broadcastRecipient = { count: jest.fn().mockResolvedValue(0) };
+      mockPrismaService.subscription.update.mockResolvedValue({ id: 'sub-3', status: 'active' });
+      mockPrismaService.payment.updateMany.mockResolvedValue({ count: 0 });
+      mockPrismaService.user.findMany.mockResolvedValue([{ id: 'user-3', email: 'owner3@test.com' }]);
+
+      const result = await service.verifyPayment('user-3', 'tenant-3', 'pay-sms', 'TRXSMS');
+
+      expect(result.success).toBe(true);
+      expect(mockPrismaService.subscription.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            status: 'active',
+            carriedForwardAiQuota: expect.any(Number),
+            carriedForwardMessageQuota: expect.any(Number),
+          }),
+        })
+      );
+    });
   });
 });
+

@@ -17,7 +17,9 @@ const mockPrisma = {
   payment: {
     findFirst: jest.fn(),
     findMany: jest.fn(),
+    findUnique: jest.fn(),
     create: jest.fn(),
+    update: jest.fn(),
     count: jest.fn(),
   },
   plan: {
@@ -209,6 +211,88 @@ describe('PaymentsService', () => {
       await expect(service.submitSandboxPaymentForAddon('t-no-pkg', 'addon-1')).rejects.toThrow(
         /সক্রিয় প্যাকেজ/
       );
+    });
+  });
+
+  describe('rejectManualPayment (BUG3 regression)', () => {
+    it('should throw NotFoundException if payment does not exist', async () => {
+      mockPrisma.payment.findUnique.mockResolvedValue(null);
+      await expect(service.rejectManualPayment('invalid-id', 'Fraud')).rejects.toThrow(
+        /Payment not found/
+      );
+    });
+
+    it('should throw BadRequestException if payment is not pending', async () => {
+      mockPrisma.payment.findUnique.mockResolvedValue({ id: 'p-1', status: 'completed' });
+      await expect(service.rejectManualPayment('p-1', 'Fraud')).rejects.toThrow(
+        /Payment is not pending/
+      );
+    });
+
+    it('should mark payment as failed, send email and in-app notification', async () => {
+      mockPrisma.payment.findUnique.mockResolvedValue({
+        id: 'p-1',
+        tenantId: 't-1',
+        status: 'pending',
+        trxId: 'TRX_TEST_REJECT',
+      });
+      mockPrisma.tenant.findUnique.mockResolvedValue({ id: 't-1', businessName: 'Test Business' });
+      mockPrisma.user.findMany.mockResolvedValue([{ id: 'u-admin-1', email: 'owner@test.com' }]);
+      mockPrisma.payment.update.mockResolvedValue({ id: 'p-1', status: 'failed' });
+
+      const res = await service.rejectManualPayment('p-1', 'Wrong TrxID');
+
+      expect(res).toEqual({ message: 'Payment rejected' });
+      expect(mockPrisma.payment.update).toHaveBeenCalledWith({
+        where: { id: 'p-1' },
+        data: { status: 'failed' },
+      });
+      expect(mockSmtpService.triggerPaymentRejectedEmail).toHaveBeenCalledWith(
+        'owner@test.com',
+        'Test Business',
+        'TRX_TEST_REJECT',
+        'Wrong TrxID'
+      );
+      expect(mockNotificationsService.createNotification).toHaveBeenCalled();
+    });
+  });
+
+  describe('approveManualPayment with seats addon (ISSUE6 regression)', () => {
+    it('should apply customSeatLimit when addon.type is seats', async () => {
+      mockPrisma.payment.findUnique.mockResolvedValue({
+        id: 'pay-addon-seats',
+        tenantId: 't-seats',
+        status: 'pending',
+        type: 'addon',
+        addonId: 'addon-seats-1',
+        amountBdt: 500,
+        trxId: 'TRX_SEATS',
+      });
+      mockPrisma.payment.update.mockResolvedValue({ id: 'pay-addon-seats', status: 'completed' });
+      mockPrisma.tenant.findUnique.mockResolvedValue({
+        id: 't-seats',
+        businessName: 'Team Corp',
+        customSeatLimit: 5,
+        subscriptions: [
+          { status: 'active', plan: { seatLimit: 3 } }
+        ]
+      });
+      mockPrisma.addon.findUnique.mockResolvedValue({
+        id: 'addon-seats-1',
+        type: 'seats',
+        value: 2,
+        name: 'Extra 2 Team Seats',
+      });
+      mockPrisma.tenant.update.mockResolvedValue({});
+
+      const result = await service.approveManualPayment('pay-addon-seats');
+
+      expect(result).toEqual({ message: 'Payment approved' });
+      expect(mockPrisma.tenant.update).toHaveBeenCalledWith({
+        where: { id: 't-seats' },
+        data: { customSeatLimit: 7 }, // 5 current + 2 from addon
+      });
+      expect(mockSmtpService.triggerAddonPurchasedEmail).toHaveBeenCalled();
     });
   });
 });

@@ -67,6 +67,13 @@ export class PaymentsController {
   }
 
   @UseGuards(PermissionsGuard)
+  @RequirePermissions('manage:billing')
+  @Post('admin/:id/reject')
+  async rejectPayment(@Param('id') id: string, @Body() body: { reason?: string }) {
+    return this.paymentsService.rejectManualPayment(id, body?.reason);
+  }
+
+  @UseGuards(PermissionsGuard)
   @RequirePermissions('manage:site')
   @Post('admin/config')
   async updateConfig(@Body() body: any) {
