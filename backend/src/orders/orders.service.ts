@@ -142,13 +142,36 @@ export class OrdersService {
       });
     }
 
+    // Trigger CAPI Purchase on creation
+    if (contactId && this.prisma?.contact?.findFirst) {
+      this.prisma.contact.findFirst({ where: { id: contactId, tenantId } })
+        .then((contact) => {
+          this.capiHubService.fireEvent(tenantId, 'Purchase', {
+            event_id: `order_${order.id}`,
+            event_source_url: 'order_creation',
+            user_data: {
+              em: contact?.email || undefined,
+              ph: contact?.phone || undefined,
+              fn: contact?.name || undefined
+            },
+            custom_data: {
+              value: order.totalAmount,
+              currency: 'BDT',
+              order_id: order.id,
+              content_ids: items?.map((i: any) => i.productId) || []
+            }
+          }, 'order').catch(() => {});
+        })
+        .catch(() => {});
+    }
+
     return order;
   }
 
   async updateOrderStatus(tenantId: string, orderId: string, status: string) {
     const order = await this.prisma.order.findFirst({
       where: { id: orderId, tenantId },
-      include: { items: true }
+      include: { items: true, contact: true }
     });
 
     if (!order) throw new NotFoundException('Order not found');
@@ -188,15 +211,18 @@ export class OrdersService {
       return updatedOrder;
     });
 
-    if (status === 'completed' && previousStatus !== 'completed') {
-      const contact = (order as any).contact;
+    const isNowFinalized = ['confirmed', 'completed'].includes(status);
+    const wasFinalized = ['confirmed', 'completed'].includes(previousStatus);
+
+    if (isNowFinalized && !wasFinalized) {
+      const contact = order.contact;
       this.capiHubService.fireEvent(tenantId, 'Purchase', {
         event_id: `order_${order.id}`,
         event_source_url: 'order_management',
         user_data: {
-          em: (contact as any)?.email || undefined,
-          ph: (contact as any)?.phone || undefined,
-          fn: (contact as any)?.name || undefined
+          em: contact?.email || undefined,
+          ph: contact?.phone || undefined,
+          fn: contact?.name || undefined
         },
         custom_data: {
           value: order.totalAmount,

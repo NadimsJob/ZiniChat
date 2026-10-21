@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Body, Param, UseGuards, Req, Headers, UnauthorizedException, ForbiddenException } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, UseGuards, Req, Headers, UnauthorizedException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { CapiHubService } from './capi-hub.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import * as bcrypt from 'bcrypt';
@@ -31,10 +31,26 @@ export class CapiHubController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Post(['events/config', 'event-configs'])
+  async upsertEventConfig(@Req() req: any, @Body() data: any) {
+    if (req.user.role !== 'owner' && req.user.role !== 'admin') throw new ForbiddenException();
+    const eventName = data.eventName || data.name;
+    if (!eventName) throw new BadRequestException('eventName is required');
+    return this.capiHubService.updateEventConfig(req.user.tenantId, eventName, data);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Patch(['events/config/:eventName', 'event-configs/:eventName'])
   async updateEventConfig(@Req() req: any, @Param('eventName') eventName: string, @Body() data: any) {
     if (req.user.role !== 'owner' && req.user.role !== 'admin') throw new ForbiddenException();
     return this.capiHubService.updateEventConfig(req.user.tenantId, eventName, data);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(['events/test-ping', 'test-ping'])
+  async sendTestPing(@Req() req: any, @Body() body?: { testEventCode?: string }) {
+    if (req.user.role !== 'owner' && req.user.role !== 'admin') throw new ForbiddenException();
+    return this.capiHubService.sendTestEvent(req.user.tenantId, body?.testEventCode);
   }
 
   @UseGuards(JwtAuthGuard)
