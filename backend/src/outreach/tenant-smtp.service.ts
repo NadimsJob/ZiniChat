@@ -3,18 +3,48 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CryptoService } from '../crypto/crypto.service';
 import * as nodemailer from 'nodemailer';
 
+import { IsString, IsNotEmpty, IsOptional, IsNumber, IsBoolean, IsEmail } from 'class-validator';
+import { Type } from 'class-transformer';
+
 export class UpsertTenantSmtpDto {
+  @IsString()
+  @IsNotEmpty()
   host!: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
   port?: number;
+
+  @IsOptional()
+  @Type(() => Boolean)
+  @IsBoolean()
   secure?: boolean;
+
+  @IsString()
+  @IsNotEmpty()
   username!: string;
+
+  @IsOptional()
+  @IsString()
   password?: string;
+
+  @IsEmail()
+  @IsNotEmpty()
   fromEmail!: string;
+
+  @IsString()
+  @IsNotEmpty()
   fromName!: string;
+
+  @IsOptional()
+  @IsEmail()
   replyToEmail?: string;
 }
 
 export class VerifyTenantSmtpDto {
+  @IsOptional()
+  @IsEmail()
   testRecipientEmail?: string;
 }
 
