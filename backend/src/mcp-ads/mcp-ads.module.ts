@@ -6,9 +6,10 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { CryptoModule } from '../crypto/crypto.module';
 import { MetaMarketingConfigModule } from '../meta-marketing-config/meta-marketing-config.module';
 import { TenantsModule } from '../tenants/tenants.module';
+import { AiModule } from '../ai/ai.module';
 
 @Module({
-  imports: [PrismaModule, CryptoModule, MetaMarketingConfigModule, TenantsModule],
+  imports: [PrismaModule, CryptoModule, MetaMarketingConfigModule, TenantsModule, AiModule],
   controllers: [McpAdsController],
   providers: [McpAdsService, McpAdsServer],
   exports: [McpAdsService, McpAdsServer],

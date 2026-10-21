@@ -51,26 +51,61 @@ The **Meta Ads Manager** (`মেটা অ্যাডস ম্যানেজ
 
 ---
 
-## 4. Advanced Custom Campaign Creation (Ads Manager Flow)
+## 4. Advanced Custom Campaign Creation (3-Tier Ads Manager Pipeline)
 
-1. Switch to the **Create Campaign (Ads Manager)** (`নতুন ক্যাম্পেইন (অ্যাড ম্যানেজার)`) tab.
-2. **Step 1: Campaign Objective & Name**:
-   - Choose your objective: `Engagement` (`OUTCOME_ENGAGEMENT`), `Traffic` (`OUTCOME_TRAFFIC`), `Leads` (`OUTCOME_LEADS`), or `Sales` (`OUTCOME_SALES`).
-   - Enter your Campaign Name.
-3. **Step 2: AdSet Budget, Schedule & Audience Targeting**:
-   - Set daily budget (quick chips: $5, $10, $25, $50, $100).
-   - Adjust campaign duration slider (1 to 60 days).
-   - Specify target countries (e.g., `BD, US, CA`), age range (`18-65`), and gender (`All`, `Men`, `Women`).
-4. **Step 3: Ad Creative & Copy**:
-   - Enter your **Ad Headline**.
-   - Write your **Primary Text** (ad copy/sales pitch).
-   - Enter your **Destination Website URL**.
-   - Provide an optional **Banner Image URL** (preview appears in real time).
-5. Click **"Launch Campaign on Meta Now"** (`এখনই মেটাতে ক্যাম্পেইন চালু করুন`). The system creates Campaign ➔ AdSet ➔ AdCreative ➔ Ad atomically on Meta.
+ZiniChat provides a native 3-tier Meta Ads Manager pipeline directly within the Tenant Panel, allowing merchants to launch sophisticated advertising campaigns without getting lost in Meta's complex business interfaces:
+
+### Level 1: Campaign Setup & Objectives
+- **Objective Selection**: Choose from 5 core Meta marketing objectives:
+  - `OUTCOME_SALES` (Sales / Conversions)
+  - `OUTCOME_LEADS` (Lead Generation)
+  - `OUTCOME_TRAFFIC` (Website Traffic / Link Clicks)
+  - `OUTCOME_ENGAGEMENT` (Post Engagement & Page Likes)
+  - `OUTCOME_AWARENESS` (Brand Awareness & Maximum Reach)
+- **Special Ad Categories**: Mark compliance for credit, housing, employment, or social issues if applicable.
+
+### Level 2: AdSet Budget, Schedule & Detailed Targeting
+- **Daily Budget & Duration**: Quick selection chips ($5, $10, $25, $50, $100) or custom budget with duration slider (1 to 60 days).
+- **Targeting**: Specify country codes (e.g., `BD, US, CA`), minimum/maximum age brackets (18–65+), and gender (`All`, `Men`, `Women`).
+- **Detailed Interest Targeting**: Target consumer niches, hobbies, or purchasing behaviors.
+- **Placements**: Choose between Meta Advantage+ Placements (Automatic) or curated manual feeds (Facebook, Instagram, Messenger).
+
+### Level 3: Ad Creative & Dynamic Multi-Copy
+Merchants can choose between two creative strategies:
+1. **📸 Upload New Media & Dynamic Copy**:
+   - **Multi-Option Primary Texts**: Add up to 5 primary text variations (`+ Add Text Option`). Meta dynamically serves the highest-converting copy to each shopper.
+   - **Multi-Option Headlines**: Add up to 3 catchy headlines (`+ Add Headline`).
+   - **Feed Description & CTA**: Custom description and button (`Shop Now`, `Order Now`, `Send Message`, `Send WhatsApp Message`, `Learn More`, etc.).
+   - **Destination Link & Image URL**: Direct product or landing page links.
+2. **📄 Boost Existing Facebook Page Post**:
+   - Click "Existing Page Post" to browse published posts from your connected Facebook Page.
+   - Boosting an existing post preserves 100% of organic likes, comments, and shares using Meta's `object_story_id`.
 
 ---
 
-## 5. Boosting an Existing Facebook Page Post
+## 5. AI Pre-Flight Ad & Copy Analyzer (1 AI Response Credit)
+
+Before spending ad budget, merchants can evaluate their campaign using the **AI Pre-Flight Ad & Copy Analyzer**:
+- **Quota Pool Compliance (Rule 4)**: Consumes strictly **1 AI Response Credit** from the tenant's AI response quota. It never touches or deducts from the message quota pool.
+- **Algorithmic Evaluation**:
+  - **Overall Score** (0–100)
+  - **Hook Strength** (Evaluating the first 3 lines of copy)
+  - **Clarity & Offer Appeal**
+  - **Meta Policy Compliance**: Evaluates risk against Meta Advertising Standards (banned keywords, exaggerated claims, non-compliant phrasing).
+- **1-Click High-Converting Variations**: Generates 3 AI-crafted copy variations (Emotional Hook, FOMO/Urgency Hook, Feature-Driven Hook) with a **"Apply to Form"** (`ফর্মে ব্যবহার করুন`) button that automatically populates the campaign inputs.
+
+---
+
+## 6. Meta Pixel Conversion Tracking Integration
+
+Merchants can connect their website conversions directly to any discovered Meta Pixel:
+- Toggle **"Track Website Conversions with Meta Pixel"** (`মেটা পিক্সেল দিয়ে কনভার্সন ট্র্যাক করুন`).
+- Select from auto-discovered Pixels connected to your ad account.
+- ZiniChat automatically attaches `tracking_specs` with `action.type: ['offsite_conversion']` and your `fb_pixel` ID to the Meta Ad payload.
+
+---
+
+## 7. Boosting an Existing Facebook Page Post (Quick Flow)
 
 1. Switch to the **Boost Page Post** (`পেইজ পোস্ট বুস্টিং`) tab.
 2. The system automatically fetches recent posts published on your connected Facebook Page.

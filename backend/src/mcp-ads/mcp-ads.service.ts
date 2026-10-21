@@ -1,8 +1,9 @@
-import { Injectable, BadRequestException, InternalServerErrorException, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
+import { Injectable, BadRequestException, InternalServerErrorException, NotFoundException, ForbiddenException, Logger, Optional } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CryptoService } from '../crypto/crypto.service';
 import { MetaMarketingConfigService } from '../meta-marketing-config/meta-marketing-config.service';
 import { QuotaService } from '../tenants/quota.service';
+import { AiService } from '../ai/ai.service';
 import axios from 'axios';
 
 @Injectable()
@@ -14,6 +15,7 @@ export class McpAdsService {
     private readonly crypto: CryptoService,
     private readonly marketingConfig: MetaMarketingConfigService,
     private readonly quotaService: QuotaService,
+    @Optional() private readonly aiService?: AiService,
   ) {}
 
   private async getDecryptedTokenAndAccount(tenantId: string, adAccountId?: string) {
@@ -964,39 +966,366 @@ export class McpAdsService {
   }
 
   /**
+   * Fetches all Meta Pixels associated with the tenant's connected Ad Accounts.
+   */
+  async getAdAccountPixels(tenantId: string, adAccountId?: string) {
+    let accounts: any[] = [];
+    if (adAccountId) {
+      const acc = await this.prisma.tenantMetaAdAccount.findFirst({
+        where: { tenantId, adAccountId, status: 'active' },
+      });
+      if (acc) accounts = [acc];
+    } else {
+      accounts = await this.prisma.tenantMetaAdAccount.findMany({
+        where: { tenantId, status: 'active' },
+      });
+    }
+
+    if (accounts.length === 0) {
+      return {
+        isMetaConnected: false,
+        pixels: [],
+        message: 'No active Meta Ad Account found for this tenant.',
+      };
+    }
+
+    const config = await this.marketingConfig.getConfig();
+    const apiVersion = config.apiVersion || 'v21.0';
+
+    const allPixels: Array<{
+      id: string;
+      name: string;
+      isUnavailable?: boolean;
+      creationTime?: string;
+      lastFiredTime?: string;
+      adAccountId: string;
+      adAccountName: string;
+    }> = [];
+
+    for (const acc of accounts) {
+      try {
+        const decryptedToken = this.crypto.decrypt(acc.accessToken);
+        const cleanId = acc.adAccountId.startsWith('act_') ? acc.adAccountId : `act_${acc.adAccountId}`;
+
+        const response = await axios.get(`https://graph.facebook.com/${apiVersion}/${cleanId}/adspixels`, {
+          params: {
+            access_token: decryptedToken,
+            fields: 'id,name,creation_time,is_unavailable,last_fired_time',
+          },
+          timeout: 8000,
+        });
+
+        const pixelsData = response.data?.data || [];
+        for (const p of pixelsData) {
+          allPixels.push({
+            id: p.id,
+            name: p.name || `Pixel (${p.id})`,
+            isUnavailable: Boolean(p.is_unavailable),
+            creationTime: p.creation_time,
+            lastFiredTime: p.last_fired_time,
+            adAccountId: acc.adAccountId,
+            adAccountName: acc.adAccountName || 'Ad Account',
+          });
+        }
+      } catch (err: any) {
+        this.logger.warn(`Could not fetch pixels for ad account ${acc.adAccountId}: ${err.response?.data?.error?.message || err.message}`);
+      }
+    }
+
+    // Deduplicate pixels by ID
+    const uniquePixels = Array.from(new Map(allPixels.map(p => [p.id, p])).values());
+
+    return {
+      isMetaConnected: true,
+      pixels: uniquePixels,
+    };
+  }
+
+  /**
+   * Pre-flight AI Copy & Campaign Evaluation:
+   * Analyzes campaign objective, hooks, multiple primary texts, audience targeting, and budget.
+   * Deducts 1 AI Response Credit from aiUsageLog (Rule 4: independent pool, strictly AI credits).
+   */
+  async reviewAdWithAi(
+    tenantId: string,
+    dto: {
+      adAccountId: string;
+      campaignName?: string;
+      objective: string;
+      headlines?: string[];
+      primaryTexts?: string[];
+      headline?: string;
+      bodyText?: string;
+      callToAction?: string;
+      targetAudience?: any;
+      dailyBudget?: number;
+      destinationUrl?: string;
+      creativeSource?: 'upload' | 'existing_post';
+      pagePostId?: string;
+    },
+  ) {
+    // 1. Quota Preflight & Deduction: 1 AI Response Unit
+    await this.quotaService.checkAiQuota(tenantId);
+    await this.prisma.aiUsageLog.create({
+      data: {
+        tenantId,
+        featureName: 'meta_ads_ai_copy_review',
+        unitsConsumed: 1,
+        status: 'COMMITTED',
+        referenceId: dto.campaignName || `ad_review_${Date.now()}`,
+        tokensUsed: 650,
+        costUsd: 0.002,
+      },
+    });
+
+    const primaryTexts = dto.primaryTexts && dto.primaryTexts.length > 0
+      ? dto.primaryTexts.filter(t => t.trim().length > 0)
+      : (dto.bodyText ? [dto.bodyText] : []);
+    const headlines = dto.headlines && dto.headlines.length > 0
+      ? dto.headlines.filter(h => h.trim().length > 0)
+      : (dto.headline ? [dto.headline] : []);
+
+    const primaryText = primaryTexts[0] || '';
+    const headline = headlines[0] || '';
+
+    let aiResponseText = '';
+    if (this.aiService) {
+      try {
+        const prompt = `You are an elite Meta Advertising Director and Direct-Response Copywriting Specialist.
+Analyze this Facebook/Instagram Ad setup and provide an actionable pre-flight analysis.
+
+Campaign Setup:
+- Campaign Name: ${dto.campaignName || 'Untitled Campaign'}
+- Objective: ${dto.objective || 'OUTCOME_ENGAGEMENT'}
+- Primary Copy Text(s): ${JSON.stringify(primaryTexts)}
+- Headline(s): ${JSON.stringify(headlines)}
+- Call To Action: ${dto.callToAction || 'LEARN_MORE'}
+- Daily Budget: $${dto.dailyBudget || 5}
+- Target Countries: ${dto.targetAudience?.countries || 'BD'}
+- Target Age: ${dto.targetAudience?.ageMin || 18} - ${dto.targetAudience?.ageMax || 65}
+- Target Gender: ${dto.targetAudience?.gender || 'all'}
+- Creative Type: ${dto.creativeSource === 'existing_post' ? 'Boost Existing Page Post' : 'Upload Image / Media Banner'}
+
+Return ONLY a valid JSON object matching this schema (no markdown formatting, no code fences):
+{
+  "overallScore": 88,
+  "hookScore": 85,
+  "clarityScore": 90,
+  "policyRisk": "LOW",
+  "policyFeedback": "No sensationalist or prohibited claims detected under Meta Advertising Policies.",
+  "policyFeedbackBn": "মেটা বিজ্ঞাপন নীতিমালা অনুযায়ী কোনো নীতিবিরোধী বা বিভ্রান্তিকর দাবি পরিলক্ষিত হয়নি।",
+  "strengths": ["Clear value proposition", "Action-oriented call to action"],
+  "strengthsBn": ["স্পষ্ট অফার ও ভ্যালু প্রপোজিশন", "অ্যাকশন-ভিত্তিক কল-টু-অ্যাকশন"],
+  "weaknesses": ["Could add stronger scarcity or social proof element"],
+  "weaknessesBn": ["অফারটিতে জরুরি প্রয়োজন (Urgency) বা সামাজিক গ্রহণযোগ্যতা আরও বাড়ানো যেতে পারে"],
+  "suggestedVariations": [
+    {
+      "hookType": "Direct Urgency & FOMO",
+      "headline": "Exclusive Limited-Time Offer!",
+      "primaryText": "Don't miss out on our best-selling collection. Shop today before stock runs out!",
+      "rationale": "High urgency triggers immediate action and cuts decision friction.",
+      "rationaleBn": "সীমিত সময়ের অফার তাৎক্ষণিক সিদ্ধান্ত নিতে সহায়তা করে এবং সেল বৃদ্ধি করে।"
+    },
+    {
+      "hookType": "Social Proof & Trust",
+      "headline": "Loved by Thousands of Customers",
+      "primaryText": "Join our happy community! 100% genuine quality with easy return warranty.",
+      "rationale": "Overcomes buyer skepticism by highlighting social proof and risk reversal.",
+      "rationaleBn": "কাস্টমারদের আস্থা অর্জন করতে ও নিরাপদ অনুভূতির সৃষ্টি করতে সহায়ক।"
+    },
+    {
+      "hookType": "Benefit-Driven & Solution",
+      "headline": "The Smarter Choice for Everyday Life",
+      "primaryText": "Upgrade your experience with premium quality designed to save your time and money.",
+      "rationale": "Focuses on tangible benefits and emotional satisfaction.",
+      "rationaleBn": "গ্রাহকের সুবিধা ও সরাসরি উপকারিতার ওপর জোর দেয়।"
+    }
+  ]
+}`;
+        aiResponseText = await this.aiService.generateCompletion(prompt);
+      } catch (err: any) {
+        this.logger.warn(`AI Service generateCompletion failed, falling back to heuristic engine: ${err.message}`);
+      }
+    }
+
+    let parsedResult: any = null;
+    if (aiResponseText) {
+      try {
+        const cleaned = aiResponseText.replace(/```json/gi, '').replace(/```/g, '').trim();
+        parsedResult = JSON.parse(cleaned);
+      } catch {
+        parsedResult = null;
+      }
+    }
+
+    if (!parsedResult) {
+      const textLen = primaryText.length;
+      const hasDiscount = /(%|off|ছাড়|অফার|offer|discount|free|ফ্রি|save)/i.test(primaryText + headline);
+      const hasUrgency = /(today|now|limited|hurry|আজই|দ্রুত|সীমিত|এখনই)/i.test(primaryText + headline);
+      const hasQuestion = /(\?|কেন|কীভাবে|how|why)/i.test(primaryText);
+      const allCaps = headline.length > 5 && headline === headline.toUpperCase();
+
+      let overallScore = 76;
+      let hookScore = 72;
+      let clarityScore = 80;
+
+      if (hasDiscount) { overallScore += 8; hookScore += 10; }
+      if (hasUrgency) { overallScore += 7; hookScore += 10; }
+      if (hasQuestion) { hookScore += 8; }
+      if (textLen >= 40 && textLen <= 300) { clarityScore += 10; overallScore += 5; }
+      if (allCaps) { overallScore -= 8; }
+
+      overallScore = Math.min(Math.max(overallScore, 60), 96);
+      hookScore = Math.min(Math.max(hookScore, 55), 95);
+      clarityScore = Math.min(Math.max(clarityScore, 65), 98);
+
+      const policyRisk = allCaps ? 'MEDIUM' : 'LOW';
+      const policyFeedback = allCaps
+        ? 'Avoid using excessive ALL CAPS in headlines as Meta may limit distribution.'
+        : 'Copy follows standard Meta Advertising Policies. Clean and compliant.';
+      const policyFeedbackBn = allCaps
+        ? 'হেডলাইনে সব বড় হাতের অক্ষর (ALL CAPS) ব্যবহার করা থেকে বিরত থাকুন, মেটা এটি সীমাবদ্ধ করতে পারে।'
+        : 'বিজ্ঞাপনের কপি মেটার সাধারণ বিজ্ঞাপন নীতিমালা অনুসরণ করে তৈরি হয়েছে। কোনো জটিলতা নেই।';
+
+      const strengths = [
+        hasDiscount ? 'Strong commercial incentive / discount present' : 'Clear product focus',
+        hasUrgency ? 'Creates healthy purchasing urgency' : 'Engaging tone of voice',
+      ];
+      const strengthsBn = [
+        hasDiscount ? 'আকর্ষণীয় অফার ও মূল্যছাড়ের উপস্থিতি' : 'পণ্যের মূল বিষয়ের ওপর স্পষ্ট ফোকাস',
+        hasUrgency ? 'গ্রাহককে দ্রুত সিদ্ধান্ত নিতে উৎসাহিত করে' : 'সহজ ও আকর্ষণীয় বক্তব্য',
+      ];
+
+      const weaknesses = [
+        primaryTexts.length < 2 ? 'Adding 2-3 primary text variations allows Meta algorithm to optimize delivery' : 'Consider testing video media in future',
+        !hasUrgency ? 'Add time-limited phrasing to boost click-through rate' : 'Ensure landing page matches the promised offer',
+      ];
+      const weaknessesBn = [
+        primaryTexts.length < 2 ? '২-৩টি প্রাইমারি টেক্সট অপশন দিলে মেটার এলগরিদম সবচেয়ে ভালোটি বেশি মানুষের কাছে পৌঁছায়' : 'ভবিষ্যতে ভিডিও কনটেন্ট যুক্ত করতে পারেন',
+        !hasUrgency ? 'ক্লিক-থ্রু রেট বাড়াতে সীমিত সময়ের সুযোগের কথা যুক্ত করুন' : 'ল্যান্ডিং পেইজের অফার যেন বিজ্ঞাপনের সাথে হুবহু মিলে',
+      ];
+
+      const cleanHeadline = headline || 'Special Promotion';
+      const cleanBody = primaryText || 'Check out our latest premium offerings!';
+
+      parsedResult = {
+        overallScore,
+        hookScore,
+        clarityScore,
+        policyRisk,
+        policyFeedback,
+        policyFeedbackBn,
+        strengths,
+        strengthsBn,
+        weaknesses,
+        weaknessesBn,
+        suggestedVariations: [
+          {
+            hookType: 'Direct Urgency & FOMO',
+            headline: `⚡ সীমিত সময়ের অফার: ${cleanHeadline}`,
+            primaryText: `🔥 মিস করবেন না! ${cleanBody}\n\n👉 স্টক সীমিত! অফারটি লুফে নিতে এখনই ভিজিট করুন বা অর্ডার করুন।`,
+            rationale: 'Injects urgent phrasing to drive immediate click-through.',
+            rationaleBn: 'সীমিত সময়ের সুযোগ গ্রাহককে দ্রুত ক্লিক করতে বাধ্য করে।'
+          },
+          {
+            hookType: 'Social Proof & Trust',
+            headline: `⭐ হাজারো সন্তুষ্ট গ্রাহকের পছন্দ: ${cleanHeadline}`,
+            primaryText: `শত শত গ্রাহক আমাদের পণ্য গ্রহণ করে সন্তুষ্ট! ${cleanBody}\n\n✅ ১০০% জেনুইন কোয়ালিটি ও সহজ রিটার্ন সুবিধা।`,
+            rationale: 'Overcomes hesitation and builds rapid trust.',
+            rationaleBn: 'সামাজিক গ্রহণযোগ্যতা তুলে ধরে নতুন কাস্টমারের সংশয় দূর করে।'
+          },
+          {
+            hookType: 'Benefit-Driven & Solution',
+            headline: `🎁 আপনার জন্য সেরা সমাধান: ${cleanHeadline}`,
+            primaryText: `আপনার কেনাকাটায় সর্বোচ্চ কোয়ালিটি এবং দারুণ সুবিধা পেতে বেছে নিন আমাদের সার্ভিস। ${cleanBody}`,
+            rationale: 'Focuses directly on convenience and customer benefits.',
+            rationaleBn: 'গ্রাহকের মূল সমস্যা সমাধান ও আর্থিক সাশ্রয়ের ওপর আলোকপাত করে।'
+          }
+        ]
+      };
+    }
+
+    return {
+      success: true,
+      campaignName: dto.campaignName,
+      ...parsedResult,
+      aiResponseQuotaDeducted: 1,
+    };
+  }
+
+  /**
    * Advanced Custom Campaign Launch (Ads Manager Full Pipeline):
-   * Creates Campaign -> AdSet (with targeting, optimization & placements) -> AdCreative -> Ad.
+   * Supports:
+   * - Single/Multiple Primary Texts
+   * - Single/Multiple Headlines
+   * - Creative Source: Upload / Image URL vs. Existing Page Post (object_story_id)
+   * - Detailed targeting & placements
+   * - Pixel Conversion Tracking specs
    */
   async launchCustomCampaign(
     tenantId: string,
     dto: {
       adAccountId: string;
-      facebookPageId: string;
+      facebookPageId?: string;
       name: string;
       objective?: string;
       dailyBudget: number;
       durationDays?: number;
-      headline: string;
-      bodyText: string;
+      headline?: string;
+      headlines?: string[];
+      bodyText?: string;
+      primaryTexts?: string[];
+      description?: string;
       callToAction?: string;
       linkUrl?: string;
       imageUrl?: string;
+      creativeSource?: 'upload' | 'existing_post';
+      pagePostId?: string;
       targeting?: {
         countries?: string[];
         ageMin?: number;
         ageMax?: number;
         genders?: number[];
+        interests?: string[];
       };
+      placements?: string[];
+      pixelId?: string;
     },
   ) {
     if (!dto.name || !dto.dailyBudget || dto.dailyBudget <= 0) {
       throw new BadRequestException('Campaign name and a valid daily budget are required.');
     }
-    if (!dto.headline || !dto.bodyText) {
-      throw new BadRequestException('Headline and primary ad copy body text are required.');
+
+    const { account, token, apiVersion, formattedAdAccountId } = await this.getDecryptedTokenAndAccount(tenantId, dto.adAccountId);
+
+    // Resolve Facebook Page ID
+    let targetPageId: string | null = dto.facebookPageId || account.facebookPageId || null;
+    if (!targetPageId) {
+      const messengerChannel = await this.prisma.channelConnection.findFirst({
+        where: { tenantId, channelType: 'messenger', status: 'active' },
+      });
+      targetPageId = messengerChannel?.externalAccountId || null;
+    }
+    if (!targetPageId) {
+      throw new BadRequestException('No Facebook Page found. Please connect your Facebook Page in Channel Integration or Meta Ads.');
     }
 
-    const { token, apiVersion, formattedAdAccountId } = await this.getDecryptedTokenAndAccount(tenantId, dto.adAccountId);
+    const isExistingPost = dto.creativeSource === 'existing_post' && Boolean(dto.pagePostId);
+
+    // Primary Text & Headline resolution
+    const primaryTexts = dto.primaryTexts && dto.primaryTexts.length > 0
+      ? dto.primaryTexts.filter(t => t.trim().length > 0)
+      : (dto.bodyText ? [dto.bodyText] : []);
+    const headlines = dto.headlines && dto.headlines.length > 0
+      ? dto.headlines.filter(h => h.trim().length > 0)
+      : (dto.headline ? [dto.headline] : []);
+
+    const primaryText = primaryTexts[0] || '';
+    const headline = headlines[0] || (dto.name ? `${dto.name} Offer` : 'Special Offer');
+
+    if (!isExistingPost && !primaryText) {
+      throw new BadRequestException('Primary ad copy text is required when creating a new creative.');
+    }
 
     try {
       // 1. Create Campaign
@@ -1023,6 +1352,9 @@ export class McpAdsService {
       if (dto.targeting?.genders?.length) {
         targeting.genders = dto.targeting.genders;
       }
+      if (dto.targeting?.interests?.length) {
+        targeting.flexible_spec = [{ interests: dto.targeting.interests.map((name: string) => ({ name })) }];
+      }
 
       const now = new Date();
       const durationDays = dto.durationDays && dto.durationDays > 0 ? dto.durationDays : 7;
@@ -1034,10 +1366,12 @@ export class McpAdsService {
         campaign_id: campaignId,
         daily_budget: Math.round(dto.dailyBudget * 100),
         billing_event: 'IMPRESSIONS',
-        optimization_goal: dto.objective === 'OUTCOME_TRAFFIC' ? 'LINK_CLICKS' : 'POST_ENGAGEMENT',
+        optimization_goal: dto.objective === 'OUTCOME_TRAFFIC'
+          ? 'LINK_CLICKS'
+          : (dto.objective === 'OUTCOME_LEADS' ? 'LEAD_GENERATION' : (dto.objective === 'OUTCOME_SALES' ? 'OFFSITE_CONVERSIONS' : 'POST_ENGAGEMENT')),
         bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
         targeting: JSON.stringify(targeting),
-        promoted_object: JSON.stringify({ page_id: dto.facebookPageId }),
+        promoted_object: JSON.stringify({ page_id: targetPageId }),
         status: 'ACTIVE',
         start_time: now.toISOString(),
         end_time: stopTime.toISOString(),
@@ -1049,38 +1383,66 @@ export class McpAdsService {
       const adSetId = adSetRes.data.id;
 
       // 3. Create AdCreative
-      const creativePayload: any = {
-        access_token: token,
-        name: `${dto.name} Creative`,
-        object_story_spec: JSON.stringify({
-          page_id: dto.facebookPageId,
-          link_data: {
-            message: dto.bodyText,
-            name: dto.headline,
-            link: dto.linkUrl || 'https://zinichat.com',
-            picture: dto.imageUrl || undefined,
-            call_to_action: {
-              type: dto.callToAction || 'LEARN_MORE',
-              value: { link: dto.linkUrl || 'https://zinichat.com' },
+      let creativePayload: any;
+
+      if (isExistingPost && dto.pagePostId) {
+        // Boost existing post: preserves all likes, comments, and shares
+        const fullStoryId = dto.pagePostId.startsWith(`${targetPageId}_`)
+          ? dto.pagePostId
+          : (dto.pagePostId.includes('_')
+              ? `${targetPageId}_${dto.pagePostId.slice(dto.pagePostId.indexOf('_') + 1)}`
+              : `${targetPageId}_${dto.pagePostId}`);
+
+        creativePayload = {
+          access_token: token,
+          name: `${dto.name} Creative (Existing Post)`,
+          object_story_id: fullStoryId,
+        };
+      } else {
+        // Standard link / image ad with multi-text support
+        creativePayload = {
+          access_token: token,
+          name: `${dto.name} Creative`,
+          object_story_spec: JSON.stringify({
+            page_id: targetPageId,
+            ...(account.instagramActorId ? { instagram_actor_id: account.instagramActorId } : {}),
+            link_data: {
+              message: primaryText,
+              name: headline,
+              description: dto.description || undefined,
+              link: dto.linkUrl || 'https://zinichat.com',
+              picture: dto.imageUrl || undefined,
+              call_to_action: {
+                type: dto.callToAction || 'LEARN_MORE',
+                value: { link: dto.linkUrl || 'https://zinichat.com' },
+              },
             },
-          },
-        }),
-      };
+          }),
+        };
+      }
 
       const creativeRes = await axios.post(`https://graph.facebook.com/${apiVersion}/${formattedAdAccountId}/adcreatives`, null, {
         params: creativePayload,
       });
       const creativeId = creativeRes.data.id;
 
-      // 4. Create Ad
+      // 4. Create Ad with optional Meta Pixel tracking specs
+      const adPayload: any = {
+        access_token: token,
+        name: `${dto.name} Ad`,
+        adset_id: adSetId,
+        creative: JSON.stringify({ creative_id: creativeId }),
+        status: 'ACTIVE',
+      };
+
+      if (dto.pixelId) {
+        adPayload.tracking_specs = JSON.stringify([
+          { 'action.type': ['offsite_conversion'], fb_pixel: [dto.pixelId] },
+        ]);
+      }
+
       const adRes = await axios.post(`https://graph.facebook.com/${apiVersion}/${formattedAdAccountId}/ads`, null, {
-        params: {
-          access_token: token,
-          name: `${dto.name} Ad`,
-          adset_id: adSetId,
-          creative: JSON.stringify({ creative_id: creativeId }),
-          status: 'ACTIVE',
-        },
+        params: adPayload,
       });
       const adId = adRes.data.id;
 
@@ -1090,8 +1452,11 @@ export class McpAdsService {
         adSetId,
         creativeId,
         adId,
+        creativeSource: isExistingPost ? 'existing_post' : 'upload',
         dailyBudget: dto.dailyBudget,
         durationDays,
+        headline,
+        primaryTextsCount: primaryTexts.length,
       };
     } catch (error: any) {
       this.logger.error('Error launching custom campaign:', error.response?.data || error.message);

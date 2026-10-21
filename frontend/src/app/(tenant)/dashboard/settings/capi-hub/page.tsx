@@ -24,7 +24,10 @@ import {
   UserCheck,
   LayoutGrid,
   Filter,
-  Activity
+  Activity,
+  ChevronDown,
+  ChevronUp,
+  ExternalLink
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useRolloutFlag } from '@/hooks/useRolloutFlag';
@@ -69,6 +72,96 @@ export default function CapiHubPage() {
     testEventCode: ''
   });
 
+  // Auto-discovered Pixels from connected Meta accounts
+  const [discoveredData, setDiscoveredData] = useState<{
+    isMetaConnected: boolean;
+    connectedAccounts: Array<{ adAccountId: string; name: string }>;
+    hasFacebookPage?: boolean;
+    facebookPageName?: string;
+    pixels: Array<{
+      id: string;
+      name: string;
+      isUnavailable?: boolean;
+      creationTime?: string;
+      lastFiredTime?: string;
+      adAccountId?: string;
+      adAccountName?: string;
+    }>;
+    message?: string;
+  } | null>(null);
+  const [loadingDiscovered, setLoadingDiscovered] = useState(false);
+  const [selectedDiscoveredPixelId, setSelectedDiscoveredPixelId] = useState<string>('');
+  const [connectingDiscovered, setConnectingDiscovered] = useState(false);
+  const [showManualForm, setShowManualForm] = useState(false);
+
+  const fetchDiscoveredPixels = async () => {
+    try {
+      setLoadingDiscovered(true);
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/capi-hub/discovered-pixels`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setDiscoveredData(data);
+        if (data.pixels && data.pixels.length > 0) {
+          setSelectedDiscoveredPixelId((prev) => {
+            if (prev) return prev;
+            return data.pixels[0].id;
+          });
+        }
+      }
+    } catch {
+      console.warn('Failed to load discovered pixels');
+    } finally {
+      setLoadingDiscovered(false);
+    }
+  };
+
+  const handleConnectDiscoveredPixel = async (targetPixelId?: string) => {
+    const pixelId = targetPixelId || selectedDiscoveredPixelId;
+    if (!pixelId) {
+      toast.error(language === 'en' ? 'Please select a Meta Pixel first' : 'অনুগ্রহ করে প্রথমে একটি মেটা পিক্সেল নির্বাচন করুন');
+      return;
+    }
+
+    setConnectingDiscovered(true);
+    setTestResult(null);
+    try {
+      const token = Cookies.get('access_token');
+      const matchedPixel = discoveredData?.pixels?.find(p => p.id === pixelId);
+      const res = await fetch(`${API}/capi-hub/connect-discovered-pixel`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          pixelId,
+          adAccountId: matchedPixel?.adAccountId,
+          testEventCode: formData.testEventCode ? formData.testEventCode.trim() : undefined
+        })
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Failed to connect pixel');
+      }
+
+      toast.success(
+        language === 'en'
+          ? `Meta Pixel (${pixelId}) connected with zero-hassle token!`
+          : `পিক্সেল (${pixelId}) সফলভাবে সংযুক্ত হয়েছে! আলাদা টোকেন দেওয়ার প্রয়োজন নেই।`
+      );
+      await fetchData();
+      await fetchDiscoveredPixels();
+    } catch (err: any) {
+      toast.error(err.message || 'Error connecting discovered pixel');
+    } finally {
+      setConnectingDiscovered(false);
+    }
+  };
+
   const fetchData = async () => {
     try {
       const token = Cookies.get('access_token');
@@ -77,10 +170,11 @@ export default function CapiHubPage() {
       const [intRes, configsRes, logsRes] = await Promise.all([
         fetch(`${API}/capi-hub/integration`, { headers }),
         fetch(`${API}/capi-hub/event-configs`, { headers }),
-        fetch(`${API}/capi-hub/logs`, { headers })
+        fetch(`${API}/capi-hub/logs`, { headers }),
+        fetchDiscoveredPixels()
       ]);
 
-      if (intRes.ok) {
+      if (intRes && intRes.ok) {
         const data = await intRes.json();
         setIntegration(data);
         if (data) {
@@ -90,14 +184,17 @@ export default function CapiHubPage() {
             accessToken: data.accessToken ? '********' : '',
             testEventCode: data.testEventCode || ''
           });
+          if (data.pixelId) {
+            setSelectedDiscoveredPixelId(data.pixelId);
+          }
         }
       }
       
-      if (configsRes.ok) {
+      if (configsRes && configsRes.ok) {
         setEventConfigs(await configsRes.json());
       }
       
-      if (logsRes.ok) {
+      if (logsRes && logsRes.ok) {
         setLogs(await logsRes.json());
       }
     } catch {
@@ -381,79 +478,213 @@ export default function CapiHubPage() {
               </span>
             </div>
 
-            <div className="space-y-3.5">
-              <div>
-                <label className="text-[11px] font-semibold text-muted-foreground mb-1 block">
-                  Meta Pixel ID / Dataset ID <span className="text-red-400">*</span>
-                </label>
-                <input 
-                  type="text" 
-                  value={formData.pixelId}
-                  onChange={e => setFormData({ ...formData, pixelId: e.target.value })}
-                  className="w-full bg-background/80 border border-white/10 rounded-xl px-3 py-2.5 text-[12px] text-foreground focus:outline-none focus:border-emerald-500/50 transition-colors font-mono"
-                  placeholder="e.g. 102938475610293"
-                />
-              </div>
+            <div className="space-y-4">
+              {/* 1. AUTO-DISCOVERED PIXELS SECTION */}
+              {discoveredData?.isMetaConnected ? (
+                <div className="p-3.5 rounded-xl bg-gradient-to-br from-emerald-500/15 via-surface/60 to-brand-green/10 border border-emerald-500/30">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                      {language === 'en' ? 'Connected Meta Pixels' : 'কানেক্টেড মেটা পিক্সেলসমূহ'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={fetchDiscoveredPixels}
+                      disabled={loadingDiscovered}
+                      className="text-[10px] text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
+                      title={language === 'en' ? 'Refresh Pixels' : 'রিফ্রেশ করুন'}
+                    >
+                      <RefreshCw className={`w-3 h-3 ${loadingDiscovered ? 'animate-spin' : ''}`} />
+                      {language === 'en' ? 'Refresh' : 'রিফ্রেশ'}
+                    </button>
+                  </div>
 
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-[11px] font-semibold text-muted-foreground flex items-center gap-1">
-                    Conversions API Access Token <span className="text-red-400">*</span>
-                  </label>
-                  <a 
-                    href="https://business.facebook.com/events_manager2" 
-                    target="_blank" 
-                    rel="noreferrer"
-                    className="text-[10px] text-emerald-400 hover:underline flex items-center gap-0.5"
-                  >
-                    Events Manager ↗
-                  </a>
+                  {loadingDiscovered ? (
+                    <div className="py-4 text-center">
+                      <RefreshCw className="w-4 h-4 animate-spin text-emerald-400 mx-auto mb-1" />
+                      <span className="text-[10px] text-muted-foreground">{language === 'en' ? 'Detecting pixels...' : 'পিক্সেল খোঁজা হচ্ছে...'}</span>
+                    </div>
+                  ) : discoveredData.pixels.length > 0 ? (
+                    <div className="space-y-2.5">
+                      <p className="text-[10px] text-muted-foreground leading-relaxed">
+                        {language === 'en'
+                          ? 'Select your Pixel to start tracking. ZiniChat automatically uses your connected Facebook OAuth token — zero manual copy-pasting!'
+                          : 'আপনার পিক্সেল নির্বাচন করুন। কোনো ম্যানুয়াল টোকেন কপি-পেস্ট ছাড়াই স্বয়ংক্রিয়ভাবে ট্র্যাকিং চালু হয়ে যাবে!'}
+                      </p>
+
+                      <div className="space-y-1.5 max-h-52 overflow-y-auto pr-1">
+                        {discoveredData.pixels.map((p) => {
+                          const isCurrentActive = integration?.pixelId === p.id && integration?.isActive;
+                          const isSelected = selectedDiscoveredPixelId === p.id;
+                          return (
+                            <div
+                              key={p.id}
+                              onClick={() => setSelectedDiscoveredPixelId(p.id)}
+                              className={`p-2.5 rounded-xl border cursor-pointer transition-all ${
+                                isSelected
+                                  ? 'bg-emerald-500/20 border-emerald-500 shadow-md shadow-emerald-950/20'
+                                  : 'bg-background/60 border-white/5 hover:border-white/20'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
+                                    isSelected ? 'border-emerald-400 bg-emerald-500' : 'border-white/30'
+                                  }`}>
+                                    {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-[11px] font-bold text-white truncate">{p.name}</p>
+                                    <p className="text-[10px] font-mono text-muted-foreground">ID: {p.id}</p>
+                                  </div>
+                                </div>
+                                {isCurrentActive && (
+                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shrink-0">
+                                    {language === 'en' ? 'Active' : 'চালু'}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleConnectDiscoveredPixel()}
+                        disabled={connectingDiscovered || !selectedDiscoveredPixelId}
+                        className="w-full mt-2 py-2.5 bg-brand-green hover:bg-brand-green/90 text-white rounded-xl text-[11px] font-bold transition-all flex items-center justify-center gap-1.5 shadow-md shadow-brand-green/20 disabled:opacity-50"
+                      >
+                        {connectingDiscovered ? (
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300" />
+                        )}
+                        {language === 'en' ? 'Connect Selected Pixel (1-Click Setup)' : 'নির্বাচিত পিক্সেলটি চালু করুন (১-ক্লিক সংযোগ)'}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="p-3 bg-background/50 rounded-xl border border-white/5 text-center">
+                      <p className="text-[11px] text-muted-foreground">
+                        {language === 'en'
+                          ? 'No Pixels found under your Meta ad accounts. Create a Pixel in Meta Events Manager or enter manually below.'
+                          : 'আপনার মেটা অ্যাকাউন্টে কোনো পিক্সেল পাওয়া যায়নি। মেটা ইভেন্টস ম্যানেজার থেকে পিক্সেল তৈরি করুন অথবা নিচে ম্যানুয়ালি লিখুন।'}
+                      </p>
+                    </div>
+                  )}
                 </div>
-                <input 
-                  type="password" 
-                  value={formData.accessToken}
-                  onChange={e => setFormData({ ...formData, accessToken: e.target.value })}
-                  className="w-full bg-background/80 border border-white/10 rounded-xl px-3 py-2.5 text-[12px] text-foreground focus:outline-none focus:border-emerald-500/50 transition-colors font-mono"
-                  placeholder="EAA..."
-                />
-                <p className="text-[10px] text-muted-foreground mt-1">
-                  {language === 'en'
-                    ? 'Generate under Events Manager > Settings > Conversions API > "Generate access token".'
-                    : 'Events Manager > Settings > Conversions API > "Generate access token" থেকে তৈরি করুন।'}
-                </p>
-              </div>
+              ) : discoveredData && !discoveredData.isMetaConnected ? (
+                <div className="p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/30">
+                  <div className="flex items-start gap-2.5">
+                    <AlertCircle className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-xs font-semibold text-white">
+                        {language === 'en' ? 'Meta Account Not Connected' : 'মেটা অ্যাকাউন্ট যুক্ত নেই'}
+                      </p>
+                      <p className="text-[11px] text-blue-200/80 mt-1 leading-relaxed">
+                        {language === 'en'
+                          ? 'Connect your Facebook Page or Meta Ad Account to auto-discover your Pixels with 1 click without manual tokens.'
+                          : 'পিক্সেল স্বয়ংক্রিয়ভাবে পেতে এবং টোকেনের ঝামেলা ছাড়া ট্র্যাক করতে মেটা অ্যাড অ্যাকাউন্ট বা ফেসবুক পেজ কানেক্ট করুন।'}
+                      </p>
+                      <a
+                        href="/dashboard/settings/meta-ads"
+                        className="inline-flex items-center gap-1 mt-2.5 px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-[10px] font-bold transition-colors"
+                      >
+                        {language === 'en' ? 'Connect Meta Account ↗' : 'মেটা অ্যাকাউন্ট কানেক্ট করুন ↗'}
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
 
-              <div>
-                <label className="text-[11px] font-semibold text-muted-foreground mb-1 block">
-                  Test Event Code <span className="text-[10px] text-muted-foreground font-normal">({language === 'en' ? 'Optional' : 'ঐচ্ছিক'})</span>
-                </label>
-                <input 
-                  type="text" 
-                  value={formData.testEventCode}
-                  onChange={e => setFormData({ ...formData, testEventCode: e.target.value })}
-                  className="w-full bg-background/80 border border-white/10 rounded-xl px-3 py-2.5 text-[12px] text-foreground focus:outline-none focus:border-emerald-500/50 transition-colors font-mono uppercase"
-                  placeholder="e.g. TEST12345"
-                />
-                <p className="text-[10px] text-muted-foreground mt-1">
-                  {language === 'en'
-                    ? 'Found in Events Manager > Test Events tab to view server hits live in Meta.'
-                    : 'মেটাতে সরাসরি রিয়েলটাইম দেখতে Events Manager > Test Events ট্যাব থেকে দিন।'}
-                </p>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="pt-2 space-y-2">
-                <button 
-                  onClick={handleSaveIntegration}
-                  disabled={saving}
-                  className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white rounded-xl text-[12px] font-bold transition-all flex justify-center items-center gap-2 shadow-lg shadow-emerald-950/20 disabled:opacity-50"
+              {/* 2. ADVANCED / MANUAL SETUP TOGGLE */}
+              <div className="border-t border-white/10 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setShowManualForm(!showManualForm)}
+                  className="w-full flex items-center justify-between text-[11px] font-semibold text-muted-foreground hover:text-white transition-colors py-1"
                 >
-                  {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                  {language === 'en' ? 'Save & Activate Tracking' : 'সেভ করুন ও ট্র্যাকিং চালু করুন'}
+                  <span className="flex items-center gap-1.5">
+                    <SlidersHorizontal className="w-3.5 h-3.5 text-brand-orange" />
+                    {language === 'en' ? 'Advanced / Manual Token Setup' : 'ঐচ্ছিক ম্যানুয়াল টোকেন ও পিক্সেল সেটআপ'}
+                  </span>
+                  {showManualForm ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                 </button>
+
+                {showManualForm && (
+                  <div className="space-y-3 pt-3 animate-in fade-in">
+                    <div>
+                      <label className="text-[11px] font-semibold text-muted-foreground mb-1 block">
+                        Meta Pixel ID / Dataset ID <span className="text-red-400">*</span>
+                      </label>
+                      <input 
+                        type="text" 
+                        value={formData.pixelId}
+                        onChange={e => setFormData({ ...formData, pixelId: e.target.value })}
+                        className="w-full bg-background/80 border border-white/10 rounded-xl px-3 py-2.5 text-[12px] text-foreground focus:outline-none focus:border-emerald-500/50 transition-colors font-mono"
+                        placeholder="e.g. 102938475610293"
+                      />
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-[11px] font-semibold text-muted-foreground flex items-center gap-1">
+                          Conversions API Access Token <span className="text-red-400">*</span>
+                        </label>
+                        <a 
+                          href="https://business.facebook.com/events_manager2" 
+                          target="_blank" 
+                          rel="noreferrer"
+                          className="text-[10px] text-emerald-400 hover:underline flex items-center gap-0.5"
+                        >
+                          Events Manager ↗
+                        </a>
+                      </div>
+                      <input 
+                        type="password" 
+                        value={formData.accessToken}
+                        onChange={e => setFormData({ ...formData, accessToken: e.target.value })}
+                        className="w-full bg-background/80 border border-white/10 rounded-xl px-3 py-2.5 text-[12px] text-foreground focus:outline-none focus:border-emerald-500/50 transition-colors font-mono"
+                        placeholder="EAA..."
+                      />
+                    </div>
+
+                    <button 
+                      type="button"
+                      onClick={handleSaveIntegration}
+                      disabled={saving}
+                      className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-[11px] font-bold transition-all flex justify-center items-center gap-1.5 shadow-md disabled:opacity-50"
+                    >
+                      {saving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                      {language === 'en' ? 'Save Manual Credentials' : 'ম্যানুয়াল তথ্য সংরক্ষণ করুন'}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* 3. TEST EVENT CODE (Optional) & TEST PING */}
+              <div className="pt-2 border-t border-white/10 space-y-3">
+                <div>
+                  <label className="text-[11px] font-semibold text-muted-foreground mb-1 block">
+                    Test Event Code <span className="text-[10px] text-muted-foreground font-normal">({language === 'en' ? 'Optional' : 'ঐচ্ছিক'})</span>
+                  </label>
+                  <input 
+                    type="text" 
+                    value={formData.testEventCode}
+                    onChange={e => setFormData({ ...formData, testEventCode: e.target.value })}
+                    className="w-full bg-background/80 border border-white/10 rounded-xl px-3 py-2 text-[12px] text-foreground focus:outline-none focus:border-emerald-500/50 transition-colors font-mono uppercase"
+                    placeholder="e.g. TEST12345"
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    {language === 'en'
+                      ? 'Found in Events Manager > Test Events tab to view server hits live in Meta.'
+                      : 'মেটাতে সরাসরি রিয়েলটাইম দেখতে Events Manager > Test Events ট্যাব থেকে দিন।'}
+                  </p>
+                </div>
 
                 {integration && (
                   <button 
+                    type="button"
                     onClick={handleSendTestEvent}
                     disabled={testingPing}
                     className="w-full py-2 bg-white/5 hover:bg-white/10 text-foreground border border-white/10 rounded-xl text-[12px] font-semibold transition-all flex justify-center items-center gap-2 disabled:opacity-50"

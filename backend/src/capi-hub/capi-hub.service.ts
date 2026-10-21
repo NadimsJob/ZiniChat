@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CryptoService } from '../crypto/crypto.service';
 import { FeatureRolloutService } from '../feature-rollout/feature-rollout.service';
@@ -425,6 +425,137 @@ export class CapiHubService {
       where: { tenantId },
       orderBy: { createdAt: 'desc' },
       take: 200
+    });
+  }
+
+  /**
+   * Auto-discovers Meta Pixels from connected Meta Ad Accounts or Facebook Page channels.
+   * Completely eliminates the hassle of manually copying/pasting Pixel IDs or Access Tokens.
+   */
+  async getDiscoveredPixels(tenantId: string) {
+    const isEnabled = await this.featureRollout.isFeatureEnabled(tenantId, 'capi_hub');
+    if (!isEnabled) throw new ForbiddenException('CAPI Hub feature is not enabled for this tenant');
+
+    const adAccounts = await this.prisma.tenantMetaAdAccount.findMany({
+      where: { tenantId, status: 'active' },
+    });
+
+    const messengerChannel = await this.prisma.channelConnection.findFirst({
+      where: {
+        tenantId,
+        channelType: { in: ['messenger', 'instagram'] },
+        status: 'active',
+      },
+    });
+
+    if (adAccounts.length === 0 && !messengerChannel) {
+      return {
+        isMetaConnected: false,
+        connectedAccounts: [],
+        pixels: [],
+        message: 'No Meta Ad Account or Facebook Page connected yet.',
+      };
+    }
+
+    const allPixels: Array<{
+      id: string;
+      name: string;
+      isUnavailable?: boolean;
+      creationTime?: string;
+      lastFiredTime?: string;
+      adAccountId?: string;
+      adAccountName?: string;
+    }> = [];
+
+    // 1. Fetch pixels from all active Meta Ad Accounts
+    for (const acc of adAccounts) {
+      try {
+        const decryptedToken = this.cryptoService.decrypt(acc.accessToken);
+        const cleanId = acc.adAccountId.startsWith('act_') ? acc.adAccountId : `act_${acc.adAccountId}`;
+
+        const response = await axios.get(`https://graph.facebook.com/v21.0/${cleanId}/adspixels`, {
+          params: {
+            access_token: decryptedToken,
+            fields: 'id,name,creation_time,is_unavailable,last_fired_time',
+          },
+          timeout: 8000,
+        });
+
+        const pixelsData = response.data?.data || [];
+        for (const p of pixelsData) {
+          allPixels.push({
+            id: p.id,
+            name: p.name || `Pixel (${p.id})`,
+            isUnavailable: Boolean(p.is_unavailable),
+            creationTime: p.creation_time,
+            lastFiredTime: p.last_fired_time,
+            adAccountId: acc.adAccountId,
+            adAccountName: acc.adAccountName || 'Ad Account',
+          });
+        }
+      } catch (err: any) {
+        this.logger.warn(`Could not fetch pixels for ad account ${acc.adAccountId}: ${err.response?.data?.error?.message || err.message}`);
+      }
+    }
+
+    // Deduplicate by pixel ID
+    const uniquePixels = Array.from(new Map(allPixels.map(p => [p.id, p])).values());
+
+    return {
+      isMetaConnected: true,
+      connectedAccounts: adAccounts.map(a => ({ adAccountId: a.adAccountId, name: a.adAccountName })),
+      hasFacebookPage: Boolean(messengerChannel),
+      facebookPageName: messengerChannel?.displayName,
+      pixels: uniquePixels,
+    };
+  }
+
+  /**
+   * 1-Click Connect a Discovered Meta Pixel:
+   * Uses the already-authenticated Meta OAuth token from tenantMetaAdAccount or channelConnection.
+   * Merchant does not have to copy or paste tokens!
+   */
+  async connectDiscoveredPixel(
+    tenantId: string,
+    data: { pixelId: string; adAccountId?: string; testEventCode?: string },
+  ) {
+    if (!data.pixelId) {
+      throw new BadRequestException('pixelId is required');
+    }
+
+    let tokenToUse: string | null = null;
+
+    if (data.adAccountId) {
+      const acc = await this.prisma.tenantMetaAdAccount.findFirst({
+        where: { tenantId, adAccountId: data.adAccountId, status: 'active' },
+      });
+      if (acc) tokenToUse = this.cryptoService.decrypt(acc.accessToken);
+    }
+
+    if (!tokenToUse) {
+      const firstAcc = await this.prisma.tenantMetaAdAccount.findFirst({
+        where: { tenantId, status: 'active' },
+      });
+      if (firstAcc) tokenToUse = this.cryptoService.decrypt(firstAcc.accessToken);
+    }
+
+    if (!tokenToUse) {
+      const channel = await this.prisma.channelConnection.findFirst({
+        where: { tenantId, channelType: 'messenger', status: 'active' },
+      });
+      if (channel?.accessTokenEncrypted) {
+        tokenToUse = this.cryptoService.decrypt(channel.accessTokenEncrypted);
+      }
+    }
+
+    if (!tokenToUse) {
+      throw new BadRequestException('No active Meta authorization token found. Please connect your Meta Ad Account or Facebook Page first.');
+    }
+
+    return this.createOrUpdateIntegration(tenantId, {
+      pixelId: data.pixelId.trim(),
+      accessToken: tokenToUse,
+      testEventCode: data.testEventCode?.trim(),
     });
   }
 }

@@ -6,12 +6,14 @@ import { useLanguage } from '@/components/LanguageProvider';
 import { FacebookBadgeIcon as Facebook } from '@/components/BrandIcons';
 import { 
   DollarSign, TrendingUp, BarChart3, Eye, MousePointer, 
-  RefreshCw, Play, Pause, Edit2, Check, X, ChevronDown, 
+  RefreshCw, Play, Pause, Edit2, Check, X, ChevronDown, ChevronUp,
   Sliders, Calendar, Share2, ThumbsUp, Trash2, ExternalLink, 
   ShieldCheck, AlertCircle, CheckCircle2, Sparkles, Filter, 
   ArrowUpRight, ArrowDownRight, Layers, Users, Zap, Bot,
-  Target, PlusCircle, CheckCircle, HelpCircle, Loader2, Activity
+  Target, PlusCircle, CheckCircle, HelpCircle, Loader2, Activity,
+  Image as ImageIcon, FileText, ArrowRight, Lightbulb, SlidersHorizontal
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 
 interface AiAnalysisResult {
@@ -142,23 +144,213 @@ export default function MetaAdsManagerPage() {
   } | null>(null);
   const [applyingAiAction, setApplyingAiAction] = useState(false);
 
-  // Advanced Custom Campaign Launch State (Ads Manager Pipeline)
+  // Advanced Custom Campaign Launch State (Ads Manager Full Pipeline)
   const [launchingCustom, setLaunchingCustom] = useState(false);
   const [customCampForm, setCustomCampForm] = useState({
     name: '',
     objective: 'OUTCOME_ENGAGEMENT',
+    specialAdCategory: 'NONE',
+    advantageBudget: false,
+    adSetName: '',
+    optimizationGoal: 'POST_ENGAGEMENT',
     dailyBudget: 5,
     durationDays: 7,
-    headline: '',
-    bodyText: '',
-    callToAction: 'LEARN_MORE',
-    linkUrl: 'https://zinichat.com',
-    imageUrl: '',
     countries: 'BD',
     ageMin: 18,
     ageMax: 65,
     gender: 'all' as 'all' | 'men' | 'women',
+    interests: '',
+    placementType: 'advantage_plus' as 'advantage_plus' | 'manual',
+    placements: ['facebook_feed', 'instagram_feed', 'stories_reels'],
+
+    // Creative Setup
+    creativeSource: 'upload' as 'upload' | 'existing_post',
+    selectedPagePostId: '',
+    headlines: [''] as string[],
+    primaryTexts: [''] as string[],
+    headline: '',
+    bodyText: '',
+    description: '',
+    callToAction: 'LEARN_MORE',
+    linkUrl: 'https://zinichat.com',
+    imageUrl: '',
+    trackPixel: false,
+    selectedPixelId: '',
   });
+
+  // Discovered Pixels for campaign conversion tracking
+  const [discoveredPixels, setDiscoveredPixels] = useState<Array<{ id: string; name: string }>>([]);
+  const [loadingPixels, setLoadingPixels] = useState(false);
+
+  // Pre-flight AI Review State (Deducts 1 AI credit under Rule 4)
+  const [reviewingWithAi, setReviewingWithAi] = useState(false);
+  const [aiReviewResult, setAiReviewResult] = useState<{
+    overallScore: number;
+    hookScore: number;
+    clarityScore: number;
+    policyRisk: 'LOW' | 'MEDIUM' | 'HIGH';
+    policyFeedback: string;
+    policyFeedbackBn: string;
+    strengths: string[];
+    strengthsBn: string[];
+    weaknesses: string[];
+    weaknessesBn: string[];
+    suggestedVariations: Array<{
+      hookType: string;
+      headline: string;
+      primaryText: string;
+      rationale: string;
+      rationaleBn: string;
+    }>;
+    aiResponseQuotaDeducted?: number;
+  } | null>(null);
+  const [aiReviewModalOpen, setAiReviewModalOpen] = useState(false);
+
+  // Helpers for Multiple Primary Texts and Headlines
+  const handleAddPrimaryText = () => {
+    if (customCampForm.primaryTexts.length >= 5) {
+      toast.error(language === 'en' ? 'Maximum 5 Primary Text options allowed by Meta.' : 'মেটা সর্বোচ্চ ৫টি প্রাইমারি টেক্সট অপশন সমর্থন করে।');
+      return;
+    }
+    setCustomCampForm(prev => ({ ...prev, primaryTexts: [...prev.primaryTexts, ''] }));
+  };
+
+  const handleRemovePrimaryText = (index: number) => {
+    if (customCampForm.primaryTexts.length <= 1) return;
+    setCustomCampForm(prev => ({
+      ...prev,
+      primaryTexts: prev.primaryTexts.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleUpdatePrimaryText = (index: number, val: string) => {
+    setCustomCampForm(prev => {
+      const updated = [...prev.primaryTexts];
+      updated[index] = val;
+      return { ...prev, primaryTexts: updated, bodyText: updated[0] || '' };
+    });
+  };
+
+  const handleAddHeadline = () => {
+    if (customCampForm.headlines.length >= 3) {
+      toast.error(language === 'en' ? 'Maximum 3 Headline options allowed.' : 'সর্বোচ্চ ৩টি হেডলাইন অপশন দেওয়া যাবে।');
+      return;
+    }
+    setCustomCampForm(prev => ({ ...prev, headlines: [...prev.headlines, ''] }));
+  };
+
+  const handleRemoveHeadline = (index: number) => {
+    if (customCampForm.headlines.length <= 1) return;
+    setCustomCampForm(prev => ({
+      ...prev,
+      headlines: prev.headlines.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleUpdateHeadline = (index: number, val: string) => {
+    setCustomCampForm(prev => {
+      const updated = [...prev.headlines];
+      updated[index] = val;
+      return { ...prev, headlines: updated, headline: updated[0] || '' };
+    });
+  };
+
+  const fetchPixelsForTracking = async (accId?: string) => {
+    const targetAccId = accId || selectedAccountId;
+    try {
+      setLoadingPixels(true);
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API_URL}/meta-ads/pixels${targetAccId ? `?adAccountId=${targetAccId}` : ''}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.pixels) {
+          setDiscoveredPixels(data.pixels);
+          if (data.pixels.length > 0) {
+            setCustomCampForm(prev => {
+              if (prev.selectedPixelId) return prev;
+              return { ...prev, selectedPixelId: data.pixels[0].id };
+            });
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to fetch pixels for tracking:', err);
+    } finally {
+      setLoadingPixels(false);
+    }
+  };
+
+  const handleReviewWithAi = async () => {
+    const primaryTexts = customCampForm.primaryTexts.filter(t => t.trim().length > 0);
+    const headlines = customCampForm.headlines.filter(h => h.trim().length > 0);
+
+    if (customCampForm.creativeSource === 'upload' && primaryTexts.length === 0) {
+      toast.error(language === 'en' ? 'Please enter at least one primary text to analyze' : 'অনুগ্রহ করে বিশ্লেষণের জন্য অন্তত একটি প্রাইমারি টেক্সট লিখুন');
+      return;
+    }
+
+    setReviewingWithAi(true);
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API_URL}/meta-ads/ai-review-ad`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          adAccountId: selectedAccountId,
+          campaignName: customCampForm.name || 'Ad Campaign',
+          objective: customCampForm.objective,
+          headlines,
+          primaryTexts,
+          callToAction: customCampForm.callToAction,
+          targetAudience: {
+            countries: customCampForm.countries,
+            ageMin: customCampForm.ageMin,
+            ageMax: customCampForm.ageMax,
+            gender: customCampForm.gender,
+          },
+          dailyBudget: customCampForm.dailyBudget,
+          destinationUrl: customCampForm.linkUrl,
+          creativeSource: customCampForm.creativeSource,
+          pagePostId: customCampForm.selectedPagePostId,
+        })
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'AI Review failed');
+      }
+
+      const data = await res.json();
+      setAiReviewResult(data);
+      setAiReviewModalOpen(true);
+      toast.success(
+        language === 'en'
+          ? 'AI Ad Analysis complete! (1 AI Credit deducted)'
+          : 'বিজ্ঞাপনের এআই বিশ্লেষণ সম্পন্ন হয়েছে! (১টি এআই ক্রেডিট কর্তন করা হয়েছে)'
+      );
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to review ad with AI');
+    } finally {
+      setReviewingWithAi(false);
+    }
+  };
+
+  const handleApplyAiVariation = (variation: { headline: string; primaryText: string }) => {
+    setCustomCampForm(prev => ({
+      ...prev,
+      headlines: [variation.headline, ...(prev.headlines.slice(1))],
+      primaryTexts: [variation.primaryText, ...(prev.primaryTexts.slice(1))],
+      headline: variation.headline,
+      bodyText: variation.primaryText,
+    }));
+    setAiReviewModalOpen(false);
+    toast.success(language === 'en' ? 'AI Optimized Copy applied to Primary Text!' : 'এআই অপ্টিমাইজড কপি সফলভাবে প্রাইমারি টেক্সটে যুক্ত হয়েছে!');
+  };
 
   // Boost Post Drawer/Modal State
   const [boostModalOpen, setBoostModalOpen] = useState(false);
@@ -187,8 +379,11 @@ export default function MetaAdsManagerPage() {
   useEffect(() => {
     if (selectedAccountId) {
       fetchAccountData(selectedAccountId);
-      if (activeTab === 'boost') {
+      if (activeTab === 'boost' || activeTab === 'create') {
         fetchPagePosts(selectedAccountId);
+      }
+      if (activeTab === 'create') {
+        fetchPixelsForTracking(selectedAccountId);
       }
     }
   }, [selectedAccountId, activeTab]);
@@ -523,6 +718,20 @@ export default function MetaAdsManagerPage() {
 
     const genders = customCampForm.gender === 'men' ? [1] : customCampForm.gender === 'women' ? [2] : [1, 2];
     const countries = customCampForm.countries.split(',').map(c => c.trim().toUpperCase()).filter(Boolean);
+    const validHeadlines = customCampForm.headlines.filter(h => h.trim().length > 0);
+    const validPrimaryTexts = customCampForm.primaryTexts.filter(t => t.trim().length > 0);
+
+    if (customCampForm.creativeSource === 'existing_post' && !customCampForm.selectedPagePostId) {
+      toast.error(language === 'en' ? 'Please select an existing Facebook Page post to boost.' : 'অনুগ্রহ করে বুস্ট করতে একটি ফেসবুক পেইজ পোস্ট নির্বাচন করুন।');
+      setLaunchingCustom(false);
+      return;
+    }
+
+    if (customCampForm.creativeSource === 'upload' && validPrimaryTexts.length === 0) {
+      toast.error(language === 'en' ? 'Primary text (ad copy) is required.' : 'বিজ্ঞাপনের মূল বিবরণ (প্রাইমারি টেক্সট) আবশ্যক।');
+      setLaunchingCustom(false);
+      return;
+    }
 
     try {
       const token = Cookies.get('access_token');
@@ -539,17 +748,25 @@ export default function MetaAdsManagerPage() {
           objective: customCampForm.objective,
           dailyBudget: Number(customCampForm.dailyBudget),
           durationDays: Number(customCampForm.durationDays),
-          headline: customCampForm.headline,
-          bodyText: customCampForm.bodyText,
+          headline: validHeadlines[0] || customCampForm.name,
+          headlines: validHeadlines,
+          bodyText: validPrimaryTexts[0] || '',
+          primaryTexts: validPrimaryTexts,
+          description: customCampForm.description || undefined,
           callToAction: customCampForm.callToAction,
           linkUrl: customCampForm.linkUrl,
           imageUrl: customCampForm.imageUrl || undefined,
+          creativeSource: customCampForm.creativeSource,
+          pagePostId: customCampForm.creativeSource === 'existing_post' ? customCampForm.selectedPagePostId : undefined,
           targeting: {
             countries,
             ageMin: Number(customCampForm.ageMin),
             ageMax: Number(customCampForm.ageMax),
             genders,
-          }
+            interests: customCampForm.interests ? customCampForm.interests.split(',').map(s => s.trim()).filter(Boolean) : undefined,
+          },
+          placements: customCampForm.placementType === 'manual' ? customCampForm.placements : undefined,
+          pixelId: customCampForm.trackPixel ? customCampForm.selectedPixelId : undefined,
         })
       });
 
@@ -558,6 +775,11 @@ export default function MetaAdsManagerPage() {
         throw new Error(err.message || 'Failed to launch custom campaign');
       }
 
+      toast.success(
+        language === 'en'
+          ? 'Campaign successfully launched to Meta Ads Manager!'
+          : 'কাস্টম ক্যাম্পেইন সফলভাবে মেটা অ্যাড ম্যানেজারে চালু করা হয়েছে!'
+      );
       setStatusMsg({
         type: 'success',
         message: language === 'en'
@@ -567,6 +789,7 @@ export default function MetaAdsManagerPage() {
       setActiveTab('campaigns');
       fetchAccountData(selectedAccountId);
     } catch (err: any) {
+      toast.error(err.message);
       setStatusMsg({ type: 'error', message: err.message });
     } finally {
       setLaunchingCustom(false);
@@ -1138,32 +1361,38 @@ export default function MetaAdsManagerPage() {
               <div>
                 <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
                   <PlusCircle className="w-5 h-5 text-emerald-400" />
-                  {language === 'en' ? 'Create Custom Campaign (Ads Manager Flow)' : 'অ্যাডভান্সড ক্যাম্পেইন তৈরি করুন (মেটা অ্যাড ম্যানেজার ফ্লো)'}
+                  {language === 'en' ? 'Create Custom Campaign (Native Ads Manager Flow)' : 'অ্যাডভান্সড ক্যাম্পেইন তৈরি করুন (মেটা অ্যাড ম্যানেজার ফ্লো)'}
                 </h3>
                 <p className="text-xs sm:text-sm text-text-secondary mt-1">
                   {language === 'en'
-                    ? 'Deploy a complete Meta advertising structure (Campaign, AdSet with precise targeting, and Ad Creative with conversion links) directly to Meta Graph API.'
-                    : 'সরাসরি মেটাতে অ্যাডভান্সড ক্যাম্পেইন, টার্গেটেড অ্যাডসেট এবং কনভার্সন লিংকযুক্ত অ্যাড ক্রিয়েটিভ চালু করুন।'}
+                    ? 'Deploy a complete 3-tier Meta advertising structure (Campaign, AdSet with detailed targeting, and Ad Creative with dynamic multi-text options or existing page post) directly to Meta Graph API.'
+                    : 'সরাসরি মেটাতে অ্যাডভান্সড ৩-লেভেল ক্যাম্পেইন (ক্যাম্পেইন, টার্গেটেড অ্যাডসেট এবং একাধিক কপি অপশন বা পেইজ পোস্টযুক্ত ক্রিয়েটিভ) চালু করুন।'}
                 </p>
               </div>
             </div>
           </div>
 
           <form onSubmit={handleLaunchCustomCampaign} className="space-y-6">
-            {/* Step 1: Campaign Objective & Name */}
+            {/* LEVEL 1: CAMPAIGN OBJECTIVE & IDENTITY */}
             <div className="bg-surface/70 backdrop-blur-xl border border-white/10 rounded-2xl p-5 space-y-4">
-              <h4 className="text-sm font-semibold text-white flex items-center gap-2">
-                <Target className="w-4 h-4 text-brand-green" />
-                {language === 'en' ? '1. Campaign Objective & Identity' : '১. ক্যাম্পেইনের উদ্দেশ্য ও নাম'}
-              </h4>
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-semibold text-white flex items-center gap-2">
+                  <Target className="w-4 h-4 text-brand-green" />
+                  {language === 'en' ? 'Level 1: Campaign Objective & Identity' : 'লেভেল ১: ক্যাম্পেইনের উদ্দেশ্য ও নাম'}
+                </h4>
+                <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                  Meta Campaign Level
+                </span>
+              </div>
 
               {/* Objectives Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
                 {[
-                  { id: 'OUTCOME_ENGAGEMENT', title: language === 'en' ? 'Engagement' : 'এনগেজমেন্ট', desc: language === 'en' ? 'Messages, video views, post interaction' : 'মেসেজ, ভিডিও ভিউ, পোস্ট রিয়্যাকশন' },
-                  { id: 'OUTCOME_TRAFFIC', title: language === 'en' ? 'Traffic' : 'ট্রাফিক', desc: language === 'en' ? 'Send clicks to website or WhatsApp' : 'ওয়েবসাইট বা হোয়াটসঅ্যাপে ভিজিটর' },
-                  { id: 'OUTCOME_LEADS', title: language === 'en' ? 'Leads' : 'লিডস', desc: language === 'en' ? 'Collect leads via instant forms/inbox' : 'ইনস্ট্যান্ট ফর্ম বা ইনবক্সে লিড' },
-                  { id: 'OUTCOME_SALES', title: language === 'en' ? 'Sales / Conversions' : 'সেলস / কনভার্সন', desc: language === 'en' ? 'Find buyers ready to purchase' : 'পণ্য কেনার মতো আগ্রহী গ্রাহক' },
+                  { id: 'OUTCOME_ENGAGEMENT', title: language === 'en' ? 'Engagement' : 'এনগেজমেন্ট', desc: language === 'en' ? 'Messages & post interaction' : 'মেসেজ ও পোস্ট রিয়্যাকশন' },
+                  { id: 'OUTCOME_TRAFFIC', title: language === 'en' ? 'Traffic' : 'ট্রাফিক', desc: language === 'en' ? 'Clicks to website or WhatsApp' : 'ওয়েবসাইট বা হোয়াটসঅ্যাপে ভিজিটর' },
+                  { id: 'OUTCOME_LEADS', title: language === 'en' ? 'Leads' : 'লিডস', desc: language === 'en' ? 'Instant forms / inbox leads' : 'ইনস্ট্যান্ট ফর্ম বা ইনবক্সে লিড' },
+                  { id: 'OUTCOME_SALES', title: language === 'en' ? 'Sales / Purchases' : 'সেলস / কনভার্সন', desc: language === 'en' ? 'High-intent conversions' : 'পণ্য কেনার মতো আগ্রহী গ্রাহক' },
+                  { id: 'OUTCOME_AWARENESS', title: language === 'en' ? 'Awareness' : 'অ্যাওয়ারনেস', desc: language === 'en' ? 'Maximum brand reach' : 'সর্বোচ্চ মানুষের কাছে পৌঁছানো' },
                 ].map((obj) => (
                   <button
                     key={obj.id}
@@ -1181,28 +1410,52 @@ export default function MetaAdsManagerPage() {
                 ))}
               </div>
 
-              {/* Campaign Name */}
-              <div>
-                <label className="text-xs text-text-secondary block mb-1 font-medium">
-                  {language === 'en' ? 'Campaign Name *' : 'ক্যাম্পেইনের নাম *'}
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={customCampForm.name}
-                  onChange={(e) => setCustomCampForm(f => ({ ...f, name: e.target.value }))}
-                  placeholder={language === 'en' ? 'e.g. Eid Mega Sale Campaign 2026' : 'যেমন: ঈদ মেগা সেল ক্যাম্পেইন ২০২৬'}
-                  className="w-full bg-surface border border-white/10 text-white text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-brand-green"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Campaign Name */}
+                <div>
+                  <label className="text-xs text-text-secondary block mb-1 font-medium">
+                    {language === 'en' ? 'Campaign Name *' : 'ক্যাম্পেইনের নাম *'}
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={customCampForm.name}
+                    onChange={(e) => setCustomCampForm(f => ({ ...f, name: e.target.value }))}
+                    placeholder={language === 'en' ? 'e.g. Eid Mega Sale Campaign 2026' : 'যেমন: ঈদ মেগা সেল ক্যাম্পেইন ২০২৬'}
+                    className="w-full bg-surface border border-white/10 text-white text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-brand-green"
+                  />
+                </div>
+
+                {/* Special Ad Category */}
+                <div>
+                  <label className="text-xs text-text-secondary block mb-1 font-medium">
+                    {language === 'en' ? 'Special Ad Category' : 'বিশেষ বিজ্ঞাপন ক্যাটাগরি'}
+                  </label>
+                  <select
+                    value={customCampForm.specialAdCategory}
+                    onChange={(e) => setCustomCampForm(f => ({ ...f, specialAdCategory: e.target.value }))}
+                    className="w-full bg-surface border border-white/10 text-white text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-brand-green"
+                  >
+                    <option value="NONE">{language === 'en' ? 'None (Standard E-commerce / Retail)' : 'কোনোটিই নয় (সাধারণ ই-কমার্স / রিটেইল)'}</option>
+                    <option value="HOUSING">{language === 'en' ? 'Housing / Real Estate' : 'রিয়েল এস্টেট / আবাসন'}</option>
+                    <option value="EMPLOYMENT">{language === 'en' ? 'Employment / Job Offers' : 'চাকরি / নিয়োগ'}</option>
+                    <option value="CREDIT">{language === 'en' ? 'Credit / Financial Services' : 'ঋণ / আর্থিক সেবা'}</option>
+                  </select>
+                </div>
               </div>
             </div>
 
-            {/* Step 2: AdSet Budget & Audience Targeting */}
+            {/* LEVEL 2: AD SET (BUDGET, SCHEDULE, TARGETING & PLACEMENTS) */}
             <div className="bg-surface/70 backdrop-blur-xl border border-white/10 rounded-2xl p-5 space-y-4">
-              <h4 className="text-sm font-semibold text-white flex items-center gap-2">
-                <Users className="w-4 h-4 text-brand-orange" />
-                {language === 'en' ? '2. AdSet: Budget, Schedule & Audience Targeting' : '২. অ্যাডসেট: বাজেট, মেয়াদ ও অডিয়েন্স টার্গেটিং'}
-              </h4>
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-semibold text-white flex items-center gap-2">
+                  <Users className="w-4 h-4 text-brand-orange" />
+                  {language === 'en' ? 'Level 2: AdSet (Budget, Schedule, Targeting & Placements)' : 'লেভেল ২: অ্যাডসেট (বাজেট, মেয়াদ, অডিয়েন্স ও প্লেসমেন্ট)'}
+                </h4>
+                <span className="text-[10px] font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
+                  Meta AdSet Level
+                </span>
+              </div>
 
               {/* Budget & Duration */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1300,106 +1553,497 @@ export default function MetaAdsManagerPage() {
                   </div>
                 </div>
 
-                <div>
-                  <label className="text-xs text-text-secondary block mb-1.5">
-                    {language === 'en' ? 'Target Gender' : 'টার্গেট জেন্ডার'}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-text-secondary block mb-1.5">
+                      {language === 'en' ? 'Target Gender' : 'টার্গেট জেন্ডার'}
+                    </label>
+                    <div className="flex items-center gap-2">
+                      {(['all', 'men', 'women'] as const).map((g) => (
+                        <button
+                          key={g}
+                          type="button"
+                          onClick={() => setCustomCampForm(f => ({ ...f, gender: g }))}
+                          className={`flex-1 py-1.5 rounded-xl text-xs capitalize transition-colors ${
+                            customCampForm.gender === g
+                              ? 'bg-brand-green text-white font-bold'
+                              : 'bg-white/5 text-text-secondary hover:text-white'
+                          }`}
+                        >
+                          {g}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-text-secondary block mb-1 font-medium">
+                      {language === 'en' ? 'Detailed Targeting / Interests (Optional)' : 'আগ্রহ ও বিষয়ভিত্তিক টার্গেটিং (ঐচ্ছিক)'}
+                    </label>
+                    <input
+                      type="text"
+                      value={customCampForm.interests}
+                      onChange={(e) => setCustomCampForm(f => ({ ...f, interests: e.target.value }))}
+                      placeholder={language === 'en' ? 'e.g. Online shopping, Fashion, Electronics' : 'যেমন: অনলাইন কেনাকাটা, ফ্যাশন, গ্যাজেট'}
+                      className="w-full bg-surface border border-white/10 text-white text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-brand-green"
+                    />
+                  </div>
+                </div>
+
+                {/* Placements Toggle */}
+                <div className="pt-2 border-t border-white/5">
+                  <label className="text-xs text-text-secondary block mb-1.5 font-medium">
+                    {language === 'en' ? 'Placements' : 'বিজ্ঞাপন প্রদর্শনের মাধ্যম (প্লেসমেন্ট)'}
                   </label>
-                  <div className="flex items-center gap-2">
-                    {(['all', 'men', 'women'] as const).map((g) => (
-                      <button
-                        key={g}
-                        type="button"
-                        onClick={() => setCustomCampForm(f => ({ ...f, gender: g }))}
-                        className={`flex-1 py-1.5 rounded-xl text-xs capitalize transition-colors ${
-                          customCampForm.gender === g
-                            ? 'bg-brand-green text-white font-bold'
-                            : 'bg-white/5 text-text-secondary hover:text-white'
-                        }`}
-                      >
-                        {g}
-                      </button>
-                    ))}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setCustomCampForm(f => ({ ...f, placementType: 'advantage_plus' }))}
+                      className={`p-3 rounded-xl text-left border transition-all ${
+                        customCampForm.placementType === 'advantage_plus'
+                          ? 'bg-brand-green/20 border-brand-green text-white'
+                          : 'bg-surface border-white/5 text-text-secondary'
+                      }`}
+                    >
+                      <span className="text-xs font-bold block text-white flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-brand-orange" />
+                        {language === 'en' ? 'Advantage+ Placements (Recommended)' : 'Advantage+ স্বয়ংক্রিয় প্লেসমেন্ট (সুপারিশকৃত)'}
+                      </span>
+                      <span className="text-[10px] text-text-secondary block mt-1">
+                        {language === 'en' ? 'Maximizes budget across Facebook Feeds, Stories, Reels & Audience Network.' : 'ফেসবুক ফিড, রিলস, স্টোরি সব মাধ্যমে মেটার এলগরিদম স্বয়ংক্রিয়ভাবে দেখাবে।'}
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setCustomCampForm(f => ({ ...f, placementType: 'manual' }))}
+                      className={`p-3 rounded-xl text-left border transition-all ${
+                        customCampForm.placementType === 'manual'
+                          ? 'bg-brand-green/20 border-brand-green text-white'
+                          : 'bg-surface border-white/5 text-text-secondary'
+                      }`}
+                    >
+                      <span className="text-xs font-bold block text-white flex items-center gap-1.5">
+                        <SlidersHorizontal className="w-3.5 h-3.5 text-emerald-400" />
+                        {language === 'en' ? 'Manual Placements' : 'ম্যানুয়াল প্লেসমেন্ট'}
+                      </span>
+                      <span className="text-[10px] text-text-secondary block mt-1">
+                        {language === 'en' ? 'Select specific feeds or formats manually.' : 'নির্দিষ্ট কিছু ফিড বা প্ল্যাটফর্ম বেছে নিন।'}
+                      </span>
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Step 3: Ad Creative & Copy */}
+            {/* LEVEL 3: AD CREATIVE SETUP (MULTI-FORMAT & DYNAMIC COPY) */}
             <div className="bg-surface/70 backdrop-blur-xl border border-white/10 rounded-2xl p-5 space-y-4">
-              <h4 className="text-sm font-semibold text-white flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-emerald-400" />
-                {language === 'en' ? '3. Ad Creative & Content' : '৩. বিজ্ঞাপন কনটেন্ট ও ক্রিয়েটিভ'}
-              </h4>
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-semibold text-white flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-emerald-400" />
+                  {language === 'en' ? 'Level 3: Ad Creative & Content Setup' : 'লেভেল ৩: বিজ্ঞাপন কনটেন্ট ও ক্রিয়েটিভ'}
+                </h4>
+                <span className="text-[10px] font-mono text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-500/20">
+                  Meta Ad Level
+                </span>
+              </div>
 
-              <div className="space-y-3">
-                <div>
-                  <label className="text-xs text-text-secondary block mb-1 font-medium">
-                    {language === 'en' ? 'Ad Headline *' : 'বিজ্ঞাপনের হেডলাইন *'}
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={customCampForm.headline}
-                    onChange={(e) => setCustomCampForm(f => ({ ...f, headline: e.target.value }))}
-                    placeholder={language === 'en' ? 'e.g. Exclusive 30% Discount Today Only!' : 'যেমন: শুধুমাত্র আজকের জন্য ৩০% বিশেষ ছাড়!'}
-                    className="w-full bg-surface border border-white/10 text-white text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-brand-green"
-                  />
+              {/* Creative Source Selector: Upload Image vs Existing Page Post */}
+              <div>
+                <label className="text-xs text-text-secondary block mb-1.5 font-medium">
+                  {language === 'en' ? 'Creative Setup Method' : 'বিজ্ঞাপন ক্রিয়েটিভের ধরন'}
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setCustomCampForm(f => ({ ...f, creativeSource: 'upload' }))}
+                    className={`p-3 rounded-xl text-left border transition-all flex items-start gap-2.5 ${
+                      customCampForm.creativeSource === 'upload'
+                        ? 'bg-brand-green/20 border-brand-green text-white shadow-md shadow-brand-green/15'
+                        : 'bg-surface border-white/5 text-text-secondary hover:text-white'
+                    }`}
+                  >
+                    <ImageIcon className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="text-xs font-bold block text-white">
+                        {language === 'en' ? 'Create New Ad / Image' : 'নতুন ব্যানার / ছবি দিয়ে তৈরি'}
+                      </span>
+                      <span className="text-[10px] text-text-secondary block mt-0.5">
+                        {language === 'en' ? 'Enter multiple primary texts and headline variations.' : 'একাধিক প্রাইমারি টেক্সট ও হেডলাইন দিয়ে নতুন বিজ্ঞাপন।'}
+                      </span>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setCustomCampForm(f => ({ ...f, creativeSource: 'existing_post' }))}
+                    className={`p-3 rounded-xl text-left border transition-all flex items-start gap-2.5 ${
+                      customCampForm.creativeSource === 'existing_post'
+                        ? 'bg-brand-green/20 border-brand-green text-white shadow-md shadow-brand-green/15'
+                        : 'bg-surface border-white/5 text-text-secondary hover:text-white'
+                    }`}
+                  >
+                    <FileText className="w-4 h-4 text-brand-orange shrink-0 mt-0.5" />
+                    <div>
+                      <span className="text-xs font-bold block text-white">
+                        {language === 'en' ? 'Use Existing Page Post' : 'পেইজের পূর্বের পোস্ট বেছে নিন'}
+                      </span>
+                      <span className="text-[10px] text-text-secondary block mt-0.5">
+                        {language === 'en' ? 'Preserves all organic likes, comments & shares.' : 'পোস্টের আগের সব লাইক, কমেন্ট ও শেয়ার হুবহু অক্ষত থাকবে।'}
+                      </span>
+                    </div>
+                  </button>
                 </div>
+              </div>
 
-                <div>
-                  <label className="text-xs text-text-secondary block mb-1 font-medium">
-                    {language === 'en' ? 'Primary Text (Ad Copy) *' : 'বিজ্ঞাপনের মূল বিবরণ (প্রাইমারি টেক্সট) *'}
-                  </label>
-                  <textarea
-                    rows={4}
-                    required
-                    value={customCampForm.bodyText}
-                    onChange={(e) => setCustomCampForm(f => ({ ...f, bodyText: e.target.value }))}
-                    placeholder={language === 'en' ? 'Write the compelling sales copy for your ad...' : 'আপনার বিজ্ঞাপনের বিস্তারিত বিবরণ এখানে লিখুন...'}
-                    className="w-full bg-surface border border-white/10 text-white text-xs rounded-xl p-3 focus:outline-none focus:border-brand-green"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs text-text-secondary block mb-1 font-medium">
-                      {language === 'en' ? 'Website / Destination URL' : 'ওয়েবসাইট বা ল্যান্ডিং পেইজ লিংক'}
-                    </label>
-                    <input
-                      type="url"
-                      value={customCampForm.linkUrl}
-                      onChange={(e) => setCustomCampForm(f => ({ ...f, linkUrl: e.target.value }))}
-                      placeholder="https://yourwebsite.com/product"
-                      className="w-full bg-surface border border-white/10 text-white text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-brand-green"
-                    />
+              {/* OPTION A: EXISTING PAGE POST PICKER */}
+              {customCampForm.creativeSource === 'existing_post' && (
+                <div className="space-y-3 pt-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-white">
+                      {language === 'en' ? 'Select a Facebook Page Post to Promote:' : 'বিজ্ঞাপনের জন্য ফেসবুক পোস্টটি নির্বাচন করুন:'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => fetchPagePosts(selectedAccountId)}
+                      disabled={loadingPosts}
+                      className="px-2.5 py-1 text-[11px] bg-white/5 hover:bg-white/10 text-emerald-400 rounded-lg border border-white/10 flex items-center gap-1 transition-colors"
+                    >
+                      <RefreshCw className={`w-3 h-3 ${loadingPosts ? 'animate-spin' : ''}`} />
+                      {language === 'en' ? 'Refresh Posts' : 'পোস্ট রিফ্রেশ'}
+                    </button>
                   </div>
 
-                  <div>
-                    <label className="text-xs text-text-secondary block mb-1 font-medium">
-                      {language === 'en' ? 'Image URL (High-Res Banner)' : 'ছবির লিংক (ব্যানার ইমেজ URL)'}
-                    </label>
-                    <input
-                      type="url"
-                      value={customCampForm.imageUrl}
-                      onChange={(e) => setCustomCampForm(f => ({ ...f, imageUrl: e.target.value }))}
-                      placeholder="https://images.unsplash.com/..."
-                      className="w-full bg-surface border border-white/10 text-white text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-brand-green"
-                    />
+                  {loadingPosts ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 animate-pulse">
+                      {[1, 2, 3].map(i => (
+                        <div key={i} className="h-36 bg-surface/50 border border-white/5 rounded-xl" />
+                      ))}
+                    </div>
+                  ) : pagePosts.length === 0 ? (
+                    <div className="p-4 bg-background/50 rounded-xl border border-white/5 text-center">
+                      <p className="text-xs text-text-secondary">
+                        {language === 'en' ? 'No page posts found. Click Refresh or publish on Facebook first.' : 'কোনো পোস্ট পাওয়া যায়নি। ফেসবুক পেজে পোস্ট করে রিফ্রেশ করুন।'}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 max-h-72 overflow-y-auto pr-1">
+                      {pagePosts.map((post) => {
+                        const isSelected = customCampForm.selectedPagePostId === post.id;
+                        return (
+                          <div
+                            key={post.id}
+                            onClick={() => setCustomCampForm(f => ({ ...f, selectedPagePostId: post.id }))}
+                            className={`p-3 rounded-xl border cursor-pointer transition-all flex flex-col justify-between ${
+                              isSelected
+                                ? 'bg-brand-green/20 border-brand-green shadow-md shadow-brand-green/20'
+                                : 'bg-surface border-white/5 hover:border-white/20'
+                            }`}
+                          >
+                            <div>
+                              {post.fullPicture && (
+                                <img
+                                  src={post.fullPicture}
+                                  alt="Post thumbnail"
+                                  className="w-full h-24 object-cover rounded-lg mb-2"
+                                />
+                              )}
+                              <p className="text-[11px] text-white/90 line-clamp-2 leading-relaxed">
+                                {post.message || '[Image Post without caption]'}
+                              </p>
+                            </div>
+                            <div className="flex items-center justify-between text-[10px] text-text-secondary pt-2 mt-2 border-t border-white/5">
+                              <span>👍 {post.reactionsCount} reactions</span>
+                              {isSelected ? (
+                                <span className="text-emerald-400 font-bold flex items-center gap-1">
+                                  <Check className="w-3 h-3" /> Selected
+                                </span>
+                              ) : (
+                                <span className="text-text-secondary">Click to choose</span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* OPTION B: UPLOAD NEW CREATIVE WITH MULTIPLE PRIMARY TEXTS & HEADLINES */}
+              {customCampForm.creativeSource === 'upload' && (
+                <div className="space-y-4 pt-2">
+                  {/* MULTIPLE PRIMARY TEXTS (Dynamic Copy) */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs text-text-secondary font-medium flex items-center gap-1.5">
+                        {language === 'en' ? 'Primary Text (Ad Copy Options)' : 'বিজ্ঞাপনের মূল বিবরণ (প্রাইমারি টেক্সট)'}
+                        <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                          {customCampForm.primaryTexts.length}/5 Options
+                        </span>
+                      </label>
+                      {customCampForm.primaryTexts.length < 5 && (
+                        <button
+                          type="button"
+                          onClick={handleAddPrimaryText}
+                          className="text-[11px] text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1"
+                        >
+                          <PlusCircle className="w-3.5 h-3.5" />
+                          {language === 'en' ? '+ Add Text Option' : '+ আরও টেক্সট অপশন যোগ করুন'}
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-text-secondary">
+                      {language === 'en'
+                        ? 'Meta will automatically test these primary text variations and deliver the highest-converting copy to each shopper.'
+                        : 'মেটার এলগরিদম এই ভিন্ন ভিন্ন টেক্সট অপশনগুলো পরীক্ষা করে প্রতিটি কাস্টমারকে সবচেয়ে কার্যকর কপিটি দেখাবে।'}
+                    </p>
+
+                    <div className="space-y-2.5">
+                      {customCampForm.primaryTexts.map((text, idx) => (
+                        <div key={idx} className="relative bg-surface/50 border border-white/10 rounded-xl p-2.5 focus-within:border-brand-green transition-all">
+                          <div className="flex items-center justify-between mb-1 text-[10px] text-text-secondary">
+                            <span className="font-semibold text-emerald-400">
+                              {language === 'en' ? `Primary Text Option #${idx + 1}` : `প্রাইমারি টেক্সট অপশন #${idx + 1}`}
+                            </span>
+                            {customCampForm.primaryTexts.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => handleRemovePrimaryText(idx)}
+                                className="text-red-400 hover:text-red-300 p-0.5"
+                                title="Remove"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+                          <textarea
+                            rows={3}
+                            value={text}
+                            onChange={(e) => handleUpdatePrimaryText(idx, e.target.value)}
+                            placeholder={language === 'en' ? `Write persuasive copy variation #${idx + 1}...` : `বিজ্ঞাপনের আকর্ষণীয় বিবরণ #${idx + 1} লিখুন...`}
+                            className="w-full bg-transparent text-white text-xs focus:outline-none resize-none leading-relaxed"
+                          />
+                        </div>
+                      ))}
+                    </div>
                   </div>
+
+                  {/* MULTIPLE HEADLINES */}
+                  <div className="space-y-2 pt-2 border-t border-white/5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs text-text-secondary font-medium flex items-center gap-1.5">
+                        {language === 'en' ? 'Headlines (Up to 3 variations)' : 'বিজ্ঞাপনের হেডলাইন (সর্বোচ্চ ৩টি অপশন)'}
+                        <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                          {customCampForm.headlines.length}/3
+                        </span>
+                      </label>
+                      {customCampForm.headlines.length < 3 && (
+                        <button
+                          type="button"
+                          onClick={handleAddHeadline}
+                          className="text-[11px] text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1"
+                        >
+                          <PlusCircle className="w-3.5 h-3.5" />
+                          {language === 'en' ? '+ Add Headline' : '+ হেডলাইন যোগ করুন'}
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      {customCampForm.headlines.map((hl, idx) => (
+                        <div key={idx} className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={hl}
+                            onChange={(e) => handleUpdateHeadline(idx, e.target.value)}
+                            placeholder={language === 'en' ? `Headline #${idx + 1} (e.g. 30% Off Today Only!)` : `হেডলাইন #${idx + 1} (যেমন: ৩০% বিশেষ ছাড় আজকের জন্য)`}
+                            className="flex-1 bg-surface border border-white/10 text-white text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-brand-green"
+                          />
+                          {customCampForm.headlines.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveHeadline(idx)}
+                              className="p-2 text-red-400 hover:text-red-300 rounded-lg hover:bg-red-500/10"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Feed Description & Call To Action */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-white/5">
+                    <div>
+                      <label className="text-xs text-text-secondary block mb-1 font-medium">
+                        {language === 'en' ? 'Feed Description (Optional)' : 'ফিড ডেসক্রিপশন (ঐচ্ছিক)'}
+                      </label>
+                      <input
+                        type="text"
+                        value={customCampForm.description}
+                        onChange={(e) => setCustomCampForm(f => ({ ...f, description: e.target.value }))}
+                        placeholder={language === 'en' ? 'e.g. Free Delivery across Bangladesh' : 'যেমন: সারা দেশে ফ্রি ডেলিভারি'}
+                        className="w-full bg-surface border border-white/10 text-white text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-brand-green"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs text-text-secondary block mb-1 font-medium">
+                        {language === 'en' ? 'Call to Action Button' : 'কল-টু-অ্যাকশন বাটন'}
+                      </label>
+                      <select
+                        value={customCampForm.callToAction}
+                        onChange={(e) => setCustomCampForm(f => ({ ...f, callToAction: e.target.value }))}
+                        className="w-full bg-surface border border-white/10 text-white text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-brand-green"
+                      >
+                        <option value="LEARN_MORE">Learn More (আরও জানুন)</option>
+                        <option value="SHOP_NOW">Shop Now (এখনই কিনুন)</option>
+                        <option value="ORDER_NOW">Order Now (অর্ডার করুন)</option>
+                        <option value="SIGN_UP">Sign Up (সাইন আপ করুন)</option>
+                        <option value="SEND_MESSAGE">Send Message (মেসেজ পাঠান)</option>
+                        <option value="WHATSAPP_MESSAGE">Send WhatsApp Message (হোয়াটসঅ্যাপে মেসেজ)</option>
+                        <option value="CONTACT_US">Contact Us (যোগাযোগ করুন)</option>
+                        <option value="GET_OFFER">Get Offer (অফার পান)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Destination URL & Image URL */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs text-text-secondary block mb-1 font-medium">
+                        {language === 'en' ? 'Website / Destination URL' : 'ওয়েবসাইট বা ল্যান্ডিং পেইজ লিংক'}
+                      </label>
+                      <input
+                        type="url"
+                        value={customCampForm.linkUrl}
+                        onChange={(e) => setCustomCampForm(f => ({ ...f, linkUrl: e.target.value }))}
+                        placeholder="https://yourwebsite.com/product"
+                        className="w-full bg-surface border border-white/10 text-white text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-brand-green"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs text-text-secondary block mb-1 font-medium">
+                        {language === 'en' ? 'Image URL (High-Res Banner)' : 'ছবির লিংক (ব্যানার ইমেজ URL)'}
+                      </label>
+                      <input
+                        type="url"
+                        value={customCampForm.imageUrl}
+                        onChange={(e) => setCustomCampForm(f => ({ ...f, imageUrl: e.target.value }))}
+                        placeholder="https://images.unsplash.com/..."
+                        className="w-full bg-surface border border-white/10 text-white text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-brand-green"
+                      />
+                    </div>
+                  </div>
+
+                  {customCampForm.imageUrl && (
+                    <div className="p-2 border border-white/10 rounded-xl bg-surface/50 max-w-xs">
+                      <span className="text-[10px] text-text-secondary block mb-1">Image Preview:</span>
+                      <img
+                        src={customCampForm.imageUrl}
+                        alt="Ad Preview"
+                        className="w-full h-32 object-cover rounded-lg"
+                        onError={(e) => (e.currentTarget.style.display = 'none')}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* CONVERSION TRACKING: META PIXEL INTEGRATION */}
+              <div className="pt-3 border-t border-white/5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-white">
+                    <input
+                      type="checkbox"
+                      checked={customCampForm.trackPixel}
+                      onChange={(e) => setCustomCampForm(f => ({ ...f, trackPixel: e.target.checked }))}
+                      className="rounded accent-brand-green w-4 h-4 cursor-pointer"
+                    />
+                    <span>{language === 'en' ? 'Track Website Conversions with Meta Pixel' : 'মেটা পিক্সেল দিয়ে কনভার্সন ট্র্যাক করুন'}</span>
+                  </label>
+                  {customCampForm.trackPixel && discoveredPixels.length === 0 && (
+                    <button
+                      type="button"
+                      onClick={() => fetchPixelsForTracking()}
+                      disabled={loadingPixels}
+                      className="text-[10px] text-emerald-400 hover:underline flex items-center gap-1"
+                    >
+                      <RefreshCw className={`w-3 h-3 ${loadingPixels ? 'animate-spin' : ''}`} />
+                      {language === 'en' ? 'Fetch Pixels' : 'পিক্সেল খুঁজুন'}
+                    </button>
+                  )}
                 </div>
 
-                {customCampForm.imageUrl && (
-                  <div className="p-2 border border-white/10 rounded-xl bg-surface/50 max-w-xs">
-                    <span className="text-[10px] text-text-secondary block mb-1">Image Preview:</span>
-                    <img
-                      src={customCampForm.imageUrl}
-                      alt="Ad Preview"
-                      className="w-full h-32 object-cover rounded-lg"
-                      onError={(e) => (e.currentTarget.style.display = 'none')}
-                    />
+                {customCampForm.trackPixel && (
+                  <div className="p-3 bg-surface/50 border border-white/10 rounded-xl space-y-2 animate-in fade-in">
+                    <label className="text-[11px] text-text-secondary block">
+                      {language === 'en' ? 'Select Connected Meta Pixel:' : 'কানেক্টেড মেটা পিক্সেল নির্বাচন করুন:'}
+                    </label>
+                    {discoveredPixels.length > 0 ? (
+                      <select
+                        value={customCampForm.selectedPixelId}
+                        onChange={(e) => setCustomCampForm(f => ({ ...f, selectedPixelId: e.target.value }))}
+                        className="w-full bg-surface border border-white/10 text-white text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-brand-green font-mono"
+                      >
+                        {discoveredPixels.map(p => (
+                          <option key={p.id} value={p.id}>
+                            {p.name} (ID: {p.id})
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <p className="text-[11px] text-text-secondary">
+                        {language === 'en' ? 'No pixels discovered on this ad account yet.' : 'এই অ্যাড অ্যাকাউন্টে এখনো কোনো পিক্সেল পাওয়া যায়নি।'}
+                      </p>
+                    )}
                   </div>
                 )}
               </div>
+            </div>
+
+            {/* AI PRE-FLIGHT ANALYSIS BAR (Deducts 1 AI Credit under Rule 4) */}
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-surface/80 to-amber-500/10 border border-emerald-500/30 flex flex-col sm:flex-row items-center justify-between gap-3 backdrop-blur-xl">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-gradient-to-br from-emerald-500 to-brand-green text-white shadow-md shadow-brand-green/30">
+                  <Sparkles className="w-4 h-4 text-brand-orange animate-pulse" />
+                </div>
+                <div>
+                  <h5 className="text-xs font-bold text-white flex items-center gap-1.5">
+                    {language === 'en' ? 'AI Pre-Flight Ad & Copy Analyzer' : 'এআই প্রি-ফ্লাইট কপি ও কনভার্সন অ্যানালাইসিস'}
+                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                      1 AI Credit
+                    </span>
+                  </h5>
+                  <p className="text-[11px] text-text-secondary mt-0.5">
+                    {language === 'en'
+                      ? 'Critique your hooks, estimate CTR strength, check Meta policy risk, and generate 3 high-converting copy variations.'
+                      : 'বিজ্ঞাপন চালুর পূর্বে হুক স্কোর, মেটা পলিসি কমপ্লায়েন্স চেক এবং ৩টি আকর্ষণীয় কপি অপশন পান।'}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleReviewWithAi}
+                disabled={reviewingWithAi}
+                className="w-full sm:w-auto px-4 py-2 bg-gradient-to-r from-emerald-600 to-brand-green hover:opacity-95 text-white font-bold text-xs rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 shrink-0 disabled:opacity-50"
+              >
+                {reviewingWithAi ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>{language === 'en' ? 'Analyzing with AI...' : 'এআই বিশ্লেষণ চলছে...'}</span>
+                  </>
+                ) : (
+                  <>
+                    <Lightbulb className="w-3.5 h-3.5 text-amber-300" />
+                    <span>{language === 'en' ? 'Analyze Ad with AI' : 'এআই দিয়ে বিজ্ঞাপন বিশ্লেষণ করুন'}</span>
+                  </>
+                )}
+              </button>
             </div>
 
             {/* Submit Action */}
@@ -1430,6 +2074,159 @@ export default function MetaAdsManagerPage() {
               </button>
             </div>
           </form>
+
+          {/* AI PRE-FLIGHT REVIEW MODAL */}
+          {aiReviewModalOpen && aiReviewResult && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in">
+              <div className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-5 sm:p-6 shadow-2xl space-y-4">
+                <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400">
+                      <Sparkles className="w-4 h-4" />
+                    </div>
+                    <h3 className="text-sm sm:text-base font-bold text-white">
+                      {language === 'en' ? 'AI Pre-Flight Campaign & Copy Analysis' : 'এআই প্রি-ফ্লাইট বিজ্ঞাপন বিশ্লেষণ'}
+                    </h3>
+                  </div>
+                  <button
+                    onClick={() => setAiReviewModalOpen(false)}
+                    className="p-1 text-slate-400 hover:text-white rounded-lg"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Scores Bar */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="p-3 rounded-xl bg-surface/60 border border-white/5 text-center">
+                    <span className="text-[10px] text-text-secondary block mb-1">
+                      {language === 'en' ? 'Overall Score' : 'সার্বিক স্কোর'}
+                    </span>
+                    <span className="text-xl font-extrabold text-emerald-400 font-mono">
+                      {aiReviewResult.overallScore}/100
+                    </span>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-surface/60 border border-white/5 text-center">
+                    <span className="text-[10px] text-text-secondary block mb-1">
+                      {language === 'en' ? 'Hook Strength' : 'হুক পাওয়ার'}
+                    </span>
+                    <span className="text-xl font-extrabold text-amber-400 font-mono">
+                      {aiReviewResult.hookScore}/100
+                    </span>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-surface/60 border border-white/5 text-center">
+                    <span className="text-[10px] text-text-secondary block mb-1">
+                      {language === 'en' ? 'Clarity & CTA' : 'স্পষ্টতা ও অফার'}
+                    </span>
+                    <span className="text-xl font-extrabold text-blue-400 font-mono">
+                      {aiReviewResult.clarityScore}/100
+                    </span>
+                  </div>
+                </div>
+
+                {/* Policy Compliance */}
+                <div className="p-3.5 rounded-xl bg-white/5 border border-white/5 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-white flex items-center gap-1.5">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                      {language === 'en' ? 'Meta Policy Compliance' : 'মেটা বিজ্ঞাপন নীতিমালা যাচাই'}
+                    </span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                      aiReviewResult.policyRisk === 'LOW'
+                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                        : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                    }`}>
+                      {aiReviewResult.policyRisk === 'LOW' ? 'Low Risk (Safe)' : 'Medium Attention'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-text-secondary leading-relaxed pt-1">
+                    {language === 'en' ? aiReviewResult.policyFeedback : aiReviewResult.policyFeedbackBn}
+                  </p>
+                </div>
+
+                {/* Strengths & Weaknesses */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px]">
+                  <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/20 space-y-1">
+                    <span className="font-bold text-emerald-400 flex items-center gap-1 mb-1">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      {language === 'en' ? 'Strengths' : 'ইতিবাচক দিকসমূহ'}
+                    </span>
+                    {(language === 'en' ? aiReviewResult.strengths : aiReviewResult.strengthsBn).map((s, idx) => (
+                      <p key={idx} className="text-emerald-200/90 leading-tight">• {s}</p>
+                    ))}
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/20 space-y-1">
+                    <span className="font-bold text-amber-400 flex items-center gap-1 mb-1">
+                      <AlertCircle className="w-3.5 h-3.5" />
+                      {language === 'en' ? 'Areas to Optimize' : 'উন্নতির সুযোগ'}
+                    </span>
+                    {(language === 'en' ? aiReviewResult.weaknesses : aiReviewResult.weaknessesBn).map((w, idx) => (
+                      <p key={idx} className="text-amber-200/90 leading-tight">• {w}</p>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Suggested High-Converting Copy Variations */}
+                <div className="space-y-2.5 pt-2 border-t border-white/10">
+                  <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-brand-orange" />
+                    {language === 'en' ? 'AI Optimized Copy Variations (1-Click Apply)' : 'এআই প্রস্তাবিত হাই-কনভার্টিং কপি (১-ক্লিকে ব্যবহার করুন)'}
+                  </h4>
+
+                  <div className="space-y-2.5">
+                    {aiReviewResult.suggestedVariations.map((v, idx) => (
+                      <div
+                        key={idx}
+                        className="p-3 rounded-xl bg-surface/70 border border-white/10 hover:border-emerald-500/40 transition-all space-y-2"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                            {v.hookType}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleApplyAiVariation(v)}
+                            className="px-2.5 py-1 bg-brand-green hover:bg-brand-green/90 text-white rounded-lg text-[10px] font-bold transition-all flex items-center gap-1"
+                          >
+                            <Check className="w-3 h-3" />
+                            {language === 'en' ? 'Apply to Form' : 'ফর্মে ব্যবহার করুন'}
+                          </button>
+                        </div>
+
+                        <div>
+                          <p className="text-xs font-bold text-white">{v.headline}</p>
+                          <p className="text-[11px] text-text-secondary mt-1 whitespace-pre-line leading-relaxed">
+                            {v.primaryText}
+                          </p>
+                        </div>
+
+                        <p className="text-[10px] text-amber-300/80 italic border-t border-white/5 pt-1.5">
+                          💡 {language === 'en' ? v.rationale : v.rationaleBn}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between text-[10px] text-text-secondary pt-3 border-t border-white/10">
+                  <span className="flex items-center gap-1">
+                    <CheckCircle className="w-3 h-3 text-emerald-400" />
+                    {language === 'en' ? '1 AI Credit deducted from independent pool' : 'স্বাধীন কোটা থেকে ১ ক্রেডিট কর্তন করা হয়েছে'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setAiReviewModalOpen(false)}
+                    className="px-3.5 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-xl font-medium transition-colors"
+                  >
+                    {language === 'en' ? 'Close' : 'বন্ধ করুন'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

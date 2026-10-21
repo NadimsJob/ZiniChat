@@ -4,19 +4,24 @@ ZiniChat CAPI Hub is an automated server-side tracking gateway that forwards cus
 
 ---
 
-## 1. Zero-Hassle 2-Minute Setup
+## 1. Zero-Hassle 1-Click Setup (Connected Pixel Auto-Discovery)
 
-To start tracking server-side conversions, merchants do not need complex code snippets or Google Tag Manager server containers.
+ZiniChat eliminates the friction of copying and pasting long access tokens and Pixel IDs from Meta Events Manager:
 
-1. Navigate to **Settings > CAPI Hub** (`/dashboard/settings/capi-hub`).
+### Automated Pixel Discovery
+1. If you have already connected your Facebook Page or Meta Ad Account in ZiniChat, navigate to **Settings > CAPI Hub** (`/dashboard/settings/capi-hub`).
+2. The system automatically inspects your connected Meta accounts via Graph API (`GET /act_{ad_account_id}/adspixels`) and displays all existing Pixels in the **"Auto-Discovered Connected Pixels"** section.
+3. Select your desired Pixel from the dropdown and click **"1-Click Connect Selected Pixel"** (`১-ক্লিকে পিক্সেল কানেক্ট করুন`).
+4. ZiniChat securely links the pixel using your existing encrypted OAuth token—**no manual token generation or copy-pasting required**.
+
+### Advanced / Manual Setup (External Pixels)
+If your Pixel belongs to an external Business Manager or is not yet linked:
+1. Click the **"Advanced / Manual Setup"** accordion.
 2. Input your **Meta Pixel ID / Dataset ID** (e.g. `102938475610293`).
-3. Paste your **Conversions API Access Token**:
-   - Go to [Meta Events Manager](https://business.facebook.com/events_manager2).
-   - Select your Pixel / Dataset > **Settings** tab.
-   - Scroll to **Conversions API** > Click **Generate access token** and copy it.
-4. *(Optional)* Paste your **Test Event Code** (e.g. `TEST12345` from Events Manager > Test Events tab).
+3. Paste your **Conversions API Access Token** generated from Meta Events Manager > Settings > Conversions API.
+4. *(Optional)* Paste your **Test Event Code** (e.g. `TEST12345`).
 5. Click **Save & Activate Tracking**.
-6. The system automatically initializes and enables standard tracking events (`Purchase`, `Lead`, `Contact`, `InitiateCheckout`, `AddToCart`, `ViewContent`) with smart active sources.
+6. The system automatically initializes standard tracking events (`Purchase`, `Lead`, `Contact`, `InitiateCheckout`, `AddToCart`, `ViewContent`).
 
 ---
 

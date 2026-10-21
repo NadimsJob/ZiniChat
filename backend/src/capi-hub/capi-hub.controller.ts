@@ -19,6 +19,22 @@ export class CapiHubController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('discovered-pixels')
+  async getDiscoveredPixels(@Req() req: any) {
+    return this.capiHubService.getDiscoveredPixels(req.user.tenantId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('connect-discovered-pixel')
+  async connectDiscoveredPixel(
+    @Req() req: any,
+    @Body() data: { pixelId: string; adAccountId?: string; testEventCode?: string },
+  ) {
+    if (req.user.role !== 'owner' && req.user.role !== 'admin') throw new ForbiddenException();
+    return this.capiHubService.connectDiscoveredPixel(req.user.tenantId, data);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get('integration')
   async getIntegration(@Req() req: any) {
     return this.capiHubService.getIntegration(req.user.tenantId);

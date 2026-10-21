@@ -156,22 +156,59 @@ export class McpAdsController {
     return this.mcpAdsService.applyAiRecommendation(req.user.tenantId, dto);
   }
 
+  @Post('ai-review-ad')
+  async reviewAdWithAi(
+    @Request() req: any,
+    @Body() dto: {
+      adAccountId: string;
+      campaignName?: string;
+      objective: string;
+      headlines?: string[];
+      primaryTexts?: string[];
+      headline?: string;
+      bodyText?: string;
+      callToAction?: string;
+      targetAudience?: any;
+      dailyBudget?: number;
+      destinationUrl?: string;
+      creativeSource?: 'upload' | 'existing_post';
+      pagePostId?: string;
+    },
+  ) {
+    return this.mcpAdsService.reviewAdWithAi(req.user.tenantId, dto);
+  }
+
+  @Get('pixels')
+  async getAdAccountPixels(
+    @Request() req: any,
+    @Query('adAccountId') adAccountId?: string,
+  ) {
+    return this.mcpAdsService.getAdAccountPixels(req.user.tenantId, adAccountId);
+  }
+
   @Post('launch-custom-campaign')
   async launchCustomCampaign(
     @Request() req: any,
     @Body() dto: {
       adAccountId: string;
-      facebookPageId: string;
+      facebookPageId?: string;
       name: string;
       objective?: string;
       dailyBudget: number;
       durationDays?: number;
-      headline: string;
-      bodyText: string;
+      headline?: string;
+      headlines?: string[];
+      bodyText?: string;
+      primaryTexts?: string[];
+      description?: string;
       callToAction?: string;
       linkUrl?: string;
       imageUrl?: string;
+      creativeSource?: 'upload' | 'existing_post';
+      pagePostId?: string;
       targeting?: any;
+      placements?: string[];
+      pixelId?: string;
     },
   ) {
     return this.mcpAdsService.launchCustomCampaign(req.user.tenantId, dto);

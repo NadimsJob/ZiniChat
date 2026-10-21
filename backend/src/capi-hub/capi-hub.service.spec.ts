@@ -133,4 +133,43 @@ describe('CapiHubService', () => {
       }), expect.any(Object));
     });
   });
+
+  describe('getDiscoveredPixels', () => {
+    it('returns empty list with guidance if no Meta accounts or channels connected', async () => {
+      prisma.tenantMetaAdAccount = { findMany: jest.fn().mockResolvedValue([]) };
+      prisma.channelConnection = { findFirst: jest.fn().mockResolvedValue(null) };
+
+      const result = await service.getDiscoveredPixels(TENANT_ID);
+      expect(result.isMetaConnected).toBe(false);
+      expect(result.pixels).toEqual([]);
+    });
+  });
+
+  describe('connectDiscoveredPixel', () => {
+    it('uses decrypted Meta ad account token to connect pixel', async () => {
+      prisma.tenantMetaAdAccount = {
+        findFirst: jest.fn().mockResolvedValue({
+          adAccountId: 'act_123',
+          accessToken: 'enc-acc-token',
+        }),
+      };
+      prisma.tenantCapiIntegration.findUnique.mockResolvedValue(null);
+      prisma.tenantCapiIntegration.create.mockResolvedValue({ id: 'int-new', pixelId: 'px-999' });
+
+      const result = await service.connectDiscoveredPixel(TENANT_ID, {
+        pixelId: 'px-999',
+        adAccountId: 'act_123',
+      });
+
+      expect(prisma.tenantMetaAdAccount.findFirst).toHaveBeenCalled();
+      expect(crypto.decrypt).toHaveBeenCalledWith('enc-acc-token');
+      expect(prisma.tenantCapiIntegration.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            pixelId: 'px-999',
+          }),
+        })
+      );
+    });
+  });
 });

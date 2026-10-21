@@ -373,5 +373,95 @@ describe('McpAdsService', () => {
       );
     });
   });
+
+  describe('getAdAccountPixels', () => {
+    it('returns discovered pixels from connected ad account', async () => {
+      prisma.tenantMetaAdAccount.findMany = jest.fn().mockResolvedValueOnce([
+        {
+          adAccountId: '123456789',
+          adAccountName: 'Store Account',
+          accessToken: mockEncryptedToken,
+          status: 'active',
+        },
+      ]);
+
+      mockedAxios.get.mockResolvedValueOnce({
+        data: {
+          data: [
+            { id: 'pixel_999', name: 'Main Pixel', is_unavailable: false },
+          ],
+        },
+      });
+
+      const result = await service.getAdAccountPixels(mockTenantId);
+      expect(result.isMetaConnected).toBe(true);
+      expect(result.pixels.length).toBe(1);
+      expect(result.pixels[0].id).toBe('pixel_999');
+    });
+  });
+
+  describe('reviewAdWithAi', () => {
+    it('analyzes campaign copy and deducts 1 AI response credit', async () => {
+      const result = await service.reviewAdWithAi(mockTenantId, {
+        adAccountId: '123456789',
+        campaignName: 'Eid Mega Sale',
+        objective: 'OUTCOME_ENGAGEMENT',
+        primaryTexts: ['Exclusive 30% off on all items!'],
+        headlines: ['Shop Eid Specials Today'],
+        callToAction: 'SHOP_NOW',
+        dailyBudget: 10,
+      });
+
+      expect(prisma.aiUsageLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            unitsConsumed: 1,
+            featureName: 'meta_ads_ai_copy_review',
+          }),
+        }),
+      );
+      expect(result.overallScore).toBeGreaterThanOrEqual(60);
+      expect(result.suggestedVariations.length).toBe(3);
+      expect(result.aiResponseQuotaDeducted).toBe(1);
+    });
+  });
+
+  describe('launchCustomCampaign', () => {
+    it('launches campaign with existing post using object_story_id', async () => {
+      prisma.tenantMetaAdAccount.findFirst.mockResolvedValueOnce({
+        adAccountId: '123456789',
+        accessToken: mockEncryptedToken,
+        facebookPageId: 'page_456',
+        status: 'active',
+      });
+
+      mockedAxios.post
+        .mockResolvedValueOnce({ data: { id: 'camp_new_1' } }) // campaign
+        .mockResolvedValueOnce({ data: { id: 'adset_new_1' } }) // adset
+        .mockResolvedValueOnce({ data: { id: 'creative_new_1' } }) // creative
+        .mockResolvedValueOnce({ data: { id: 'ad_new_1' } }); // ad
+
+      const result = await service.launchCustomCampaign(mockTenantId, {
+        adAccountId: '123456789',
+        name: 'Post Boost Campaign',
+        dailyBudget: 5,
+        creativeSource: 'existing_post',
+        pagePostId: 'page_456_post_789',
+        pixelId: 'pixel_999',
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.creativeSource).toBe('existing_post');
+      expect(mockedAxios.post).toHaveBeenCalledWith(
+        expect.stringContaining('/adcreatives'),
+        null,
+        expect.objectContaining({
+          params: expect.objectContaining({
+            object_story_id: 'page_456_post_789',
+          }),
+        }),
+      );
+    });
+  });
 });
 
