@@ -28,6 +28,9 @@ describe('McpAdsService', () => {
       channelConnection: {
         findFirst: jest.fn(),
       },
+      aiUsageLog: {
+        create: jest.fn().mockResolvedValue({ id: 'log-uuid' }),
+      },
     };
 
     crypto = {
@@ -41,12 +44,17 @@ describe('McpAdsService', () => {
       }),
     };
 
+    const quotaService = {
+      checkAiQuota: jest.fn().mockResolvedValue(undefined),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         McpAdsService,
         { provide: PrismaService, useValue: prisma },
         { provide: CryptoService, useValue: crypto },
         { provide: MetaMarketingConfigService, useValue: marketingConfig },
+        { provide: require('../tenants/quota.service').QuotaService, useValue: quotaService },
       ],
     }).compile();
 

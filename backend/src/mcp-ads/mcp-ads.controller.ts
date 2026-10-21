@@ -126,6 +126,57 @@ export class McpAdsController {
     );
   }
 
+  @Post('campaigns/:campaignId/analyze-ai')
+  async analyzeCampaignWithAi(
+    @Request() req: any,
+    @Param('campaignId') campaignId: string,
+    @Body() body: { adAccountId: string },
+  ) {
+    return this.mcpAdsService.analyzeCampaignWithAi(
+      req.user.tenantId,
+      body.adAccountId,
+      campaignId,
+    );
+  }
+
+  @Post('campaigns/apply-ai-recommendation')
+  async applyAiRecommendation(
+    @Request() req: any,
+    @Body() dto: {
+      adAccountId: string;
+      campaignId: string;
+      adSetId?: string;
+      actionType: 'SCALE_BUDGET' | 'UPDATE_TARGETING' | 'TOGGLE_STATUS';
+      percentage?: number;
+      newDailyBudget?: number;
+      targeting?: any;
+      status?: 'ACTIVE' | 'PAUSED';
+    },
+  ) {
+    return this.mcpAdsService.applyAiRecommendation(req.user.tenantId, dto);
+  }
+
+  @Post('launch-custom-campaign')
+  async launchCustomCampaign(
+    @Request() req: any,
+    @Body() dto: {
+      adAccountId: string;
+      facebookPageId: string;
+      name: string;
+      objective?: string;
+      dailyBudget: number;
+      durationDays?: number;
+      headline: string;
+      bodyText: string;
+      callToAction?: string;
+      linkUrl?: string;
+      imageUrl?: string;
+      targeting?: any;
+    },
+  ) {
+    return this.mcpAdsService.launchCustomCampaign(req.user.tenantId, dto);
+  }
+
   @Get('tools')
   async getRegisteredTools() {
     return this.mcpAdsServer.getRegisteredTools();

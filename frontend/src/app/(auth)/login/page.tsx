@@ -55,8 +55,8 @@ export default function LoginPage() {
 
       const data = await res.json();
       const expires = rememberMe ? 30 : 1;
-      Cookies.set('access_token', data.access_token, { expires, secure: true, sameSite: 'strict' });
-      Cookies.set('user_role', data.user.role, { expires, secure: true, sameSite: 'strict' });
+      Cookies.set('access_token', data.access_token, { expires, secure: true, sameSite: 'lax' });
+      Cookies.set('user_role', data.user.role, { expires, secure: true, sameSite: 'lax' });
 
       if (data.user.role === 'superadmin') {
         Cookies.remove('access_token');
@@ -134,8 +134,8 @@ export default function LoginPage() {
       }
       // But typically, a tenant user (owner/agent) goes to /dashboard
       const expires = rememberMe ? 30 : 1;
-      Cookies.set('access_token', data.access_token, { expires, secure: true, sameSite: 'strict' });
-      Cookies.set('user_role', data.user.role, { expires, secure: true, sameSite: 'strict' });
+      Cookies.set('access_token', data.access_token, { expires, secure: true, sameSite: 'lax' });
+      Cookies.set('user_role', data.user.role, { expires, secure: true, sameSite: 'lax' });
 
       if (data.user.role === 'superadmin') {
         Cookies.remove('access_token');

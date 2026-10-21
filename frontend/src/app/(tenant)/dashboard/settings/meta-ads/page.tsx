@@ -9,9 +9,38 @@ import {
   RefreshCw, Play, Pause, Edit2, Check, X, ChevronDown, 
   Sliders, Calendar, Share2, ThumbsUp, Trash2, ExternalLink, 
   ShieldCheck, AlertCircle, CheckCircle2, Sparkles, Filter, 
-  ArrowUpRight, ArrowDownRight, Layers, Users
+  ArrowUpRight, ArrowDownRight, Layers, Users, Zap, Bot,
+  Target, PlusCircle, CheckCircle, HelpCircle, Loader2, Activity
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+
+interface AiAnalysisResult {
+  campaignId: string;
+  campaignName: string;
+  status: string;
+  currentDailyBudget: number;
+  currency: string;
+  telemetry: {
+    impressions: number;
+    clicks: number;
+    spend: number;
+    ctr: number;
+    cpc: number;
+    period: string;
+  };
+  aiDiagnosis: {
+    healthScore: number;
+    diagnosis: string;
+    diagnosisBn: string;
+    recommendedAction: 'SCALE_BUDGET_UP' | 'SCALE_BUDGET_DOWN' | 'EXPAND_AUDIENCE' | 'PAUSE_UNDERPERFORMING';
+    suggestedScalingPercent: number;
+    suggestedTargeting?: any;
+    suggestedNewBudget: number;
+    rationale: string;
+    rationaleBn: string;
+    aiResponseQuotaCost: number;
+  };
+}
 
 interface AdAccount {
   id: string;
@@ -59,8 +88,8 @@ export default function MetaAdsManagerPage() {
   const { language } = useLanguage();
   const router = useRouter();
 
-  // Navigation Tabs: 'campaigns' | 'boost' | 'accounts'
-  const [activeTab, setActiveTab] = useState<'campaigns' | 'boost' | 'accounts'>('campaigns');
+  // Navigation Tabs: 'campaigns' | 'create' | 'boost' | 'accounts'
+  const [activeTab, setActiveTab] = useState<'campaigns' | 'create' | 'boost' | 'accounts'>('campaigns');
 
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
@@ -89,6 +118,47 @@ export default function MetaAdsManagerPage() {
   const [targetAgeMin, setTargetAgeMin] = useState<number>(18);
   const [targetAgeMax, setTargetAgeMax] = useState<number>(65);
   const [targetGender, setTargetGender] = useState<'all' | 'men' | 'women'>('all');
+
+  // AI Diagnostic & Scaling Confirmation State
+  const [analyzingAiCampaignId, setAnalyzingAiCampaignId] = useState<string | null>(null);
+  const [aiAnalysisResult, setAiAnalysisResult] = useState<AiAnalysisResult | null>(null);
+  const [aiAnalysisModalOpen, setAiAnalysisModalOpen] = useState(false);
+  const [confirmModalData, setConfirmModalData] = useState<{
+    type?: 'SCALE_BUDGET' | 'AI_RECOMMENDATION';
+    campaignId: string;
+    campaignName: string;
+    actionType: string;
+    percentage?: number;
+    currentBudget?: number;
+    targetBudget?: number;
+    scalingPercentage?: number;
+    newDailyBudget?: number;
+    targeting?: any;
+    suggestedTargeting?: any;
+    status?: 'ACTIVE' | 'PAUSED';
+    summaryEn?: string;
+    summaryBn?: string;
+    quotaCost?: number;
+  } | null>(null);
+  const [applyingAiAction, setApplyingAiAction] = useState(false);
+
+  // Advanced Custom Campaign Launch State (Ads Manager Pipeline)
+  const [launchingCustom, setLaunchingCustom] = useState(false);
+  const [customCampForm, setCustomCampForm] = useState({
+    name: '',
+    objective: 'OUTCOME_ENGAGEMENT',
+    dailyBudget: 5,
+    durationDays: 7,
+    headline: '',
+    bodyText: '',
+    callToAction: 'LEARN_MORE',
+    linkUrl: 'https://zinichat.com',
+    imageUrl: '',
+    countries: 'BD',
+    ageMin: 18,
+    ageMax: 65,
+    gender: 'all' as 'all' | 'men' | 'women',
+  });
 
   // Boost Post Drawer/Modal State
   const [boostModalOpen, setBoostModalOpen] = useState(false);
@@ -335,37 +405,171 @@ export default function MetaAdsManagerPage() {
     }
   };
 
-  // 1-Click Scale Budget by Percentage (+20%, +50%, -10%, -20%)
-  const handleScaleBudget = async (campaignId: string, percentage: number) => {
-    setActionLoading(`scale-${campaignId}-${percentage}`);
+  // Trigger AI Campaign Telemetry & Optimization Diagnosis (Costs 1 AI Response Quota)
+  const handleAnalyzeCampaignWithAi = async (campaignId: string) => {
+    setAnalyzingAiCampaignId(campaignId);
+    setStatusMsg(null);
     try {
       const token = Cookies.get('access_token');
-      const res = await fetch(`${API_URL}/meta-ads/objects/${campaignId}/scale`, {
-        method: 'PATCH',
+      const res = await fetch(`${API_URL}/meta-ads/campaigns/${campaignId}/analyze-ai`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ adAccountId: selectedAccountId, percentage })
+        body: JSON.stringify({ adAccountId: selectedAccountId })
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        setCampaigns(prev => prev.map(c => c.id === campaignId ? { ...c, dailyBudget: data.newDailyBudget } : c));
-        setStatusMsg({
-          type: 'success',
-          message: language === 'en'
-            ? `Budget scaled ${percentage > 0 ? '+' : ''}${percentage}% to ${data.newDailyBudget} ${balance?.currency || ''}`
-            : `বাজেট ${percentage > 0 ? '+' : ''}${percentage}% স্কেল করে ${data.newDailyBudget} ${balance?.currency || ''} করা হয়েছে`
-        });
-      } else {
+      if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.message || 'Failed to scale budget');
+        throw new Error(err.message || 'AI Campaign Analysis failed');
       }
+
+      const data: AiAnalysisResult = await res.json();
+      setAiAnalysisResult(data);
+      setAiAnalysisModalOpen(true);
+      setStatusMsg({
+        type: 'success',
+        message: language === 'en'
+          ? 'AI Diagnostics completed! 1 AI Response Quota consumed.'
+          : 'এআই অ্যানালাইসিস সম্পন্ন হয়েছে! ১টি এআই রেসপন্স কোটা ব্যবহৃত হয়েছে।'
+      });
     } catch (err: any) {
       setStatusMsg({ type: 'error', message: err.message });
     } finally {
-      setActionLoading(null);
+      setAnalyzingAiCampaignId(null);
+    }
+  };
+
+  // Open 2-Step Confirmation Modal Before Applying Scaling / Target Adjustments
+  const promptConfirmScale = (campaign: Campaign, percentage: number) => {
+    const isUp = percentage > 0;
+    const current = campaign.dailyBudget || 0;
+    const target = current > 0 ? Math.round(current * (1 + percentage / 100)) : 10;
+    setConfirmModalData({
+      type: 'SCALE_BUDGET',
+      campaignId: campaign.id,
+      campaignName: campaign.name,
+      actionType: 'SCALE_BUDGET',
+      percentage,
+      scalingPercentage: percentage,
+      currentBudget: current,
+      targetBudget: target,
+      newDailyBudget: target,
+      quotaCost: 2,
+      summaryEn: `Are you sure you want to scale the daily budget by ${isUp ? '+' : ''}${percentage}%? This will recalculate delivery bidding and cost 2 AI Response Quota credits to execute optimization.`,
+      summaryBn: `আপনি কি নিশ্চিত যে দৈনিক বাজেট ${isUp ? '+' : ''}${percentage}% পরিবর্তন করতে চান? মেটাতে এটি অটোমেটিকভাবে অ্যাডজাস্ট হবে এবং এই অ্যাকশনে ২টা AI Response কোটা কর্তন করা হবে।`
+    });
+  };
+
+  // Confirm & Apply AI-Recommended or Scaled Action (Costs 2 AI Response Quota)
+  const handleApplyConfirmedAction = async () => {
+    if (!confirmModalData) return;
+    setApplyingAiAction(true);
+    try {
+      const token = Cookies.get('access_token');
+      let actionType = confirmModalData.actionType;
+      if (actionType === 'SCALE_BUDGET_UP' || actionType === 'SCALE_BUDGET_DOWN') {
+        actionType = 'SCALE_BUDGET';
+      } else if (actionType === 'EXPAND_AUDIENCE') {
+        actionType = 'UPDATE_TARGETING';
+      } else if (actionType === 'PAUSE_UNDERPERFORMING') {
+        actionType = 'TOGGLE_STATUS';
+      }
+
+      const res = await fetch(`${API_URL}/meta-ads/campaigns/apply-ai-recommendation`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          adAccountId: selectedAccountId,
+          campaignId: confirmModalData.campaignId,
+          actionType,
+          percentage: confirmModalData.percentage || confirmModalData.scalingPercentage,
+          newDailyBudget: confirmModalData.newDailyBudget || confirmModalData.targetBudget,
+          targeting: confirmModalData.targeting || confirmModalData.suggestedTargeting,
+          status: confirmModalData.status || (confirmModalData.actionType === 'PAUSE_UNDERPERFORMING' ? 'PAUSED' : undefined),
+        })
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Failed to apply recommendation');
+      }
+
+      setConfirmModalData(null);
+      setAiAnalysisModalOpen(false);
+      setStatusMsg({
+        type: 'success',
+        message: language === 'en'
+          ? 'AI Optimization applied successfully to Meta! 2 AI Response credits used.'
+          : 'এআই অপ্টিমাইজেশন সফলভাবে মেটাতে অ্যাপ্লাই করা হয়েছে! ২টা AI Response কোটা ব্যবহৃত হয়েছে।'
+      });
+      fetchAccountData(selectedAccountId);
+    } catch (err: any) {
+      setStatusMsg({ type: 'error', message: err.message });
+    } finally {
+      setApplyingAiAction(false);
+    }
+  };
+
+  // Advanced Custom Campaign Launch Handler (Ads Manager Full Pipeline)
+  const handleLaunchCustomCampaign = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLaunchingCustom(true);
+    setStatusMsg(null);
+
+    const genders = customCampForm.gender === 'men' ? [1] : customCampForm.gender === 'women' ? [2] : [1, 2];
+    const countries = customCampForm.countries.split(',').map(c => c.trim().toUpperCase()).filter(Boolean);
+
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API_URL}/meta-ads/launch-custom-campaign`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          adAccountId: selectedAccountId,
+          facebookPageId: pageId,
+          name: customCampForm.name,
+          objective: customCampForm.objective,
+          dailyBudget: Number(customCampForm.dailyBudget),
+          durationDays: Number(customCampForm.durationDays),
+          headline: customCampForm.headline,
+          bodyText: customCampForm.bodyText,
+          callToAction: customCampForm.callToAction,
+          linkUrl: customCampForm.linkUrl,
+          imageUrl: customCampForm.imageUrl || undefined,
+          targeting: {
+            countries,
+            ageMin: Number(customCampForm.ageMin),
+            ageMax: Number(customCampForm.ageMax),
+            genders,
+          }
+        })
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Failed to launch custom campaign');
+      }
+
+      setStatusMsg({
+        type: 'success',
+        message: language === 'en'
+          ? 'Campaign successfully launched to Meta Ads Manager!'
+          : 'কাস্টম ক্যাম্পেইন সফলভাবে মেটা অ্যাড ম্যানেজারে চালু করা হয়েছে!'
+      });
+      setActiveTab('campaigns');
+      fetchAccountData(selectedAccountId);
+    } catch (err: any) {
+      setStatusMsg({ type: 'error', message: err.message });
+    } finally {
+      setLaunchingCustom(false);
     }
   };
 
@@ -596,6 +800,18 @@ export default function MetaAdsManagerPage() {
         </button>
 
         <button
+          onClick={() => setActiveTab('create')}
+          className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all flex items-center gap-2 shrink-0 whitespace-nowrap cursor-pointer ${
+            activeTab === 'create'
+              ? 'bg-brand-green text-white shadow-lg shadow-brand-green/20'
+              : 'text-text-secondary hover:text-white hover:bg-white/5'
+          }`}
+        >
+          <PlusCircle className="w-4 h-4 text-emerald-400" />
+          {language === 'en' ? 'Create Campaign (Ads Manager)' : 'নতুন ক্যাম্পেইন (অ্যাড ম্যানেজার)'}
+        </button>
+
+        <button
           onClick={() => setActiveTab('boost')}
           className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all flex items-center gap-2 shrink-0 whitespace-nowrap cursor-pointer ${
             activeTab === 'boost'
@@ -655,7 +871,7 @@ export default function MetaAdsManagerPage() {
                       <th className="py-3 px-4">{language === 'en' ? 'Campaign Name' : 'ক্যাম্পেইনের নাম'}</th>
                       <th className="py-3 px-4">{language === 'en' ? 'Objective' : 'উদ্দেশ্য'}</th>
                       <th className="py-3 px-4">{language === 'en' ? 'Daily Budget' : 'দৈনিক বাজেট'}</th>
-                      <th className="py-3 px-4 text-center">{language === 'en' ? '1-Click Scale' : '১-ক্লিক স্কেল'}</th>
+                      <th className="py-3 px-4 text-center">{language === 'en' ? 'AI Optimization & Scale' : 'এআই অপটিমাইজেশন ও স্কেল'}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5 text-white">
@@ -663,6 +879,7 @@ export default function MetaAdsManagerPage() {
                       const isActive = camp.status === 'ACTIVE';
                       const isStatusLoading = actionLoading === `status-${camp.id}`;
                       const isBudgetLoading = actionLoading === `budget-${camp.id}`;
+                      const isAiAnalyzing = analyzingAiCampaignId === camp.id;
 
                       return (
                         <tr key={camp.id} className="hover:bg-white/[0.02] transition-colors">
@@ -688,7 +905,7 @@ export default function MetaAdsManagerPage() {
 
                           {/* Campaign Name */}
                           <td className="py-3 px-4">
-                            <div className="font-medium text-white max-w-[280px] truncate" title={camp.name}>
+                            <div className="font-medium text-white max-w-[260px] truncate" title={camp.name}>
                               {camp.name}
                             </div>
                             <div className="text-[10px] text-text-secondary font-mono">ID: {camp.id}</div>
@@ -752,48 +969,67 @@ export default function MetaAdsManagerPage() {
                             )}
                           </td>
 
-                          {/* 1-Click Scale Quick Buttons (+20%, +50%, -10%, -20%) */}
+                          {/* AI Optimization & Controlled Scale */}
                           <td className="py-3 px-4">
-                            {camp.dailyBudget ? (
-                              <div className="flex items-center justify-center gap-1.5">
-                                <button
-                                  onClick={() => handleScaleBudget(camp.id, 20)}
-                                  disabled={actionLoading?.startsWith(`scale-${camp.id}`)}
-                                  className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 transition-all flex items-center gap-0.5"
-                                  title="Scale up by 20%"
-                                >
-                                  <ArrowUpRight className="w-3 h-3" /> +20%
-                                </button>
-                                <button
-                                  onClick={() => handleScaleBudget(camp.id, 50)}
-                                  disabled={actionLoading?.startsWith(`scale-${camp.id}`)}
-                                  className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 transition-all flex items-center gap-0.5"
-                                  title="Scale up by 50%"
-                                >
-                                  <ArrowUpRight className="w-3 h-3" /> +50%
-                                </button>
-                                <button
-                                  onClick={() => handleScaleBudget(camp.id, -10)}
-                                  disabled={actionLoading?.startsWith(`scale-${camp.id}`)}
-                                  className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/20 transition-all flex items-center gap-0.5"
-                                  title="Scale down by 10%"
-                                >
-                                  <ArrowDownRight className="w-3 h-3" /> -10%
-                                </button>
-                                <button
-                                  onClick={() => handleScaleBudget(camp.id, -20)}
-                                  disabled={actionLoading?.startsWith(`scale-${camp.id}`)}
-                                  className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition-all flex items-center gap-0.5"
-                                  title="Scale down by 20%"
-                                >
-                                  <ArrowDownRight className="w-3 h-3" /> -20%
-                                </button>
-                              </div>
-                            ) : (
-                              <span className="text-[10px] text-text-secondary text-center block">
-                                {language === 'en' ? 'Lifetime Budget' : 'লাইফটাইম বাজেট'}
-                              </span>
-                            )}
+                            <div className="flex items-center justify-center gap-2">
+                              {/* AI Telemetry Diagnosis Button */}
+                              <button
+                                onClick={() => handleAnalyzeCampaignWithAi(camp.id)}
+                                disabled={isAiAnalyzing}
+                                className="px-2.5 py-1 rounded-xl text-[10px] font-semibold bg-gradient-to-r from-brand-green/20 to-brand-orange/20 hover:from-brand-green/30 hover:to-brand-orange/30 text-white border border-brand-green/40 transition-all flex items-center gap-1.5 shadow-sm disabled:opacity-50"
+                                title={language === 'en' ? 'Run AI Analysis & Diagnostics (Costs 1 AI Credit)' : 'এআই দিয়ে ক্যাম্পেইন অ্যানালিসিস করুন (১টি এআই ক্রেডিট)'}
+                              >
+                                {isAiAnalyzing ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin text-brand-orange" />
+                                ) : (
+                                  <Bot className="w-3.5 h-3.5 text-brand-orange" />
+                                )}
+                                <span>{language === 'en' ? 'AI Diagnose' : 'এআই অ্যানালিসিস'}</span>
+                                <span className="text-[9px] px-1 py-0.2 bg-brand-green/40 text-emerald-200 rounded font-mono">1 AI</span>
+                              </button>
+
+                              {/* Controlled Scaling Quick Buttons with Confirmation Modal */}
+                              {camp.dailyBudget ? (
+                                <div className="flex items-center gap-1 border-l border-white/10 pl-2">
+                                  <button
+                                    onClick={() => promptConfirmScale(camp, 20)}
+                                    disabled={actionLoading?.startsWith(`scale-${camp.id}`)}
+                                    className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 transition-all flex items-center gap-0.5"
+                                    title={language === 'en' ? 'Scale up +20% (Double confirmation)' : '+২০% স্কেল করুন (পপ-আপ কনফার্মেশন)'}
+                                  >
+                                    <ArrowUpRight className="w-3 h-3" /> +20%
+                                  </button>
+                                  <button
+                                    onClick={() => promptConfirmScale(camp, 50)}
+                                    disabled={actionLoading?.startsWith(`scale-${camp.id}`)}
+                                    className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 transition-all flex items-center gap-0.5"
+                                    title={language === 'en' ? 'Scale up +50% (Double confirmation)' : '+৫০% স্কেল করুন (পপ-আপ কনফার্মেশন)'}
+                                  >
+                                    <ArrowUpRight className="w-3 h-3" /> +50%
+                                  </button>
+                                  <button
+                                    onClick={() => promptConfirmScale(camp, -10)}
+                                    disabled={actionLoading?.startsWith(`scale-${camp.id}`)}
+                                    className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/20 transition-all flex items-center gap-0.5"
+                                    title={language === 'en' ? 'Scale down -10% (Double confirmation)' : '-১০% স্কেল করুন (পপ-আপ কনফার্মেশন)'}
+                                  >
+                                    <ArrowDownRight className="w-3 h-3" /> -10%
+                                  </button>
+                                  <button
+                                    onClick={() => promptConfirmScale(camp, -20)}
+                                    disabled={actionLoading?.startsWith(`scale-${camp.id}`)}
+                                    className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition-all flex items-center gap-0.5"
+                                    title={language === 'en' ? 'Scale down -20% (Double confirmation)' : '-২০% স্কেল করুন (পপ-আপ কনফার্মেশন)'}
+                                  >
+                                    <ArrowDownRight className="w-3 h-3" /> -20%
+                                  </button>
+                                </div>
+                              ) : (
+                                <span className="text-[10px] text-text-secondary text-center block">
+                                  {language === 'en' ? 'Lifetime Budget' : 'লাইফটাইম বাজেট'}
+                                </span>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       );
@@ -807,9 +1043,10 @@ export default function MetaAdsManagerPage() {
                 {campaigns.map((camp) => {
                   const isActive = camp.status === 'ACTIVE';
                   const isStatusLoading = actionLoading === `status-${camp.id}`;
+                  const isAiAnalyzing = analyzingAiCampaignId === camp.id;
 
                   return (
-                    <div key={camp.id} className="p-3 bg-surface-light rounded-xl space-y-3">
+                    <div key={camp.id} className="p-3.5 bg-surface-light rounded-xl space-y-3 border border-white/5 shadow-sm">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <h4 className="font-semibold text-white text-xs truncate">{camp.name}</h4>
@@ -837,29 +1074,45 @@ export default function MetaAdsManagerPage() {
                         </span>
                       </div>
 
+                      {/* AI Diagnostics CTA for Mobile */}
+                      <button
+                        onClick={() => handleAnalyzeCampaignWithAi(camp.id)}
+                        disabled={isAiAnalyzing}
+                        className="w-full py-2 px-3 rounded-xl text-xs font-semibold bg-gradient-to-r from-brand-green/20 to-brand-orange/20 hover:from-brand-green/30 text-white border border-brand-green/30 transition-all flex items-center justify-center gap-2 shadow-sm"
+                      >
+                        {isAiAnalyzing ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-brand-orange" />
+                        ) : (
+                          <Bot className="w-3.5 h-3.5 text-brand-orange" />
+                        )}
+                        <span>{language === 'en' ? 'AI Diagnostic & Telemetry' : 'এআই ডায়াগনোসিস ও অ্যানালিসিস'}</span>
+                        <span className="text-[9px] px-1.5 py-0.5 bg-brand-green/40 text-emerald-200 rounded font-mono">1 AI Quota</span>
+                      </button>
+
+                      {/* Controlled Scaling for Mobile */}
                       {camp.dailyBudget && (
-                        <div className="flex items-center justify-between gap-1 pt-2">
+                        <div className="flex items-center justify-between gap-1 pt-1">
                           <button
-                            onClick={() => handleScaleBudget(camp.id, 20)}
-                            className="flex-1 py-1 rounded bg-emerald-500/10 text-emerald-400 text-[10px] font-bold border border-emerald-500/20 text-center"
+                            onClick={() => promptConfirmScale(camp, 20)}
+                            className="flex-1 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-[10px] font-bold border border-emerald-500/20 text-center"
                           >
                             +20%
                           </button>
                           <button
-                            onClick={() => handleScaleBudget(camp.id, 50)}
-                            className="flex-1 py-1 rounded bg-emerald-500/10 text-emerald-400 text-[10px] font-bold border border-emerald-500/20 text-center"
+                            onClick={() => promptConfirmScale(camp, 50)}
+                            className="flex-1 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-[10px] font-bold border border-emerald-500/20 text-center"
                           >
                             +50%
                           </button>
                           <button
-                            onClick={() => handleScaleBudget(camp.id, -10)}
-                            className="flex-1 py-1 rounded bg-orange-500/10 text-orange-400 text-[10px] font-bold border border-orange-500/20 text-center"
+                            onClick={() => promptConfirmScale(camp, -10)}
+                            className="flex-1 py-1.5 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 text-[10px] font-bold border border-orange-500/20 text-center"
                           >
                             -10%
                           </button>
                           <button
-                            onClick={() => handleScaleBudget(camp.id, -20)}
-                            className="flex-1 py-1 rounded bg-red-500/10 text-red-400 text-[10px] font-bold border border-red-500/20 text-center"
+                            onClick={() => promptConfirmScale(camp, -20)}
+                            className="flex-1 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-[10px] font-bold border border-red-500/20 text-center"
                           >
                             -20%
                           </button>
@@ -875,7 +1128,313 @@ export default function MetaAdsManagerPage() {
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 2: BOOST PAGE POST */}
+      {/* TAB 2: CREATE CAMPAIGN (ADS MANAGER STYLE) */}
+      {/* ========================================================================= */}
+      {activeTab === 'create' && (
+        <div className="space-y-6 max-w-4xl">
+          {/* Header Card */}
+          <div className="bg-gradient-to-r from-brand-green/15 via-surface/80 to-brand-orange/15 border border-brand-green/30 rounded-2xl p-5 sm:p-6 backdrop-blur-xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                  <PlusCircle className="w-5 h-5 text-emerald-400" />
+                  {language === 'en' ? 'Create Custom Campaign (Ads Manager Flow)' : 'অ্যাডভান্সড ক্যাম্পেইন তৈরি করুন (মেটা অ্যাড ম্যানেজার ফ্লো)'}
+                </h3>
+                <p className="text-xs sm:text-sm text-text-secondary mt-1">
+                  {language === 'en'
+                    ? 'Deploy a complete Meta advertising structure (Campaign, AdSet with precise targeting, and Ad Creative with conversion links) directly to Meta Graph API.'
+                    : 'সরাসরি মেটাতে অ্যাডভান্সড ক্যাম্পেইন, টার্গেটেড অ্যাডসেট এবং কনভার্সন লিংকযুক্ত অ্যাড ক্রিয়েটিভ চালু করুন।'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <form onSubmit={handleLaunchCustomCampaign} className="space-y-6">
+            {/* Step 1: Campaign Objective & Name */}
+            <div className="bg-surface/70 backdrop-blur-xl border border-white/10 rounded-2xl p-5 space-y-4">
+              <h4 className="text-sm font-semibold text-white flex items-center gap-2">
+                <Target className="w-4 h-4 text-brand-green" />
+                {language === 'en' ? '1. Campaign Objective & Identity' : '১. ক্যাম্পেইনের উদ্দেশ্য ও নাম'}
+              </h4>
+
+              {/* Objectives Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                {[
+                  { id: 'OUTCOME_ENGAGEMENT', title: language === 'en' ? 'Engagement' : 'এনগেজমেন্ট', desc: language === 'en' ? 'Messages, video views, post interaction' : 'মেসেজ, ভিডিও ভিউ, পোস্ট রিয়্যাকশন' },
+                  { id: 'OUTCOME_TRAFFIC', title: language === 'en' ? 'Traffic' : 'ট্রাফিক', desc: language === 'en' ? 'Send clicks to website or WhatsApp' : 'ওয়েবসাইট বা হোয়াটসঅ্যাপে ভিজিটর' },
+                  { id: 'OUTCOME_LEADS', title: language === 'en' ? 'Leads' : 'লিডস', desc: language === 'en' ? 'Collect leads via instant forms/inbox' : 'ইনস্ট্যান্ট ফর্ম বা ইনবক্সে লিড' },
+                  { id: 'OUTCOME_SALES', title: language === 'en' ? 'Sales / Conversions' : 'সেলস / কনভার্সন', desc: language === 'en' ? 'Find buyers ready to purchase' : 'পণ্য কেনার মতো আগ্রহী গ্রাহক' },
+                ].map((obj) => (
+                  <button
+                    key={obj.id}
+                    type="button"
+                    onClick={() => setCustomCampForm(f => ({ ...f, objective: obj.id }))}
+                    className={`p-3 rounded-xl text-left border transition-all ${
+                      customCampForm.objective === obj.id
+                        ? 'bg-brand-green/20 border-brand-green text-white shadow-md shadow-brand-green/20'
+                        : 'bg-surface border-white/5 text-text-secondary hover:border-white/20 hover:text-white'
+                    }`}
+                  >
+                    <span className="text-xs font-bold block text-white">{obj.title}</span>
+                    <span className="text-[10px] text-text-secondary mt-1 block leading-tight">{obj.desc}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Campaign Name */}
+              <div>
+                <label className="text-xs text-text-secondary block mb-1 font-medium">
+                  {language === 'en' ? 'Campaign Name *' : 'ক্যাম্পেইনের নাম *'}
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={customCampForm.name}
+                  onChange={(e) => setCustomCampForm(f => ({ ...f, name: e.target.value }))}
+                  placeholder={language === 'en' ? 'e.g. Eid Mega Sale Campaign 2026' : 'যেমন: ঈদ মেগা সেল ক্যাম্পেইন ২০২৬'}
+                  className="w-full bg-surface border border-white/10 text-white text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-brand-green"
+                />
+              </div>
+            </div>
+
+            {/* Step 2: AdSet Budget & Audience Targeting */}
+            <div className="bg-surface/70 backdrop-blur-xl border border-white/10 rounded-2xl p-5 space-y-4">
+              <h4 className="text-sm font-semibold text-white flex items-center gap-2">
+                <Users className="w-4 h-4 text-brand-orange" />
+                {language === 'en' ? '2. AdSet: Budget, Schedule & Audience Targeting' : '২. অ্যাডসেট: বাজেট, মেয়াদ ও অডিয়েন্স টার্গেটিং'}
+              </h4>
+
+              {/* Budget & Duration */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs text-text-secondary block mb-1 font-medium">
+                    {language === 'en' ? `Daily Budget (${currencySymbol}) *` : `দৈনিক বাজেট (${currencySymbol}) *`}
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    required
+                    value={customCampForm.dailyBudget}
+                    onChange={(e) => setCustomCampForm(f => ({ ...f, dailyBudget: Number(e.target.value) }))}
+                    className="w-full bg-surface border border-white/10 text-white text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-brand-green"
+                  />
+                  <div className="flex gap-1.5 mt-2">
+                    {[5, 10, 25, 50, 100].map((amt) => (
+                      <button
+                        key={amt}
+                        type="button"
+                        onClick={() => setCustomCampForm(f => ({ ...f, dailyBudget: amt }))}
+                        className="px-2.5 py-1 rounded-lg text-[10px] bg-white/5 hover:bg-white/10 text-text-secondary hover:text-white border border-white/10 font-mono transition-colors"
+                      >
+                        {currencySymbol} {amt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="text-xs text-text-secondary font-medium">
+                      {language === 'en' ? 'Campaign Duration:' : 'বিজ্ঞাপনের মেয়াদ:'}
+                    </label>
+                    <span className="text-xs font-bold text-white font-mono">{customCampForm.durationDays} Days</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={1}
+                    max={60}
+                    value={customCampForm.durationDays}
+                    onChange={(e) => setCustomCampForm(f => ({ ...f, durationDays: Number(e.target.value) }))}
+                    className="w-full accent-brand-green cursor-pointer mt-2"
+                  />
+                  <div className="text-[11px] text-text-secondary flex justify-between mt-1">
+                    <span>1 Day</span>
+                    <span>Total Est: ~{currencySymbol} {(customCampForm.dailyBudget * customCampForm.durationDays).toLocaleString()}</span>
+                    <span>60 Days</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Target Audience: Country, Age, Gender */}
+              <div className="pt-3 border-t border-white/5 space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-xs text-text-secondary block mb-1">
+                      {language === 'en' ? 'Target Countries (comma separated)' : 'টার্গেট দেশ (কমা দিয়ে লিখুন)'}
+                    </label>
+                    <input
+                      type="text"
+                      value={customCampForm.countries}
+                      onChange={(e) => setCustomCampForm(f => ({ ...f, countries: e.target.value }))}
+                      placeholder="BD, US, CA"
+                      className="w-full bg-surface border border-white/10 text-white text-xs rounded-xl px-3 py-2 uppercase font-mono focus:outline-none focus:border-brand-green"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-text-secondary block mb-1">
+                      {language === 'en' ? 'Min Age' : 'সর্বনিম্ন বয়স'}
+                    </label>
+                    <input
+                      type="number"
+                      min={18}
+                      max={65}
+                      value={customCampForm.ageMin}
+                      onChange={(e) => setCustomCampForm(f => ({ ...f, ageMin: Number(e.target.value) }))}
+                      className="w-full bg-surface border border-white/10 text-white text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-brand-green"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-text-secondary block mb-1">
+                      {language === 'en' ? 'Max Age' : 'সর্বোচ্চ বয়স'}
+                    </label>
+                    <input
+                      type="number"
+                      min={18}
+                      max={65}
+                      value={customCampForm.ageMax}
+                      onChange={(e) => setCustomCampForm(f => ({ ...f, ageMax: Number(e.target.value) }))}
+                      className="w-full bg-surface border border-white/10 text-white text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-brand-green"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs text-text-secondary block mb-1.5">
+                    {language === 'en' ? 'Target Gender' : 'টার্গেট জেন্ডার'}
+                  </label>
+                  <div className="flex items-center gap-2">
+                    {(['all', 'men', 'women'] as const).map((g) => (
+                      <button
+                        key={g}
+                        type="button"
+                        onClick={() => setCustomCampForm(f => ({ ...f, gender: g }))}
+                        className={`flex-1 py-1.5 rounded-xl text-xs capitalize transition-colors ${
+                          customCampForm.gender === g
+                            ? 'bg-brand-green text-white font-bold'
+                            : 'bg-white/5 text-text-secondary hover:text-white'
+                        }`}
+                      >
+                        {g}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Step 3: Ad Creative & Copy */}
+            <div className="bg-surface/70 backdrop-blur-xl border border-white/10 rounded-2xl p-5 space-y-4">
+              <h4 className="text-sm font-semibold text-white flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-emerald-400" />
+                {language === 'en' ? '3. Ad Creative & Content' : '৩. বিজ্ঞাপন কনটেন্ট ও ক্রিয়েটিভ'}
+              </h4>
+
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs text-text-secondary block mb-1 font-medium">
+                    {language === 'en' ? 'Ad Headline *' : 'বিজ্ঞাপনের হেডলাইন *'}
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={customCampForm.headline}
+                    onChange={(e) => setCustomCampForm(f => ({ ...f, headline: e.target.value }))}
+                    placeholder={language === 'en' ? 'e.g. Exclusive 30% Discount Today Only!' : 'যেমন: শুধুমাত্র আজকের জন্য ৩০% বিশেষ ছাড়!'}
+                    className="w-full bg-surface border border-white/10 text-white text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-brand-green"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs text-text-secondary block mb-1 font-medium">
+                    {language === 'en' ? 'Primary Text (Ad Copy) *' : 'বিজ্ঞাপনের মূল বিবরণ (প্রাইমারি টেক্সট) *'}
+                  </label>
+                  <textarea
+                    rows={4}
+                    required
+                    value={customCampForm.bodyText}
+                    onChange={(e) => setCustomCampForm(f => ({ ...f, bodyText: e.target.value }))}
+                    placeholder={language === 'en' ? 'Write the compelling sales copy for your ad...' : 'আপনার বিজ্ঞাপনের বিস্তারিত বিবরণ এখানে লিখুন...'}
+                    className="w-full bg-surface border border-white/10 text-white text-xs rounded-xl p-3 focus:outline-none focus:border-brand-green"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-text-secondary block mb-1 font-medium">
+                      {language === 'en' ? 'Website / Destination URL' : 'ওয়েবসাইট বা ল্যান্ডিং পেইজ লিংক'}
+                    </label>
+                    <input
+                      type="url"
+                      value={customCampForm.linkUrl}
+                      onChange={(e) => setCustomCampForm(f => ({ ...f, linkUrl: e.target.value }))}
+                      placeholder="https://yourwebsite.com/product"
+                      className="w-full bg-surface border border-white/10 text-white text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-brand-green"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-text-secondary block mb-1 font-medium">
+                      {language === 'en' ? 'Image URL (High-Res Banner)' : 'ছবির লিংক (ব্যানার ইমেজ URL)'}
+                    </label>
+                    <input
+                      type="url"
+                      value={customCampForm.imageUrl}
+                      onChange={(e) => setCustomCampForm(f => ({ ...f, imageUrl: e.target.value }))}
+                      placeholder="https://images.unsplash.com/..."
+                      className="w-full bg-surface border border-white/10 text-white text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-brand-green"
+                    />
+                  </div>
+                </div>
+
+                {customCampForm.imageUrl && (
+                  <div className="p-2 border border-white/10 rounded-xl bg-surface/50 max-w-xs">
+                    <span className="text-[10px] text-text-secondary block mb-1">Image Preview:</span>
+                    <img
+                      src={customCampForm.imageUrl}
+                      alt="Ad Preview"
+                      className="w-full h-32 object-cover rounded-lg"
+                      onError={(e) => (e.currentTarget.style.display = 'none')}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Submit Action */}
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setActiveTab('campaigns')}
+                className="px-4 py-2.5 text-xs text-text-secondary hover:text-white transition-colors"
+              >
+                {language === 'en' ? 'Cancel' : 'বাতিল'}
+              </button>
+              <button
+                type="submit"
+                disabled={launchingCustom}
+                className="px-6 py-2.5 bg-gradient-to-r from-brand-green to-emerald-600 hover:opacity-95 text-white font-semibold text-xs rounded-xl transition-all shadow-lg shadow-brand-green/20 flex items-center gap-2 disabled:opacity-50"
+              >
+                {launchingCustom ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-white" />
+                    <span>{language === 'en' ? 'Deploying to Meta Ads Manager...' : 'মেটা অ্যাড ম্যানেজারে সাবমিট হচ্ছে...'}</span>
+                  </>
+                ) : (
+                  <>
+                    <PlusCircle className="w-4 h-4 text-white" />
+                    <span>{language === 'en' ? 'Launch Campaign on Meta Now' : 'এখনই মেটাতে ক্যাম্পেইন চালু করুন'}</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 3: BOOST PAGE POST */}
       {/* ========================================================================= */}
       {activeTab === 'boost' && (
         <div className="space-y-4">
@@ -1247,6 +1806,302 @@ export default function MetaAdsManagerPage() {
                 {launchingBoost
                   ? (language === 'en' ? 'Launching Ad on Meta...' : 'মেটাতে বিজ্ঞাপন লাইভ হচ্ছে...')
                   : (language === 'en' ? 'Launch Ad on Meta Now' : 'এখনই মেটাতে বিজ্ঞাপন লাইভ করুন')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ========================================================================= */}
+      {/* MODAL: AI ANALYSIS & DIAGNOSTIC TELEMETRY */}
+      {/* ========================================================================= */}
+      {aiAnalysisModalOpen && aiAnalysisResult && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-surface-light border border-white/10 rounded-2xl max-w-xl w-full p-5 sm:p-6 space-y-5 shadow-2xl relative my-8 max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="flex items-start justify-between gap-3 border-b border-white/10 pb-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="p-1.5 rounded-lg bg-brand-green/20 text-emerald-400">
+                    <Bot className="w-5 h-5 text-brand-orange" />
+                  </span>
+                  <h3 className="text-base sm:text-lg font-bold text-white">
+                    {language === 'en' ? 'AI Campaign Telemetry & Diagnosis' : 'এআই ক্যাম্পেইন টেলিমেট্রি ও ডায়াগনোসিস'}
+                  </h3>
+                </div>
+                <div className="flex items-center gap-2 mt-1.5">
+                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/20 font-medium">
+                    {language === 'en' ? '✓ 1 AI Response Credit Deducted' : '✓ ১টি এআই রেসপন্স ক্রেডিট ব্যবহার হয়েছে'}
+                  </span>
+                  <span className="text-xs text-text-secondary truncate max-w-[200px]">
+                    {aiAnalysisResult.campaignName}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => setAiAnalysisModalOpen(false)}
+                className="text-text-secondary hover:text-white p-1 rounded-lg hover:bg-white/5 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Health Score & Performance Bar */}
+            <div className="p-4 rounded-xl bg-surface/90 border border-white/10 flex items-center justify-between gap-4">
+              <div>
+                <span className="text-xs text-text-secondary block">
+                  {language === 'en' ? 'Campaign Health Score' : 'ক্যাম্পেইন হেলথ স্কোর'}
+                </span>
+                <span className="text-xs font-semibold text-white mt-0.5 block">
+                  {aiAnalysisResult.aiDiagnosis.healthScore >= 75
+                    ? (language === 'en' ? '🌟 High Efficiency' : '🌟 দারুণ পারফরম্যান্স')
+                    : aiAnalysisResult.aiDiagnosis.healthScore >= 50
+                    ? (language === 'en' ? '⚡ Moderate / Optimization Opportunity' : '⚡ মধ্যম / অপটিমাইজেশন প্রয়োজন')
+                    : (language === 'en' ? '⚠️ Underperforming / High CPC' : '⚠️ আশঙ্কাজনক / অতিরিক্ত খরচ')}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={`text-2xl sm:text-3xl font-extrabold font-mono ${
+                  aiAnalysisResult.aiDiagnosis.healthScore >= 75 ? 'text-emerald-400' : aiAnalysisResult.aiDiagnosis.healthScore >= 50 ? 'text-brand-orange' : 'text-red-400'
+                }`}>
+                  {aiAnalysisResult.aiDiagnosis.healthScore}
+                </span>
+                <span className="text-xs text-text-secondary">/ 100</span>
+              </div>
+            </div>
+
+            {/* 7-Day Live Telemetry Grid */}
+            <div className="space-y-2">
+              <span className="text-xs font-semibold text-white flex items-center gap-1.5">
+                <Activity className="w-3.5 h-3.5 text-brand-green" />
+                {language === 'en' ? '7-Day Meta Telemetry' : 'বিগত ৭ দিনের মেটা টেলিমেট্রি'}
+              </span>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                <div className="p-2.5 rounded-xl bg-surface border border-white/5 text-center">
+                  <span className="text-[10px] text-text-secondary block">Impressions</span>
+                  <span className="text-xs sm:text-sm font-bold text-white font-mono">
+                    {aiAnalysisResult.telemetry.impressions.toLocaleString()}
+                  </span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-surface border border-white/5 text-center">
+                  <span className="text-[10px] text-text-secondary block">Clicks</span>
+                  <span className="text-xs sm:text-sm font-bold text-emerald-400 font-mono">
+                    {aiAnalysisResult.telemetry.clicks.toLocaleString()}
+                  </span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-surface border border-white/5 text-center">
+                  <span className="text-[10px] text-text-secondary block">CTR</span>
+                  <span className="text-xs sm:text-sm font-bold text-blue-400 font-mono">
+                    {aiAnalysisResult.telemetry.ctr}%
+                  </span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-surface border border-white/5 text-center">
+                  <span className="text-[10px] text-text-secondary block">Spend</span>
+                  <span className="text-xs sm:text-sm font-bold text-brand-orange font-mono">
+                    {currencySymbol} {aiAnalysisResult.telemetry.spend}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Diagnosis Content */}
+            <div className="p-3.5 rounded-xl bg-surface border border-white/5 space-y-1.5">
+              <span className="text-xs font-semibold text-white flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-brand-orange" />
+                {language === 'en' ? 'AI Diagnostic Evaluation' : 'এআই ডায়াগনস্টিক রিপোর্ট'}
+              </span>
+              <p className="text-xs text-text-secondary leading-relaxed">
+                {language === 'en' ? aiAnalysisResult.aiDiagnosis.diagnosis : aiAnalysisResult.aiDiagnosis.diagnosisBn}
+              </p>
+            </div>
+
+            {/* Recommended Action Plan */}
+            <div className="p-4 rounded-xl bg-gradient-to-br from-brand-green/10 via-surface to-brand-orange/10 border border-brand-green/30 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                  <Target className="w-3.5 h-3.5 text-emerald-400" />
+                  {language === 'en' ? 'Recommended Optimization' : 'প্রস্তাবিত অপটিমাইজেশন'}
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-brand-green/20 text-emerald-300 border border-brand-green/30">
+                  {aiAnalysisResult.aiDiagnosis.recommendedAction.replace(/_/g, ' ')}
+                </span>
+              </div>
+
+              {aiAnalysisResult.aiDiagnosis.suggestedScalingPercent && (
+                <div className="text-xs text-white">
+                  <span className="text-text-secondary">{language === 'en' ? 'Suggested Budget Scaling: ' : 'প্রস্তাবিত বাজেট স্কেলিং: '}</span>
+                  <span className="font-bold text-emerald-400 font-mono">
+                    {aiAnalysisResult.aiDiagnosis.suggestedScalingPercent > 0 ? `+${aiAnalysisResult.aiDiagnosis.suggestedScalingPercent}%` : `${aiAnalysisResult.aiDiagnosis.suggestedScalingPercent}%`}
+                  </span>
+                </div>
+              )}
+
+              {aiAnalysisResult.aiDiagnosis.suggestedTargeting && (
+                <div className="text-xs text-white space-y-1 pt-1 border-t border-white/5">
+                  <span className="text-text-secondary block">{language === 'en' ? 'Suggested Audience Refinement: ' : 'প্রস্তাবিত অডিয়েন্স পরিবর্তন: '}</span>
+                  <div className="flex flex-wrap gap-1.5 text-[11px] font-mono">
+                    <span className="px-2 py-0.5 rounded bg-white/5 text-text-secondary">
+                      Countries: {aiAnalysisResult.aiDiagnosis.suggestedTargeting.geo_locations?.countries?.join(', ') || 'BD'}
+                    </span>
+                    <span className="px-2 py-0.5 rounded bg-white/5 text-text-secondary">
+                      Age: {aiAnalysisResult.aiDiagnosis.suggestedTargeting.age_min || 18}-{aiAnalysisResult.aiDiagnosis.suggestedTargeting.age_max || 65}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              <p className="text-xs text-text-secondary italic pt-1">
+                {language === 'en' ? aiAnalysisResult.aiDiagnosis.rationale : aiAnalysisResult.aiDiagnosis.rationaleBn}
+              </p>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex flex-col sm:flex-row items-center justify-end gap-2.5 pt-2 border-t border-white/10">
+              <button
+                type="button"
+                onClick={() => setAiAnalysisModalOpen(false)}
+                className="w-full sm:w-auto px-4 py-2 text-xs text-text-secondary hover:text-white transition-colors"
+              >
+                {language === 'en' ? 'Close' : 'বন্ধ করুন'}
+              </button>
+
+              {aiAnalysisResult.aiDiagnosis.recommendedAction && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const res = aiAnalysisResult;
+                    setAiAnalysisModalOpen(false);
+                    setConfirmModalData({
+                      type: 'AI_RECOMMENDATION',
+                      campaignId: res.campaignId,
+                      campaignName: res.campaignName,
+                      actionType: res.aiDiagnosis.recommendedAction,
+                      scalingPercentage: res.aiDiagnosis.suggestedScalingPercent,
+                      percentage: res.aiDiagnosis.suggestedScalingPercent,
+                      currentBudget: res.currentDailyBudget,
+                      targetBudget: res.aiDiagnosis.suggestedNewBudget,
+                      newDailyBudget: res.aiDiagnosis.suggestedNewBudget,
+                      targeting: res.aiDiagnosis.suggestedTargeting,
+                      suggestedTargeting: res.aiDiagnosis.suggestedTargeting,
+                      quotaCost: 2
+                    });
+                  }}
+                  className="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-brand-green to-emerald-600 hover:opacity-95 text-white font-semibold text-xs rounded-xl transition-all shadow-lg shadow-brand-green/20 flex items-center justify-center gap-2"
+                >
+                  <Sparkles className="w-4 h-4 text-brand-orange" />
+                  <span>{language === 'en' ? 'Apply AI Optimization' : 'এআই সাজেশন অ্যাপ্লাই করুন'}</span>
+                  <span className="text-[10px] px-1.5 py-0.5 bg-black/30 rounded font-mono text-emerald-200">
+                    2 AI Credits
+                  </span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: 2-STEP CONFIRMATION POPUP (NO BLIND IMMEDIATE SCALING) */}
+      {/* ========================================================================= */}
+      {confirmModalData && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-surface-light border border-white/15 rounded-2xl max-w-md w-full p-6 space-y-5 shadow-2xl relative animate-in fade-in zoom-in duration-150">
+            {/* Header */}
+            <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+              <span className="p-2 rounded-xl bg-brand-orange/20 text-brand-orange">
+                <AlertCircle className="w-5 h-5" />
+              </span>
+              <div>
+                <h3 className="text-base font-bold text-white">
+                  {language === 'en' ? 'Confirm Action on Meta' : 'মেটাতে অ্যাকশন নিশ্চিত করুন'}
+                </h3>
+                <span className="text-xs text-text-secondary">
+                  {confirmModalData.campaignName}
+                </span>
+              </div>
+            </div>
+
+            {/* Action Details */}
+            <div className="p-4 rounded-xl bg-surface border border-white/10 space-y-2.5 text-xs">
+              {confirmModalData.type === 'SCALE_BUDGET' ? (
+                <div>
+                  <span className="text-text-secondary block mb-1">
+                    {language === 'en' ? 'Budget Adjustment:' : 'বাজেট পরিবর্তন:'}
+                  </span>
+                  <div className="flex items-center gap-2 font-mono">
+                    <span className="text-white font-bold">{currencySymbol} {confirmModalData.currentBudget}</span>
+                    <span className="text-text-secondary">➔</span>
+                    <span className={`font-bold ${
+                      (confirmModalData.scalingPercentage || 0) > 0 ? 'text-emerald-400' : 'text-red-400'
+                    }`}>
+                      {currencySymbol} {confirmModalData.targetBudget} ({(confirmModalData.scalingPercentage || 0) > 0 ? `+${confirmModalData.scalingPercentage}%` : `${confirmModalData.scalingPercentage}%`})
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  <span className="text-text-secondary block">
+                    {language === 'en' ? 'AI Optimization Action:' : 'এআই অপটিমাইজেশন পদক্ষেপ:'}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-brand-green/20 text-emerald-300 border border-brand-green/30 inline-block">
+                    {confirmModalData.actionType?.replace(/_/g, ' ')}
+                  </span>
+                  {confirmModalData.scalingPercentage && (
+                    <div className="text-text-secondary text-[11px] pt-1">
+                      Scaling Daily Budget by <span className="font-bold text-white font-mono">{confirmModalData.scalingPercentage > 0 ? `+${confirmModalData.scalingPercentage}%` : `${confirmModalData.scalingPercentage}%`}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Quota Notice Banner */}
+              {confirmModalData.quotaCost ? (
+                <div className="p-2.5 rounded-lg bg-brand-orange/15 border border-brand-orange/30 text-brand-orange text-[11px] flex items-center gap-2 mt-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>
+                    {language === 'en'
+                      ? `⚠️ Executing this optimization will deduct ${confirmModalData.quotaCost} AI Response Credits from your quota.`
+                      : `⚠️ এই অপটিমাইজেশনটি সম্পন্ন করতে আপনার কোটা থেকে ${confirmModalData.quotaCost}টি এআই রেসপন্স ক্রেডিট কাটা হবে।`}
+                  </span>
+                </div>
+              ) : (
+                <div className="p-2.5 rounded-lg bg-blue-500/15 border border-blue-500/30 text-blue-300 text-[11px] flex items-center gap-2 mt-2">
+                  <HelpCircle className="w-4 h-4 shrink-0" />
+                  <span>
+                    {language === 'en'
+                      ? 'This will immediately update the live adset budget on Meta Graph API.'
+                      : 'এটি অবিলম্বে মেটা গ্রাফ এপিআইতে লাইভ অ্যাডসেট বাজেট আপডেট করবে।'}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* CTAs */}
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setConfirmModalData(null)}
+                disabled={applyingAiAction}
+                className="px-4 py-2 text-xs text-text-secondary hover:text-white transition-colors disabled:opacity-50"
+              >
+                {language === 'en' ? 'Cancel' : 'বাতিল'}
+              </button>
+              <button
+                type="button"
+                onClick={handleApplyConfirmedAction}
+                disabled={applyingAiAction}
+                className="px-5 py-2.5 bg-brand-green hover:bg-brand-green/90 text-white font-semibold text-xs rounded-xl transition-all shadow-lg shadow-brand-green/20 flex items-center gap-2 disabled:opacity-50"
+              >
+                {applyingAiAction ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
+                    <span>{language === 'en' ? 'Applying to Meta...' : 'মেটাতে আপডেট হচ্ছে...'}</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+                    <span>{language === 'en' ? 'Confirm & Apply on Meta' : 'নিশ্চিত করুন ও মেটাতে অ্যাপ্লাই করুন'}</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
