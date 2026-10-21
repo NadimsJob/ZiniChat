@@ -1675,7 +1675,10 @@ export default function AiTrainingPage() {
             </div>
 
             {/* Quick Test Prompt Pills */}
-            <div className="px-3 py-2 border-t border-border bg-card/60 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+            <div 
+              className="px-3 py-2 border-t border-border bg-card/60 flex items-center gap-1.5 overflow-x-auto no-scrollbar touch-pan-x"
+              style={{ WebkitOverflowScrolling: 'touch' }}
+            >
               <span className="text-[10px] font-bold text-muted-foreground shrink-0">Test Prompts:</span>
               {[
                 { labelEn: 'Delivery Fee?', labelBn: 'ডেলিভারি চার্জ কত?', text: 'ডেলিভারি চার্জ কত?' },

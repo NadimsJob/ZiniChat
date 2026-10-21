@@ -493,7 +493,10 @@ export default function CampaignDetailsPage() {
       </div>
 
       {/* Filter Tabs Navigation */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 text-[11px] font-bold">
+      <div 
+        className="flex items-center gap-2 overflow-x-auto no-scrollbar touch-pan-x pb-1 text-[11px] font-bold"
+        style={{ WebkitOverflowScrolling: 'touch' }}
+      >
         <button
           onClick={() => handleFilterChange('all')}
           className={`px-3 py-1.5 rounded-xl border transition-all shrink-0 ${

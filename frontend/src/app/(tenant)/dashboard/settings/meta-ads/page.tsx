@@ -574,10 +574,13 @@ export default function MetaAdsManagerPage() {
       )}
 
       {/* Tab Navigation Pill Bar */}
-      <div className="flex items-center gap-2 border-b border-white/10 pb-2">
+      <div 
+        className="flex items-center gap-2 border-b border-white/10 pb-2 overflow-x-auto no-scrollbar touch-pan-x"
+        style={{ WebkitOverflowScrolling: 'touch' }}
+      >
         <button
           onClick={() => setActiveTab('campaigns')}
-          className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all flex items-center gap-2 ${
+          className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all flex items-center gap-2 shrink-0 whitespace-nowrap cursor-pointer ${
             activeTab === 'campaigns'
               ? 'bg-brand-green text-white shadow-lg shadow-brand-green/20'
               : 'text-text-secondary hover:text-white hover:bg-white/5'
@@ -594,7 +597,7 @@ export default function MetaAdsManagerPage() {
 
         <button
           onClick={() => setActiveTab('boost')}
-          className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all flex items-center gap-2 ${
+          className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all flex items-center gap-2 shrink-0 whitespace-nowrap cursor-pointer ${
             activeTab === 'boost'
               ? 'bg-brand-green text-white shadow-lg shadow-brand-green/20'
               : 'text-text-secondary hover:text-white hover:bg-white/5'
@@ -606,7 +609,7 @@ export default function MetaAdsManagerPage() {
 
         <button
           onClick={() => setActiveTab('accounts')}
-          className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all flex items-center gap-2 ${
+          className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all flex items-center gap-2 shrink-0 whitespace-nowrap cursor-pointer ${
             activeTab === 'accounts'
               ? 'bg-brand-green text-white shadow-lg shadow-brand-green/20'
               : 'text-text-secondary hover:text-white hover:bg-white/5'

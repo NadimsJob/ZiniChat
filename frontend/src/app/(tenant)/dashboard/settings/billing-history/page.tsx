@@ -278,7 +278,10 @@ export default function BillingHistoryPage() {
           <div className="flex items-center gap-2">
             <Filter className="w-4 h-4 text-muted-foreground" />
             <span className="text-xs font-bold text-foreground">{language === 'en' ? 'Filter Payments:' : 'পেমেন্ট ফিল্টার:'}</span>
-            <div className="flex items-center gap-1 bg-surface-hover/60 border border-surface-hover p-1 rounded-xl">
+            <div 
+              className="flex items-center gap-1 bg-surface-hover/60 border border-surface-hover p-1 rounded-xl overflow-x-auto no-scrollbar touch-pan-x"
+              style={{ WebkitOverflowScrolling: 'touch' }}
+            >
               {[
                 { id: 'all', label: language === 'en' ? 'All' : 'সব' },
                 { id: 'success', label: language === 'en' ? 'Successful' : 'সফল' },
@@ -288,7 +291,7 @@ export default function BillingHistoryPage() {
                 <button
                   key={f.id}
                   onClick={() => setStatusFilter(f.id)}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all shrink-0 whitespace-nowrap cursor-pointer ${
                     statusFilter === f.id ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >

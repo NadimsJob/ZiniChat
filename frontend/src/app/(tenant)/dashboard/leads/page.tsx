@@ -359,11 +359,17 @@ export default function LeadsPage() {
   </div>
 
   {/* Content Area */}
- <div className="flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar bg-transparent p-1.5">
- {loading ? (
- <div className="flex justify-center items-center h-full"><div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" /></div>
- ) : view === 'kanban' ? (
- <div className="flex space-x-4 h-full overflow-x-auto pb-2 items-start">
+  <div 
+    className="flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar bg-transparent p-1.5 touch-pan-x"
+    style={{ WebkitOverflowScrolling: 'touch' }}
+  >
+  {loading ? (
+  <div className="flex justify-center items-center h-full"><div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" /></div>
+  ) : view === 'kanban' ? (
+  <div 
+    className="flex space-x-4 h-full overflow-x-auto pb-2 items-start touch-pan-x"
+    style={{ WebkitOverflowScrolling: 'touch' }}
+  >
  {stages.map(stage => (
  <div
  key={stage.id}

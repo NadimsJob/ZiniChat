@@ -680,7 +680,10 @@ export default function BroadcastsPage() {
       />
 
       {/* Tabs */}
-      <div className="flex gap-1 p-1 bg-surface-hover/30 rounded-xl w-full sm:w-fit overflow-x-auto border border-border/50 shrink-0">
+      <div 
+        className="flex gap-1 p-1 bg-surface-hover/30 rounded-xl w-full sm:w-fit overflow-x-auto no-scrollbar touch-pan-x border border-border/50 shrink-0"
+        style={{ WebkitOverflowScrolling: 'touch' }}
+      >
         <button 
           onClick={() => setActiveTab('campaigns')}
           className={`px-3.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap shrink-0 transition-all ${activeTab === 'campaigns' ? 'bg-primary text-primary-foreground shadow-md cursor-pointer' : 'text-muted-foreground hover:text-foreground cursor-pointer'}`}

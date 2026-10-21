@@ -186,6 +186,7 @@ export default function InboxPage() {
 
   const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const assignMenuRef = useRef<HTMLDivElement>(null);
   const collaboratorMenuRef = useRef<HTMLDivElement>(null);
@@ -482,13 +483,39 @@ export default function InboxPage() {
       .catch(console.error);
   }, [selectedConvId]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = 'auto') => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
+    messagesEndRef.current?.scrollIntoView({ behavior, block: 'end' });
+  }, []);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    scrollToBottom('auto');
+    const rAf = requestAnimationFrame(() => scrollToBottom('auto'));
+    const t1 = setTimeout(() => scrollToBottom('auto'), 50);
+    const t2 = setTimeout(() => scrollToBottom('auto'), 200);
+    return () => {
+      cancelAnimationFrame(rAf);
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, [messages, scrollToBottom]);
+
+  // When switching to mobile chat view or selecting a conversation, auto-scroll to the bottom immediately
+  useEffect(() => {
+    if (selectedConvId && mobilePanelView === 'chat') {
+      scrollToBottom('auto');
+      const rAf = requestAnimationFrame(() => scrollToBottom('auto'));
+      const t1 = setTimeout(() => scrollToBottom('auto'), 60);
+      const t2 = setTimeout(() => scrollToBottom('auto'), 250);
+      return () => {
+        cancelAnimationFrame(rAf);
+        clearTimeout(t1);
+        clearTimeout(t2);
+      };
+    }
+  }, [mobilePanelView, selectedConvId, scrollToBottom]);
 
   const activeConv = conversations.find(c => c.id === selectedConvId);
 
@@ -1095,9 +1122,13 @@ export default function InboxPage() {
     <div className="flex flex-col h-full md:h-[calc(100vh-4rem)] overflow-hidden bg-background text-foreground">
       
       {/* FULL-WIDTH TOP HEADER */}
-      <div className="w-full flex items-center justify-between border-b border-border bg-surface/90 backdrop-blur-md shrink-0 px-2 sm:px-4 py-2 z-20 shadow-2xs gap-3">
-        {/* Left Section: All Conversations / Smart Tabs Bar */}
-        <div className="flex items-center gap-1.5 text-[11px] font-medium shrink-0 overflow-x-auto no-scrollbar">
+      <div className="w-full border-b border-border bg-surface/90 backdrop-blur-md shrink-0 z-20 shadow-2xs">
+        <div 
+          className="w-full flex items-center justify-between px-2 sm:px-4 py-2 gap-2 sm:gap-3 overflow-x-auto no-scrollbar touch-pan-x"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
+          {/* Left Section: All Conversations / Smart Tabs Bar */}
+          <div className="flex items-center gap-1.5 text-[11px] font-medium shrink-0">
           <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-500/80 dark:text-indigo-400/80 shrink-0 hidden xl:inline px-1">
             {language === 'en' ? 'Filter:' : 'ফিল্টার:'}
           </span>
@@ -1136,7 +1167,7 @@ export default function InboxPage() {
         </div>
 
         {/* Clear Vertical Divider */}
-        <div className="h-6 w-[2px] bg-border/80 dark:bg-border/60 shrink-0 hidden sm:block mx-1" />
+        <div className="h-6 w-[2px] bg-border/80 dark:bg-border/60 shrink-0 mx-1" />
 
         {/* Right Section: All Channels & Channel Filter Row with More Dropdown */}
         <div className="flex items-center gap-1.5 text-xs shrink-0 relative">
@@ -1231,10 +1262,15 @@ export default function InboxPage() {
 
                 {/* More Channels Popover */}
                 {showMoreChannelsMenu && (
-                  <div 
-                    className="absolute right-0 top-full mt-1.5 w-56 bg-card border border-border rounded-xl shadow-xl z-50 p-1.5 space-y-1 animate-in fade-in-50 zoom-in-95"
-                    onMouseLeave={() => setShowMoreChannelsMenu(false)}
-                  >
+                  <>
+                    <div 
+                      className="fixed inset-0 z-[99] sm:hidden" 
+                      onClick={() => setShowMoreChannelsMenu(false)} 
+                    />
+                    <div 
+                      className="fixed sm:absolute right-2 sm:right-0 top-14 sm:top-full mt-1.5 w-56 bg-card border border-border rounded-xl shadow-2xl z-[100] p-1.5 space-y-1 animate-in fade-in-50 zoom-in-95"
+                      onMouseLeave={() => setShowMoreChannelsMenu(false)}
+                    >
                     <div className="text-[10px] font-bold text-muted-foreground px-2 py-1 uppercase tracking-wider">
                       {language === 'en' ? 'More Channels' : 'অন্যান্য চ্যানেল'}
                     </div>
@@ -1303,12 +1339,14 @@ export default function InboxPage() {
                       </button>
                     )}
                   </div>
-                )}
-              </div>
-            );
-          })()}
+                </>
+              )}
+            </div>
+          );
+        })()}
         </div>
       </div>
+    </div>
 
       <div className="flex flex-1 overflow-hidden gap-3 p-0 md:p-3 bg-background">
         {/* LEFT COLUMN: Conversation List */}
@@ -1397,6 +1435,7 @@ export default function InboxPage() {
                       setSelectedCommentId(c.commentId);
                       markCommentAsRead(c.commentId);
                       setMobilePanelView('chat');
+                      setTimeout(() => scrollToBottom('auto'), 50);
                     }}
                     className={`px-3 py-2.5 cursor-pointer transition-all hover:bg-muted/50 ${
                       isSelected ? 'bg-orange-500/10 border-l-4 border-orange-500' : ''
@@ -1536,6 +1575,7 @@ export default function InboxPage() {
                   onClick={() => {
                     setSelectedConvId(conv.id);
                     setMobilePanelView('chat');
+                    setTimeout(() => scrollToBottom('auto'), 50);
                   }}
                   className={`px-3 py-2.5 cursor-pointer transition-all hover:bg-muted/50 ${
                     isSelected ? 'bg-primary/10 border-l-4 border-primary' : ''
@@ -2020,7 +2060,10 @@ export default function InboxPage() {
           )}
 
           {/* Messages Feed */}
-          <div className="flex-1 overflow-y-auto overscroll-contain p-4 space-y-3 custom-scrollbar bg-background">
+          <div 
+            ref={messagesContainerRef}
+            className="flex-1 overflow-y-auto overscroll-contain p-4 space-y-3 custom-scrollbar bg-background"
+          >
             {messages.map((m, idx) => {
               const isInbound = m.direction === 'inbound';
               const isAi = m.senderType === 'ai';
@@ -2139,6 +2182,7 @@ export default function InboxPage() {
                           <img 
                             src={resolveMediaUrl(mediaUrl)} 
                             alt="attachment" 
+                            onLoad={() => scrollToBottom('auto')}
                             onClick={() => setZoomedImage(resolveMediaUrl(mediaUrl))}
                             className="max-h-56 max-w-full rounded-lg cursor-pointer hover:opacity-90 object-cover shadow-sm" 
                           />
