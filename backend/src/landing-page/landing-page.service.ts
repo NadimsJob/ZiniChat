@@ -445,7 +445,19 @@ const OFFICIAL_FAQS_JSON = {
 export class LandingPageService {
   constructor(private prisma: PrismaService) {}
 
+  private cachedConfig: any = null;
+  private cacheExpiresAt: number = 0;
+
+  invalidateCache() {
+    this.cachedConfig = null;
+    this.cacheExpiresAt = 0;
+  }
+
   async getConfig() {
+    if (this.cachedConfig && Date.now() < this.cacheExpiresAt) {
+      return this.cachedConfig;
+    }
+
     let config = await this.prisma.landingPageConfig.findFirst();
     if (!config) {
       // Create default config if it doesn't exist
@@ -571,14 +583,20 @@ export class LandingPageService {
         });
       }
     }
+
+    this.cachedConfig = config;
+    this.cacheExpiresAt = Date.now() + 5 * 60 * 1000; // 5 min TTL
     return config;
   }
 
   async updateConfig(data: any) {
+    this.invalidateCache();
     const config = await this.getConfig();
-    return this.prisma.landingPageConfig.update({
+    const updated = await this.prisma.landingPageConfig.update({
       where: { id: config.id },
       data
     });
+    this.invalidateCache();
+    return updated;
   }
 }

@@ -22,7 +22,7 @@
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
 
-  --font-sans: var(--font-noto-bengali), var(--font-hind), var(--font-inter), system-ui, -apple-system, sans-serif;
+  --font-sans: var(--font-noto-bengali), var(--font-inter), system-ui, -apple-system, sans-serif;
 
   /* Custom Animations for Marketing Redesign */
   --animate-float: float 4s ease-in-out infinite;
@@ -116,6 +116,7 @@ body {
 .text-brand-gradient {
   background: linear-gradient(135deg, #1F824A 0%, #EE8D27 50%, #EAB308 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 

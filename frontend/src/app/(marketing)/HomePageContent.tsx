@@ -17,6 +17,7 @@ import {
   WhatsAppBadgeIcon, MessengerBadgeIcon, InstagramBadgeIcon, 
   FacebookCommentBadgeIcon, WebChatBadgeIcon 
 } from '@/components/BrandIcons';
+import { DEFAULT_FALLBACK_CONFIG, getCachedLandingConfig, getCachedPlans } from '@/lib/publicDataCache';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -45,8 +46,8 @@ function WhatsAppBotMockup({ language }: { language: string }) {
         </div>
       </div>
       
-      {/* Chat Background Pattern */}
-      <div className="absolute inset-0 opacity-[0.04] dark:opacity-[0.06] pointer-events-none" style={{ backgroundImage: 'url("https://web.whatsapp.com/img/bg-chat-tile-dark_a4be512e7195b6b733d9110b408f075d.png")' }}></div>
+      {/* Chat Background Pattern - Zero External Network Latency */}
+      <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.06] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, currentColor 1px, transparent 1px)', backgroundSize: '16px 16px' }}></div>
 
       <div className="space-y-3 p-4 relative z-10">
         {/* User Message */}
@@ -97,10 +98,8 @@ export default function HomePageContent() {
   const { trackEvent } = useMetaPixel();
   const { trackEvent: trackGaEvent } = useGoogleAnalytics();
   const [activeFeature, setActiveFeature] = useState(0);
-  const [config, setConfig] = useState<any>(null);
+  const [config, setConfig] = useState<any>(DEFAULT_FALLBACK_CONFIG);
   const [plans, setPlans] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
   const [clientLogos, setClientLogos] = useState<any[]>([]);
   const [dashboardTab, setDashboardTab] = useState<'overview' | 'inbox'>('overview');
 
@@ -115,53 +114,26 @@ export default function HomePageContent() {
       .then(res => res.ok ? res.json() : [])
       .then(data => setClientLogos(data))
       .catch(() => {});
-  }, [trackEvent]);
+  }, [trackEvent, trackGaEvent]);
 
   const displayLogos = clientLogos.length > 0 ? clientLogos : DEFAULT_BRANDS;
 
   useEffect(() => {
+    // Non-blocking background SWR hydration - 0ms initial render
     Promise.all([
-      fetch(`${API}/landing-page/config`).then(res => {
-        if (!res.ok) throw new Error('API Error');
-        return res.json();
-      }),
-      fetch(`${API}/packages/plans`).then(res => res.ok ? res.json() : [])
+      getCachedLandingConfig(),
+      getCachedPlans()
     ])
     .then(([configData, plansData]) => {
-      setConfig(configData);
-      setPlans((plansData || []).sort((a: any, b: any) => a.priceMonthlyBdt - b.priceMonthlyBdt));
-      setLoading(false);
+      if (configData) setConfig(configData);
+      if (plansData && plansData.length > 0) {
+        setPlans(plansData);
+      }
     })
     .catch(err => {
-      console.warn("Could not fetch data from backend.", err.message);
-      setError(true);
-      setLoading(false);
+      console.warn("Could not fetch latest data from backend.", err?.message);
     });
   }, []);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin" />
-      </div>
-    );
-  }
-
-  if (error || !config) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
-        <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mb-4">
-          <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
-        </div>
-        <h2 className="text-2xl font-bold mb-2">Backend Connection Failed</h2>
-        <p className="text-zinc-500 max-w-md">
-          The frontend could not connect to the backend server.
-        </p>
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col items-center w-full">
@@ -824,7 +796,7 @@ export default function HomePageContent() {
       </section>
 
       {/* Pricing Preview */}
-      <PricingSection isHomepage={true} />
+      <PricingSection isHomepage={true} initialPlans={plans} />
 
       {/* Bottom CTA */}
       <section className="relative w-full overflow-hidden bg-primary py-20 px-4 text-center">

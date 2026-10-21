@@ -5,21 +5,21 @@ import { useLanguage } from '@/components/LanguageProvider';
 import { useCurrency } from '@/components/CurrencyProvider';
 import { Check, X, ArrowRight, Info, Mail, Sparkles, ShieldCheck, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
+import { DEFAULT_FALLBACK_CONFIG, getCachedLandingConfig, getCachedPlans } from '@/lib/publicDataCache';
 
 export default function PricingPageContent() {
   const { language } = useLanguage();
   const { rate, formatBDT, formatNumber, displayCurrency, setDisplayCurrency, formatPrice } = useCurrency();
   const [plans, setPlans] = useState<any[]>([]);
   const [addons, setAddons] = useState<any[]>([]);
-  const [config, setConfig] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [config, setConfig] = useState<any>(DEFAULT_FALLBACK_CONFIG);
   const [billingCycle, setBillingCycle] = useState<'weekly' | 'monthly' | 'yearly'>('monthly');
 
   useEffect(() => {
     Promise.all([
-      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/packages/plans`).then(res => res.json()),
-      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/packages/addons`).then(res => res.json()),
-      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/landing-page/config`).then(res => res.json())
+      getCachedPlans(),
+      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/packages/addons`).then(res => res.ok ? res.json() : []).catch(() => []),
+      getCachedLandingConfig()
     ])
     .then(([plansData, addonsData, configData]) => {
       const getPlanWeight = (plan: any) => {
@@ -39,13 +39,9 @@ export default function PricingPageContent() {
 
       setPlans(sortedPlans);
       setAddons(addonsData || []);
-      setConfig(configData);
+      if (configData) setConfig(configData);
     })
-    .catch(console.error)
-    .finally(() => {
-      setLoading(false);
-      setTimeout(() => window.scrollTo(0, 0), 10);
-    });
+    .catch(console.error);
   }, []);
 
   const maxDiscountPercent = useMemo(() => {
@@ -149,14 +145,6 @@ export default function PricingPageContent() {
     }
     return rows;
   }, [config, formatNumber]);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin" />
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col items-center w-full overflow-hidden bg-background min-h-screen">

@@ -13,8 +13,8 @@ const Linkedin = ({ className }: { className?: string }) => <svg xmlns="http://w
 const Youtube = ({ className }: { className?: string }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"/><polygon points="10 15 15 12 10 9 10 15"/></svg>;
 
 import Image from 'next/image';
-
 import { useTheme } from 'next-themes';
+import { getCachedLandingConfig } from '@/lib/publicDataCache';
 
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
   const { language, setLanguage } = useLanguage();
@@ -24,8 +24,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     setTheme('dark');
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/landing-page/config`)
-      .then(res => res.json())
+    getCachedLandingConfig()
       .then(data => setConfig(data))
       .catch(console.error);
   }, [setTheme]);
@@ -221,7 +220,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
         data-token="622de982-7993-4778-b7c6-bf16c042dcb4"
         data-color="#7C3AED"
         data-heading="Chat with us"
-        strategy="afterInteractive"
+        strategy="lazyOnload"
       />
     </div>
   );

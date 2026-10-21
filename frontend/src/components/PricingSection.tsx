@@ -6,16 +6,23 @@ import { useCurrency } from '@/components/CurrencyProvider';
 import { Check, Info } from 'lucide-react';
 import Link from 'next/link';
 
-export function PricingSection({ isHomepage = false }: { isHomepage?: boolean }) {
+import { getCachedPlans } from '@/lib/publicDataCache';
+
+export function PricingSection({ isHomepage = false, initialPlans }: { isHomepage?: boolean; initialPlans?: any[] }) {
   const { language } = useLanguage();
   const { rate, formatBDT, formatNumber, displayCurrency, setDisplayCurrency } = useCurrency();
-  const [plans, setPlans] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [plans, setPlans] = useState<any[]>(initialPlans || []);
+  const [loading, setLoading] = useState(!initialPlans || initialPlans.length === 0);
   const [billingCycle, setBillingCycle] = useState<'weekly' | 'monthly' | 'yearly'>('monthly');
 
   useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/packages/plans`)
-      .then(res => res.json())
+    if (initialPlans && initialPlans.length > 0) {
+      setPlans(initialPlans);
+      setLoading(false);
+      return;
+    }
+
+    getCachedPlans()
       .then(plansData => {
         const getPlanWeight = (plan: any) => {
           const name = (plan.name || '').toLowerCase();
@@ -36,7 +43,7 @@ export function PricingSection({ isHomepage = false }: { isHomepage?: boolean })
       })
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, []);
+  }, [initialPlans]);
 
   const hasAnyPaidWeeklyPlan = plans.some(
     (p: any) => p.allowWeekly === true && Number(p.priceMonthlyBdt) > 0
