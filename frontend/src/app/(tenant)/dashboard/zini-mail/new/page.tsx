@@ -847,14 +847,9 @@ export default function NewCampaignWizardPage() {
                         </div>
                         <p className="text-[11px] text-muted-foreground">
                           {language === 'en'
-                            ? 'PNG, JPG or WebP (Max 5MB) • Automatically saved to your workspace storage'
-                            : 'পিএনজি, জেপিজি বা ওয়েবপি (সর্বোচ্চ ৫ মেগাবাইট) • আপনার স্টোরেজ কোটায় হিসাব হবে'}
+                            ? 'PNG, JPG or WebP (Max 5MB)'
+                            : 'পিএনজি, জেপিজি বা ওয়েবপি (সর্বোচ্চ ৫ মেগাবাইট)'}
                         </p>
-                      </div>
-
-                      <div className="flex items-center gap-1.5 text-[10px] text-emerald-600 dark:text-emerald-400 font-medium pt-1">
-                        <HardDrive className="w-3 h-3" />
-                        <span>{language === 'en' ? 'Counts towards your Tenant Storage quota' : 'আপনার টেন্যান্ট স্টোরেজে যুক্ত হবে'}</span>
                       </div>
                     </div>
                   )}

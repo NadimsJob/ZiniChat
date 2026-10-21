@@ -320,33 +320,6 @@ export default function ZiniMailDashboardPage() {
             <span className="font-bold">{overview?.availableAiCredits ?? 0}</span>
           </div>
 
-          {/* Storage Meter */}
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 text-muted-foreground">
-              <HardDrive className="w-4 h-4 text-[#EE8D27]" />
-              <span>
-                {language === 'en' ? 'Storage Consumed:' : 'স্টোরেজ ব্যবহার:'}
-              </span>
-              <span className="font-bold text-foreground">
-                {formatBytes(overview?.storageUsedBytes || 0)} / {formatBytes(overview?.storageLimitBytes || 524288000)}
-              </span>
-            </div>
-            <div className="w-24 sm:w-32 bg-surface-hover rounded-full h-2 overflow-hidden border border-surface-hover">
-              <div
-                className={`h-full transition-all ${
-                  (overview?.storageUsedPercent || 0) > 85
-                    ? 'bg-rose-500'
-                    : (overview?.storageUsedPercent || 0) > 65
-                    ? 'bg-amber-500'
-                    : 'bg-[#1F824A]'
-                }`}
-                style={{ width: `${Math.min(100, overview?.storageUsedPercent || 0)}%` }}
-              />
-            </div>
-            <span className="text-[10px] font-bold text-muted-foreground">
-              {overview?.storageUsedPercent || 0}%
-            </span>
-          </div>
 
           <button
             onClick={() => {

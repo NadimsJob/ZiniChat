@@ -9,7 +9,6 @@ import Link from 'next/link';
 import {
   Mail,
   ShieldCheck,
-  ShieldAlert,
   Save,
   RefreshCw,
   Eye,
@@ -24,12 +23,13 @@ import {
   ArrowLeft,
   Server,
   Zap,
-  Info,
-  Key
+  Info
 } from 'lucide-react';
 import SmtpSetupGuide, { SmtpGuideTab } from '@/components/outreach/SmtpSetupGuideModal';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+type ProviderKey = 'gmail' | 'outlook' | 'custom';
 
 export default function TenantSmtpSettingsPage() {
   const { language } = useLanguage();
@@ -43,10 +43,11 @@ export default function TenantSmtpSettingsPage() {
   const [guideTab, setGuideTab] = useState<SmtpGuideTab>('gmail');
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [testRecipient, setTestRecipient] = useState('');
+  const [selectedProvider, setSelectedProvider] = useState<ProviderKey>('gmail');
 
   const [smtpData, setSmtpData] = useState<any>(null);
   const [form, setForm] = useState({
-    host: '',
+    host: 'smtp.gmail.com',
     port: 465,
     secure: true,
     username: '',
@@ -66,7 +67,7 @@ export default function TenantSmtpSettingsPage() {
       if (res.ok) {
         const data = await res.json();
         setSmtpData(data);
-        if (data) {
+        if (data && data.host) {
           setForm({
             host: data.host || '',
             port: data.port || 465,
@@ -78,6 +79,34 @@ export default function TenantSmtpSettingsPage() {
             replyToEmail: data.replyToEmail || '',
           });
           setTestRecipient(data.fromEmail || '');
+
+          const hostLower = (data.host || '').toLowerCase();
+          if (hostLower.includes('gmail.com')) {
+            setSelectedProvider('gmail');
+            setGuideTab('gmail');
+          } else if (hostLower.includes('office365.com') || hostLower.includes('outlook.com')) {
+            setSelectedProvider('outlook');
+            setGuideTab('outlook');
+          } else {
+            setSelectedProvider('custom');
+            setGuideTab('cpanel');
+          }
+        } else {
+          // Restore user's last chosen provider preference if no DB record yet
+          const saved = typeof window !== 'undefined' ? (localStorage.getItem('zinimail_smtp_provider') as ProviderKey) : null;
+          if (saved === 'outlook') {
+            setSelectedProvider('outlook');
+            setGuideTab('outlook');
+            setForm((prev) => ({ ...prev, host: 'smtp.office365.com', port: 587, secure: false }));
+          } else if (saved === 'custom') {
+            setSelectedProvider('custom');
+            setGuideTab('cpanel');
+            setForm((prev) => ({ ...prev, host: '', port: 465, secure: true }));
+          } else {
+            setSelectedProvider('gmail');
+            setGuideTab('gmail');
+            setForm((prev) => ({ ...prev, host: 'smtp.gmail.com', port: 465, secure: true }));
+          }
         }
       }
     } catch (err: any) {
@@ -91,8 +120,13 @@ export default function TenantSmtpSettingsPage() {
     fetchSmtpSetting();
   }, []);
 
-  const handleApplyPreset = (preset: 'gmail' | 'outlook' | 'cpanel') => {
-    if (preset === 'gmail') {
+  const handleSelectProvider = (provider: ProviderKey) => {
+    setSelectedProvider(provider);
+    try {
+      localStorage.setItem('zinimail_smtp_provider', provider);
+    } catch {}
+
+    if (provider === 'gmail') {
       setGuideTab('gmail');
       setForm((prev) => ({
         ...prev,
@@ -102,10 +136,10 @@ export default function TenantSmtpSettingsPage() {
       }));
       toast.success(
         language === 'en'
-          ? 'Gmail preset applied (Port 465 SSL). Use a 16-character Google App Password!'
-          : 'জিমেইল প্রিসেট প্রয়োগ করা হয়েছে (পোর্ট ৪৬৫ SSL)। ১৬ অক্ষরের গুগল অ্যাপ পাসওয়ার্ড দিন!'
+          ? 'Google Workspace / Gmail selected (Port 465 SSL)'
+          : 'গুগল ওয়ার্কস্পেস / জিমেইল সিলেক্ট করা হয়েছে (পোর্ট ৪৬৫ SSL)'
       );
-    } else if (preset === 'outlook') {
+    } else if (provider === 'outlook') {
       setGuideTab('outlook');
       setForm((prev) => ({
         ...prev,
@@ -115,21 +149,26 @@ export default function TenantSmtpSettingsPage() {
       }));
       toast.success(
         language === 'en'
-          ? 'Microsoft 365 preset applied (Port 587 STARTTLS)'
-          : 'মাইক্রোসফট ৩৬৫ প্রিসেট প্রয়োগ করা হয়েছে (পোর্ট ৫৮৭ STARTTLS)'
+          ? 'Microsoft 365 / Outlook selected (Port 587 STARTTLS)'
+          : 'মাইক্রোসফট ৩৬৫ / আউটলুক সিলেক্ট করা হয়েছে (পোর্ট ৫৮৭ STARTTLS)'
       );
-    } else if (preset === 'cpanel') {
+    } else if (provider === 'custom') {
       setGuideTab('cpanel');
       setForm((prev) => ({
         ...prev,
         port: 465,
         secure: true,
-        host: prev.host || (prev.fromEmail.includes('@') ? `mail.${prev.fromEmail.split('@')[1]}` : 'mail.yourdomain.com'),
+        host:
+          prev.host && !prev.host.includes('gmail.com') && !prev.host.includes('office365.com')
+            ? prev.host
+            : prev.fromEmail.includes('@')
+            ? `mail.${prev.fromEmail.split('@')[1]}`
+            : '',
       }));
       toast.success(
         language === 'en'
-          ? 'cPanel / Webmail preset applied (Port 465 SSL)'
-          : 'সিপ্যানেল / ওয়েবমেইল প্রিসেট প্রয়োগ করা হয়েছে (পোর্ট ৪৬৫ SSL)'
+          ? 'Custom / cPanel Webmail selected'
+          : 'কাস্টম / সিপ্যানেল ওয়েবমেইল সিলেক্ট করা হয়েছে'
       );
     }
   };
@@ -239,7 +278,7 @@ export default function TenantSmtpSettingsPage() {
 
       setSmtpData(null);
       setForm({
-        host: '',
+        host: 'smtp.gmail.com',
         port: 465,
         secure: true,
         username: '',
@@ -248,6 +287,8 @@ export default function TenantSmtpSettingsPage() {
         fromEmail: '',
         replyToEmail: '',
       });
+      setSelectedProvider('gmail');
+      setGuideTab('gmail');
       toast.success(language === 'en' ? 'SMTP settings removed' : 'এসএমটিপি সেটিংস মুছে ফেলা হয়েছে');
     } catch (err: any) {
       toast.error(err.message || 'Failed to delete');
@@ -361,55 +402,163 @@ export default function TenantSmtpSettingsPage() {
         </div>
       </div>
 
-      {/* Preset Fast Selectors */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <button
-          type="button"
-          onClick={() => handleApplyPreset('gmail')}
-          className="p-3.5 rounded-xl bg-surface/70 backdrop-blur-xl border border-border hover:border-emerald-500/50 hover:bg-emerald-500/5 text-left transition-all group flex items-start gap-3"
-        >
-          <div className="w-8 h-8 rounded-lg bg-red-500/10 text-red-500 flex items-center justify-center shrink-0">
-            <Mail className="w-4 h-4" />
-          </div>
-          <div>
-            <div className="text-xs font-bold text-foreground group-hover:text-emerald-500 transition-colors">
-              Google Workspace / Gmail
-            </div>
-            <div className="text-[10px] text-muted-foreground">Port 465 (SSL) with App Password</div>
-          </div>
-        </button>
+      {/* Provider Selector Cards (Persistent & User-Friendly) */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between px-1">
+          <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
+            <Server className="w-3.5 h-3.5 text-emerald-500" />
+            {language === 'en' ? 'Select Email Service Provider' : 'ইমেইল সার্ভিস প্রোভাইডার নির্বাচন করুন'}
+          </label>
+          <span className="text-[10px] text-muted-foreground font-medium">
+            {language === 'en' ? 'Choose your provider below' : 'পছন্দের প্রোভাইডারে ক্লিক করুন'}
+          </span>
+        </div>
 
-        <button
-          type="button"
-          onClick={() => handleApplyPreset('outlook')}
-          className="p-3.5 rounded-xl bg-surface/70 backdrop-blur-xl border border-border hover:border-emerald-500/50 hover:bg-emerald-500/5 text-left transition-all group flex items-start gap-3"
-        >
-          <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
-            <Server className="w-4 h-4" />
-          </div>
-          <div>
-            <div className="text-xs font-bold text-foreground group-hover:text-emerald-500 transition-colors">
-              Microsoft 365 / Outlook
-            </div>
-            <div className="text-[10px] text-muted-foreground">Port 587 (STARTTLS)</div>
-          </div>
-        </button>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {/* Google Workspace / Gmail */}
+          <button
+            type="button"
+            onClick={() => handleSelectProvider('gmail')}
+            className={`relative p-4 rounded-2xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between ${
+              selectedProvider === 'gmail'
+                ? 'bg-emerald-500/10 border-emerald-500 ring-2 ring-emerald-500/30 shadow-lg shadow-emerald-500/10'
+                : 'bg-surface/70 backdrop-blur-xl border-border/80 hover:border-emerald-500/40 hover:bg-surface-hover/80 opacity-80 hover:opacity-100'
+            }`}
+          >
+            <div className="flex items-start justify-between gap-2 mb-3">
+              <div className="flex items-center gap-2.5">
+                <div
+                  className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                    selectedProvider === 'gmail' ? 'bg-red-500/20 text-red-500' : 'bg-red-500/10 text-red-400'
+                  }`}
+                >
+                  <Mail className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-foreground">
+                    Google Workspace / Gmail
+                  </div>
+                  <div className="text-[10px] text-muted-foreground">
+                    {language === 'en' ? 'Workspace & Personal Gmail' : 'গুগল ওয়ার্কস্পেস ও জিমেইল'}
+                  </div>
+                </div>
+              </div>
 
-        <button
-          type="button"
-          onClick={() => handleApplyPreset('cpanel')}
-          className="p-3.5 rounded-xl bg-surface/70 backdrop-blur-xl border border-border hover:border-emerald-500/50 hover:bg-emerald-500/5 text-left transition-all group flex items-start gap-3"
-        >
-          <div className="w-8 h-8 rounded-lg bg-orange-500/10 text-orange-500 flex items-center justify-center shrink-0">
-            <Zap className="w-4 h-4" />
-          </div>
-          <div>
-            <div className="text-xs font-bold text-foreground group-hover:text-emerald-500 transition-colors">
-              Custom / cPanel Webmail
+              {/* Selection Badge */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                {selectedProvider === 'gmail' ? (
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-500 text-white text-[9px] font-bold flex items-center gap-1 shadow-sm">
+                    <CheckCircle2 className="w-2.5 h-2.5" />
+                    {language === 'en' ? 'Selected' : 'সিলেক্টেড'}
+                  </span>
+                ) : (
+                  <span className="w-4 h-4 rounded-full border border-muted-foreground/40 shrink-0" />
+                )}
+              </div>
             </div>
-            <div className="text-[10px] text-muted-foreground">mail.yourdomain.com (Port 465)</div>
-          </div>
-        </button>
+
+            <div className="pt-2 border-t border-border/50 text-[10px] text-muted-foreground flex items-center justify-between">
+              <span className="font-mono">smtp.gmail.com:465</span>
+              <span className="text-emerald-500 font-semibold">SSL / App Password</span>
+            </div>
+          </button>
+
+          {/* Microsoft 365 / Outlook */}
+          <button
+            type="button"
+            onClick={() => handleSelectProvider('outlook')}
+            className={`relative p-4 rounded-2xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between ${
+              selectedProvider === 'outlook'
+                ? 'bg-blue-500/10 border-blue-500 ring-2 ring-blue-500/30 shadow-lg shadow-blue-500/10'
+                : 'bg-surface/70 backdrop-blur-xl border-border/80 hover:border-blue-500/40 hover:bg-surface-hover/80 opacity-80 hover:opacity-100'
+            }`}
+          >
+            <div className="flex items-start justify-between gap-2 mb-3">
+              <div className="flex items-center gap-2.5">
+                <div
+                  className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                    selectedProvider === 'outlook' ? 'bg-blue-500/20 text-blue-500' : 'bg-blue-500/10 text-blue-400'
+                  }`}
+                >
+                  <Server className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-foreground">
+                    Microsoft 365 / Outlook
+                  </div>
+                  <div className="text-[10px] text-muted-foreground">
+                    {language === 'en' ? 'Office 365 & Outlook Mail' : 'মাইক্রোসফট ৩৬৫ ও আউটলুক'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Selection Badge */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                {selectedProvider === 'outlook' ? (
+                  <span className="px-2 py-0.5 rounded-full bg-blue-500 text-white text-[9px] font-bold flex items-center gap-1 shadow-sm">
+                    <CheckCircle2 className="w-2.5 h-2.5" />
+                    {language === 'en' ? 'Selected' : 'সিলেক্টেড'}
+                  </span>
+                ) : (
+                  <span className="w-4 h-4 rounded-full border border-muted-foreground/40 shrink-0" />
+                )}
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-border/50 text-[10px] text-muted-foreground flex items-center justify-between">
+              <span className="font-mono">smtp.office365.com:587</span>
+              <span className="text-blue-500 font-semibold">STARTTLS</span>
+            </div>
+          </button>
+
+          {/* Custom SMTP / cPanel Webmail */}
+          <button
+            type="button"
+            onClick={() => handleSelectProvider('custom')}
+            className={`relative p-4 rounded-2xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between ${
+              selectedProvider === 'custom'
+                ? 'bg-amber-500/10 border-amber-500 ring-2 ring-amber-500/30 shadow-lg shadow-amber-500/10'
+                : 'bg-surface/70 backdrop-blur-xl border-border/80 hover:border-amber-500/40 hover:bg-surface-hover/80 opacity-80 hover:opacity-100'
+            }`}
+          >
+            <div className="flex items-start justify-between gap-2 mb-3">
+              <div className="flex items-center gap-2.5">
+                <div
+                  className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                    selectedProvider === 'custom' ? 'bg-amber-500/20 text-amber-500' : 'bg-amber-500/10 text-amber-400'
+                  }`}
+                >
+                  <Zap className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-foreground">
+                    Custom / cPanel Webmail
+                  </div>
+                  <div className="text-[10px] text-muted-foreground">
+                    {language === 'en' ? 'Business Domain & Hosting SMTP' : 'কাস্টম ডোমেইন ও হোস্টিং এসএমটিপি'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Selection Badge */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                {selectedProvider === 'custom' ? (
+                  <span className="px-2 py-0.5 rounded-full bg-amber-500 text-white text-[9px] font-bold flex items-center gap-1 shadow-sm">
+                    <CheckCircle2 className="w-2.5 h-2.5" />
+                    {language === 'en' ? 'Selected' : 'সিলেক্টেড'}
+                  </span>
+                ) : (
+                  <span className="w-4 h-4 rounded-full border border-muted-foreground/40 shrink-0" />
+                )}
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-border/50 text-[10px] text-muted-foreground flex items-center justify-between">
+              <span className="font-mono">mail.yourdomain.com</span>
+              <span className="text-amber-500 font-semibold">Custom Port</span>
+            </div>
+          </button>
+        </div>
       </div>
 
       {/* Main Configuration Form */}
@@ -431,6 +580,71 @@ export default function TenantSmtpSettingsPage() {
           </button>
         </div>
 
+        {/* Dynamic Provider Guidance Note */}
+        {selectedProvider === 'gmail' && (
+          <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-foreground space-y-1.5">
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-bold text-red-500 dark:text-red-400 flex items-center gap-1.5">
+                <Info className="w-3.5 h-3.5" />
+                {language === 'en' ? 'Google 16-Character App Password Required' : 'গুগল ১৬-অক্ষরের অ্যাপ পাসওয়ার্ড প্রয়োজন'}
+              </span>
+              <a
+                href="https://myaccount.google.com/apppasswords"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[10px] font-bold text-red-500 hover:underline flex items-center gap-1"
+              >
+                {language === 'en' ? 'Generate App Password' : 'অ্যাপ পাসওয়ার্ড তৈরি করুন'}
+                <ExternalLink className="w-2.5 h-2.5" />
+              </a>
+            </div>
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              {language === 'en'
+                ? 'Do not use your regular Gmail password. Generate a 16-character App Password from Google Account > Security > 2-Step Verification > App passwords.'
+                : 'আপনার সাধারণ জিমেইল পাসওয়ার্ড কাজ করবে না। গুগল অ্যাকাউন্ট > সিকিউরিটি > ২-স্টেপ ভেরিফিকেশন থেকে ১৬ অক্ষরের অ্যাপ পাসওয়ার্ড তৈরি করে এখানে দিন।'}
+            </p>
+          </div>
+        )}
+
+        {selectedProvider === 'outlook' && (
+          <div className="p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-foreground space-y-1.5">
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-bold text-blue-500 dark:text-blue-400 flex items-center gap-1.5">
+                <Info className="w-3.5 h-3.5" />
+                {language === 'en' ? 'Microsoft 365 Authenticated SMTP' : 'মাইক্রোসফট ৩৬৫ অথেনটিকেটেড এসএমটিপি'}
+              </span>
+              <a
+                href="https://admin.microsoft.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[10px] font-bold text-blue-500 hover:underline flex items-center gap-1"
+              >
+                {language === 'en' ? 'M365 Admin Portal' : 'অ্যাডমিন পোর্টাল'}
+                <ExternalLink className="w-2.5 h-2.5" />
+              </a>
+            </div>
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              {language === 'en'
+                ? 'Ensure "Authenticated SMTP" is enabled for your user mailbox under Microsoft 365 Admin Center > Users > Active users > Mail.'
+                : 'মাইক্রোসফট ৩৬৫ অ্যাডমিন সেন্টার থেকে আপনার ইমেইল ইউজার অ্যাকাউন্টে "Authenticated SMTP" অপশনটি সক্রিয় থাকতে হবে।'}
+            </p>
+          </div>
+        )}
+
+        {selectedProvider === 'custom' && (
+          <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-foreground space-y-1.5">
+            <span className="font-bold text-amber-500 dark:text-amber-400 flex items-center gap-1.5">
+              <Info className="w-3.5 h-3.5" />
+              {language === 'en' ? 'Custom Domain / cPanel Webmail Configuration' : 'কাস্টম ডোমেইন / সিপ্যানেল কনফিগারেশন'}
+            </span>
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              {language === 'en'
+                ? 'Enter your custom mail server host (usually mail.yourdomain.com), full email address, and cPanel/Webmail password. Port 465 (SSL) is recommended.'
+                : 'আপনার হোস্টিংয়ের আউটগোয়িং এসএমটিপি সার্ভার (সাধারণত mail.yourdomain.com), পূর্ণ ইমেইল ও পাসওয়ার্ড দিন। পোর্ট ৪৬৫ (SSL) ব্যবহার করা উত্তম।'}
+            </p>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="md:col-span-2">
             <label className="text-[11px] font-medium text-muted-foreground block mb-1">
@@ -441,7 +655,13 @@ export default function TenantSmtpSettingsPage() {
               required
               value={form.host}
               onChange={(e) => setForm({ ...form, host: e.target.value })}
-              placeholder="e.g. smtp.gmail.com or mail.mybrand.com"
+              placeholder={
+                selectedProvider === 'gmail'
+                  ? 'smtp.gmail.com'
+                  : selectedProvider === 'outlook'
+                  ? 'smtp.office365.com'
+                  : 'mail.yourdomain.com'
+              }
               className="w-full bg-surface border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:ring-1 focus:ring-emerald-500 outline-none font-mono"
             />
           </div>
@@ -470,21 +690,45 @@ export default function TenantSmtpSettingsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="text-[11px] font-medium text-muted-foreground block mb-1">
-              {language === 'en' ? 'SMTP Username / Login Email' : 'এসএমটিপি ইউজারনেম / লগইন ইমেইল'} *
+              {selectedProvider === 'gmail'
+                ? language === 'en'
+                  ? 'Gmail / Google Workspace Address'
+                  : 'জিমেইল / গুগল ওয়ার্কস্পেস ইমেইল'
+                : selectedProvider === 'outlook'
+                ? language === 'en'
+                  ? 'Microsoft 365 Email'
+                  : 'মাইক্রোসফট ৩৬৫ ইমেইল'
+                : language === 'en'
+                ? 'SMTP Username / Login Email'
+                : 'এসএমটিপি ইউজারনেম / লগইন ইমেইল'}{' '}
+              *
             </label>
             <input
               type="text"
               required
               value={form.username}
               onChange={(e) => setForm({ ...form, username: e.target.value })}
-              placeholder="e.g. contact@mybrand.com"
+              placeholder={
+                selectedProvider === 'gmail'
+                  ? 'yourbrand@gmail.com'
+                  : selectedProvider === 'outlook'
+                  ? 'sales@mybrand.com'
+                  : 'contact@mybrand.com'
+              }
               className="w-full bg-surface border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:ring-1 focus:ring-emerald-500 outline-none font-mono"
             />
           </div>
 
           <div>
             <label className="text-[11px] font-medium text-muted-foreground block mb-1">
-              {language === 'en' ? 'Password / App Password' : 'পাসওয়ার্ড / অ্যাপ পাসওয়ার্ড'} *
+              {selectedProvider === 'gmail'
+                ? language === 'en'
+                  ? '16-Character Google App Password'
+                  : '১৬-অক্ষরের গুগল অ্যাপ পাসওয়ার্ড'
+                : language === 'en'
+                ? 'Password / App Password'
+                : 'পাসওয়ার্ড / অ্যাপ পাসওয়ার্ড'}{' '}
+              *
             </label>
             <div className="relative">
               <input
@@ -494,7 +738,9 @@ export default function TenantSmtpSettingsPage() {
                 placeholder={
                   smtpData?.hasPassword
                     ? '•••••••••••••••• (Leave blank to keep saved password)'
-                    : '16-character App Password or Mail Password'
+                    : selectedProvider === 'gmail'
+                    ? '16-character App Password (e.g. abcd efgh ijkl mnop)'
+                    : 'Mailbox Password'
                 }
                 className="w-full bg-surface border border-border rounded-xl pl-3 pr-10 py-2 text-xs text-foreground focus:ring-1 focus:ring-emerald-500 outline-none font-mono"
               />
@@ -541,7 +787,14 @@ export default function TenantSmtpSettingsPage() {
                 type="email"
                 required
                 value={form.fromEmail}
-                onChange={(e) => setForm({ ...form, fromEmail: e.target.value })}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setForm((prev) => ({
+                    ...prev,
+                    fromEmail: val,
+                    username: prev.username ? prev.username : val,
+                  }));
+                }}
                 placeholder="e.g. sales@mybrand.com"
                 className="w-full bg-surface border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:ring-1 focus:ring-emerald-500 outline-none font-mono"
               />
@@ -558,7 +811,9 @@ export default function TenantSmtpSettingsPage() {
                 placeholder="e.g. support@mybrand.com"
                 className="w-full bg-surface border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:ring-1 focus:ring-emerald-500 outline-none font-mono"
               />
-              <span className="text-[10px] text-muted-foreground mt-0.5 block">Customer replies land here</span>
+              <span className="text-[10px] text-muted-foreground mt-0.5 block">
+                {language === 'en' ? 'Customer replies land here' : 'কাস্টমারদের রিপ্লাই এখানে আসবে'}
+              </span>
             </div>
           </div>
         </div>
@@ -606,7 +861,12 @@ export default function TenantSmtpSettingsPage() {
       <SmtpSetupGuide
         mode="inline"
         activeTab={guideTab}
-        onTabChange={setGuideTab}
+        onTabChange={(tab) => {
+          setGuideTab(tab);
+          if (tab === 'gmail') setSelectedProvider('gmail');
+          else if (tab === 'outlook') setSelectedProvider('outlook');
+          else setSelectedProvider('custom');
+        }}
       />
 
       {/* Verification Modal */}
@@ -674,7 +934,12 @@ export default function TenantSmtpSettingsPage() {
         isOpen={showGuideModal}
         onClose={() => setShowGuideModal(false)}
         activeTab={guideTab}
-        onTabChange={setGuideTab}
+        onTabChange={(tab) => {
+          setGuideTab(tab);
+          if (tab === 'gmail') setSelectedProvider('gmail');
+          else if (tab === 'outlook') setSelectedProvider('outlook');
+          else setSelectedProvider('custom');
+        }}
       />
     </div>
   );
