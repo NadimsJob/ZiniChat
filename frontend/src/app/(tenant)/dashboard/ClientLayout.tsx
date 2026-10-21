@@ -1123,7 +1123,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  <div className="md:hidden fixed bottom-0 left-0 right-0 h-[64px] bg-card border-t border-border z-50 flex items-center justify-around px-1 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] pb-safe">
    <Link 
      href="/dashboard" 
-      className={`flex flex-col items-center justify-center w-full h-full text-[11px] font-semibold transition-all duration-150 ${pathname === '/dashboard' ? 'text-primary font-bold scale-105' : 'text-slate-700 dark:text-zinc-200 hover:text-primary active:scale-95'}`}
+      className={`flex flex-col items-center justify-center w-full h-full text-[11px] font-medium transition-all duration-150 ${pathname === '/dashboard' ? 'text-primary font-bold scale-105' : 'text-slate-700 dark:text-zinc-300 hover:text-primary active:scale-95'}`}
     >
       <LayoutGrid className="w-5 h-5 mb-0.5" />
      <span>{language === 'en' ? 'Home' : 'হোম'}</span>
@@ -1131,7 +1131,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
 
    <Link 
      href="/dashboard/inbox" 
-      className={`flex flex-col items-center justify-center w-full h-full text-[11px] font-semibold transition-all duration-150 relative ${isInboxPage ? 'text-primary font-bold scale-105' : 'text-slate-700 dark:text-zinc-200 hover:text-primary active:scale-95'}`}
+      className={`flex flex-col items-center justify-center w-full h-full text-[11px] font-medium transition-all duration-150 relative ${isInboxPage ? 'text-primary font-bold scale-105' : 'text-slate-700 dark:text-zinc-300 hover:text-primary active:scale-95'}`}
     >
       <div className="relative">
         <Inbox className="w-5 h-5 mb-0.5" />
@@ -1146,7 +1146,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
 
    <Link 
      href="/dashboard/leads" 
-      className={`flex flex-col items-center justify-center w-full h-full text-[11px] font-semibold transition-all duration-150 ${pathname.includes('/leads') ? 'text-primary font-bold scale-105' : 'text-slate-700 dark:text-zinc-200 hover:text-primary active:scale-95'}`}
+      className={`flex flex-col items-center justify-center w-full h-full text-[11px] font-medium transition-all duration-150 ${pathname.includes('/leads') ? 'text-primary font-bold scale-105' : 'text-slate-700 dark:text-zinc-300 hover:text-primary active:scale-95'}`}
     >
       <UserCircle className="w-5 h-5 mb-0.5" />
      <span>{language === 'en' ? 'Leads' : 'লিডস'}</span>
@@ -1154,9 +1154,9 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
 
     <Link 
       href="/dashboard/orders" 
-      className={`flex flex-col items-center justify-center w-full h-full text-[11px] font-semibold transition-all duration-150 ${pathname.includes('/orders') ? 'text-primary font-bold scale-105' : 'text-slate-700 dark:text-zinc-200 hover:text-primary active:scale-95'}`}
+      className={`flex flex-col items-center justify-center w-full h-full text-[11px] font-medium transition-all duration-150 ${pathname.includes('/orders') ? 'text-primary font-bold scale-105' : 'text-slate-700 dark:text-zinc-300 hover:text-primary active:scale-95'}`}
     >
-      <ShoppingBag className="w-5 h-5 mb-0.5" />
+      <ShoppingBag className="w-5 h-5 mb-0.5" strokeWidth={1.5} />
       <span className="truncate max-w-[68px]">
         {isPropertyMode 
           ? (language === 'en' ? 'Inquiries' : 'ইনকোয়ারি') 
@@ -1180,7 +1180,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
 
    <button 
      onClick={() => setIsMobileMenuOpen(true)}
-      className="flex flex-col items-center justify-center w-full h-full text-[11px] font-semibold text-slate-700 dark:text-zinc-200 hover:text-primary active:scale-95 transition-all duration-150 cursor-pointer"
+      className="flex flex-col items-center justify-center w-full h-full text-[11px] font-medium text-slate-700 dark:text-zinc-300 hover:text-primary active:scale-95 transition-all duration-150 cursor-pointer"
     >
       <Menu className="w-5 h-5 mb-0.5" />
      <span>{language === 'en' ? 'Menu' : 'মেনু'}</span>
