@@ -863,7 +863,7 @@ export default function CampaignDetailsPage() {
 
       {/* Email Preview Modal */}
       {previewLead && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-surface border border-surface-hover rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto p-5 space-y-4 shadow-xl animate-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between border-b border-surface-hover pb-3">
               <div>

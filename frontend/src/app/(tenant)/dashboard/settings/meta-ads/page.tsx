@@ -2077,7 +2077,7 @@ export default function MetaAdsManagerPage() {
 
           {/* AI PRE-FLIGHT REVIEW MODAL */}
           {aiReviewModalOpen && aiReviewResult && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in">
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in">
               <div className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-5 sm:p-6 shadow-2xl space-y-4">
                 <div className="flex items-center justify-between border-b border-white/10 pb-3">
                   <div className="flex items-center gap-2">
@@ -2428,7 +2428,7 @@ export default function MetaAdsManagerPage() {
       {/* 1-CLICK BOOST POST MODAL / DRAWER */}
       {/* ========================================================================= */}
       {boostModalOpen && selectedPost && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in">
           <div className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-5 sm:p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
@@ -2612,7 +2612,7 @@ export default function MetaAdsManagerPage() {
       {/* MODAL: AI ANALYSIS & DIAGNOSTIC TELEMETRY */}
       {/* ========================================================================= */}
       {aiAnalysisModalOpen && aiAnalysisResult && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-surface-light border border-white/10 rounded-2xl max-w-xl w-full p-5 sm:p-6 space-y-5 shadow-2xl relative my-8 max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
             <div className="flex items-start justify-between gap-3 border-b border-white/10 pb-4">
@@ -2800,7 +2800,7 @@ export default function MetaAdsManagerPage() {
       {/* MODAL: 2-STEP CONFIRMATION POPUP (NO BLIND IMMEDIATE SCALING) */}
       {/* ========================================================================= */}
       {confirmModalData && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-surface-light border border-white/15 rounded-2xl max-w-md w-full p-6 space-y-5 shadow-2xl relative animate-in fade-in zoom-in duration-150">
             {/* Header */}
             <div className="flex items-center gap-3 border-b border-white/10 pb-4">

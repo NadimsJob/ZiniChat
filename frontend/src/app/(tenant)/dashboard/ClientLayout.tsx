@@ -165,7 +165,12 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  const isInboxPage = pathname.startsWith('/dashboard/inbox');
  const [sidebarPinned, setSidebarPinned] = useState(false);
  const [sidebarHovered, setSidebarHovered] = useState(false);
- const isSidebarCollapsed = isInboxPage && !sidebarPinned && !sidebarHovered;
+ const isSidebarCollapsed = isInboxPage && !sidebarPinned && !sidebarHovered && !isMobileMenuOpen;
+
+ // Auto-close mobile drawer on route navigation
+ useEffect(() => {
+   setIsMobileMenuOpen(false);
+ }, [pathname]);
 
   useEffect(() => {
   setMounted(true);
@@ -624,7 +629,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
       {/* Mobile Sidebar Overlay */}
       {isMobileMenuOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[90] md:hidden animate-in fade-in duration-200"
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
@@ -634,11 +639,11 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
         onMouseEnter={() => isInboxPage && setSidebarHovered(true)}
         onMouseLeave={() => isInboxPage && setSidebarHovered(false)}
         className={`
-          fixed md:relative z-50 h-full 
-          ${isSidebarCollapsed ? 'w-[56px]' : 'w-[188px]'} 
+          fixed md:relative z-[95] md:z-auto h-full 
+          ${isSidebarCollapsed ? 'w-[56px]' : 'w-[260px] md:w-[188px]'} 
           border-r border-border bg-card
           flex flex-col shrink-0 transition-all duration-300 ease-in-out
-          ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+          ${isMobileMenuOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full md:translate-x-0'}
         `}
       >
         {/* Logo Area */}
@@ -665,10 +670,11 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
             </button>
           )}
           <button 
-            className="md:hidden text-muted-foreground hover:text-foreground"
+            className="md:hidden p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors cursor-pointer"
             onClick={() => setIsMobileMenuOpen(false)}
+            aria-label="Close menu"
           >
-            <ChevronDown className="w-5 h-5 rotate-90" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 

@@ -7,7 +7,7 @@ import { useCurrency } from '@/components/CurrencyProvider';
 import {
   Crown, Package, Puzzle, Check, Zap, RefreshCw, AlertCircle,
   MessageSquare, Bot, Users, HardDrive, Wifi, Globe, Tag, ShieldCheck,
-  BarChart2, Megaphone, Headphones, Star, Sparkles, Lock
+  BarChart2, Megaphone, Headphones, Star, Sparkles, Lock, Info
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -489,7 +489,7 @@ export default function SubscriptionSettingsPage() {
 
               return (
                 <div key={plan.id}
-                  className={`flex flex-col rounded-2xl p-4 border transition-all ${
+                  className={`relative z-10 hover:z-30 flex flex-col rounded-2xl p-4 border transition-all ${
                     isActive
                       ? 'border-primary ring-1 ring-primary bg-primary/5'
                       : 'border-surface-hover bg-surface/50 hover:border-primary/30'
@@ -569,24 +569,112 @@ export default function SubscriptionSettingsPage() {
 
                   {/* Quotas */}
                   <ul className="space-y-1.5 flex-1">
-                    <li className="flex items-center gap-2 text-[12px] text-foreground/90">
-                      <Users className="w-3.5 h-3.5 text-secondary shrink-0" />
-                      {formatNumber(plan.seatLimit)} {language === 'en' ? 'Team Members' : 'টিম মেম্বার'}
+                    <li className="flex items-center justify-between text-[12px] text-foreground/90">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Users className="w-3.5 h-3.5 text-secondary shrink-0" />
+                        <span className="truncate">
+                          {formatNumber(plan.seatLimit)} {language === 'en' ? 'Team Members' : 'টিম মেম্বার'}
+                        </span>
+                      </div>
+                      <div className="relative group/info cursor-pointer inline-flex items-center shrink-0 ml-1">
+                        <Info className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground transition-colors" />
+                        <div className="absolute right-0 bottom-full mb-2 opacity-0 invisible group-hover/info:opacity-100 group-hover/info:visible transition-all duration-200 z-50 w-64 p-3 bg-zinc-900 text-zinc-100 text-xs rounded-xl shadow-2xl border border-zinc-800 pointer-events-none text-left font-normal leading-relaxed">
+                          {language === 'en' ? (
+                            <>
+                              <strong className="block text-white mb-1 font-semibold">👥 Team Members ({plan.seatLimit === -1 ? 'Unlimited' : formatNumber(plan.seatLimit)})</strong>
+                              Staff/Agent accounts: Up to {plan.seatLimit === -1 ? 'unlimited' : formatNumber(plan.seatLimit)} members can log in simultaneously to handle customer chats & support.
+                            </>
+                          ) : (
+                            <>
+                              <strong className="block text-white mb-1 font-semibold">👥 টিম মেম্বার ({plan.seatLimit === -1 ? 'আনলিমিটেড' : formatNumber(plan.seatLimit)})</strong>
+                              স্টাফ/এজেন্ট এক্সেস: আপনার টিমের মোট {plan.seatLimit === -1 ? 'আনলিমিটেড' : formatNumber(plan.seatLimit)} জন সদস্য একসাথে লগইন করে কাস্টমার চ্যাট ও ইনবক্স সাপোর্ট দিতে পারবেন।
+                            </>
+                          )}
+                          <div className="absolute top-full right-2 -mt-1 border-4 border-transparent border-t-zinc-900" />
+                        </div>
+                      </div>
                     </li>
-                    <li className="flex items-center gap-2 text-[12px] text-foreground/90">
-                      <MessageSquare className="w-3.5 h-3.5 text-secondary shrink-0" />
-                      {formatNumber(plan.messageQuota)} {language === 'en' ? 'Messages/mo' : 'মেসেজ/মাস'}
+                    <li className="flex items-center justify-between text-[12px] text-foreground/90">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <MessageSquare className="w-3.5 h-3.5 text-secondary shrink-0" />
+                        <span className="truncate">
+                          {formatNumber(plan.messageQuota)} {language === 'en' ? 'Messages/mo' : 'মেসেজ/মাস'}
+                        </span>
+                      </div>
+                      <div className="relative group/info cursor-pointer inline-flex items-center shrink-0 ml-1">
+                        <Info className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground transition-colors" />
+                        <div className="absolute right-0 bottom-full mb-2 opacity-0 invisible group-hover/info:opacity-100 group-hover/info:visible transition-all duration-200 z-50 w-64 p-3 bg-zinc-900 text-zinc-100 text-xs rounded-xl shadow-2xl border border-zinc-800 pointer-events-none text-left font-normal leading-relaxed">
+                          {language === 'en' ? (
+                            <>
+                              <strong className="block text-white mb-1 font-semibold">💬 Monthly Agent Messages & Broadcasts ({plan.messageQuota === -1 ? 'Unlimited' : formatNumber(plan.messageQuota)})</strong>
+                              Dedicated for your <strong className="text-emerald-400">human team members</strong> to reply in the Live Inbox and send bulk WhatsApp marketing broadcasts. <strong className="text-emerald-400">Independent Pool:</strong> Automated AI replies do NOT consume this quota!
+                            </>
+                          ) : (
+                            <>
+                              <strong className="block text-white mb-1 font-semibold">💬 মাসিক এজেন্ট মেসেজ ও ব্রডকাস্ট ({plan.messageQuota === -1 ? 'আনলিমিটেড' : formatNumber(plan.messageQuota)})</strong>
+                              আপনার টিমের <strong className="text-emerald-400">হিউম্যান এজেন্টদের</strong> ইনবক্স রিপ্লাই এবং হোয়াটসঅ্যাপ ব্রডকাস্টের জন্য নির্ধারিত। <strong className="text-emerald-400">স্বতন্ত্র কোটা:</strong> এআই-এর উত্তরে এই মেসেজ কোটা কাটা যায় না!
+                            </>
+                          )}
+                          <div className="absolute top-full right-2 -mt-1 border-4 border-transparent border-t-zinc-900" />
+                        </div>
+                      </div>
                     </li>
-                    <li className="flex items-center gap-2 text-[12px] text-foreground/90">
-                      <Bot className="w-3.5 h-3.5 text-secondary shrink-0" />
-                      {formatNumber(plan.aiQuota)} {language === 'en' ? 'AI Responses/mo' : 'এআই রেসপন্স/মাস'}
+                    <li className="flex items-center justify-between text-[12px] text-foreground/90">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Bot className="w-3.5 h-3.5 text-secondary shrink-0" />
+                        <span className="truncate">
+                          {formatNumber(plan.aiQuota)} {language === 'en' ? 'AI Responses/mo' : 'এআই রেসপন্স/মাস'}
+                        </span>
+                      </div>
+                      <div className="relative group/info cursor-pointer inline-flex items-center shrink-0 ml-1">
+                        <Info className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground transition-colors" />
+                        <div className="absolute right-0 bottom-full mb-2 opacity-0 invisible group-hover/info:opacity-100 group-hover/info:visible transition-all duration-200 z-50 w-64 p-3 bg-zinc-900 text-zinc-100 text-xs rounded-xl shadow-2xl border border-zinc-800 pointer-events-none text-left font-normal leading-relaxed">
+                          {language === 'en' ? (
+                            <>
+                              <strong className="block text-white mb-1 font-semibold">🤖 Automated AI Responses ({plan.aiQuota === -1 ? 'Unlimited' : formatNumber(plan.aiQuota)})</strong>
+                              Dedicated AI Automation: Total automated 24/7 customer replies, product recommendations & order processing. This is a 100% separate quota pool from your agent messages.
+                            </>
+                          ) : (
+                            <>
+                              <strong className="block text-white mb-1 font-semibold">🤖 স্বয়ংক্রিয় এআই রেসপন্স ({plan.aiQuota === -1 ? 'আনলিমিটেড' : formatNumber(plan.aiQuota)})</strong>
+                              ডেডিকেটেড এআই কোটা: কাস্টমারদের ২৪/৭ স্বয়ংক্রিয় উত্তর, প্রোডাক্ট ক্যাটালগ রিকমেন্ডেশন ও অর্ডার নিতে মোট {plan.aiQuota === -1 ? 'আনলিমিটেড' : formatNumber(plan.aiQuota)}টি এআই রিপ্লাই। এটি মূল এজেন্ট মেসেজ কোটা থেকে সম্পূর্ণ আলাদা।
+                            </>
+                          )}
+                          <div className="absolute top-full right-2 -mt-1 border-4 border-transparent border-t-zinc-900" />
+                        </div>
+                      </div>
                     </li>
                     {plan.storageLimitMb && (
-                      <li className="flex items-center gap-2 text-[12px] text-foreground/90">
-                        <HardDrive className="w-3.5 h-3.5 text-secondary shrink-0" />
-                        {plan.storageLimitMb >= 1024
-                          ? `${(plan.storageLimitMb / 1024).toFixed(1)} GB`
-                          : `${plan.storageLimitMb} MB`} {language === 'en' ? 'Storage' : 'স্টোরেজ'}
+                      <li className="flex items-center justify-between text-[12px] text-foreground/90">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <HardDrive className="w-3.5 h-3.5 text-secondary shrink-0" />
+                          <span className="truncate">
+                            {plan.storageLimitMb >= 1024
+                              ? `${(plan.storageLimitMb / 1024).toFixed(1)} GB`
+                              : `${plan.storageLimitMb} MB`} {language === 'en' ? 'Storage' : 'স্টোরেজ'}
+                          </span>
+                        </div>
+                        <div className="relative group/info cursor-pointer inline-flex items-center shrink-0 ml-1">
+                          <Info className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground transition-colors" />
+                          <div className="absolute right-0 bottom-full mb-2 opacity-0 invisible group-hover/info:opacity-100 group-hover/info:visible transition-all duration-200 z-50 w-64 p-3 bg-zinc-900 text-zinc-100 text-xs rounded-xl shadow-2xl border border-zinc-800 pointer-events-none text-left font-normal leading-relaxed">
+                            {language === 'en' ? (
+                              <>
+                                <strong className="block text-white mb-1 font-semibold">
+                                  🖴 File & Media Storage ({plan.storageLimitMb >= 1024 ? `${(plan.storageLimitMb / 1024).toFixed(1)} GB` : `${plan.storageLimitMb} MB`})
+                                </strong>
+                                Secure cloud storage for shared chat attachments, product images, marketing catalogs, and uploaded media assets.
+                              </>
+                            ) : (
+                              <>
+                                <strong className="block text-white mb-1 font-semibold">
+                                  🖴 ফাইল ও মিডিয়া স্টোরেজ ({plan.storageLimitMb >= 1024 ? `${(plan.storageLimitMb / 1024).toFixed(1)} GB` : `${plan.storageLimitMb} MB`})
+                                </strong>
+                                ইনবক্স চ্যাটে শেয়ার করা ছবি, প্রোডাক্ট ক্যাটালগ ও মিডিয়া অ্যাসেট নিরাপদে ক্লাউডে সংরক্ষণের মোট বরাদ্দ।
+                              </>
+                            )}
+                            <div className="absolute top-full right-2 -mt-1 border-4 border-transparent border-t-zinc-900" />
+                          </div>
+                        </div>
                       </li>
                     )}
                     {/* Feature list */}

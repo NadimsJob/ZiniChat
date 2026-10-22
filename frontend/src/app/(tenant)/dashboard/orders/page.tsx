@@ -206,9 +206,9 @@ export default function OrdersPage() {
  {/* Left Pane: Order List */}
  <div className={`w-full ${selectedOrder ? 'hidden md:flex md:w-[40%] lg:w-[35%]' : 'flex'} flex-col border-r border-border bg-surface shrink-0`}>
  <div className="p-1.5 md:p-1.5 border-b border-border shrink-0 bg-background z-10">
- <div className="flex items-center justify-between mb-4">
+ <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 mb-4">
  <div>
- <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+ <h1 className="text-xl sm:text-2xl font-bold text-foreground flex items-center gap-2">
  {isPropertyMode ? <Building2 className="w-6 h-6 text-primary" /> : isHospitalityMode ? <Hotel className="w-6 h-6 text-amber-500" /> : isTechSoftwareMode ? <Cpu className="w-6 h-6 text-indigo-500" /> : isFinancialServiceMode ? <Briefcase className="w-6 h-6 text-emerald-500" /> : isHealthcareMode ? <Stethoscope className="w-6 h-6 text-rose-500" /> : isEducationMode ? <GraduationCap className="w-6 h-6 text-purple-500" /> : isManufacturingMode ? <Factory className="w-6 h-6 text-amber-500" /> : isLogisticsMode ? <Truck className="w-6 h-6 text-sky-500" /> : <ShoppingBag className="w-6 h-6 text-primary" />}
  {isPropertyMode ? (language === 'en' ? 'Inquiries' : 'ইনকোয়ারি') : isHospitalityMode ? (language === 'en' ? 'Reservations' : 'রিজার্ভেশন') : isTechSoftwareMode ? (language === 'en' ? 'Demo Requests' : 'ডেমো রিকুয়েস্ট') : isFinancialServiceMode ? (language === 'en' ? 'Consultations' : 'কন্সালটেন্সি') : isHealthcareMode ? (language === 'en' ? 'Appointments' : 'অ্যাপয়েন্টমেন্ট') : isEducationMode ? (language === 'en' ? 'Admissions' : 'ভর্তি ইনকোয়ারি') : isManufacturingMode ? (language === 'en' ? 'RFQ / Quotations' : 'কোটেশন রিকুয়েস্ট') : isLogisticsMode ? (language === 'en' ? 'Shipments & Bookings' : 'শিপমেন্ট ও বুকিং') : (language === 'en' ? 'Orders' : 'অর্ডারস')}
  </h1>
@@ -433,7 +433,7 @@ export default function OrdersPage() {
      : <ShoppingBag className="w-5 h-5 mr-2 text-primary" />;
 
    return (
-     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
+     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-2 sm:p-4">
        <div className="bg-surface border border-primary/10 shadow-xl shadow-primary/5 hover:border-primary/20 hover:shadow-primary/10 transition-all rounded-2xl w-[95vw] sm:w-full max-w-2xl flex flex-col max-h-[90vh]">
          <div className="px-1.5 py-2.5 border-b border-border flex justify-between items-center bg-background rounded-t-2xl">
            <h2 className="text-xl font-bold text-foreground flex items-center">{modalIcon}{modalTitle}</h2>

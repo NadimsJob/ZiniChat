@@ -1184,7 +1184,7 @@ export default function CapiHubPage() {
 
       {/* Modal: Add Event */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
           <div className="bg-surface border border-white/15 rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl relative">
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <h3 className="font-bold text-[15px] flex items-center gap-2 text-foreground">
@@ -1254,7 +1254,7 @@ export default function CapiHubPage() {
 
       {/* Modal: Configure Payload Fields */}
       {activeConfigModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
           <div className="bg-surface border border-white/15 rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl relative">
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <div>

@@ -72,6 +72,9 @@ export default function InboxPage() {
   const [followUpPickerConvId, setFollowUpPickerConvId] = useState<string | null>(null);
   // Mobile WhatsApp-style panel navigation: 'list' | 'chat' | 'crm'
   const [mobilePanelView, setMobilePanelView] = useState<'list' | 'chat' | 'crm'>('list');
+  const [showMobileMoreMenu, setShowMobileMoreMenu] = useState(false);
+  const [showMobileAssignSubmenu, setShowMobileAssignSubmenu] = useState(false);
+  const [showMobileCollaboratorSubmenu, setShowMobileCollaboratorSubmenu] = useState(false);
 
   // Mobile hardware/gesture back button support (WhatsApp-style navigation)
   useEffect(() => {
@@ -194,7 +197,7 @@ export default function InboxPage() {
 
   // Close all header dropdowns when clicking outside
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
       if (showAssignMenu && assignMenuRef.current && !assignMenuRef.current.contains(e.target as Node)) {
         setShowAssignMenu(false);
       }
@@ -206,7 +209,11 @@ export default function InboxPage() {
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
   }, [showAssignMenu, showCollaboratorMenu, showAiPickerMenu]);
 
   // Fetch counts for tabs
@@ -516,6 +523,13 @@ export default function InboxPage() {
       };
     }
   }, [mobilePanelView, selectedConvId, scrollToBottom]);
+
+  // Reset mobile menus on conversation change or panel transition
+  useEffect(() => {
+    setShowMobileMoreMenu(false);
+    setShowMobileAssignSubmenu(false);
+    setShowMobileCollaboratorSubmenu(false);
+  }, [selectedConvId, mobilePanelView]);
 
   const activeConv = conversations.find(c => c.id === selectedConvId);
 
@@ -1848,7 +1862,7 @@ export default function InboxPage() {
                     setShowRightSidebar(!showRightSidebar);
                   }
                 }}
-                className="flex items-center gap-2 md:gap-2.5 min-w-0 cursor-pointer hover:opacity-80 active:opacity-60 transition-opacity group"
+                className="flex items-center gap-2 md:gap-2.5 min-w-0 flex-1 cursor-pointer hover:opacity-80 active:opacity-60 transition-opacity group"
                 title={language === 'en' ? 'View CRM Details' : 'CRM ডিটেইলস দেখুন'}
               >
                 <div className="relative shrink-0">
@@ -1856,137 +1870,342 @@ export default function InboxPage() {
                     <img
                       src={activeConv.contact.avatarUrl}
                       alt={activeConv.contact.name || 'Customer'}
-                      className="w-10 h-10 md:w-9 md:h-9 rounded-full object-cover border border-primary/20 group-hover:border-primary/60 transition-colors"
+                      className="w-9 h-9 md:w-9 md:h-9 rounded-full object-cover border border-primary/20 group-hover:border-primary/60 transition-colors"
                       onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
                     />
                   ) : (
-                    <div className="w-10 h-10 md:w-9 md:h-9 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-sm md:text-xs border border-primary/20 shrink-0 group-hover:border-primary/60 transition-colors">
+                    <div className="w-9 h-9 md:w-9 md:h-9 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-sm md:text-xs border border-primary/20 shrink-0 group-hover:border-primary/60 transition-colors">
                       {activeConv.contact?.name ? activeConv.contact.name[0].toUpperCase() : 'C'}
                     </div>
                   )}
                 </div>
-                <div className="min-w-0 text-left">
+                <div className="min-w-0 flex-1 text-left">
                   <h3 className="text-sm md:text-xs font-bold text-foreground truncate flex items-center gap-1.5">
-                    <span>{activeConv.contact?.name || activeConv.contact?.phone || 'Customer'}</span>
-                    <span className="text-xs md:text-[10px] text-muted-foreground font-normal capitalize">({activeConv.channel})</span>
+                    <span className="truncate">{activeConv.contact?.name || activeConv.contact?.phone || 'Customer'}</span>
+                    <span className="text-xs md:text-[10px] text-muted-foreground font-normal capitalize shrink-0">({activeConv.channel})</span>
                     {['messenger', 'instagram'].includes(activeConv.channel) && (
                       <span
                         onClick={(e) => {
                           e.stopPropagation();
                           if (activeConv.contact?.id) handleSyncMetaProfile(activeConv.contact.id);
                         }}
-                        className={`p-1 hover:bg-muted text-muted-foreground hover:text-primary rounded-md transition-colors cursor-pointer inline-flex items-center ${isSyncingMetaProfile ? 'pointer-events-none' : ''}`}
+                        className={`p-1 hover:bg-muted text-muted-foreground hover:text-primary rounded-md transition-colors cursor-pointer inline-flex items-center shrink-0 ${isSyncingMetaProfile ? 'pointer-events-none' : ''}`}
                         title={language === 'en' ? 'Sync Meta Profile (Name & Photo)' : 'মেটা প্রোফাইল সিঙ্ক করুন'}
                       >
                         <RefreshCw className={`w-3 h-3 ${isSyncingMetaProfile ? 'animate-spin text-primary' : ''}`} />
                       </span>
                     )}
                   </h3>
-                  <p className="text-[11px] md:text-[10px] text-muted-foreground flex items-center gap-2">
-                    <span>{activeConv.contact?.phone ? activeConv.contact.phone : `ID: ${activeConv.contact?.externalContactId || ''}`}</span>
+                  <p className="text-[11px] md:text-[10px] text-muted-foreground flex items-center gap-2 truncate">
+                    <span className="truncate">{activeConv.contact?.phone ? activeConv.contact.phone : `ID: ${activeConv.contact?.externalContactId || ''}`}</span>
                     {activeConv.assignedAgent && (
-                      <span className="text-primary font-medium">· Assigned to: {activeConv.assignedAgent.name}</span>
+                      <span className="text-primary font-medium shrink-0">· {activeConv.assignedAgent.name}</span>
                     )}
                   </p>
                 </div>
               </button>
             </div>
 
-            {/* Header Control Buttons — scrollable on mobile so all icons always visible */}
-            <div className="overflow-x-auto shrink-0 no-scrollbar">
-              <div className="flex items-center gap-0.5 text-muted-foreground w-max">
-                {/* Star */}
-                <button
-                  onClick={handleToggleStar}
-                  className={`p-1.5 rounded-lg hover:bg-muted transition-colors shrink-0 ${activeConv.isStarred ? 'text-amber-500' : ''}`}
-                  title={activeConv.isStarred 
-                    ? (language === 'en' ? 'Unstar Conversation' : 'অনস্টার করুন')
-                    : (language === 'en' ? 'Star Conversation' : 'স্টার করুন')}
-                >
-                  <Star className={`w-4 h-4 ${activeConv.isStarred ? 'fill-amber-500' : ''}`} />
-                </button>
+            {/* Mobile Header Quick Actions & 3-Dots Menu (Clean, prevents name squeeze) */}
+            <div className="flex md:hidden items-center gap-1 text-muted-foreground shrink-0">
+              {/* Star Quick Toggle */}
+              <button
+                onClick={handleToggleStar}
+                className={`p-2 rounded-lg hover:bg-muted active:scale-95 transition-all shrink-0 cursor-pointer ${
+                  activeConv.isStarred ? 'text-amber-500' : 'text-muted-foreground'
+                }`}
+                title={activeConv.isStarred 
+                  ? (language === 'en' ? 'Unstar Conversation' : 'অনস্টার করুন')
+                  : (language === 'en' ? 'Star Conversation' : 'স্টার করুন')}
+              >
+                <Star className={`w-4 h-4 ${activeConv.isStarred ? 'fill-amber-500 text-amber-500' : ''}`} />
+              </button>
 
+              {/* Resolve / Reopen Quick Toggle */}
+              <button
+                onClick={handleToggleResolve}
+                className={`p-2 rounded-lg hover:bg-muted active:scale-95 transition-all shrink-0 cursor-pointer ${
+                  activeConv.status === 'resolved' ? 'text-emerald-500 bg-emerald-500/10' : 'text-muted-foreground'
+                }`}
+                title={activeConv.status === 'resolved'
+                  ? (language === 'en' ? 'Reopen Conversation' : 'পুনরায় ওপেন করুন')
+                  : (language === 'en' ? 'Resolve Conversation' : 'রেসোলভ করুন')}
+              >
+                <CheckCircle2 className="w-4 h-4" />
+              </button>
+
+              {/* 3-Dots More Options Menu Toggle */}
+              <button
+                onClick={() => {
+                  setShowMobileMoreMenu(!showMobileMoreMenu);
+                  setShowMobileAssignSubmenu(false);
+                  setShowMobileCollaboratorSubmenu(false);
+                }}
+                className={`p-2 rounded-lg hover:bg-muted active:scale-95 transition-all shrink-0 cursor-pointer ${
+                  showMobileMoreMenu ? 'bg-muted text-foreground' : 'text-muted-foreground'
+                }`}
+                title={language === 'en' ? 'More Actions' : 'আরও অ্যাকশন'}
+              >
+                <MoreVertical className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Desktop Header Control Buttons — 100% visible on web view */}
+            <div className="hidden md:flex items-center gap-0.5 text-muted-foreground shrink-0 overflow-visible">
+              {/* Star */}
+              <button
+                onClick={handleToggleStar}
+                className={`p-1.5 rounded-lg hover:bg-muted transition-colors shrink-0 ${activeConv.isStarred ? 'text-amber-500' : ''}`}
+                title={activeConv.isStarred 
+                  ? (language === 'en' ? 'Unstar Conversation' : 'অনস্টার করুন')
+                  : (language === 'en' ? 'Star Conversation' : 'স্টার করুন')}
+              >
+                <Star className={`w-4 h-4 ${activeConv.isStarred ? 'fill-amber-500' : ''}`} />
+              </button>
+
+              {/* Follow-up flag */}
+              <button
+                onClick={handleToggleFollowUp}
+                className={`p-1.5 rounded-lg hover:bg-muted transition-colors shrink-0 ${activeConv.requiresFollowUp ? 'text-red-500' : ''}`}
+                title={language === 'en' ? 'Flag for Follow-up' : 'ফলো-আপ ফ্ল্যাগ'}
+              >
+                <Flag className={`w-4 h-4 ${activeConv.requiresFollowUp ? 'fill-red-500' : ''}`} />
+              </button>
+
+              {/* Resolve */}
+              <button
+                onClick={handleToggleResolve}
+                className={`p-1.5 rounded-lg hover:bg-muted transition-colors shrink-0 ${activeConv.status === 'resolved' ? 'text-emerald-600' : ''}`}
+                title={activeConv.status === 'resolved'
+                  ? (language === 'en' ? 'Reopen Conversation' : 'পুনরায় ওপেন করুন')
+                  : (language === 'en' ? 'Resolve Conversation' : 'রেসোলভ করুন')}
+              >
+                <CheckCircle2 className="w-4 h-4" />
+              </button>
+
+              {/* Archive */}
+              <button
+                onClick={handleToggleArchive}
+                className={`p-1.5 rounded-lg hover:bg-muted transition-colors shrink-0 ${activeConv.isArchived ? 'text-blue-600' : ''}`}
+                title={activeConv.isArchived
+                  ? (language === 'en' ? 'Unarchive Conversation' : 'আনআর্কাইভ করুন')
+                  : (language === 'en' ? 'Archive Conversation' : 'আর্কাইভ করুন')}
+              >
+                <Archive className="w-4 h-4" />
+              </button>
+
+              {/* Block */}
+              <button
+                onClick={handleToggleBlock}
+                className={`p-1.5 rounded-lg hover:bg-muted transition-colors shrink-0 ${activeConv.isBlocked || activeConv.contact?.isBlocked ? 'text-rose-600 bg-rose-500/10' : ''}`}
+                title={activeConv.isBlocked || activeConv.contact?.isBlocked
+                  ? (language === 'en' ? 'Unblock Contact' : 'আনব্লক করুন')
+                  : (language === 'en' ? 'Block Contact' : 'ব্লক করুন')}
+              >
+                <Ban className="w-4 h-4" />
+              </button>
+
+              {/* Assign Agent */}
+              <div className="relative shrink-0" ref={assignMenuRef}>
+                <button
+                  onClick={() => setShowAssignMenu(!showAssignMenu)}
+                  className="p-1.5 rounded-lg hover:bg-muted transition-colors"
+                  title={language === 'en' ? 'Assign Agent' : 'এজেন্ট অ্যাসাইন'}
+                >
+                  <UserPlus className="w-4 h-4" />
+                </button>
+                {showAssignMenu && (
+                  <div className="absolute right-0 mt-1 w-44 bg-card border border-border rounded-xl shadow-lg p-1 z-50 animate-in fade-in zoom-in-95 duration-100 text-xs">
+                    <button onClick={() => handleAssignAgent(null)} className="w-full text-left px-2.5 py-1.5 hover:bg-muted rounded-lg text-amber-600 font-medium">
+                      Unassign
+                    </button>
+                    {agents.map(a => (
+                      <button key={a.id} onClick={() => handleAssignAgent(a.id)} className="w-full text-left px-2.5 py-1.5 hover:bg-muted rounded-lg text-foreground">
+                        {a.name} ({a.role})
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Add Collaborator */}
+              {hasCollaborators && (
+                <div className="relative shrink-0" ref={collaboratorMenuRef}>
+                  <button
+                    onClick={() => setShowCollaboratorMenu(!showCollaboratorMenu)}
+                    className="p-1.5 rounded-lg hover:bg-muted transition-colors"
+                    title={language === 'en' ? 'Add Collaborator' : 'কোলাবোরেটর যুক্ত'}
+                  >
+                    <UserCheck className="w-4 h-4" />
+                  </button>
+                  {showCollaboratorMenu && (
+                    <div className="absolute right-0 mt-1 w-44 bg-card border border-border rounded-xl shadow-lg p-1 z-50 animate-in fade-in zoom-in-95 duration-100 text-xs">
+                      <p className="px-2.5 py-1 text-[10px] text-muted-foreground font-bold uppercase">Add Collaborator</p>
+                      {agents.map(a => (
+                        <button key={a.id} onClick={() => handleAddCollaborator(a.id)} className="w-full text-left px-2.5 py-1.5 hover:bg-muted rounded-lg text-foreground">
+                          {a.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Toggle Right Sidebar */}
+              <button
+                onClick={() => {
+                  if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+                    setMobilePanelView('crm');
+                  } else {
+                    setShowRightSidebar(!showRightSidebar);
+                  }
+                }}
+                className={`p-1.5 rounded-lg hover:bg-muted transition-colors shrink-0 ${showRightSidebar ? 'text-primary' : ''} ${mobilePanelView === 'crm' ? 'text-primary' : ''}`}
+                title={language === 'en' ? 'Toggle Sidebar' : 'সাইডবার'}
+              >
+                <PanelRight className="w-4 h-4" />
+              </button>
+
+              {/* Delete */}
+              <button
+                onClick={() => setShowDeleteConfirmModal(true)}
+                className="p-1.5 rounded-lg hover:bg-red-500/10 text-red-500 transition-colors shrink-0 cursor-pointer"
+                title={language === 'en' ? 'Delete Conversation' : 'কনভারসেশন স্থায়ীভাবে মুছুন'}
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Mobile More Options Dropdown Menu (Floating high-z-index popover) */}
+          {showMobileMoreMenu && (
+            <>
+              <div 
+                className="fixed inset-0 z-[75] bg-black/40 backdrop-blur-xs md:hidden"
+                onClick={() => {
+                  setShowMobileMoreMenu(false);
+                  setShowMobileAssignSubmenu(false);
+                  setShowMobileCollaboratorSubmenu(false);
+                }}
+              />
+              <div className="fixed right-2 top-14 z-[80] w-64 max-h-[82vh] overflow-y-auto bg-card border border-border/90 rounded-2xl shadow-2xl p-2 md:hidden animate-in fade-in zoom-in-95 duration-150 custom-scrollbar text-xs">
                 {/* Follow-up flag */}
                 <button
-                  onClick={handleToggleFollowUp}
-                  className={`p-1.5 rounded-lg hover:bg-muted transition-colors shrink-0 ${activeConv.requiresFollowUp ? 'text-red-500' : ''}`}
-                  title={language === 'en' ? 'Flag for Follow-up' : 'ফলো-আপ ফ্ল্যাগ'}
+                  onClick={() => {
+                    handleToggleFollowUp();
+                    setShowMobileMoreMenu(false);
+                  }}
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-muted transition-colors cursor-pointer ${
+                    activeConv.requiresFollowUp ? 'text-red-500 font-semibold bg-red-500/10' : 'text-foreground'
+                  }`}
                 >
-                  <Flag className={`w-4 h-4 ${activeConv.requiresFollowUp ? 'fill-red-500' : ''}`} />
+                  <span className="flex items-center gap-2.5">
+                    <Flag className={`w-4 h-4 shrink-0 ${activeConv.requiresFollowUp ? 'fill-red-500 text-red-500' : 'text-muted-foreground'}`} />
+                    <span>{language === 'en' ? 'Flag for Follow-up' : 'ফলো-আপের জন্য ফ্ল্যাগ'}</span>
+                  </span>
+                  {activeConv.requiresFollowUp && <span className="text-[10px] text-red-500 font-bold uppercase">Active</span>}
                 </button>
 
-                {/* Resolve */}
+                {/* View CRM Details */}
                 <button
-                  onClick={handleToggleResolve}
-                  className={`p-1.5 rounded-lg hover:bg-muted transition-colors shrink-0 ${activeConv.status === 'resolved' ? 'text-emerald-600' : ''}`}
-                  title={activeConv.status === 'resolved'
-                    ? (language === 'en' ? 'Reopen Conversation' : 'পুনরায় ওপেন করুন')
-                    : (language === 'en' ? 'Resolve Conversation' : 'রেসোলভ করুন')}
+                  onClick={() => {
+                    setShowMobileMoreMenu(false);
+                    setMobilePanelView('crm');
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-muted text-foreground transition-colors cursor-pointer"
                 >
-                  <CheckCircle2 className="w-4 h-4" />
+                  <PanelRight className="w-4 h-4 text-primary shrink-0" />
+                  <span>{language === 'en' ? 'View CRM & Details' : 'CRM ও কাস্টমার বিস্তারিত'}</span>
                 </button>
 
-                {/* Archive */}
-                <button
-                  onClick={handleToggleArchive}
-                  className={`p-1.5 rounded-lg hover:bg-muted transition-colors shrink-0 ${activeConv.isArchived ? 'text-blue-600' : ''}`}
-                  title={activeConv.isArchived
-                    ? (language === 'en' ? 'Unarchive Conversation' : 'আনআর্কাইভ করুন')
-                    : (language === 'en' ? 'Archive Conversation' : 'আর্কাইভ করুন')}
-                >
-                  <Archive className="w-4 h-4" />
-                </button>
-
-                {/* Block */}
-                <button
-                  onClick={handleToggleBlock}
-                  className={`p-1.5 rounded-lg hover:bg-muted transition-colors shrink-0 ${activeConv.isBlocked || activeConv.contact?.isBlocked ? 'text-rose-600 bg-rose-500/10' : ''}`}
-                  title={activeConv.isBlocked || activeConv.contact?.isBlocked
-                    ? (language === 'en' ? 'Unblock Contact' : 'আনব্লক করুন')
-                    : (language === 'en' ? 'Block Contact' : 'ব্লক করুন')}
-                >
-                  <Ban className="w-4 h-4" />
-                </button>
-
-                {/* Assign Agent */}
-                <div className="relative shrink-0" ref={assignMenuRef}>
+                {/* Sync Meta Profile (if applicable) */}
+                {['messenger', 'instagram'].includes(activeConv.channel) && activeConv.contact?.id && (
                   <button
-                    onClick={() => setShowAssignMenu(!showAssignMenu)}
-                    className="p-1.5 rounded-lg hover:bg-muted transition-colors"
-                    title={language === 'en' ? 'Assign Agent' : 'এজেন্ট অ্যাসাইন'}
+                    onClick={() => {
+                      setShowMobileMoreMenu(false);
+                      handleSyncMetaProfile(activeConv.contact.id);
+                    }}
+                    disabled={isSyncingMetaProfile}
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-muted text-foreground transition-colors cursor-pointer disabled:opacity-50"
                   >
-                    <UserPlus className="w-4 h-4" />
+                    <RefreshCw className={`w-4 h-4 text-primary shrink-0 ${isSyncingMetaProfile ? 'animate-spin' : ''}`} />
+                    <span>{language === 'en' ? 'Sync Meta Profile' : 'মেটা প্রোফাইল সিঙ্ক করুন'}</span>
                   </button>
-                  {showAssignMenu && (
-                    <div className="absolute right-0 mt-1 w-44 bg-card border border-border rounded-xl shadow-lg p-1 z-50 animate-in fade-in zoom-in-95 duration-100 text-xs">
-                      <button onClick={() => handleAssignAgent(null)} className="w-full text-left px-2.5 py-1.5 hover:bg-muted rounded-lg text-amber-600 font-medium">
-                        Unassign
+                )}
+
+                {/* Assign Agent (Accordion) */}
+                <div className="border-t border-border/60 my-1 pt-1">
+                  <button
+                    onClick={() => setShowMobileAssignSubmenu(!showMobileAssignSubmenu)}
+                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-muted text-foreground transition-colors cursor-pointer"
+                  >
+                    <span className="flex items-center gap-2.5 min-w-0">
+                      <UserPlus className="w-4 h-4 text-muted-foreground shrink-0" />
+                      <span className="truncate">{language === 'en' ? 'Assign Agent' : 'এজেন্ট অ্যাসাইন'}</span>
+                    </span>
+                    <span className="flex items-center gap-1 text-[11px] text-muted-foreground shrink-0">
+                      <span className="truncate max-w-[80px] font-medium text-primary">
+                        {activeConv.assignedAgent?.name || (language === 'en' ? 'None' : 'নেই')}
+                      </span>
+                      <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-150 ${showMobileAssignSubmenu ? 'rotate-180' : ''}`} />
+                    </span>
+                  </button>
+                  {showMobileAssignSubmenu && (
+                    <div className="bg-muted/40 rounded-xl p-1.5 mt-1 space-y-0.5 border border-border/50">
+                      <button
+                        onClick={() => {
+                          handleAssignAgent(null);
+                          setShowMobileMoreMenu(false);
+                        }}
+                        className="w-full text-left px-2.5 py-2 rounded-lg text-amber-500 font-semibold hover:bg-muted text-[11px] transition-colors cursor-pointer"
+                      >
+                        {language === 'en' ? '✕ Unassign' : '✕ অ্যাসাইন বাদ দিন'}
                       </button>
                       {agents.map(a => (
-                        <button key={a.id} onClick={() => handleAssignAgent(a.id)} className="w-full text-left px-2.5 py-1.5 hover:bg-muted rounded-lg text-foreground">
-                          {a.name} ({a.role})
+                        <button
+                          key={a.id}
+                          onClick={() => {
+                            handleAssignAgent(a.id);
+                            setShowMobileMoreMenu(false);
+                          }}
+                          className={`w-full text-left px-2.5 py-2 rounded-lg text-[11px] hover:bg-muted transition-colors flex items-center justify-between cursor-pointer ${
+                            activeConv.assignedAgentId === a.id ? 'bg-primary/10 text-primary font-bold' : 'text-foreground'
+                          }`}
+                        >
+                          <span>{a.name}</span>
+                          <span className="text-[10px] text-muted-foreground capitalize">({a.role})</span>
                         </button>
                       ))}
                     </div>
                   )}
                 </div>
 
-                {/* Add Collaborator */}
+                {/* Add Collaborator (Accordion) */}
                 {hasCollaborators && (
-                  <div className="relative shrink-0" ref={collaboratorMenuRef}>
+                  <div className="border-t border-border/60 my-1 pt-1">
                     <button
-                      onClick={() => setShowCollaboratorMenu(!showCollaboratorMenu)}
-                      className="p-1.5 rounded-lg hover:bg-muted transition-colors"
-                      title={language === 'en' ? 'Add Collaborator' : 'কোলাবোরেটর যুক্ত'}
+                      onClick={() => setShowMobileCollaboratorSubmenu(!showMobileCollaboratorSubmenu)}
+                      className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-muted text-foreground transition-colors cursor-pointer"
                     >
-                      <UserCheck className="w-4 h-4" />
+                      <span className="flex items-center gap-2.5 min-w-0">
+                        <UserCheck className="w-4 h-4 text-muted-foreground shrink-0" />
+                        <span className="truncate">{language === 'en' ? 'Add Collaborator' : 'কোলাবোরেটর যুক্ত'}</span>
+                      </span>
+                      <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform duration-150 ${showMobileCollaboratorSubmenu ? 'rotate-180' : ''}`} />
                     </button>
-                    {showCollaboratorMenu && (
-                      <div className="absolute right-0 mt-1 w-44 bg-card border border-border rounded-xl shadow-lg p-1 z-50 animate-in fade-in zoom-in-95 duration-100 text-xs">
-                        <p className="px-2.5 py-1 text-[10px] text-muted-foreground font-bold uppercase">Add Collaborator</p>
+                    {showMobileCollaboratorSubmenu && (
+                      <div className="bg-muted/40 rounded-xl p-1.5 mt-1 space-y-0.5 border border-border/50">
                         {agents.map(a => (
-                          <button key={a.id} onClick={() => handleAddCollaborator(a.id)} className="w-full text-left px-2.5 py-1.5 hover:bg-muted rounded-lg text-foreground">
-                            {a.name}
+                          <button
+                            key={a.id}
+                            onClick={() => {
+                              handleAddCollaborator(a.id);
+                              setShowMobileMoreMenu(false);
+                            }}
+                            className="w-full text-left px-2.5 py-2 rounded-lg text-[11px] text-foreground hover:bg-muted transition-colors flex items-center justify-between cursor-pointer"
+                          >
+                            <span>{a.name}</span>
+                            <span className="text-[10px] text-muted-foreground capitalize">({a.role})</span>
                           </button>
                         ))}
                       </div>
@@ -1994,48 +2213,69 @@ export default function InboxPage() {
                   </div>
                 )}
 
-                {/* Toggle Right Sidebar */}
-                <button
-                  onClick={() => {
-                    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
-                      setMobilePanelView('crm');
-                    } else {
-                      setShowRightSidebar(!showRightSidebar);
-                    }
-                  }}
-                  className={`p-1.5 rounded-lg hover:bg-muted transition-colors shrink-0 ${showRightSidebar ? 'text-primary' : ''} ${mobilePanelView === 'crm' ? 'text-primary' : ''}`}
-                  title={language === 'en' ? 'Toggle Sidebar' : 'সাইডবার'}
-                >
-                  <PanelRight className="w-4 h-4" />
-                </button>
+                {/* Archive / Unarchive */}
+                <div className="border-t border-border/60 my-1 pt-1">
+                  <button
+                    onClick={() => {
+                      handleToggleArchive();
+                      setShowMobileMoreMenu(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-muted transition-colors cursor-pointer ${
+                      activeConv.isArchived ? 'text-blue-500 font-semibold bg-blue-500/10' : 'text-foreground'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2.5">
+                      <Archive className={`w-4 h-4 shrink-0 ${activeConv.isArchived ? 'text-blue-500' : 'text-muted-foreground'}`} />
+                      <span>
+                        {activeConv.isArchived 
+                          ? (language === 'en' ? 'Unarchive Conversation' : 'আনআর্কাইভ করুন') 
+                          : (language === 'en' ? 'Archive Conversation' : 'আর্কাইভ করুন')}
+                      </span>
+                    </span>
+                    {activeConv.isArchived && <span className="text-[10px] text-blue-500 font-bold uppercase">Archived</span>}
+                  </button>
 
-                {/* Merge Conversation */}
-                <button
-                  onClick={() => {
-                    setSelectedMergeTargetId(duplicateConversations[0]?.id || '');
-                    setShowMergeModal(true);
-                  }}
-                  className={`p-1.5 rounded-lg transition-all shrink-0 cursor-pointer ${
-                    duplicateConversations.length > 0 
-                      ? 'text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 ring-1 ring-amber-500/30' 
-                      : 'hover:bg-muted text-muted-foreground'
-                  }`}
-                  title={language === 'en' ? 'Merge Conversation' : 'কনভারসেশন মার্জ করুন'}
-                >
-                  <GitMerge className="w-4 h-4" />
-                </button>
+                  {/* Block / Unblock */}
+                  <button
+                    onClick={() => {
+                      handleToggleBlock();
+                      setShowMobileMoreMenu(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-muted transition-colors cursor-pointer ${
+                      activeConv.isBlocked || activeConv.contact?.isBlocked ? 'text-rose-500 font-semibold bg-rose-500/10' : 'text-foreground'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2.5">
+                      <Ban className={`w-4 h-4 shrink-0 ${activeConv.isBlocked || activeConv.contact?.isBlocked ? 'text-rose-500' : 'text-muted-foreground'}`} />
+                      <span>
+                        {activeConv.isBlocked || activeConv.contact?.isBlocked
+                          ? (language === 'en' ? 'Unblock Contact' : 'আনব্লক করুন')
+                          : (language === 'en' ? 'Block Contact' : 'কন্টাক্ট ব্লক করুন')}
+                      </span>
+                    </span>
+                    {(activeConv.isBlocked || activeConv.contact?.isBlocked) && (
+                      <span className="text-[10px] text-rose-500 font-bold uppercase">Blocked</span>
+                    )}
+                  </button>
 
-                {/* Delete */}
-                <button
-                  onClick={() => setShowDeleteConfirmModal(true)}
-                  className="p-1.5 rounded-lg hover:bg-red-500/10 text-red-500 transition-colors shrink-0 cursor-pointer"
-                  title={language === 'en' ? 'Delete Conversation' : 'কনভারসেশন স্থায়ীভাবে মুছুন'}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                </div>
+
+                {/* Delete Permanently (Hard Action) */}
+                <div className="border-t border-border/60 my-1 pt-1">
+                  <button
+                    onClick={() => {
+                      setShowMobileMoreMenu(false);
+                      setShowDeleteConfirmModal(true);
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer font-medium"
+                  >
+                    <Trash2 className="w-4 h-4 text-red-500 shrink-0" />
+                    <span>{language === 'en' ? 'Delete Conversation' : 'কনভারসেশন মুছুন'}</span>
+                  </button>
+                </div>
               </div>
-            </div>
-          </div>
+            </>
+          )}
 
           {/* Duplicate Customer Notice Banner */}
           {duplicateConversations.length > 0 && (
@@ -2527,7 +2767,7 @@ export default function InboxPage() {
 
       {/* Merge Conversation Modal */}
       {showMergeModal && activeConv && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
           <div className="bg-card border border-border rounded-2xl shadow-xl max-w-lg w-full p-5 space-y-4 animate-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3 text-amber-500">
@@ -2677,7 +2917,7 @@ export default function InboxPage() {
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirmModal && activeConv && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
           <div className="bg-card border border-border rounded-2xl shadow-xl max-w-md w-full p-5 space-y-4 animate-in zoom-in-95 duration-150">
             <div className="flex items-center gap-3 text-red-500">
               <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center shrink-0 border border-red-500/20">

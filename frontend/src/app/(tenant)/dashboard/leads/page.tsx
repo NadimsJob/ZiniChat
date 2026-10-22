@@ -315,7 +315,7 @@ export default function LeadsPage() {
   </div>
 
  {/* Compact Header */}
- <div className="px-1.5 py-1 border-b border-border bg-surface/50 backdrop-blur-xl flex justify-between items-center z-10">
+ <div className="px-2 py-1.5 border-b border-border bg-surface/50 backdrop-blur-xl flex flex-wrap sm:flex-nowrap justify-between items-center gap-2 z-10">
  <div className="flex items-center space-x-4">
  <h1 className="text-[13px] font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
  {language === 'en' ? 'Leads' : 'লিডস'}
@@ -633,7 +633,7 @@ export default function LeadsPage() {
 
  {/* New Lead Modal */}
  {isCreatingLead && (
- <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
+ <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[100] flex items-center justify-center p-2 sm:p-4">
  <div className="bg-surface border border-primary/10 shadow-xl shadow-primary/5 hover:border-primary/20 hover:shadow-primary/10 transition-all rounded-2xl w-[95vw] sm:w-full max-w-md shadow-2xl p-5 max-h-[90vh] overflow-y-auto custom-scrollbar">
  <div className="flex justify-between items-center mb-4">
  <h2 className="text-[13px] font-bold text-foreground">Create New Lead</h2>

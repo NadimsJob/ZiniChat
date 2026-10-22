@@ -390,7 +390,7 @@ export default function TeamPage() {
 
       {/* Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-sm">
           <div className="bg-card border border-border rounded-2xl shadow-2xl w-[95vw] sm:w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden">
             <div className="flex items-center justify-between p-4 border-b border-border shrink-0">
               <h2 className="text-[15px] font-bold text-foreground">
@@ -658,7 +658,7 @@ export default function TeamPage() {
 
       {/* Activity & Stats Summary Modal */}
       {statsAgent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-sm">
           <div className="bg-card border border-border rounded-2xl shadow-2xl w-[95vw] sm:w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
             <div className="flex items-center justify-between p-4 border-b border-border shrink-0 bg-muted/20">
               <div className="flex items-center gap-2">

@@ -218,9 +218,9 @@ export function PricingSection({ isHomepage = false, initialPlans }: { isHomepag
           return (
             <div 
               key={plan.id} 
-              className={`group flex flex-col p-8 sm:p-10 rounded-[32px] border transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl ${
+              className={`group relative flex flex-col p-8 sm:p-10 rounded-[32px] border transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl z-10 hover:z-30 ${
                 isPop 
-                  ? 'border-transparent shadow-xl relative transform md:-translate-y-4 hover:!translate-y-[-24px] bg-[#FFC527]' 
+                  ? 'border-transparent shadow-xl transform md:-translate-y-4 hover:!translate-y-[-24px] bg-[#FFC527]' 
                   : 'bg-card border-border hover:border-primary/30 shadow-sm'
               }`}
             >
@@ -306,7 +306,7 @@ export function PricingSection({ isHomepage = false, initialPlans }: { isHomepag
                   </div>
                   <div className="relative group/info cursor-pointer inline-flex items-center">
                     <Info className={`w-4 h-4 transition-colors ${isPop ? 'text-zinc-800 hover:text-black' : 'text-muted-foreground hover:text-foreground'}`} />
-                    <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 opacity-0 invisible group-hover/info:opacity-100 group-hover/info:visible transition-all duration-200 z-50 w-64 p-3 bg-zinc-900 text-zinc-100 text-xs rounded-xl shadow-2xl border border-zinc-800 pointer-events-none text-left font-normal leading-relaxed">
+                    <div className="absolute right-0 bottom-full mb-2 opacity-0 invisible group-hover/info:opacity-100 group-hover/info:visible transition-all duration-200 z-50 w-64 p-3 bg-zinc-900 text-zinc-100 text-xs rounded-xl shadow-2xl border border-zinc-800 pointer-events-none text-left font-normal leading-relaxed">
                       {language === 'en' ? (
                         <>
                           <strong className="block text-white mb-1 font-semibold">👥 Team Members ({plan.seatLimit === -1 ? 'Unlimited' : formatNumber(plan.seatLimit)})</strong>
@@ -318,7 +318,7 @@ export function PricingSection({ isHomepage = false, initialPlans }: { isHomepag
                           স্টাফ/এজেন্ট এক্সেস: আপনার টিমের মোট {plan.seatLimit === -1 ? 'আনলিমিটেড' : formatNumber(plan.seatLimit)} জন সদস্য একসাথে লগইন করে কাস্টমার চ্যাট ও ইনবক্স সাপোর্ট দিতে পারবেন।
                         </>
                       )}
-                      <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-zinc-900" />
+                      <div className="absolute top-full right-2 -mt-1 border-4 border-transparent border-t-zinc-900" />
                     </div>
                   </div>
                 </li>
@@ -334,19 +334,19 @@ export function PricingSection({ isHomepage = false, initialPlans }: { isHomepag
                   </div>
                   <div className="relative group/info cursor-pointer inline-flex items-center">
                     <Info className={`w-4 h-4 transition-colors ${isPop ? 'text-zinc-800 hover:text-black' : 'text-muted-foreground hover:text-foreground'}`} />
-                    <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 opacity-0 invisible group-hover/info:opacity-100 group-hover/info:visible transition-all duration-200 z-50 w-64 p-3 bg-zinc-900 text-zinc-100 text-xs rounded-xl shadow-2xl border border-zinc-800 pointer-events-none text-left font-normal leading-relaxed">
+                    <div className="absolute right-0 bottom-full mb-2 opacity-0 invisible group-hover/info:opacity-100 group-hover/info:visible transition-all duration-200 z-50 w-64 p-3 bg-zinc-900 text-zinc-100 text-xs rounded-xl shadow-2xl border border-zinc-800 pointer-events-none text-left font-normal leading-relaxed">
                       {language === 'en' ? (
                         <>
-                          <strong className="block text-white mb-1 font-semibold">💬 Monthly Outbound Messages ({plan.messageQuota === -1 ? 'Unlimited' : formatNumber(plan.messageQuota)})</strong>
-                          Only your <strong className="text-emerald-400">outbound replies</strong> count (agent + AI). Customers can message you freely — unlimited inbound. This quota covers replies sent via WhatsApp, Messenger, Instagram & Broadcasts.
+                          <strong className="block text-white mb-1 font-semibold">💬 Monthly Agent Messages & Broadcasts ({plan.messageQuota === -1 ? 'Unlimited' : formatNumber(plan.messageQuota)})</strong>
+                          Dedicated for your <strong className="text-emerald-400">human team members</strong> to reply in the Live Inbox and send bulk WhatsApp marketing broadcasts. <strong className="text-emerald-400">Independent Pool:</strong> Automated AI replies do NOT consume this quota!
                         </>
                       ) : (
                         <>
-                          <strong className="block text-white mb-1 font-semibold">💬 মাসিক আউটবাউন্ড মেসেজ ({plan.messageQuota === -1 ? 'আনলিমিটেড' : formatNumber(plan.messageQuota)})</strong>
-                          শুধু আপনার <strong className="text-emerald-400">পাঠানো (Outbound)</strong> রিপ্লাই গণনা হয় — এজেন্ট ও AI উত্তর মিলিয়ে। কাস্টমার যত ইচ্ছা মেসেজ করতে পারবে, তাতে কোটা খরচ হয় না। WhatsApp, Messenger, Instagram ও Broadcast মিলে মোট {plan.messageQuota === -1 ? 'আনলিমিটেড' : formatNumber(plan.messageQuota)}টি উত্তর পাঠানো যাবে।
+                          <strong className="block text-white mb-1 font-semibold">💬 মাসিক এজেন্ট মেসেজ ও ব্রডকাস্ট ({plan.messageQuota === -1 ? 'আনলিমিটেড' : formatNumber(plan.messageQuota)})</strong>
+                          আপনার টিমের <strong className="text-emerald-400">হিউম্যান এজেন্টদের</strong> ইনবক্স রিপ্লাই এবং হোয়াটসঅ্যাপ ব্রডকাস্টের জন্য নির্ধারিত। <strong className="text-emerald-400">স্বতন্ত্র কোটা:</strong> এআই-এর উত্তরে এই মেসেজ কোটা কাটা যায় না!
                         </>
                       )}
-                      <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-zinc-900" />
+                      <div className="absolute top-full right-2 -mt-1 border-4 border-transparent border-t-zinc-900" />
                     </div>
                   </div>
                 </li>
@@ -362,19 +362,19 @@ export function PricingSection({ isHomepage = false, initialPlans }: { isHomepag
                   </div>
                   <div className="relative group/info cursor-pointer inline-flex items-center">
                     <Info className={`w-4 h-4 transition-colors ${isPop ? 'text-zinc-800 hover:text-black' : 'text-muted-foreground hover:text-foreground'}`} />
-                    <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 opacity-0 invisible group-hover/info:opacity-100 group-hover/info:visible transition-all duration-200 z-50 w-64 p-3 bg-zinc-900 text-zinc-100 text-xs rounded-xl shadow-2xl border border-zinc-800 pointer-events-none text-left font-normal leading-relaxed">
+                    <div className="absolute right-0 bottom-full mb-2 opacity-0 invisible group-hover/info:opacity-100 group-hover/info:visible transition-all duration-200 z-50 w-64 p-3 bg-zinc-900 text-zinc-100 text-xs rounded-xl shadow-2xl border border-zinc-800 pointer-events-none text-left font-normal leading-relaxed">
                       {language === 'en' ? (
                         <>
-                          <strong className="block text-white mb-1 font-semibold">🤖 AI Auto-Responses ({plan.aiQuota === -1 ? 'Unlimited' : formatNumber(plan.aiQuota)})</strong>
-                          AI Automation: Number of automated customer replies & product recommendations generated by AI per month.
+                          <strong className="block text-white mb-1 font-semibold">🤖 Automated AI Responses ({plan.aiQuota === -1 ? 'Unlimited' : formatNumber(plan.aiQuota)})</strong>
+                          Dedicated AI Automation: Total automated 24/7 customer replies, product recommendations & order processing. This is a 100% separate quota pool from your agent messages.
                         </>
                       ) : (
                         <>
-                          <strong className="block text-white mb-1 font-semibold">🤖 এআই রেসপন্স ({plan.aiQuota === -1 ? 'আনলিমিটেড' : formatNumber(plan.aiQuota)})</strong>
-                          এআই অটোমেশন: প্রতি মাসে কাস্টমারের প্রশ্নের উত্তর ও সেলস হ্যান্ডেল করতে এআই মোট {plan.aiQuota === -1 ? 'আনলিমিটেড' : formatNumber(plan.aiQuota)}টি স্বয়ংক্রিয় রিপ্লাই দিতে পারবে।
+                          <strong className="block text-white mb-1 font-semibold">🤖 স্বয়ংক্রিয় এআই রেসপন্স ({plan.aiQuota === -1 ? 'আনলিমিটেড' : formatNumber(plan.aiQuota)})</strong>
+                          ডেডিকেটেড এআই কোটা: কাস্টমারদের ২৪/৭ স্বয়ংক্রিয় উত্তর, প্রোডাক্ট ক্যাটালগ রিকমেন্ডেশন ও অর্ডার নিতে মোট {plan.aiQuota === -1 ? 'আনলিমিটেড' : formatNumber(plan.aiQuota)}টি এআই রিপ্লাই। এটি মূল এজেন্ট মেসেজ কোটা থেকে সম্পূর্ণ আলাদা।
                         </>
                       )}
-                      <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-zinc-900" />
+                      <div className="absolute top-full right-2 -mt-1 border-4 border-transparent border-t-zinc-900" />
                     </div>
                   </div>
                 </li>

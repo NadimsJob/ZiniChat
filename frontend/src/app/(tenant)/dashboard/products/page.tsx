@@ -470,7 +470,7 @@ export default function ProductsPage() {
                 className="px-3 py-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-xl text-[12px] font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
               >
                 <Sparkles className="w-4 h-4 text-primary" />
-                <span>Dynamic Fields</span>
+                <span className="hidden sm:inline">Dynamic Fields</span>
                 {customFieldDefs.length > 0 && (
                   <span className="px-1.5 py-0.2 bg-primary text-white text-[10px] font-extrabold rounded-full">
                     {customFieldDefs.length}
@@ -1341,7 +1341,7 @@ export default function ProductsPage() {
 
       {/* ── PERMANENT DYNAMIC FIELDS MANAGEMENT MODAL ───────────── */}
       {isCustomFieldsModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-[100] animate-in fade-in duration-200">
           <div className="bg-surface border border-border rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
             {/* Modal Header */}
             <div className="p-4 border-b border-border flex items-center justify-between bg-muted/30">
@@ -1486,7 +1486,7 @@ export default function ProductsPage() {
       {activeLightboxImage && (
         <div
           onClick={() => setActiveLightboxImage(null)}
-          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
+          className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
         >
           <div
             onClick={(e) => e.stopPropagation()}
