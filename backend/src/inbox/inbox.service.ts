@@ -1217,6 +1217,8 @@ export class InboxService implements OnModuleInit {
     channelConnectionId?: string;
     externalContactId: string;
     contactName?: string;
+    phone?: string;
+    lid?: string;
     messageType: string;
     content: any;
     externalMessageId: string;
@@ -1246,6 +1248,24 @@ export class InboxService implements OnModuleInit {
     const strippedId = cleanId.replace(/^\+/, '');
     const withPlusId = `+${strippedId}`;
 
+    const isLid = data.channel === 'whatsapp' && (
+      !!(data as any).lid || 
+      cleanId.startsWith('lid:') || 
+      /^\d{15,}$/.test(strippedId) ||
+      (data.externalContactId || '').includes('@lid')
+    );
+    const cleanLidNumber = (data as any).lid || (cleanId.startsWith('lid:') ? cleanId.replace('lid:', '') : (isLid ? strippedId : null));
+
+    // Determine verified phone number (never allow 15+ digit LID numbers as phone)
+    let phoneToSet: string | undefined = undefined;
+    if ((data as any).phone && !/^\d{15,}$/.test((data as any).phone)) {
+      phoneToSet = (data as any).phone.replace(/\D/g, '');
+    } else if (data.channel === 'whatsapp' && !isLid && /^\d{8,14}$/.test(strippedId)) {
+      phoneToSet = strippedId;
+    }
+
+    const lidTag = cleanLidNumber ? `lid:${cleanLidNumber}` : null;
+
     let contact = await this.prisma.contact.findFirst({
       where: { 
         tenantId: data.tenantId, 
@@ -1256,7 +1276,17 @@ export class InboxService implements OnModuleInit {
           { externalContactId: withPlusId },
           { tags: { has: `ext:${cleanId}` } },
           { tags: { has: `ext:${strippedId}` } },
-          ...(data.channel === 'whatsapp' ? [
+          ...(lidTag ? [
+            { tags: { has: lidTag } },
+            { externalContactId: cleanLidNumber! },
+            { phone: cleanLidNumber! }
+          ] : []),
+          ...(phoneToSet ? [
+            { phone: phoneToSet },
+            { phone: `+${phoneToSet}` },
+            { externalContactId: phoneToSet }
+          ] : []),
+          ...(!isLid && data.channel === 'whatsapp' ? [
             { phone: cleanId },
             { phone: strippedId },
             { phone: withPlusId }
@@ -1271,37 +1301,58 @@ export class InboxService implements OnModuleInit {
         orderBy: { order: 'asc' }
       });
 
+      const finalName = data.contactName && data.contactName !== cleanId && !/^\d{15,}$/.test(data.contactName)
+        ? data.contactName
+        : (phoneToSet ? `+${phoneToSet}` : (data.channel === 'whatsapp' ? 'WhatsApp User' : cleanId));
+
       contact = await this.prisma.contact.create({
         data: {
           tenantId: data.tenantId,
           channel: data.channel,
-          externalContactId: cleanId,
-          name: isOutboundFromPhone ? cleanId : (data.contactName || cleanId),
-          phone: data.channel === 'whatsapp' ? strippedId : undefined,
+          externalContactId: phoneToSet || cleanId,
+          name: isOutboundFromPhone ? (phoneToSet ? `+${phoneToSet}` : cleanId) : finalName,
+          phone: phoneToSet || undefined,
           lastSeenAt: data.timestamp,
-          stageId: firstStage?.id || null
+          stageId: firstStage?.id || null,
+          tags: lidTag ? [lidTag] : []
         }
       });
     } else {
       const isGenericCurrent = !contact.name || 
         contact.name === 'Messenger User' || 
         contact.name === 'Instagram User' || 
+        contact.name === 'WhatsApp User' ||
+        /^\d{15,}$/.test(contact.name) ||
         contact.name === contact.externalContactId;
       const isNewNameReal = data.contactName && 
         data.contactName !== data.externalContactId && 
         data.contactName !== 'Messenger User' && 
-        data.contactName !== 'Instagram User';
+        data.contactName !== 'Instagram User' &&
+        data.contactName !== 'WhatsApp User' &&
+        !/^\d{15,}$/.test(data.contactName);
 
+      const fallbackName = phoneToSet ? `+${phoneToSet}` : contact.name;
       const newName = (!isOutboundFromPhone && isNewNameReal)
                         ? data.contactName 
-                        : (isGenericCurrent && isNewNameReal ? data.contactName : contact.name);
+                        : (isGenericCurrent && isNewNameReal ? data.contactName : (isGenericCurrent ? fallbackName : contact.name));
+
+      // Fix bogus LID phone if present
+      const existingPhoneIsLid = contact.phone && /^\d{15,}$/.test(contact.phone);
+      const targetPhone = phoneToSet || (existingPhoneIsLid ? null : contact.phone);
+
+      const tagsToUpdate = contact.tags || [];
+      if (lidTag && !tagsToUpdate.includes(lidTag)) {
+        tagsToUpdate.push(lidTag);
+      }
 
       contact = await this.prisma.contact.update({
         where: { id: contact.id },
         data: { 
           lastSeenAt: data.timestamp, 
           name: newName,
-          phone: data.channel === 'whatsapp' && !contact.phone ? strippedId : contact.phone
+          phone: targetPhone,
+          externalContactId: (contact.externalContactId && /^\d{15,}$/.test(contact.externalContactId) && phoneToSet) ? phoneToSet : contact.externalContactId,
+          tags: tagsToUpdate
         }
       });
     }

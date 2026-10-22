@@ -11,16 +11,59 @@ import * as fs from 'fs';
 import * as path from 'path';
 import sharp from 'sharp';
 function unwrapBaileysMessage(raw: any): any {
-  if (!raw) return null;
-  if (raw.ephemeralMessage?.message) return unwrapBaileysMessage(raw.ephemeralMessage.message);
-  if (raw.viewOnceMessage?.message) return unwrapBaileysMessage(raw.viewOnceMessage.message);
-  if (raw.viewOnceMessageV2?.message) return unwrapBaileysMessage(raw.viewOnceMessageV2.message);
-  if (raw.viewOnceMessageV2Extension?.message) return unwrapBaileysMessage(raw.viewOnceMessageV2Extension.message);
-  if (raw.documentWithCaptionMessage?.message) return unwrapBaileysMessage(raw.documentWithCaptionMessage.message);
-  if (raw.editedMessage?.message?.protocolMessage?.editedMessage) {
-    return unwrapBaileysMessage(raw.editedMessage.message.protocolMessage.editedMessage);
+  if (!raw || typeof raw !== 'object') return null;
+  let current = raw;
+  let depth = 0;
+  while (current && typeof current === 'object' && depth < 15) {
+    depth++;
+    if (current.ephemeralMessage?.message) { current = current.ephemeralMessage.message; continue; }
+    if (current.viewOnceMessage?.message) { current = current.viewOnceMessage.message; continue; }
+    if (current.viewOnceMessageV2?.message) { current = current.viewOnceMessageV2.message; continue; }
+    if (current.viewOnceMessageV2Extension?.message) { current = current.viewOnceMessageV2Extension.message; continue; }
+    if (current.documentWithCaptionMessage?.message) { current = current.documentWithCaptionMessage.message; continue; }
+    if (current.deviceSentMessage?.message) { current = current.deviceSentMessage.message; continue; }
+    if (current.botInvokeMessage?.message) { current = current.botInvokeMessage.message; continue; }
+    if (current.associatedChildMessage?.message) { current = current.associatedChildMessage.message; continue; }
+    if (current.keepInChatMessage?.message) { current = current.keepInChatMessage.message; continue; }
+    if (current.statusQuotedMessage?.message) { current = current.statusQuotedMessage.message; continue; }
+    if (current.editedMessage?.message?.protocolMessage?.editedMessage) {
+      current = current.editedMessage.message.protocolMessage.editedMessage;
+      continue;
+    }
+    if (current.editedMessage?.message) { current = current.editedMessage.message; continue; }
+    if (current.protocolMessage?.editedMessage) { current = current.protocolMessage.editedMessage; continue; }
+    break;
   }
-  return raw;
+  return current;
+}
+
+function extractAnyTextFromPayload(obj: any, maxDepth = 4): string {
+  if (!obj || typeof obj !== 'object' || maxDepth <= 0) return '';
+  const priorityKeys = [
+    'conversation', 'text', 'caption', 'body', 'title', 'selectedDisplayText',
+    'selectedButtonId', 'selectedRowId', 'displayName', 'description', 'contentText',
+    'name', 'vcard', 'message', 'paramsJson'
+  ];
+  for (const k of priorityKeys) {
+    if (typeof obj[k] === 'string' && obj[k].trim()) {
+      if (k === 'paramsJson') {
+        try {
+          const parsed = JSON.parse(obj[k]);
+          const innerText = parsed.title || parsed.display_text || parsed.id || parsed.name;
+          if (innerText) return String(innerText).trim();
+        } catch {}
+      } else {
+        return obj[k].trim();
+      }
+    }
+  }
+  for (const key of Object.keys(obj)) {
+    if (typeof obj[key] === 'object' && obj[key] !== null) {
+      const found = extractAnyTextFromPayload(obj[key], maxDepth - 1);
+      if (found) return found;
+    }
+  }
+  return '';
 }
 
 @Injectable()
@@ -30,6 +73,109 @@ export class WhatsappWebService implements OnModuleInit {
   // Cache connectionId per tenant to avoid race condition on first message
   private connectionIds: Map<string, string> = new Map();
   private reconnectAttempts: Map<string, number> = new Map();
+  private lidToPnMap: Map<string, Map<string, string>> = new Map();
+
+  loadLidMappingsForTenant(tenantId: string): Map<string, string> {
+    let tenantMap = this.lidToPnMap.get(tenantId);
+    if (!tenantMap) {
+      tenantMap = new Map<string, string>();
+      this.lidToPnMap.set(tenantId, tenantMap);
+    }
+    try {
+      const sessionDir = path.join(process.cwd(), 'sessions', 'whatsapp_web', tenantId);
+      if (fs.existsSync(sessionDir)) {
+        const files = fs.readdirSync(sessionDir);
+        for (const file of files) {
+          if (file.startsWith('lid-mapping-') && file.endsWith('.json')) {
+            try {
+              const filePath = path.join(sessionDir, file);
+              const content = fs.readFileSync(filePath, 'utf8').trim();
+              const rawVal = JSON.parse(content);
+              if (file.endsWith('_reverse.json')) {
+                const lid = file.replace('lid-mapping-', '').replace('_reverse.json', '').replace(/\D/g, '');
+                const pn = String(rawVal).replace(/\D/g, '');
+                if (lid && pn) tenantMap.set(lid, pn);
+              } else {
+                const pn = file.replace('lid-mapping-', '').replace('.json', '').replace(/\D/g, '');
+                const lid = String(rawVal).replace(/\D/g, '');
+                if (lid && pn) tenantMap.set(lid, pn);
+              }
+            } catch {}
+          }
+        }
+      }
+    } catch (err: any) {
+      this.logger.warn(`Failed to scan lid-mapping files for ${tenantId}: ${err.message}`);
+    }
+    return tenantMap;
+  }
+
+  async resolvePnFromLid(tenantId: string, lid: string, sock?: any): Promise<string | null> {
+    const cleanLid = (lid || '').replace(/\D/g, '');
+    if (!cleanLid) return null;
+
+    let tenantMap = this.lidToPnMap.get(tenantId);
+    if (!tenantMap || tenantMap.size === 0) {
+      tenantMap = this.loadLidMappingsForTenant(tenantId);
+    }
+    if (tenantMap.has(cleanLid)) {
+      return tenantMap.get(cleanLid)!;
+    }
+
+    if (sock?.signalRepository?.lidMapping) {
+      try {
+        const lidJid = `${cleanLid}@lid`;
+        const pnJid = await sock.signalRepository.lidMapping.getPNForLID(lidJid);
+        if (pnJid) {
+          const pn = pnJid.split('@')[0].split(':')[0].replace(/\D/g, '');
+          if (pn) {
+            tenantMap.set(cleanLid, pn);
+            return pn;
+          }
+        }
+      } catch {}
+    }
+
+    tenantMap = this.loadLidMappingsForTenant(tenantId);
+    return tenantMap.get(cleanLid) || null;
+  }
+
+  async healLidContact(tenantId: string, lid: string, pn: string) {
+    try {
+      const cleanLid = lid.replace(/\D/g, '');
+      const cleanPn = pn.replace(/\D/g, '');
+      if (!cleanLid || !cleanPn) return;
+
+      const contact = await this.prisma.contact.findFirst({
+        where: {
+          tenantId,
+          channel: 'whatsapp',
+          OR: [
+            { externalContactId: cleanLid },
+            { phone: cleanLid },
+            { tags: { has: `lid:${cleanLid}` } }
+          ]
+        }
+      });
+
+      if (contact && (!contact.phone || contact.phone === cleanLid || contact.phone.length > 14)) {
+        const isLidName = !contact.name || contact.name === cleanLid || contact.name === 'WhatsApp User' || /^\d{15,}$/.test(contact.name);
+        const updated = await this.prisma.contact.update({
+          where: { id: contact.id },
+          data: {
+            phone: cleanPn,
+            externalContactId: cleanPn,
+            name: isLidName ? `+${cleanPn}` : contact.name,
+            tags: contact.tags.includes(`lid:${cleanLid}`) ? contact.tags : [...contact.tags, `lid:${cleanLid}`]
+          }
+        });
+        this.inboxGateway.broadcastToTenant(tenantId, 'contact:updated', updated);
+        this.logger.log(`[LID Resolution] Auto-healed contact ${contact.id}: LID ${cleanLid} -> Phone ${cleanPn}`);
+      }
+    } catch (e: any) {
+      this.logger.debug(`Failed to heal LID contact for ${lid}: ${e.message}`);
+    }
+  }
 
   private debugLog(msg: string) {
     fs.appendFileSync('wa-debug.log', `[${new Date().toISOString()}] ${msg}\n`);
@@ -160,8 +306,27 @@ export class WhatsappWebService implements OnModuleInit {
     });
 
     this.sockets.set(tenantId, sock);
+    this.loadLidMappingsForTenant(tenantId);
 
     sock.ev.on('creds.update', saveCreds);
+
+    sock.ev.on('lid-mapping.update' as any, async (mapping: any) => {
+      try {
+        const pairs = Array.isArray(mapping) ? mapping : [mapping];
+        const tenantMap = this.lidToPnMap.get(tenantId) || this.loadLidMappingsForTenant(tenantId);
+        for (const pair of pairs) {
+          if (!pair?.lid || !pair?.pn) continue;
+          const cleanLid = String(pair.lid).split('@')[0].split(':')[0].replace(/\D/g, '');
+          const cleanPn = String(pair.pn).split('@')[0].split(':')[0].replace(/\D/g, '');
+          if (cleanLid && cleanPn) {
+            tenantMap.set(cleanLid, cleanPn);
+            this.healLidContact(tenantId, cleanLid, cleanPn).catch(() => {});
+          }
+        }
+      } catch (err: any) {
+        this.logger.debug(`Error handling lid-mapping.update for ${tenantId}: ${err.message}`);
+      }
+    });
 
     sock.ev.on('connection.update', (update) => {
       const { connection, lastDisconnect, qr } = update;
@@ -325,6 +490,12 @@ export class WhatsappWebService implements OnModuleInit {
         const messageContent = unwrapBaileysMessage(msg.message);
         if (!messageContent) continue;
 
+        // Skip completely empty message payload stubs to avoid phantom [Message] records
+        if (typeof messageContent === 'object' && Object.keys(messageContent).length === 0) {
+          this.debugLog(`Skipping empty message object for msg ${msg.key.id}`);
+          continue;
+        }
+
         // Ignore protocol control messages (e.g. revokes, key syncs, ephemeral timer updates)
         if (messageContent.protocolMessage && !messageContent.protocolMessage.editedMessage) {
           continue;
@@ -335,8 +506,50 @@ export class WhatsappWebService implements OnModuleInit {
           continue;
         }
 
-        const externalContactId = isGroup ? remoteJid : remoteJid.split('@')[0];
-        const contactName = msg.pushName || externalContactId;
+        // ── Robust WhatsApp LID & Phone Number Identity Resolution ────────────────
+        const isLid = !isGroup && (remoteJid.includes('@lid') || /^\d{15,}$/.test(remoteJid.split('@')[0]));
+        const rawUser = isGroup ? remoteJid : remoteJid.split('@')[0].split(':')[0];
+
+        let resolvedPhone: string | undefined = undefined;
+        let lidNumber: string | undefined = undefined;
+
+        if (isLid) {
+          lidNumber = rawUser.replace(/\D/g, '');
+          // 1. Check alternate standard phone JID if provided by Baileys
+          const alt = msg.key.remoteJidAlt || msg.key.participantAlt;
+          if (alt && (alt.includes('@s.whatsapp.net') || alt.includes('@c.us'))) {
+            resolvedPhone = alt.split('@')[0].split(':')[0].replace(/\D/g, '');
+          }
+          // 2. Query in-memory session cache & SignalRepository LID store
+          if (!resolvedPhone) {
+            resolvedPhone = (await this.resolvePnFromLid(tenantId, lidNumber, sock)) || undefined;
+          }
+        } else if (!isGroup) {
+          resolvedPhone = rawUser.replace(/\D/g, '');
+        }
+
+        const externalContactId = isGroup 
+          ? remoteJid 
+          : (resolvedPhone || (lidNumber ? `lid:${lidNumber}` : rawUser));
+
+        // Contact Name resolution:
+        // 1. msg.pushName if valid and not equal to raw LID digits
+        // 2. msg.verifiedBizName
+        // 3. Formatted phone number (+880...) if resolved
+        // 4. Fallback 'WhatsApp User' (never raw 15-digit internal LID)
+        let contactName = '';
+        const rawPushName = msg.pushName?.trim();
+        const isPushNameValid = rawPushName && rawPushName !== lidNumber && rawPushName !== rawUser && !/^\d{15,}$/.test(rawPushName);
+
+        if (isPushNameValid) {
+          contactName = rawPushName;
+        } else if ((msg as any).verifiedBizName) {
+          contactName = (msg as any).verifiedBizName;
+        } else if (resolvedPhone) {
+          contactName = `+${resolvedPhone}`;
+        } else {
+          contactName = isGroup ? 'WhatsApp Group' : 'WhatsApp User';
+        }
         
         let messageType = 'text';
         let contentStr = '';
@@ -348,11 +561,15 @@ export class WhatsappWebService implements OnModuleInit {
 
         if (messageContent.conversation) {
           contentStr = messageContent.conversation;
-        } else if (messageContent.extendedTextMessage?.text) {
-          contentStr = messageContent.extendedTextMessage.text;
+        } else if (messageContent.extendedTextMessage) {
+          contentStr = messageContent.extendedTextMessage.text || '';
           const contextInfo = messageContent.extendedTextMessage.contextInfo;
           if (contextInfo) {
             quotedMsg = await this.resolveQuotedMessage(contextInfo);
+            if (!contentStr && contextInfo.externalAdReply) {
+              const ad = contextInfo.externalAdReply;
+              contentStr = `📢 [Ad Inquiry]: ${ad.title || ad.body || 'Meta Ad'}`;
+            }
           }
         } else if (messageContent.imageMessage) {
           messageType = 'image';
@@ -360,7 +577,6 @@ export class WhatsappWebService implements OnModuleInit {
           if (messageContent.imageMessage.contextInfo) {
             quotedMsg = await this.resolveQuotedMessage(messageContent.imageMessage.contextInfo);
           }
-          // Immediately preserve inline thumbnail if available from Baileys
           if (messageContent.imageMessage.jpegThumbnail) {
             try {
               thumbnail = Buffer.from(messageContent.imageMessage.jpegThumbnail).toString('base64');
@@ -377,7 +593,6 @@ export class WhatsappWebService implements OnModuleInit {
             if (buffer && buffer.length > 0) {
               thumbnail = buffer.toString('base64');
 
-              // Compress and save high-clarity media file to disk (~10-30KB)
               const uploadPath = path.join(process.cwd(), 'uploads', 'tenants', tenantId);
               if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true });
               const fileName = `wa_${Date.now()}_${Math.round(Math.random() * 1E6)}.webp`;
@@ -385,16 +600,13 @@ export class WhatsappWebService implements OnModuleInit {
 
               let compressedBuffer = buffer;
               try {
-                // Stage 1: Resize to max 720px
                 let sharpInstance = sharp(buffer)
                   .resize({ width: 720, height: 720, fit: 'inside', withoutEnlargement: true });
 
-                // Stage 2: Compress to WebP targeting 10-25KB
                 compressedBuffer = await sharpInstance
                   .webp({ quality: 42, effort: 6, smartSubsample: true })
                   .toBuffer();
 
-                // Stage 3: Adaptive quality reduction if still over 25KB
                 if (compressedBuffer.length > 25 * 1024) {
                   let quality = 35;
                   while (compressedBuffer.length > 20 * 1024 && quality >= 20) {
@@ -417,9 +629,11 @@ export class WhatsappWebService implements OnModuleInit {
           } catch (err) {
             this.logger.error(`Failed to download image media for ${tenantId}: ${err.message}`);
           }
-        } else if (messageContent.videoMessage) {
+        } else if (messageContent.videoMessage || messageContent.ptvMessage) {
           messageType = 'video';
-          contentStr = messageContent.videoMessage.caption || '[Video]';
+          const isPtv = !!messageContent.ptvMessage;
+          const vidObj = messageContent.videoMessage || messageContent.ptvMessage;
+          contentStr = vidObj.caption || (isPtv ? '🎥 [Video Note]' : '[Video]');
           try {
             const buffer = await downloadMediaMessage(effectiveMsg as any, 'buffer', {});
             const uploadPath = path.join(process.cwd(), 'uploads', 'tenants', tenantId);
@@ -460,7 +674,7 @@ export class WhatsappWebService implements OnModuleInit {
           } catch (err) {
             this.logger.error(`Failed to download audio media for ${tenantId}: ${err.message}`);
           }
-        } else if (messageContent.stickerMessage) {
+        } else if (messageContent.stickerMessage || messageContent.lottieStickerMessage) {
           messageType = 'image';
           contentStr = '🏷️ [Sticker]';
           try {
@@ -495,7 +709,22 @@ export class WhatsappWebService implements OnModuleInit {
           contentStr = messageContent.listResponseMessage.title || messageContent.listResponseMessage.singleSelectReply?.selectedRowId || '[Option Selected]';
         } else if (messageContent.interactiveResponseMessage) {
           messageType = 'text';
-          contentStr = messageContent.interactiveResponseMessage.body?.text || '[Interactive Response]';
+          let buttonText = messageContent.interactiveResponseMessage.body?.text;
+          const nativeFlow = messageContent.interactiveResponseMessage.nativeFlowResponseMessage;
+          if (!buttonText && nativeFlow) {
+            if (nativeFlow.paramsJson) {
+              try {
+                const parsed = JSON.parse(nativeFlow.paramsJson);
+                buttonText = parsed.title || parsed.display_text || parsed.id || parsed.name;
+              } catch {
+                buttonText = nativeFlow.paramsJson;
+              }
+            }
+            if (!buttonText && nativeFlow.name) {
+              buttonText = nativeFlow.name;
+            }
+          }
+          contentStr = buttonText || '[Interactive Response]';
         } else if (messageContent.templateMessage || messageContent.buttonsMessage || messageContent.listMessage || messageContent.interactiveMessage) {
           messageType = 'text';
           contentStr = messageContent.templateMessage?.hydratedTemplate?.hydratedContentText ||
@@ -503,17 +732,48 @@ export class WhatsappWebService implements OnModuleInit {
             messageContent.buttonsMessage?.contentText ||
             messageContent.listMessage?.description ||
             messageContent.interactiveMessage?.body?.text ||
+            messageContent.interactiveMessage?.header?.title ||
+            messageContent.interactiveMessage?.footer?.text ||
             '[Interactive Message]';
+        } else if (messageContent.productMessage) {
+          messageType = 'text';
+          const prod = messageContent.productMessage.product;
+          const title = prod?.title || prod?.productName || 'Catalog Product';
+          const price = prod?.priceAmount1000 ? `${(prod.priceAmount1000 / 1000).toFixed(2)} ${prod.currencyCode || 'BDT'}` : '';
+          contentStr = `🛍️ [Product Inquiry]: ${title}${price ? ` (${price})` : ''}`;
         } else if (messageContent.orderMessage) {
           messageType = 'text';
-          contentStr = `🛒 Order: ${messageContent.orderMessage.title || 'Catalog Order'}`;
-        } else if (messageContent.pollCreationMessage || messageContent.pollUpdateMessage) {
+          const order = messageContent.orderMessage;
+          const title = order.orderTitle || order.title || 'Catalog Order';
+          const count = order.itemCount ? ` (${order.itemCount} items)` : '';
+          contentStr = `🛒 [Order]: ${title}${count}`;
+        } else if (messageContent.pollCreationMessage || messageContent.pollCreationMessageV2 || messageContent.pollCreationMessageV3 || messageContent.pollCreationMessageV4 || messageContent.pollCreationMessageV5 || messageContent.pollUpdateMessage) {
           messageType = 'text';
-          contentStr = `📊 Poll: ${messageContent.pollCreationMessage?.name || 'Poll'}`;
+          const poll = messageContent.pollCreationMessage || messageContent.pollCreationMessageV2 || messageContent.pollCreationMessageV3 || messageContent.pollCreationMessageV4 || messageContent.pollCreationMessageV5;
+          contentStr = `📊 Poll: ${poll?.name || 'Poll'}`;
+        } else if (messageContent.groupInviteMessage) {
+          messageType = 'text';
+          contentStr = `👥 [Group Invite]: ${messageContent.groupInviteMessage.groupName || 'WhatsApp Group'}`;
+        } else if (messageContent.eventMessage) {
+          messageType = 'text';
+          contentStr = `📅 [Event]: ${messageContent.eventMessage.name || 'Event'}`;
+        } else if (messageContent.requestPhoneNumberMessage) {
+          messageType = 'text';
+          contentStr = '📱 [Phone Number Shared]';
         } else {
-          // Dynamic inspection fallback before generic string
-          const possibleText = messageContent.text || messageContent.caption || messageContent.body || messageContent.title;
-          contentStr = typeof possibleText === 'string' && possibleText.trim() ? possibleText : '[Message]';
+          const extracted = extractAnyTextFromPayload(messageContent);
+          if (extracted) {
+            contentStr = extracted;
+          } else {
+            const payloadKeys = Object.keys(messageContent).filter(k => k !== 'messageContextInfo');
+            if (payloadKeys.length > 0) {
+              const topKey = payloadKeys[0].replace(/Message$/, '');
+              contentStr = `[${topKey.charAt(0).toUpperCase() + topKey.slice(1)}]`;
+            } else {
+              this.debugLog(`Skipping unhandled empty message payload: ${msg.key.id}`);
+              continue;
+            }
+          }
         }
 
         try {
@@ -523,6 +783,8 @@ export class WhatsappWebService implements OnModuleInit {
             channelConnectionId,
             externalContactId,
             contactName,
+            phone: resolvedPhone,
+            lid: lidNumber,
             messageType,
             direction: isFromMe ? 'outbound' : 'inbound',
             content: { 
@@ -606,12 +868,21 @@ export class WhatsappWebService implements OnModuleInit {
         waits++;
       }
     }
-    // Clean recipient phone number (strip LID, device suffix :1, @s.whatsapp.net, +, etc.)
+    // Clean recipient identifier (strip device suffix :1, @s.whatsapp.net, +, etc.)
     const cleanNumber = to.split('@')[0].split(':')[0].replace(/\D/g, '');
     if (!cleanNumber) {
       throw new Error(`Invalid WhatsApp recipient number: ${to}`);
     }
-    const jid = `${cleanNumber}@s.whatsapp.net`;
+
+    let jid: string;
+    if (to.includes('@g.us')) {
+      jid = to;
+    } else if (to.includes('@lid') || /^\d{15,}$/.test(cleanNumber)) {
+      const mappedPn = await this.resolvePnFromLid(tenantId, cleanNumber, sock);
+      jid = mappedPn ? `${mappedPn}@s.whatsapp.net` : `${cleanNumber}@lid`;
+    } else {
+      jid = `${cleanNumber}@s.whatsapp.net`;
+    }
     this.debugLog(`Sending WhatsApp message via Baileys to ${jid}`);
     
     const doSend = async (targetSock: any) => {
@@ -659,7 +930,15 @@ export class WhatsappWebService implements OnModuleInit {
     // Clean recipient phone number
     const cleanNumber = jid.split('@')[0].split(':')[0].replace(/\D/g, '');
     if (!cleanNumber) return;
-    const remoteJid = `${cleanNumber}@s.whatsapp.net`;
+    let remoteJid: string;
+    if (jid.includes('@g.us')) {
+      remoteJid = jid;
+    } else if (jid.includes('@lid') || /^\d{15,}$/.test(cleanNumber)) {
+      const mappedPn = await this.resolvePnFromLid(tenantId, cleanNumber, sock);
+      remoteJid = mappedPn ? `${mappedPn}@s.whatsapp.net` : `${cleanNumber}@lid`;
+    } else {
+      remoteJid = `${cleanNumber}@s.whatsapp.net`;
+    }
     
     const keys = messageIds.map(id => ({
       remoteJid,

@@ -21,6 +21,43 @@ import { ChannelBrandIcon, FacebookCommentBadgeIcon } from '@/components/BrandIc
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+const getCleanContactDisplayName = (contact?: { name?: string | null; phone?: string | null; externalContactId?: string | null } | null) => {
+  if (!contact) return 'Customer';
+  const name = contact.name?.trim();
+  const phone = contact.phone?.trim();
+  const extId = contact.externalContactId?.trim();
+
+  if (name && name !== 'WhatsApp User' && name !== 'Messenger User' && name !== 'Instagram User' && !/^\d{15,}$/.test(name) && !name.startsWith('lid:')) {
+    return name;
+  }
+  if (phone && !/^\d{15,}$/.test(phone)) {
+    return phone.startsWith('+') ? phone : `+${phone}`;
+  }
+  if (extId && !/^\d{15,}$/.test(extId) && !extId.startsWith('lid:') && /^\d{8,14}$/.test(extId)) {
+    return `+${extId}`;
+  }
+  return 'WhatsApp User';
+};
+
+const getCleanContactSubLabel = (contact?: { phone?: string | null; externalContactId?: string | null } | null) => {
+  if (!contact) return '';
+  const phone = contact.phone?.trim();
+  const extId = contact.externalContactId?.trim();
+  if (phone && !/^\d{15,}$/.test(phone)) {
+    return phone.startsWith('+') ? phone : `+${phone}`;
+  }
+  if (extId && !/^\d{15,}$/.test(extId) && !extId.startsWith('lid:') && /^\d{8,14}$/.test(extId)) {
+    return `+${extId}`;
+  }
+  return '';
+};
+
+const getContactAvatarLetter = (contact?: { name?: string | null; phone?: string | null; externalContactId?: string | null } | null) => {
+  const displayName = getCleanContactDisplayName(contact);
+  const firstChar = displayName.replace(/^\+/, '')[0];
+  return (firstChar || 'C').toUpperCase();
+};
+
 export default function InboxPage() {
   const { language } = useLanguage();
 
@@ -1578,8 +1615,8 @@ export default function InboxPage() {
               if (!searchQuery.trim()) return true;
               const q = searchQuery.toLowerCase().trim();
               
-              const contactName = (conv.contact?.name || '').toLowerCase();
-              const contactPhone = (conv.contact?.phone || conv.contact?.externalContactId || '').toLowerCase();
+              const contactName = (getCleanContactDisplayName(conv.contact) || '').toLowerCase();
+              const contactPhone = (getCleanContactSubLabel(conv.contact) || conv.contact?.phone || '').toLowerCase();
               const contactEmail = (conv.contact?.email || '').toLowerCase();
               const tags = (conv.labels || []).map((l: any) => l.label?.name || '').join(' ').toLowerCase();
 
@@ -1658,13 +1695,13 @@ export default function InboxPage() {
                         {conv.contact?.avatarUrl ? (
                           <img
                             src={conv.contact.avatarUrl}
-                            alt={conv.contact.name || 'Customer'}
+                            alt={getCleanContactDisplayName(conv.contact)}
                             className="w-10 h-10 md:w-8 md:h-8 rounded-full object-cover border border-primary/20"
                             onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
                           />
                         ) : (
                           <div className="w-10 h-10 md:w-8 md:h-8 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-sm md:text-xs border border-primary/20">
-                            {conv.contact?.name ? conv.contact.name[0].toUpperCase() : 'C'}
+                            {getContactAvatarLetter(conv.contact)}
                           </div>
                         )}
                         <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 md:w-3 md:h-3 shrink-0">
@@ -1674,7 +1711,7 @@ export default function InboxPage() {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5 min-w-0">
                           <h4 className="text-sm md:text-xs font-bold text-foreground truncate">
-                            {conv.contact?.name || conv.contact?.phone || 'Customer'}
+                            {getCleanContactDisplayName(conv.contact)}
                           </h4>
                           {conv.isStarred && <Star className="w-3.5 h-3.5 md:w-3 md:h-3 text-amber-500 fill-amber-500 shrink-0" />}
                           {conv.requiresFollowUp && <Flag className="w-3.5 h-3.5 md:w-3 md:h-3 text-red-500 shrink-0" />}
@@ -1934,19 +1971,19 @@ export default function InboxPage() {
                   {activeConv.contact?.avatarUrl ? (
                     <img
                       src={activeConv.contact.avatarUrl}
-                      alt={activeConv.contact.name || 'Customer'}
+                      alt={getCleanContactDisplayName(activeConv.contact)}
                       className="w-9 h-9 md:w-9 md:h-9 rounded-full object-cover border border-primary/20 group-hover:border-primary/60 transition-colors"
                       onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
                     />
                   ) : (
                     <div className="w-9 h-9 md:w-9 md:h-9 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-sm md:text-xs border border-primary/20 shrink-0 group-hover:border-primary/60 transition-colors">
-                      {activeConv.contact?.name ? activeConv.contact.name[0].toUpperCase() : 'C'}
+                      {getContactAvatarLetter(activeConv.contact)}
                     </div>
                   )}
                 </div>
                 <div className="min-w-0 flex-1 text-left">
                   <h3 className="text-sm md:text-xs font-bold text-foreground truncate flex items-center gap-1.5">
-                    <span className="truncate">{activeConv.contact?.name || activeConv.contact?.phone || 'Customer'}</span>
+                    <span className="truncate">{getCleanContactDisplayName(activeConv.contact)}</span>
                     <span className="text-xs md:text-[10px] text-muted-foreground font-normal capitalize shrink-0">({activeConv.channel})</span>
                     {isAiAutoPaused && (
                       <span 
@@ -1971,7 +2008,7 @@ export default function InboxPage() {
                     )}
                   </h3>
                   <p className="text-[11px] md:text-[10px] text-muted-foreground flex items-center gap-2 truncate">
-                    <span className="truncate">{activeConv.contact?.phone ? activeConv.contact.phone : `ID: ${activeConv.contact?.externalContactId || ''}`}</span>
+                    <span className="truncate">{getCleanContactSubLabel(activeConv.contact) || (activeConv.contact?.externalContactId && !activeConv.contact.externalContactId.startsWith('lid:') && !/^\d{15,}$/.test(activeConv.contact.externalContactId) ? `ID: ${activeConv.contact.externalContactId}` : '')}</span>
                     {activeConv.assignedAgent && (
                       <span className="text-primary font-medium shrink-0">· {activeConv.assignedAgent.name}</span>
                     )}
@@ -2801,14 +2838,14 @@ export default function InboxPage() {
                   <ChevronLeft className="w-5 h-5" />
                 </button>
                 <div className="w-8 h-8 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-xs border border-primary/20 shrink-0">
-                  {sidebarConv.contact?.name ? sidebarConv.contact.name[0].toUpperCase() : 'C'}
+                  {getContactAvatarLetter(sidebarConv.contact)}
                 </div>
                 <div className="min-w-0">
                   <h3 className="font-bold text-sm text-foreground truncate">
                     {language === 'en' ? 'CRM Details' : 'CRM ডিটেইলস'}
                   </h3>
                   <p className="text-[10px] text-muted-foreground truncate">
-                    {sidebarConv.contact?.name || sidebarConv.contact?.phone || 'Customer'}
+                    {getCleanContactDisplayName(sidebarConv.contact)}
                   </p>
                 </div>
               </div>
@@ -2880,17 +2917,17 @@ export default function InboxPage() {
                 .filter(c => {
                   if (!forwardSearchQuery.trim()) return true;
                   const q = forwardSearchQuery.toLowerCase();
-                  return (c.contact?.name || '').toLowerCase().includes(q) || (c.contact?.phone || '').toLowerCase().includes(q);
+                  return (getCleanContactDisplayName(c.contact) || '').toLowerCase().includes(q) || (getCleanContactSubLabel(c.contact) || '').toLowerCase().includes(q);
                 })
                 .map(c => (
                   <div key={c.id} className="flex items-center justify-between p-2 hover:bg-muted/50 rounded-lg">
                     <div className="flex items-center gap-2 min-w-0">
                       <div className="w-7 h-7 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-xs shrink-0">
-                        {c.contact?.name ? c.contact.name[0].toUpperCase() : 'C'}
+                        {getContactAvatarLetter(c.contact)}
                       </div>
                       <div className="min-w-0">
-                        <div className="text-xs font-bold text-foreground truncate">{c.contact?.name || 'Customer'}</div>
-                        <div className="text-[10px] text-muted-foreground truncate">{c.contact?.phone || c.contact?.externalContactId}</div>
+                        <div className="text-xs font-bold text-foreground truncate">{getCleanContactDisplayName(c.contact)}</div>
+                        <div className="text-[10px] text-muted-foreground truncate">{getCleanContactSubLabel(c.contact)}</div>
                       </div>
                     </div>
                     <button
@@ -2941,10 +2978,10 @@ export default function InboxPage() {
               </span>
               <div className="flex items-center justify-between text-xs">
                 <span className="font-bold text-foreground">
-                  {activeConv.contact?.name || activeConv.contact?.phone || 'Customer'} ({activeConv.channel})
+                  {getCleanContactDisplayName(activeConv.contact)} ({activeConv.channel})
                 </span>
                 <span className="text-muted-foreground text-[11px]">
-                  {activeConv.contact?.phone || activeConv.contact?.externalContactId}
+                  {getCleanContactSubLabel(activeConv.contact)}
                 </span>
               </div>
             </div>
@@ -2982,11 +3019,11 @@ export default function InboxPage() {
                       >
                         <div className="min-w-0 flex items-center gap-2.5">
                           <div className="w-8 h-8 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center shrink-0">
-                            {c.contact?.name ? c.contact.name[0].toUpperCase() : 'C'}
+                            {getContactAvatarLetter(c.contact)}
                           </div>
                           <div className="min-w-0">
                             <div className="text-xs font-bold text-foreground truncate flex items-center gap-1.5">
-                              <span>{c.contact?.name || 'Customer'}</span>
+                              <span>{getCleanContactDisplayName(c.contact)}</span>
                               <span className="text-[10px] text-muted-foreground capitalize">({c.channel})</span>
                               {isDup && (
                                 <span className="text-[9px] px-1.5 py-0.2 bg-amber-500/20 text-amber-400 font-bold rounded-full border border-amber-500/30">
@@ -2995,7 +3032,7 @@ export default function InboxPage() {
                               )}
                             </div>
                             <div className="text-[10px] text-muted-foreground truncate">
-                              {c.contact?.phone ? `Phone: ${c.contact.phone}` : `ID: ${c.contact?.externalContactId}`}
+                              {getCleanContactSubLabel(c.contact) ? `Phone: ${getCleanContactSubLabel(c.contact)}` : (c.contact?.externalContactId && !c.contact.externalContactId.startsWith('lid:') && !/^\d{15,}$/.test(c.contact.externalContactId) ? `ID: ${c.contact.externalContactId}` : '')}
                             </div>
                           </div>
                         </div>
@@ -3069,7 +3106,7 @@ export default function InboxPage() {
                   {language === 'en' ? 'Permanently Delete Conversation?' : 'কনভারসেশনটি চিরতরে মুছে ফেলবেন?'}
                 </h3>
                 <p className="text-[11px] text-muted-foreground">
-                  {activeConv.contact?.name || activeConv.contact?.phone || 'Customer'} ({activeConv.channel})
+                  {getCleanContactDisplayName(activeConv.contact)} ({activeConv.channel})
                 </p>
               </div>
             </div>

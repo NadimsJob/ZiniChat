@@ -28,6 +28,37 @@ const toLocalISOString = (dateStr?: string | Date | null) => {
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 };
 
+const getCleanContactDisplayName = (contact?: { name?: string | null; phone?: string | null; externalContactId?: string | null } | null) => {
+  if (!contact) return 'Customer';
+  const name = contact.name?.trim();
+  const phone = contact.phone?.trim();
+  const extId = contact.externalContactId?.trim();
+
+  if (name && name !== 'WhatsApp User' && name !== 'Messenger User' && name !== 'Instagram User' && !/^\d{15,}$/.test(name) && !name.startsWith('lid:')) {
+    return name;
+  }
+  if (phone && !/^\d{15,}$/.test(phone)) {
+    return phone.startsWith('+') ? phone : `+${phone}`;
+  }
+  if (extId && !/^\d{15,}$/.test(extId) && !extId.startsWith('lid:') && /^\d{8,14}$/.test(extId)) {
+    return `+${extId}`;
+  }
+  return 'WhatsApp User';
+};
+
+const getCleanContactPhone = (contact?: { phone?: string | null; externalContactId?: string | null } | null) => {
+  if (!contact) return '';
+  const phone = contact.phone?.trim();
+  const extId = contact.externalContactId?.trim();
+  if (phone && !/^\d{15,}$/.test(phone)) {
+    return phone.startsWith('+') ? phone : `+${phone}`;
+  }
+  if (extId && !/^\d{15,}$/.test(extId) && !extId.startsWith('lid:') && /^\d{8,14}$/.test(extId)) {
+    return `+${extId}`;
+  }
+  return '';
+};
+
 interface ConversationSidebarProps {
   conversation: any;
   availableLabels: any[];
@@ -244,9 +275,11 @@ export default function ConversationSidebar({
 
   useEffect(() => {
     if (contact) {
+      const cleanPhone = getCleanContactPhone(contact);
+      const isLidName = contact.name && (/^\d{15,}$/.test(contact.name) || contact.name === 'WhatsApp User' || contact.name.startsWith('lid:'));
       setContactForm({
-        name: contact.name || '',
-        phone: contact.phone || '',
+        name: isLidName ? (cleanPhone || '') : (contact.name || ''),
+        phone: cleanPhone,
         email: contact.email || '',
         company: contact.company || '',
         address: contact.address || '',
@@ -665,7 +698,7 @@ export default function ConversationSidebar({
                 <div className="flex items-center justify-between gap-2 text-muted-foreground">
                   <div className="flex items-center gap-2 min-w-0">
                     <User className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-                    <span className="text-foreground font-semibold truncate">{contact?.name || 'Customer'}</span>
+                    <span className="text-foreground font-semibold truncate">{getCleanContactDisplayName(contact)}</span>
                   </div>
                   {['messenger', 'instagram'].includes(contact?.channel) && (
                     <button
@@ -683,7 +716,7 @@ export default function ConversationSidebar({
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Phone className="w-3.5 h-3.5 text-primary shrink-0" />
                   <span className="text-foreground select-all font-medium">
-                    {contact?.phone ? contact.phone : (language === 'en' ? 'No phone set' : 'ফোন নম্বর যুক্ত নেই')}
+                    {getCleanContactPhone(contact) || (language === 'en' ? 'No phone set' : 'ফোন নম্বর যুক্ত নেই')}
                   </span>
                 </div>
                 {contact?.email && (
