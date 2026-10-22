@@ -292,152 +292,197 @@ export default function InboxesPage() {
                 const isActive = !isChannelInactive && (conn.isConnected === true || conn.status === 'active' || conn.qrStatus === 'CONNECTED');
                 
                 return (
-                  <div key={conn.id} className="p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-muted/30 transition-colors group">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center shrink-0 border border-border overflow-hidden relative">
-                        {(conn.channelType?.toLowerCase() === 'messenger' || conn.channelType?.toLowerCase() === 'instagram') ? (
-                          <>
-                            <img 
-                              src={`https://graph.facebook.com/${conn.channelType?.toLowerCase() === 'instagram' ? conn.verifyToken : conn.externalAccountId}/picture?type=normal`} 
-                              alt="Profile" 
-                              className="w-full h-full object-cover"
-                              onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} 
-                            />
-                            <div className="hidden absolute inset-0 flex items-center justify-center bg-muted w-full h-full">
-                              {getChannelIcon(conn.channelType)}
-                            </div>
-                          </>
-                        ) : (
-                          getChannelIcon(conn.channelType)
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        {editingChannelId === conn.id ? (
-                          <div className="flex items-center gap-1.5 my-0.5">
-                            <input
-                              type="text"
-                              value={editingName}
-                              onChange={(e) => setEditingName(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') handleSaveRename(conn.id);
-                                if (e.key === 'Escape') {
+                  <div key={conn.id} className="p-4 sm:p-5 flex flex-col gap-3.5 hover:bg-muted/20 transition-all">
+                    {/* 1. Header: Avatar + Channel Info + Delete */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-3 min-w-0 flex-1">
+                        {/* Avatar Icon */}
+                        <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-muted/80 flex items-center justify-center shrink-0 border border-border/80 overflow-hidden relative shadow-2xs mt-0.5">
+                          {(conn.channelType?.toLowerCase() === 'messenger' || conn.channelType?.toLowerCase() === 'instagram') ? (
+                            <>
+                              <img 
+                                src={`https://graph.facebook.com/${conn.channelType?.toLowerCase() === 'instagram' ? conn.verifyToken : conn.externalAccountId}/picture?type=normal`} 
+                                alt="Profile" 
+                                className="w-full h-full object-cover"
+                                onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} 
+                              />
+                              <div className="hidden absolute inset-0 flex items-center justify-center bg-muted w-full h-full">
+                                {getChannelIcon(conn.channelType)}
+                              </div>
+                            </>
+                          ) : (
+                            getChannelIcon(conn.channelType)
+                          )}
+                        </div>
+
+                        {/* Name & Meta */}
+                        <div className="min-w-0 flex-1">
+                          {editingChannelId === conn.id ? (
+                            <div className="flex items-center gap-1.5 my-0.5 max-w-full">
+                              <input
+                                type="text"
+                                value={editingName}
+                                onChange={(e) => setEditingName(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') handleSaveRename(conn.id);
+                                  if (e.key === 'Escape') {
+                                    setEditingChannelId(null);
+                                    setEditingName('');
+                                  }
+                                }}
+                                autoFocus
+                                className="px-2.5 py-1 text-xs font-semibold bg-background border border-primary rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-primary w-48 max-w-full shadow-2xs"
+                                placeholder={language === 'en' ? 'Enter inbox name...' : 'ইনবক্সের নাম লিখুন...'}
+                              />
+                              <button
+                                onClick={() => handleSaveRename(conn.id)}
+                                disabled={savingRename}
+                                className="p-1.5 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 cursor-pointer shadow-2xs shrink-0"
+                                title={language === 'en' ? 'Save Name' : 'সেভ করুন'}
+                              >
+                                <Check className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => {
                                   setEditingChannelId(null);
                                   setEditingName('');
+                                }}
+                                className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors cursor-pointer shrink-0"
+                                title={language === 'en' ? 'Cancel' : 'বাতিল'}
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3 className="font-bold text-foreground text-sm tracking-tight truncate max-w-[180px] xs:max-w-[260px] sm:max-w-none">
+                                {conn.displayName || conn.phoneNumber || getChannelName(conn.channelType)}
+                              </h3>
+                              <button
+                                onClick={() => {
+                                  setEditingChannelId(conn.id);
+                                  setEditingName(conn.displayName || conn.phoneNumber || getChannelName(conn.channelType));
+                                }}
+                                className="p-1 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-colors cursor-pointer shrink-0 opacity-70 hover:opacity-100"
+                                title={language === 'en' ? 'Rename Inbox' : 'নাম পরিবর্তন করুন'}
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold inline-flex items-center gap-1.5 shrink-0 ${
+                                isChannelInactive
+                                  ? 'bg-muted text-muted-foreground border border-border'
+                                  : isActive
+                                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shadow-2xs' 
+                                  : 'bg-red-500/10 text-red-500 border border-red-500/30'
+                              }`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${
+                                  isChannelInactive ? 'bg-muted-foreground' : isActive ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'
+                                }`} />
+                                {isChannelInactive 
+                                  ? (language === 'en' ? 'Inactive' : 'নিষ্ক্রিয়')
+                                  : isActive 
+                                  ? (language === 'en' ? 'Active' : 'সক্রিয়') 
+                                  : (language === 'en' ? 'Disconnected' : 'ডিসকানেক্টেড')
                                 }
-                              }}
-                              autoFocus
-                              className="px-2.5 py-1 text-xs font-semibold bg-background border border-primary rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-primary w-48 max-w-full shadow-2xs"
-                              placeholder={language === 'en' ? 'Enter inbox name...' : 'ইনবক্সের নাম লিখুন...'}
-                            />
-                            <button
-                              onClick={() => handleSaveRename(conn.id)}
-                              disabled={savingRename}
-                              className="p-1 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 cursor-pointer shadow-2xs"
-                              title={language === 'en' ? 'Save Name' : 'সেভ করুন'}
-                            >
-                              <Check className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => {
-                                setEditingChannelId(null);
-                                setEditingName('');
-                              }}
-                              className="p-1 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors cursor-pointer"
-                              title={language === 'en' ? 'Cancel' : 'বাতিল'}
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
+                              </span>
+                            </div>
+                          )}
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1 text-[11px] text-muted-foreground font-sans">
+                            <span className="font-medium text-foreground/80">{getChannelName(conn.channelType)}</span>
+                            {conn.provider && (
+                              <>
+                                <span className="text-muted-foreground/60">•</span>
+                                <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-muted/60 text-muted-foreground border border-border/40">
+                                  {conn.provider}
+                                </span>
+                              </>
+                            )}
+                            {conn.phoneNumber && conn.channelType?.toLowerCase() !== 'messenger' && conn.channelType?.toLowerCase() !== 'instagram' && (
+                              <>
+                                <span className="text-muted-foreground/60">•</span>
+                                <span className="font-mono text-[11px]">{conn.phoneNumber}</span>
+                              </>
+                            )}
                           </div>
-                        ) : (
-                          <h3 className="font-bold text-foreground flex items-center gap-1.5 text-xs truncate">
-                            <span className="truncate">{conn.displayName || conn.phoneNumber || getChannelName(conn.channelType)}</span>
-                            <button
-                              onClick={() => {
-                                setEditingChannelId(conn.id);
-                                setEditingName(conn.displayName || conn.phoneNumber || getChannelName(conn.channelType));
-                              }}
-                              className="p-1 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-colors cursor-pointer shrink-0 opacity-70 hover:opacity-100"
-                              title={language === 'en' ? 'Rename Inbox' : 'নাম পরিবর্তন করুন'}
-                            >
-                              <Pencil className="w-3.5 h-3.5" />
-                            </button>
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold inline-flex items-center gap-1.5 shrink-0 ${
-                              isChannelInactive
-                                ? 'bg-muted text-muted-foreground border border-border'
-                                : isActive
-                                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' 
-                                : 'bg-red-500/10 text-red-500 border border-red-500/20'
-                            }`}>
-                              <span className={`w-1.5 h-1.5 rounded-full ${
-                                isChannelInactive ? 'bg-muted-foreground' : isActive ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'
-                              }`} />
-                              {isChannelInactive 
-                                ? (language === 'en' ? 'Inactive' : 'নিষ্ক্রিয়')
-                                : isActive 
-                                ? (language === 'en' ? 'Active' : 'সক্রিয়') 
-                                : (language === 'en' ? 'Disconnected' : 'ডিসকানেক্টেড')
-                              }
-                            </span>
-                          </h3>
-                        )}
-                        <p className="text-[11px] text-muted-foreground mt-0.5 truncate font-sans">
-                          {getChannelName(conn.channelType)} {conn.provider ? `(${conn.provider})` : ''}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-border">
-                      {isDisconnected && (
-                        <Link
-                          href="/dashboard/settings/inboxes/new"
-                          className="px-2.5 py-1 bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border border-amber-500/20 rounded-lg text-[11px] font-bold flex items-center gap-1 transition-all shrink-0 cursor-pointer font-sans"
-                        >
-                          <RotateCcw className="w-3 h-3" />
-                          <span>{language === 'en' ? 'Reconnect / Scan QR' : 'পুনরায় কানেক্ট করুন'}</span>
-                        </Link>
-                      )}
-
-                      {conn.channelType?.toLowerCase() === 'website' && (
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => setCodeModalWidget(conn)}
-                            className="px-2.5 py-1 bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 border border-indigo-500/20 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition-all shrink-0 cursor-pointer shadow-2xs font-sans"
-                            title="Customize Widget & View Code"
-                          >
-                            <Code className="w-3.5 h-3.5" />
-                            <span>{language === 'en' ? 'Settings & Code' : 'সেটিংস ও কোড'}</span>
-                          </button>
-                          <button
-                            onClick={() => handleTestPing(conn.id)}
-                            className="px-2.5 py-1 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20 rounded-lg text-[11px] font-bold flex items-center gap-1 transition-all shrink-0 cursor-pointer font-sans"
-                            title="Test Connection Ping"
-                          >
-                            <Zap className="w-3.5 h-3.5" />
-                            <span>{language === 'en' ? 'Test Ping' : 'টেস্ট মোটিক'}</span>
-                          </button>
                         </div>
-                      )}
+                      </div>
 
-                      {conn.channelType?.toLowerCase() === 'messenger' && (
-                        <button
-                          onClick={() => setCommentModalChannel(conn)}
-                          className="px-2.5 py-1 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/20 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition-all shrink-0 cursor-pointer shadow-2xs font-sans mr-2"
-                          title="Configure Facebook Comment Auto-Reply"
-                        >
-                          <MessageSquare className="w-3.5 h-3.5 text-blue-400" />
-                          <span>{language === 'en' ? 'Comment Auto-Reply' : 'কমেন্ট অটো-রিপ্লাই'}</span>
-                        </button>
-                      )}
+                      {/* Delete button (isolated at top right) */}
+                      <button 
+                        onClick={() => handleDelete(conn.id)}
+                        className="p-2 text-muted-foreground/70 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all shrink-0 cursor-pointer border border-transparent hover:border-red-500/20"
+                        title={language === 'en' ? 'Delete Inbox' : 'ইনবক্স মুছে ফেলুন'}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
 
-                      <div className="flex items-center gap-2 mr-2">
-                        <span className="text-[11px] text-muted-foreground font-semibold font-sans">
-                          {language === 'en' ? 'Channel Status' : 'চ্যানেল স্ট্যাটাস'}
-                        </span>
+                    {/* 2. Contextual Action Buttons (Reconnect, Settings & Code, Test Ping, Comment Auto-Reply) */}
+                    {(isDisconnected || conn.channelType?.toLowerCase() === 'website' || conn.channelType?.toLowerCase() === 'messenger') && (
+                      <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                        {isDisconnected && (
+                          <Link
+                            href="/dashboard/settings/inboxes/new"
+                            className="px-3 py-1.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 border border-amber-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-2xs font-sans cursor-pointer"
+                          >
+                            <RotateCcw className="w-3.5 h-3.5" />
+                            <span>{language === 'en' ? 'Reconnect / Scan QR' : 'পুনরায় কানেক্ট করুন'}</span>
+                          </Link>
+                        )}
+
+                        {conn.channelType?.toLowerCase() === 'website' && (
+                          <>
+                            <button
+                              onClick={() => setCodeModalWidget(conn)}
+                              className="px-3 py-1.5 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/20 border border-indigo-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs font-sans"
+                              title="Customize Widget & View Code"
+                            >
+                              <Code className="w-3.5 h-3.5" />
+                              <span>{language === 'en' ? 'Settings & Code' : 'সেটিংস ও কোড'}</span>
+                            </button>
+                            <button
+                              onClick={() => handleTestPing(conn.id)}
+                              className="px-3 py-1.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs font-sans"
+                              title="Test Connection Ping"
+                            >
+                              <Zap className="w-3.5 h-3.5" />
+                              <span>{language === 'en' ? 'Test Ping' : 'টেস্ট পিং'}</span>
+                            </button>
+                          </>
+                        )}
+
+                        {conn.channelType?.toLowerCase() === 'messenger' && (
+                          <button
+                            onClick={() => setCommentModalChannel(conn)}
+                            className="px-3 py-1.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 border border-blue-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs font-sans"
+                            title="Configure Facebook Comment Auto-Reply"
+                          >
+                            <MessageSquare className="w-3.5 h-3.5 text-blue-500" />
+                            <span>{language === 'en' ? 'Comment Auto-Reply' : 'কমেন্ট অটো-রিপ্লাই'}</span>
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    {/* 3. Toggles & Switches Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-2.5 pt-2.5 border-t border-border/50">
+                      {/* Toggle 1: Channel Status */}
+                      <div className="flex items-center justify-between p-2.5 sm:p-3 rounded-xl bg-muted/40 dark:bg-zinc-800/40 border border-border/50 hover:border-border transition-colors">
+                        <div className="flex flex-col min-w-0 pr-2">
+                          <span className="text-[11px] font-bold text-foreground truncate font-sans">
+                            {language === 'en' ? 'Channel Status' : 'চ্যানেল স্ট্যাটাস'}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground truncate font-sans mt-0.5">
+                            {!isChannelInactive 
+                              ? (language === 'en' ? 'Visible in Inbox' : 'ইনবক্সে সক্রিয়') 
+                              : (language === 'en' ? 'Hidden from Inbox' : 'ইনবক্স থেকে লুকানো')}
+                          </span>
+                        </div>
                         <button
                           type="button"
                           onClick={() => handleToggleChannelStatus(conn.id, !isChannelInactive)}
-                          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none cursor-pointer ${
-                            !isChannelInactive ? 'bg-emerald-600' : 'bg-muted'
+                          className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus:outline-none cursor-pointer ${
+                            !isChannelInactive ? 'bg-emerald-600' : 'bg-muted-foreground/30'
                           }`}
                           title={language === 'en' ? 'Toggle Channel Active/Inactive (Inactive channels are hidden from Inbox)' : 'চ্যানেল সক্রিয়/নিষ্ক্রিয় করুন'}
                         >
@@ -449,14 +494,25 @@ export default function InboxesPage() {
                         </button>
                       </div>
 
-                      <div className="flex items-center gap-2 mr-2">
-                        <span className="text-[11px] text-muted-foreground font-semibold font-sans">AI Auto-Reply</span>
+                      {/* Toggle 2: AI Auto-Reply */}
+                      <div className="flex items-center justify-between p-2.5 sm:p-3 rounded-xl bg-muted/40 dark:bg-zinc-800/40 border border-border/50 hover:border-border transition-colors">
+                        <div className="flex flex-col min-w-0 pr-2">
+                          <span className="text-[11px] font-bold text-foreground truncate font-sans">
+                            {language === 'en' ? 'AI Auto-Reply' : 'এআই অটো-রিপ্লাই'}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground truncate font-sans mt-0.5">
+                            {conn.isAiAutoReplyEnabled 
+                              ? (language === 'en' ? 'Automated replies ON' : 'অটো-রিপ্লাই চালু') 
+                              : (language === 'en' ? 'Auto-replies OFF' : 'অটো-রিপ্লাই বন্ধ')}
+                          </span>
+                        </div>
                         <button
                           type="button"
                           onClick={() => handleToggleAiReply(conn.id, !!conn.isAiAutoReplyEnabled)}
-                          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none cursor-pointer ${
-                            conn.isAiAutoReplyEnabled ? 'bg-primary' : 'bg-muted'
+                          className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus:outline-none cursor-pointer ${
+                            conn.isAiAutoReplyEnabled ? 'bg-primary' : 'bg-muted-foreground/30'
                           }`}
+                          title={language === 'en' ? 'Toggle AI Auto-Reply' : 'এআই অটো-রিপ্লাই টগল করুন'}
                         >
                           <span
                             className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform shadow-sm ${
@@ -466,16 +522,24 @@ export default function InboxesPage() {
                         </button>
                       </div>
 
+                      {/* Toggle 3: WhatsApp Group Messages Ignore */}
                       {conn.channelType?.toLowerCase() === 'whatsapp' && (
-                        <div className="flex items-center gap-2 mr-2">
-                          <span className="text-[11px] text-muted-foreground font-semibold font-sans">
-                            {language === 'en' ? 'Ignore Group Msgs' : 'গ্রুপ মেসেজ ইগনোর'}
-                          </span>
+                        <div className="flex items-center justify-between p-2.5 sm:p-3 rounded-xl bg-muted/40 dark:bg-zinc-800/40 border border-border/50 hover:border-border transition-colors sm:col-span-2 lg:col-span-1">
+                          <div className="flex flex-col min-w-0 pr-2">
+                            <span className="text-[11px] font-bold text-foreground truncate font-sans">
+                              {language === 'en' ? 'Ignore Group Msgs' : 'গ্রুপ মেসেজ ইগনোর'}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground truncate font-sans mt-0.5">
+                              {(conn.ignoreGroupMessages ?? true) 
+                                ? (language === 'en' ? 'Ignoring group chats' : 'গ্রুপ মেসেজ বন্ধ') 
+                                : (language === 'en' ? 'Receiving group chats' : 'গ্রুপ মেসেজ চালু')}
+                            </span>
+                          </div>
                           <button
                             type="button"
                             onClick={() => handleToggleIgnoreGroups(conn.id, conn.ignoreGroupMessages ?? true)}
-                            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none cursor-pointer ${
-                              (conn.ignoreGroupMessages ?? true) ? 'bg-emerald-600' : 'bg-muted'
+                            className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus:outline-none cursor-pointer ${
+                              (conn.ignoreGroupMessages ?? true) ? 'bg-emerald-600' : 'bg-muted-foreground/30'
                             }`}
                             title={language === 'en' ? 'Ignore WhatsApp Group Messages' : 'হোয়াটসঅ্যাপ গ্রুপ মেসেজ ইগনোর করুন'}
                           >
@@ -487,14 +551,6 @@ export default function InboxesPage() {
                           </button>
                         </div>
                       )}
-
-                      <button 
-                        onClick={() => handleDelete(conn.id)}
-                        className="p-1.5 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors shrink-0 cursor-pointer"
-                        title="Delete Inbox"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
                     </div>
                   </div>
                 );
@@ -695,7 +751,7 @@ function WidgetConfigModal({ widget, onClose, onRefresh, language, API }: any) {
   const waUrl = `https://wa.me/${cleanPhoneFormatted.startsWith('0') ? '88' + cleanPhoneFormatted : cleanPhoneFormatted}${prefilledText ? `?text=${encodeURIComponent(prefilledText)}` : ''}`;
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[100] flex items-center justify-center p-3 sm:p-6 overflow-y-auto" onClick={onClose}>
       <div className="bg-card rounded-2xl max-w-4xl w-full p-4 sm:p-6 space-y-6 shadow-2xl border border-border my-auto max-h-[92vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         
         {/* Modal Header */}
