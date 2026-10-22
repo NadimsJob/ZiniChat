@@ -2,6 +2,7 @@ import { Injectable, Logger, NotFoundException, BadRequestException, ForbiddenEx
 import { PrismaService } from '../prisma/prisma.service';
 import { OutreachAttributionService } from './outreach-attribution.service';
 import { BillingService } from '../billing/billing.service';
+import { QuotaService } from '../tenants/quota.service';
 
 export class CreateCampaignDto {
   name!: string;
@@ -34,6 +35,7 @@ export class OutreachCampaignService {
     private readonly prisma: PrismaService,
     private readonly attributionService: OutreachAttributionService,
     private readonly billingService: BillingService,
+    private readonly quotaService: QuotaService,
   ) {}
 
   /**
@@ -95,26 +97,32 @@ export class OutreachCampaignService {
     // Configured custom limit or default 500 MB (524,288,000 bytes)
     const storageLimitBytes = (tenant?.customStorageLimitMb ? tenant.customStorageLimitMb : 500) * 1024 * 1024;
 
-    // Available AI Response Credits from Quota / Billing Service
+    // Available AI Response Credits from Quota / Billing Service (Rule 4 compliant)
     let availableAiCredits = 0;
+    let aiQuota = 0;
+    let aiUsed = 0;
     let isByok = false;
     try {
       const activePeriod = await this.billingService.getActivePeriod(tenantId);
       const quotas = await this.billingService.getTenantQuotas(tenantId);
       isByok = !!(quotas?.allowByok || tenant?.customAllowByok);
 
-      if (isByok) {
-        availableAiCredits = 999999;
+      const totalAiQuota = quotas?.aiQuota ?? activePeriod?.aiQuota ?? 100;
+      const aiUsedCount = quotas?.aiUsed !== undefined
+        ? quotas.aiUsed
+        : await this.prisma.aiUsageLog.count({
+            where: {
+              tenantId,
+              createdAt: { gte: activePeriod.periodStart },
+            },
+          });
+
+      aiQuota = totalAiQuota;
+      aiUsed = aiUsedCount;
+
+      if (totalAiQuota === -1) {
+        availableAiCredits = -1;
       } else {
-        const totalAiQuota = quotas?.aiQuota ?? activePeriod?.aiQuota ?? 100;
-        const aiUsedCount = quotas?.aiUsed !== undefined
-          ? quotas.aiUsed
-          : await this.prisma.aiUsageLog.count({
-              where: {
-                tenantId,
-                createdAt: { gte: activePeriod.periodStart },
-              },
-            });
         availableAiCredits = Math.max(0, totalAiQuota - aiUsedCount);
       }
     } catch {
@@ -125,7 +133,16 @@ export class OutreachCampaignService {
     const clickRatePercent = totalSent > 0 ? Number(((totalClicks / totalSent) * 100).toFixed(1)) : 0;
     const conversionRatePercent = totalClicks > 0 ? Number(((totalOrders / totalClicks) * 100).toFixed(1)) : 0;
 
+    let isSubscriptionActive = true;
+    try {
+      const subCheck = await this.quotaService.isTenantSubscriptionActive(tenantId);
+      isSubscriptionActive = subCheck.isActive;
+    } catch {
+      isSubscriptionActive = true;
+    }
+
     return {
+      isSubscriptionActive,
       totalCampaigns,
       activeCampaigns,
       totalSent,
@@ -142,6 +159,8 @@ export class OutreachCampaignService {
       storageLimitBytes,
       storageUsedPercent: storageLimitBytes > 0 ? Number(((tenantStorageUsed / storageLimitBytes) * 100).toFixed(1)) : 0,
       availableAiCredits,
+      aiQuota,
+      aiUsed,
       isByok,
     };
   }
@@ -252,6 +271,8 @@ export class OutreachCampaignService {
    * Create a new draft campaign
    */
   async createCampaign(tenantId: string, dto: CreateCampaignDto) {
+    await this.quotaService.checkActiveSubscription(tenantId, 'Zini-Mail Campaign Creation');
+
     if (!dto.name || !dto.name.trim()) {
       throw new BadRequestException('Campaign name is required');
     }
@@ -416,6 +437,8 @@ export class OutreachCampaignService {
    * Automatically moves them to Hot Lead CRM stage & attaches tags for WhatsApp Broadcast
    */
   async retargetClickedNoOrderLeads(campaignId: string, tenantId: string) {
+    await this.quotaService.checkActiveSubscription(tenantId, 'Zini-Mail Retargeting');
+
     const leads = await this.prisma.campaignLead.findMany({
       where: {
         campaignId,
@@ -485,6 +508,8 @@ export class OutreachCampaignService {
    * Export leads to RFC 4180 CSV format
    */
   async exportLeadsCsv(campaignId: string, tenantId: string, filter?: string): Promise<string> {
+    await this.quotaService.checkActiveSubscription(tenantId, 'Zini-Mail Lead Export');
+
     const campaign = await this.prisma.emailCampaign.findFirst({
       where: { id: campaignId, tenantId },
       select: { name: true },

@@ -2,6 +2,7 @@ import { Injectable, Logger, NotFoundException, BadRequestException } from '@nes
 import { PrismaService } from '../prisma/prisma.service';
 import { CryptoService } from '../crypto/crypto.service';
 import { WaterfallEnricherService, LeadCandidateInput } from './waterfall-enricher.service';
+import { QuotaService } from '../tenants/quota.service';
 import axios from 'axios';
 
 export interface HarvestOptions {
@@ -17,6 +18,7 @@ export class LeadHarvestService {
     private readonly prisma: PrismaService,
     private readonly crypto: CryptoService,
     private readonly enricher: WaterfallEnricherService,
+    private readonly quotaService: QuotaService,
   ) {}
 
   /**
@@ -32,6 +34,8 @@ export class LeadHarvestService {
     if (!campaign) {
       throw new NotFoundException(`Campaign with ID ${campaignId} not found`);
     }
+
+    await this.quotaService.checkActiveSubscription(campaign.tenantId, 'Zini-Mail Lead Harvest');
 
     // Set campaign status to collecting
     await this.prisma.emailCampaign.update({

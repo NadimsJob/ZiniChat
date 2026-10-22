@@ -95,6 +95,7 @@ export class OutreachAiService {
 
     // Quota pre-flight check if QuotaService is available
     if (this.quotaService && !dto?.isTestMode) {
+      await this.quotaService.checkActiveSubscription(campaign.tenantId, 'Zini-Mail Vision AI Analysis');
       try {
         await this.quotaService.checkAiQuota(campaign.tenantId);
       } catch (err: any) {
@@ -667,6 +668,11 @@ export class OutreachAiService {
       throw new ForbiddenException('Access denied to this campaign');
     }
 
+    if (this.quotaService && !dto?.isTestMode) {
+      await this.quotaService.checkActiveSubscription(campaign.tenantId, 'Zini-Mail Email Generation');
+      await this.quotaService.checkAiQuota(campaign.tenantId);
+    }
+
     const limit = dto?.limit || 50;
     const leads = await this.prisma.campaignLead.findMany({
       where: {
@@ -713,6 +719,10 @@ export class OutreachAiService {
 
     if (tenantId && campaign.tenantId !== tenantId) {
       throw new ForbiddenException('Access denied to this campaign');
+    }
+
+    if (this.quotaService && !dto?.isTestMode) {
+      await this.quotaService.checkActiveSubscription(campaign.tenantId, 'Zini-Mail Draft Preview');
     }
 
     const dummyTrackingToken = `preview-${Date.now()}`;

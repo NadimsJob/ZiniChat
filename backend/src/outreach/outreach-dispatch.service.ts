@@ -2,6 +2,7 @@ import { Injectable, Logger, NotFoundException, BadRequestException, ForbiddenEx
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
+import { QuotaService } from '../tenants/quota.service';
 
 export class StartCampaignOptions {
   maxEmails?: number;
@@ -14,6 +15,7 @@ export class OutreachDispatchService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly quotaService: QuotaService,
     @InjectQueue('outreach-email-queue') private readonly outreachQueue: Queue,
   ) {}
 
@@ -33,6 +35,12 @@ export class OutreachDispatchService {
 
     if (tenantId && campaign.tenantId !== tenantId) {
       throw new ForbiddenException('Access denied to this campaign');
+    }
+
+    // 0. Enforce Active Plan Subscription & AI Quota Requirements
+    await this.quotaService.checkActiveSubscription(campaign.tenantId, 'Zini-Mail Email Outreach');
+    if (!options?.isTestMode) {
+      await this.quotaService.checkAiQuota(campaign.tenantId);
     }
 
     // 1. Verify Tenant SMTP is configured & active

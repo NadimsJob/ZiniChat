@@ -43,7 +43,16 @@ export class AiTrainingController {
   @Post('config/byok')
   async updateByokConfig(
     @Request() req: any, 
-    @Body() data: { routingMode: string; apiKey?: string; aiOrderEnabled?: boolean; isActive?: boolean; replyWhenAssigned?: boolean; agentName?: string }
+    @Body() data: { 
+      routingMode?: string; 
+      apiKey?: string; 
+      aiOrderEnabled?: boolean; 
+      isActive?: boolean; 
+      replyWhenAssigned?: boolean; 
+      agentName?: string;
+      smartAutoPauseEnabled?: boolean;
+      smartAutoPauseMinutes?: number;
+    }
   ) {
     return this.aiTrainingService.updateByokConfig(
       req.user.tenantId, 
@@ -52,7 +61,9 @@ export class AiTrainingController {
       data.aiOrderEnabled, 
       data.isActive, 
       data.replyWhenAssigned, 
-      data.agentName
+      data.agentName,
+      data.smartAutoPauseEnabled,
+      data.smartAutoPauseMinutes
     );
   }
 

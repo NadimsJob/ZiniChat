@@ -192,12 +192,29 @@ export class QuotaService {
     const now = new Date();
     const isWithinTrial = tenant.trialEndsAt ? new Date(tenant.trialEndsAt) > now : false;
     const hasActiveSubscription = Array.isArray(tenant.subscriptions) && tenant.subscriptions.length > 0;
+    const hasActiveCustomPlan = Boolean(tenant.customPlanName);
 
-    if (isWithinTrial || hasActiveSubscription) {
+    if (isWithinTrial || hasActiveSubscription || hasActiveCustomPlan) {
       return { isActive: true };
     }
 
     return { isActive: false, reason: 'SUBSCRIPTION_EXPIRED' };
+  }
+
+  /**
+   * Enforces that the tenant has an active package, valid trial, or custom plan.
+   * Throws ForbiddenException if expired so restricted features (e.g. Meta Ads, CAPI, Email Outreach) are blocked.
+   */
+  async checkActiveSubscription(tenantId: string, featureName?: string): Promise<void> {
+    const { isActive, reason } = await this.isTenantSubscriptionActive(tenantId);
+    if (!isActive) {
+      if (reason === 'TENANT_SUSPENDED') {
+        throw new ForbiddenException('Account suspended. Please contact support.');
+      }
+      throw new ForbiddenException(
+        `Your subscription plan has expired. Please renew or reactivate your plan to access ${featureName || 'this feature'}.`
+      );
+    }
   }
 
   /**

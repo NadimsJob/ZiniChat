@@ -305,6 +305,17 @@ const OFFICIAL_FAQS_JSON = {
         bn: 'BYOK মোডে আপনি ZiniChat-এর নিজস্ব এআই কী-এর বদলে আপনার নিজস্ব OpenAI, Google Gemini বা Claude API Key বসাতে পারবেন। এতে খরচ সম্পূর্ণ আপনার নিয়ন্ত্রণে থাকে এবং ভলিউম ডিসকাউন্ট পাওয়া যায়।' 
       } 
     },
+    { 
+      categoryId: 'ai',
+      question: { 
+        en: 'What happens if a human agent replies to a customer in the Live Inbox? Does AI interfere or collide?', 
+        bn: 'লাইভ ইনবক্সে কোনো হিউম্যান এজেন্ট রিপ্লাই দিলে কি AI কথা বলে ডিস্টার্ব করবে?' 
+      }, 
+      answer: { 
+        en: 'No! ZiniChat features Smart AI Auto-Pause on Human Intervention. The moment a human team member sends a reply, AI auto-replies are automatically paused for that conversation (e.g. for 5 minutes). You can chat naturally without bot collisions. If the agent steps away and doesn\'t reply within the grace period, AI automatically resumes taking care of the customer.', 
+        bn: 'একদমই না! ZiniChat-এ রয়েছে স্মার্ট AI অটো-পজ (Smart Human Takeover) প্রযুক্তি। কোনো ইনবক্সে হিউম্যান এজেন্ট রিপ্লাই দেওয়ার সাথে সাথেই AI রেসপন্স স্বয়ংক্রিয়ভাবে পজ হয়ে যায় (যেমন ৫ মিনিটের জন্য)। ফলে হিউম্যান ও বটের কথা কখনো সংঘর্ষ হয় না। হিউম্যান চ্যাট শেষ করলে বা সরে গেলে নির্দিষ্ট সময় পর AI স্বয়ংক্রিয়ভাবে পুনরায় চালু হয়ে কাস্টমারকে সাপোর্ট দেওয়া শুরু করে।' 
+      } 
+    },
 
     // Zini-Mail Fully Automated AI Email Marketing (Zero List Required)
     { 

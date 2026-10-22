@@ -2,6 +2,7 @@ import { Injectable, BadRequestException, InternalServerErrorException } from '@
 import { PrismaService } from '../prisma/prisma.service';
 import { CryptoService } from '../crypto/crypto.service';
 import { MetaMarketingConfigService } from '../meta-marketing-config/meta-marketing-config.service';
+import { QuotaService } from '../tenants/quota.service';
 import axios from 'axios';
 
 @Injectable()
@@ -10,9 +11,12 @@ export class MetaAdsAccountService {
     private readonly prisma: PrismaService,
     private readonly crypto: CryptoService,
     private readonly marketingConfig: MetaMarketingConfigService,
+    private readonly quotaService: QuotaService,
   ) {}
 
   async initiateOAuth(tenantId: string, redirectUri: string) {
+    await this.quotaService.checkActiveSubscription(tenantId, 'Meta Ad Account Connection');
+
     // Check if the tenant has a connected Messenger or Instagram channel
     const channels = await this.prisma.channelConnection.findMany({
       where: {
@@ -37,6 +41,8 @@ export class MetaAdsAccountService {
   }
 
   async handleCallback(code: string, tenantId: string, redirectUri: string) {
+    await this.quotaService.checkActiveSubscription(tenantId, 'Meta Ad Account Connection');
+
     const config = await this.marketingConfig.getConfig();
     if (!config.appId || !config.appSecret) throw new BadRequestException('Meta App Config is incomplete.');
 

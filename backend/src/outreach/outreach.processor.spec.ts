@@ -116,6 +116,8 @@ describe('OutreachProcessor (Phase 6: Throttled Queue, Rate Limiting & Outbound 
       reserveAiQuota: jest.fn().mockResolvedValue('quota-log-1'),
       commitAiQuota: jest.fn().mockResolvedValue(undefined),
       refundAiQuota: jest.fn().mockResolvedValue(undefined),
+      isTenantSubscriptionActive: jest.fn().mockResolvedValue({ isActive: true }),
+      checkActiveSubscription: jest.fn().mockResolvedValue(true),
     };
 
     mockNotifications = {

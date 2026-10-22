@@ -3,6 +3,7 @@ import { LeadHarvestService } from './lead-harvest.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CryptoService } from '../crypto/crypto.service';
 import { WaterfallEnricherService } from './waterfall-enricher.service';
+import { QuotaService } from '../tenants/quota.service';
 import { NotFoundException } from '@nestjs/common';
 
 describe('LeadHarvestService', () => {
@@ -10,8 +11,14 @@ describe('LeadHarvestService', () => {
   let mockPrisma: any;
   let mockCrypto: any;
   let mockEnricher: any;
+  let mockQuota: any;
 
   beforeEach(async () => {
+    mockQuota = {
+      checkActiveSubscription: jest.fn().mockResolvedValue(true),
+      isTenantSubscriptionActive: jest.fn().mockResolvedValue({ isActive: true }),
+      checkAiQuota: jest.fn().mockResolvedValue(undefined),
+    };
     mockPrisma = {
       emailCampaign: {
         findUnique: jest.fn(),
@@ -55,6 +62,7 @@ describe('LeadHarvestService', () => {
         { provide: PrismaService, useValue: mockPrisma },
         { provide: CryptoService, useValue: mockCrypto },
         { provide: WaterfallEnricherService, useValue: mockEnricher },
+        { provide: QuotaService, useValue: mockQuota },
       ],
     }).compile();
 

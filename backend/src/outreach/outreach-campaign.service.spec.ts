@@ -3,10 +3,17 @@ import { OutreachCampaignService } from './outreach-campaign.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { OutreachAttributionService } from './outreach-attribution.service';
 import { BillingService } from '../billing/billing.service';
+import { QuotaService } from '../tenants/quota.service';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 
 describe('OutreachCampaignService', () => {
   let service: OutreachCampaignService;
+
+  const mockQuota = {
+    checkActiveSubscription: jest.fn().mockResolvedValue(true),
+    isTenantSubscriptionActive: jest.fn().mockResolvedValue({ isActive: true }),
+    checkAiQuota: jest.fn().mockResolvedValue(undefined),
+  };
 
   const mockPrisma = {
     emailCampaign: {
@@ -60,6 +67,7 @@ describe('OutreachCampaignService', () => {
         { provide: PrismaService, useValue: mockPrisma },
         { provide: OutreachAttributionService, useValue: mockAttributionService },
         { provide: BillingService, useValue: mockBillingService },
+        { provide: QuotaService, useValue: mockQuota },
       ],
     }).compile();
 

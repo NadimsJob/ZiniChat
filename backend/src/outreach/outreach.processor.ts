@@ -88,6 +88,25 @@ export class OutreachProcessor extends WorkerHost {
       return { status: 'paused', reason: 'EMERGENCY_KILLSWITCH_ACTIVE', leadId, jobId: job.id };
     }
 
+    if (this.quotaService && !isTestMode) {
+      const subCheck = await this.quotaService.isTenantSubscriptionActive(tenantId);
+      if (!subCheck.isActive) {
+        this.logger.warn(`Subscription plan expired for tenant ${tenantId}. Auto-pausing outreach campaign ${campaignId}`);
+        await this.prisma.emailCampaign.update({
+          where: { id: campaignId },
+          data: { status: 'paused' },
+        });
+
+        await this.notifyAdmins(
+          tenantId,
+          '🚨 আউটরিচ ক্যাম্পেইন স্থগিত - সাবস্ক্রিপশন প্ল্যান মেয়াদোত্তীর্ণ',
+          'আপনার অ্যাকাউন্টের সাবস্ক্রিপশন প্ল্যানের মেয়াদ শেষ হয়ে যাওয়ায় আউটরিচ ক্যাম্পেইনটি স্বয়ংক্রিয়ভাবে স্থগিত করা হয়েছে। আউটরিচ চালু করতে প্ল্যান রিনিউ বা রি-অ্যাক্টিভ করুন।',
+        );
+
+        return { status: 'paused', reason: 'SUBSCRIPTION_EXPIRED', leadId, jobId: job.id };
+      }
+    }
+
     // ── Pre-flight Check 2: Lead Status Guard (স্তর ৪) ───────────────
     const lead = await this.prisma.campaignLead.findUnique({ where: { id: leadId } });
 

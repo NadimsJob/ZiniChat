@@ -90,6 +90,8 @@ describe('OutreachAttributionService & Controller (Phase 7: Attribution, Unsubsc
     mockQuota = {
       incrementStorage: jest.fn().mockResolvedValue(undefined),
       decrementStorage: jest.fn().mockResolvedValue(undefined),
+      checkActiveSubscription: jest.fn().mockResolvedValue(true),
+      isTenantSubscriptionActive: jest.fn().mockResolvedValue({ isActive: true }),
     };
 
     mockNotifications = {

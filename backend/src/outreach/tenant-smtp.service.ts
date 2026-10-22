@@ -1,6 +1,7 @@
 import { Injectable, Logger, BadRequestException, NotFoundException, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CryptoService } from '../crypto/crypto.service';
+import { QuotaService } from '../tenants/quota.service';
 import * as nodemailer from 'nodemailer';
 
 import { IsString, IsNotEmpty, IsOptional, IsNumber, IsBoolean, IsEmail } from 'class-validator';
@@ -55,6 +56,7 @@ export class TenantSmtpService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly crypto: CryptoService,
+    private readonly quotaService: QuotaService,
   ) {}
 
   /**
@@ -91,6 +93,8 @@ export class TenantSmtpService {
    * Upserts tenant SMTP configuration with AES-256 encryption for the password.
    */
   async upsertSmtpSetting(tenantId: string, dto: UpsertTenantSmtpDto, actorUserId?: string) {
+    await this.quotaService.checkActiveSubscription(tenantId, 'Zini-Mail SMTP Configuration');
+
     if (!dto.host || !dto.username || !dto.fromEmail || !dto.fromName) {
       throw new BadRequestException('Host, username, sender email, and sender name are required');
     }
@@ -174,6 +178,8 @@ export class TenantSmtpService {
    * Probes the tenant's SMTP server via handshake and optional test email dispatch.
    */
   async verifySmtpConnection(tenantId: string, testRecipientEmail?: string) {
+    await this.quotaService.checkActiveSubscription(tenantId, 'Zini-Mail SMTP Verification');
+
     const setting = await this.prisma.tenantSmtpSetting.findUnique({
       where: { tenantId },
     });

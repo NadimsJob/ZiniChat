@@ -150,6 +150,32 @@ export class OrchestratorService {
         return;
       }
 
+      // Smart Human Takeover Check: If AI is auto-paused because a human agent recently replied
+      const aiAutoPausedUntil = (message.conversation as any).aiAutoPausedUntil;
+      if (aiAutoPausedUntil) {
+        const now = new Date();
+        const pauseEnd = new Date(aiAutoPausedUntil);
+        if (now < pauseEnd) {
+          const remainingSeconds = Math.max(0, Math.ceil((pauseEnd.getTime() - now.getTime()) / 1000));
+          const remainingMinutes = Math.ceil(remainingSeconds / 60);
+          this.logger.log(`[Smart Human Takeover] AI auto-reply paused for conversation ${message.conversation.id} (${remainingMinutes}m / ${remainingSeconds}s remaining). Human agent recently replied.`);
+          return { skipped: true, reason: 'smart_auto_pause_active' };
+        } else {
+          // Pause window expired! Auto-resume AI and clear aiAutoPausedUntil
+          this.logger.log(`[Smart Human Takeover] Auto-pause window expired for conversation ${message.conversation.id}. AI auto-reply automatically resumed.`);
+          await this.prisma.conversation.update({
+            where: { id: message.conversation.id },
+            data: { aiAutoPausedUntil: null }
+          }).catch(() => {});
+
+          this.inboxGateway.broadcastToTenant(tenantId, 'conversation:ai_resumed', {
+            conversationId: message.conversation.id,
+            isAiEnabled: true,
+            aiAutoPausedUntil: null
+          });
+        }
+      }
+
       // Never process AI auto-reply for group conversations
       const externalContactId = message.conversation.contact?.externalContactId || '';
       if (externalContactId.includes('@g.us')) {

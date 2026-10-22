@@ -26,6 +26,81 @@ export const helpCategories: { id: DocCategory; labelEn: string; labelBn: string
 
 export const helpDocs: HelpArticle[] = [
   {
+    id: 'smart-ai-auto-pause',
+    titleEn: 'Smart AI Auto-Pause on Human Intervention',
+    titleBn: 'হিউম্যান রিপ্লাই দিলে স্মার্ট এআই অটো-পজ ও অটো-রিসুম',
+    category: 'inbox-messaging',
+    tags: ['AI', 'Inbox', 'Auto-Pause', 'Human Takeover', 'Messaging', 'Support'],
+    excerptEn: 'Learn how ZiniChat automatically pauses AI when a human agent replies to a customer, and seamlessly resumes when human steps away.',
+    excerptBn: 'ইনবক্সে কোনো এজেন্ট কাস্টমারকে রিপ্লাই দেওয়ার সাথে সাথে কীভাবে AI সাময়িকভাবে পজ থাকে এবং পরে স্বয়ংক্রিয়ভাবে পুনরায় চালু হয় তা জানুন।',
+    planConditions: 'Available on all active plans',
+    aiCreditCost: '0.00 / free built-in feature',
+    contentEn: `
+## What is Smart AI Auto-Pause?
+When using AI auto-replies in customer support, one common frustration is **bot collisions** — a human agent types a personal reply to a customer, but the moment the customer replies, the AI jumps in instantly and talks over the human agent!
+
+ZiniChat solves this with **Smart AI Auto-Pause & Human Takeover**:
+- The moment any human team member (agent, admin, or owner) sends an outbound message in any conversation, AI auto-replies are **automatically paused** for that specific chat (default: 5 minutes).
+- While the human is actively handling the conversation, the customer can message back freely and AI will **not** interrupt.
+- If the human agent finishes chatting or steps away, and the customer messages after the auto-pause window expires, the AI **automatically takes back over** without needing anyone to manually flip a switch!
+
+---
+
+### How to Configure Auto-Pause Duration:
+1. Navigate to **Dashboard -> Settings -> AI Training**.
+2. Under the **Smart Human Takeover & AI Auto-Pause** section, ensure the toggle is **Enabled**.
+3. Select your desired cooldown duration:
+   - **1 Minute**: Ultra-fast takeover for fast-paced teams.
+   - **2-3 Minutes**: Ideal for quick questions and order confirmations.
+   - **5 Minutes (Recommended)**: Standard window giving human agents plenty of time to compose replies.
+   - **10-15 Minutes**: Extended window for complex sales or consulting discussions.
+4. Changes take effect across all your connected inboxes (WhatsApp, Messenger, Instagram, Web Chat) immediately.
+
+---
+
+### 1-Click "Resume AI Now" in Live Inbox:
+Finished chatting with a customer earlier than expected? You don't have to wait for the 5-minute timer!
+- In **Live Inbox**, when a conversation has Smart Auto-Pause active, an amber banner appears above the chat:
+  \`⏸️ Smart AI Auto-Paused: Human agent recently replied...\`
+- Simply click **⚡ Resume AI Now** to immediately hand the conversation back to AI.
+
+> [!TIP]
+> Both human agent messages and automated AI responses are cleanly isolated in independent quota pools. Manual messages never consume AI credits, and AI responses never deduct human message limits.
+    `,
+    contentBn: `
+## স্মার্ট এআই অটো-পজ কী এবং কেন এটি প্রয়োজন?
+কাস্টমার সার্ভিসে এআই অটো-রিপ্লাই ব্যবহারের সময় সবচেয়ে বড় সমস্যা হলো **বট ইন্টারাপশন বা সংঘর্ষ** — একজন হিউম্যান এজেন্ট যখন কাস্টমারের সাথে কথা বলছেন, তখন কাস্টমার কোনো মেসেজ দেওয়া মাত্রই যদি বট লাফিয়ে পড়ে উত্তর দেয়, তবে কাস্টমার বিভ্রান্ত হয় এবং এজেন্টের কাজে ব্যাঘাত ঘটে।
+
+ZiniChat এই সমস্যার স্থায়ী সমাধান করেছে **Smart Human Takeover & Auto-Pause** ফিচারের মাধ্যমে:
+- ইনবক্সে কোনো টিম এজেন্ট (এজেন্ট, অ্যাডমিন বা ওনার) কাস্টমারকে কোনো মেসেজ পাঠানোর সাথে সাথেই সেই কনভারসেশনের জন্য এআই রেসপন্স **স্বয়ংক্রিয়ভাবে পজ (Auto-Paused)** হয়ে যায় (ডিফল্ট: ৫ মিনিট)।
+- যতক্ষণ হিউম্যান এজেন্ট কথা বলছেন, ততক্ষণ কাস্টমার যত মেসেজই পাঠাক না কেন, এআই কোনো প্রকার বাধা দেবে না।
+- এজেন্ট কথা শেষ করে সরে গেলে বা উইন্ডো পার হয়ে গেলে, কাস্টমারের পরবর্তী মেসেজে এআই **স্বয়ংক্রিয়ভাবে পুনরায় সক্রিয় হয়ে (Auto-Resumed)** গ্রাহককে ২৪/৭ সার্ভিস দেওয়া শুরু করবে। কাউকেই ম্যানুয়ালি সুইচ অন করার কথা মনে রাখতে হবে না!
+
+---
+
+### অটো-পজ সময় কীভাবে কনফিগার করবেন:
+১. ড্যাশবোর্ডের **Settings -> AI Training** পেজে যান।
+২. **স্মার্ট হিউম্যান হ্যান্ডওভার ও অটো-পজ** কার্ডে গিয়ে টগলটি চালু রাখুন।
+৩. আপনার পছন্দমতো সময় নির্বাচন করুন:
+   - **১ মিনিট**: দ্রুত হ্যান্ডওভারের জন্য।
+   - **২-৩ মিনিট**: সাধারণ প্রশ্ন ও অর্ডার যাচাইয়ের জন্য।
+   - **৫ মিনিট (রিকমেন্ডেড)**: স্ট্যান্ডার্ড সময়, যা এজেন্টকে নিশ্চিন্তে টাইপ করতে সাহায্য করে।
+   - **১০-১৫ মিনিট**: দীর্ঘ পরামর্শ বা বড় ডিল ফাইনাল করার জন্য।
+৪. সেভ করলেই WhatsApp, Messenger, Instagram ও Website Chat-এ সাথে সাথে কার্যকর হবে।
+
+---
+
+### লাইভ ইনবক্সে ১-ক্লিকে "Resume AI Now":
+কাস্টমারের সাথে কাজ দ্রুত শেষ হয়ে গেলে আপনাকে পুরো ৫ মিনিট অপেক্ষা করতে হবে না!
+- **Live Inbox**-এ চ্যাট স্ক্রিনের শীর্ষে একটি হলুদ ব্যানার প্রদর্শিত হবে:
+  \`⏸️ স্মার্ট এআই অটো-পজ: হিউম্যান এজেন্ট রিপ্লাই দেওয়ায় এআই সাময়িকভাবে পজ করা হয়েছে...\`
+- ব্যানারের **⚡ এখনই AI চালু করুন (Resume AI Now)** বাটনে ক্লিক করলেই মুহূর্তেই এআই পুনরায় চ্যাটের দায়িত্ব গ্রহণ করবে।
+
+> [!TIP]
+> হিউম্যান এজেন্টের পাঠানো মেসেজ এবং এআই অটো-রিপ্লাই দুটি সম্পূর্ণ স্বাধীন কোটা পুল থেকে হিসাব হয়। হিউম্যানের পাঠানো মেসেজে কোনো এআই ক্রেডিট কাটা যাবে না।
+    `
+  },
+  {
     id: 'capi-hub-setup',
     titleEn: 'How to setup Meta CAPI (Conversion API)',
     titleBn: 'মেটা CAPI (Conversion API) কিভাবে সেটআপ করবেন',

@@ -19,6 +19,8 @@ export class McpAdsService {
   ) {}
 
   private async getDecryptedTokenAndAccount(tenantId: string, adAccountId?: string) {
+    await this.quotaService.checkActiveSubscription(tenantId, 'Meta Ads Manager');
+
     const config = await this.marketingConfig.getConfig();
     if (!config.isEnabled) {
       throw new ForbiddenException('Meta Marketing API is currently disabled platform-wide.');
@@ -85,7 +87,7 @@ export class McpAdsService {
       const response = await axios.get(`https://graph.facebook.com/${apiVersion}/${formattedAdAccountId}/campaigns`, {
         params: {
           access_token: token,
-          fields: 'id,name,status,effective_status,daily_budget,lifetime_budget,start_time,stop_time,objective',
+          fields: 'id,name,status,effective_status,daily_budget,lifetime_budget,start_time,stop_time,objective,insights{impressions,clicks,spend,cpc,ctr,actions}',
           limit: 50,
         },
       });
@@ -95,17 +97,51 @@ export class McpAdsService {
         campaigns = campaigns.filter((c: any) => c.status === statusFilter || c.effective_status === statusFilter);
       }
 
-      return campaigns.map((c: any) => ({
-        id: c.id,
-        name: c.name,
-        status: c.status,
-        effectiveStatus: c.effective_status,
-        objective: c.objective,
-        dailyBudget: c.daily_budget ? Number(c.daily_budget) / 100 : null,
-        lifetimeBudget: c.lifetime_budget ? Number(c.lifetime_budget) / 100 : null,
-        startTime: c.start_time,
-        stopTime: c.stop_time,
-      }));
+      return campaigns.map((c: any) => {
+        const insightsObj = c.insights?.data?.[0];
+        let events: any = undefined;
+        if (insightsObj) {
+          const actions = insightsObj.actions || [];
+          const messagesStarted = Number(actions.find((a: any) => 
+            a.action_type === 'onsite_conversion.messaging_conversation_started_7d' ||
+            a.action_type === 'onsite_conversion.messaging_user_depth_2' ||
+            a.action_type === 'messaging_conversation_started_7d'
+          )?.value || 0);
+          const leads = Number(actions.find((a: any) => a.action_type === 'lead')?.value || 0);
+          const purchases = Number(actions.find((a: any) => a.action_type === 'purchase' || a.action_type === 'omni_purchase')?.value || 0);
+          const postEngagement = Number(actions.find((a: any) => a.action_type === 'post_engagement')?.value || 0);
+          const linkClicks = Number(actions.find((a: any) => a.action_type === 'link_click')?.value || 0);
+
+          events = {
+            impressions: Number(insightsObj.impressions || 0),
+            clicks: Number(insightsObj.clicks || 0),
+            spend: Number(insightsObj.spend || 0),
+            cpc: Number(insightsObj.cpc || 0),
+            ctr: Number(insightsObj.ctr || 0),
+            messagesStarted,
+            leads,
+            purchases,
+            postEngagement,
+            linkClicks,
+          };
+        }
+
+        const mapped: any = {
+          id: c.id,
+          name: c.name,
+          status: c.status,
+          effectiveStatus: c.effective_status || c.status,
+          objective: c.objective,
+          dailyBudget: c.daily_budget ? Number(c.daily_budget) / 100 : null,
+          lifetimeBudget: c.lifetime_budget ? Number(c.lifetime_budget) / 100 : null,
+          startTime: c.start_time,
+          stopTime: c.stop_time,
+        };
+        if (events) {
+          mapped.events = events;
+        }
+        return mapped;
+      });
     } catch (error: any) {
       console.error('Error listing campaigns:', error.response?.data || error.message);
       throw new InternalServerErrorException('Failed to fetch ad campaigns from Meta');
@@ -429,6 +465,8 @@ export class McpAdsService {
    * without requiring tenant to configure any external MCP server.
    */
   async getPagePosts(tenantId: string, adAccountId?: string, pageId?: string, limit: number = 25) {
+    await this.quotaService.checkActiveSubscription(tenantId, 'Meta Ads Manager');
+
     let tenantAccount: any;
     if (adAccountId) {
       tenantAccount = await this.prisma.tenantMetaAdAccount.findFirst({
@@ -754,7 +792,7 @@ export class McpAdsService {
       const campRes = await axios.get(`https://graph.facebook.com/${apiVersion}/${campaignId}`, {
         params: {
           access_token: token,
-          fields: 'id,name,status,objective,daily_budget,lifetime_budget,start_time,stop_time',
+          fields: 'id,name,status,effective_status,objective,daily_budget,lifetime_budget,start_time,stop_time',
         },
       });
       const camp = campRes.data;
@@ -770,14 +808,14 @@ export class McpAdsService {
       const adSets = adSetsRes.data.data || [];
       const primaryAdSet = adSets[0] || null;
 
-      // 4. Fetch Insights (last 7 days performance)
+      // 4. Fetch Insights (last 7 days performance) with full conversion events
       let insights: any = null;
       try {
         const insRes = await axios.get(`https://graph.facebook.com/${apiVersion}/${campaignId}/insights`, {
           params: {
             access_token: token,
             date_preset: 'last_7d',
-            fields: 'impressions,clicks,spend,cpc,ctr,reach,actions',
+            fields: 'impressions,clicks,spend,cpc,ctr,reach,actions,cost_per_action_type',
           },
         });
         insights = insRes.data.data?.[0] || null;
@@ -788,56 +826,73 @@ export class McpAdsService {
       const spend = Number(insights?.spend || 0);
       const clicks = Number(insights?.clicks || 0);
       const impressions = Number(insights?.impressions || 0);
+      const reach = Number(insights?.reach || impressions);
       const ctr = Number(insights?.ctr || 0);
       const cpc = Number(insights?.cpc || 0);
       const currentBudget = camp.daily_budget ? Number(camp.daily_budget) / 100 : primaryAdSet?.daily_budget ? Number(primaryAdSet.daily_budget) / 100 : 0;
 
-      // 5. Intelligent Diagnostics & AI Optimization Formula
+      // Parse conversion events from actions
+      const actions = insights?.actions || [];
+      const messagesStarted = Number(actions.find((a: any) => 
+        a.action_type === 'onsite_conversion.messaging_conversation_started_7d' ||
+        a.action_type === 'onsite_conversion.messaging_user_depth_2' ||
+        a.action_type === 'messaging_conversation_started_7d'
+      )?.value || 0);
+      const leads = Number(actions.find((a: any) => a.action_type === 'lead')?.value || 0);
+      const purchases = Number(actions.find((a: any) => a.action_type === 'purchase' || a.action_type === 'omni_purchase')?.value || 0);
+      const postEngagement = Number(actions.find((a: any) => a.action_type === 'post_engagement')?.value || 0);
+      const linkClicks = Number(actions.find((a: any) => a.action_type === 'link_click')?.value || 0);
+
+      // Default baseline diagnostics
       let healthScore = 75;
-      let diagnosis = 'Good baseline performance.';
-      let diagnosisBn = 'ক্যাম্পেইনের কার্যক্ষমতা সন্তোষজনক অবস্থায় রয়েছে।';
-      let recommendedAction: 'SCALE_BUDGET_UP' | 'SCALE_BUDGET_DOWN' | 'EXPAND_AUDIENCE' | 'PAUSE_UNDERPERFORMING' = 'SCALE_BUDGET_UP';
+      let diagnosis = 'Good baseline performance with room for optimization.';
+      let diagnosisBn = 'ক্যাম্পেইনের কার্যক্ষমতা সন্তোষজনক অবস্থায় রয়েছে এবং অপ্টিমাইজেশনের সুযোগ আছে।';
+      let recommendedAction: 'SCALE_BUDGET_UP' | 'SCALE_BUDGET_DOWN' | 'EXPAND_AUDIENCE' | 'REFINE_TARGETING' | 'PAUSE_UNDERPERFORMING' = 'SCALE_BUDGET_UP';
       let suggestedScalingPercent = 20;
       let rationale = '';
       let rationaleBn = '';
-      let suggestedTargeting: any = null;
+      let suggestedTargeting: any = {
+        geo_locations: { countries: ['BD'] },
+        age_min: 22,
+        age_max: 50,
+        genders: [1, 2],
+        interests: ['Online shopping', 'Customer service'],
+      };
 
       if (ctr >= 2.0 && cpc > 0 && cpc < 0.15) {
-        // High engagement winner
         healthScore = 94;
-        diagnosis = 'High Performing Campaign. Very strong CTR and low CPC.';
-        diagnosisBn = 'উচ্চ কার্যক্ষমতাসম্পন্ন ক্যাম্পেইন! শক্তিশালী CTR এবং অত্যন্ত সাশ্রয়ী CPC পাওয়া যাচ্ছে।';
+        diagnosis = 'High Performing Campaign. Very strong CTR, high lead engagement, and low CPC.';
+        diagnosisBn = 'উচ্চ কার্যক্ষমতাসম্পন্ন ক্যাম্পেইন! শক্তিশালী CTR, উচ্চ এনগেজমেন্ট এবং সাশ্রয়ী CPC পাওয়া যাচ্ছে।';
         recommendedAction = 'SCALE_BUDGET_UP';
         suggestedScalingPercent = 50;
-        rationale = `Your CTR is stellar (${ctr.toFixed(2)}%) and CPC is very low ($${cpc.toFixed(3)}). Scaling budget up by +50% will maximize lead acquisition without audience fatigue.`;
-        rationaleBn = `আপনার বিজ্ঞাপনের CTR দুর্দান্ত (${ctr.toFixed(2)}%) এবং প্রতি ক্লিকের খরচ মাত্র $${cpc.toFixed(3)}। দৈনিক বাজেট +৫০% বৃদ্ধি করলে অডিয়েন্স নষ্ট না হয়ে সর্বোচ্চ সেল ও লিড পাওয়া যাবে।`;
+        rationale = `Your CTR is stellar (${ctr.toFixed(2)}%) and CPC is very low ($${cpc.toFixed(3)}). Scaling budget up by +50% will maximize lead acquisition without resetting learning.`;
+        rationaleBn = `আপনার বিজ্ঞাপনের CTR দুর্দান্ত (${ctr.toFixed(2)}%) এবং খরচ মাত্র $${cpc.toFixed(3)}। বাজেট +৫০% বৃদ্ধি করলে অডিয়েন্স নষ্ট না হয়ে সর্বোচ্চ মেসেজ ও লিড পাওয়া যাবে।`;
       } else if (ctr >= 1.0) {
-        // Moderate performer
         healthScore = 82;
         diagnosis = 'Healthy Performing Campaign with steady delivery.';
         diagnosisBn = 'স্থিতিশীল ডেলিভারি ও সন্তোষজনক ফলাফল পাওয়া যাচ্ছে।';
         recommendedAction = 'SCALE_BUDGET_UP';
         suggestedScalingPercent = 20;
-        rationale = `CTR is healthy at ${ctr.toFixed(2)}%. A standard +20% safe scaling increment is recommended to capture more market volume without resetting Facebook learning phase.`;
-        rationaleBn = `বিজ্ঞাপনের CTR স্বাস্থ্যকর (${ctr.toFixed(2)}%)। মেটার লার্নিং ফেজ ক্ষতিগ্রস্ত না করে নিরাপদভাবে ডেলিভারি বাড়াতে বাজেট +২০% বাড়ানোর পরামর্শ দেওয়া হচ্ছে।`;
+        rationale = `CTR is healthy at ${ctr.toFixed(2)}%. A standard +20% safe scaling increment is recommended to capture more market volume safely.`;
+        rationaleBn = `বিজ্ঞাপনের CTR স্বাস্থ্যকর (${ctr.toFixed(2)}%)। মেটার লার্নিং ফেজ নষ্ট না করে নিরাপদে বাজেট +২০% বাড়ানো সুপারিশকৃত।`;
       } else if (impressions > 500 && ctr < 0.7) {
-        // Creative or Audience fatigue
         healthScore = 52;
         diagnosis = 'Audience or Creative Fatigue detected. CTR is below benchmark.';
         diagnosisBn = 'বিজ্ঞাপনের কার্যক্ষমতা কমেছে। অডিয়েন্স ক্লান্তি বা কম CTR পরিলক্ষিত হচ্ছে।';
-        recommendedAction = 'EXPAND_AUDIENCE';
+        recommendedAction = 'REFINE_TARGETING';
         suggestedScalingPercent = -10;
         suggestedTargeting = {
           geo_locations: { countries: ['BD'] },
-          age_min: 20,
-          age_max: 55,
+          age_min: 24,
+          age_max: 52,
+          genders: [1, 2],
+          interests: ['Online shopping', 'Retail'],
         };
-        rationale = `Low CTR (${ctr.toFixed(2)}%) suggests the current audience has saturated. Broadening age targeting to 20-55 and adjusting budget by -10% will stabilize delivery.`;
-        rationaleBn = `কম CTR (${ctr.toFixed(2)}%) প্রমাণ করে বর্তমান দর্শকগোষ্ঠী পোস্টটি বেশি ক্লিক করছে না। অডিয়েন্স বয়সসীমা ২০-৫৫ এ বাড়িয়ে এবং বাজেট -১০% রিক্যালিব্রেট করলে অপ্টিমাইজড রেজাল্ট আসবে।`;
+        rationale = `Low CTR (${ctr.toFixed(2)}%) suggests current audience has saturated. Tightening age targeting to 24-52 and testing fresh creative copy will restore conversion velocity.`;
+        rationaleBn = `কম CTR (${ctr.toFixed(2)}%) নির্দেশ করে অডিয়েন্স সম্পৃক্ততা কমেছে। বয়সসীমা ২৪-৫২ এ সমন্বয় করে নতুন আকর্ষণীয় কপি ব্যবহার করলে ভালো ফল আসবে।`;
       } else {
-        // Early stage / learning phase
         healthScore = 70;
-        diagnosis = 'Early delivery phase with moderate signals.';
+        diagnosis = 'Early delivery phase with moderate telemetry.';
         diagnosisBn = 'ক্যাম্পেইনটি প্রাথমিক ডেলিভারি ও লার্নিং পর্যায়ে রয়েছে।';
         recommendedAction = 'SCALE_BUDGET_UP';
         suggestedScalingPercent = 20;
@@ -845,18 +900,211 @@ export class McpAdsService {
         rationaleBn = 'প্রাথমিক সিগন্যাল তৈরি হচ্ছে। নিয়ন্ত্রিত +২০% বাজেট বৃদ্ধি ফেসবুককে দ্রুত লার্নিং ফেজ শেষ করতে সাহায্য করবে।';
       }
 
+      let targetingOptimization: any = {
+        evaluation: 'Audience size is balanced, but fine-tuning age bracket and purchasing interests will filter out casual scrollers.',
+        evaluationBn: 'অডিয়েন্স পরিধি ঠিক আছে, তবে বয়সসীমা ও শপিং সংক্রান্ত আগ্রহ যোগ করলে অপ্রয়োজনীয় মেসেজ বন্ধ হয়ে আসল ক্রেতা বাড়বে।',
+        suggestedCountries: ['BD'],
+        suggestedAgeMin: suggestedTargeting.age_min,
+        suggestedAgeMax: suggestedTargeting.age_max,
+        suggestedGenders: [1, 2],
+        suggestedInterests: ['Online shopping', 'Retail', 'E-commerce'],
+        rationale: 'Focuses delivery on demographic segments with verified online purchasing capability.',
+        rationaleBn: 'অনলাইনে কেনাকাটায় অভ্যস্ত সক্রিয় ক্রেতাগোষ্ঠীর কাছে বিজ্ঞাপন প্রদর্শন নিশ্চিত করে।',
+      };
+
+      let creativeOptimization: any = {
+        evaluation: 'Ad creative needs stronger direct-response hooks and urgency cues to capture attention in the first 2 seconds.',
+        evaluationBn: 'বিজ্ঞাপনের কপি ও শিরোনামে আরও জোরালো অফার ও সীমিত সময়ের সুযোগের উল্লেখ থাকা দরকার।',
+        suggestedHeadlines: [
+          '🔥 সীমিত সময়ের স্পেশাল অফার - স্টক দ্রুত শেষ হচ্ছে!',
+          '💯 প্রিমিয়াম কোয়ালিটি ও ১০০% অরিজিনাল গ্যারান্টি',
+          '⚡ আজই অর্ডার করুন এবং উপভোগ করুন দ্রুত হোম ডেলিভারি'
+        ],
+        suggestedPrimaryTexts: [
+          'আপনার পছন্দের পণ্য এখন সেরা দামে! কোনো অগ্রিম পেমেন্ট ছাড়াই সারা দেশে ক্যাশ অন ডেলিভারিতে অর্ডার করতে এখনই মেসেজ পাঠান।',
+          'হাজারো সন্তুষ্ট গ্রাহকের বিশ্বাসে সেরা অভিজ্ঞতা। স্টক সীমিত, তাই এখনই বিস্তারিত জানতে ইনবক্স করুন।'
+        ],
+        suggestedCta: 'MESSAGE_PAGE',
+        rationale: 'Direct-response messaging reduces hesitation and speeds up customer inquiries.',
+        rationaleBn: 'সরাসরি অফার গ্রাহকের দ্বিধা দূর করে এবং ইনবক্সে যোগাযোগ বৃদ্ধি করে।',
+      };
+
+      let placementOptimization: any = {
+        recommendedType: 'advantage_plus',
+        advice: 'Keep Advantage+ active to allow Meta AI to route impressions to whichever platform (Feeds vs Reels) provides the lowest cost per message.',
+        adviceBn: 'Advantage+ চালু রাখুন যাতে মেটার এলগরিদম স্বয়ংক্রিয়ভাবে যেখানে সবচেয়ে কম খরচে মেসেজ পাওয়া যায় সেখানে বিজ্ঞাপন দেখায়।',
+      };
+
+      // Call LLM for deep strategic reasoning if available
+      if (this.aiService) {
+        try {
+          const prompt = `You are a Principal Meta Ads Performance Director.
+Analyze this live active Facebook/Instagram campaign and provide a multi-dimensional diagnostic report covering:
+1. Overall Health Score (0-100) & Diagnosis
+2. Daily Budget Optimization (+/- %)
+3. Audience & Demographic Targeting Refinements
+4. Creative, Headline & Copy Suggestions
+5. Placement Advice
+
+Campaign Data:
+- Name: "${camp.name}"
+- Objective: "${camp.objective}"
+- Status: "${camp.status}" (Effective: "${camp.effective_status || camp.status}")
+- Daily Budget: $${currentBudget}
+- 7-Day Spend: $${spend}
+- Impressions: ${impressions}
+- Clicks: ${clicks}
+- CTR: ${ctr}%
+- CPC: $${cpc}
+- Messaging Conversations Started: ${messagesStarted}
+- Leads: ${leads}
+- Purchases: ${purchases}
+- Primary AdSet Targeting: ${JSON.stringify(primaryAdSet?.targeting || {})}
+
+Return strictly valid JSON matching this schema (no markdown, no backticks):
+{
+  "healthScore": 85,
+  "diagnosis": "Summary in English...",
+  "diagnosisBn": "বাংলায় ডায়াগনোসিস...",
+  "recommendedAction": "SCALE_BUDGET_UP",
+  "suggestedScalingPercent": 20,
+  "suggestedNewBudget": ${currentBudget > 0 ? Math.round(currentBudget * 1.2) : 10},
+  "rationale": "Why this scaling works...",
+  "rationaleBn": "বাংলায় ব্যাখ্যা...",
+  "targeting": {
+    "evaluation": "Audience evaluation...",
+    "evaluationBn": "বাংলায় অডিয়েন্স মূল্যায়ন...",
+    "suggestedAgeMin": 22,
+    "suggestedAgeMax": 48,
+    "suggestedGenders": [1, 2],
+    "suggestedCountries": ["BD"],
+    "suggestedInterests": ["Online shopping", "Fashion accessories"],
+    "rationale": "Why these targets succeed...",
+    "rationaleBn": "বাংলায় ব্যাখ্যা..."
+  },
+  "creatives": {
+    "evaluation": "Creative copy evaluation...",
+    "evaluationBn": "বাংলায় কপি মূল্যায়ন...",
+    "suggestedHeadlines": ["Headline 1", "Headline 2", "Headline 3"],
+    "suggestedPrimaryTexts": ["Copy text 1", "Copy text 2"],
+    "suggestedCta": "MESSAGE_PAGE",
+    "rationale": "Why these hooks convert...",
+    "rationaleBn": "বাংলায় ব্যাখ্যা..."
+  },
+  "placements": {
+    "recommendedType": "advantage_plus",
+    "advice": "Placements advice in English...",
+    "adviceBn": "বাংলায় প্লেসমেন্ট পরামর্শ..."
+  }
+}`;
+          const rawAi = await this.aiService.generateCompletion(prompt);
+          const parsed = JSON.parse(rawAi.replace(/```json/g, '').replace(/```/g, '').trim());
+          if (parsed.healthScore) {
+            healthScore = Number(parsed.healthScore);
+            diagnosis = parsed.diagnosis || diagnosis;
+            diagnosisBn = parsed.diagnosisBn || diagnosisBn;
+            if (parsed.recommendedAction) recommendedAction = parsed.recommendedAction;
+            if (parsed.suggestedScalingPercent !== undefined) suggestedScalingPercent = Number(parsed.suggestedScalingPercent);
+            rationale = parsed.rationale || rationale;
+            rationaleBn = parsed.rationaleBn || rationaleBn;
+            if (parsed.targeting) {
+              targetingOptimization = {
+                evaluation: parsed.targeting.evaluation || targetingOptimization.evaluation,
+                evaluationBn: parsed.targeting.evaluationBn || targetingOptimization.evaluationBn,
+                suggestedCountries: parsed.targeting.suggestedCountries || ['BD'],
+                suggestedAgeMin: parsed.targeting.suggestedAgeMin || 22,
+                suggestedAgeMax: parsed.targeting.suggestedAgeMax || 50,
+                suggestedGenders: parsed.targeting.suggestedGenders || [1, 2],
+                suggestedInterests: parsed.targeting.suggestedInterests || ['Online shopping'],
+                rationale: parsed.targeting.rationale || targetingOptimization.rationale,
+                rationaleBn: parsed.targeting.rationaleBn || targetingOptimization.rationaleBn,
+              };
+              suggestedTargeting = {
+                geo_locations: { countries: targetingOptimization.suggestedCountries },
+                age_min: targetingOptimization.suggestedAgeMin,
+                age_max: targetingOptimization.suggestedAgeMax,
+                genders: targetingOptimization.suggestedGenders,
+                interests: targetingOptimization.suggestedInterests,
+              };
+            }
+            if (parsed.creatives) {
+              creativeOptimization = {
+                evaluation: parsed.creatives.evaluation || creativeOptimization.evaluation,
+                evaluationBn: parsed.creatives.evaluationBn || creativeOptimization.evaluationBn,
+                suggestedHeadlines: parsed.creatives.suggestedHeadlines || creativeOptimization.suggestedHeadlines,
+                suggestedPrimaryTexts: parsed.creatives.suggestedPrimaryTexts || creativeOptimization.suggestedPrimaryTexts,
+                suggestedCta: parsed.creatives.suggestedCta || creativeOptimization.suggestedCta,
+                rationale: parsed.creatives.rationale || creativeOptimization.rationale,
+                rationaleBn: parsed.creatives.rationaleBn || creativeOptimization.rationaleBn,
+              };
+            }
+            if (parsed.placements) {
+              placementOptimization = {
+                recommendedType: parsed.placements.recommendedType || placementOptimization.recommendedType,
+                advice: parsed.placements.advice || placementOptimization.advice,
+                adviceBn: parsed.placements.adviceBn || placementOptimization.adviceBn,
+              };
+            }
+          }
+        } catch (aiErr: any) {
+          this.logger.warn(`AI campaign analysis LLM parse failed, using telemetry baseline: ${aiErr.message}`);
+        }
+      }
+
+      const calculatedNewBudget = currentBudget > 0 ? Math.round(currentBudget * (1 + suggestedScalingPercent / 100)) : 10;
+
+      // Actionable Recommendations array with pre-configured 1-click payloads
+      const actionableRecommendations: any[] = [
+        {
+          id: 'action_budget',
+          type: 'SCALE_BUDGET',
+          title: suggestedScalingPercent >= 0 ? `Scale Daily Budget +${suggestedScalingPercent}%` : `Scale Daily Budget ${suggestedScalingPercent}%`,
+          titleBn: suggestedScalingPercent >= 0 ? `দৈনিক বাজেট +${suggestedScalingPercent}% বৃদ্ধি করুন` : `দৈনিক বাজেট ${suggestedScalingPercent}% কমান`,
+          description: `Adjust daily budget from $${currentBudget} to $${calculatedNewBudget} on Meta.`,
+          descriptionBn: `মেটায় দৈনিক বাজেট $${currentBudget} থেকে $${calculatedNewBudget}-এ পরিবর্তন করুন।`,
+          payload: {
+            newDailyBudget: calculatedNewBudget,
+            percentage: suggestedScalingPercent,
+          },
+        },
+        {
+          id: 'action_targeting',
+          type: 'UPDATE_TARGETING',
+          title: 'Apply AI-Refined Audience Targeting',
+          titleBn: 'এআই প্রস্তাবিত নতুন অডিয়েন্স প্রয়োগ করুন',
+          description: `Target Age ${targetingOptimization.suggestedAgeMin}-${targetingOptimization.suggestedAgeMax} with interests: ${targetingOptimization.suggestedInterests.slice(0, 3).join(', ')}.`,
+          descriptionBn: `বয়সসীমা ${targetingOptimization.suggestedAgeMin}-${targetingOptimization.suggestedAgeMax} এবং নির্দিষ্ট কেনাকাটার আগ্রহ যুক্ত করুন।`,
+          payload: {
+            targeting: {
+              geo_locations: { countries: targetingOptimization.suggestedCountries },
+              age_min: targetingOptimization.suggestedAgeMin,
+              age_max: targetingOptimization.suggestedAgeMax,
+              genders: targetingOptimization.suggestedGenders,
+              flexible_spec: [{ interests: targetingOptimization.suggestedInterests.map((name: string) => ({ name })) }],
+            },
+          },
+        },
+      ];
+
       return {
         campaignId,
         campaignName: camp.name,
         status: camp.status,
+        effectiveStatus: camp.effective_status || camp.status,
         currentDailyBudget: currentBudget,
         currency: 'USD',
         telemetry: {
           impressions,
+          reach,
           clicks,
           spend,
           ctr: Number(ctr.toFixed(2)),
           cpc: Number(cpc.toFixed(3)),
+          messagesStarted,
+          leads,
+          purchases,
+          postEngagement,
+          linkClicks,
           period: 'last_7d',
         },
         aiDiagnosis: {
@@ -866,15 +1114,243 @@ export class McpAdsService {
           recommendedAction,
           suggestedScalingPercent,
           suggestedTargeting,
-          suggestedNewBudget: currentBudget > 0 ? Math.round(currentBudget * (1 + suggestedScalingPercent / 100)) : 10,
+          suggestedNewBudget: calculatedNewBudget,
           rationale,
           rationaleBn,
+          targetingOptimization,
+          creativeOptimization,
+          placementOptimization,
+          actionableRecommendations,
           aiResponseQuotaCost: 1,
         },
       };
     } catch (error: any) {
       this.logger.error('Error analyzing campaign with AI:', error.response?.data || error.message);
       throw new InternalServerErrorException(error.response?.data?.error?.message || 'Failed to complete AI campaign analysis');
+    }
+  }
+
+  /**
+   * AI-Assisted Audience Re-Targeting Assistant.
+   * Solves problem of untargeted messaging leads / unqualified customers,
+   * generates high-intent targeting and costs 1 AI Response Credit.
+   */
+  async aiRetargetAudience(
+    tenantId: string,
+    dto: {
+      adAccountId: string;
+      campaignId: string;
+      adSetId?: string;
+      problemDescription?: string;
+      targetBuyerPersona?: string;
+    },
+  ) {
+    // 1. Quota Preflight & Deduction: 1 AI Response Unit
+    await this.quotaService.checkAiQuota(tenantId);
+    await this.prisma.aiUsageLog.create({
+      data: {
+        tenantId,
+        featureName: 'meta_ads_ai_retarget',
+        unitsConsumed: 1,
+        status: 'COMMITTED',
+        referenceId: dto.campaignId,
+        tokensUsed: 750,
+        costUsd: 0.002,
+      },
+    });
+
+    const { token, apiVersion } = await this.getDecryptedTokenAndAccount(tenantId, dto.adAccountId);
+
+    let targetAdSetId = dto.adSetId;
+    let currentTargeting: any = {};
+    try {
+      const adSetsRes = await axios.get(`https://graph.facebook.com/${apiVersion}/${dto.campaignId}/adsets`, {
+        params: {
+          access_token: token,
+          fields: 'id,name,status,targeting,daily_budget',
+          limit: 10,
+        },
+      });
+      const adSets = adSetsRes.data.data || [];
+      if (adSets.length > 0) {
+        targetAdSetId = targetAdSetId || adSets[0].id;
+        currentTargeting = adSets[0].targeting || {};
+      }
+    } catch (err: any) {
+      this.logger.warn(`Could not fetch ad set for retargeting: ${err.message}`);
+    }
+
+    const currentAgeMin = currentTargeting.age_min || 18;
+    const currentAgeMax = currentTargeting.age_max || 65;
+    const currentCountries = currentTargeting.geo_locations?.countries || ['BD'];
+
+    let result = {
+      campaignId: dto.campaignId,
+      adSetId: targetAdSetId,
+      currentTargeting: {
+        ageMin: currentAgeMin,
+        ageMax: currentAgeMax,
+        countries: currentCountries,
+        genders: currentTargeting.genders || [],
+        raw: currentTargeting,
+      },
+      suggestedTargeting: {
+        countries: currentCountries,
+        ageMin: Math.max(22, currentAgeMin),
+        ageMax: Math.min(52, currentAgeMax),
+        genders: [1, 2],
+        interests: ['Online shopping', 'Retail', 'Customer service', 'E-commerce'],
+        raw: {
+          geo_locations: { countries: currentCountries },
+          age_min: Math.max(22, currentAgeMin),
+          age_max: Math.min(52, currentAgeMax),
+          genders: [1, 2],
+          flexible_spec: [{ interests: [{ name: 'Online shopping' }, { name: 'Retail' }] }],
+        },
+      },
+      summary: 'Adjusted demographic focus away from student age groups to purchasing-age professionals with active shopping interests.',
+      summaryBn: 'অপ্রয়োজনীয় কম বয়সী বা শিক্ষার্থীর মেসেজ কমাতে বয়সসীমা ২২-৫২ এ উন্নীত করা হয়েছে এবং অনলাইন শপিং ক্রেতাদের টার্গেট করা হয়েছে।',
+      rationale: 'Filters out uncommitted or non-buying leads while concentrating ad delivery on verified buyers.',
+      rationaleBn: 'এর মাধ্যমে অযথা চ্যাট করা অডিয়েন্স বাদ যাবে এবং পণ্য ক্রয়ে আগ্রহী প্রকৃত গ্রাহকরাই মেসেজ পাঠাবে।',
+      aiResponseQuotaCost: 1,
+    };
+
+    if (this.aiService) {
+      try {
+        const prompt = `You are a Meta Advertising Audience Targeting Specialist.
+The merchant is running a Facebook/Instagram campaign but reporting that incoming messages are NOT from their target audience:
+Merchant Problem Description: "${dto.problemDescription || 'Current leads/messages are unqualified and not purchasing'}"
+Target Buyer Persona: "${dto.targetBuyerPersona || 'Affluent customers ready to buy'}"
+Current Targeting: Age ${currentAgeMin}-${currentAgeMax}, Countries: ${currentCountries.join(', ')}
+
+Provide an optimized, precise Meta Graph API targeting configuration that filters out unqualified audiences and targets high-intent buyers.
+Return ONLY valid JSON matching this schema (no markdown, no backticks):
+{
+  "ageMin": 24,
+  "ageMax": 50,
+  "genders": [1, 2],
+  "countries": ["BD"],
+  "interests": ["Online shopping", "Luxury goods", "Retail"],
+  "summary": "English summary of changes...",
+  "summaryBn": "বাংলায় পরিবর্তনের সারসংক্ষেপ...",
+  "rationale": "English rationale...",
+  "rationaleBn": "বাংলায় যুক্তি..."
+}`;
+        const rawAi = await this.aiService.generateCompletion(prompt);
+        const parsed = JSON.parse(rawAi.replace(/```json/g, '').replace(/```/g, '').trim());
+        if (parsed.ageMin) {
+          result.suggestedTargeting = {
+            countries: parsed.countries || currentCountries,
+            ageMin: Number(parsed.ageMin),
+            ageMax: Number(parsed.ageMax),
+            genders: parsed.genders || [1, 2],
+            interests: parsed.interests || ['Online shopping'],
+            raw: {
+              geo_locations: { countries: parsed.countries || currentCountries },
+              age_min: Number(parsed.ageMin),
+              age_max: Number(parsed.ageMax),
+              genders: parsed.genders || [1, 2],
+              flexible_spec: [{ interests: (parsed.interests || ['Online shopping']).map((name: string) => ({ name })) }],
+            },
+          };
+          result.summary = parsed.summary || result.summary;
+          result.summaryBn = parsed.summaryBn || result.summaryBn;
+          result.rationale = parsed.rationale || result.rationale;
+          result.rationaleBn = parsed.rationaleBn || result.rationaleBn;
+        }
+      } catch (aiErr: any) {
+        this.logger.warn(`AI audience retargeting fallback: ${aiErr.message}`);
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Updates an active campaign and its primary ad set directly on Meta Graph API.
+   * Can update campaign name, status, daily budget, and audience targeting.
+   */
+  async updateCampaignDetails(
+    tenantId: string,
+    campaignId: string,
+    dto: {
+      adAccountId: string;
+      name?: string;
+      status?: 'ACTIVE' | 'PAUSED';
+      dailyBudget?: number;
+      adSetId?: string;
+      targeting?: {
+        countries?: string[];
+        ageMin?: number;
+        ageMax?: number;
+        genders?: number[];
+        interests?: string[];
+      };
+    },
+  ) {
+    const { token, apiVersion } = await this.getDecryptedTokenAndAccount(tenantId, dto.adAccountId);
+
+    try {
+      // 1. Update Campaign attributes if provided
+      if (dto.name || dto.status) {
+        const campParams: any = { access_token: token };
+        if (dto.name) campParams.name = dto.name;
+        if (dto.status) campParams.status = dto.status;
+        await axios.post(`https://graph.facebook.com/${apiVersion}/${campaignId}`, null, {
+          params: campParams,
+        });
+      }
+
+      // 2. Update AdSet attributes if budget or targeting provided
+      if (dto.dailyBudget || dto.targeting) {
+        let targetAdSetId = dto.adSetId;
+        if (!targetAdSetId) {
+          const adSetsRes = await axios.get(`https://graph.facebook.com/${apiVersion}/${campaignId}/adsets`, {
+            params: { access_token: token, fields: 'id', limit: 5 },
+          });
+          targetAdSetId = adSetsRes.data.data?.[0]?.id;
+        }
+
+        if (targetAdSetId) {
+          const adSetParams: any = { access_token: token };
+          if (dto.dailyBudget && dto.dailyBudget > 0) {
+            adSetParams.daily_budget = Math.round(dto.dailyBudget * 100);
+          }
+          if (dto.targeting) {
+            const targetingObj: any = {
+              geo_locations: { countries: dto.targeting.countries?.length ? dto.targeting.countries : ['BD'] },
+              age_min: dto.targeting.ageMin || 18,
+              age_max: dto.targeting.ageMax || 65,
+            };
+            if (dto.targeting.genders?.length) {
+              targetingObj.genders = dto.targeting.genders;
+            }
+            if (dto.targeting.interests?.length) {
+              targetingObj.flexible_spec = [{ interests: dto.targeting.interests.map((name: string) => ({ name })) }];
+            }
+            adSetParams.targeting = JSON.stringify(targetingObj);
+          }
+
+          await axios.post(`https://graph.facebook.com/${apiVersion}/${targetAdSetId}`, null, {
+            params: adSetParams,
+          });
+        }
+      }
+
+      return {
+        success: true,
+        campaignId,
+        adSetId: dto.adSetId,
+        updatedFields: {
+          name: dto.name,
+          status: dto.status,
+          dailyBudget: dto.dailyBudget,
+          targeting: dto.targeting,
+        },
+      };
+    } catch (error: any) {
+      this.logger.error('Error updating campaign details:', error.response?.data || error.message);
+      throw new InternalServerErrorException(error.response?.data?.error?.message || 'Failed to update campaign details on Meta');
     }
   }
 
@@ -969,6 +1445,8 @@ export class McpAdsService {
    * Fetches all Meta Pixels associated with the tenant's connected Ad Accounts.
    */
   async getAdAccountPixels(tenantId: string, adAccountId?: string) {
+    await this.quotaService.checkActiveSubscription(tenantId, 'Meta Ads Manager');
+
     let accounts: any[] = [];
     if (adAccountId) {
       const acc = await this.prisma.tenantMetaAdAccount.findFirst({
@@ -1281,6 +1759,7 @@ Return ONLY a valid JSON object matching this schema (no markdown formatting, no
       imageUrl?: string;
       creativeSource?: 'upload' | 'existing_post';
       pagePostId?: string;
+      pagePostIds?: string[];
       targeting?: {
         countries?: string[];
         ageMin?: number;
@@ -1310,7 +1789,10 @@ Return ONLY a valid JSON object matching this schema (no markdown formatting, no
       throw new BadRequestException('No Facebook Page found. Please connect your Facebook Page in Channel Integration or Meta Ads.');
     }
 
-    const isExistingPost = dto.creativeSource === 'existing_post' && Boolean(dto.pagePostId);
+    const postIds: string[] = (dto.pagePostIds && dto.pagePostIds.length > 0)
+      ? dto.pagePostIds
+      : (dto.pagePostId ? [dto.pagePostId] : []);
+    const isExistingPost = dto.creativeSource === 'existing_post' && postIds.length > 0;
 
     // Primary Text & Headline resolution
     const primaryTexts = dto.primaryTexts && dto.primaryTexts.length > 0
@@ -1342,7 +1824,7 @@ Return ONLY a valid JSON object matching this schema (no markdown formatting, no
       });
       const campaignId = campRes.data.id;
 
-      // 2. Create Ad Set
+      // 2. Create Ad Set with targeting & manual placements support
       const countries = dto.targeting?.countries?.length ? dto.targeting.countries : ['BD'];
       const targeting: any = {
         geo_locations: { countries },
@@ -1354,6 +1836,48 @@ Return ONLY a valid JSON object matching this schema (no markdown formatting, no
       }
       if (dto.targeting?.interests?.length) {
         targeting.flexible_spec = [{ interests: dto.targeting.interests.map((name: string) => ({ name })) }];
+      }
+
+      // Manual Placements mapping
+      if (dto.placements?.length && !dto.placements.includes('advantage_plus')) {
+        const publisherPlatforms: string[] = [];
+        const facebookPositions: string[] = [];
+        const instagramPositions: string[] = [];
+        const messengerPositions: string[] = [];
+
+        for (const p of dto.placements) {
+          if (p.includes('facebook') || p.startsWith('fb_')) {
+            if (!publisherPlatforms.includes('facebook')) publisherPlatforms.push('facebook');
+            if (p.includes('feed')) facebookPositions.push('feed');
+            if (p.includes('story') || p.includes('stories')) facebookPositions.push('story');
+            if (p.includes('reel')) facebookPositions.push('facebook_reels');
+            if (p.includes('marketplace')) facebookPositions.push('marketplace');
+            if (p.includes('right_column')) facebookPositions.push('right_hand_column');
+          }
+          if (p.includes('instagram') || p.startsWith('ig_')) {
+            if (!publisherPlatforms.includes('instagram')) publisherPlatforms.push('instagram');
+            if (p.includes('feed')) instagramPositions.push('stream');
+            if (p.includes('story') || p.includes('stories')) instagramPositions.push('story');
+            if (p.includes('reel')) instagramPositions.push('reels');
+            if (p.includes('explore')) instagramPositions.push('explore');
+          }
+          if (p.includes('messenger') || p.startsWith('msg_')) {
+            if (!publisherPlatforms.includes('messenger')) publisherPlatforms.push('messenger');
+            if (p.includes('inbox') || p.includes('home')) messengerPositions.push('messenger_home');
+            if (p.includes('story')) messengerPositions.push('story');
+          }
+          if (p.includes('audience_network')) {
+            if (!publisherPlatforms.includes('audience_network')) publisherPlatforms.push('audience_network');
+          }
+        }
+
+        if (publisherPlatforms.length > 0) {
+          targeting.publisher_platforms = publisherPlatforms;
+          if (facebookPositions.length > 0) targeting.facebook_positions = Array.from(new Set(facebookPositions));
+          if (instagramPositions.length > 0) targeting.instagram_positions = Array.from(new Set(instagramPositions));
+          if (messengerPositions.length > 0) targeting.messenger_positions = Array.from(new Set(messengerPositions));
+          targeting.device_platforms = ['mobile', 'desktop'];
+        }
       }
 
       const now = new Date();
@@ -1382,25 +1906,57 @@ Return ONLY a valid JSON object matching this schema (no markdown formatting, no
       });
       const adSetId = adSetRes.data.id;
 
-      // 3. Create AdCreative
-      let creativePayload: any;
+      // 3 & 4. Create AdCreative(s) and Ad(s)
+      let firstCreativeId = '';
+      let firstAdId = '';
+      const createdAds: any[] = [];
 
-      if (isExistingPost && dto.pagePostId) {
-        // Boost existing post: preserves all likes, comments, and shares
-        const fullStoryId = dto.pagePostId.startsWith(`${targetPageId}_`)
-          ? dto.pagePostId
-          : (dto.pagePostId.includes('_')
-              ? `${targetPageId}_${dto.pagePostId.slice(dto.pagePostId.indexOf('_') + 1)}`
-              : `${targetPageId}_${dto.pagePostId}`);
+      if (isExistingPost) {
+        // Multi-Post Creative Support: iterate through all selected posts
+        for (let i = 0; i < postIds.length; i++) {
+          const pid = postIds[i];
+          const fullStoryId = pid.startsWith(`${targetPageId}_`)
+            ? pid
+            : (pid.includes('_')
+                ? `${targetPageId}_${pid.slice(pid.indexOf('_') + 1)}`
+                : `${targetPageId}_${pid}`);
 
-        creativePayload = {
-          access_token: token,
-          name: `${dto.name} Creative (Existing Post)`,
-          object_story_id: fullStoryId,
-        };
+          const creativePayload = {
+            access_token: token,
+            name: `${dto.name} Creative (Post ${i + 1})`,
+            object_story_id: fullStoryId,
+          };
+
+          const creativeRes = await axios.post(`https://graph.facebook.com/${apiVersion}/${formattedAdAccountId}/adcreatives`, null, {
+            params: creativePayload,
+          });
+          const cId = creativeRes.data.id;
+          if (!firstCreativeId) firstCreativeId = cId;
+
+          const adPayload: any = {
+            access_token: token,
+            name: postIds.length > 1 ? `${dto.name} Ad (${i + 1})` : `${dto.name} Ad`,
+            adset_id: adSetId,
+            creative: JSON.stringify({ creative_id: cId }),
+            status: 'ACTIVE',
+          };
+
+          if (dto.pixelId) {
+            adPayload.tracking_specs = JSON.stringify([
+              { 'action.type': ['offsite_conversion'], fb_pixel: [dto.pixelId] },
+            ]);
+          }
+
+          const adRes = await axios.post(`https://graph.facebook.com/${apiVersion}/${formattedAdAccountId}/ads`, null, {
+            params: adPayload,
+          });
+          const aId = adRes.data.id;
+          if (!firstAdId) firstAdId = aId;
+          createdAds.push({ adId: aId, creativeId: cId, pagePostId: pid });
+        }
       } else {
         // Standard link / image ad with multi-text support
-        creativePayload = {
+        const creativePayload = {
           access_token: token,
           name: `${dto.name} Creative`,
           object_story_spec: JSON.stringify({
@@ -1419,40 +1975,42 @@ Return ONLY a valid JSON object matching this schema (no markdown formatting, no
             },
           }),
         };
+
+        const creativeRes = await axios.post(`https://graph.facebook.com/${apiVersion}/${formattedAdAccountId}/adcreatives`, null, {
+          params: creativePayload,
+        });
+        firstCreativeId = creativeRes.data.id;
+
+        const adPayload: any = {
+          access_token: token,
+          name: `${dto.name} Ad`,
+          adset_id: adSetId,
+          creative: JSON.stringify({ creative_id: firstCreativeId }),
+          status: 'ACTIVE',
+        };
+
+        if (dto.pixelId) {
+          adPayload.tracking_specs = JSON.stringify([
+            { 'action.type': ['offsite_conversion'], fb_pixel: [dto.pixelId] },
+          ]);
+        }
+
+        const adRes = await axios.post(`https://graph.facebook.com/${apiVersion}/${formattedAdAccountId}/ads`, null, {
+          params: adPayload,
+        });
+        firstAdId = adRes.data.id;
+        createdAds.push({ adId: firstAdId, creativeId: firstCreativeId });
       }
-
-      const creativeRes = await axios.post(`https://graph.facebook.com/${apiVersion}/${formattedAdAccountId}/adcreatives`, null, {
-        params: creativePayload,
-      });
-      const creativeId = creativeRes.data.id;
-
-      // 4. Create Ad with optional Meta Pixel tracking specs
-      const adPayload: any = {
-        access_token: token,
-        name: `${dto.name} Ad`,
-        adset_id: adSetId,
-        creative: JSON.stringify({ creative_id: creativeId }),
-        status: 'ACTIVE',
-      };
-
-      if (dto.pixelId) {
-        adPayload.tracking_specs = JSON.stringify([
-          { 'action.type': ['offsite_conversion'], fb_pixel: [dto.pixelId] },
-        ]);
-      }
-
-      const adRes = await axios.post(`https://graph.facebook.com/${apiVersion}/${formattedAdAccountId}/ads`, null, {
-        params: adPayload,
-      });
-      const adId = adRes.data.id;
 
       return {
         success: true,
         campaignId,
         adSetId,
-        creativeId,
-        adId,
+        creativeId: firstCreativeId,
+        adId: firstAdId,
+        createdAds,
         creativeSource: isExistingPost ? 'existing_post' : 'upload',
+        creativesCount: isExistingPost ? postIds.length : 1,
         dailyBudget: dto.dailyBudget,
         durationDays,
         headline,

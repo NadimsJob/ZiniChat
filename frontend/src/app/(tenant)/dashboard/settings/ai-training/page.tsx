@@ -9,7 +9,7 @@ import {
   Bot, Key, Save, AlertCircle, RefreshCw, MessageSquare, Plus, Edit2, 
   Trash2, X, Check, Wand2, Eye, Lock, Sliders, Sparkles, ShieldCheck, 
   FileText, AlertTriangle, Send, PlayCircle, HelpCircle, User, CornerDownLeft, Tag, Globe,
-  CreditCard, Truck, PlusCircle, CheckCircle2
+  CreditCard, Truck, PlusCircle, CheckCircle2, PauseCircle, Clock
 } from 'lucide-react';
 import InstructionBanner from '@/components/InstructionBanner';
 import LabelForm from '@/components/labels/LabelForm';
@@ -49,6 +49,8 @@ export default function AiTrainingPage() {
     aiQuota: 0,
     isActive: true,
     replyWhenAssigned: false,
+    smartAutoPauseEnabled: true,
+    smartAutoPauseMinutes: 5,
     agentName: '',
     systemPrompt: '',
     websiteUrl: '',
@@ -418,6 +420,8 @@ export default function AiTrainingPage() {
         aiOrderEnabled: config.aiOrderEnabled,
         isActive: config.isActive,
         replyWhenAssigned: config.replyWhenAssigned,
+        smartAutoPauseEnabled: config.smartAutoPauseEnabled ?? true,
+        smartAutoPauseMinutes: config.smartAutoPauseMinutes ?? 5,
         agentName: config.agentName,
         ...updates
       };
@@ -927,6 +931,105 @@ export default function AiTrainingPage() {
                   {language === 'en' ? 'Save Name' : 'নাম সেভ করুন'}
                 </button>
               </div>
+            </div>
+
+            {/* Smart AI Auto-Pause on Human Intervention */}
+            <div className="pt-3 border-t border-border space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-500">
+                    <PauseCircle className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                      {language === 'en' ? 'Smart Human Takeover & AI Auto-Pause' : 'হিউম্যান টেকওভার ও স্মার্ট AI অটো-পজ'}
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                        {language === 'en' ? 'Recommended' : 'সুপারিশকৃত'}
+                      </span>
+                    </h3>
+                    <p className="text-[11px] text-muted-foreground font-sans">
+                      {language === 'en'
+                        ? 'When a human agent sends a message in Inbox, temporarily pause AI for that chat so you can converse naturally.'
+                        : 'ইনবক্সে কোনো হিউম্যান এজেন্ট রিপ্লাই দিলে কিছুক্ষণের জন্য AI স্বয়ংক্রিয়ভাবে পজ থাকবে যাতে দুজনের কথা সংঘর্ষ না হয়।'}
+                    </p>
+                  </div>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={config.smartAutoPauseEnabled ?? true}
+                    onChange={(e) => {
+                      const val = e.target.checked;
+                      setConfig({ ...config, smartAutoPauseEnabled: val });
+                      handleQuickSave(
+                        { smartAutoPauseEnabled: val },
+                        val
+                          ? (language === 'en' ? 'Smart AI Auto-Pause enabled!' : 'স্মার্ট AI অটো-পজ সক্রিয় করা হয়েছে!')
+                          : (language === 'en' ? 'Smart AI Auto-Pause disabled!' : 'স্মার্ট AI অটো-পজ বন্ধ করা হয়েছে!')
+                      );
+                    }}
+                    className="sr-only peer"
+                  />
+                  <div className="w-9 h-5 bg-muted-foreground/30 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+                </label>
+              </div>
+
+              {/* Pause Duration Chips */}
+              {(config.smartAutoPauseEnabled ?? true) && (
+                <div className="bg-muted/30 border border-border/60 rounded-xl p-2.5 space-y-2">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="font-semibold text-foreground flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-primary" />
+                      {language === 'en' ? 'Auto-Pause Duration after Human Reply:' : 'হিউম্যান রিপ্লাইয়ের পর কতক্ষণ AI পজ থাকবে:'}
+                    </span>
+                    <span className="font-mono text-[10px] text-muted-foreground">
+                      {config.smartAutoPauseMinutes ?? 5} {language === 'en' ? 'minutes' : 'মিনিট'}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      { mins: 1, labelEn: '1 min', labelBn: '১ মিনিট' },
+                      { mins: 2, labelEn: '2 mins', labelBn: '২ মিনিট' },
+                      { mins: 3, labelEn: '3 mins', labelBn: '৩ মিনিট' },
+                      { mins: 5, labelEn: '5 mins (Standard)', labelBn: '৫ মিনিট (স্ট্যান্ডার্ড)' },
+                      { mins: 10, labelEn: '10 mins', labelBn: '১০ মিনিট' },
+                      { mins: 15, labelEn: '15 mins', labelBn: '১৫ মিনিট' },
+                      { mins: 30, labelEn: '30 mins', labelBn: '৩০ মিনিট' },
+                    ].map((item) => {
+                      const isSelected = (config.smartAutoPauseMinutes ?? 5) === item.mins;
+                      return (
+                        <button
+                          key={item.mins}
+                          type="button"
+                          onClick={() => {
+                            setConfig({ ...config, smartAutoPauseMinutes: item.mins });
+                            handleQuickSave(
+                              { smartAutoPauseMinutes: item.mins },
+                              language === 'en' 
+                                ? `AI auto-pause duration set to ${item.mins} minutes!` 
+                                : `AI অটো-পজ সময় ${item.mins} মিনিটে সেট করা হয়েছে!`
+                            );
+                          }}
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all cursor-pointer ${
+                            isSelected
+                              ? 'bg-amber-500 text-white font-bold shadow-sm'
+                              : 'bg-background hover:bg-muted text-muted-foreground border border-border'
+                          }`}
+                        >
+                          {language === 'en' ? item.labelEn : item.labelBn}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <p className="text-[10px] text-muted-foreground leading-relaxed pt-1">
+                    ℹ️ {language === 'en'
+                      ? '⚡ Auto-Resume: If the customer messages after this time and the human has not responded, the AI will automatically resume answering.'
+                      : '⚡ অটো-রেজিউম: এই নির্ধারিত সময় পার হওয়ার পর কাস্টমার আবার কোনো মেসেজ পাঠালে এবং কোনো হিউম্যান রিপ্লাই না দিলে, AI স্বয়ংক্রিয়ভাবে পুনরায় উত্তর দেওয়া শুরু করবে।'}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Persona & System Prompt */}

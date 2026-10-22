@@ -223,6 +223,9 @@ export class AiTrainingService {
       aiOrderEnabled: assistant.aiOrderEnabled,
       isActive: assistant.isActive,
       agentName: assistant.agentName,
+      smartAutoPauseEnabled: (assistant as any).smartAutoPauseEnabled ?? true,
+      smartAutoPauseMinutes: (assistant as any).smartAutoPauseMinutes ?? 5,
+      replyWhenAssigned: (assistant as any).replyWhenAssigned ?? false,
       allowByok,
       planName: activeSub?.plan?.name || 'No Active Plan',
       aiQuota: activeSub?.plan?.aiQuota || 0,
@@ -337,15 +340,28 @@ ${combinedText}`;
     return { prompt };
   }
 
-  async updateByokConfig(tenantId: string, routingMode: string, apiKey?: string, aiOrderEnabled?: boolean, isActive?: boolean, replyWhenAssigned?: boolean, agentName?: string) {
+  async updateByokConfig(
+    tenantId: string, 
+    routingMode?: string, 
+    apiKey?: string, 
+    aiOrderEnabled?: boolean, 
+    isActive?: boolean, 
+    replyWhenAssigned?: boolean, 
+    agentName?: string,
+    smartAutoPauseEnabled?: boolean,
+    smartAutoPauseMinutes?: number
+  ) {
     const assistant = await this.ensureAiAssistantExists(tenantId);
     const planInfo = await this.getConfig(tenantId);
 
-    if (routingMode !== 'system_only' && !planInfo.allowByok) {
+    if (routingMode && routingMode !== 'system_only' && !planInfo.allowByok) {
       throw new BadRequestException('Your current plan does not allow BYOK features.');
     }
 
-    const dataToUpdate: any = { routingMode };
+    const dataToUpdate: any = {};
+    if (routingMode !== undefined) {
+      dataToUpdate.routingMode = routingMode;
+    }
     
     // Encrypt API key using AES-256-GCM before saving to database
     if (apiKey !== undefined) {
@@ -372,6 +388,14 @@ ${combinedText}`;
 
     if (agentName !== undefined) {
       dataToUpdate.agentName = agentName;
+    }
+
+    if (smartAutoPauseEnabled !== undefined) {
+      dataToUpdate.smartAutoPauseEnabled = smartAutoPauseEnabled;
+    }
+
+    if (smartAutoPauseMinutes !== undefined) {
+      dataToUpdate.smartAutoPauseMinutes = Math.max(1, Math.min(60, Number(smartAutoPauseMinutes) || 5));
     }
 
     if (Object.keys(dataToUpdate).length > 0) {

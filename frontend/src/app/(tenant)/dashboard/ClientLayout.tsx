@@ -529,6 +529,43 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
    return requiredFeature.some(f => featuresList.includes(f));
  };
 
+ // Granular route permission checker for tenant agents
+ const isPermittedForUser = (path: string) => {
+   if (!userProfile) return true; // loading
+   if (userProfile.role === 'owner' || userProfile.role === 'admin') return true;
+   const userPerms: string[] = Array.isArray(userProfile.permissions) ? userProfile.permissions : [];
+   // If agent has wildcard or empty array, grant full access
+   if (userPerms.includes('*') || userPerms.length === 0) return true;
+
+   if (path === '/dashboard' || path === '/dashboard/help-center') return true;
+
+   // Check specific route or matching prefix
+   const routePerms: Record<string, string[]> = {
+     '/dashboard/inbox': ['inbox', 'inbox:view', 'inbox:reply'],
+     '/dashboard/settings/inboxes': ['inboxes', 'inboxes:manage', 'settings', 'settings:manage'],
+     '/dashboard/settings/ai-training': ['ai_training', 'ai_training:view', 'ai_training:manage'],
+     '/dashboard/products': ['products', 'products:view', 'products:manage'],
+     '/dashboard/leads': ['leads', 'leads:view', 'leads:manage'],
+     '/dashboard/orders': ['orders', 'orders:view', 'orders:manage'],
+     '/dashboard/broadcasts': ['broadcasts', 'broadcasts:view', 'broadcasts:create'],
+     '/dashboard/support': ['support'],
+     '/dashboard/zini-mail': ['zini_mail', 'zini_mail:view', 'zini_mail:manage'],
+     '/dashboard/settings/meta-ads': ['meta_ads', 'meta_ads:view', 'meta_ads:manage'],
+     '/dashboard/settings/capi-hub': ['capi_hub', 'capi_hub:view', 'capi_hub:manage'],
+     '/dashboard/settings/team': ['team', 'team:view', 'team:manage'],
+     '/dashboard/team': ['team', 'team:view', 'team:manage'],
+     '/dashboard/settings/storage': ['storage', 'storage:view', 'storage:manage', 'settings'],
+     '/dashboard/settings/subscription': ['subscription', 'subscription:view', 'billing:view'],
+     '/dashboard/settings/billing-history': ['billing_history', 'billing:view', 'subscription'],
+   };
+
+   const matchedEntry = Object.entries(routePerms).find(([prefix]) => path === prefix || path.startsWith(prefix + '/'));
+   if (!matchedEntry) return true;
+
+   const required = matchedEntry[1];
+   return required.some((perm) => userPerms.includes(perm));
+ };
+
   const menuGroups = [
     {
       title: language === 'en' ? 'MY HOME' : 'আমার হোম',
@@ -598,7 +635,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
     {
       title: language === 'en' ? 'MARKETING & ADS' : 'মার্কেটিং ও এডস',
       items: [
-        { name: language === 'en' ? 'Zini-Mail' : 'জিনি-মেইল', icon: Mail, href: '/dashboard/zini-mail', hiddenUnlessAllowed: true },
+        { name: language === 'en' ? 'AI Auto Email' : 'এআই অটো ইমেইল', icon: Mail, href: '/dashboard/zini-mail', hiddenUnlessAllowed: true },
         { name: language === 'en' ? 'Meta Ads Manager' : 'মেটা অ্যাডস ম্যানেজার', icon: Facebook, href: '/dashboard/settings/meta-ads', hiddenUnlessAllowed: true },
         { name: language === 'en' ? 'CAPI Hub' : 'CAPI Hub', icon: Server, href: '/dashboard/settings/capi-hub', hiddenUnlessAllowed: true },
       ]
@@ -682,8 +719,11 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
         <nav className="flex-1 px-1.5 py-2 space-y-3 overflow-y-auto custom-scrollbar pb-20">
           {menuGroups.map((group, groupIdx) => {
             const visibleItems = group.items.filter(item => {
-              if ((item as any).hiddenUnlessAllowed) {
-                return isFeatureAssigned(item.href);
+              if ((item as any).hiddenUnlessAllowed && !isFeatureAssigned(item.href)) {
+                return false;
+              }
+              if (!isPermittedForUser(item.href)) {
+                return false;
               }
               return true;
             });
@@ -1122,7 +1162,29 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
       );
     })()
   )}
- {children}
+  {!isPermittedForUser(pathname) ? (
+    <div className="flex flex-col items-center justify-center min-h-[60vh] p-6 text-center">
+      <div className="w-16 h-16 rounded-2xl bg-amber-500/10 dark:bg-amber-500/20 text-amber-500 flex items-center justify-center mb-4 shadow-lg shadow-amber-500/10">
+        <Lock className="w-8 h-8" />
+      </div>
+      <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
+        {language === 'en' ? 'Access Restricted' : 'প্রবেশাধিকার সীমাবদ্ধ'}
+      </h2>
+      <p className="text-sm text-slate-500 dark:text-zinc-400 max-w-md mb-6">
+        {language === 'en'
+          ? 'You do not have permission to access this module. Please contact your workspace administrator or owner to update your permissions.'
+          : 'আপনার এই মডিউলে প্রবেশের অনুমতি নেই। অনুমতি পেতে আপনার টিম অ্যাডমিন বা ওনারের সাথে যোগাযোগ করুন।'}
+      </p>
+      <Link
+        href="/dashboard"
+        className="px-4 py-2 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
+      >
+        {language === 'en' ? 'Back to Dashboard' : 'ড্যাশবোর্ডে ফিরে যান'}
+      </Link>
+    </div>
+  ) : (
+    children
+  )}
  </div>
 
  {/* Mobile Bottom Navigation Bar */}

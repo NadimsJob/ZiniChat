@@ -1,0 +1,8 @@
+-- AlterTable
+ALTER TABLE "conversations" ADD COLUMN IF NOT EXISTS "aiAutoPausedUntil" TIMESTAMP(3),
+ADD COLUMN IF NOT EXISTS "lastHumanMessageAt" TIMESTAMP(3);
+
+-- AlterTable
+ALTER TABLE "ai_assistants" ADD COLUMN IF NOT EXISTS "smartAutoPauseEnabled" BOOLEAN NOT NULL DEFAULT true,
+ADD COLUMN IF NOT EXISTS "smartAutoPauseMinutes" INTEGER NOT NULL DEFAULT 5,
+ADD COLUMN IF NOT EXISTS "replyWhenAssigned" BOOLEAN NOT NULL DEFAULT false;

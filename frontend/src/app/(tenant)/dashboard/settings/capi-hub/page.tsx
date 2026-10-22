@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 import { useLanguage } from '@/components/LanguageProvider';
 import { 
@@ -47,6 +48,7 @@ const STANDARD_EVENT_PRESETS = [
 
 export default function CapiHubPage() {
   const { language } = useLanguage();
+  const router = useRouter();
   const { enabled: isFeatureEnabled, loading: isFeatureLoading } = useRolloutFlag('capi_hub');
   
   const [integration, setIntegration] = useState<any>(null);
@@ -58,6 +60,10 @@ export default function CapiHubPage() {
   const [testResult, setTestResult] = useState<{ success: boolean; message: string; data?: any } | null>(null);
   const [refreshingLogs, setRefreshingLogs] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  // Subscription Plan Synchronization
+  const [quotaData, setQuotaData] = useState<{ isSubscriptionActive?: boolean } | null>(null);
+  const isPlanActive = quotaData ? quotaData.isSubscriptionActive !== false : true;
   
   // Modals
   const [showAddModal, setShowAddModal] = useState(false);
@@ -119,6 +125,15 @@ export default function CapiHubPage() {
   };
 
   const handleConnectDiscoveredPixel = async (targetPixelId?: string) => {
+    if (!isPlanActive) {
+      toast.error(
+        language === 'en'
+          ? 'Subscription plan expired. Please renew your plan to connect Meta Pixels.'
+          : 'সাবস্ক্রিপশন প্ল্যানের মেয়াদ শেষ। মেটা পিক্সেল যুক্ত করতে প্ল্যান রিনিউ করুন।'
+      );
+      return;
+    }
+
     const pixelId = targetPixelId || selectedDiscoveredPixelId;
     if (!pixelId) {
       toast.error(language === 'en' ? 'Please select a Meta Pixel first' : 'অনুগ্রহ করে প্রথমে একটি মেটা পিক্সেল নির্বাচন করুন');
@@ -167,12 +182,18 @@ export default function CapiHubPage() {
       const token = Cookies.get('access_token');
       const headers = { 'Authorization': `Bearer ${token}` };
       
-      const [intRes, configsRes, logsRes] = await Promise.all([
+      const [intRes, configsRes, logsRes, quotasRes] = await Promise.all([
         fetch(`${API}/capi-hub/integration`, { headers }),
         fetch(`${API}/capi-hub/event-configs`, { headers }),
         fetch(`${API}/capi-hub/logs`, { headers }),
+        fetch(`${API}/billing/quotas`, { headers }).catch(() => null),
         fetchDiscoveredPixels()
       ]);
+
+      if (quotasRes && quotasRes.ok) {
+        const qData = await quotasRes.json();
+        setQuotaData({ isSubscriptionActive: qData.isSubscriptionActive });
+      }
 
       if (intRes && intRes.ok) {
         const data = await intRes.json();
@@ -187,6 +208,11 @@ export default function CapiHubPage() {
           if (data.pixelId) {
             setSelectedDiscoveredPixelId(data.pixelId);
           }
+        }
+      } else if (intRes && intRes.status === 403) {
+        const errData = await intRes.clone().json().catch(() => ({}));
+        if (errData?.message?.toLowerCase()?.includes('subscription') || errData?.message?.toLowerCase()?.includes('expired')) {
+          setQuotaData({ isSubscriptionActive: false });
         }
       }
       
@@ -221,6 +247,15 @@ export default function CapiHubPage() {
   };
 
   const handleSaveIntegration = async () => {
+    if (!isPlanActive) {
+      toast.error(
+        language === 'en'
+          ? 'Subscription plan expired. Please renew your plan to configure CAPI tracking.'
+          : 'সাবস্ক্রিপশন প্ল্যানের মেয়াদ শেষ। CAPI সেটিংস সংরক্ষণ করতে প্ল্যান রিনিউ করুন।'
+      );
+      return;
+    }
+
     if (!formData.pixelId || !formData.accessToken) {
       toast.error(language === 'en' ? 'Pixel ID and Access Token are required' : 'Pixel ID এবং Access Token আবশ্যক');
       return;
@@ -269,6 +304,15 @@ export default function CapiHubPage() {
   };
 
   const handleSendTestEvent = async () => {
+    if (!isPlanActive) {
+      toast.error(
+        language === 'en'
+          ? 'Subscription plan expired. Server-side test pings are suspended.'
+          : 'সাবস্ক্রিপশন প্ল্যানের মেয়াদ শেষ। সার্ভার-সাইড টেস্ট ইভেন্ট পাঠানো স্থগিত।'
+      );
+      return;
+    }
+
     setTestingPing(true);
     setTestResult(null);
     try {
@@ -315,6 +359,15 @@ export default function CapiHubPage() {
   };
 
   const handleToggleEventConfig = async (eventName: string, field: string, value: boolean) => {
+    if (!isPlanActive) {
+      toast.error(
+        language === 'en'
+          ? 'Subscription plan expired. Please renew your plan to update event tracking.'
+          : 'সাবস্ক্রিপশন প্ল্যানের মেয়াদ শেষ। ইভেন্ট ট্র্যাকিং পরিবর্তন করতে প্ল্যান রিনিউ করুন।'
+      );
+      return;
+    }
+
     // Optimistic UI update
     setEventConfigs(prev => prev.map(c => c.eventName === eventName ? { ...c, [field]: value } : c));
     if (activeConfigModal?.eventName === eventName) {
@@ -349,6 +402,15 @@ export default function CapiHubPage() {
   };
 
   const handleAddEvent = async () => {
+    if (!isPlanActive) {
+      toast.error(
+        language === 'en'
+          ? 'Subscription plan expired. Please renew your plan to add new events.'
+          : 'সাবস্ক্রিপশন প্ল্যানের মেয়াদ শেষ। নতুন ইভেন্ট যুক্ত করতে প্ল্যান রিনিউ করুন।'
+      );
+      return;
+    }
+
     const finalEventName = newEventName === 'Custom' ? customEventInput.trim() : newEventName;
     if (!finalEventName) {
       toast.error(language === 'en' ? 'Event name is required' : 'ইভেন্টের নাম আবশ্যক');
@@ -451,14 +513,49 @@ export default function CapiHubPage() {
 
           {integration?.isActive && (
             <div className="flex items-center gap-2 shrink-0">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                {language === 'en' ? 'Active & Tracking' : 'সক্রিয় ও ট্র্যাকিং চালু'}
-              </span>
+              {isPlanActive ? (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  {language === 'en' ? 'Active & Tracking' : 'সক্রিয় ও ট্র্যাকিং চালু'}
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/30">
+                  <span className="w-2 h-2 rounded-full bg-rose-400" />
+                  {language === 'en' ? 'Tracking Paused (Plan Expired)' : 'ট্র্যাকিং স্থগিত (মেয়াদ শেষ)'}
+                </span>
+              )}
             </div>
           )}
         </div>
       </div>
+
+      {/* Plan Expired Warning Banner */}
+      {!isPlanActive && (
+        <div className="bg-rose-500/10 border border-rose-500/30 rounded-2xl p-4 sm:p-5 backdrop-blur-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg shadow-rose-950/20">
+          <div className="flex items-start gap-3.5">
+            <div className="p-2.5 bg-rose-500/20 text-rose-400 rounded-xl mt-0.5 border border-rose-500/30 shrink-0">
+              <AlertCircle className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-rose-200 flex items-center gap-2">
+                {language === 'en' ? '⚠️ Subscription Plan Expired — Server-Side Tracking Suspended' : '⚠️ সাবস্ক্রিপশন প্ল্যানের মেয়াদ শেষ — সার্ভার-সাইড ট্র্যাকিং স্থগিত'}
+              </h3>
+              <p className="text-xs text-rose-300/80 mt-1 max-w-2xl leading-relaxed">
+                {language === 'en'
+                  ? 'Your subscription plan has expired. Meta Conversions API (CAPI) real-time event forwarding, deduplication sync, test pings, and webhook triggers are paused. Renew your subscription to restore real-time ROAS tracking.'
+                  : 'আপনার সাবস্ক্রিপশন প্ল্যানের মেয়াদ শেষ হয়ে গেছে। মেটা কনভার্শনস এপিআই (CAPI) রিয়েল-টাইম ইভেন্ট ফরোয়ার্ডিং, টেস্ট পিং এবং ওয়েবহুক সিঙ্ক স্থগিত করা হয়েছে। নির্ভুল ROAS ট্র্যাকিং সচল রাখতে প্ল্যান রিনিউ করুন।'}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => router.push('/dashboard/settings/subscription')}
+            className="px-4 py-2.5 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white rounded-xl text-xs font-semibold transition-all shadow-lg shadow-rose-900/40 flex items-center gap-2 shrink-0 active:scale-95"
+          >
+            <Zap className="w-4 h-4 fill-white" />
+            {language === 'en' ? 'Renew Plan Now' : 'প্ল্যান রিনিউ করুন'}
+          </button>
+        </div>
+      )}
 
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

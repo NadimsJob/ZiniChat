@@ -46,6 +46,8 @@ describe('McpAdsService', () => {
 
     const quotaService = {
       checkAiQuota: jest.fn().mockResolvedValue(undefined),
+      checkActiveSubscription: jest.fn().mockResolvedValue(true),
+      isTenantSubscriptionActive: jest.fn().mockResolvedValue(true),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -461,6 +463,103 @@ describe('McpAdsService', () => {
           }),
         }),
       );
+    });
+
+    it('launches campaign with multiple existing posts as separate ads', async () => {
+      prisma.tenantMetaAdAccount.findFirst.mockResolvedValueOnce({
+        adAccountId: '123456789',
+        accessToken: mockEncryptedToken,
+        facebookPageId: 'page_456',
+        status: 'active',
+      });
+
+      mockedAxios.post
+        .mockResolvedValueOnce({ data: { id: 'camp_multi_1' } }) // campaign
+        .mockResolvedValueOnce({ data: { id: 'adset_multi_1' } }) // adset
+        .mockResolvedValueOnce({ data: { id: 'creative_multi_1' } }) // creative 1
+        .mockResolvedValueOnce({ data: { id: 'ad_multi_1' } }) // ad 1
+        .mockResolvedValueOnce({ data: { id: 'creative_multi_2' } }) // creative 2
+        .mockResolvedValueOnce({ data: { id: 'ad_multi_2' } }); // ad 2
+
+      const result = await service.launchCustomCampaign(mockTenantId, {
+        adAccountId: '123456789',
+        name: 'Multi Post Campaign',
+        dailyBudget: 15,
+        creativeSource: 'existing_post',
+        pagePostIds: ['page_456_post_1', 'page_456_post_2'],
+        placements: ['fb_feed', 'ig_feed'],
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.creativesCount).toBe(2);
+      expect(result.createdAds).toHaveLength(2);
+    });
+  });
+
+  describe('aiRetargetAudience', () => {
+    it('formulates refined targeting and deducts 1 AI response credit', async () => {
+      prisma.tenantMetaAdAccount.findFirst.mockResolvedValueOnce({
+        adAccountId: '123456789',
+        accessToken: mockEncryptedToken,
+        status: 'active',
+      });
+
+      mockedAxios.get.mockResolvedValueOnce({
+        data: {
+          data: [
+            {
+              id: 'adset_123',
+              name: 'AdSet 1',
+              targeting: { geo_locations: { countries: ['BD'] }, age_min: 18, age_max: 65 },
+            },
+          ],
+        },
+      });
+
+      const result = await service.aiRetargetAudience(mockTenantId, {
+        adAccountId: '123456789',
+        campaignId: 'camp_123',
+        problemDescription: 'Casual young students messaging, need genuine buyers 25-50',
+      });
+
+      expect(prisma.aiUsageLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            unitsConsumed: 1,
+            featureName: 'meta_ads_ai_retarget',
+          }),
+        }),
+      );
+      expect(result.campaignId).toBe('camp_123');
+      expect(result.suggestedTargeting.ageMin).toBeGreaterThanOrEqual(22);
+      expect(result.aiResponseQuotaCost).toBe(1);
+    });
+  });
+
+  describe('updateCampaignDetails', () => {
+    it('updates campaign name and ad set targeting on Meta', async () => {
+      prisma.tenantMetaAdAccount.findFirst.mockResolvedValueOnce({
+        adAccountId: '123456789',
+        accessToken: mockEncryptedToken,
+        status: 'active',
+      });
+
+      // Campaign update response
+      mockedAxios.post.mockResolvedValueOnce({ data: { success: true } });
+      // Ad set update response
+      mockedAxios.post.mockResolvedValueOnce({ data: { success: true } });
+
+      const result = await service.updateCampaignDetails(mockTenantId, 'camp_123', {
+        adAccountId: '123456789',
+        adSetId: 'adset_123',
+        name: 'Updated Campaign Name',
+        dailyBudget: 25,
+        targeting: { ageMin: 24, ageMax: 50, countries: ['BD'] },
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.updatedFields.name).toBe('Updated Campaign Name');
+      expect(result.updatedFields.dailyBudget).toBe(25);
     });
   });
 });

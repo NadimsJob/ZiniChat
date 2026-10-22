@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { TenantSmtpService, UpsertTenantSmtpDto } from './tenant-smtp.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CryptoService } from '../crypto/crypto.service';
+import { QuotaService } from '../tenants/quota.service';
 import { BadRequestException, NotFoundException, InternalServerErrorException } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 
@@ -12,8 +13,15 @@ describe('TenantSmtpService', () => {
   let mockPrisma: any;
   let mockCrypto: any;
   let mockTransporter: any;
+  let mockQuota: any;
 
   beforeEach(async () => {
+    mockQuota = {
+      checkActiveSubscription: jest.fn().mockResolvedValue(true),
+      isTenantSubscriptionActive: jest.fn().mockResolvedValue({ isActive: true }),
+      checkAiQuota: jest.fn().mockResolvedValue(undefined),
+    };
+
     mockTransporter = {
       verify: jest.fn().mockResolvedValue(true),
       sendMail: jest.fn().mockResolvedValue({ messageId: 'msg-test-123' }),
@@ -40,6 +48,7 @@ describe('TenantSmtpService', () => {
         TenantSmtpService,
         { provide: PrismaService, useValue: mockPrisma },
         { provide: CryptoService, useValue: mockCrypto },
+        { provide: QuotaService, useValue: mockQuota },
       ],
     }).compile();
 

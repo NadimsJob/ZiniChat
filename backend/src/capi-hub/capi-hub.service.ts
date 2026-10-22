@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, ForbiddenException, BadRequestException,
 import { PrismaService } from '../prisma/prisma.service';
 import { CryptoService } from '../crypto/crypto.service';
 import { FeatureRolloutService } from '../feature-rollout/feature-rollout.service';
+import { QuotaService } from '../tenants/quota.service';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import * as crypto from 'crypto';
@@ -97,6 +98,7 @@ export class CapiHubService {
     private prisma: PrismaService,
     private cryptoService: CryptoService,
     private featureRollout: FeatureRolloutService,
+    private quotaService: QuotaService,
     @InjectQueue('capi-events') private capiQueue: Queue
   ) {}
 
@@ -106,6 +108,7 @@ export class CapiHubService {
     datasetId?: string;
     testEventCode?: string;
   }) {
+    await this.quotaService.checkActiveSubscription(tenantId, 'CAPI Hub');
     const isEnabled = await this.featureRollout.isFeatureEnabled(tenantId, 'capi_hub');
     if (!isEnabled) throw new ForbiddenException('CAPI Hub feature is not enabled for this tenant');
 
@@ -203,6 +206,7 @@ export class CapiHubService {
   }
 
   async updateEventConfig(tenantId: string, eventName: string, data: any) {
+    await this.quotaService.checkActiveSubscription(tenantId, 'CAPI Hub');
     const integration = await this.prisma.tenantCapiIntegration.findUnique({ where: { tenantId } });
     if (!integration) throw new NotFoundException('CAPI integration not found');
 
@@ -229,6 +233,7 @@ export class CapiHubService {
   }
 
   async sendTestEvent(tenantId: string, testEventCodeOverride?: string) {
+    await this.quotaService.checkActiveSubscription(tenantId, 'CAPI Hub');
     const isEnabled = await this.featureRollout.isFeatureEnabled(tenantId, 'capi_hub');
     if (!isEnabled) throw new ForbiddenException('CAPI Hub feature is not enabled for this tenant');
 
@@ -313,9 +318,15 @@ export class CapiHubService {
   }
 
   async fireEvent(tenantId: string, eventName: string, payload: any, source: string) {
-    // 1. Check feature flag
+    // 1. Check feature flag & subscription active status
     const isEnabled = await this.featureRollout.isFeatureEnabled(tenantId, 'capi_hub');
     if (!isEnabled) return;
+
+    const subCheck = await this.quotaService.isTenantSubscriptionActive(tenantId);
+    if (!subCheck.isActive) {
+      this.logger.warn(`Skipping CAPI event '${eventName}' for tenant ${tenantId}: Subscription expired or inactive.`);
+      return;
+    }
 
     // 2. Check integration
     const integration = await this.prisma.tenantCapiIntegration.findUnique({ where: { tenantId } });

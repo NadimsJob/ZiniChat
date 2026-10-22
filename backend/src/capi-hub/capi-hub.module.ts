@@ -4,6 +4,7 @@ import { CapiHubService } from './capi-hub.service';
 import { CapiHubController } from './capi-hub.controller';
 import { CapiHubProcessor } from './capi-hub.processor';
 import { FeatureRolloutModule } from '../feature-rollout/feature-rollout.module';
+import { TenantsModule } from '../tenants/tenants.module';
 
 @Module({
   imports: [
@@ -11,6 +12,7 @@ import { FeatureRolloutModule } from '../feature-rollout/feature-rollout.module'
       name: 'capi-events',
     }),
     FeatureRolloutModule,
+    TenantsModule,
   ],
   providers: [CapiHubService, CapiHubProcessor],
   controllers: [CapiHubController],

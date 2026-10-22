@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
 import Link from 'next/link';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { toast, Toaster } from 'react-hot-toast';
 import { useLanguage } from '@/components/LanguageProvider';
 import { useRolloutFlag } from '@/hooks/useRolloutFlag';
@@ -34,12 +34,15 @@ import {
   Clock,
   ShieldCheck,
   TrendingUp,
-  X
+  X,
+  Zap,
+  Lock
 } from 'lucide-react';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function CampaignDetailsPage() {
+  const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();
   const campaignId = params.id as string;
@@ -51,6 +54,19 @@ export default function CampaignDetailsPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [campaign, setCampaign] = useState<any>(null);
+
+  // Subscription Plan Synchronization
+  const [quotaData, setQuotaData] = useState<{
+    isSubscriptionActive?: boolean;
+    aiQuota?: number;
+    aiUsed?: number;
+  } | null>(null);
+
+  const isPlanActive = quotaData
+    ? quotaData.isSubscriptionActive !== false
+    : campaign
+    ? campaign.isSubscriptionActive !== false
+    : true;
 
   // Leads and Filter State
   const initialFilter = searchParams.get('filter') || 'all';
@@ -69,7 +85,20 @@ export default function CampaignDetailsPage() {
       const token = Cookies.get('access_token');
       const headers = { Authorization: `Bearer ${token}` };
 
-      const res = await fetch(`${API}/tenant/outreach/campaigns/${campaignId}`, { headers });
+      const [res, quotasRes] = await Promise.all([
+        fetch(`${API}/tenant/outreach/campaigns/${campaignId}`, { headers }),
+        fetch(`${API}/billing/quotas`, { headers }).catch(() => null),
+      ]);
+
+      if (quotasRes && quotasRes.ok) {
+        const qData = await quotasRes.json();
+        setQuotaData({
+          isSubscriptionActive: qData.isSubscriptionActive,
+          aiQuota: qData.aiQuota,
+          aiUsed: qData.aiUsed,
+        });
+      }
+
       if (!res.ok) throw new Error('Campaign not found');
       const data = await res.json();
       setCampaign(data);
@@ -122,6 +151,15 @@ export default function CampaignDetailsPage() {
 
   // Dispatch Controls
   const handleStartCampaign = async () => {
+    if (!isPlanActive) {
+      toast.error(
+        language === 'en'
+          ? 'Subscription plan expired. Please renew your plan to start campaigns.'
+          : 'সাবস্ক্রিপশন প্ল্যানের মেয়াদ শেষ। ক্যাম্পেইন চালু করতে প্ল্যান রিনিউ করুন।'
+      );
+      return;
+    }
+
     try {
       setActionLoading(true);
       const token = Cookies.get('access_token');
@@ -166,6 +204,15 @@ export default function CampaignDetailsPage() {
   };
 
   const handleResumeCampaign = async () => {
+    if (!isPlanActive) {
+      toast.error(
+        language === 'en'
+          ? 'Subscription plan expired. Please renew your plan to resume campaigns.'
+          : 'সাবস্ক্রিপশন প্ল্যানের মেয়াদ শেষ। ক্যাম্পেইন পুনরায় চালু করতে প্ল্যান রিনিউ করুন।'
+      );
+      return;
+    }
+
     try {
       setActionLoading(true);
       const token = Cookies.get('access_token');
@@ -187,6 +234,15 @@ export default function CampaignDetailsPage() {
 
   // 1-Click Harvest
   const handleTriggerHarvest = async () => {
+    if (!isPlanActive) {
+      toast.error(
+        language === 'en'
+          ? 'Subscription plan expired. Please renew your plan to harvest leads.'
+          : 'সাবস্ক্রিপশন প্ল্যানের মেয়াদ শেষ। নতুন লিড সংগ্রহ করতে প্ল্যান রিনিউ করুন।'
+      );
+      return;
+    }
+
     try {
       setActionLoading(true);
       const token = Cookies.get('access_token');
@@ -214,6 +270,15 @@ export default function CampaignDetailsPage() {
 
   // 1-Click Retarget "Clicked (No Order Yet)" Leads
   const handleRetargetHotLeads = async () => {
+    if (!isPlanActive) {
+      toast.error(
+        language === 'en'
+          ? 'Subscription plan expired. Please renew your plan to retarget leads.'
+          : 'সাবস্ক্রিপশন প্ল্যানের মেয়াদ শেষ। লিড রিটার্গেট করতে প্ল্যান রিনিউ করুন।'
+      );
+      return;
+    }
+
     try {
       setActionLoading(true);
       const token = Cookies.get('access_token');
@@ -243,6 +308,15 @@ export default function CampaignDetailsPage() {
 
   // CSV Export
   const handleExportCsv = (filterType = activeFilter) => {
+    if (!isPlanActive) {
+      toast.error(
+        language === 'en'
+          ? 'Subscription plan expired. Please renew your plan to export leads.'
+          : 'সাবস্ক্রিপশন প্ল্যানের মেয়াদ শেষ। লিড এক্সপোর্ট করতে প্ল্যান রিনিউ করুন।'
+      );
+      return;
+    }
+
     const token = Cookies.get('access_token');
     window.open(
       `${API}/tenant/outreach/campaigns/${campaignId}/export-leads?filter=${filterType}&token=${token}`,
@@ -336,12 +410,12 @@ export default function CampaignDetailsPage() {
               <span
                 className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
                   campaign?.status === 'running'
-                    ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 animate-pulse'
+                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 animate-pulse'
                     : campaign?.status === 'paused'
-                    ? 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                    ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30'
                     : campaign?.status === 'completed'
-                    ? 'bg-blue-500/10 text-blue-500 border-blue-500/20'
-                    : 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20'
+                    ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30'
+                    : 'bg-zinc-500/10 text-zinc-600 dark:text-zinc-300 border-zinc-500/30'
                 }`}
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-current" />
@@ -361,10 +435,10 @@ export default function CampaignDetailsPage() {
             <button
               onClick={handleTriggerHarvest}
               disabled={actionLoading}
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-[12px] font-semibold rounded-xl bg-surface border border-surface-hover hover:bg-surface-hover text-foreground transition-colors shadow-sm disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-[12px] font-semibold rounded-xl bg-surface border border-border/80 dark:border-zinc-800 hover:bg-surface-hover text-foreground transition-colors shadow-sm disabled:opacity-50"
             >
               <Search className={`w-3.5 h-3.5 text-blue-500 ${actionLoading ? 'animate-spin' : ''}`} />
-              {language === 'en' ? 'Harvest Leads' : 'লিড হার্ভেস্ট করুন'}
+              {language === 'en' ? 'Find New Leads' : 'নতুন কাস্টমার খুঁজুন'}
             </button>
 
             {campaign?.status === 'running' ? (
@@ -406,6 +480,34 @@ export default function CampaignDetailsPage() {
           </div>
         </div>
       </div>
+
+      {/* Plan Expired Warning Banner */}
+      {!isPlanActive && (
+        <div className="bg-rose-500/10 border border-rose-500/30 rounded-2xl p-4 sm:p-5 backdrop-blur-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg shadow-rose-950/20">
+          <div className="flex items-start gap-3.5">
+            <div className="p-2.5 bg-rose-500/20 text-rose-400 rounded-xl mt-0.5 border border-rose-500/30 shrink-0">
+              <AlertTriangle className="w-5 h-5 text-rose-400" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-rose-200 flex items-center gap-2">
+                {language === 'en' ? '⚠️ Subscription Plan Expired — Campaign Controls Locked' : '⚠️ সাবস্ক্রিপশন প্ল্যানের মেয়াদ শেষ — ক্যাম্পেইন অ্যাকশন লকড'}
+              </h3>
+              <p className="text-xs text-rose-300/80 mt-1 max-w-2xl leading-relaxed">
+                {language === 'en'
+                  ? 'Your subscription plan has expired. Starting, resuming, lead harvesting, retargeting, and CSV exporting are locked until your plan is renewed.'
+                  : 'আপনার সাবস্ক্রিপশন প্ল্যানের মেয়াদ শেষ হয়ে গেছে। ক্যাম্পেইন শুরু, পুনরায় চালু, নতুন লিড সংগ্রহ, রিটার্গেটিং এবং সিএসভি এক্সপোর্ট বন্ধ রয়েছে। অ্যাকশন সচল করতে প্ল্যান রিনিউ করুন।'}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => router.push('/dashboard/settings/subscription')}
+            className="px-4 py-2.5 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white rounded-xl text-xs font-semibold transition-all shadow-lg shadow-rose-900/40 flex items-center gap-2 shrink-0 active:scale-95"
+          >
+            <Zap className="w-4 h-4 fill-white" />
+            {language === 'en' ? 'Renew Plan Now' : 'প্ল্যান রিনিউ করুন'}
+          </button>
+        </div>
+      )}
 
       {/* 5-Stage Visual Conversion Funnel Bar */}
       <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-4 sm:p-5 shadow-sm space-y-3">
@@ -691,8 +793,8 @@ export default function CampaignDetailsPage() {
                           : l.openedAt
                           ? 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20'
                           : l.status === 'sent'
-                          ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
-                          : 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20'
+                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+                          : 'bg-zinc-500/10 text-zinc-600 dark:text-zinc-300 border-zinc-500/30'
                       }`}
                     >
                       {l.orderedAt
@@ -805,8 +907,8 @@ export default function CampaignDetailsPage() {
                               : l.openedAt
                               ? 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20'
                               : l.status === 'sent'
-                              ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
-                              : 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20'
+                              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+                              : 'bg-zinc-500/10 text-zinc-600 dark:text-zinc-300 border-zinc-500/30'
                           }`}
                         >
                           {l.orderedAt

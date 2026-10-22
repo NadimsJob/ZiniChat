@@ -6,6 +6,7 @@ import { toast, Toaster } from 'react-hot-toast';
 import { useLanguage } from '@/components/LanguageProvider';
 import { useRolloutFlag } from '@/hooks/useRolloutFlag';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Mail,
   ShieldCheck,
@@ -32,6 +33,7 @@ const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 type ProviderKey = 'gmail' | 'outlook' | 'custom';
 
 export default function TenantSmtpSettingsPage() {
+  const router = useRouter();
   const { language } = useLanguage();
   const { enabled: isFeatureEnabled, loading: isFeatureLoading } = useRolloutFlag('ai_email_outreach');
 
@@ -44,6 +46,15 @@ export default function TenantSmtpSettingsPage() {
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [testRecipient, setTestRecipient] = useState('');
   const [selectedProvider, setSelectedProvider] = useState<ProviderKey>('gmail');
+
+  // Subscription Plan Synchronization
+  const [quotaData, setQuotaData] = useState<{
+    isSubscriptionActive?: boolean;
+    aiQuota?: number;
+    aiUsed?: number;
+  } | null>(null);
+
+  const isPlanActive = quotaData ? quotaData.isSubscriptionActive !== false : true;
 
   const [smtpData, setSmtpData] = useState<any>(null);
   const [form, setForm] = useState({
@@ -60,9 +71,23 @@ export default function TenantSmtpSettingsPage() {
   const fetchSmtpSetting = async () => {
     try {
       const token = Cookies.get('access_token');
-      const res = await fetch(`${API}/tenant/smtp`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const [res, quotasRes] = await Promise.all([
+        fetch(`${API}/tenant/smtp`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`${API}/billing/quotas`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }).catch(() => null),
+      ]);
+
+      if (quotasRes && quotasRes.ok) {
+        const qData = await quotasRes.json();
+        setQuotaData({
+          isSubscriptionActive: qData.isSubscriptionActive,
+          aiQuota: qData.aiQuota,
+          aiUsed: qData.aiUsed,
+        });
+      }
 
       if (res.ok) {
         const data = await res.json();
@@ -175,6 +200,15 @@ export default function TenantSmtpSettingsPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isPlanActive) {
+      toast.error(
+        language === 'en'
+          ? 'Subscription plan expired. Please renew your plan to configure SMTP settings.'
+          : 'সাবস্ক্রিপশন প্ল্যানের মেয়াদ শেষ। এসএমটিপি কনফিগার করতে প্ল্যান রিনিউ করুন।'
+      );
+      return;
+    }
+
     setSaving(true);
     try {
       const token = Cookies.get('access_token');
@@ -222,6 +256,15 @@ export default function TenantSmtpSettingsPage() {
   };
 
   const handleVerify = async () => {
+    if (!isPlanActive) {
+      toast.error(
+        language === 'en'
+          ? 'Subscription plan expired. Please renew your plan to verify SMTP connection.'
+          : 'সাবস্ক্রিপশন প্ল্যানের মেয়াদ শেষ। এসএমটিপি কানেকশন ভেরিফাই করতে প্ল্যান রিনিউ করুন।'
+      );
+      return;
+    }
+
     setVerifying(true);
     try {
       const token = Cookies.get('access_token');
@@ -401,6 +444,34 @@ export default function TenantSmtpSettingsPage() {
           )}
         </div>
       </div>
+
+      {/* Plan Expired Warning Banner */}
+      {!isPlanActive && (
+        <div className="bg-rose-500/10 border border-rose-500/30 rounded-2xl p-4 sm:p-5 backdrop-blur-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg shadow-rose-950/20">
+          <div className="flex items-start gap-3.5">
+            <div className="p-2.5 bg-rose-500/20 text-rose-400 rounded-xl mt-0.5 border border-rose-500/30 shrink-0">
+              <AlertTriangle className="w-5 h-5 text-rose-400" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-rose-200 flex items-center gap-2">
+                {language === 'en' ? '⚠️ Subscription Plan Expired — SMTP Settings Locked' : '⚠️ সাবস্ক্রিপশন প্ল্যানের মেয়াদ শেষ — এসএমটিপি সেটিংস লকড'}
+              </h3>
+              <p className="text-xs text-rose-300/80 mt-1 max-w-2xl leading-relaxed">
+                {language === 'en'
+                  ? 'Your subscription plan has expired. Connecting new SMTP credentials and verifying email connections are locked until your plan is renewed.'
+                  : 'আপনার সাবস্ক্রিপশন প্ল্যানের মেয়াদ শেষ হয়ে গেছে। নতুন এসএমটিপি সংযোগ ও কানেকশন ভেরিফিকেশন লক করা হয়েছে। সচল করতে প্ল্যান রিনিউ করুন।'}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => router.push('/dashboard/settings/subscription')}
+            className="px-4 py-2.5 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white rounded-xl text-xs font-semibold transition-all shadow-lg shadow-rose-900/40 flex items-center gap-2 shrink-0 active:scale-95"
+          >
+            <Zap className="w-4 h-4 fill-white" />
+            {language === 'en' ? 'Renew Plan Now' : 'প্ল্যান রিনিউ করুন'}
+          </button>
+        </div>
+      )}
 
       {/* Provider Selector Cards (Persistent & User-Friendly) */}
       <div className="space-y-2">

@@ -202,6 +202,62 @@ describe('OrchestratorService', () => {
     expect(aiService.generateCompletion).not.toHaveBeenCalled();
   });
 
+  describe('Smart Human Takeover Auto-Pause Engine', () => {
+    it('should skip AI auto-reply when smart auto-pause is active (aiAutoPausedUntil in future)', async () => {
+      const futurePauseUntil = new Date(Date.now() + 5 * 60 * 1000);
+      prismaService.message.findUnique.mockResolvedValue({
+        id: 'msg_paused',
+        direction: 'inbound',
+        type: 'text',
+        content: { text: 'Customer query' },
+        conversationId: 'c_paused',
+        conversation: {
+          tenantId: 't1',
+          id: 'c_paused',
+          aiAutoPausedUntil: futurePauseUntil,
+          channelConnection: { id: 'conn1', isAiAutoReplyEnabled: true },
+        },
+      });
+
+      const result = await service.processMessage('msg_paused');
+      expect(result).toEqual({ skipped: true, reason: 'smart_auto_pause_active' });
+      expect(aiService.generateCompletion).not.toHaveBeenCalled();
+    });
+
+    it('should auto-resume AI, clear aiAutoPausedUntil and broadcast conversation:ai_resumed when pause expires', async () => {
+      const pastPauseUntil = new Date(Date.now() - 10 * 1000); // 10s ago
+      prismaService.message.findUnique.mockResolvedValue({
+        id: 'msg_resumed',
+        direction: 'inbound',
+        type: 'text',
+        content: { text: 'Customer query after pause expired' },
+        conversationId: 'c_resumed',
+        conversation: {
+          tenantId: 't1',
+          id: 'c_resumed',
+          aiAutoPausedUntil: pastPauseUntil,
+          channelConnection: { id: 'conn1', isAiAutoReplyEnabled: true },
+        },
+      });
+      prismaService.aiAssistant.findFirst.mockResolvedValue({
+        id: 'ai1', tenantId: 't1', isActive: true, routingMode: 'ai_first', systemPrompt: 'Helpful', tools: [],
+      });
+      aiService.generateCompletion.mockResolvedValue('{"reply": "Automated answer", "intent": "general"}');
+
+      await service.processMessage('msg_resumed');
+
+      expect(prismaService.conversation.update).toHaveBeenCalledWith({
+        where: { id: 'c_resumed' },
+        data: { aiAutoPausedUntil: null },
+      });
+      expect(inboxGateway.broadcastToTenant).toHaveBeenCalledWith(
+        't1',
+        'conversation:ai_resumed',
+        expect.objectContaining({ conversationId: 'c_resumed', isAiEnabled: true })
+      );
+    });
+  });
+
   it('should fallback gracefully to raw text reply if structured JSON parsing fails', async () => {
     prismaService.message.findUnique.mockResolvedValue({
       id: 'msg1', direction: 'inbound', type: 'text', content: { text: 'hello' },

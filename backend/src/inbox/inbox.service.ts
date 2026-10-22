@@ -1113,16 +1113,20 @@ export class InboxService implements OnModuleInit {
   }
 
   async toggleAiReply(tenantId: string, conversationId: string, isAiEnabled: boolean, actionUser: any) {
+    const updateData: any = { isAiEnabled };
+    if (isAiEnabled) {
+      updateData.aiAutoPausedUntil = null;
+    }
     const conversation = await this.prisma.conversation.update({
       where: { id: conversationId, tenantId },
-      data: { isAiEnabled },
+      data: updateData,
       include: { contact: true }
     });
 
     await this.prisma.contactNote.create({
       data: {
         contactId: conversation.contactId,
-        createdBy: actionUser.id,
+        createdBy: actionUser?.id || actionUser?.userId,
         content: `AI Auto-Reply turned ${isAiEnabled ? 'ON' : 'OFF'} for this conversation.`
       }
     });
@@ -1132,8 +1136,44 @@ export class InboxService implements OnModuleInit {
       conversationId,
       contactId: conversation.contactId,
       type: 'AI_HANDOVER',
-      actorUserId: actionUser.id,
+      actorUserId: actionUser?.id || actionUser?.userId,
       metadataJson: { isAiEnabled }
+    });
+
+    if (isAiEnabled) {
+      this.inboxGateway.broadcastToTenant(tenantId, 'conversation:ai_resumed', {
+        conversationId: conversation.id,
+        isAiEnabled: true,
+        aiAutoPausedUntil: null
+      });
+    }
+
+    return conversation;
+  }
+
+  async resumeConversationAi(tenantId: string, conversationId: string, actionUser: any) {
+    const conversation = await this.prisma.conversation.update({
+      where: { id: conversationId, tenantId },
+      data: { 
+        isAiEnabled: true,
+        aiAutoPausedUntil: null 
+      },
+      include: { contact: true }
+    });
+
+    await this.activityLogService.record({
+      tenantId,
+      conversationId,
+      contactId: conversation.contactId,
+      type: 'AI_HANDOVER',
+      actorUserId: actionUser?.id || actionUser?.userId,
+      metadataJson: { isAiEnabled: true, manualResume: true }
+    });
+
+    this.inboxGateway.broadcastToTenant(tenantId, 'conversation:ai_resumed', {
+      conversationId: conversation.id,
+      isAiEnabled: true,
+      aiAutoPausedUntil: null
     });
 
     return conversation;
@@ -1618,9 +1658,36 @@ export class InboxService implements OnModuleInit {
       } as any
     });
 
+    const convUpdateData: any = { lastMessageAt: new Date() };
+
+    // Smart Human Takeover: When a human agent sends a message, auto-pause AI for this conversation
+    if (!aiAssistantId && senderUserId) {
+      convUpdateData.lastHumanMessageAt = new Date();
+      try {
+        const assistant = await this.prisma.aiAssistant.findFirst({
+          where: { tenantId },
+          select: { smartAutoPauseEnabled: true, smartAutoPauseMinutes: true }
+        });
+        const isPauseEnabled = assistant ? assistant.smartAutoPauseEnabled !== false : true;
+        if (isPauseEnabled) {
+          const pauseMinutes = assistant?.smartAutoPauseMinutes || 5;
+          const pauseUntil = new Date(Date.now() + pauseMinutes * 60 * 1000);
+          convUpdateData.aiAutoPausedUntil = pauseUntil;
+
+          this.inboxGateway.broadcastToTenant(tenantId, 'conversation:ai_paused', {
+            conversationId: conversation.id,
+            aiAutoPausedUntil: pauseUntil,
+            pauseMinutes
+          });
+        }
+      } catch (err: any) {
+        this.logger.error(`Failed to calculate smart auto-pause for conversation ${conversation.id}: ${err.message}`);
+      }
+    }
+
     await this.prisma.conversation.update({
       where: { id: conversation.id },
-      data: { lastMessageAt: new Date() }
+      data: convUpdateData
     });
 
     if (senderType === 'ai' || aiAssistantId) {

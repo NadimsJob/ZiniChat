@@ -12,7 +12,7 @@ import {
   MapPin, AlertCircle, Paperclip, File as FileIcon, Trash2, Bot, ToggleLeft, 
   ToggleRight, Wand2, RefreshCw, ChevronLeft, PanelRight, Eye, Star, Archive, 
   CheckCircle2, Flag, UserCheck, Sparkles, Calendar, Download, Reply, Share2, Ban, Filter, Globe, ChevronDown,
-  GitMerge
+  GitMerge, PauseCircle
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
@@ -446,6 +446,18 @@ export default function InboxPage() {
       fetchCounts();
     });
 
+    socket.on('conversation:ai_paused', ({ conversationId, aiAutoPausedUntil }: any) => {
+      setConversations(prev => prev.map(c => 
+        c.id === conversationId ? { ...c, aiAutoPausedUntil } : c
+      ));
+    });
+
+    socket.on('conversation:ai_resumed', ({ conversationId }: any) => {
+      setConversations(prev => prev.map(c => 
+        c.id === conversationId ? { ...c, aiAutoPausedUntil: null } : c
+      ));
+    });
+
     // Fetch initial auxiliary metadata
     Promise.all([
       fetch(`${API}/labels`, { headers: { Authorization: `Bearer ${token}` } }),
@@ -532,6 +544,22 @@ export default function InboxPage() {
   }, [selectedConvId, mobilePanelView]);
 
   const activeConv = conversations.find(c => c.id === selectedConvId);
+
+  // Periodic tick to refresh countdown timers every 15 seconds
+  const [, setTimerTick] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimerTick(t => t + 1);
+    }, 15000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const isAiAutoPaused = Boolean(
+    activeConv?.aiAutoPausedUntil && new Date(activeConv.aiAutoPausedUntil) > new Date()
+  );
+  const autoPauseRemainingMinutes = activeConv?.aiAutoPausedUntil
+    ? Math.max(1, Math.ceil((new Date(activeConv.aiAutoPausedUntil).getTime() - Date.now()) / 60000))
+    : 0;
 
   const duplicateConversations = (activeConv?.contact?.phone && selectedConvId)
     ? conversations.filter(c => 
@@ -826,6 +854,34 @@ export default function InboxPage() {
       }
     } catch (err) {
       toast.error('Failed to toggle AI');
+    }
+  };
+
+  const [resumingAi, setResumingAi] = useState(false);
+
+  const handleResumeAi = async (conversationId?: string) => {
+    const targetId = conversationId || selectedConvId;
+    if (!targetId) return;
+    setResumingAi(true);
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${API}/inbox/conversations/${targetId}/resume-ai`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (res.ok) {
+        setConversations(prev => prev.map(c => c.id === targetId ? { ...c, aiAutoPausedUntil: null } : c));
+        toast.success(language === 'en' ? 'AI Resumed successfully!' : 'AI সফলভাবে চালু করা হয়েছে!');
+      } else {
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.message || (language === 'en' ? 'Failed to resume AI' : 'AI চালু করতে ব্যর্থ হয়েছে'));
+      }
+    } catch (err) {
+      toast.error(language === 'en' ? 'Network error resuming AI' : 'নেটওয়ার্ক এরর');
+    } finally {
+      setResumingAi(false);
     }
   };
 
@@ -1645,6 +1701,15 @@ export default function InboxPage() {
                             Unassigned
                           </span>
                         )}
+                        {conv.aiAutoPausedUntil && new Date(conv.aiAutoPausedUntil) > new Date() && (
+                          <span 
+                            className="text-amber-500 bg-amber-500/15 text-[10px] md:text-[9px] font-bold px-1.5 py-0.5 rounded border border-amber-500/30 whitespace-nowrap flex items-center gap-1"
+                            title={language === 'en' ? 'AI Auto-Paused on Human Reply' : 'হিউম্যান রিপ্লাইয়ের কারণে AI পজ'}
+                          >
+                            <PauseCircle className="w-2.5 h-2.5 shrink-0" />
+                            <span>{language === 'en' ? 'Paused' : 'পজ'}</span>
+                          </span>
+                        )}
                         {hasCollaborators && conv.collaborators && conv.collaborators.length > 0 && (
                           <div className="flex -space-x-1 overflow-hidden shrink-0">
                             {conv.collaborators.map((col: any) => (
@@ -1883,6 +1948,15 @@ export default function InboxPage() {
                   <h3 className="text-sm md:text-xs font-bold text-foreground truncate flex items-center gap-1.5">
                     <span className="truncate">{activeConv.contact?.name || activeConv.contact?.phone || 'Customer'}</span>
                     <span className="text-xs md:text-[10px] text-muted-foreground font-normal capitalize shrink-0">({activeConv.channel})</span>
+                    {isAiAutoPaused && (
+                      <span 
+                        className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-500 border border-amber-500/30 flex items-center gap-1 shrink-0 animate-pulse"
+                        title={language === 'en' ? `AI Auto-Paused (~${autoPauseRemainingMinutes}m left)` : `AI সাময়িক পজ (~${autoPauseRemainingMinutes} মি বাকি)`}
+                      >
+                        <PauseCircle className="w-3 h-3 text-amber-500 shrink-0" />
+                        <span>{language === 'en' ? `AI Paused (${autoPauseRemainingMinutes}m)` : `AI পজ (${autoPauseRemainingMinutes} মি)`}</span>
+                      </span>
+                    )}
                     {['messenger', 'instagram'].includes(activeConv.channel) && (
                       <span
                         onClick={(e) => {
@@ -1951,7 +2025,20 @@ export default function InboxPage() {
             </div>
 
             {/* Desktop Header Control Buttons — 100% visible on web view */}
-            <div className="hidden md:flex items-center gap-0.5 text-muted-foreground shrink-0 overflow-visible">
+            <div className="hidden md:flex items-center gap-1 text-muted-foreground shrink-0 overflow-visible">
+              {/* Quick Resume AI Button if Auto-Paused */}
+              {isAiAutoPaused && (
+                <button
+                  onClick={() => handleResumeAi()}
+                  disabled={resumingAi}
+                  className="flex items-center gap-1 px-2.5 py-1 bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 border border-amber-500/30 rounded-lg text-xs font-bold transition-all shrink-0 cursor-pointer disabled:opacity-50"
+                  title={language === 'en' ? 'Resume AI immediately' : 'এখনই AI পুনরায় চালু করুন'}
+                >
+                  {resumingAi ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3 text-amber-400" />}
+                  <span>{language === 'en' ? 'Resume AI' : 'AI চালু করুন'}</span>
+                </button>
+              )}
+
               {/* Star */}
               <button
                 onClick={handleToggleStar}
@@ -2089,6 +2176,26 @@ export default function InboxPage() {
                 }}
               />
               <div className="fixed right-2 top-14 z-[80] w-64 max-h-[82vh] overflow-y-auto bg-card border border-border/90 rounded-2xl shadow-2xl p-2 md:hidden animate-in fade-in zoom-in-95 duration-150 custom-scrollbar text-xs">
+                {/* Resume AI if Auto-Paused */}
+                {isAiAutoPaused && (
+                  <button
+                    onClick={() => {
+                      handleResumeAi();
+                      setShowMobileMoreMenu(false);
+                    }}
+                    disabled={resumingAi}
+                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 hover:bg-amber-500/25 transition-colors cursor-pointer font-bold mb-1"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+                      <span>{language === 'en' ? 'Resume AI Now' : 'এখনই AI চালু করুন'}</span>
+                    </span>
+                    <span className="text-[10px] bg-amber-500/20 px-1.5 py-0.5 rounded font-mono">
+                      {autoPauseRemainingMinutes}m left
+                    </span>
+                  </button>
+                )}
+
                 {/* Follow-up flag */}
                 <button
                   onClick={() => {
@@ -2295,6 +2402,40 @@ export default function InboxPage() {
               >
                 <RefreshCw className={`w-3 h-3 ${isMerging ? 'animate-spin' : ''}`} />
                 <span>{language === 'en' ? 'Merge Chats' : 'একসাথে মার্জ করুন'}</span>
+              </button>
+            </div>
+          )}
+
+          {/* Smart AI Auto-Pause on Human Intervention Banner */}
+          {isAiAutoPaused && (
+            <div className="mx-3 md:mx-4 mt-2 mb-1 px-3.5 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs text-amber-200 shadow-sm shrink-0 backdrop-blur-md">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="p-1.5 rounded-lg bg-amber-500/20 text-amber-400 shrink-0">
+                  <PauseCircle className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-amber-400 text-xs">
+                      {language === 'en' ? 'Smart AI Auto-Paused' : 'স্মার্ট AI অটো-পজ সক্রিয়'}
+                    </span>
+                    <span className="px-1.5 py-0.5 bg-amber-500/20 text-amber-300 font-mono text-[10px] rounded border border-amber-500/30">
+                      ~{autoPauseRemainingMinutes} {language === 'en' ? 'mins remaining' : 'মিনিট বাকি'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-amber-200/80 leading-tight mt-0.5">
+                    {language === 'en'
+                      ? 'AI response is temporarily paused because a human agent replied. If no human responds within the window, AI will automatically resume.'
+                      : 'হিউম্যান রিপ্লাইয়ের কারণে AI সাময়িকভাবে বন্ধ আছে। উইন্ডোর মধ্যে হিউম্যান রিপ্লাই না দিলে AI নিজে থেকেই আবার উত্তর দেবে।'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => handleResumeAi()}
+                disabled={resumingAi}
+                className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-lg text-[11px] flex items-center justify-center gap-1.5 transition shrink-0 cursor-pointer shadow-xs disabled:opacity-50"
+              >
+                {resumingAi ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                <span>{language === 'en' ? 'Resume AI Now' : 'এখনই AI চালু করুন'}</span>
               </button>
             </div>
           )}

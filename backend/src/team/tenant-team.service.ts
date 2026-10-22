@@ -5,8 +5,9 @@ import { NotificationsService } from '../notifications/notifications.service';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 
-// All available menu permission keys for agent roles
+// All available module & granular action permission keys for tenant roles
 export const ALL_MENU_PERMISSIONS = [
+  // Core Modules
   'inbox',
   'leads',
   'products',
@@ -18,6 +19,59 @@ export const ALL_MENU_PERMISSIONS = [
   'ai_training',
   'subscription',
   'support',
+  // Extended Modules
+  'inboxes',
+  'zini_mail',
+  'meta_ads',
+  'capi_hub',
+  'storage',
+  'billing_history',
+
+  // Granular Actions
+  'inbox:view',
+  'inbox:reply',
+  'inbox:assign',
+  'inbox:delete',
+  'inboxes:manage',
+
+  'leads:view',
+  'leads:manage',
+  'leads:export',
+
+  'products:view',
+  'products:manage',
+
+  'orders:view',
+  'orders:manage',
+
+  'broadcasts:view',
+  'broadcasts:create',
+
+  'zini_mail:view',
+  'zini_mail:manage',
+
+  'meta_ads:view',
+  'meta_ads:manage',
+
+  'capi_hub:view',
+  'capi_hub:manage',
+
+  'ai_training:view',
+  'ai_training:manage',
+
+  'team:view',
+  'team:manage',
+
+  'storage:view',
+  'storage:manage',
+
+  'settings:view',
+  'settings:manage',
+
+  'subscription:view',
+  'billing:view',
+
+  '*',
 ] as const;
 
 export type MenuPermission = typeof ALL_MENU_PERMISSIONS[number];

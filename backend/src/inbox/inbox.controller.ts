@@ -230,6 +230,12 @@ export class InboxController {
     return this.inboxService.toggleAiReply(tenantId, conversationId, body.isAiEnabled, req.user);
   }
 
+  @Post('conversations/:id/resume-ai')
+  async resumeConversationAi(@Request() req: any, @Param('id') conversationId: string) {
+    const tenantId = req.user.tenantId;
+    return this.inboxService.resumeConversationAi(tenantId, conversationId, req.user);
+  }
+
   @Post('conversations/:id/labels')
   async toggleLabel(@Request() req: any, @Param('id') conversationId: string, @Body() body: { labelId: string }) {
     const tenantId = req.user.tenantId;

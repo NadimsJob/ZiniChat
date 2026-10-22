@@ -172,7 +172,14 @@ export class BillingService {
     const baseMessageQuota = tenant?.customMessageQuota ?? plan?.messageQuota ?? 100;
     const baseAiQuota = tenant?.customAiQuota ?? plan?.aiQuota ?? 50;
 
+    const isSubscriptionActive = Boolean(
+      (activeSubscription && new Date(activeSubscription.currentPeriodEnd) > new Date()) ||
+      (tenant?.trialEndsAt && new Date(tenant.trialEndsAt) > new Date()) ||
+      tenant?.customPlanName
+    );
+
     return {
+      isSubscriptionActive,
       subscription: activeSubscription,
       whatsappLimit: tenant?.customWhatsappLimit ?? plan?.whatsappLimit ?? 1,
       messengerLimit: tenant?.customMessengerLimit ?? plan?.messengerLimit ?? 1,

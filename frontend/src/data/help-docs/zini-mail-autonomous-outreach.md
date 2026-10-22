@@ -1,17 +1,17 @@
-# Zini-Mail: Autonomous AI Cold Email Outreach & High-Intent Retargeting
+# AI Automated Email Marketing (Zini-Mail): Smart AI Email Campaigns & Lead Retargeting
 
 **Category**: Marketing & Ads  
 **Feature Flag**: `ai_email_outreach`  
-**Plan Requirement**: Growth, Scale, or Custom Tenant Plan with AI Cold Email Outreach enabled  
-**AI Credit Cost**: 1 AI Response Unit per successfully delivered email (Automatic full refund if SMTP fails or email bounces)  
+**Plan Requirement**: Growth, Scale, or Custom Tenant Plan with AI Automated Email Marketing enabled  
+**AI Response Quota Cost**: 1 AI Response Unit per successfully delivered personalized email (Automatic full refund if SMTP fails or email bounces)  
 
-![Zini-Mail Autonomous AI Outreach Guide](/docs/zini-mail-outreach-guide.svg)
+![AI Automated Email Marketing Guide](/docs/zini-mail-outreach-guide.svg)
 
 ---
 
 ## 1. Overview & Architecture
 
-**Zini-Mail** is an autonomous, end-to-end B2B cold email outreach and conversion acceleration engine built directly into ZiniChat. Unlike traditional disconnected bulk email tools that risk domain blacklisting and lack commerce context, Zini-Mail bridges discovery, AI visual copywriting, strict reputation protection, and closed-loop revenue attribution.
+**AI Automated Email Marketing (Zini-Mail)** is an intelligent, end-to-end email marketing engine built directly into ZiniChat. Designed to be accessible and straightforward for businesses of all sizes, it enables merchants to automatically discover potential business customers, generate personalized marketing copy with AI Vision from offer banners, send safely via custom SMTP (Gmail, Outlook, or cPanel Webmail) at 1 email/minute, and track orders directly in the platform.
 
 ### Core Capabilities:
 1. **Zero Domain Burn Guarantee**: Enforces 1 email per minute throttling with random jitter (+0 to +15 seconds), daily tenant sending caps, and automated bounce rate tripwires (> 8% over 50 emails auto-pauses campaign).

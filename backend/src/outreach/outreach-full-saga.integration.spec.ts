@@ -284,6 +284,8 @@ describe('Zini-Mail Full-Saga End-to-End Integration Suite', () => {
       reserveAiQuota: jest.fn().mockResolvedValue('res-saga-1'),
       commitAiQuota: jest.fn().mockResolvedValue(undefined),
       refundAiQuota: jest.fn().mockResolvedValue(undefined),
+      checkActiveSubscription: jest.fn().mockResolvedValue(true),
+      isTenantSubscriptionActive: jest.fn().mockResolvedValue({ isActive: true }),
     };
 
     notificationsServiceMock = {

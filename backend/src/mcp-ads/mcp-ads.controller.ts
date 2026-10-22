@@ -126,6 +126,41 @@ export class McpAdsController {
     );
   }
 
+  @Post('campaigns/:campaignId/ai-retarget')
+  async aiRetargetAudience(
+    @Request() req: any,
+    @Param('campaignId') campaignId: string,
+    @Body()
+    dto: {
+      adAccountId: string;
+      adSetId?: string;
+      problemDescription?: string;
+      targetBuyerPersona?: string;
+    },
+  ) {
+    return this.mcpAdsService.aiRetargetAudience(req.user.tenantId, {
+      ...dto,
+      campaignId,
+    });
+  }
+
+  @Patch('campaigns/:campaignId/edit')
+  async updateCampaignDetails(
+    @Request() req: any,
+    @Param('campaignId') campaignId: string,
+    @Body()
+    dto: {
+      adAccountId: string;
+      name?: string;
+      status?: 'ACTIVE' | 'PAUSED';
+      dailyBudget?: number;
+      adSetId?: string;
+      targeting?: any;
+    },
+  ) {
+    return this.mcpAdsService.updateCampaignDetails(req.user.tenantId, campaignId, dto);
+  }
+
   @Post('campaigns/:campaignId/analyze-ai')
   async analyzeCampaignWithAi(
     @Request() req: any,
@@ -206,6 +241,7 @@ export class McpAdsController {
       imageUrl?: string;
       creativeSource?: 'upload' | 'existing_post';
       pagePostId?: string;
+      pagePostIds?: string[];
       targeting?: any;
       placements?: string[];
       pixelId?: string;

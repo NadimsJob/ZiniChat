@@ -282,6 +282,13 @@ describe('TenantTeamService', () => {
       expect(ALL_MENU_PERMISSIONS).toContain('ai_training');
       expect(ALL_MENU_PERMISSIONS).toContain('subscription');
       expect(ALL_MENU_PERMISSIONS).toContain('support');
+      expect(ALL_MENU_PERMISSIONS).toContain('zini_mail');
+      expect(ALL_MENU_PERMISSIONS).toContain('meta_ads');
+      expect(ALL_MENU_PERMISSIONS).toContain('capi_hub');
+      expect(ALL_MENU_PERMISSIONS).toContain('orders:view');
+      expect(ALL_MENU_PERMISSIONS).toContain('orders:manage');
+      expect(ALL_MENU_PERMISSIONS).toContain('inbox:reply');
+      expect(ALL_MENU_PERMISSIONS).toContain('leads:export');
     });
   });
 });

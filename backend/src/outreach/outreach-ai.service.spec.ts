@@ -86,6 +86,8 @@ describe('OutreachAiService (Phase 5: Vision, Tone, Multi-Language & Prompt Cach
 
     mockQuota = {
       checkAiQuota: jest.fn().mockResolvedValue(undefined),
+      checkActiveSubscription: jest.fn().mockResolvedValue(true),
+      isTenantSubscriptionActive: jest.fn().mockResolvedValue({ isActive: true }),
     };
 
     const module: TestingModule = await Test.createTestingModule({

@@ -71,14 +71,23 @@ export default function SubscriptionSettingsPage() {
   }, 0);
 
   const currentSubscription = quotaData?.subscription;
-  const activePlanId = currentSubscription?.planId;
+  const isCustomPlan = Boolean(
+    quotaData?.customPlanName ||
+    (quotaData?.basePlan && (
+      quotaData.messageQuota !== quotaData.basePlan.messageQuota ||
+      quotaData.aiQuota !== quotaData.basePlan.aiQuota ||
+      quotaData.seatLimit !== quotaData.basePlan.seatLimit ||
+      quotaData.whatsappLimit !== quotaData.basePlan.whatsappLimit
+    ))
+  );
+  const activePlanId = isCustomPlan ? null : currentSubscription?.planId;
 
   const hasActivePackage = Boolean(
     (currentSubscription &&
       (currentSubscription.status === 'active' || currentSubscription.status === 'trialing') &&
       new Date(currentSubscription.currentPeriodEnd) > new Date() &&
       currentSubscription.plan?.name !== 'Free') ||
-    quotaData?.customPlanName
+    isCustomPlan
   );
 
   const visiblePlans = plans.filter((p: any) => {
@@ -447,6 +456,25 @@ export default function SubscriptionSettingsPage() {
             </div>
           </div>
         </div>
+
+        {isCustomPlan && (
+          <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/25 rounded-xl flex items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2">
+              <Star className="w-4 h-4 text-amber-400 shrink-0 fill-amber-400" />
+              <span className="text-foreground">
+                {language === 'en' ? (
+                  <>
+                    You are currently active on a customized plan (<strong>{quotaData?.customPlanName || 'Custom Plan'}</strong>). The plans below are standard tier packages if you wish to switch.
+                  </>
+                ) : (
+                  <>
+                    আপনি বর্তমানে কাস্টম প্ল্যানে (<strong>{quotaData?.customPlanName || 'কাস্টম প্ল্যান'}</strong>) সক্রিয় আছেন। আপনি চাইলে নিচের যেকোনো স্ট্যান্ডার্ড প্ল্যানে সুইচ করতে পারেন।
+                  </>
+                )}
+              </span>
+            </div>
+          </div>
+        )}
 
         {visiblePlans.length === 0 ? (
           <p className="text-center py-8 text-[13px] text-muted-foreground">

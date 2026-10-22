@@ -4,6 +4,7 @@ import { CapiHubController } from './capi-hub.controller';
 import { PrismaService } from '../prisma/prisma.service';
 import { CryptoService } from '../crypto/crypto.service';
 import { FeatureRolloutService } from '../feature-rollout/feature-rollout.service';
+import { QuotaService } from '../tenants/quota.service';
 import { getQueueToken } from '@nestjs/bullmq';
 import { UnauthorizedException } from '@nestjs/common';
 import { metaMockServer } from '../test/mocks/meta-graph-api.mock';
@@ -90,6 +91,13 @@ describe('CAPI Full Pipeline E2E Integration Suite', () => {
           useValue: { isFeatureEnabled: jest.fn().mockResolvedValue(true) },
         },
         { provide: getQueueToken('capi-events'), useValue: capiQueueMock },
+        {
+          provide: QuotaService,
+          useValue: {
+            checkActiveSubscription: jest.fn().mockResolvedValue(true),
+            isTenantSubscriptionActive: jest.fn().mockResolvedValue({ isActive: true }),
+          },
+        },
       ],
     }).compile();
 

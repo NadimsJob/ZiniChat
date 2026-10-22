@@ -59,6 +59,16 @@ export default function NewCampaignWizardPage() {
   const [showSmtpGuide, setShowSmtpGuide] = useState(false);
   const [smtpGuideTab, setSmtpGuideTab] = useState<SmtpGuideTab>('gmail');
 
+  // Subscription Plan Synchronization
+  const [quotaData, setQuotaData] = useState<{
+    isSubscriptionActive?: boolean;
+    aiQuota?: number;
+    aiUsed?: number;
+    allowByok?: boolean;
+  } | null>(null);
+
+  const isPlanActive = quotaData ? quotaData.isSubscriptionActive !== false : true;
+
   // Banner Upload State
   const [bannerMode, setBannerMode] = useState<'upload' | 'url'>('upload');
   const [uploadingBanner, setUploadingBanner] = useState(false);
@@ -122,19 +132,24 @@ export default function NewCampaignWizardPage() {
 
         if (quotasRes.ok) {
           const qData = await quotasRes.json();
+          setQuotaData({
+            isSubscriptionActive: qData.isSubscriptionActive,
+            aiQuota: qData.aiQuota,
+            aiUsed: qData.aiUsed,
+            allowByok: qData.allowByok,
+          });
           if (qData.allowByok) byokActive = true;
 
           const totalQuota = Number(qData.aiQuota || 0);
           const usedQuota = Number(qData.aiUsed || 0);
           setQuotaDetails({ total: totalQuota, used: usedQuota });
 
-          const remaining = Math.max(0, totalQuota - usedQuota);
-          credits = Math.max(credits, remaining);
+          const remaining = totalQuota === -1 ? -1 : Math.max(0, totalQuota - usedQuota);
+          credits = remaining;
         }
 
         if (byokActive) {
           setIsByok(true);
-          credits = 999999;
         }
 
         setAvailableAiCredits(credits);
@@ -233,6 +248,15 @@ export default function NewCampaignWizardPage() {
 
   // Step 3 AI Vision Banner Analysis
   const handleAnalyzeBanner = async () => {
+    if (!isPlanActive) {
+      toast.error(
+        language === 'en'
+          ? 'Subscription plan expired. Please renew your plan to use Vision AI.'
+          : 'সাবস্ক্রিপশন প্ল্যানের মেয়াদ শেষ। এআই ভিশন ব্যবহার করতে প্ল্যান রিনিউ করুন।'
+      );
+      return;
+    }
+
     if (!form.bannerImageUrl.trim()) {
       toast.error(language === 'en' ? 'Please enter a valid banner image URL' : 'ব্যানার ছবির লিংক দিন');
       return;
@@ -271,6 +295,15 @@ export default function NewCampaignWizardPage() {
 
   // Step 3 Sample Draft Generator
   const handleGenerateSampleDraft = async () => {
+    if (!isPlanActive) {
+      toast.error(
+        language === 'en'
+          ? 'Subscription plan expired. Please renew your plan to generate email drafts.'
+          : 'সাবস্ক্রিপশন প্ল্যানের মেয়াদ শেষ। ইমেইল ড্রাফট তৈরি করতে প্ল্যান রিনিউ করুন।'
+      );
+      return;
+    }
+
     try {
       setGeneratingDraft(true);
       const token = Cookies.get('access_token');
@@ -310,9 +343,9 @@ export default function NewCampaignWizardPage() {
   const requiredVisionCredits = 5;
   const requiredEmailCredits = form.totalLimit;
   const totalRequiredCredits = requiredVisionCredits + requiredEmailCredits;
-  const isBalanceSufficient = isByok || availableAiCredits >= totalRequiredCredits;
-  const creditDeficit = isByok ? 0 : Math.max(0, totalRequiredCredits - availableAiCredits);
-  const maxAffordableEmails = isByok ? 5000 : Math.max(0, availableAiCredits - requiredVisionCredits);
+  const isBalanceSufficient = isByok || availableAiCredits === -1 || availableAiCredits >= totalRequiredCredits;
+  const creditDeficit = (isByok || availableAiCredits === -1) ? 0 : Math.max(0, totalRequiredCredits - availableAiCredits);
+  const maxAffordableEmails = (isByok || availableAiCredits === -1) ? 5000 : Math.max(0, availableAiCredits - requiredVisionCredits);
 
   // Auto-Adjust to Max Affordable
   const handleAutoAdjust = () => {
@@ -329,6 +362,15 @@ export default function NewCampaignWizardPage() {
 
   // Final Submit: Create Campaign
   const handleCreateCampaign = async () => {
+    if (!isPlanActive) {
+      toast.error(
+        language === 'en'
+          ? 'Subscription plan expired. Please renew your plan to create and launch campaigns.'
+          : 'সাবস্ক্রিপশন প্ল্যানের মেয়াদ শেষ। ক্যাম্পেইন তৈরি ও পরিচালনা করতে প্ল্যান রিনিউ করুন।'
+      );
+      return;
+    }
+
     if (!form.name.trim()) {
       toast.error(language === 'en' ? 'Campaign name is required' : 'ক্যাম্পেইনের নাম দিন');
       setCurrentStep(1);
@@ -441,6 +483,34 @@ export default function NewCampaignWizardPage() {
           {language === 'en' ? 'Step' : 'ধাপ'} {currentStep} / 4
         </span>
       </div>
+
+      {/* Plan Expired Warning Banner */}
+      {!isPlanActive && (
+        <div className="bg-rose-500/10 border border-rose-500/30 rounded-2xl p-4 sm:p-5 backdrop-blur-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg shadow-rose-950/20">
+          <div className="flex items-start gap-3.5">
+            <div className="p-2.5 bg-rose-500/20 text-rose-400 rounded-xl mt-0.5 border border-rose-500/30 shrink-0">
+              <AlertTriangle className="w-5 h-5 text-rose-400" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-rose-200 flex items-center gap-2">
+                {language === 'en' ? '⚠️ Subscription Plan Expired — Campaign Creation Locked' : '⚠️ সাবস্ক্রিপশন প্ল্যানের মেয়াদ শেষ — নতুন ক্যাম্পেইন তৈরি লকড'}
+              </h3>
+              <p className="text-xs text-rose-300/80 mt-1 max-w-2xl leading-relaxed">
+                {language === 'en'
+                  ? 'Your subscription plan has expired. Creating campaigns, analyzing banner vision, and auto-generating outreach drafts require an active plan. Please renew your subscription to proceed.'
+                  : 'আপনার সাবস্ক্রিপশন প্ল্যানের মেয়াদ শেষ হয়ে গেছে। নতুন ক্যাম্পেইন তৈরি, এআই ভিশন বিশ্লেষণ ও আউটরিচ ড্রাফট তৈরির জন্য একটি সক্রিয় প্ল্যান প্রয়োজন। এগিয়ে যেতে প্ল্যান রিনিউ করুন।'}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => router.push('/dashboard/settings/subscription')}
+            className="px-4 py-2.5 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white rounded-xl text-xs font-semibold transition-all shadow-lg shadow-rose-900/40 flex items-center gap-2 shrink-0 active:scale-95"
+          >
+            <Zap className="w-4 h-4 fill-white" />
+            {language === 'en' ? 'Renew Plan Now' : 'প্ল্যান রিনিউ করুন'}
+          </button>
+        </div>
+      )}
 
       {/* Wizard Progress Bar */}
       <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-2.5 sm:p-4 shadow-sm">
@@ -1379,7 +1449,28 @@ export default function NewCampaignWizardPage() {
             </div>
 
             {/* AI Credit Safeguard & Balance Matching Engine */}
-            {isBalanceSufficient ? (
+            {!isPlanActive ? (
+              <div className="p-4 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-300 space-y-3">
+                <div className="font-bold flex items-center gap-1.5 text-[13px]">
+                  <AlertTriangle className="w-4 h-4 text-rose-500" />
+                  {language === 'en' ? 'Subscription Plan Expired!' : 'সাবস্ক্রিপশন প্ল্যানের মেয়াদ শেষ!'}
+                </div>
+                <p className="text-[11px]">
+                  {language === 'en'
+                    ? 'Your subscription plan has expired. Campaign creation and email dispatch are locked until your plan is renewed.'
+                    : 'আপনার সাবস্ক্রিপশন প্ল্যানের মেয়াদ শেষ হয়েছে। প্ল্যান রিনিউ না করা পর্যন্ত ক্যাম্পেইন তৈরি ও পাঠানো লক করা থাকবে।'}
+                </p>
+                <div className="pt-1">
+                  <Link
+                    href="/dashboard/settings/subscription"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-[11px] transition-all shadow-sm"
+                  >
+                    <Zap className="w-3.5 h-3.5 fill-white" />
+                    {language === 'en' ? 'Renew Subscription Plan' : 'প্ল্যান রিনিউ করুন'}
+                  </Link>
+                </div>
+              </div>
+            ) : isBalanceSufficient ? (
               <div className="p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 space-y-1">
                 <div className="font-bold flex items-center justify-between text-[13px]">
                   <div className="flex items-center gap-1.5">
@@ -1461,9 +1552,9 @@ export default function NewCampaignWizardPage() {
 
             <button
               onClick={handleCreateCampaign}
-              disabled={loading || !isBalanceSufficient}
+              disabled={loading || !isBalanceSufficient || !isPlanActive}
               className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-[13px] text-white transition-all shadow-md ${
-                !isBalanceSufficient || loading
+                !isBalanceSufficient || !isPlanActive || loading
                   ? 'bg-zinc-600 opacity-50 cursor-not-allowed'
                   : 'bg-[#1F824A] hover:bg-[#1F824A]/90 hover:scale-[1.02] active:scale-[0.98]'
               }`}
@@ -1472,6 +1563,11 @@ export default function NewCampaignWizardPage() {
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin" />
                   {language === 'en' ? 'Creating Campaign...' : 'ক্যাম্পেইন তৈরি হচ্ছে...'}
+                </>
+              ) : !isPlanActive ? (
+                <>
+                  <Lock className="w-4 h-4 text-rose-300" />
+                  {language === 'en' ? 'Plan Expired (Locked)' : 'প্ল্যানের মেয়াদ শেষ (লক)'}
                 </>
               ) : (
                 <>

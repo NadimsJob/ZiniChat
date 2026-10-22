@@ -2,12 +2,14 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { OutreachDispatchService } from './outreach-dispatch.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { getQueueToken } from '@nestjs/bullmq';
+import { QuotaService } from '../tenants/quota.service';
 import { NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 
 describe('OutreachDispatchService', () => {
   let service: OutreachDispatchService;
   let mockPrisma: any;
   let mockQueue: any;
+  let mockQuota: any;
 
   const mockCampaign = {
     id: 'camp-300',
@@ -74,11 +76,18 @@ describe('OutreachDispatchService', () => {
       add: jest.fn().mockResolvedValue({ id: 'job-id' }),
     };
 
+    mockQuota = {
+      checkActiveSubscription: jest.fn().mockResolvedValue(true),
+      isTenantSubscriptionActive: jest.fn().mockResolvedValue({ isActive: true }),
+      checkAiQuota: jest.fn().mockResolvedValue(undefined),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         OutreachDispatchService,
         { provide: PrismaService, useValue: mockPrisma },
         { provide: getQueueToken('outreach-email-queue'), useValue: mockQueue },
+        { provide: QuotaService, useValue: mockQuota },
       ],
     }).compile();
 

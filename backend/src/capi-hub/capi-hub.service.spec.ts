@@ -3,6 +3,7 @@ import { CapiHubService } from './capi-hub.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CryptoService } from '../crypto/crypto.service';
 import { FeatureRolloutService } from '../feature-rollout/feature-rollout.service';
+import { QuotaService } from '../tenants/quota.service';
 import { getQueueToken } from '@nestjs/bullmq';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 
@@ -14,8 +15,13 @@ describe('CapiHubService', () => {
   let crypto: any;
   let featureRollout: any;
   let capiQueue: any;
+  let quotaService: any;
 
   beforeEach(async () => {
+    quotaService = {
+      checkActiveSubscription: jest.fn().mockResolvedValue(true),
+      isTenantSubscriptionActive: jest.fn().mockResolvedValue({ isActive: true }),
+    };
     prisma = {
       tenantCapiIntegration: {
         findUnique: jest.fn(),
@@ -54,6 +60,7 @@ describe('CapiHubService', () => {
         { provide: CryptoService, useValue: crypto },
         { provide: FeatureRolloutService, useValue: featureRollout },
         { provide: getQueueToken('capi-events'), useValue: capiQueue },
+        { provide: QuotaService, useValue: quotaService },
       ],
     }).compile();
 

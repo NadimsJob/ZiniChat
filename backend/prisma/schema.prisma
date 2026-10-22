@@ -353,6 +353,8 @@ model Conversation {
   assignedAgentId     String?  @db.Uuid
   status              String   @default("open") // open, closed, bot, resolved
   isAiEnabled         Boolean  @default(true) // Per-conversation AI toggle
+  aiAutoPausedUntil   DateTime? // When human agent replies, AI auto-pauses until this timestamp
+  lastHumanMessageAt  DateTime? // Timestamp of last human agent reply
   unreadCount         Int      @default(0) // Tracks unread inbound messages
   lastMessageAt       DateTime @default(now())
 
@@ -453,6 +455,9 @@ model AiAssistant {
   cacheExpiresAt      DateTime?
   cacheChecksum       String?
   aiOrderEnabled      Boolean  @default(true)
+  smartAutoPauseEnabled Boolean @default(true) // Whether AI auto-pauses when human agent intervenes
+  smartAutoPauseMinutes Int     @default(5)    // Pause duration in minutes (e.g. 2, 3, 5, 10, 15, 30)
+  replyWhenAssigned   Boolean  @default(false)
   isActive            Boolean  @default(true)
   createdAt           DateTime @default(now())
 
