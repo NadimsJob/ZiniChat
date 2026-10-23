@@ -458,10 +458,10 @@ export default function CapiHubPage() {
   if (isFeatureLoading || loading) {
     return (
       <div className="max-w-6xl mx-auto p-3 sm:p-6 space-y-4 animate-pulse">
-        <div className="h-28 bg-surface/50 border border-white/5 rounded-2xl" />
+        <div className="h-28 bg-surface/50 border border-border dark:border-white/5 rounded-2xl" />
         <div className="grid lg:grid-cols-3 gap-6">
-          <div className="h-64 bg-surface/50 border border-white/5 rounded-2xl" />
-          <div className="lg:col-span-2 h-96 bg-surface/50 border border-white/5 rounded-2xl" />
+          <div className="h-64 bg-surface/50 border border-border dark:border-white/5 rounded-2xl" />
+          <div className="lg:col-span-2 h-96 bg-surface/50 border border-border dark:border-white/5 rounded-2xl" />
         </div>
       </div>
     );
@@ -470,7 +470,7 @@ export default function CapiHubPage() {
   if (!isFeatureEnabled) {
     return (
       <div className="max-w-6xl mx-auto p-4 flex flex-col items-center justify-center min-h-[60vh]">
-        <div className="w-16 h-16 bg-surface/70 border border-white/10 rounded-2xl flex items-center justify-center mb-5 text-muted-foreground shadow-lg">
+        <div className="w-16 h-16 bg-surface/70 border border-border dark:border-white/10 rounded-2xl flex items-center justify-center mb-5 text-muted-foreground shadow-lg">
           <ShieldCheck className="w-8 h-8" />
         </div>
         <h2 className="text-xl font-bold mb-2 text-foreground">
@@ -489,7 +489,7 @@ export default function CapiHubPage() {
     <div className="max-w-6xl mx-auto space-y-6 p-2 sm:p-6 pb-24 text-[13px]">
       
       {/* Page Header Banner */}
-      <div className="bg-surface/70 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6 shadow-sm relative overflow-hidden">
+      <div className="bg-surface/70 backdrop-blur-xl border border-border dark:border-white/10 rounded-2xl p-4 sm:p-6 shadow-sm relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
           <div>
@@ -564,7 +564,7 @@ export default function CapiHubPage() {
         <div className="lg:col-span-4 space-y-6">
           
           {/* Pixel Setup Card */}
-          <div className="bg-surface/70 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-5 shadow-sm">
+          <div className="bg-surface/70 backdrop-blur-xl border border-border dark:border-white/10 rounded-2xl p-4 sm:p-5 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-[14px] font-bold flex items-center gap-2 text-foreground">
                 <ShieldCheck className="w-4 h-4 text-emerald-500" />
@@ -580,7 +580,7 @@ export default function CapiHubPage() {
               {discoveredData?.isMetaConnected ? (
                 <div className="p-3.5 rounded-xl bg-gradient-to-br from-emerald-500/15 via-surface/60 to-brand-green/10 border border-emerald-500/30">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
                       <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
                       {language === 'en' ? 'Connected Meta Pixels' : 'কানেক্টেড মেটা পিক্সেলসমূহ'}
                     </span>
@@ -620,18 +620,18 @@ export default function CapiHubPage() {
                               className={`p-2.5 rounded-xl border cursor-pointer transition-all ${
                                 isSelected
                                   ? 'bg-emerald-500/20 border-emerald-500 shadow-md shadow-emerald-950/20'
-                                  : 'bg-background/60 border-white/5 hover:border-white/20'
+                                  : 'bg-background/60 border-border hover:border-emerald-500/40'
                               }`}
                             >
                               <div className="flex items-center justify-between gap-2">
                                 <div className="flex items-center gap-2.5 min-w-0">
                                   <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
-                                    isSelected ? 'border-emerald-400 bg-emerald-500' : 'border-white/30'
+                                    isSelected ? 'border-emerald-400 bg-emerald-500' : 'border-border dark:border-white/30'
                                   }`}>
                                     {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                                   </div>
                                   <div className="min-w-0">
-                                    <p className="text-[11px] font-bold text-white truncate">{p.name}</p>
+                                    <p className="text-[11px] font-bold text-foreground truncate">{p.name}</p>
                                     <p className="text-[10px] font-mono text-muted-foreground">ID: {p.id}</p>
                                   </div>
                                 </div>
@@ -661,7 +661,7 @@ export default function CapiHubPage() {
                       </button>
                     </div>
                   ) : (
-                    <div className="p-3 bg-background/50 rounded-xl border border-white/5 text-center">
+                    <div className="p-3 bg-background/50 rounded-xl border border-border dark:border-white/5 text-center">
                       <p className="text-[11px] text-muted-foreground">
                         {language === 'en'
                           ? 'No Pixels found under your Meta ad accounts. Create a Pixel in Meta Events Manager or enter manually below.'
@@ -675,7 +675,7 @@ export default function CapiHubPage() {
                   <div className="flex items-start gap-2.5">
                     <AlertCircle className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
                     <div className="flex-1">
-                      <p className="text-xs font-semibold text-white">
+                      <p className="text-xs font-semibold text-blue-900 dark:text-white">
                         {language === 'en' ? 'Meta Account Not Connected' : 'মেটা অ্যাকাউন্ট যুক্ত নেই'}
                       </p>
                       <p className="text-[11px] text-blue-200/80 mt-1 leading-relaxed">
@@ -695,11 +695,11 @@ export default function CapiHubPage() {
               ) : null}
 
               {/* 2. ADVANCED / MANUAL SETUP TOGGLE */}
-              <div className="border-t border-white/10 pt-3">
+              <div className="border-t border-border dark:border-white/10 pt-3">
                 <button
                   type="button"
                   onClick={() => setShowManualForm(!showManualForm)}
-                  className="w-full flex items-center justify-between text-[11px] font-semibold text-muted-foreground hover:text-white transition-colors py-1"
+                  className="w-full flex items-center justify-between text-[11px] font-semibold text-muted-foreground hover:text-foreground transition-colors py-1"
                 >
                   <span className="flex items-center gap-1.5">
                     <SlidersHorizontal className="w-3.5 h-3.5 text-brand-orange" />
@@ -718,7 +718,7 @@ export default function CapiHubPage() {
                         type="text" 
                         value={formData.pixelId}
                         onChange={e => setFormData({ ...formData, pixelId: e.target.value })}
-                        className="w-full bg-background/80 border border-white/10 rounded-xl px-3 py-2.5 text-[12px] text-foreground focus:outline-none focus:border-emerald-500/50 transition-colors font-mono"
+                        className="w-full bg-background/80 border border-border dark:border-white/10 rounded-xl px-3 py-2.5 text-[12px] text-foreground focus:outline-none focus:border-emerald-500/50 transition-colors font-mono"
                         placeholder="e.g. 102938475610293"
                       />
                     </div>
@@ -741,7 +741,7 @@ export default function CapiHubPage() {
                         type="password" 
                         value={formData.accessToken}
                         onChange={e => setFormData({ ...formData, accessToken: e.target.value })}
-                        className="w-full bg-background/80 border border-white/10 rounded-xl px-3 py-2.5 text-[12px] text-foreground focus:outline-none focus:border-emerald-500/50 transition-colors font-mono"
+                        className="w-full bg-background/80 border border-border dark:border-white/10 rounded-xl px-3 py-2.5 text-[12px] text-foreground focus:outline-none focus:border-emerald-500/50 transition-colors font-mono"
                         placeholder="EAA..."
                       />
                     </div>
@@ -760,7 +760,7 @@ export default function CapiHubPage() {
               </div>
 
               {/* 3. TEST EVENT CODE (Optional) & TEST PING */}
-              <div className="pt-2 border-t border-white/10 space-y-3">
+              <div className="pt-2 border-t border-border dark:border-white/10 space-y-3">
                 <div>
                   <label className="text-[11px] font-semibold text-muted-foreground mb-1 block">
                     Test Event Code <span className="text-[10px] text-muted-foreground font-normal">({language === 'en' ? 'Optional' : 'ঐচ্ছিক'})</span>
@@ -769,7 +769,7 @@ export default function CapiHubPage() {
                     type="text" 
                     value={formData.testEventCode}
                     onChange={e => setFormData({ ...formData, testEventCode: e.target.value })}
-                    className="w-full bg-background/80 border border-white/10 rounded-xl px-3 py-2 text-[12px] text-foreground focus:outline-none focus:border-emerald-500/50 transition-colors font-mono uppercase"
+                    className="w-full bg-background/80 border border-border dark:border-white/10 rounded-xl px-3 py-2 text-[12px] text-foreground focus:outline-none focus:border-emerald-500/50 transition-colors font-mono uppercase"
                     placeholder="e.g. TEST12345"
                   />
                   <p className="text-[10px] text-muted-foreground mt-1">
@@ -784,7 +784,7 @@ export default function CapiHubPage() {
                     type="button"
                     onClick={handleSendTestEvent}
                     disabled={testingPing}
-                    className="w-full py-2 bg-white/5 hover:bg-white/10 text-foreground border border-white/10 rounded-xl text-[12px] font-semibold transition-all flex justify-center items-center gap-2 disabled:opacity-50"
+                    className="w-full py-2 bg-muted/60 dark:bg-white/5 hover:bg-muted dark:hover:bg-white/10 text-foreground border border-border dark:border-white/10 rounded-xl text-[12px] font-semibold transition-all flex justify-center items-center gap-2 disabled:opacity-50"
                   >
                     {testingPing ? <RefreshCw className="w-4 h-4 animate-spin text-emerald-400" /> : <Zap className="w-4 h-4 text-emerald-400" />}
                     {language === 'en' ? 'Send 1-Click Test Ping to Meta' : 'মেটাতে ১-ক্লিক টেস্ট ইভেন্ট পাঠান'}
@@ -819,7 +819,7 @@ export default function CapiHubPage() {
 
           {/* External Webhook Card */}
           {integration && (
-            <div className="bg-surface/70 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-5 shadow-sm space-y-3.5">
+            <div className="bg-surface/70 backdrop-blur-xl border border-border dark:border-white/10 rounded-2xl p-4 sm:p-5 shadow-sm space-y-3.5">
               <div className="flex items-center justify-between">
                 <h2 className="text-[14px] font-bold flex items-center gap-2 text-foreground">
                   <Globe className="w-4 h-4 text-amber-500" />
@@ -848,7 +848,7 @@ export default function CapiHubPage() {
                       {copiedField === 'webhook' ? (language === 'en' ? 'Copied' : 'কপি হয়েছে') : (language === 'en' ? 'Copy URL' : 'কপি করুন')}
                     </button>
                   </div>
-                  <div className="bg-background/90 border border-white/10 rounded-xl p-2.5 text-[11px] break-all font-mono text-emerald-400 select-all">
+                  <div className="bg-background/90 border border-border dark:border-white/10 rounded-xl p-2.5 text-[11px] break-all font-mono text-emerald-600 dark:text-emerald-400 select-all">
                     {`${API}/capi-hub/webhook/${integration.webhookToken}`}
                   </div>
                 </div>
@@ -866,7 +866,7 @@ export default function CapiHubPage() {
                       </button>
                     )}
                   </div>
-                  <div className="bg-background/90 border border-white/10 rounded-xl p-2.5 text-[11px] break-all font-mono text-muted-foreground">
+                  <div className="bg-background/90 border border-border dark:border-white/10 rounded-xl p-2.5 text-[11px] break-all font-mono text-muted-foreground">
                     {integration.unhashedWebhookSecret || '•••••••••••••••••••••••• (Securely Stored in DB)'}
                   </div>
                 </div>
@@ -875,7 +875,7 @@ export default function CapiHubPage() {
           )}
 
           {/* EMQ Optimizer Info Card */}
-          <div className="bg-surface/50 border border-white/5 rounded-2xl p-4 text-[11px] text-muted-foreground space-y-1.5">
+          <div className="bg-surface/50 border border-border dark:border-white/5 rounded-2xl p-4 text-[11px] text-muted-foreground space-y-1.5">
             <div className="flex items-center gap-1.5 font-bold text-foreground">
               <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
               <span>{language === 'en' ? 'High Event Match Quality (EMQ)' : 'উচ্চ ইভেন্ট ম্যাচ কোয়ালিটি (EMQ)'}</span>
@@ -893,8 +893,8 @@ export default function CapiHubPage() {
         <div className="lg:col-span-8 space-y-6">
           
           {/* Event Configurations Section */}
-          <div className="bg-surface/70 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden shadow-sm">
-            <div className="p-4 sm:p-5 border-b border-white/10 flex flex-wrap items-center justify-between gap-3 bg-white/[0.02]">
+          <div className="bg-surface/70 backdrop-blur-xl border border-border dark:border-white/10 rounded-2xl overflow-hidden shadow-sm">
+            <div className="p-4 sm:p-5 border-b border-border dark:border-white/10 flex flex-wrap items-center justify-between gap-3 bg-muted/20 dark:bg-white/[0.02]">
               <div>
                 <h2 className="text-[14px] font-bold flex items-center gap-2 text-foreground">
                   <SlidersHorizontal className="w-4 h-4 text-emerald-500" />
@@ -919,7 +919,7 @@ export default function CapiHubPage() {
             {/* Desktop Table View (lg and above) */}
             <div className="hidden lg:block overflow-x-auto">
               <table className="w-full text-left text-[12px]">
-                <thead className="bg-white/[0.03] text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
+                <thead className="bg-muted/50 dark:bg-white/[0.03] text-[10px] text-muted-foreground uppercase font-bold tracking-wider border-b border-border dark:border-white/5">
                   <tr>
                     <th className="p-3.5 pl-5">Event</th>
                     <th className="p-3.5 text-center">Status</th>
@@ -931,7 +931,7 @@ export default function CapiHubPage() {
                     <th className="p-3.5 text-center pr-5">Payload</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5">
+                <tbody className="divide-y divide-border dark:divide-white/5">
                   {eventConfigs.length === 0 ? (
                     <tr>
                       <td colSpan={8} className="p-8 text-center text-muted-foreground text-[12px]">
@@ -941,7 +941,7 @@ export default function CapiHubPage() {
                       </td>
                     </tr>
                   ) : eventConfigs.map(config => (
-                    <tr key={config.id} className="hover:bg-white/[0.02] transition-colors">
+                    <tr key={config.id} className="hover:bg-muted/30 dark:hover:bg-white/[0.02] transition-colors">
                       <td className="p-3.5 pl-5 font-bold text-foreground">
                         <div className="flex items-center gap-2">
                           <span className="w-2 h-2 rounded-full bg-emerald-400" />
@@ -968,7 +968,7 @@ export default function CapiHubPage() {
                           type="checkbox" 
                           checked={config.sourceOrderCompleted} 
                           onChange={(e) => handleToggleEventConfig(config.eventName, 'sourceOrderCompleted', e.target.checked)} 
-                          className="rounded border-white/20 bg-background/80 text-emerald-500 focus:ring-emerald-500/20 cursor-pointer w-4 h-4" 
+                          className="rounded border-border dark:border-white/20 bg-background/80 text-emerald-500 focus:ring-emerald-500/20 cursor-pointer w-4 h-4" 
                         />
                       </td>
 
@@ -978,7 +978,7 @@ export default function CapiHubPage() {
                           type="checkbox" 
                           checked={config.sourceInboxAiIntent} 
                           onChange={(e) => handleToggleEventConfig(config.eventName, 'sourceInboxAiIntent', e.target.checked)} 
-                          className="rounded border-white/20 bg-background/80 text-emerald-500 focus:ring-emerald-500/20 cursor-pointer w-4 h-4" 
+                          className="rounded border-border dark:border-white/20 bg-background/80 text-emerald-500 focus:ring-emerald-500/20 cursor-pointer w-4 h-4" 
                         />
                       </td>
 
@@ -988,7 +988,7 @@ export default function CapiHubPage() {
                           type="checkbox" 
                           checked={config.sourceLeadCreated} 
                           onChange={(e) => handleToggleEventConfig(config.eventName, 'sourceLeadCreated', e.target.checked)} 
-                          className="rounded border-white/20 bg-background/80 text-emerald-500 focus:ring-emerald-500/20 cursor-pointer w-4 h-4" 
+                          className="rounded border-border dark:border-white/20 bg-background/80 text-emerald-500 focus:ring-emerald-500/20 cursor-pointer w-4 h-4" 
                         />
                       </td>
 
@@ -998,7 +998,7 @@ export default function CapiHubPage() {
                           type="checkbox" 
                           checked={config.sourceWidgetForm} 
                           onChange={(e) => handleToggleEventConfig(config.eventName, 'sourceWidgetForm', e.target.checked)} 
-                          className="rounded border-white/20 bg-background/80 text-emerald-500 focus:ring-emerald-500/20 cursor-pointer w-4 h-4" 
+                          className="rounded border-border dark:border-white/20 bg-background/80 text-emerald-500 focus:ring-emerald-500/20 cursor-pointer w-4 h-4" 
                         />
                       </td>
 
@@ -1008,7 +1008,7 @@ export default function CapiHubPage() {
                           type="checkbox" 
                           checked={config.sourceExternalWebhook} 
                           onChange={(e) => handleToggleEventConfig(config.eventName, 'sourceExternalWebhook', e.target.checked)} 
-                          className="rounded border-white/20 bg-background/80 text-emerald-500 focus:ring-emerald-500/20 cursor-pointer w-4 h-4" 
+                          className="rounded border-border dark:border-white/20 bg-background/80 text-emerald-500 focus:ring-emerald-500/20 cursor-pointer w-4 h-4" 
                         />
                       </td>
 
@@ -1016,7 +1016,7 @@ export default function CapiHubPage() {
                       <td className="p-3.5 text-center pr-5">
                         <button 
                           onClick={() => setActiveConfigModal(config)}
-                          className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-muted-foreground hover:text-foreground transition-all"
+                          className="p-1.5 rounded-lg bg-muted/60 dark:bg-white/5 hover:bg-muted dark:hover:bg-white/10 text-muted-foreground hover:text-foreground border border-border dark:border-transparent transition-all"
                           title="Configure forwarded data fields"
                         >
                           <Info className="w-3.5 h-3.5" />
@@ -1041,12 +1041,12 @@ export default function CapiHubPage() {
                   key={config.id} 
                   className={`p-3.5 rounded-xl border transition-all ${
                     config.isEnabled 
-                      ? 'bg-surface/90 border-white/10 shadow-sm' 
-                      : 'bg-white/[0.01] border-white/5 opacity-70'
+                      ? 'bg-surface border-border shadow-sm' 
+                      : 'bg-muted/30 border-border/60 opacity-70'
                   }`}
                 >
                   {/* Card Header: Event name & Master Toggle */}
-                  <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-white/5">
+                  <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-border dark:border-white/5">
                     <div className="flex items-center gap-2">
                       <span className={`w-2 h-2 rounded-full ${config.isEnabled ? 'bg-emerald-400' : 'bg-muted-foreground'}`} />
                       <span className="font-bold text-[13px] text-foreground">{config.eventName}</span>
@@ -1055,7 +1055,7 @@ export default function CapiHubPage() {
                     <div className="flex items-center gap-2">
                       <button 
                         onClick={() => setActiveConfigModal(config)}
-                        className="p-1.5 rounded-lg bg-white/5 text-muted-foreground hover:text-foreground"
+                        className="p-1.5 rounded-lg bg-muted/60 dark:bg-white/5 text-muted-foreground hover:text-foreground border border-border dark:border-transparent"
                         title="Payload fields"
                       >
                         <Info className="w-3.5 h-3.5" />
@@ -1086,7 +1086,7 @@ export default function CapiHubPage() {
                         className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border flex items-center gap-1 transition-all ${
                           config.sourceOrderCompleted 
                             ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300' 
-                            : 'bg-white/5 border-white/5 text-muted-foreground hover:bg-white/10'
+                            : 'bg-muted/50 dark:bg-white/5 border-border dark:border-white/5 text-muted-foreground hover:bg-muted dark:hover:bg-white/10'
                         }`}
                       >
                         <ShoppingCart className="w-3 h-3" />
@@ -1099,7 +1099,7 @@ export default function CapiHubPage() {
                         className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border flex items-center gap-1 transition-all ${
                           config.sourceInboxAiIntent 
                             ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300' 
-                            : 'bg-white/5 border-white/5 text-muted-foreground hover:bg-white/10'
+                            : 'bg-muted/50 dark:bg-white/5 border-border dark:border-white/5 text-muted-foreground hover:bg-muted dark:hover:bg-white/10'
                         }`}
                       >
                         <Bot className="w-3 h-3" />
@@ -1112,7 +1112,7 @@ export default function CapiHubPage() {
                         className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border flex items-center gap-1 transition-all ${
                           config.sourceLeadCreated 
                             ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300' 
-                            : 'bg-white/5 border-white/5 text-muted-foreground hover:bg-white/10'
+                            : 'bg-muted/50 dark:bg-white/5 border-border dark:border-white/5 text-muted-foreground hover:bg-muted dark:hover:bg-white/10'
                         }`}
                       >
                         <UserCheck className="w-3 h-3" />
@@ -1125,7 +1125,7 @@ export default function CapiHubPage() {
                         className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border flex items-center gap-1 transition-all ${
                           config.sourceWidgetForm 
                             ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300' 
-                            : 'bg-white/5 border-white/5 text-muted-foreground hover:bg-white/10'
+                            : 'bg-muted/50 dark:bg-white/5 border-border dark:border-white/5 text-muted-foreground hover:bg-muted dark:hover:bg-white/10'
                         }`}
                       >
                         <LayoutGrid className="w-3 h-3" />
@@ -1138,7 +1138,7 @@ export default function CapiHubPage() {
                         className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border flex items-center gap-1 transition-all ${
                           config.sourceExternalWebhook 
                             ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300' 
-                            : 'bg-white/5 border-white/5 text-muted-foreground hover:bg-white/10'
+                            : 'bg-muted/50 dark:bg-white/5 border-border dark:border-white/5 text-muted-foreground hover:bg-muted dark:hover:bg-white/10'
                         }`}
                       >
                         <Globe className="w-3 h-3" />
@@ -1154,8 +1154,8 @@ export default function CapiHubPage() {
           </div>
 
           {/* Recent Event Logs Section */}
-          <div className="bg-surface/70 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden shadow-sm">
-            <div className="p-4 sm:p-5 border-b border-white/10 flex items-center justify-between bg-white/[0.02]">
+          <div className="bg-surface/70 backdrop-blur-xl border border-border dark:border-white/10 rounded-2xl overflow-hidden shadow-sm">
+            <div className="p-4 sm:p-5 border-b border-border dark:border-white/10 flex items-center justify-between bg-muted/20 dark:bg-white/[0.02]">
               <div>
                 <h2 className="text-[14px] font-bold flex items-center gap-2 text-foreground">
                   <Activity className="w-4 h-4 text-emerald-400" />
@@ -1169,7 +1169,7 @@ export default function CapiHubPage() {
               <button 
                 onClick={() => { setRefreshingLogs(true); fetchData(); }}
                 disabled={refreshingLogs}
-                className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-muted-foreground hover:text-foreground transition-all flex items-center gap-1 text-[11px] disabled:opacity-50"
+                className="p-2 rounded-xl bg-muted/60 dark:bg-white/5 hover:bg-muted dark:hover:bg-white/10 text-muted-foreground hover:text-foreground border border-border dark:border-transparent transition-all flex items-center gap-1 text-[11px] disabled:opacity-50"
                 title="Refresh logs"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${refreshingLogs ? 'animate-spin text-emerald-400' : ''}`} />
@@ -1180,7 +1180,7 @@ export default function CapiHubPage() {
             {/* Desktop Table for Logs (lg and above) */}
             <div className="hidden lg:block overflow-x-auto max-h-[380px]">
               <table className="w-full text-left text-[12px]">
-                <thead className="bg-white/[0.03] text-[10px] text-muted-foreground uppercase sticky top-0 z-10 font-bold backdrop-blur-md">
+                <thead className="bg-muted/50 dark:bg-white/[0.03] text-[10px] text-muted-foreground uppercase sticky top-0 z-10 font-bold backdrop-blur-md border-b border-border dark:border-white/5">
                   <tr>
                     <th className="p-3 pl-5">Timestamp</th>
                     <th className="p-3">Event</th>
@@ -1197,7 +1197,7 @@ export default function CapiHubPage() {
                       </td>
                     </tr>
                   ) : logs.map(log => (
-                    <tr key={log.id} className="hover:bg-white/[0.02] transition-colors">
+                    <tr key={log.id} className="hover:bg-muted/30 dark:hover:bg-white/[0.02] transition-colors">
                       <td className="p-3 pl-5 text-muted-foreground whitespace-nowrap text-[11px]">
                         {new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                         <span className="block text-[10px] opacity-60">
@@ -1208,7 +1208,7 @@ export default function CapiHubPage() {
                         {log.eventName}
                       </td>
                       <td className="p-3">
-                        <span className="px-2 py-0.5 rounded text-[10px] bg-white/5 border border-white/5 text-muted-foreground font-mono">
+                        <span className="px-2 py-0.5 rounded text-[10px] bg-muted/60 dark:bg-white/5 border border-border dark:border-white/5 text-muted-foreground font-mono">
                           {log.source}
                         </span>
                       </td>
@@ -1241,7 +1241,7 @@ export default function CapiHubPage() {
                   {language === 'en' ? 'No conversion events fired yet' : 'এখনো কোনো কনভার্সন ইভেন্ট লগ নেই'}
                 </div>
               ) : logs.map(log => (
-                <div key={log.id} className="p-3 rounded-xl bg-white/[0.02] border border-white/5 space-y-1.5">
+                <div key={log.id} className="p-3 rounded-xl bg-surface border border-border dark:border-white/5 space-y-1.5 shadow-xs">
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-bold text-[12px] text-foreground">{log.eventName}</span>
                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
@@ -1256,7 +1256,7 @@ export default function CapiHubPage() {
                   </div>
 
                   <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                    <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-white/5">
+                    <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-muted/60 dark:bg-white/5 border border-border/50 dark:border-transparent">
                       {log.source}
                     </span>
                     <span className="text-[10px]">
@@ -1282,15 +1282,15 @@ export default function CapiHubPage() {
       {/* Modal: Add Event */}
       {showAddModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-surface border border-white/15 rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl relative">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+          <div className="bg-card dark:bg-surface border border-border dark:border-white/15 rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl relative text-foreground">
+            <div className="flex items-center justify-between border-b border-border dark:border-white/10 pb-3">
               <h3 className="font-bold text-[15px] flex items-center gap-2 text-foreground">
                 <Plus className="w-4 h-4 text-emerald-400" />
                 {language === 'en' ? 'Add Meta Standard Event' : 'মেটা স্ট্যান্ডার্ড ইভেন্ট যোগ করুন'}
               </h3>
               <button 
                 onClick={() => setShowAddModal(false)}
-                className="text-muted-foreground hover:text-foreground p-1 rounded-lg hover:bg-white/5"
+                className="text-muted-foreground hover:text-foreground p-1 rounded-lg hover:bg-muted dark:hover:bg-white/5"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1304,7 +1304,7 @@ export default function CapiHubPage() {
                 <select
                   value={newEventName}
                   onChange={e => setNewEventName(e.target.value)}
-                  className="w-full bg-background border border-white/15 rounded-xl px-3 py-2 text-[12px] text-foreground focus:outline-none focus:border-emerald-500/50"
+                  className="w-full bg-background border border-border dark:border-white/15 rounded-xl px-3 py-2 text-[12px] text-foreground focus:outline-none focus:border-emerald-500/50"
                 >
                   {STANDARD_EVENT_PRESETS.map(preset => (
                     <option key={preset.name} value={preset.name}>
@@ -1325,16 +1325,16 @@ export default function CapiHubPage() {
                     value={customEventInput}
                     onChange={e => setCustomEventInput(e.target.value)}
                     placeholder="e.g. ScheduleAppointment"
-                    className="w-full bg-background border border-white/15 rounded-xl px-3 py-2 text-[12px] text-foreground focus:outline-none focus:border-emerald-500/50"
+                    className="w-full bg-background border border-border dark:border-white/15 rounded-xl px-3 py-2 text-[12px] text-foreground focus:outline-none focus:border-emerald-500/50"
                   />
                 </div>
               )}
             </div>
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-white/10">
+            <div className="flex justify-end gap-2 pt-2 border-t border-border dark:border-white/10">
               <button 
                 onClick={() => setShowAddModal(false)}
-                className="px-4 py-2 bg-white/5 hover:bg-white/10 text-muted-foreground hover:text-foreground rounded-xl text-[12px] font-medium"
+                className="px-4 py-2 bg-muted/60 dark:bg-white/5 hover:bg-muted dark:hover:bg-white/10 text-muted-foreground hover:text-foreground border border-border dark:border-transparent rounded-xl text-[12px] font-medium"
               >
                 {language === 'en' ? 'Cancel' : 'বাতিল'}
               </button>
@@ -1352,8 +1352,8 @@ export default function CapiHubPage() {
       {/* Modal: Configure Payload Fields */}
       {activeConfigModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-surface border border-white/15 rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl relative">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+          <div className="bg-card dark:bg-surface border border-border dark:border-white/15 rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl relative text-foreground">
+            <div className="flex items-center justify-between border-b border-border dark:border-white/10 pb-3">
               <div>
                 <h3 className="font-bold text-[15px] text-foreground flex items-center gap-2">
                   <Info className="w-4 h-4 text-emerald-400" />
@@ -1365,7 +1365,7 @@ export default function CapiHubPage() {
               </div>
               <button 
                 onClick={() => setActiveConfigModal(null)}
-                className="text-muted-foreground hover:text-foreground p-1 rounded-lg hover:bg-white/5"
+                className="text-muted-foreground hover:text-foreground p-1 rounded-lg hover:bg-muted dark:hover:bg-white/5"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1382,7 +1382,7 @@ export default function CapiHubPage() {
                   type="checkbox"
                   checked={activeConfigModal.includeUserData}
                   onChange={e => handleToggleEventConfig(activeConfigModal.eventName, 'includeUserData', e.target.checked)}
-                  className="rounded border-white/20 bg-background text-emerald-500 w-4 h-4 cursor-pointer"
+                  className="rounded border-border dark:border-white/20 bg-background text-emerald-500 w-4 h-4 cursor-pointer"
                 />
               </div>
 
@@ -1395,7 +1395,7 @@ export default function CapiHubPage() {
                   type="checkbox"
                   checked={activeConfigModal.includeValue}
                   onChange={e => handleToggleEventConfig(activeConfigModal.eventName, 'includeValue', e.target.checked)}
-                  className="rounded border-white/20 bg-background text-emerald-500 w-4 h-4 cursor-pointer"
+                  className="rounded border-border dark:border-white/20 bg-background text-emerald-500 w-4 h-4 cursor-pointer"
                 />
               </div>
 
@@ -1408,7 +1408,7 @@ export default function CapiHubPage() {
                   type="checkbox"
                   checked={activeConfigModal.includeCurrency}
                   onChange={e => handleToggleEventConfig(activeConfigModal.eventName, 'includeCurrency', e.target.checked)}
-                  className="rounded border-white/20 bg-background text-emerald-500 w-4 h-4 cursor-pointer"
+                  className="rounded border-border dark:border-white/20 bg-background text-emerald-500 w-4 h-4 cursor-pointer"
                 />
               </div>
 
@@ -1421,7 +1421,7 @@ export default function CapiHubPage() {
                   type="checkbox"
                   checked={activeConfigModal.includeOrderId}
                   onChange={e => handleToggleEventConfig(activeConfigModal.eventName, 'includeOrderId', e.target.checked)}
-                  className="rounded border-white/20 bg-background text-emerald-500 w-4 h-4 cursor-pointer"
+                  className="rounded border-border dark:border-white/20 bg-background text-emerald-500 w-4 h-4 cursor-pointer"
                 />
               </div>
 
@@ -1434,13 +1434,13 @@ export default function CapiHubPage() {
                   type="checkbox"
                   checked={activeConfigModal.includeContentIds}
                   onChange={e => handleToggleEventConfig(activeConfigModal.eventName, 'includeContentIds', e.target.checked)}
-                  className="rounded border-white/20 bg-background text-emerald-500 w-4 h-4 cursor-pointer"
+                  className="rounded border-border dark:border-white/20 bg-background text-emerald-500 w-4 h-4 cursor-pointer"
                 />
               </div>
 
             </div>
 
-            <div className="flex justify-end pt-2 border-t border-white/10">
+            <div className="flex justify-end pt-2 border-t border-border dark:border-white/10">
               <button 
                 onClick={() => setActiveConfigModal(null)}
                 className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-[12px] font-bold"

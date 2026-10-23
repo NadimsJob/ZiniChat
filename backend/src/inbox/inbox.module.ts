@@ -9,6 +9,7 @@ import { AiModule } from '../ai/ai.module';
 import { OrchestratorModule } from '../orchestrator/orchestrator.module';
 import { TenantsModule } from '../tenants/tenants.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { StorageModule } from '../storage/storage.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
     forwardRef(() => OrchestratorModule),
     TenantsModule,
     NotificationsModule,
+    StorageModule,
   ],
   controllers: [InboxController],
   providers: [InboxService, InboxGateway, ActivityLogService, UserPresenceService],

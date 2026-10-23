@@ -4,6 +4,8 @@ import { Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { WhatsappWebService } from '../whatsapp-web/whatsapp-web.service';
 import { InboxGateway } from '../../inbox/inbox.gateway';
+import * as path from 'path';
+import { resolveLocalMediaPath } from '../../storage/storage.service';
 
 @Processor('whatsapp-outbound')
 export class WhatsappProcessor extends WorkerHost {
@@ -122,10 +124,31 @@ export class WhatsappProcessor extends WorkerHost {
       } else if (type === 'image' && parsedMediaContent) {
         payload.type = 'image';
         const mUrl = parsedMediaContent.mediaUrl || parsedMediaContent.url || '';
-        const appUrl = process.env.APP_URL || process.env.FRONTEND_URL || 'https://zinichat.com';
-        const fullLink = mUrl.startsWith('/') ? `${appUrl.replace(/\/$/, '')}${mUrl}` : mUrl;
+        const backendUrl = (process.env.BACKEND_PUBLIC_URL || process.env.API_URL || (process.env.APP_URL?.includes('test') ? 'https://api-test.zinichat.com' : 'https://api.zinichat.com')).replace(/\/$/, '');
+        const fullLink = mUrl.startsWith('http') ? mUrl : `${backendUrl}${mUrl.startsWith('/') ? '' : '/'}${mUrl}`;
         const caption = parsedMediaContent.body || parsedMediaContent.caption || parsedMediaContent.text || undefined;
         payload.image = { link: fullLink, ...(caption ? { caption } : {}) };
+      } else if (type === 'video' && parsedMediaContent) {
+        payload.type = 'video';
+        const mUrl = parsedMediaContent.mediaUrl || parsedMediaContent.url || '';
+        const backendUrl = (process.env.BACKEND_PUBLIC_URL || process.env.API_URL || (process.env.APP_URL?.includes('test') ? 'https://api-test.zinichat.com' : 'https://api.zinichat.com')).replace(/\/$/, '');
+        const fullLink = mUrl.startsWith('http') ? mUrl : `${backendUrl}${mUrl.startsWith('/') ? '' : '/'}${mUrl}`;
+        const caption = parsedMediaContent.body || parsedMediaContent.caption || parsedMediaContent.text || undefined;
+        payload.video = { link: fullLink, ...(caption ? { caption } : {}) };
+      } else if (type === 'document' && parsedMediaContent) {
+        payload.type = 'document';
+        const mUrl = parsedMediaContent.mediaUrl || parsedMediaContent.url || '';
+        const backendUrl = (process.env.BACKEND_PUBLIC_URL || process.env.API_URL || (process.env.APP_URL?.includes('test') ? 'https://api-test.zinichat.com' : 'https://api.zinichat.com')).replace(/\/$/, '');
+        const fullLink = mUrl.startsWith('http') ? mUrl : `${backendUrl}${mUrl.startsWith('/') ? '' : '/'}${mUrl}`;
+        const caption = parsedMediaContent.body || parsedMediaContent.caption || parsedMediaContent.text || undefined;
+        const filename = parsedMediaContent.fileName || path.basename(mUrl);
+        payload.document = { link: fullLink, ...(caption ? { caption } : {}), ...(filename ? { filename } : {}) };
+      } else if ((type === 'audio' || type === 'voice') && parsedMediaContent) {
+        payload.type = 'audio';
+        const mUrl = parsedMediaContent.mediaUrl || parsedMediaContent.url || '';
+        const backendUrl = (process.env.BACKEND_PUBLIC_URL || process.env.API_URL || (process.env.APP_URL?.includes('test') ? 'https://api-test.zinichat.com' : 'https://api.zinichat.com')).replace(/\/$/, '');
+        const fullLink = mUrl.startsWith('http') ? mUrl : `${backendUrl}${mUrl.startsWith('/') ? '' : '/'}${mUrl}`;
+        payload.audio = { link: fullLink };
       } else {
         payload.type = type;
         payload[type] = content;
@@ -154,23 +177,19 @@ export class WhatsappProcessor extends WorkerHost {
 
         // Send via Baileys
         let textContent = '';
-        let mediaPath = '';
+        let mediaTarget = '';
         if (parsedMediaContent && (parsedMediaContent.mediaUrl || parsedMediaContent.url)) {
           textContent = parsedMediaContent.body || parsedMediaContent.caption || parsedMediaContent.text || '';
-          const mUrl = parsedMediaContent.mediaUrl || parsedMediaContent.url;
-          const path = require('path');
-          const cleanUrl = mUrl.startsWith('/') ? mUrl.substring(1) : mUrl;
-          mediaPath = path.isAbsolute(mUrl) ? mUrl : path.join(process.cwd(), cleanUrl);
+          mediaTarget = parsedMediaContent.mediaUrl || parsedMediaContent.url;
         } else if (typeof finalContentText === 'string') {
           textContent = finalContentText;
         } else if (content) {
           textContent = content.body || '';
           if (content.mediaUrl) {
-            const path = require('path');
-            mediaPath = path.join(process.cwd(), content.mediaUrl);
+            mediaTarget = content.mediaUrl;
           }
         }
-        externalMessageId = await this.whatsappWebService.sendMessage(tenantId, to, textContent, mediaPath, type);
+        externalMessageId = await this.whatsappWebService.sendMessage(tenantId, to, textContent, mediaTarget, type);
       } else {
         // CLOUD_API logic
         if (!connection.accessTokenEncrypted.startsWith('mock_')) {

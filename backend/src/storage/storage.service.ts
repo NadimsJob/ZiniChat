@@ -88,6 +88,97 @@ export class StorageService {
   }
 
   /**
+   * Dedicated chat media upload pipeline for tenant inbox.
+   * Compresses outbound images to progressive JPEG (max 1200x1200, 75% quality),
+   * applies quota checks, stores inside /uploads/tenants/${tenantId}/,
+   * and increments tenant storage quota.
+   */
+  async uploadChatMedia(
+    file: Express.Multer.File,
+    tenantId: string
+  ): Promise<{ publicUrl: string; diskPath: string; fileName: string; sizeBytes: number; mimeType: string }> {
+    if (!file) {
+      throw new Error('No media file provided');
+    }
+
+    // 1. Storage quota pre-check
+    const initialSize = file.size || (file.buffer ? file.buffer.length : 0);
+    await this.quotaService.checkStorageQuota(tenantId, initialSize);
+
+    const tenantDir = path.join(this.uploadDir, 'tenants', tenantId);
+    if (!fs.existsSync(tenantDir)) {
+      fs.mkdirSync(tenantDir, { recursive: true });
+    }
+
+    const inputBuffer = file.buffer || (file.path && fs.existsSync(file.path) ? fs.readFileSync(file.path) : null);
+    if (!inputBuffer) {
+      throw new Error('Unable to read media file buffer');
+    }
+
+    let fileName: string;
+    let filePath: string;
+    let mimeType = file.mimetype || 'application/octet-stream';
+    let savedBytes = inputBuffer.length;
+
+    try {
+      const isCompressibleImage =
+        mimeType.startsWith('image/') &&
+        mimeType !== 'image/svg+xml' &&
+        mimeType !== 'image/gif';
+
+      if (isCompressibleImage) {
+        // Universal progressive JPEG format for WhatsApp Web, Cloud API, Messenger, Instagram
+        fileName = `chat_${Date.now()}_${crypto.randomUUID().slice(0, 8)}.jpg`;
+        filePath = path.join(tenantDir, fileName);
+        mimeType = 'image/jpeg';
+
+        const info = await sharp(inputBuffer)
+          .resize({
+            width: 1200,
+            height: 1200,
+            fit: 'inside',
+            withoutEnlargement: true,
+          })
+          .jpeg({ quality: 75, progressive: true })
+          .toFile(filePath);
+
+        savedBytes = info.size;
+        this.logger.log(`Compressed chat image saved for tenant ${tenantId}: ${fileName} (${savedBytes} bytes, was ${initialSize} bytes)`);
+      } else {
+        const rawExt = path.extname(file.originalname || '').toLowerCase();
+        fileName = `chat_${Date.now()}_${crypto.randomUUID().slice(0, 8)}${rawExt}`;
+        filePath = path.join(tenantDir, fileName);
+
+        fs.writeFileSync(filePath, inputBuffer);
+        savedBytes = fs.statSync(filePath).size;
+        this.logger.log(`Saved raw chat media for tenant ${tenantId}: ${fileName} (${savedBytes} bytes)`);
+      }
+
+      // Cleanup temporary multer file if written to disk elsewhere
+      if (file.path && file.path !== filePath && fs.existsSync(file.path)) {
+        try {
+          fs.unlinkSync(file.path);
+        } catch {}
+      }
+
+      // 2. Increment tenant storage quota with exact saved bytes
+      await this.quotaService.incrementStorage(tenantId, savedBytes);
+
+      const publicUrl = `/uploads/tenants/${tenantId}/${fileName}`;
+      return {
+        publicUrl,
+        diskPath: filePath,
+        fileName,
+        sizeBytes: savedBytes,
+        mimeType,
+      };
+    } catch (error: any) {
+      this.logger.error(`Failed to process and save chat media: ${error.message}`, error.stack);
+      throw new Error(`Failed to process and save chat media: ${error.message}`);
+    }
+  }
+
+  /**
    * Scans disk files and correlates with DB models to calculate storage stats per category.
    */
   async getStorageStats(tenantId: string) {
@@ -507,4 +598,53 @@ export class StorageService {
 
     return Array.from(itemsMap.values());
   }
+}
+
+/**
+ * Robust media path resolver across Windows and Linux (Docker container) environments.
+ * Prevents POSIX root misconception (/uploads/... vs ./uploads/...) and checks
+ * project root, uploads subdirectories, and tenant storage locations.
+ */
+export function resolveLocalMediaPath(mediaUrlOrPath: string | null | undefined, tenantId?: string): string | null {
+  if (!mediaUrlOrPath || typeof mediaUrlOrPath !== 'string') return null;
+
+  // 1. Direct filesystem check if already an existing disk file
+  try {
+    if (fs.existsSync(mediaUrlOrPath) && fs.statSync(mediaUrlOrPath).isFile()) {
+      return mediaUrlOrPath;
+    }
+  } catch {}
+
+  let clean = mediaUrlOrPath;
+  if (clean.startsWith('http://') || clean.startsWith('https://')) {
+    try {
+      const parsed = new URL(clean);
+      clean = parsed.pathname;
+    } catch {}
+  }
+
+  // Strip leading slashes to prevent POSIX root misconception (/uploads vs ./uploads)
+  const relativePath = clean.replace(/^[/\\]+/, '');
+
+  const candidates: string[] = [
+    // Project root join: /usr/src/app/uploads/... or D:\ZiniChat\uploads\...
+    path.resolve(process.cwd(), relativePath),
+    // uploads/ subfolder join if path didn't start with uploads
+    path.resolve(process.cwd(), 'uploads', relativePath.replace(/^uploads[/\\]/, '')),
+  ];
+
+  if (tenantId) {
+    const baseName = path.basename(relativePath);
+    candidates.push(path.resolve(process.cwd(), 'uploads', 'tenants', tenantId, baseName));
+  }
+
+  for (const cand of candidates) {
+    try {
+      if (fs.existsSync(cand) && fs.statSync(cand).isFile()) {
+        return cand;
+      }
+    } catch {}
+  }
+
+  return null;
 }

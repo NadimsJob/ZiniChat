@@ -75,10 +75,10 @@ export class MessengerProcessor extends WorkerHost {
           }
         }
 
-        // If mediaUrl is relative (e.g. /uploads/products/...), prefix with APP_URL
-        if (mediaUrl && mediaUrl.startsWith('/')) {
-          const appUrl = process.env.APP_URL || process.env.FRONTEND_URL || 'https://zinichat.com';
-          mediaUrl = `${appUrl.replace(/\/$/, '')}${mediaUrl}`;
+        // If mediaUrl is relative (e.g. /uploads/tenants/...), prefix with backend public URL
+        if (mediaUrl && !mediaUrl.startsWith('http')) {
+          const backendUrl = (process.env.BACKEND_PUBLIC_URL || process.env.API_URL || (process.env.APP_URL?.includes('test') ? 'https://api-test.zinichat.com' : 'https://api.zinichat.com')).replace(/\/$/, '');
+          mediaUrl = `${backendUrl}${mediaUrl.startsWith('/') ? '' : '/'}${mediaUrl}`;
         }
 
         payload.message.attachment = {

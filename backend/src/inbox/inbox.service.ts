@@ -380,12 +380,21 @@ export class InboxService implements OnModuleInit {
             label: true
           }
         },
-        channelConnection: true
+        channelConnection: {
+          select: {
+            id: true,
+            channelType: true,
+            displayName: true,
+            status: true,
+            isAiAutoReplyEnabled: true,
+            externalAccountId: true
+          }
+        }
       },
       orderBy: { lastMessageAt: 'desc' },
     });
 
-    // Auto-fetch Meta User Profile for any contact with generic default name
+    // Non-blocking background sync for generic Meta contacts (runs asynchronously without delaying response)
     const genericConvs = conversations.filter(conv => {
       if (!conv.contact || !['messenger', 'instagram'].includes(conv.contact.channel)) return false;
       const name = conv.contact.name;
@@ -393,24 +402,9 @@ export class InboxService implements OnModuleInit {
     });
 
     if (genericConvs.length > 0) {
-      await Promise.allSettled(
-        genericConvs.slice(0, 5).map(async conv => {
-          const updated = await this.fetchAndUpdateMetaUserProfile(
-            tenantId,
-            conv.contact.id,
-            conv.contact.externalContactId,
-            conv.contact.channel,
-            conv.channelConnectionId || undefined
-          ).catch(() => null);
-          if (updated && updated.name) {
-            conv.contact.name = updated.name;
-          }
-        })
-      );
-      // Run background sync for remaining generic contacts
-      if (genericConvs.length > 5) {
-        for (const conv of genericConvs.slice(5)) {
-          this.fetchAndUpdateMetaUserProfile(
+      setImmediate(async () => {
+        for (const conv of genericConvs.slice(0, 5)) {
+          await this.fetchAndUpdateMetaUserProfile(
             tenantId,
             conv.contact.id,
             conv.contact.externalContactId,
@@ -418,7 +412,7 @@ export class InboxService implements OnModuleInit {
             conv.channelConnectionId || undefined
           ).catch(() => {});
         }
-      }
+      });
     }
 
     return conversations;
@@ -1113,10 +1107,10 @@ export class InboxService implements OnModuleInit {
   }
 
   async toggleAiReply(tenantId: string, conversationId: string, isAiEnabled: boolean, actionUser: any) {
-    const updateData: any = { isAiEnabled };
-    if (isAiEnabled) {
-      updateData.aiAutoPausedUntil = null;
-    }
+    const updateData: any = { 
+      isAiEnabled,
+      aiAutoPausedUntil: null // Always clear any auto-pause timer when AI is explicitly toggled
+    };
     const conversation = await this.prisma.conversation.update({
       where: { id: conversationId, tenantId },
       data: updateData,
@@ -1140,13 +1134,11 @@ export class InboxService implements OnModuleInit {
       metadataJson: { isAiEnabled }
     });
 
-    if (isAiEnabled) {
-      this.inboxGateway.broadcastToTenant(tenantId, 'conversation:ai_resumed', {
-        conversationId: conversation.id,
-        isAiEnabled: true,
-        aiAutoPausedUntil: null
-      });
-    }
+    this.inboxGateway.broadcastToTenant(tenantId, 'conversation:ai_resumed', {
+      conversationId: conversation.id,
+      isAiEnabled,
+      aiAutoPausedUntil: null
+    });
 
     return conversation;
   }
@@ -1180,16 +1172,27 @@ export class InboxService implements OnModuleInit {
   }
 
   async getMessages(tenantId: string, conversationId: string) {
-    await this.prisma.conversation.updateMany({
+    // 1. Fast ownership check
+    const conversation = await this.prisma.conversation.findFirst({
       where: { id: conversationId, tenantId },
-      data: { unreadCount: 0 }
+      select: { id: true, unreadCount: true }
     });
 
+    if (!conversation) {
+      return [];
+    }
+
+    // 2. Asynchronously reset unread count only if unread messages existed (non-blocking)
+    if (conversation.unreadCount > 0) {
+      this.prisma.conversation.update({
+        where: { id: conversationId },
+        data: { unreadCount: 0 }
+      }).catch(err => this.logger.error(`Failed to reset unreadCount for conv ${conversationId}: ${err.message}`));
+    }
+
+    // 3. Fast direct indexed message fetch
     return this.prisma.message.findMany({
-      where: { 
-        conversationId,
-        conversation: { tenantId }
-      },
+      where: { conversationId },
       include: {
         senderUser: { select: { id: true, name: true, profilePicUrl: true } },
         aiAssistant: { select: { id: true, agentName: true } }
@@ -1714,25 +1717,28 @@ export class InboxService implements OnModuleInit {
     // Smart Human Takeover: When a human agent sends a message, auto-pause AI for this conversation
     if (!aiAssistantId && senderUserId) {
       convUpdateData.lastHumanMessageAt = new Date();
-      try {
-        const assistant = await this.prisma.aiAssistant.findFirst({
-          where: { tenantId },
-          select: { smartAutoPauseEnabled: true, smartAutoPauseMinutes: true }
-        });
-        const isPauseEnabled = assistant ? assistant.smartAutoPauseEnabled !== false : true;
-        if (isPauseEnabled) {
-          const pauseMinutes = assistant?.smartAutoPauseMinutes || 5;
-          const pauseUntil = new Date(Date.now() + pauseMinutes * 60 * 1000);
-          convUpdateData.aiAutoPausedUntil = pauseUntil;
-
-          this.inboxGateway.broadcastToTenant(tenantId, 'conversation:ai_paused', {
-            conversationId: conversation.id,
-            aiAutoPausedUntil: pauseUntil,
-            pauseMinutes
+      // Only calculate and activate auto-pause if AI is enabled for this conversation
+      if ((conversation as any).isAiEnabled !== false) {
+        try {
+          const assistant = await this.prisma.aiAssistant.findFirst({
+            where: { tenantId },
+            select: { smartAutoPauseEnabled: true, smartAutoPauseMinutes: true }
           });
+          const isPauseEnabled = assistant ? assistant.smartAutoPauseEnabled !== false : true;
+          if (isPauseEnabled) {
+            const pauseMinutes = assistant?.smartAutoPauseMinutes || 5;
+            const pauseUntil = new Date(Date.now() + pauseMinutes * 60 * 1000);
+            convUpdateData.aiAutoPausedUntil = pauseUntil;
+
+            this.inboxGateway.broadcastToTenant(tenantId, 'conversation:ai_paused', {
+              conversationId: conversation.id,
+              aiAutoPausedUntil: pauseUntil,
+              pauseMinutes
+            });
+          }
+        } catch (err: any) {
+          this.logger.error(`Failed to calculate smart auto-pause for conversation ${conversation.id}: ${err.message}`);
         }
-      } catch (err: any) {
-        this.logger.error(`Failed to calculate smart auto-pause for conversation ${conversation.id}: ${err.message}`);
       }
     }
 

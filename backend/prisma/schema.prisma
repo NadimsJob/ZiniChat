@@ -385,6 +385,9 @@ model Conversation {
   @@index([tenantId, hasOrderRequest])
   @@index([tenantId, requiresFollowUp])
   @@index([tenantId, isStarred])
+  @@index([tenantId, isArchived, lastMessageAt(sort: Desc)])
+  @@index([tenantId, lastMessageAt(sort: Desc)])
+  @@index([tenantId, unreadCount])
   @@map("conversations")
 }
 
@@ -435,6 +438,7 @@ model Message {
   aiAssistant  AiAssistant? @relation(fields: [aiAssistantId], references: [id], onDelete: SetNull)
 
   @@index([conversationId, type])
+  @@index([conversationId, createdAt])
   @@map("messages")
 }
 

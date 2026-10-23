@@ -273,7 +273,7 @@ export default function ZiniMailDashboardPage() {
     return (
       <div className="p-3 sm:p-6 max-w-7xl mx-auto space-y-6">
         {/* Header Skeleton */}
-        <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-4 sm:p-6 shadow-sm space-y-4 animate-pulse">
+        <div className="bg-surface/70 backdrop-blur-xl border border-border rounded-2xl p-4 sm:p-6 shadow-sm space-y-4 animate-pulse">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="space-y-2">
               <div className="h-5 w-48 bg-surface-hover rounded-lg" />
@@ -290,7 +290,7 @@ export default function ZiniMailDashboardPage() {
         {/* 6 KPI Cards Skeleton */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="bg-surface/70 border border-surface-hover rounded-2xl p-3.5 space-y-2 animate-pulse">
+            <div key={i} className="bg-surface/70 border border-border rounded-2xl p-3.5 space-y-2 animate-pulse">
               <div className="h-3 w-16 bg-surface-hover rounded" />
               <div className="h-6 w-12 bg-surface-hover rounded" />
               <div className="h-2.5 w-20 bg-surface-hover/60 rounded" />
@@ -299,7 +299,7 @@ export default function ZiniMailDashboardPage() {
         </div>
 
         {/* Campaign List Skeleton */}
-        <div className="bg-surface/70 border border-surface-hover rounded-2xl p-4 shadow-sm space-y-3 animate-pulse">
+        <div className="bg-surface/70 border border-border rounded-2xl p-4 shadow-sm space-y-3 animate-pulse">
           <div className="h-8 w-60 bg-surface-hover rounded-xl" />
           <div className="space-y-2 pt-2">
             {[1, 2, 3].map((i) => (
@@ -315,7 +315,7 @@ export default function ZiniMailDashboardPage() {
   if (!isFeatureEnabled) {
     return (
       <div className="p-4 sm:p-6 max-w-4xl mx-auto">
-        <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-8 text-center space-y-4">
+        <div className="bg-surface/70 backdrop-blur-xl border border-border rounded-2xl p-8 text-center space-y-4">
           <div className="w-16 h-16 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center mx-auto">
             <Lock className="w-8 h-8" />
           </div>

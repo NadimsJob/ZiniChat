@@ -10,6 +10,7 @@ import { Boom } from '@hapi/boom';
 import * as fs from 'fs';
 import * as path from 'path';
 import sharp from 'sharp';
+import { resolveLocalMediaPath } from '../../storage/storage.service';
 function unwrapBaileysMessage(raw: any): any {
   if (!raw || typeof raw !== 'object') return null;
   let current = raw;
@@ -886,16 +887,52 @@ export class WhatsappWebService implements OnModuleInit {
     this.debugLog(`Sending WhatsApp message via Baileys to ${jid}`);
     
     const doSend = async (targetSock: any) => {
-      if (mediaPath && fs.existsSync(mediaPath)) {
-        const buffer = fs.readFileSync(mediaPath);
-        if (messageType === 'video') {
-          return await targetSock.sendMessage(jid, { video: buffer, caption: content || undefined });
-        } else if (messageType === 'document') {
-          const fileName = path.basename(mediaPath);
-          return await targetSock.sendMessage(jid, { document: buffer, mimetype: 'application/octet-stream', fileName, caption: content || undefined });
-        } else {
-          return await targetSock.sendMessage(jid, { image: buffer, caption: content || undefined });
+      let resolvedBuffer: Buffer | null = null;
+      let resolvedFileName = '';
+
+      if (mediaPath) {
+        const resolvedPath = resolveLocalMediaPath(mediaPath, tenantId);
+        if (resolvedPath && fs.existsSync(resolvedPath)) {
+          resolvedBuffer = fs.readFileSync(resolvedPath);
+          resolvedFileName = path.basename(resolvedPath);
+        } else if (mediaPath.startsWith('http://') || mediaPath.startsWith('https://')) {
+          try {
+            const resp = await fetch(mediaPath);
+            if (resp.ok) {
+              resolvedBuffer = Buffer.from(await resp.arrayBuffer());
+              try {
+                resolvedFileName = path.basename(new URL(mediaPath).pathname) || 'file';
+              } catch {
+                resolvedFileName = 'file';
+              }
+            }
+          } catch (err: any) {
+            this.debugLog(`Failed to fetch remote media from ${mediaPath}: ${err.message}`);
+          }
         }
+      }
+
+      const isMediaMessage = ['image', 'video', 'document', 'audio', 'voice'].includes(messageType || '') || (!!mediaPath && messageType !== 'text');
+
+      if (resolvedBuffer) {
+        if (messageType === 'video') {
+          return await targetSock.sendMessage(jid, { video: resolvedBuffer, caption: content || undefined });
+        } else if (messageType === 'audio' || messageType === 'voice') {
+          return await targetSock.sendMessage(jid, { audio: resolvedBuffer, mimetype: 'audio/mp4', ptt: messageType === 'voice' });
+        } else if (messageType === 'document') {
+          return await targetSock.sendMessage(jid, { 
+            document: resolvedBuffer, 
+            mimetype: 'application/octet-stream', 
+            fileName: resolvedFileName || 'document', 
+            caption: content || undefined 
+          });
+        } else {
+          // Default media type is image
+          return await targetSock.sendMessage(jid, { image: resolvedBuffer, caption: content || undefined });
+        }
+      } else if (isMediaMessage) {
+        this.logger.error(`Cannot send ${messageType || 'media'} to ${jid}: media file could not be resolved from '${mediaPath}'`);
+        throw new Error(`Media file not found or unreadable for ${messageType || 'media'}: ${mediaPath}`);
       } else {
         return await targetSock.sendMessage(jid, { text: content });
       }

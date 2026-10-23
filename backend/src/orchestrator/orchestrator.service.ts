@@ -152,7 +152,8 @@ export class OrchestratorService {
 
       // Smart Human Takeover Check: If AI is auto-paused because a human agent recently replied
       const aiAutoPausedUntil = (message.conversation as any).aiAutoPausedUntil;
-      if (aiAutoPausedUntil) {
+      const isConvAiEnabled = (message.conversation as any).isAiEnabled !== false;
+      if (aiAutoPausedUntil && isConvAiEnabled) {
         const now = new Date();
         const pauseEnd = new Date(aiAutoPausedUntil);
         if (now < pauseEnd) {

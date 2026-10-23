@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { StorageService } from './storage.service';
+import { StorageService, resolveLocalMediaPath } from './storage.service';
 import { QuotaService } from '../tenants/quota.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -69,6 +69,40 @@ describe('StorageService', () => {
       expect(stats.categories).toHaveProperty('aiDocuments');
       expect(stats.categories).toHaveProperty('products');
       expect(stats.categories).toHaveProperty('tickets');
+    });
+  });
+
+  describe('uploadChatMedia', () => {
+    it('should throw error if file is missing', async () => {
+      await expect(service.uploadChatMedia(null as any, 'tenant-1')).rejects.toThrow('No media file provided');
+    });
+
+    it('should upload non-image raw media, check quota, and increment storage', async () => {
+      const mockDoc: any = {
+        originalname: 'invoice.pdf',
+        mimetype: 'application/pdf',
+        size: 1024,
+        buffer: Buffer.from('%PDF-1.4 test document'),
+      };
+
+      const result = await service.uploadChatMedia(mockDoc, 'tenant-1');
+      expect(mockQuotaService.checkStorageQuota).toHaveBeenCalledWith('tenant-1', 1024);
+      expect(mockQuotaService.incrementStorage).toHaveBeenCalledWith('tenant-1', expect.any(Number));
+      expect(result.publicUrl).toMatch(/^\/uploads\/tenants\/tenant-1\/chat_.*\.pdf$/);
+      expect(result.mimeType).toBe('application/pdf');
+    });
+  });
+
+  describe('resolveLocalMediaPath', () => {
+    it('should return null for empty or non-string input', () => {
+      expect(resolveLocalMediaPath(null)).toBeNull();
+      expect(resolveLocalMediaPath(undefined)).toBeNull();
+      expect(resolveLocalMediaPath('' as any)).toBeNull();
+    });
+
+    it('should not throw on non-existent path and return null', () => {
+      const resolved = resolveLocalMediaPath('/uploads/tenants/non-existent/file.jpg', 'tenant-1');
+      expect(resolved).toBeNull();
     });
   });
 

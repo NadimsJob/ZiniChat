@@ -438,14 +438,14 @@ export default function NewCampaignWizardPage() {
           <div className="h-4 w-28 bg-surface-hover/80 rounded" />
           <div className="h-4 w-16 bg-surface-hover/80 rounded" />
         </div>
-        <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-4 shadow-sm animate-pulse">
+        <div className="bg-surface/70 backdrop-blur-xl border border-border rounded-2xl p-4 shadow-sm animate-pulse">
           <div className="grid grid-cols-4 gap-2">
             {[1, 2, 3, 4].map((i) => (
               <div key={i} className="h-9 bg-surface-hover/70 rounded-xl" />
             ))}
           </div>
         </div>
-        <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-6 shadow-sm space-y-4 animate-pulse">
+        <div className="bg-surface/70 backdrop-blur-xl border border-border rounded-2xl p-6 shadow-sm space-y-4 animate-pulse">
           <div className="h-6 w-48 bg-surface-hover/80 rounded-xl" />
           <div className="h-4 w-72 bg-surface-hover/60 rounded" />
           <div className="space-y-3 pt-4">
@@ -513,7 +513,7 @@ export default function NewCampaignWizardPage() {
       )}
 
       {/* Wizard Progress Bar */}
-      <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-2.5 sm:p-4 shadow-sm">
+      <div className="bg-surface/70 backdrop-blur-xl border border-border rounded-2xl p-2.5 sm:p-4 shadow-sm">
         <div className="grid grid-cols-4 gap-1.5 sm:gap-2 text-center text-[10px] sm:text-[11px] font-bold">
           <button
             onClick={() => setCurrentStep(1)}
@@ -573,8 +573,8 @@ export default function NewCampaignWizardPage() {
 
       {/* STEP 1: Audience & Sourcing */}
       {currentStep === 1 && (
-        <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-5 sm:p-6 shadow-sm space-y-5 animate-in fade-in duration-300">
-          <div className="border-b border-surface-hover pb-3">
+        <div className="bg-surface/70 backdrop-blur-xl border border-border rounded-2xl p-5 sm:p-6 shadow-sm space-y-5 animate-in fade-in duration-300">
+          <div className="border-b border-border pb-3">
             <h2 className="text-lg font-bold text-foreground">
               {language === 'en' ? 'Campaign Details & Lead Discovery' : 'ক্যাম্পেইন বিবরণ ও লিড সোর্সিং'}
             </h2>
@@ -596,7 +596,7 @@ export default function NewCampaignWizardPage() {
                 placeholder="e.g. Festive Handicraft B2B Outreach 2026"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="w-full px-3.5 py-2 rounded-xl bg-surface border border-surface-hover text-foreground focus:outline-none focus:border-[#1F824A]"
+                className="w-full px-3.5 py-2 rounded-xl bg-surface border border-border text-foreground focus:outline-none focus:border-[#1F824A]"
               />
             </div>
 
@@ -612,7 +612,7 @@ export default function NewCampaignWizardPage() {
                 <select
                   value={form.targetCountry}
                   onChange={(e) => setForm({ ...form, targetCountry: e.target.value })}
-                  className="w-full px-3.5 py-2 rounded-xl bg-surface border border-surface-hover text-foreground focus:outline-none focus:border-[#1F824A] cursor-pointer"
+                  className="w-full px-3.5 py-2 rounded-xl bg-surface border border-border text-foreground focus:outline-none focus:border-[#1F824A] cursor-pointer"
                 >
                   <optgroup label={language === 'en' ? '★ Popular Targets' : '★ জনপ্রিয় দেশসমূহ'}>
                     {['Bangladesh', 'United States', 'United Kingdom', 'Canada', 'Australia', 'United Arab Emirates', 'Saudi Arabia', 'India', 'Singapore', 'Malaysia', 'Germany', 'France', 'Italy'].map((cName) => {
@@ -653,7 +653,7 @@ export default function NewCampaignWizardPage() {
                   }
                   value={form.targetCity}
                   onChange={(e) => setForm({ ...form, targetCity: e.target.value })}
-                  className="w-full px-3.5 py-2 rounded-xl bg-surface border border-surface-hover text-foreground focus:outline-none focus:border-[#1F824A]"
+                  className="w-full px-3.5 py-2 rounded-xl bg-surface border border-border text-foreground focus:outline-none focus:border-[#1F824A]"
                 />
               </div>
             </div>
@@ -678,7 +678,7 @@ export default function NewCampaignWizardPage() {
                       handleAddKeyword();
                     }
                   }}
-                  className="flex-1 px-3.5 py-2 rounded-xl bg-surface border border-surface-hover text-foreground focus:outline-none focus:border-[#1F824A]"
+                  className="flex-1 px-3.5 py-2 rounded-xl bg-surface border border-border text-foreground focus:outline-none focus:border-[#1F824A]"
                 />
                 <button
                   type="button"
@@ -693,7 +693,7 @@ export default function NewCampaignWizardPage() {
                 {form.keywords.map((kw) => (
                   <span
                     key={kw}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface border border-surface-hover text-[11px] font-medium text-foreground"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface border border-border text-[11px] font-medium text-foreground"
                   >
                     #{kw}
                     <button
@@ -729,7 +729,7 @@ export default function NewCampaignWizardPage() {
                       className={`p-3 rounded-xl border flex flex-col items-center gap-1.5 transition-all ${
                         active
                           ? 'border-[#1F824A] bg-[#1F824A]/10 text-foreground'
-                          : 'border-surface-hover bg-surface text-muted-foreground hover:bg-surface-hover'
+                          : 'border-border bg-surface text-muted-foreground hover:bg-surface-hover'
                       }`}
                     >
                       <Icon className={`w-5 h-5 ${active ? 'text-[#1F824A]' : 'text-muted-foreground'}`} />
@@ -741,7 +741,7 @@ export default function NewCampaignWizardPage() {
             </div>
 
             {/* Phone Harvester Toggle */}
-            <div className="p-3.5 rounded-xl border border-surface-hover bg-surface flex items-start gap-3">
+            <div className="p-3.5 rounded-xl border border-border bg-surface flex items-start gap-3">
               <Smartphone className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
               <div className="space-y-0.5 flex-1">
                 <div className="flex items-center justify-between">
@@ -786,8 +786,8 @@ export default function NewCampaignWizardPage() {
 
       {/* STEP 2: Banner & Offer */}
       {currentStep === 2 && (
-        <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-5 sm:p-6 shadow-sm space-y-5 animate-in fade-in duration-300">
-          <div className="border-b border-surface-hover pb-3">
+        <div className="bg-surface/70 backdrop-blur-xl border border-border rounded-2xl p-5 sm:p-6 shadow-sm space-y-5 animate-in fade-in duration-300">
+          <div className="border-b border-border pb-3">
             <h2 className="text-lg font-bold text-foreground">
               {language === 'en' ? 'Promotional Hero Banner & Destination' : 'প্রমোশনাল হিরো ব্যানার ও ল্যান্ডিং পেজ'}
             </h2>
@@ -808,7 +808,7 @@ export default function NewCampaignWizardPage() {
                 </label>
 
                 {/* Mode Selector Tabs */}
-                <div className="flex items-center gap-1 p-0.5 bg-surface border border-surface-hover rounded-xl text-[11px]">
+                <div className="flex items-center gap-1 p-0.5 bg-surface border border-border rounded-xl text-[11px]">
                   <button
                     type="button"
                     onClick={() => setBannerMode('upload')}
@@ -848,7 +848,7 @@ export default function NewCampaignWizardPage() {
                   />
 
                   {form.bannerImageUrl ? (
-                    <div className="p-4 rounded-2xl border border-surface-hover bg-surface/80 space-y-3">
+                    <div className="p-4 rounded-2xl border border-border bg-surface/80 space-y-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-[11px] font-bold flex items-center gap-1.5">
@@ -865,14 +865,14 @@ export default function NewCampaignWizardPage() {
                             type="button"
                             onClick={() => fileInputRef.current?.click()}
                             disabled={uploadingBanner}
-                            className="px-2.5 py-1 rounded-lg bg-surface border border-surface-hover hover:border-[#1F824A] text-foreground text-[11px] font-medium transition-colors"
+                            className="px-2.5 py-1 rounded-lg bg-surface border border-border hover:border-[#1F824A] text-foreground text-[11px] font-medium transition-colors"
                           >
                             {language === 'en' ? 'Change Image' : 'ছবি পরিবর্তন'}
                           </button>
                           <button
                             type="button"
                             onClick={() => setForm((prev) => ({ ...prev, bannerImageUrl: '', bannerSizeBytes: 0 }))}
-                            className="p-1 rounded-lg border border-surface-hover hover:border-rose-500/40 text-rose-500 transition-colors"
+                            className="p-1 rounded-lg border border-border hover:border-rose-500/40 text-rose-500 transition-colors"
                             title="Remove image"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -880,7 +880,7 @@ export default function NewCampaignWizardPage() {
                         </div>
                       </div>
 
-                      <div className="max-h-56 rounded-xl overflow-hidden border border-surface-hover flex items-center justify-center bg-black/30">
+                      <div className="max-h-56 rounded-xl overflow-hidden border border-border flex items-center justify-center bg-black/30">
                         <img
                           src={
                             form.bannerImageUrl.startsWith('http') || form.bannerImageUrl.startsWith('data:') || form.bannerImageUrl.startsWith('blob:')
@@ -898,7 +898,7 @@ export default function NewCampaignWizardPage() {
                       className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2 group ${
                         uploadingBanner
                           ? 'border-emerald-500 bg-emerald-500/5 cursor-wait'
-                          : 'border-surface-hover hover:border-[#1F824A] bg-surface/40 hover:bg-surface/80'
+                          : 'border-border hover:border-[#1F824A] bg-surface/40 hover:bg-surface/80'
                       }`}
                     >
                       <div className="w-12 h-12 rounded-2xl bg-[#1F824A]/10 text-[#1F824A] flex items-center justify-center group-hover:scale-110 transition-transform shadow-inner">
@@ -934,7 +934,7 @@ export default function NewCampaignWizardPage() {
                     placeholder="https://yourdomain.com/banners/summer_offer.jpg"
                     value={form.bannerImageUrl}
                     onChange={(e) => setForm({ ...form, bannerImageUrl: e.target.value })}
-                    className="w-full px-3.5 py-2 rounded-xl bg-surface border border-surface-hover text-foreground focus:outline-none focus:border-[#1F824A]"
+                    className="w-full px-3.5 py-2 rounded-xl bg-surface border border-border text-foreground focus:outline-none focus:border-[#1F824A]"
                   />
                   <span className="text-[10px] text-muted-foreground block">
                     {language === 'en'
@@ -943,11 +943,11 @@ export default function NewCampaignWizardPage() {
                   </span>
 
                   {form.bannerImageUrl && (
-                    <div className="p-3 rounded-xl border border-surface-hover bg-surface/50 space-y-2">
+                    <div className="p-3 rounded-xl border border-border bg-surface/50 space-y-2">
                       <span className="text-[11px] font-semibold text-muted-foreground">
                         {language === 'en' ? 'Banner Preview' : 'ব্যানার প্রিভিউ'}:
                       </span>
-                      <div className="max-h-48 rounded-lg overflow-hidden border border-surface-hover flex items-center justify-center bg-black/20">
+                      <div className="max-h-48 rounded-lg overflow-hidden border border-border flex items-center justify-center bg-black/20">
                         <img
                           src={
                             form.bannerImageUrl.startsWith('http') || form.bannerImageUrl.startsWith('data:') || form.bannerImageUrl.startsWith('blob:')
@@ -975,7 +975,7 @@ export default function NewCampaignWizardPage() {
                 placeholder="https://mybrand.com/festive-offer"
                 value={form.bannerClickUrl}
                 onChange={(e) => setForm({ ...form, bannerClickUrl: e.target.value })}
-                className="w-full px-3.5 py-2 rounded-xl bg-surface border border-surface-hover text-foreground focus:outline-none focus:border-[#1F824A]"
+                className="w-full px-3.5 py-2 rounded-xl bg-surface border border-border text-foreground focus:outline-none focus:border-[#1F824A]"
               />
               <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-300 text-[11px]">
                 <ShieldCheck className="w-3.5 h-3.5 inline mr-1" />
@@ -994,7 +994,7 @@ export default function NewCampaignWizardPage() {
                 <select
                   value={form.language}
                   onChange={(e) => setForm({ ...form, language: e.target.value })}
-                  className="w-full px-3.5 py-2 rounded-xl bg-surface border border-surface-hover text-foreground focus:outline-none focus:border-[#1F824A]"
+                  className="w-full px-3.5 py-2 rounded-xl bg-surface border border-border text-foreground focus:outline-none focus:border-[#1F824A]"
                 >
                   <option value="bn">বাংলা (Formal Bengali with 'আপনি')</option>
                   <option value="en">English (Crisp Professional B2B)</option>
@@ -1009,7 +1009,7 @@ export default function NewCampaignWizardPage() {
                 <select
                   value={form.tone}
                   onChange={(e) => setForm({ ...form, tone: e.target.value })}
-                  className="w-full px-3.5 py-2 rounded-xl bg-surface border border-surface-hover text-foreground focus:outline-none focus:border-[#1F824A]"
+                  className="w-full px-3.5 py-2 rounded-xl bg-surface border border-border text-foreground focus:outline-none focus:border-[#1F824A]"
                 >
                   <option value="consultative">Consultative (সমস্যা সমাধান ও পার্টনারশিপ)</option>
                   <option value="friendly">Friendly & Warm (সহজ ও আন্তরিক)</option>
@@ -1023,7 +1023,7 @@ export default function NewCampaignWizardPage() {
           <div className="pt-4 flex justify-between items-center">
             <button
               onClick={() => setCurrentStep(1)}
-              className="px-4 py-2 rounded-xl border border-surface-hover hover:bg-surface-hover text-foreground font-semibold text-[12px]"
+              className="px-4 py-2 rounded-xl border border-border hover:bg-surface-hover text-foreground font-semibold text-[12px]"
             >
               {language === 'en' ? 'Back' : 'পূর্ববর্তী'}
             </button>
@@ -1051,8 +1051,8 @@ export default function NewCampaignWizardPage() {
 
       {/* STEP 3: AI Vision & Sample Draft */}
       {currentStep === 3 && (
-        <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-5 sm:p-6 shadow-sm space-y-5 animate-in fade-in duration-300">
-          <div className="border-b border-surface-hover pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div className="bg-surface/70 backdrop-blur-xl border border-border rounded-2xl p-5 sm:p-6 shadow-sm space-y-5 animate-in fade-in duration-300">
+          <div className="border-b border-border pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
               <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-purple-500" />
@@ -1079,7 +1079,7 @@ export default function NewCampaignWizardPage() {
             {/* Vision Summary Cards */}
             {form.bannerSummary ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="p-3 rounded-xl border border-surface-hover bg-surface space-y-1">
+                <div className="p-3 rounded-xl border border-border bg-surface space-y-1">
                   <span className="text-[10px] uppercase font-bold text-muted-foreground">
                     {language === 'en' ? 'Product Category' : 'পণ্যের ক্যাটাগরি'}
                   </span>
@@ -1088,7 +1088,7 @@ export default function NewCampaignWizardPage() {
                   </div>
                 </div>
 
-                <div className="p-3 rounded-xl border border-surface-hover bg-surface space-y-1">
+                <div className="p-3 rounded-xl border border-border bg-surface space-y-1">
                   <span className="text-[10px] uppercase font-bold text-muted-foreground">
                     {language === 'en' ? 'Detected Offers' : 'চিহ্নিত অফার'}
                   </span>
@@ -1097,7 +1097,7 @@ export default function NewCampaignWizardPage() {
                   </div>
                 </div>
 
-                <div className="p-3 rounded-xl border border-surface-hover bg-surface space-y-1">
+                <div className="p-3 rounded-xl border border-border bg-surface space-y-1">
                   <span className="text-[10px] uppercase font-bold text-muted-foreground">
                     {language === 'en' ? 'Pricing & Discounts' : 'মূল্য ও ডিসকাউন্ট'}
                   </span>
@@ -1106,7 +1106,7 @@ export default function NewCampaignWizardPage() {
                   </div>
                 </div>
 
-                <div className="p-3 rounded-xl border border-surface-hover bg-surface space-y-1">
+                <div className="p-3 rounded-xl border border-border bg-surface space-y-1">
                   <span className="text-[10px] uppercase font-bold text-muted-foreground">
                     {language === 'en' ? 'Target Pain Point' : 'গ্রাহকের সমস্যা ও সমাধান'}
                   </span>
@@ -1116,7 +1116,7 @@ export default function NewCampaignWizardPage() {
                 </div>
               </div>
             ) : (
-              <div className="p-4 rounded-xl border border-dashed border-surface-hover text-center space-y-2">
+              <div className="p-4 rounded-xl border border-dashed border-border text-center space-y-2">
                 <p className="text-muted-foreground text-[12px]">
                   {language === 'en'
                     ? 'Click "Run AI Analysis" to extract structured offers from your banner, or proceed directly to drafting.'
@@ -1126,7 +1126,7 @@ export default function NewCampaignWizardPage() {
             )}
 
             {/* Test Sample Draft Generator */}
-            <div className="pt-2 border-t border-surface-hover space-y-3">
+            <div className="pt-2 border-t border-border space-y-3">
               <div className="flex items-center justify-between">
                 <span className="font-bold text-foreground">
                   {language === 'en' ? 'Live Email Preview' : 'ইমেইল প্রিভিউ'}
@@ -1135,7 +1135,7 @@ export default function NewCampaignWizardPage() {
                 <button
                   onClick={handleGenerateSampleDraft}
                   disabled={generatingDraft}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold rounded-xl bg-surface border border-surface-hover hover:bg-surface-hover text-foreground transition-all"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold rounded-xl bg-surface border border-border hover:bg-surface-hover text-foreground transition-all"
                 >
                   <Eye className="w-3.5 h-3.5 text-blue-500" />
                   {generatingDraft
@@ -1145,7 +1145,7 @@ export default function NewCampaignWizardPage() {
               </div>
 
               {form.sampleDraft ? (
-                <div className="p-4 rounded-xl border border-surface-hover bg-surface/80 space-y-3">
+                <div className="p-4 rounded-xl border border-border bg-surface/80 space-y-3">
                   <div className="space-y-1">
                     <span className="text-[10px] uppercase font-bold text-muted-foreground">
                       {language === 'en' ? 'Subject Line' : 'ইমেইল সাবজেক্ট'}:
@@ -1155,15 +1155,15 @@ export default function NewCampaignWizardPage() {
                     </div>
                   </div>
 
-                  <div className="border-t border-surface-hover pt-3">
+                  <div className="border-t border-border pt-3">
                     <div
-                      className="prose prose-invert max-w-none text-[12px] bg-background/50 p-4 rounded-xl border border-surface-hover"
+                      className="prose prose-invert max-w-none text-[12px] bg-background/50 p-4 rounded-xl border border-border"
                       dangerouslySetInnerHTML={{ __html: form.sampleDraft.bodyHtml }}
                     />
                   </div>
                 </div>
               ) : (
-                <div className="p-4 rounded-xl bg-surface/40 border border-surface-hover text-center text-muted-foreground text-[12px]">
+                <div className="p-4 rounded-xl bg-surface/40 border border-border text-center text-muted-foreground text-[12px]">
                   {language === 'en'
                     ? 'Click "Generate Sample Draft" to preview how your personalized cold email will appear in recipients inboxes.'
                     : 'কাস্টমারদের ইনবক্সে ইমেইল কেমন দেখাবে তা দেখতে প্রিভিউ জেনারেট করুন।'}
@@ -1175,7 +1175,7 @@ export default function NewCampaignWizardPage() {
           <div className="pt-4 flex justify-between items-center">
             <button
               onClick={() => setCurrentStep(2)}
-              className="px-4 py-2 rounded-xl border border-surface-hover hover:bg-surface-hover text-foreground font-semibold text-[12px]"
+              className="px-4 py-2 rounded-xl border border-border hover:bg-surface-hover text-foreground font-semibold text-[12px]"
             >
               {language === 'en' ? 'Back' : 'পূর্ববর্তী'}
             </button>
@@ -1193,8 +1193,8 @@ export default function NewCampaignWizardPage() {
 
       {/* STEP 4: SMTP & Quota Safeguard */}
       {currentStep === 4 && (
-        <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-5 sm:p-6 shadow-sm space-y-5 animate-in fade-in duration-300">
-          <div className="border-b border-surface-hover pb-3">
+        <div className="bg-surface/70 backdrop-blur-xl border border-border rounded-2xl p-5 sm:p-6 shadow-sm space-y-5 animate-in fade-in duration-300">
+          <div className="border-b border-border pb-3">
             <h2 className="text-lg font-bold text-foreground">
               {language === 'en' ? 'SMTP Verification & AI Credit Safeguard' : 'এসএমটিপি ও এআই ক্রেডিট যাচাই'}
             </h2>
@@ -1207,7 +1207,7 @@ export default function NewCampaignWizardPage() {
 
           <div className="space-y-5 text-[12px]">
             {/* SMTP Status Check */}
-            <div className="p-4 rounded-xl border border-surface-hover bg-surface flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="p-4 rounded-xl border border-border bg-surface flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <div
                   className={`w-10 h-10 rounded-xl flex items-center justify-center ${
@@ -1237,7 +1237,7 @@ export default function NewCampaignWizardPage() {
                 <button
                   type="button"
                   onClick={() => setShowSmtpGuide(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface border border-surface-hover hover:border-emerald-500/40 text-foreground font-semibold text-[11px] transition-colors shrink-0 shadow-sm"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface border border-border hover:border-emerald-500/40 text-foreground font-semibold text-[11px] transition-colors shrink-0 shadow-sm"
                 >
                   <HelpCircle className="w-3.5 h-3.5 text-emerald-500" />
                   {language === 'en' ? 'Credentials Guide (Gmail, cPanel, Outlook)' : 'পাসওয়ার্ড ও হোস্ট গাইড (জিমেইল, সিপ্যানেল, আউটলুক)'}
@@ -1284,7 +1284,7 @@ export default function NewCampaignWizardPage() {
                   <button
                     type="button"
                     onClick={() => { setSmtpGuideTab('gmail'); setShowSmtpGuide(true); }}
-                    className="px-2.5 py-1 rounded-lg bg-surface border border-surface-hover hover:border-red-500/40 text-[11px] font-medium text-foreground flex items-center gap-1"
+                    className="px-2.5 py-1 rounded-lg bg-surface border border-border hover:border-red-500/40 text-[11px] font-medium text-foreground flex items-center gap-1"
                   >
                     <Mail className="w-3 h-3 text-red-500" />
                     <span>Google / Gmail Guide</span>
@@ -1292,7 +1292,7 @@ export default function NewCampaignWizardPage() {
                   <button
                     type="button"
                     onClick={() => { setSmtpGuideTab('outlook'); setShowSmtpGuide(true); }}
-                    className="px-2.5 py-1 rounded-lg bg-surface border border-surface-hover hover:border-blue-500/40 text-[11px] font-medium text-foreground flex items-center gap-1"
+                    className="px-2.5 py-1 rounded-lg bg-surface border border-border hover:border-blue-500/40 text-[11px] font-medium text-foreground flex items-center gap-1"
                   >
                     <Server className="w-3 h-3 text-blue-500" />
                     <span>Microsoft 365 Guide</span>
@@ -1300,7 +1300,7 @@ export default function NewCampaignWizardPage() {
                   <button
                     type="button"
                     onClick={() => { setSmtpGuideTab('cpanel'); setShowSmtpGuide(true); }}
-                    className="px-2.5 py-1 rounded-lg bg-surface border border-surface-hover hover:border-orange-500/40 text-[11px] font-medium text-foreground flex items-center gap-1"
+                    className="px-2.5 py-1 rounded-lg bg-surface border border-border hover:border-orange-500/40 text-[11px] font-medium text-foreground flex items-center gap-1"
                   >
                     <Zap className="w-3 h-3 text-orange-500" />
                     <span>cPanel Webmail Guide</span>
@@ -1317,7 +1317,7 @@ export default function NewCampaignWizardPage() {
             )}
 
             {/* Campaign Target Limit Slider & Visual Accuracy Engine */}
-            <div className="space-y-3 p-4 rounded-xl border border-surface-hover bg-surface shadow-sm">
+            <div className="space-y-3 p-4 rounded-xl border border-border bg-surface shadow-sm">
               <div className="flex items-center justify-between font-semibold text-foreground">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2">
                   <span className="text-[13px]">{language === 'en' ? 'Target Email Quantity' : 'টার্গেট ইমেইল সংখ্যা'}</span>
@@ -1338,7 +1338,7 @@ export default function NewCampaignWizardPage() {
                         setForm({ ...form, totalLimit: Math.min(5000, Math.max(50, v)) });
                       }
                     }}
-                    className="w-20 px-2 py-1 text-right font-black text-sm text-[#1F824A] bg-surface-hover/80 border border-surface-hover rounded-lg focus:outline-none focus:border-[#1F824A] transition-colors"
+                    className="w-20 px-2 py-1 text-right font-black text-sm text-[#1F824A] bg-surface-hover/80 border border-border rounded-lg focus:outline-none focus:border-[#1F824A] transition-colors"
                   />
                   <span className="text-xs font-bold text-foreground">{language === 'en' ? 'Emails' : 'ইমেইল'}</span>
                 </div>
@@ -1406,7 +1406,7 @@ export default function NewCampaignWizardPage() {
               })()}
 
               {/* Quick Select Preset Buttons */}
-              <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-surface-hover/60">
+              <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-border/60">
                 <span className="text-[10px] text-muted-foreground mr-1">{language === 'en' ? 'Quick Presets:' : 'দ্রুত নির্বাচন:'}</span>
                 {[100, 500, 1000, 1650, 2500, 5000].map((preset) => (
                   <button
@@ -1416,7 +1416,7 @@ export default function NewCampaignWizardPage() {
                     className={`px-2 py-0.5 rounded-md text-[10px] font-semibold transition-all ${
                       form.totalLimit === preset
                         ? 'bg-[#1F824A] text-white shadow-sm ring-1 ring-[#1F824A]'
-                        : 'bg-surface-hover/70 hover:bg-surface-hover text-muted-foreground hover:text-foreground border border-surface-hover'
+                        : 'bg-surface-hover/70 hover:bg-surface-hover text-muted-foreground hover:text-foreground border border-border'
                     }`}
                   >
                     {preset.toLocaleString()}
@@ -1426,7 +1426,7 @@ export default function NewCampaignWizardPage() {
             </div>
 
             {/* Transparent Cost Breakdown Card */}
-            <div className="p-4 rounded-xl border border-surface-hover bg-surface/50 space-y-3">
+            <div className="p-4 rounded-xl border border-border bg-surface/50 space-y-3">
               <span className="font-bold text-foreground text-[13px] flex items-center gap-1.5">
                 <Coins className="w-4 h-4 text-amber-500" />
                 {language === 'en' ? 'Transparent Cost Breakdown' : 'স্বচ্ছ খরচের হিসাব'}
@@ -1441,7 +1441,7 @@ export default function NewCampaignWizardPage() {
                   <span>{language === 'en' ? 'Personalized Cold Email Drafting:' : 'পার্সোনালাইজড ইমেইল ড্রাফটিং:'}</span>
                   <span className="font-semibold text-foreground">{form.totalLimit} AI Response Credits (1/email)</span>
                 </div>
-                <div className="border-t border-surface-hover pt-1.5 flex justify-between font-bold text-foreground">
+                <div className="border-t border-border pt-1.5 flex justify-between font-bold text-foreground">
                   <span>{language === 'en' ? 'Total Required for Campaign:' : 'মোট প্রয়োজনীয় ক্রেডিট:'}</span>
                   <span className="text-[#1F824A] text-sm">{totalRequiredCredits} AI Credits</span>
                 </div>
@@ -1525,7 +1525,7 @@ export default function NewCampaignWizardPage() {
                     <button
                       type="button"
                       onClick={handleAutoAdjust}
-                      className="px-3 py-1.5 rounded-lg bg-surface border border-surface-hover text-foreground hover:bg-surface-hover font-bold text-[11px] transition-all"
+                      className="px-3 py-1.5 rounded-lg bg-surface border border-border text-foreground hover:bg-surface-hover font-bold text-[11px] transition-all"
                     >
                       ⚡ {language === 'en' ? `Auto-Adjust to Max Affordable: ${maxAffordableEmails.toLocaleString()} Emails` : `অটো-অ্যাডজাস্ট করুন (${maxAffordableEmails.toLocaleString()} ইমেইল)`}
                     </button>
@@ -1542,10 +1542,10 @@ export default function NewCampaignWizardPage() {
             )}
           </div>
 
-          <div className="pt-4 flex justify-between items-center border-t border-surface-hover">
+          <div className="pt-4 flex justify-between items-center border-t border-border">
             <button
               onClick={() => setCurrentStep(3)}
-              className="px-4 py-2 rounded-xl border border-surface-hover hover:bg-surface-hover text-foreground font-semibold text-[12px]"
+              className="px-4 py-2 rounded-xl border border-border hover:bg-surface-hover text-foreground font-semibold text-[12px]"
             >
               {language === 'en' ? 'Back' : 'পূর্ববর্তী'}
             </button>

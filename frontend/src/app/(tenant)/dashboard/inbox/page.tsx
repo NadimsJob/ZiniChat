@@ -71,6 +71,9 @@ export default function InboxPage() {
   const [conversations, setConversations] = useState<any[]>([]);
   const [selectedConvId, setSelectedConvId] = useState<string | null>(null);
   const [messages, setMessages] = useState<any[]>([]);
+  const [messagesLoading, setMessagesLoading] = useState(false);
+  const messagesCacheRef = useRef<Map<string, any[]>>(new Map());
+  const activeMsgFetchAbortRef = useRef<AbortController | null>(null);
   const [inputText, setInputText] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(true);
@@ -280,8 +283,8 @@ export default function InboxPage() {
       if (res.ok) {
         const data = await res.json();
         setConversations(data);
-        if (data.length > 0 && !selectedConvId) {
-          setSelectedConvId(data[0].id);
+        if (data.length > 0) {
+          setSelectedConvId(prev => prev || data[0].id);
         }
       }
     } catch (err) {
@@ -289,7 +292,7 @@ export default function InboxPage() {
     } finally {
       setLoading(false);
     }
-  }, [activeTab, channelFilter, hasSmartTabs, selectedConvId]);
+  }, [activeTab, channelFilter, hasSmartTabs]);
 
   const fetchLabels = async () => {
     const token = Cookies.get('access_token');
@@ -403,8 +406,15 @@ export default function InboxPage() {
         if (currentSelectedId === data.conversationId) {
           setMessages(prev => {
             if (prev.some(m => m.id === data.message.id)) return prev;
-            return [...prev, data.message];
+            const next = [...prev, data.message];
+            messagesCacheRef.current.set(data.conversationId, next);
+            return next;
           });
+        } else {
+          const existing = messagesCacheRef.current.get(data.conversationId);
+          if (existing && !existing.some(m => m.id === data.message.id)) {
+            messagesCacheRef.current.set(data.conversationId, [...existing, data.message]);
+          }
         }
         return currentSelectedId;
       });
@@ -485,13 +495,13 @@ export default function InboxPage() {
 
     socket.on('conversation:ai_paused', ({ conversationId, aiAutoPausedUntil }: any) => {
       setConversations(prev => prev.map(c => 
-        c.id === conversationId ? { ...c, aiAutoPausedUntil } : c
+        (c.id === conversationId && c.isAiEnabled !== false) ? { ...c, aiAutoPausedUntil } : c
       ));
     });
 
-    socket.on('conversation:ai_resumed', ({ conversationId }: any) => {
+    socket.on('conversation:ai_resumed', ({ conversationId, isAiEnabled }: any) => {
       setConversations(prev => prev.map(c => 
-        c.id === conversationId ? { ...c, aiAutoPausedUntil: null } : c
+        c.id === conversationId ? { ...c, aiAutoPausedUntil: null, ...(isAiEnabled !== undefined ? { isAiEnabled } : {}) } : c
       ));
     });
 
@@ -512,7 +522,6 @@ export default function InboxPage() {
     }).catch(console.error);
 
     fetchCounts();
-    fetchConversations();
 
     return () => {
       socket.disconnect();
@@ -524,19 +533,54 @@ export default function InboxPage() {
     fetchConversations();
   }, [activeTab, channelFilter]);
 
-  // Fetch messages for active conversation
+  // Fetch messages for active conversation with instant cache-first lookup and request cancellation
   useEffect(() => {
-    if (!selectedConvId) return;
+    if (!selectedConvId) {
+      setMessages([]);
+      return;
+    }
+
+    // 1. Instant Cache-First Lookup (0ms latency perception)
+    const cached = messagesCacheRef.current.get(selectedConvId);
+    if (cached && cached.length > 0) {
+      setMessages(cached);
+      setMessagesLoading(false);
+    } else {
+      setMessages([]);
+      setMessagesLoading(true);
+    }
+
+    // 2. Abort prior in-flight request if user rapidly clicked through conversations
+    if (activeMsgFetchAbortRef.current) {
+      activeMsgFetchAbortRef.current.abort();
+    }
+    const abortController = new AbortController();
+    activeMsgFetchAbortRef.current = abortController;
 
     const token = Cookies.get('access_token');
     fetch(`${API}/inbox/conversations/${selectedConvId}/messages`, {
-      headers: { Authorization: `Bearer ${token}` }
+      headers: { Authorization: `Bearer ${token}` },
+      signal: abortController.signal
     })
       .then(res => res.json())
       .then(data => {
-        if (Array.isArray(data)) setMessages(data);
+        if (Array.isArray(data)) {
+          messagesCacheRef.current.set(selectedConvId, data);
+          setMessages(data);
+        }
       })
-      .catch(console.error);
+      .catch(err => {
+        if (err.name !== 'AbortError') {
+          console.error('Failed to fetch messages:', err);
+        }
+      })
+      .finally(() => {
+        setMessagesLoading(false);
+      });
+
+    return () => {
+      abortController.abort();
+    };
   }, [selectedConvId]);
 
   const scrollToBottom = useCallback((behavior: ScrollBehavior = 'auto') => {
@@ -592,9 +636,11 @@ export default function InboxPage() {
   }, []);
 
   const isAiAutoPaused = Boolean(
-    activeConv?.aiAutoPausedUntil && new Date(activeConv.aiAutoPausedUntil) > new Date()
+    activeConv?.isAiEnabled !== false &&
+    activeConv?.aiAutoPausedUntil &&
+    new Date(activeConv.aiAutoPausedUntil).getTime() > Date.now()
   );
-  const autoPauseRemainingMinutes = activeConv?.aiAutoPausedUntil
+  const autoPauseRemainingMinutes = (isAiAutoPaused && activeConv?.aiAutoPausedUntil)
     ? Math.max(1, Math.ceil((new Date(activeConv.aiAutoPausedUntil).getTime() - Date.now()) / 60000))
     : 0;
 
@@ -886,7 +932,7 @@ export default function InboxPage() {
         body: JSON.stringify({ isAiEnabled })
       });
       if (res.ok) {
-        setConversations(prev => prev.map(c => c.id === selectedConvId ? { ...c, isAiEnabled } : c));
+        setConversations(prev => prev.map(c => c.id === selectedConvId ? { ...c, isAiEnabled, aiAutoPausedUntil: null } : c));
         toast.success(`AI Auto-Reply ${isAiEnabled ? 'ON' : 'OFF'}`);
       }
     } catch (err) {
@@ -2482,7 +2528,30 @@ export default function InboxPage() {
             ref={messagesContainerRef}
             className="flex-1 overflow-y-auto overscroll-contain p-4 space-y-3 custom-scrollbar bg-background"
           >
-            {messages.map((m, idx) => {
+            {messagesLoading && messages.length === 0 ? (
+              <div className="space-y-4 py-4 animate-pulse">
+                <div className="flex items-start gap-2 max-w-[70%]">
+                  <div className="w-7 h-7 rounded-full bg-muted shrink-0" />
+                  <div className="space-y-1.5 flex-1">
+                    <div className="h-3 bg-muted rounded-md w-24" />
+                    <div className="h-9 bg-muted/80 rounded-2xl w-44" />
+                  </div>
+                </div>
+                <div className="flex items-start justify-end gap-2 max-w-[70%] ml-auto">
+                  <div className="space-y-1.5 flex-1 flex flex-col items-end">
+                    <div className="h-3 bg-muted rounded-md w-16" />
+                    <div className="h-10 bg-primary/20 rounded-2xl w-52" />
+                  </div>
+                  <div className="w-7 h-7 rounded-full bg-primary/20 shrink-0" />
+                </div>
+                <div className="flex items-start gap-2 max-w-[70%]">
+                  <div className="w-7 h-7 rounded-full bg-muted shrink-0" />
+                  <div className="space-y-1.5 flex-1">
+                    <div className="h-8 bg-muted/80 rounded-2xl w-36" />
+                  </div>
+                </div>
+              </div>
+            ) : messages.map((m, idx) => {
               const isInbound = m.direction === 'inbound';
               const isAi = m.senderType === 'ai';
               let parsedContent: any = m.content;

@@ -328,7 +328,7 @@ export default function CampaignDetailsPage() {
     return (
       <div className="p-3 sm:p-6 max-w-7xl mx-auto space-y-6">
         {/* Header Skeleton */}
-        <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-4 sm:p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 animate-pulse">
+        <div className="bg-surface/70 backdrop-blur-xl border border-border rounded-2xl p-4 sm:p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 animate-pulse">
           <div className="space-y-2">
             <div className="h-4 w-32 bg-surface-hover/80 rounded" />
             <div className="h-7 w-64 bg-surface-hover/80 rounded-xl" />
@@ -341,14 +341,14 @@ export default function CampaignDetailsPage() {
         </div>
 
         {/* Funnel Skeleton */}
-        <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-4 sm:p-5 shadow-sm space-y-3 animate-pulse">
+        <div className="bg-surface/70 backdrop-blur-xl border border-border rounded-2xl p-4 sm:p-5 shadow-sm space-y-3 animate-pulse">
           <div className="flex justify-between">
             <div className="h-4 w-40 bg-surface-hover/80 rounded" />
             <div className="h-4 w-24 bg-surface-hover/80 rounded" />
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
             {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="p-3 rounded-xl bg-surface border border-surface-hover h-20 space-y-2">
+              <div key={i} className="p-3 rounded-xl bg-surface border border-border h-20 space-y-2">
                 <div className="h-3 w-16 bg-surface-hover/60 rounded" />
                 <div className="h-6 w-12 bg-surface-hover/80 rounded" />
               </div>
@@ -359,16 +359,16 @@ export default function CampaignDetailsPage() {
         {/* Filter Pills Skeleton */}
         <div className="flex gap-2 overflow-x-auto pb-1 animate-pulse">
           {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="h-8 w-24 bg-surface/70 border border-surface-hover rounded-xl shrink-0" />
+            <div key={i} className="h-8 w-24 bg-surface/70 border border-border rounded-xl shrink-0" />
           ))}
         </div>
 
         {/* Table / Cards Skeleton */}
-        <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-4 shadow-sm space-y-3 animate-pulse">
+        <div className="bg-surface/70 backdrop-blur-xl border border-border rounded-2xl p-4 shadow-sm space-y-3 animate-pulse">
           <div className="h-9 w-full max-w-md bg-surface-hover/80 rounded-xl" />
           <div className="space-y-2 pt-2">
             {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="h-14 bg-surface/50 border border-surface-hover rounded-xl" />
+              <div key={i} className="h-14 bg-surface/50 border border-border rounded-xl" />
             ))}
           </div>
         </div>
@@ -391,7 +391,7 @@ export default function CampaignDetailsPage() {
       <Toaster position="top-right" />
 
       {/* Header Bar */}
-      <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-4 sm:p-6 shadow-sm">
+      <div className="bg-surface/70 backdrop-blur-xl border border-border rounded-2xl p-4 sm:p-6 shadow-sm">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
             <Link
@@ -472,7 +472,7 @@ export default function CampaignDetailsPage() {
 
             <button
               onClick={() => handleExportCsv(activeFilter)}
-              className="p-2 rounded-xl bg-surface border border-surface-hover hover:bg-surface-hover text-foreground transition-colors"
+              className="p-2 rounded-xl bg-surface border border-border hover:bg-surface-hover text-foreground transition-colors"
               title={language === 'en' ? 'Export CSV' : 'সিএসভি ডাউনলোড করুন'}
             >
               <Download className="w-4 h-4" />
@@ -510,7 +510,7 @@ export default function CampaignDetailsPage() {
       )}
 
       {/* 5-Stage Visual Conversion Funnel Bar */}
-      <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl p-4 sm:p-5 shadow-sm space-y-3">
+      <div className="bg-surface/70 backdrop-blur-xl border border-border rounded-2xl p-4 sm:p-5 shadow-sm space-y-3">
         <div className="flex items-center justify-between text-[11px] font-bold uppercase text-muted-foreground tracking-wider">
           <span className="flex items-center gap-1.5">
             <TrendingUp className="w-4 h-4 text-[#1F824A]" />
@@ -523,7 +523,7 @@ export default function CampaignDetailsPage() {
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
           {/* Stage 1: Discovered / Harvested */}
-          <div className="p-3 rounded-xl bg-surface border border-surface-hover space-y-1">
+          <div className="p-3 rounded-xl bg-surface border border-border space-y-1">
             <span className="text-[10px] uppercase font-bold text-muted-foreground flex items-center justify-between">
               1. {language === 'en' ? 'Discovered' : 'সংগৃহীত'}
               <Users className="w-3.5 h-3.5 text-blue-500" />
@@ -537,7 +537,7 @@ export default function CampaignDetailsPage() {
           </div>
 
           {/* Stage 2: Sent */}
-          <div className="p-3 rounded-xl bg-surface border border-surface-hover space-y-1">
+          <div className="p-3 rounded-xl bg-surface border border-border space-y-1">
             <span className="text-[10px] uppercase font-bold text-muted-foreground flex items-center justify-between">
               2. {language === 'en' ? 'Sent' : 'পাঠানো'}
               <Mail className="w-3.5 h-3.5 text-emerald-500" />
@@ -551,7 +551,7 @@ export default function CampaignDetailsPage() {
           </div>
 
           {/* Stage 3: Opened */}
-          <div className="p-3 rounded-xl bg-surface border border-surface-hover space-y-1">
+          <div className="p-3 rounded-xl bg-surface border border-border space-y-1">
             <span className="text-[10px] uppercase font-bold text-muted-foreground flex items-center justify-between">
               3. {language === 'en' ? 'Opened' : 'ওপেন'}
               <Eye className="w-3.5 h-3.5 text-indigo-500" />
@@ -565,7 +565,7 @@ export default function CampaignDetailsPage() {
           </div>
 
           {/* Stage 4: Clicked */}
-          <div className="p-3 rounded-xl bg-surface border border-surface-hover space-y-1">
+          <div className="p-3 rounded-xl bg-surface border border-border space-y-1">
             <span className="text-[10px] uppercase font-bold text-muted-foreground flex items-center justify-between">
               4. {language === 'en' ? 'Clicked' : 'ক্লিক'}
               <MousePointerClick className="w-3.5 h-3.5 text-amber-500" />
@@ -604,7 +604,7 @@ export default function CampaignDetailsPage() {
           className={`px-3 py-1.5 rounded-xl border transition-all shrink-0 ${
             activeFilter === 'all'
               ? 'bg-foreground text-background border-foreground shadow-sm'
-              : 'bg-surface border-surface-hover text-muted-foreground hover:bg-surface-hover'
+              : 'bg-surface border-border text-muted-foreground hover:bg-surface-hover'
           }`}
         >
           {language === 'en' ? 'All Leads' : 'সব লিড'} ({funnel.all ?? 0})
@@ -615,7 +615,7 @@ export default function CampaignDetailsPage() {
           className={`px-3 py-1.5 rounded-xl border transition-all shrink-0 ${
             activeFilter === 'sent'
               ? 'bg-foreground text-background border-foreground shadow-sm'
-              : 'bg-surface border-surface-hover text-muted-foreground hover:bg-surface-hover'
+              : 'bg-surface border-border text-muted-foreground hover:bg-surface-hover'
           }`}
         >
           {language === 'en' ? 'Emails Sent' : 'মেইল পাঠানো'} ({funnel.sent ?? 0})
@@ -626,7 +626,7 @@ export default function CampaignDetailsPage() {
           className={`px-3 py-1.5 rounded-xl border transition-all shrink-0 ${
             activeFilter === 'opened'
               ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
-              : 'bg-surface border-surface-hover text-muted-foreground hover:bg-surface-hover'
+              : 'bg-surface border-border text-muted-foreground hover:bg-surface-hover'
           }`}
         >
           {language === 'en' ? 'Opened' : 'ওপেন করেছে'} ({funnel.opened ?? 0})
@@ -637,7 +637,7 @@ export default function CampaignDetailsPage() {
           className={`px-3 py-1.5 rounded-xl border transition-all shrink-0 ${
             activeFilter === 'clicked'
               ? 'bg-amber-600 text-white border-amber-600 shadow-sm'
-              : 'bg-surface border-surface-hover text-muted-foreground hover:bg-surface-hover'
+              : 'bg-surface border-border text-muted-foreground hover:bg-surface-hover'
           }`}
         >
           {language === 'en' ? 'Banner Clicked' : 'ক্লিক করেছে'} ({funnel.clicked ?? 0})
@@ -663,7 +663,7 @@ export default function CampaignDetailsPage() {
           className={`px-3 py-1.5 rounded-xl border transition-all shrink-0 ${
             activeFilter === 'ordered'
               ? 'bg-[#1F824A] text-white border-[#1F824A] shadow-sm'
-              : 'bg-surface border-surface-hover text-muted-foreground hover:bg-surface-hover'
+              : 'bg-surface border-border text-muted-foreground hover:bg-surface-hover'
           }`}
         >
           {language === 'en' ? 'Ordered' : 'অর্ডার করেছে'} ({funnel.ordered ?? 0})
@@ -674,7 +674,7 @@ export default function CampaignDetailsPage() {
           className={`px-3 py-1.5 rounded-xl border transition-all shrink-0 ${
             activeFilter === 'phone_only'
               ? 'bg-foreground text-background border-foreground shadow-sm'
-              : 'bg-surface border-surface-hover text-muted-foreground hover:bg-surface-hover'
+              : 'bg-surface border-border text-muted-foreground hover:bg-surface-hover'
           }`}
         >
           {language === 'en' ? 'Phone Harvested' : 'ফোন নম্বর পাওয়া গেছে'} ({funnel.phoneOnly ?? 0})
@@ -713,7 +713,7 @@ export default function CampaignDetailsPage() {
 
               <button
                 onClick={() => handleExportCsv('clicked_no_order')}
-                className="inline-flex items-center gap-1.5 px-3 py-2 text-[12px] font-semibold rounded-xl bg-surface border border-surface-hover hover:bg-surface-hover text-foreground transition-colors shadow-sm"
+                className="inline-flex items-center gap-1.5 px-3 py-2 text-[12px] font-semibold rounded-xl bg-surface border border-border hover:bg-surface-hover text-foreground transition-colors shadow-sm"
               >
                 <Download className="w-3.5 h-3.5 text-amber-500" />
                 {language === 'en' ? 'Export Hot Leads CSV' : 'হট লিড সিএসভি ডাউনলোড'}
@@ -724,9 +724,9 @@ export default function CampaignDetailsPage() {
       )}
 
       {/* Leads Table Section */}
-      <div className="bg-surface/70 backdrop-blur-xl border border-surface-hover rounded-2xl shadow-sm overflow-hidden">
+      <div className="bg-surface/70 backdrop-blur-xl border border-border rounded-2xl shadow-sm overflow-hidden">
         {/* Search bar inside table */}
-        <div className="p-4 border-b border-surface-hover flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="p-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <form onSubmit={handleSearch} className="flex-1 max-w-md">
             <div className="relative">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -739,7 +739,7 @@ export default function CampaignDetailsPage() {
                 }
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-3 py-1.5 text-[12px] rounded-xl bg-surface border border-surface-hover text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[#1F824A]"
+                className="w-full pl-9 pr-3 py-1.5 text-[12px] rounded-xl bg-surface border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[#1F824A]"
               />
             </div>
           </form>
@@ -808,7 +808,7 @@ export default function CampaignDetailsPage() {
                   </div>
 
                   <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1">
-                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-surface-hover border border-surface-hover">
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-surface-hover border border-border">
                       {l.sourceChannel}
                     </span>
 
@@ -859,7 +859,7 @@ export default function CampaignDetailsPage() {
             {/* Desktop Table View (Visible on >= md) */}
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left text-[12px]">
-                <thead className="bg-surface/50 border-b border-surface-hover text-muted-foreground uppercase text-[10px] tracking-wider font-semibold">
+                <thead className="bg-surface/50 border-b border-border text-muted-foreground uppercase text-[10px] tracking-wider font-semibold">
                   <tr>
                     <th className="py-3 px-4">{language === 'en' ? 'Business / Contact' : 'ব্যবসা / কন্টাক্ট'}</th>
                     <th className="py-3 px-3">{language === 'en' ? 'Channel' : 'চ্যানেল'}</th>
@@ -886,7 +886,7 @@ export default function CampaignDetailsPage() {
 
                       {/* Channel */}
                       <td className="py-3 px-3">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-surface-hover text-muted-foreground border border-surface-hover">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-surface-hover text-muted-foreground border border-border">
                           {l.sourceChannel}
                         </span>
                       </td>
@@ -945,7 +945,7 @@ export default function CampaignDetailsPage() {
                         {l.personalizedSubject ? (
                           <button
                             onClick={() => setPreviewLead(l)}
-                            className="p-1.5 rounded-lg border border-surface-hover hover:bg-surface-hover text-muted-foreground hover:text-foreground transition-colors"
+                            className="p-1.5 rounded-lg border border-border hover:bg-surface-hover text-muted-foreground hover:text-foreground transition-colors"
                             title="View Personalized Email"
                           >
                             <Eye className="w-3.5 h-3.5" />
@@ -966,8 +966,8 @@ export default function CampaignDetailsPage() {
       {/* Email Preview Modal */}
       {previewLead && (
         <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-surface border border-surface-hover rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto p-5 space-y-4 shadow-xl animate-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between border-b border-surface-hover pb-3">
+          <div className="bg-surface border border-border rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto p-5 space-y-4 shadow-xl animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-border pb-3">
               <div>
                 <span className="text-[10px] uppercase font-bold text-muted-foreground">
                   Personalized Cold Email
@@ -992,7 +992,7 @@ export default function CampaignDetailsPage() {
                 </span>
               </div>
 
-              <div className="border border-surface-hover rounded-xl p-4 bg-background/50">
+              <div className="border border-border rounded-xl p-4 bg-background/50">
                 <div
                   className="prose prose-invert max-w-none text-[12px]"
                   dangerouslySetInnerHTML={{ __html: previewLead.personalizedBodyHtml || '' }}
@@ -1000,10 +1000,10 @@ export default function CampaignDetailsPage() {
               </div>
             </div>
 
-            <div className="flex justify-end pt-2 border-t border-surface-hover">
+            <div className="flex justify-end pt-2 border-t border-border">
               <button
                 onClick={() => setPreviewLead(null)}
-                className="px-4 py-2 rounded-xl bg-surface border border-surface-hover hover:bg-surface-hover text-foreground font-semibold text-[12px]"
+                className="px-4 py-2 rounded-xl bg-surface border border-border hover:bg-surface-hover text-foreground font-semibold text-[12px]"
               >
                 {language === 'en' ? 'Close' : 'বন্ধ করুন'}
               </button>

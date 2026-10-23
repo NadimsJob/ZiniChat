@@ -11,6 +11,7 @@ import { InboxGateway } from './inbox.gateway';
 import { QuotaService } from '../tenants/quota.service';
 import { ActivityLogService } from './activity-log.service';
 import { UserPresenceService } from './user-presence.service';
+import { StorageService } from '../storage/storage.service';
 
 @Controller('inbox')
 @UseGuards(JwtAuthGuard)
@@ -20,7 +21,8 @@ export class InboxController {
     private readonly inboxGateway: InboxGateway,
     private readonly quotaService: QuotaService,
     private readonly activityLogService: ActivityLogService,
-    private readonly userPresenceService: UserPresenceService
+    private readonly userPresenceService: UserPresenceService,
+    private readonly storageService: StorageService,
   ) {}
 
   @Get('channels')
@@ -156,19 +158,7 @@ export class InboxController {
 
   @Post('messages/media')
   @UseInterceptors(FileInterceptor('file', {
-    storage: diskStorage({
-      destination: (req: any, file, cb) => {
-        const tenantId = req.user?.tenantId || 'general';
-        const uploadPath = path.join(process.cwd(), 'uploads', 'tenants', tenantId);
-        if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true });
-        cb(null, uploadPath);
-      },
-      filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const ext = path.extname(file.originalname);
-        cb(null, `out_${uniqueSuffix}${ext}`);
-      }
-    })
+    limits: { fileSize: 50 * 1024 * 1024 }
   }))
   async sendMediaMessage(
     @Request() req: any, 
@@ -177,28 +167,27 @@ export class InboxController {
   ) {
     const tenantId = req.user.tenantId;
 
-    if (file && file.mimetype.startsWith('image/')) {
-      try {
-        const compressedBuffer = await sharp(file.path)
-          .resize({ width: 1200, height: 1200, fit: 'inside', withoutEnlargement: true })
-          .jpeg({ quality: 75, progressive: true })
-          .toBuffer();
-        fs.writeFileSync(file.path, compressedBuffer);
-        file.size = compressedBuffer.length;
-      } catch (err) {
-        console.error('Failed to compress outbound image:', err);
-      }
-    }
-
+    // 1. Check message quota first
     await this.quotaService.checkMessageQuota(tenantId);
-    await this.quotaService.checkStorageQuota(tenantId, file.size);
 
-    const mediaUrl = `/uploads/tenants/${tenantId}/${file.filename}`;
-    const type = body.type || (file.mimetype.startsWith('video') ? 'video' : (file.mimetype.startsWith('image') ? 'image' : 'document'));
+    // 2. Upload, compress images via progressive JPEG, and track quota in tenant storage
+    const uploadResult = await this.storageService.uploadChatMedia(file, tenantId);
+
+    // 3. Derive channel message type
+    const type = body.type || (
+      uploadResult.mimeType.startsWith('video') ? 'video' :
+      uploadResult.mimeType.startsWith('image') ? 'image' :
+      uploadResult.mimeType.startsWith('audio') ? 'audio' : 'document'
+    );
+
     const contentPayload = {
       body: body.content || '',
-      mediaUrl
+      mediaUrl: uploadResult.publicUrl,
+      fileName: uploadResult.fileName,
+      mimeType: uploadResult.mimeType,
+      sizeBytes: uploadResult.sizeBytes,
     };
+
     const { message, conversation } = await this.inboxService.saveOutboundMessage(
       tenantId,
       body.conversationId,
@@ -212,7 +201,6 @@ export class InboxController {
       conversationId: conversation.id
     });
 
-    await this.quotaService.incrementStorage(tenantId, file.size);
     return message;
   }
 

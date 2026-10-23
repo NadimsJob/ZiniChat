@@ -13,6 +13,8 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-surface: var(--surface);
   --color-surface-hover: var(--surface-hover);
+  --color-surface-light: var(--surface-light);
+  --color-text-secondary: var(--text-secondary);
   
   --color-border: var(--border);
   --color-input: var(--input);
@@ -70,6 +72,8 @@
   /* Glass Surfaces */
   --surface: rgba(255, 255, 255, 0.95);    
   --surface-hover: rgba(248, 250, 252, 1); 
+  --surface-light: #f8fafc;
+  --text-secondary: #64748b;
 
   /* UI Elements */
   --border: rgba(0, 0, 0, 0.09);
@@ -87,6 +91,8 @@
   
   --surface: #121216;
   --surface-hover: #1a1a1f;
+  --surface-light: #16161c;
+  --text-secondary: #a1a1aa;
   
   --border: #222228;
   --input: #222228;

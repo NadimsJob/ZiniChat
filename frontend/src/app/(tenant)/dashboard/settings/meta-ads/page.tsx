@@ -1306,11 +1306,11 @@ export default function MetaAdsManagerPage() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-white flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-zinc-900 dark:text-white flex items-center gap-2">
             <Facebook className="w-6 h-6 text-brand-green" />
             {language === 'en' ? 'Meta Ads Manager' : 'মেটা অ্যাডস ম্যানেজার'}
           </h1>
-          <p className="text-xs sm:text-sm text-text-secondary mt-1">
+          <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-1">
             {language === 'en'
               ? 'Scale live campaigns, update daily pricing, and boost Facebook Page posts in 1 click.'
               : 'চলমান ক্যাম্পেইন স্কেল করুন, দৈনিক বাজেট পরিবর্তন করুন এবং ফেসবুক পেজের পোস্ট ১-ক্লিকে বুস্ট করুন।'}
@@ -1324,15 +1324,15 @@ export default function MetaAdsManagerPage() {
               <select
                 value={selectedAccountId}
                 onChange={(e) => setSelectedAccountId(e.target.value)}
-                className="bg-surface/80 border border-white/10 text-white text-xs rounded-xl px-3 py-2 pr-8 focus:outline-none focus:border-brand-green appearance-none cursor-pointer"
+                className="bg-white dark:bg-surface/80 border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white text-xs rounded-xl px-3 py-2 pr-8 focus:outline-none focus:border-brand-green appearance-none cursor-pointer shadow-xs"
               >
                 {accounts.map((acc) => (
-                  <option key={acc.id} value={acc.adAccountId} className="bg-slate-900 text-white">
+                  <option key={acc.id} value={acc.adAccountId} className="bg-white dark:bg-slate-900 text-zinc-900 dark:text-white">
                     {acc.adAccountName || 'Ad Account'} ({acc.adAccountId})
                   </option>
                 ))}
               </select>
-              <ChevronDown className="w-3.5 h-3.5 text-text-secondary absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <ChevronDown className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
           )}
 
@@ -1342,7 +1342,7 @@ export default function MetaAdsManagerPage() {
               if (activeTab === 'boost' && selectedAccountId) fetchPagePosts(selectedAccountId);
             }}
             disabled={loadingCampaigns || loadingPosts}
-            className="p-2 bg-surface/80 hover:bg-surface border border-white/10 text-text-secondary hover:text-white rounded-xl text-xs transition-colors flex items-center gap-1.5"
+            className="p-2 bg-white dark:bg-surface/80 hover:bg-zinc-100 dark:hover:bg-surface border border-zinc-200 dark:border-white/10 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white rounded-xl text-xs transition-colors flex items-center gap-1.5 shadow-xs"
             title={language === 'en' ? 'Refresh Telemetry' : 'রিফ্রেশ করুন'}
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loadingCampaigns || loadingPosts ? 'animate-spin' : ''}`} />
@@ -1437,20 +1437,20 @@ export default function MetaAdsManagerPage() {
       {/* Account Balance & Telemetry Summary Cards */}
       {selectedAccountId && balance && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-          <div className="bg-surface/70 backdrop-blur-xl border border-white/10 rounded-xl p-3.5 sm:p-4">
-            <span className="text-[11px] text-text-secondary block mb-1">
+          <div className="bg-white dark:bg-surface/70 backdrop-blur-xl border border-zinc-200 dark:border-white/10 rounded-xl p-3.5 sm:p-4 shadow-sm">
+            <span className="text-[11px] text-zinc-500 dark:text-zinc-400 block mb-1">
               {language === 'en' ? 'Account Balance' : 'অ্যাকাউন্ট ব্যালেন্স'}
             </span>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-lg sm:text-xl font-bold text-white">
+              <span className="text-lg sm:text-xl font-bold text-zinc-900 dark:text-white">
                 {currencySymbol} {balance.balance?.toFixed(2) || '0.00'}
               </span>
-              <span className="text-[10px] text-text-secondary uppercase">{balance.currency}</span>
+              <span className="text-[10px] text-zinc-500 dark:text-zinc-400 uppercase">{balance.currency}</span>
             </div>
           </div>
 
-          <div className="bg-surface/70 backdrop-blur-xl border border-white/10 rounded-xl p-3.5 sm:p-4">
-            <span className="text-[11px] text-text-secondary block mb-1">
+          <div className="bg-white dark:bg-surface/70 backdrop-blur-xl border border-zinc-200 dark:border-white/10 rounded-xl p-3.5 sm:p-4 shadow-sm">
+            <span className="text-[11px] text-zinc-500 dark:text-zinc-400 block mb-1">
               {language === 'en' ? 'Total Spent (30d)' : 'গত ৩০ দিনের খরচ'}
             </span>
             <div className="flex items-baseline gap-1.5">
@@ -1460,24 +1460,24 @@ export default function MetaAdsManagerPage() {
             </div>
           </div>
 
-          <div className="bg-surface/70 backdrop-blur-xl border border-white/10 rounded-xl p-3.5 sm:p-4">
-            <span className="text-[11px] text-text-secondary block mb-1">
+          <div className="bg-white dark:bg-surface/70 backdrop-blur-xl border border-zinc-200 dark:border-white/10 rounded-xl p-3.5 sm:p-4 shadow-sm">
+            <span className="text-[11px] text-zinc-500 dark:text-zinc-400 block mb-1">
               {language === 'en' ? 'Clicks / CTR' : 'ক্লিক / CTR'}
             </span>
             <div className="flex items-baseline gap-1.5">
               <span className="text-lg sm:text-xl font-bold text-brand-green">
                 {insights?.clicks?.toLocaleString() || 0}
               </span>
-              <span className="text-[10px] text-text-secondary">({insights?.ctr?.toFixed(2) || '0.00'}%)</span>
+              <span className="text-[10px] text-zinc-500 dark:text-zinc-400">({insights?.ctr?.toFixed(2) || '0.00'}%)</span>
             </div>
           </div>
 
-          <div className="bg-surface/70 backdrop-blur-xl border border-white/10 rounded-xl p-3.5 sm:p-4">
-            <span className="text-[11px] text-text-secondary block mb-1">
+          <div className="bg-white dark:bg-surface/70 backdrop-blur-xl border border-zinc-200 dark:border-white/10 rounded-xl p-3.5 sm:p-4 shadow-sm">
+            <span className="text-[11px] text-zinc-500 dark:text-zinc-400 block mb-1">
               {language === 'en' ? 'Total Impressions' : 'মোট ইমপ্রেশন'}
             </span>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-lg sm:text-xl font-bold text-white">
+              <span className="text-lg sm:text-xl font-bold text-zinc-900 dark:text-white">
                 {insights?.impressions?.toLocaleString() || 0}
               </span>
             </div>
@@ -1645,11 +1645,11 @@ export default function MetaAdsManagerPage() {
 
           {campaigns.length === 0 ? (
             <div className="bg-white dark:bg-surface/70 backdrop-blur-xl border border-zinc-200 dark:border-white/10 rounded-2xl p-8 text-center py-16 shadow-sm">
-              <Layers className="w-12 h-12 text-zinc-400 dark:text-text-secondary/40 mx-auto mb-3" />
+              <Layers className="w-12 h-12 text-zinc-400 dark:text-zinc-400/40 mx-auto mb-3" />
               <h3 className="text-base font-semibold text-zinc-900 dark:text-white mb-1">
                 {language === 'en' ? 'No Campaigns Found' : 'কোনো ক্যাম্পেইন পাওয়া যায়নি'}
               </h3>
-              <p className="text-xs text-zinc-500 dark:text-text-secondary max-w-md mx-auto mb-5">
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-md mx-auto mb-5">
                 {language === 'en'
                   ? 'There are no active or draft campaigns in this ad account yet. Boost a Facebook Page post to launch your first ad.'
                   : 'এই অ্যাড অ্যাকাউন্টে এখনো কোনো ক্যাম্পেইন নেই। প্রথম বিজ্ঞাপন চালাতে পেইজ পোস্ট বুস্ট করুন।'}
@@ -1686,7 +1686,7 @@ export default function MetaAdsManagerPage() {
               {/* Desktop View Table */}
               <div className="hidden lg:block overflow-x-auto">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-zinc-50 dark:bg-white/5 border-b border-zinc-200 dark:border-white/10 text-zinc-600 dark:text-text-secondary uppercase tracking-wider text-[11px]">
+                  <thead className="bg-zinc-50 dark:bg-white/5 border-b border-zinc-200 dark:border-white/10 text-zinc-600 dark:text-zinc-400 uppercase tracking-wider text-[11px]">
                     <tr>
                       <th className="py-3 px-4">{language === 'en' ? 'Live Status' : 'লাইভ স্ট্যাটাস'}</th>
                       <th className="py-3 px-4">{language === 'en' ? 'Campaign Details' : 'ক্যাম্পেইনের বিবরণ'}</th>
@@ -1804,7 +1804,7 @@ export default function MetaAdsManagerPage() {
                           <td className="py-3 px-4 whitespace-nowrap">
                             {editingBudgetId === camp.id ? (
                               <div className="flex items-center gap-1.5">
-                                <span className="text-zinc-500 dark:text-text-secondary text-[11px]">{currencySymbol}</span>
+                                <span className="text-zinc-500 dark:text-zinc-400 text-[11px]">{currencySymbol}</span>
                                 <input
                                   type="number"
                                   value={editBudgetValue}
@@ -1945,12 +1945,12 @@ export default function MetaAdsManagerPage() {
                   const isAiAnalyzing = analyzingAiCampaignId === camp.id;
 
                   return (
-                    <div key={camp.id} className="p-3.5 bg-zinc-50 dark:bg-surface-light rounded-xl space-y-3 border border-zinc-200 dark:border-white/5 shadow-sm">
+                    <div key={camp.id} className="p-3.5 bg-white dark:bg-surface rounded-xl space-y-3 border border-zinc-200 dark:border-white/10 shadow-sm">
                       {/* Top Row: Name, Copy ID & Tactile Switch */}
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0 flex-1">
                           <h4 className="font-semibold text-zinc-900 dark:text-white text-xs truncate">{camp.name}</h4>
-                          <div className="flex items-center gap-1.5 text-[10px] font-mono text-zinc-500 dark:text-text-secondary mt-0.5">
+                          <div className="flex items-center gap-1.5 text-[10px] font-mono text-zinc-500 dark:text-zinc-400 mt-0.5">
                             <span>ID: {camp.id}</span>
                             <button
                               type="button"
@@ -2022,7 +2022,7 @@ export default function MetaAdsManagerPage() {
 
                       {/* Daily Budget */}
                       <div className="flex items-center justify-between text-xs pt-1 border-t border-zinc-200 dark:border-white/5">
-                        <span className="text-zinc-500 dark:text-text-secondary">{language === 'en' ? 'Daily Budget:' : 'দৈনিক বাজেট:'}</span>
+                        <span className="text-zinc-500 dark:text-zinc-400">{language === 'en' ? 'Daily Budget:' : 'দৈনিক বাজেট:'}</span>
                         <span className="font-bold text-zinc-900 dark:text-white font-mono">
                           {camp.dailyBudget ? `${currencySymbol} ${camp.dailyBudget}` : '—'}
                         </span>
@@ -2107,14 +2107,14 @@ export default function MetaAdsManagerPage() {
       {activeTab === 'create' && (
         <div className="space-y-6 max-w-4xl">
           {/* Header Card */}
-          <div className="bg-gradient-to-r from-brand-green/15 via-surface/80 to-brand-orange/15 border border-brand-green/30 rounded-2xl p-5 sm:p-6 backdrop-blur-xl">
+          <div className="bg-gradient-to-r from-brand-green/15 via-white dark:via-surface/80 to-brand-orange/15 border border-brand-green/30 rounded-2xl p-5 sm:p-6 backdrop-blur-xl shadow-sm">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                <h3 className="text-base sm:text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-2">
                   <PlusCircle className="w-5 h-5 text-emerald-400" />
                   {language === 'en' ? 'Create Custom Campaign (Native Ads Manager Flow)' : 'অ্যাডভান্সড ক্যাম্পেইন তৈরি করুন (মেটা অ্যাড ম্যানেজার ফ্লো)'}
                 </h3>
-                <p className="text-xs sm:text-sm text-text-secondary mt-1">
+                <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-1">
                   {language === 'en'
                     ? 'Deploy a complete 3-tier Meta advertising structure (Campaign, AdSet with detailed targeting, and Ad Creative with dynamic multi-text options or existing page post) directly to Meta Graph API.'
                     : 'সরাসরি মেটাতে অ্যাডভান্সড ৩-লেভেল ক্যাম্পেইন (ক্যাম্পেইন, টার্গেটেড অ্যাডসেট এবং একাধিক কপি অপশন বা পেইজ পোস্টযুক্ত ক্রিয়েটিভ) চালু করুন।'}
@@ -2125,9 +2125,9 @@ export default function MetaAdsManagerPage() {
 
           <form onSubmit={handleLaunchCustomCampaign} className="space-y-6">
             {/* LEVEL 1: CAMPAIGN OBJECTIVE & IDENTITY */}
-            <div className="bg-surface/70 backdrop-blur-xl border border-white/10 rounded-2xl p-5 space-y-4">
+            <div className="bg-white dark:bg-surface/70 backdrop-blur-xl border border-zinc-200 dark:border-white/10 rounded-2xl p-5 space-y-4 shadow-sm">
               <div className="flex items-center justify-between">
-                <h4 className="text-sm font-semibold text-white flex items-center gap-2">
+                <h4 className="text-sm font-semibold text-zinc-900 dark:text-white flex items-center gap-2">
                   <Target className="w-4 h-4 text-brand-green" />
                   {language === 'en' ? 'Level 1: Campaign Objective & Identity' : 'লেভেল ১: ক্যাম্পেইনের উদ্দেশ্য ও নাম'}
                 </h4>
@@ -2152,11 +2152,11 @@ export default function MetaAdsManagerPage() {
                     className={`p-3 rounded-xl text-left border transition-all ${
                       customCampForm.objective === obj.id
                         ? 'bg-brand-green/20 border-brand-green text-white shadow-md shadow-brand-green/20'
-                        : 'bg-surface border-white/5 text-text-secondary hover:border-white/20 hover:text-white'
+                        : 'bg-zinc-50 dark:bg-surface border-zinc-200 dark:border-white/10 text-zinc-600 dark:text-zinc-400 hover:border-brand-green/40 hover:text-zinc-900 dark:hover:text-white'
                     }`}
                   >
-                    <span className="text-xs font-bold block text-white">{obj.title}</span>
-                    <span className="text-[10px] text-text-secondary mt-1 block leading-tight">{obj.desc}</span>
+                    <span className="text-xs font-bold block text-zinc-900 dark:text-white">{obj.title}</span>
+                    <span className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1 block leading-tight">{obj.desc}</span>
                   </button>
                 ))}
               </div>
@@ -2164,7 +2164,7 @@ export default function MetaAdsManagerPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Campaign Name */}
                 <div>
-                  <label className="text-xs text-text-secondary block mb-1 font-medium">
+                  <label className="text-xs text-zinc-500 dark:text-zinc-400 block mb-1 font-medium">
                     {language === 'en' ? 'Campaign Name *' : 'ক্যাম্পেইনের নাম *'}
                   </label>
                   <input
@@ -2173,19 +2173,19 @@ export default function MetaAdsManagerPage() {
                     value={customCampForm.name}
                     onChange={(e) => setCustomCampForm(f => ({ ...f, name: e.target.value }))}
                     placeholder={language === 'en' ? 'e.g. Eid Mega Sale Campaign 2026' : 'যেমন: ঈদ মেগা সেল ক্যাম্পেইন ২০২৬'}
-                    className="w-full bg-surface border border-white/10 text-white text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-brand-green"
+                    className="w-full bg-zinc-50 dark:bg-surface border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-brand-green placeholder:text-zinc-400 shadow-xs"
                   />
                 </div>
 
                 {/* Special Ad Category */}
                 <div>
-                  <label className="text-xs text-text-secondary block mb-1 font-medium">
+                  <label className="text-xs text-zinc-500 dark:text-zinc-400 block mb-1 font-medium">
                     {language === 'en' ? 'Special Ad Category' : 'বিশেষ বিজ্ঞাপন ক্যাটাগরি'}
                   </label>
                   <select
                     value={customCampForm.specialAdCategory}
                     onChange={(e) => setCustomCampForm(f => ({ ...f, specialAdCategory: e.target.value }))}
-                    className="w-full bg-surface border border-white/10 text-white text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-brand-green"
+                    className="w-full bg-zinc-50 dark:bg-surface border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-brand-green placeholder:text-zinc-400 shadow-xs"
                   >
                     <option value="NONE">{language === 'en' ? 'None (Standard E-commerce / Retail)' : 'কোনোটিই নয় (সাধারণ ই-কমার্স / রিটেইল)'}</option>
                     <option value="HOUSING">{language === 'en' ? 'Housing / Real Estate' : 'রিয়েল এস্টেট / আবাসন'}</option>
@@ -2197,9 +2197,9 @@ export default function MetaAdsManagerPage() {
             </div>
 
             {/* LEVEL 2: AD SET (BUDGET, SCHEDULE, TARGETING & PLACEMENTS) */}
-            <div className="bg-surface/70 backdrop-blur-xl border border-white/10 rounded-2xl p-5 space-y-4">
+            <div className="bg-white dark:bg-surface/70 backdrop-blur-xl border border-zinc-200 dark:border-white/10 rounded-2xl p-5 space-y-4 shadow-sm">
               <div className="flex items-center justify-between">
-                <h4 className="text-sm font-semibold text-white flex items-center gap-2">
+                <h4 className="text-sm font-semibold text-zinc-900 dark:text-white flex items-center gap-2">
                   <Users className="w-4 h-4 text-brand-orange" />
                   {language === 'en' ? 'Level 2: AdSet (Budget, Schedule, Targeting & Placements)' : 'লেভেল ২: অ্যাডসেট (বাজেট, মেয়াদ, অডিয়েন্স ও প্লেসমেন্ট)'}
                 </h4>
@@ -2211,7 +2211,7 @@ export default function MetaAdsManagerPage() {
               {/* Budget & Duration */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs text-text-secondary block mb-1 font-medium">
+                  <label className="text-xs text-zinc-500 dark:text-zinc-400 block mb-1 font-medium">
                     {language === 'en' ? `Daily Budget (${currencySymbol}) *` : `দৈনিক বাজেট (${currencySymbol}) *`}
                   </label>
                   <input
@@ -2220,7 +2220,7 @@ export default function MetaAdsManagerPage() {
                     required
                     value={customCampForm.dailyBudget}
                     onChange={(e) => setCustomCampForm(f => ({ ...f, dailyBudget: Number(e.target.value) }))}
-                    className="w-full bg-surface border border-white/10 text-white text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-brand-green"
+                    className="w-full bg-zinc-50 dark:bg-surface border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-brand-green placeholder:text-zinc-400 shadow-xs"
                   />
                   <div className="flex gap-1.5 mt-2">
                     {[5, 10, 25, 50, 100].map((amt) => (
@@ -2228,7 +2228,7 @@ export default function MetaAdsManagerPage() {
                         key={amt}
                         type="button"
                         onClick={() => setCustomCampForm(f => ({ ...f, dailyBudget: amt }))}
-                        className="px-2.5 py-1 rounded-lg text-[10px] bg-white/5 hover:bg-white/10 text-text-secondary hover:text-white border border-white/10 font-mono transition-colors"
+                        className="px-2.5 py-1 rounded-lg text-[10px] bg-zinc-100 dark:bg-white/5 hover:bg-zinc-200 dark:hover:bg-white/10 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white border border-zinc-200 dark:border-white/10 font-mono transition-colors"
                       >
                         {currencySymbol} {amt}
                       </button>
@@ -2238,10 +2238,10 @@ export default function MetaAdsManagerPage() {
 
                 <div>
                   <div className="flex justify-between items-center mb-1">
-                    <label className="text-xs text-text-secondary font-medium">
+                    <label className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">
                       {language === 'en' ? 'Campaign Duration:' : 'বিজ্ঞাপনের মেয়াদ:'}
                     </label>
-                    <span className="text-xs font-bold text-white font-mono">{customCampForm.durationDays} Days</span>
+                    <span className="text-xs font-bold text-zinc-900 dark:text-white font-mono">{customCampForm.durationDays} Days</span>
                   </div>
                   <input
                     type="range"
@@ -2251,7 +2251,7 @@ export default function MetaAdsManagerPage() {
                     onChange={(e) => setCustomCampForm(f => ({ ...f, durationDays: Number(e.target.value) }))}
                     className="w-full accent-brand-green cursor-pointer mt-2"
                   />
-                  <div className="text-[11px] text-text-secondary flex justify-between mt-1">
+                  <div className="text-[11px] text-zinc-500 dark:text-zinc-400 flex justify-between mt-1">
                     <span>1 Day</span>
                     <span>Total Est: ~{currencySymbol} {(customCampForm.dailyBudget * customCampForm.durationDays).toLocaleString()}</span>
                     <span>60 Days</span>
@@ -2260,10 +2260,10 @@ export default function MetaAdsManagerPage() {
               </div>
 
               {/* Target Audience: Country, Age, Gender */}
-              <div className="pt-3 border-t border-white/5 space-y-3">
+              <div className="pt-3 border-t border-zinc-200 dark:border-white/10 space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="text-xs text-text-secondary block mb-1">
+                    <label className="text-xs text-zinc-500 dark:text-zinc-400 block mb-1">
                       {language === 'en' ? 'Target Countries (comma separated)' : 'টার্গেট দেশ (কমা দিয়ে লিখুন)'}
                     </label>
                     <input
@@ -2271,12 +2271,12 @@ export default function MetaAdsManagerPage() {
                       value={customCampForm.countries}
                       onChange={(e) => setCustomCampForm(f => ({ ...f, countries: e.target.value }))}
                       placeholder="BD, US, CA"
-                      className="w-full bg-surface border border-white/10 text-white text-xs rounded-xl px-3 py-2 uppercase font-mono focus:outline-none focus:border-brand-green"
+                      className="w-full bg-zinc-50 dark:bg-surface border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white text-xs rounded-xl px-3 py-2 uppercase font-mono focus:outline-none focus:border-brand-green placeholder:text-zinc-400 shadow-xs"
                     />
                   </div>
 
                   <div>
-                    <label className="text-xs text-text-secondary block mb-1">
+                    <label className="text-xs text-zinc-500 dark:text-zinc-400 block mb-1">
                       {language === 'en' ? 'Min Age' : 'সর্বনিম্ন বয়স'}
                     </label>
                     <input
@@ -2285,12 +2285,12 @@ export default function MetaAdsManagerPage() {
                       max={65}
                       value={customCampForm.ageMin}
                       onChange={(e) => setCustomCampForm(f => ({ ...f, ageMin: Number(e.target.value) }))}
-                      className="w-full bg-surface border border-white/10 text-white text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-brand-green"
+                      className="w-full bg-zinc-50 dark:bg-surface border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-brand-green placeholder:text-zinc-400 shadow-xs"
                     />
                   </div>
 
                   <div>
-                    <label className="text-xs text-text-secondary block mb-1">
+                    <label className="text-xs text-zinc-500 dark:text-zinc-400 block mb-1">
                       {language === 'en' ? 'Max Age' : 'সর্বোচ্চ বয়স'}
                     </label>
                     <input
@@ -2299,14 +2299,14 @@ export default function MetaAdsManagerPage() {
                       max={65}
                       value={customCampForm.ageMax}
                       onChange={(e) => setCustomCampForm(f => ({ ...f, ageMax: Number(e.target.value) }))}
-                      className="w-full bg-surface border border-white/10 text-white text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-brand-green"
+                      className="w-full bg-zinc-50 dark:bg-surface border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-brand-green placeholder:text-zinc-400 shadow-xs"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs text-text-secondary block mb-1.5">
+                    <label className="text-xs text-zinc-500 dark:text-zinc-400 block mb-1.5">
                       {language === 'en' ? 'Target Gender' : 'টার্গেট জেন্ডার'}
                     </label>
                     <div className="flex items-center gap-2">
@@ -2318,7 +2318,7 @@ export default function MetaAdsManagerPage() {
                           className={`flex-1 py-1.5 rounded-xl text-xs capitalize transition-colors ${
                             customCampForm.gender === g
                               ? 'bg-brand-green text-white font-bold'
-                              : 'bg-white/5 text-text-secondary hover:text-white'
+                              : 'bg-zinc-100 dark:bg-white/5 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white border border-zinc-200 dark:border-white/10'
                           }`}
                         >
                           {g}
@@ -2328,7 +2328,7 @@ export default function MetaAdsManagerPage() {
                   </div>
 
                   <div>
-                    <label className="text-xs text-text-secondary block mb-1 font-medium">
+                    <label className="text-xs text-zinc-500 dark:text-zinc-400 block mb-1 font-medium">
                       {language === 'en' ? 'Detailed Targeting / Interests (Optional)' : 'আগ্রহ ও বিষয়ভিত্তিক টার্গেটিং (ঐচ্ছিক)'}
                     </label>
                     <input
@@ -2336,14 +2336,14 @@ export default function MetaAdsManagerPage() {
                       value={customCampForm.interests}
                       onChange={(e) => setCustomCampForm(f => ({ ...f, interests: e.target.value }))}
                       placeholder={language === 'en' ? 'e.g. Online shopping, Fashion, Electronics' : 'যেমন: অনলাইন কেনাকাটা, ফ্যাশন, গ্যাজেট'}
-                      className="w-full bg-surface border border-white/10 text-white text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-brand-green"
+                      className="w-full bg-zinc-50 dark:bg-surface border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-brand-green placeholder:text-zinc-400 shadow-xs"
                     />
                   </div>
                 </div>
 
                 {/* Placements Toggle & Manual Setup */}
-                <div className="pt-2 border-t border-white/5 space-y-3">
-                  <label className="text-xs text-text-secondary block font-medium">
+                <div className="pt-2 border-t border-zinc-200 dark:border-white/10 space-y-3">
+                  <label className="text-xs text-zinc-500 dark:text-zinc-400 block font-medium">
                     {language === 'en' ? 'Placements & Device Delivery' : 'বিজ্ঞাপন প্রদর্শনের মাধ্যম (প্লেসমেন্ট)'}
                   </label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -2353,14 +2353,14 @@ export default function MetaAdsManagerPage() {
                       className={`p-3 rounded-xl text-left border transition-all ${
                         customCampForm.placementType === 'advantage_plus'
                           ? 'bg-brand-green/20 border-brand-green text-white'
-                          : 'bg-surface border-white/5 text-text-secondary'
+                          : 'bg-zinc-50 dark:bg-surface border-zinc-200 dark:border-white/10 text-zinc-600 dark:text-zinc-400 hover:border-brand-green/40'
                       }`}
                     >
                       <span className="text-xs font-bold block text-white flex items-center gap-1.5">
                         <Sparkles className="w-3.5 h-3.5 text-brand-orange" />
                         {language === 'en' ? 'Advantage+ Placements (Recommended)' : 'Advantage+ স্বয়ংক্রিয় প্লেসমেন্ট (সুপারিশকৃত)'}
                       </span>
-                      <span className="text-[10px] text-text-secondary block mt-1">
+                      <span className="text-[10px] text-zinc-500 dark:text-zinc-400 block mt-1">
                         {language === 'en' ? 'Maximizes budget across Facebook Feeds, Stories, Reels & Audience Network.' : 'ফেসবুক ফিড, রিলস, স্টোরি সব মাধ্যমে মেটার এলগরিদম স্বয়ংক্রিয়ভাবে দেখাবে।'}
                       </span>
                     </button>
@@ -2375,14 +2375,14 @@ export default function MetaAdsManagerPage() {
                       className={`p-3 rounded-xl text-left border transition-all ${
                         customCampForm.placementType === 'manual'
                           ? 'bg-brand-green/20 border-brand-green text-white'
-                          : 'bg-surface border-white/5 text-text-secondary'
+                          : 'bg-zinc-50 dark:bg-surface border-zinc-200 dark:border-white/10 text-zinc-600 dark:text-zinc-400 hover:border-brand-green/40'
                       }`}
                     >
                       <span className="text-xs font-bold block text-white flex items-center gap-1.5">
                         <SlidersHorizontal className="w-3.5 h-3.5 text-emerald-400" />
                         {language === 'en' ? 'Manual Placements' : 'ম্যানুয়াল প্লেসমেন্ট'}
                       </span>
-                      <span className="text-[10px] text-text-secondary block mt-1">
+                      <span className="text-[10px] text-zinc-500 dark:text-zinc-400 block mt-1">
                         {language === 'en' ? 'Select specific platforms, feeds, stories and reels.' : 'নির্দিষ্ট কিছু ফিড বা প্ল্যাটফর্ম বেছে নিন।'}
                       </span>
                     </button>
@@ -2477,7 +2477,7 @@ export default function MetaAdsManagerPage() {
             </div>
 
             {/* LEVEL 3: AD CREATIVE SETUP (MULTI-FORMAT & DYNAMIC COPY) */}
-            <div className="bg-surface/70 backdrop-blur-xl border border-white/10 rounded-2xl p-5 space-y-4">
+            <div className="bg-white dark:bg-surface/70 backdrop-blur-xl border border-zinc-200 dark:border-white/10 rounded-2xl p-5 space-y-4 shadow-sm">
               <div className="flex items-center justify-between">
                 <h4 className="text-sm font-semibold text-white flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-emerald-400" />
@@ -2490,7 +2490,7 @@ export default function MetaAdsManagerPage() {
 
               {/* Creative Source Selector: Upload Image vs Existing Page Post */}
               <div>
-                <label className="text-xs text-text-secondary block mb-1.5 font-medium">
+                <label className="text-xs text-zinc-500 dark:text-zinc-400 block mb-1.5 font-medium">
                   {language === 'en' ? 'Creative Setup Method' : 'বিজ্ঞাপন ক্রিয়েটিভের ধরন'}
                 </label>
                 <div className="grid grid-cols-2 gap-3">
@@ -2499,16 +2499,16 @@ export default function MetaAdsManagerPage() {
                     onClick={() => setCustomCampForm(f => ({ ...f, creativeSource: 'upload' }))}
                     className={`p-3 rounded-xl text-left border transition-all flex items-start gap-2.5 ${
                       customCampForm.creativeSource === 'upload'
-                        ? 'bg-brand-green/20 border-brand-green text-white shadow-md shadow-brand-green/15'
-                        : 'bg-surface border-white/5 text-text-secondary hover:text-white'
+                        ? 'bg-brand-green/15 border-brand-green text-emerald-800 dark:text-white shadow-md shadow-brand-green/15'
+                        : 'bg-zinc-50 dark:bg-surface border-zinc-200 dark:border-white/10 text-zinc-600 dark:text-zinc-400 hover:border-brand-green/40 hover:text-zinc-900 dark:hover:text-white'
                     }`}
                   >
-                    <ImageIcon className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                    <ImageIcon className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
                     <div>
-                      <span className="text-xs font-bold block text-white">
+                      <span className="text-xs font-bold block text-zinc-900 dark:text-white">
                         {language === 'en' ? 'Create New Ad / Image' : 'নতুন ব্যানার / ছবি দিয়ে তৈরি'}
                       </span>
-                      <span className="text-[10px] text-text-secondary block mt-0.5">
+                      <span className="text-[10px] text-zinc-500 dark:text-zinc-400 block mt-0.5">
                         {language === 'en' ? 'Enter multiple primary texts and headline variations.' : 'একাধিক প্রাইমারি টেক্সট ও হেডলাইন দিয়ে নতুন বিজ্ঞাপন।'}
                       </span>
                     </div>
@@ -2519,16 +2519,16 @@ export default function MetaAdsManagerPage() {
                     onClick={() => setCustomCampForm(f => ({ ...f, creativeSource: 'existing_post' }))}
                     className={`p-3 rounded-xl text-left border transition-all flex items-start gap-2.5 ${
                       customCampForm.creativeSource === 'existing_post'
-                        ? 'bg-brand-green/20 border-brand-green text-white shadow-md shadow-brand-green/15'
-                        : 'bg-surface border-white/5 text-text-secondary hover:text-white'
+                        ? 'bg-brand-green/15 border-brand-green text-emerald-800 dark:text-white shadow-md shadow-brand-green/15'
+                        : 'bg-zinc-50 dark:bg-surface border-zinc-200 dark:border-white/10 text-zinc-600 dark:text-zinc-400 hover:border-brand-green/40 hover:text-zinc-900 dark:hover:text-white'
                     }`}
                   >
                     <FileText className="w-4 h-4 text-brand-orange shrink-0 mt-0.5" />
                     <div>
-                      <span className="text-xs font-bold block text-white">
+                      <span className="text-xs font-bold block text-zinc-900 dark:text-white">
                         {language === 'en' ? 'Use Existing Page Post' : 'পেইজের পূর্বের পোস্ট বেছে নিন'}
                       </span>
-                      <span className="text-[10px] text-text-secondary block mt-0.5">
+                      <span className="text-[10px] text-zinc-500 dark:text-zinc-400 block mt-0.5">
                         {language === 'en' ? 'Preserves all organic likes, comments & shares.' : 'পোস্টের আগের সব লাইক, কমেন্ট ও শেয়ার হুবহু অক্ষত থাকবে।'}
                       </span>
                     </div>
@@ -2544,7 +2544,7 @@ export default function MetaAdsManagerPage() {
                       <span className="text-xs font-semibold text-zinc-900 dark:text-white block">
                         {language === 'en' ? 'Select Facebook Page Posts as Creatives:' : 'বিজ্ঞাপনের ক্রিয়েটিভ হিসেবে পোস্ট নির্বাচন করুন:'}
                       </span>
-                      <span className="text-[10px] text-zinc-500 dark:text-text-secondary">
+                      <span className="text-[10px] text-zinc-500 dark:text-zinc-400">
                         {language === 'en' 
                           ? 'Select 1 or multiple posts. Each selected post creates an ad creative under the ad set.' 
                           : '১টি বা একাধিক পোস্ট নির্বাচন করতে পারেন। প্রতিটি পোস্ট দিয়ে আলাদা অ্যাড ক্রিয়েটিভ তৈরি হবে।'}
@@ -2584,12 +2584,12 @@ export default function MetaAdsManagerPage() {
                   {loadingPosts ? (
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 animate-pulse">
                       {[1, 2, 3].map(i => (
-                        <div key={i} className="h-36 bg-surface/50 border border-white/5 rounded-xl" />
+                        <div key={i} className="h-36 bg-zinc-50 dark:bg-surface/50 border border-zinc-200 dark:border-white/10 rounded-xl" />
                       ))}
                     </div>
                   ) : pagePosts.length === 0 ? (
-                    <div className="p-4 bg-background/50 rounded-xl border border-white/5 text-center">
-                      <p className="text-xs text-text-secondary">
+                    <div className="p-4 bg-zinc-50 dark:bg-background/50 rounded-xl border border-zinc-200 dark:border-white/10 text-center">
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400">
                         {language === 'en' ? 'No page posts found. Click Refresh or publish on Facebook first.' : 'কোনো পোস্ট পাওয়া যায়নি। ফেসবুক পেজে পোস্ট করে রিফ্রেশ করুন।'}
                       </p>
                     </div>
@@ -2634,14 +2634,14 @@ export default function MetaAdsManagerPage() {
                                 {post.message || '[Image Post without caption]'}
                               </p>
                             </div>
-                            <div className="flex items-center justify-between text-[10px] text-zinc-500 dark:text-text-secondary pt-2 mt-2 border-t border-zinc-100 dark:border-white/5">
+                            <div className="flex items-center justify-between text-[10px] text-zinc-500 dark:text-zinc-400 pt-2 mt-2 border-t border-zinc-100 dark:border-white/5">
                               <span>👍 {post.reactionsCount} reactions</span>
                               {isSelected ? (
                                 <span className="text-white bg-brand-green px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 shadow-sm">
                                   <Check className="w-3 h-3" /> Creative #{selectionIndex >= 0 ? selectionIndex + 1 : 1}
                                 </span>
                               ) : (
-                                <span className="text-zinc-500 dark:text-text-secondary hover:text-brand-green font-medium">
+                                <span className="text-zinc-500 dark:text-zinc-400 hover:text-brand-green font-medium">
                                   + {language === 'en' ? 'Add Creative' : 'যোগ করুন'}
                                 </span>
                               )}
@@ -2660,7 +2660,7 @@ export default function MetaAdsManagerPage() {
                   {/* MULTIPLE PRIMARY TEXTS (Dynamic Copy) */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <label className="text-xs text-text-secondary font-medium flex items-center gap-1.5">
+                      <label className="text-xs text-zinc-500 dark:text-zinc-400 font-medium flex items-center gap-1.5">
                         {language === 'en' ? 'Primary Text (Ad Copy Options)' : 'বিজ্ঞাপনের মূল বিবরণ (প্রাইমারি টেক্সট)'}
                         <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
                           {customCampForm.primaryTexts.length}/5 Options
@@ -2677,7 +2677,7 @@ export default function MetaAdsManagerPage() {
                         </button>
                       )}
                     </div>
-                    <p className="text-[10px] text-text-secondary">
+                    <p className="text-[10px] text-zinc-500 dark:text-zinc-400">
                       {language === 'en'
                         ? 'Meta will automatically test these primary text variations and deliver the highest-converting copy to each shopper.'
                         : 'মেটার এলগরিদম এই ভিন্ন ভিন্ন টেক্সট অপশনগুলো পরীক্ষা করে প্রতিটি কাস্টমারকে সবচেয়ে কার্যকর কপিটি দেখাবে।'}
@@ -2685,8 +2685,8 @@ export default function MetaAdsManagerPage() {
 
                     <div className="space-y-2.5">
                       {customCampForm.primaryTexts.map((text, idx) => (
-                        <div key={idx} className="relative bg-surface/50 border border-white/10 rounded-xl p-2.5 focus-within:border-brand-green transition-all">
-                          <div className="flex items-center justify-between mb-1 text-[10px] text-text-secondary">
+                        <div key={idx} className="relative bg-zinc-50/60 dark:bg-surface/50 border border-zinc-200 dark:border-white/10 rounded-xl p-2.5 focus-within:border-brand-green transition-all">
+                          <div className="flex items-center justify-between mb-1 text-[10px] text-zinc-500 dark:text-zinc-400">
                             <span className="font-semibold text-emerald-400">
                               {language === 'en' ? `Primary Text Option #${idx + 1}` : `প্রাইমারি টেক্সট অপশন #${idx + 1}`}
                             </span>
@@ -2706,7 +2706,7 @@ export default function MetaAdsManagerPage() {
                             value={text}
                             onChange={(e) => handleUpdatePrimaryText(idx, e.target.value)}
                             placeholder={language === 'en' ? `Write persuasive copy variation #${idx + 1}...` : `বিজ্ঞাপনের আকর্ষণীয় বিবরণ #${idx + 1} লিখুন...`}
-                            className="w-full bg-transparent text-white text-xs focus:outline-none resize-none leading-relaxed"
+                            className="w-full bg-transparent text-zinc-900 dark:text-white text-xs focus:outline-none resize-none leading-relaxed"
                           />
                         </div>
                       ))}
@@ -2714,9 +2714,9 @@ export default function MetaAdsManagerPage() {
                   </div>
 
                   {/* MULTIPLE HEADLINES */}
-                  <div className="space-y-2 pt-2 border-t border-white/5">
+                  <div className="space-y-2 pt-2 border-t border-zinc-200 dark:border-white/10">
                     <div className="flex items-center justify-between">
-                      <label className="text-xs text-text-secondary font-medium flex items-center gap-1.5">
+                      <label className="text-xs text-zinc-500 dark:text-zinc-400 font-medium flex items-center gap-1.5">
                         {language === 'en' ? 'Headlines (Up to 3 variations)' : 'বিজ্ঞাপনের হেডলাইন (সর্বোচ্চ ৩টি অপশন)'}
                         <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
                           {customCampForm.headlines.length}/3
@@ -2742,7 +2742,7 @@ export default function MetaAdsManagerPage() {
                             value={hl}
                             onChange={(e) => handleUpdateHeadline(idx, e.target.value)}
                             placeholder={language === 'en' ? `Headline #${idx + 1} (e.g. 30% Off Today Only!)` : `হেডলাইন #${idx + 1} (যেমন: ৩০% বিশেষ ছাড় আজকের জন্য)`}
-                            className="flex-1 bg-surface border border-white/10 text-white text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-brand-green"
+                            className="flex-1 bg-zinc-50 dark:bg-surface border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-brand-green placeholder:text-zinc-400 shadow-xs"
                           />
                           {customCampForm.headlines.length > 1 && (
                             <button
@@ -2759,9 +2759,9 @@ export default function MetaAdsManagerPage() {
                   </div>
 
                   {/* Feed Description & Call To Action */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-white/5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-zinc-200 dark:border-white/10">
                     <div>
-                      <label className="text-xs text-text-secondary block mb-1 font-medium">
+                      <label className="text-xs text-zinc-500 dark:text-zinc-400 block mb-1 font-medium">
                         {language === 'en' ? 'Feed Description (Optional)' : 'ফিড ডেসক্রিপশন (ঐচ্ছিক)'}
                       </label>
                       <input
@@ -2769,18 +2769,18 @@ export default function MetaAdsManagerPage() {
                         value={customCampForm.description}
                         onChange={(e) => setCustomCampForm(f => ({ ...f, description: e.target.value }))}
                         placeholder={language === 'en' ? 'e.g. Free Delivery across Bangladesh' : 'যেমন: সারা দেশে ফ্রি ডেলিভারি'}
-                        className="w-full bg-surface border border-white/10 text-white text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-brand-green"
+                        className="w-full bg-zinc-50 dark:bg-surface border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-brand-green placeholder:text-zinc-400 shadow-xs"
                       />
                     </div>
 
                     <div>
-                      <label className="text-xs text-text-secondary block mb-1 font-medium">
+                      <label className="text-xs text-zinc-500 dark:text-zinc-400 block mb-1 font-medium">
                         {language === 'en' ? 'Call to Action Button' : 'কল-টু-অ্যাকশন বাটন'}
                       </label>
                       <select
                         value={customCampForm.callToAction}
                         onChange={(e) => setCustomCampForm(f => ({ ...f, callToAction: e.target.value }))}
-                        className="w-full bg-surface border border-white/10 text-white text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-brand-green"
+                        className="w-full bg-zinc-50 dark:bg-surface border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-brand-green placeholder:text-zinc-400 shadow-xs"
                       >
                         <option value="LEARN_MORE">Learn More (আরও জানুন)</option>
                         <option value="SHOP_NOW">Shop Now (এখনই কিনুন)</option>
@@ -2797,7 +2797,7 @@ export default function MetaAdsManagerPage() {
                   {/* Destination URL & Image URL */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs text-text-secondary block mb-1 font-medium">
+                      <label className="text-xs text-zinc-500 dark:text-zinc-400 block mb-1 font-medium">
                         {language === 'en' ? 'Website / Destination URL' : 'ওয়েবসাইট বা ল্যান্ডিং পেইজ লিংক'}
                       </label>
                       <input
@@ -2805,12 +2805,12 @@ export default function MetaAdsManagerPage() {
                         value={customCampForm.linkUrl}
                         onChange={(e) => setCustomCampForm(f => ({ ...f, linkUrl: e.target.value }))}
                         placeholder="https://yourwebsite.com/product"
-                        className="w-full bg-surface border border-white/10 text-white text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-brand-green"
+                        className="w-full bg-zinc-50 dark:bg-surface border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-brand-green placeholder:text-zinc-400 shadow-xs"
                       />
                     </div>
 
                     <div>
-                      <label className="text-xs text-text-secondary block mb-1 font-medium">
+                      <label className="text-xs text-zinc-500 dark:text-zinc-400 block mb-1 font-medium">
                         {language === 'en' ? 'Image URL (High-Res Banner)' : 'ছবির লিংক (ব্যানার ইমেজ URL)'}
                       </label>
                       <input
@@ -2818,14 +2818,14 @@ export default function MetaAdsManagerPage() {
                         value={customCampForm.imageUrl}
                         onChange={(e) => setCustomCampForm(f => ({ ...f, imageUrl: e.target.value }))}
                         placeholder="https://images.unsplash.com/..."
-                        className="w-full bg-surface border border-white/10 text-white text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-brand-green"
+                        className="w-full bg-zinc-50 dark:bg-surface border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-brand-green placeholder:text-zinc-400 shadow-xs"
                       />
                     </div>
                   </div>
 
                   {customCampForm.imageUrl && (
-                    <div className="p-2 border border-white/10 rounded-xl bg-surface/50 max-w-xs">
-                      <span className="text-[10px] text-text-secondary block mb-1">Image Preview:</span>
+                    <div className="p-2 border border-zinc-200 dark:border-white/10 rounded-xl bg-zinc-50/50 dark:bg-surface/50 max-w-xs">
+                      <span className="text-[10px] text-zinc-500 dark:text-zinc-400 block mb-1">Image Preview:</span>
                       <img
                         src={customCampForm.imageUrl}
                         alt="Ad Preview"
@@ -2838,9 +2838,9 @@ export default function MetaAdsManagerPage() {
               )}
 
               {/* CONVERSION TRACKING: META PIXEL INTEGRATION */}
-              <div className="pt-3 border-t border-white/5 space-y-2">
+              <div className="pt-3 border-t border-zinc-200 dark:border-white/10 space-y-2">
                 <div className="flex items-center justify-between">
-                  <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-white">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-zinc-900 dark:text-white">
                     <input
                       type="checkbox"
                       checked={customCampForm.trackPixel}
@@ -2863,15 +2863,15 @@ export default function MetaAdsManagerPage() {
                 </div>
 
                 {customCampForm.trackPixel && (
-                  <div className="p-3 bg-surface/50 border border-white/10 rounded-xl space-y-2 animate-in fade-in">
-                    <label className="text-[11px] text-text-secondary block">
+                  <div className="p-3 bg-zinc-50/60 dark:bg-surface/50 border border-zinc-200 dark:border-white/10 rounded-xl space-y-2 animate-in fade-in">
+                    <label className="text-[11px] text-zinc-500 dark:text-zinc-400 block">
                       {language === 'en' ? 'Select Connected Meta Pixel:' : 'কানেক্টেড মেটা পিক্সেল নির্বাচন করুন:'}
                     </label>
                     {discoveredPixels.length > 0 ? (
                       <select
                         value={customCampForm.selectedPixelId}
                         onChange={(e) => setCustomCampForm(f => ({ ...f, selectedPixelId: e.target.value }))}
-                        className="w-full bg-surface border border-white/10 text-white text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-brand-green font-mono"
+                        className="w-full bg-zinc-50 dark:bg-surface border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-brand-green font-mono placeholder:text-zinc-400 shadow-xs"
                       >
                         {discoveredPixels.map(p => (
                           <option key={p.id} value={p.id}>
@@ -2880,7 +2880,7 @@ export default function MetaAdsManagerPage() {
                         ))}
                       </select>
                     ) : (
-                      <p className="text-[11px] text-text-secondary">
+                      <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
                         {language === 'en' ? 'No pixels discovered on this ad account yet.' : 'এই অ্যাড অ্যাকাউন্টে এখনো কোনো পিক্সেল পাওয়া যায়নি।'}
                       </p>
                     )}
@@ -2902,7 +2902,7 @@ export default function MetaAdsManagerPage() {
                       1 AI Credit
                     </span>
                   </h5>
-                  <p className="text-[11px] text-text-secondary mt-0.5">
+                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
                     {language === 'en'
                       ? 'Critique your hooks, estimate CTR strength, check Meta policy risk, and generate 3 high-converting copy variations.'
                       : 'বিজ্ঞাপন চালুর পূর্বে হুক স্কোর, মেটা পলিসি কমপ্লায়েন্স চেক এবং ৩টি আকর্ষণীয় কপি অপশন পান।'}
@@ -2935,7 +2935,7 @@ export default function MetaAdsManagerPage() {
               <button
                 type="button"
                 onClick={() => setActiveTab('campaigns')}
-                className="px-4 py-2.5 text-xs text-text-secondary hover:text-white transition-colors"
+                className="px-4 py-2.5 text-xs text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors"
               >
                 {language === 'en' ? 'Cancel' : 'বাতিল'}
               </button>
@@ -2962,13 +2962,13 @@ export default function MetaAdsManagerPage() {
           {/* AI PRE-FLIGHT REVIEW MODAL */}
           {aiReviewModalOpen && aiReviewResult && (
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in">
-              <div className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-5 sm:p-6 shadow-2xl space-y-4">
-                <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="bg-white dark:bg-slate-900 border border-zinc-200 dark:border-white/15 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-5 sm:p-6 shadow-2xl space-y-4 text-zinc-900 dark:text-white">
+                <div className="flex items-center justify-between border-b border-zinc-200 dark:border-white/10 pb-3">
                   <div className="flex items-center gap-2">
-                    <div className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400">
+                    <div className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">
                       <Sparkles className="w-4 h-4" />
                     </div>
-                    <h3 className="text-sm sm:text-base font-bold text-white">
+                    <h3 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-white">
                       {language === 'en' ? 'AI Pre-Flight Campaign & Copy Analysis' : 'এআই প্রি-ফ্লাইট বিজ্ঞাপন বিশ্লেষণ'}
                     </h3>
                   </div>
@@ -2982,8 +2982,8 @@ export default function MetaAdsManagerPage() {
 
                 {/* Scores Bar */}
                 <div className="grid grid-cols-3 gap-3">
-                  <div className="p-3 rounded-xl bg-surface/60 border border-white/5 text-center">
-                    <span className="text-[10px] text-text-secondary block mb-1">
+                  <div className="p-3 rounded-xl bg-zinc-50 dark:bg-surface/60 border border-zinc-200 dark:border-white/10 text-center">
+                    <span className="text-[10px] text-zinc-500 dark:text-zinc-400 block mb-1">
                       {language === 'en' ? 'Overall Score' : 'সার্বিক স্কোর'}
                     </span>
                     <span className="text-xl font-extrabold text-emerald-400 font-mono">
@@ -2991,8 +2991,8 @@ export default function MetaAdsManagerPage() {
                     </span>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-surface/60 border border-white/5 text-center">
-                    <span className="text-[10px] text-text-secondary block mb-1">
+                  <div className="p-3 rounded-xl bg-zinc-50 dark:bg-surface/60 border border-zinc-200 dark:border-white/10 text-center">
+                    <span className="text-[10px] text-zinc-500 dark:text-zinc-400 block mb-1">
                       {language === 'en' ? 'Hook Strength' : 'হুক পাওয়ার'}
                     </span>
                     <span className="text-xl font-extrabold text-amber-400 font-mono">
@@ -3000,8 +3000,8 @@ export default function MetaAdsManagerPage() {
                     </span>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-surface/60 border border-white/5 text-center">
-                    <span className="text-[10px] text-text-secondary block mb-1">
+                  <div className="p-3 rounded-xl bg-zinc-50 dark:bg-surface/60 border border-zinc-200 dark:border-white/10 text-center">
+                    <span className="text-[10px] text-zinc-500 dark:text-zinc-400 block mb-1">
                       {language === 'en' ? 'Clarity & CTA' : 'স্পষ্টতা ও অফার'}
                     </span>
                     <span className="text-xl font-extrabold text-blue-400 font-mono">
@@ -3011,9 +3011,9 @@ export default function MetaAdsManagerPage() {
                 </div>
 
                 {/* Policy Compliance */}
-                <div className="p-3.5 rounded-xl bg-white/5 border border-white/5 space-y-1">
+                <div className="p-3.5 rounded-xl bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/10 space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-white flex items-center gap-1.5">
+                    <span className="text-xs font-semibold text-zinc-900 dark:text-white flex items-center gap-1.5">
                       <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
                       {language === 'en' ? 'Meta Policy Compliance' : 'মেটা বিজ্ঞাপন নীতিমালা যাচাই'}
                     </span>
@@ -3025,7 +3025,7 @@ export default function MetaAdsManagerPage() {
                       {aiReviewResult.policyRisk === 'LOW' ? 'Low Risk (Safe)' : 'Medium Attention'}
                     </span>
                   </div>
-                  <p className="text-[11px] text-text-secondary leading-relaxed pt-1">
+                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed pt-1">
                     {language === 'en' ? aiReviewResult.policyFeedback : aiReviewResult.policyFeedbackBn}
                   </p>
                 </div>
@@ -3054,7 +3054,7 @@ export default function MetaAdsManagerPage() {
                 </div>
 
                 {/* Suggested High-Converting Copy Variations */}
-                <div className="space-y-2.5 pt-2 border-t border-white/10">
+                <div className="space-y-2.5 pt-2 border-t border-zinc-200 dark:border-white/10">
                   <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-brand-orange" />
                     {language === 'en' ? 'AI Optimized Copy Variations (1-Click Apply)' : 'এআই প্রস্তাবিত হাই-কনভার্টিং কপি (১-ক্লিকে ব্যবহার করুন)'}
@@ -3064,7 +3064,7 @@ export default function MetaAdsManagerPage() {
                     {aiReviewResult.suggestedVariations.map((v, idx) => (
                       <div
                         key={idx}
-                        className="p-3 rounded-xl bg-surface/70 border border-white/10 hover:border-emerald-500/40 transition-all space-y-2"
+                        className="p-3 rounded-xl bg-zinc-50 dark:bg-surface/70 border border-zinc-200 dark:border-white/10 hover:border-emerald-500/40 transition-all space-y-2"
                       >
                         <div className="flex items-center justify-between">
                           <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
@@ -3081,13 +3081,13 @@ export default function MetaAdsManagerPage() {
                         </div>
 
                         <div>
-                          <p className="text-xs font-bold text-white">{v.headline}</p>
-                          <p className="text-[11px] text-text-secondary mt-1 whitespace-pre-line leading-relaxed">
+                          <p className="text-xs font-bold text-zinc-900 dark:text-white">{v.headline}</p>
+                          <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 whitespace-pre-line leading-relaxed">
                             {v.primaryText}
                           </p>
                         </div>
 
-                        <p className="text-[10px] text-amber-300/80 italic border-t border-white/5 pt-1.5">
+                        <p className="text-[10px] text-amber-600 dark:text-amber-300/80 italic border-t border-zinc-200 dark:border-white/10 pt-1.5">
                           💡 {language === 'en' ? v.rationale : v.rationaleBn}
                         </p>
                       </div>
@@ -3095,7 +3095,7 @@ export default function MetaAdsManagerPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between text-[10px] text-text-secondary pt-3 border-t border-white/10">
+                <div className="flex items-center justify-between text-[10px] text-zinc-500 dark:text-zinc-400 pt-3 border-t border-zinc-200 dark:border-white/10">
                   <span className="flex items-center gap-1">
                     <CheckCircle className="w-3 h-3 text-emerald-400" />
                     {language === 'en' ? '1 AI Credit deducted from independent pool' : 'স্বাধীন কোটা থেকে ১ ক্রেডিট কর্তন করা হয়েছে'}
@@ -3103,7 +3103,7 @@ export default function MetaAdsManagerPage() {
                   <button
                     type="button"
                     onClick={() => setAiReviewModalOpen(false)}
-                    className="px-3.5 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-xl font-medium transition-colors"
+                    className="px-3.5 py-1.5 bg-zinc-100 dark:bg-white/10 hover:bg-zinc-200 dark:hover:bg-white/20 text-zinc-800 dark:text-white border border-zinc-200 dark:border-white/10 rounded-xl font-medium transition-colors"
                   >
                     {language === 'en' ? 'Close' : 'বন্ধ করুন'}
                   </button>
@@ -3122,11 +3122,11 @@ export default function MetaAdsManagerPage() {
           {/* Header notice */}
           <div className="bg-gradient-to-r from-brand-green/10 to-brand-orange/10 border border-brand-green/20 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h3 className="text-sm sm:text-base font-semibold text-white flex items-center gap-2">
+              <h3 className="text-sm sm:text-base font-semibold text-zinc-900 dark:text-white flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-brand-orange" />
                 {pageName ? `${pageName} — ${language === 'en' ? 'Facebook Posts' : 'ফেসবুক পোস্টসমূহ'}` : (language === 'en' ? 'Facebook Page Posts' : 'ফেসবুক পেইজ পোস্টসমূহ')}
               </h3>
-              <p className="text-xs text-text-secondary mt-0.5">
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
                 {language === 'en'
                   ? 'Select any existing Facebook Page post to boost. All organic likes, comments, and shares will be preserved.'
                   : 'বুস্ট করতে যেকোনো পোস্ট নির্বাচন করুন। পোস্টের পূর্বের সব লাইক, কমেন্ট ও শেয়ার হুবহু অক্ষত থাকবে।'}
@@ -3135,7 +3135,7 @@ export default function MetaAdsManagerPage() {
             <button
               onClick={() => fetchPagePosts(selectedAccountId)}
               disabled={loadingPosts}
-              className="px-3.5 py-1.5 bg-surface hover:bg-surface-hover border border-white/10 text-white rounded-xl text-xs font-medium transition-colors flex items-center gap-1.5 self-start sm:self-auto shrink-0"
+              className="px-3.5 py-1.5 bg-white dark:bg-surface hover:bg-zinc-100 dark:hover:bg-surface-hover border border-zinc-200 dark:border-white/10 text-zinc-800 dark:text-white rounded-xl text-xs font-medium transition-colors flex items-center gap-1.5 self-start sm:self-auto shrink-0 shadow-xs"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loadingPosts ? 'animate-spin' : ''}`} />
               {language === 'en' ? 'Fetch Latest Posts' : 'নতুন পোস্ট খুঁজুন'}
@@ -3159,16 +3159,16 @@ export default function MetaAdsManagerPage() {
           {loadingPosts ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               {[1, 2, 3, 4, 5, 6].map(i => (
-                <div key={i} className="bg-surface/50 border border-white/5 rounded-2xl h-64 animate-pulse" />
+                <div key={i} className="bg-zinc-50 dark:bg-surface/50 border border-zinc-200 dark:border-white/10 rounded-2xl h-64 animate-pulse" />
               ))}
             </div>
           ) : pagePosts.length === 0 ? (
-            <div className="bg-surface/70 backdrop-blur-xl border border-white/10 rounded-2xl p-8 text-center py-16">
-              <Facebook className="w-12 h-12 text-text-secondary/40 mx-auto mb-3" />
-              <h3 className="text-base font-semibold text-white mb-1">
+            <div className="bg-white dark:bg-surface/70 backdrop-blur-xl border border-zinc-200 dark:border-white/10 rounded-2xl p-8 text-center py-16 shadow-sm">
+              <Facebook className="w-12 h-12 text-zinc-500 dark:text-zinc-400/40 mx-auto mb-3" />
+              <h3 className="text-base font-semibold text-zinc-900 dark:text-white mb-1">
                 {language === 'en' ? 'No Posts Found on Connected Page' : 'কানেক্টেড পেইজে কোনো পোস্ট পাওয়া যায়নি'}
               </h3>
-              <p className="text-xs text-text-secondary max-w-md mx-auto mb-4">
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-md mx-auto mb-4">
                 {language === 'en'
                   ? 'Publish a post or photo on your Facebook Page, then click "Fetch Latest Posts" to boost it here.'
                   : 'আপনার ফেসবুক পেজে কোনো ছবি বা লেখা পোস্ট করুন, তারপর এখানে রিফ্রেশ করে ১-ক্লিকে বুস্ট করুন।'}
@@ -3179,7 +3179,7 @@ export default function MetaAdsManagerPage() {
               {pagePosts.map((post) => (
                 <div
                   key={post.id}
-                  className="bg-surface/70 backdrop-blur-xl border border-white/10 hover:border-brand-green/50 rounded-2xl overflow-hidden flex flex-col transition-all duration-200 group shadow-lg"
+                  className="bg-white dark:bg-surface/70 backdrop-blur-xl border border-zinc-200 dark:border-white/10 hover:border-brand-green/50 rounded-2xl overflow-hidden flex flex-col transition-all duration-200 group shadow-sm hover:shadow-md"
                 >
                   {/* Post Image Thumbnail */}
                   <div className="h-44 bg-slate-900/50 relative overflow-hidden flex items-center justify-center">
@@ -3191,8 +3191,8 @@ export default function MetaAdsManagerPage() {
                       />
                     ) : (
                       <div className="text-center p-4">
-                        <Facebook className="w-8 h-8 text-text-secondary/40 mx-auto mb-1" />
-                        <span className="text-[10px] text-text-secondary font-mono">Text Status Post</span>
+                        <Facebook className="w-8 h-8 text-zinc-500 dark:text-zinc-400/40 mx-auto mb-1" />
+                        <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-mono">Text Status Post</span>
                       </div>
                     )}
                     {post.permalinkUrl && (
@@ -3211,20 +3211,20 @@ export default function MetaAdsManagerPage() {
                   {/* Post Text & Metrics */}
                   <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
                     <div>
-                      <span className="text-[10px] text-text-secondary font-mono block mb-1">
+                      <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-mono block mb-1">
                         {new Date(post.createdTime).toLocaleDateString(language === 'en' ? 'en-US' : 'bn-BD', {
                           month: 'short',
                           day: 'numeric',
                           year: 'numeric'
                         })}
                       </span>
-                      <p className="text-xs text-white/90 line-clamp-3 leading-relaxed">
+                      <p className="text-xs text-zinc-800 dark:text-white/90 line-clamp-3 leading-relaxed">
                         {post.message || (language === 'en' ? '[Photo Post without caption]' : '[ক্যাপশন ছাড়া ছবি পোস্ট]')}
                       </p>
                     </div>
 
-                    <div className="pt-2 border-t border-white/5 space-y-2.5">
-                      <div className="flex items-center justify-between text-[11px] text-text-secondary">
+                    <div className="pt-2 border-t border-zinc-200 dark:border-white/10 space-y-2.5">
+                      <div className="flex items-center justify-between text-[11px] text-zinc-500 dark:text-zinc-400">
                         <span className="flex items-center gap-1">
                           <ThumbsUp className="w-3 h-3 text-blue-400" />
                           {post.reactionsCount}
@@ -3255,9 +3255,9 @@ export default function MetaAdsManagerPage() {
       {/* TAB 3: CONNECTED ACCOUNTS & BALANCES */}
       {/* ========================================================================= */}
       {activeTab === 'accounts' && (
-        <div className="bg-surface/70 backdrop-blur-xl border border-white/10 rounded-2xl p-6 space-y-4">
+        <div className="bg-white dark:bg-surface/70 backdrop-blur-xl border border-zinc-200 dark:border-white/10 rounded-2xl p-6 space-y-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold text-white flex items-center gap-2">
+            <h2 className="text-base font-bold text-zinc-900 dark:text-white flex items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-brand-orange" />
               {language === 'en' ? 'Connected Meta Ad Accounts' : 'সংযুক্ত মেটা অ্যাড অ্যাকাউন্টসমূহ'}
             </h2>
@@ -3272,9 +3272,9 @@ export default function MetaAdsManagerPage() {
           </div>
 
           {accounts.length === 0 ? (
-            <div className="text-center py-12 border-2 border-dashed border-white/10 rounded-2xl">
-              <Facebook className="w-10 h-10 text-text-secondary/40 mx-auto mb-2" />
-              <p className="text-xs text-text-secondary max-w-sm mx-auto">
+            <div className="text-center py-12 border-2 border-dashed border-zinc-200 dark:border-white/10 rounded-2xl">
+              <Facebook className="w-10 h-10 text-zinc-500 dark:text-zinc-400/40 mx-auto mb-2" />
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-sm mx-auto">
                 {language === 'en' ? 'No Meta Ad account connected yet.' : 'এখনো কোনো মেটা অ্যাড অ্যাকাউন্ট যুক্ত করা হয়নি।'}
               </p>
             </div>
@@ -3286,7 +3286,7 @@ export default function MetaAdsManagerPage() {
                   className={`p-4 rounded-xl border transition-all ${
                     acc.adAccountId === selectedAccountId
                       ? 'bg-brand-green/10 border-brand-green/40 shadow-lg shadow-brand-green/10'
-                      : 'bg-surface-light border-white/5 hover:border-white/10'
+                      : 'bg-zinc-50 dark:bg-surface border-zinc-200 dark:border-white/10 hover:border-zinc-300 dark:hover:border-white/20 shadow-xs'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -3295,21 +3295,21 @@ export default function MetaAdsManagerPage() {
                         <Facebook className="w-5 h-5" />
                       </div>
                       <div>
-                        <h4 className="font-semibold text-white text-xs">{acc.adAccountName || 'Ad Account'}</h4>
-                        <span className="text-[10px] font-mono text-text-secondary">act_{acc.adAccountId}</span>
+                        <h4 className="font-semibold text-zinc-900 dark:text-white text-xs">{acc.adAccountName || 'Ad Account'}</h4>
+                        <span className="text-[10px] font-mono text-zinc-500 dark:text-zinc-400">act_{acc.adAccountId}</span>
                       </div>
                     </div>
                     <button
                       onClick={() => handleDisconnect(acc.id)}
-                      className="p-1.5 text-text-secondary hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                      className="p-1.5 text-zinc-500 dark:text-zinc-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
                       title={language === 'en' ? 'Disconnect' : 'ডিসকানেক্ট'}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
 
-                  <div className="flex items-center justify-between text-[11px] text-text-secondary pt-3 mt-3 border-t border-white/5">
-                    <span>Currency: <strong className="text-white uppercase">{acc.currency || 'USD'}</strong></span>
+                  <div className="flex items-center justify-between text-[11px] text-zinc-500 dark:text-zinc-400 pt-3 mt-3 border-t border-zinc-200 dark:border-white/10">
+                    <span>Currency: <strong className="text-zinc-900 dark:text-white uppercase">{acc.currency || 'USD'}</strong></span>
                     <span className="px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/10 text-emerald-400 font-medium">
                       Active
                     </span>
@@ -3326,22 +3326,22 @@ export default function MetaAdsManagerPage() {
       {/* ========================================================================= */}
       {boostModalOpen && selectedPost && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-5 sm:p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+          <div className="bg-white dark:bg-slate-900 border border-zinc-200 dark:border-white/15 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-5 sm:p-6 shadow-2xl space-y-4 text-zinc-900 dark:text-white">
+            <div className="flex items-center justify-between border-b border-zinc-200 dark:border-white/10 pb-3">
+              <h3 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-white flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-brand-orange" />
                 {language === 'en' ? 'Boost Existing Page Post' : 'পেইজ পোস্ট বুস্টিং সেটআপ'}
               </h3>
               <button
                 onClick={() => setBoostModalOpen(false)}
-                className="p-1 text-slate-400 hover:text-white rounded-lg"
+                className="p-1 text-zinc-400 hover:text-zinc-700 dark:hover:text-white rounded-lg transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {/* Selected Post Preview Snippet */}
-            <div className="bg-white/5 border border-white/5 rounded-xl p-3 flex gap-3 items-center">
+            <div className="bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-xl p-3 flex gap-3 items-center">
               {selectedPost.fullPicture && (
                 <img
                   src={selectedPost.fullPicture}
@@ -3353,22 +3353,22 @@ export default function MetaAdsManagerPage() {
                 <span className="text-[10px] text-emerald-400 font-mono block">
                   {language === 'en' ? '✓ Native Post (Likes/Shares Preserved)' : '✓ বিদ্যমান পোস্ট (লাইক/শেয়ার অক্ষত থাকবে)'}
                 </span>
-                <p className="text-xs text-white line-clamp-2 mt-0.5">{selectedPost.message || 'Post without text'}</p>
+                <p className="text-xs text-zinc-800 dark:text-white line-clamp-2 mt-0.5">{selectedPost.message || 'Post without text'}</p>
               </div>
             </div>
 
             {/* Daily Budget Selector */}
             <div className="space-y-2">
-              <label className="text-xs text-text-secondary font-medium block">
+              <label className="text-xs text-zinc-500 dark:text-zinc-400 font-medium block">
                 {language === 'en' ? 'Daily Budget:' : 'দৈনিক বাজেট:'}
               </label>
               <div className="flex items-center gap-2">
-                <span className="text-white text-sm font-bold">{currencySymbol}</span>
+                <span className="text-zinc-900 dark:text-white text-sm font-bold">{currencySymbol}</span>
                 <input
                   type="number"
                   value={boostBudget}
                   onChange={(e) => setBoostBudget(Math.max(1, Number(e.target.value)))}
-                  className="flex-1 bg-surface border border-white/10 text-white text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-brand-green"
+                  className="flex-1 bg-zinc-50 dark:bg-surface border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-brand-green placeholder:text-zinc-400 shadow-xs"
                 />
               </div>
 
@@ -3382,7 +3382,7 @@ export default function MetaAdsManagerPage() {
                     className={`px-2.5 py-1 rounded-lg text-[11px] font-mono transition-colors ${
                       boostBudget === amt
                         ? 'bg-brand-green text-white font-bold'
-                        : 'bg-white/5 text-text-secondary hover:text-white'
+                        : 'bg-zinc-100 dark:bg-white/5 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white border border-zinc-200 dark:border-white/10'
                     }`}
                   >
                     {currencySymbol} {amt}
@@ -3394,8 +3394,8 @@ export default function MetaAdsManagerPage() {
             {/* Duration Slider */}
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-text-secondary">{language === 'en' ? 'Duration:' : 'বিজ্ঞাপনের মেয়াদ:'}</span>
-                <span className="text-white font-bold">{boostDuration} {language === 'en' ? 'Days' : 'দিন'}</span>
+                <span className="text-zinc-500 dark:text-zinc-400">{language === 'en' ? 'Duration:' : 'বিজ্ঞাপনের মেয়াদ:'}</span>
+                <span className="text-zinc-900 dark:text-white font-bold">{boostDuration} {language === 'en' ? 'Days' : 'দিন'}</span>
               </div>
               <input
                 type="range"
@@ -3405,7 +3405,7 @@ export default function MetaAdsManagerPage() {
                 onChange={(e) => setBoostDuration(Number(e.target.value))}
                 className="w-full accent-brand-green cursor-pointer"
               />
-              <div className="text-[11px] text-text-secondary flex justify-between">
+              <div className="text-[11px] text-zinc-500 dark:text-zinc-400 flex justify-between">
                 <span>1 Day</span>
                 <span>Total: ~{currencySymbol} {(boostBudget * boostDuration).toLocaleString()}</span>
                 <span>30 Days</span>
@@ -3413,22 +3413,22 @@ export default function MetaAdsManagerPage() {
             </div>
 
             {/* Audience Targeting */}
-            <div className="space-y-3 pt-2 border-t border-white/5">
-              <span className="text-xs font-semibold text-white flex items-center gap-1.5">
+            <div className="space-y-3 pt-2 border-t border-zinc-200 dark:border-white/10">
+              <span className="text-xs font-semibold text-zinc-900 dark:text-white flex items-center gap-1.5">
                 <Users className="w-3.5 h-3.5 text-brand-green" />
                 {language === 'en' ? 'Target Audience' : 'টার্গেট অডিয়েন্স'}
               </span>
 
               {/* Country */}
               <div>
-                <label className="text-[11px] text-text-secondary block mb-1">
+                <label className="text-[11px] text-zinc-500 dark:text-zinc-400 block mb-1">
                   {language === 'en' ? 'Country (e.g. BD, US, IN):' : 'টার্গেট দেশ:'}
                 </label>
                 <input
                   type="text"
                   value={boostCountries}
                   onChange={(e) => setBoostCountries(e.target.value)}
-                  className="w-full bg-surface border border-white/10 text-white text-xs rounded-xl px-3 py-1.5 uppercase font-mono focus:outline-none focus:border-brand-green"
+                  className="w-full bg-zinc-50 dark:bg-surface border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white text-xs rounded-xl px-3 py-1.5 uppercase font-mono focus:outline-none focus:border-brand-green placeholder:text-zinc-400 shadow-xs"
                   placeholder="BD"
                 />
               </div>
@@ -3436,32 +3436,32 @@ export default function MetaAdsManagerPage() {
               {/* Age Range */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[11px] text-text-secondary block mb-1">Min Age:</label>
+                  <label className="text-[11px] text-zinc-500 dark:text-zinc-400 block mb-1">Min Age:</label>
                   <input
                     type="number"
                     min={18}
                     max={65}
                     value={boostAgeMin}
                     onChange={(e) => setBoostAgeMin(Number(e.target.value))}
-                    className="w-full bg-surface border border-white/10 text-white text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:border-brand-green"
+                    className="w-full bg-zinc-50 dark:bg-surface border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:border-brand-green placeholder:text-zinc-400 shadow-xs"
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] text-text-secondary block mb-1">Max Age:</label>
+                  <label className="text-[11px] text-zinc-500 dark:text-zinc-400 block mb-1">Max Age:</label>
                   <input
                     type="number"
                     min={18}
                     max={65}
                     value={boostAgeMax}
                     onChange={(e) => setBoostAgeMax(Number(e.target.value))}
-                    className="w-full bg-surface border border-white/10 text-white text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:border-brand-green"
+                    className="w-full bg-zinc-50 dark:bg-surface border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:border-brand-green placeholder:text-zinc-400 shadow-xs"
                   />
                 </div>
               </div>
 
               {/* Gender */}
               <div>
-                <label className="text-[11px] text-text-secondary block mb-1.5">Gender:</label>
+                <label className="text-[11px] text-zinc-500 dark:text-zinc-400 block mb-1.5">Gender:</label>
                 <div className="flex items-center gap-2">
                   {(['all', 'men', 'women'] as const).map((g) => (
                     <button
@@ -3471,7 +3471,7 @@ export default function MetaAdsManagerPage() {
                       className={`flex-1 py-1.5 rounded-xl text-xs capitalize transition-colors ${
                         boostGender === g
                           ? 'bg-brand-green text-white font-bold'
-                          : 'bg-white/5 text-text-secondary hover:text-white'
+                          : 'bg-zinc-100 dark:bg-white/5 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white border border-zinc-200 dark:border-white/10'
                       }`}
                     >
                       {g}
@@ -3482,11 +3482,11 @@ export default function MetaAdsManagerPage() {
             </div>
 
             {/* Launch CTA */}
-            <div className="pt-3 border-t border-white/10 flex items-center justify-end gap-2.5">
+            <div className="pt-3 border-t border-zinc-200 dark:border-white/10 flex items-center justify-end gap-2.5">
               <button
                 type="button"
                 onClick={() => setBoostModalOpen(false)}
-                className="px-4 py-2 text-xs text-text-secondary hover:text-white transition-colors"
+                className="px-4 py-2 text-xs text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors"
               >
                 {language === 'en' ? 'Cancel' : 'বাতিল'}
               </button>
@@ -3526,7 +3526,7 @@ export default function MetaAdsManagerPage() {
                   <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25 font-semibold">
                     {language === 'en' ? '✓ 1 AI Response Credit Deducted' : '✓ ১টি এআই রেসপন্স ক্রেডিট ব্যবহার হয়েছে'}
                   </span>
-                  <span className="text-xs text-zinc-500 dark:text-text-secondary truncate max-w-[240px] font-mono">
+                  <span className="text-xs text-zinc-500 dark:text-zinc-400 truncate max-w-[240px] font-mono">
                     {aiAnalysisResult.campaignName}
                   </span>
                 </div>
@@ -3542,7 +3542,7 @@ export default function MetaAdsManagerPage() {
             {/* Health Score & Performance Bar */}
             <div className="p-4 rounded-xl bg-zinc-50 dark:bg-surface/90 border border-zinc-200 dark:border-white/10 flex items-center justify-between gap-4">
               <div>
-                <span className="text-xs text-zinc-500 dark:text-text-secondary block">
+                <span className="text-xs text-zinc-500 dark:text-zinc-400 block">
                   {language === 'en' ? 'Campaign Health Score' : 'ক্যাম্পেইন হেলথ স্কোর'}
                 </span>
                 <span className="text-xs font-semibold text-zinc-900 dark:text-white mt-0.5 block">
@@ -3559,7 +3559,7 @@ export default function MetaAdsManagerPage() {
                 }`}>
                   {aiAnalysisResult.aiDiagnosis.healthScore}
                 </span>
-                <span className="text-xs text-zinc-500 dark:text-text-secondary">/ 100</span>
+                <span className="text-xs text-zinc-500 dark:text-zinc-400">/ 100</span>
               </div>
             </div>
 
@@ -3571,25 +3571,25 @@ export default function MetaAdsManagerPage() {
               </span>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                 <div className="p-2.5 rounded-xl bg-zinc-50 dark:bg-surface border border-zinc-200 dark:border-white/5 text-center">
-                  <span className="text-[10px] text-zinc-500 dark:text-text-secondary block">Impressions</span>
+                  <span className="text-[10px] text-zinc-500 dark:text-zinc-400 block">Impressions</span>
                   <span className="text-xs sm:text-sm font-bold text-zinc-900 dark:text-white font-mono">
                     {aiAnalysisResult.telemetry.impressions.toLocaleString()}
                   </span>
                 </div>
                 <div className="p-2.5 rounded-xl bg-zinc-50 dark:bg-surface border border-zinc-200 dark:border-white/5 text-center">
-                  <span className="text-[10px] text-zinc-500 dark:text-text-secondary block">Clicks</span>
+                  <span className="text-[10px] text-zinc-500 dark:text-zinc-400 block">Clicks</span>
                   <span className="text-xs sm:text-sm font-bold text-emerald-600 dark:text-emerald-400 font-mono">
                     {aiAnalysisResult.telemetry.clicks.toLocaleString()}
                   </span>
                 </div>
                 <div className="p-2.5 rounded-xl bg-zinc-50 dark:bg-surface border border-zinc-200 dark:border-white/5 text-center">
-                  <span className="text-[10px] text-zinc-500 dark:text-text-secondary block">CTR / CPC</span>
+                  <span className="text-[10px] text-zinc-500 dark:text-zinc-400 block">CTR / CPC</span>
                   <span className="text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-400 font-mono">
                     {aiAnalysisResult.telemetry.ctr}% / ${aiAnalysisResult.telemetry.cpc}
                   </span>
                 </div>
                 <div className="p-2.5 rounded-xl bg-zinc-50 dark:bg-surface border border-zinc-200 dark:border-white/5 text-center">
-                  <span className="text-[10px] text-zinc-500 dark:text-text-secondary block">Spend</span>
+                  <span className="text-[10px] text-zinc-500 dark:text-zinc-400 block">Spend</span>
                   <span className="text-xs sm:text-sm font-bold text-brand-orange font-mono">
                     {currencySymbol} {aiAnalysisResult.telemetry.spend}
                   </span>
@@ -3732,12 +3732,12 @@ export default function MetaAdsManagerPage() {
 
                 {aiAnalysisResult.aiDiagnosis.suggestedScalingPercent && (
                   <div className="text-xs text-zinc-900 dark:text-white">
-                    <span className="text-zinc-500 dark:text-text-secondary">{language === 'en' ? 'Suggested Budget Scaling: ' : 'প্রস্তাবিত বাজেট স্কেলিং: '}</span>
+                    <span className="text-zinc-500 dark:text-zinc-400">{language === 'en' ? 'Suggested Budget Scaling: ' : 'প্রস্তাবিত বাজেট স্কেলিং: '}</span>
                     <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono">
                       {aiAnalysisResult.aiDiagnosis.suggestedScalingPercent > 0 ? `+${aiAnalysisResult.aiDiagnosis.suggestedScalingPercent}%` : `${aiAnalysisResult.aiDiagnosis.suggestedScalingPercent}%`}
                     </span>
                     {aiAnalysisResult.aiDiagnosis.suggestedNewBudget > 0 && (
-                      <span className="ml-2 text-zinc-500 dark:text-text-secondary font-mono">
+                      <span className="ml-2 text-zinc-500 dark:text-zinc-400 font-mono">
                         (➔ {currencySymbol} {aiAnalysisResult.aiDiagnosis.suggestedNewBudget}/day)
                       </span>
                     )}
@@ -3755,7 +3755,7 @@ export default function MetaAdsManagerPage() {
               <button
                 type="button"
                 onClick={() => setAiAnalysisModalOpen(false)}
-                className="w-full sm:w-auto px-4 py-2 text-xs text-zinc-600 dark:text-text-secondary hover:text-zinc-900 dark:hover:text-white transition-colors"
+                className="w-full sm:w-auto px-4 py-2 text-xs text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-900 dark:hover:text-white transition-colors"
               >
                 {language === 'en' ? 'Close' : 'বন্ধ করুন'}
               </button>
@@ -3946,7 +3946,7 @@ export default function MetaAdsManagerPage() {
               <button
                 type="button"
                 onClick={() => setEditCampaignModalOpen(false)}
-                className="px-4 py-2 text-xs text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors"
+                className="px-4 py-2 text-xs text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-900 dark:hover:text-white transition-colors"
               >
                 {language === 'en' ? 'Cancel' : 'বাতিল'}
               </button>
@@ -4127,7 +4127,7 @@ export default function MetaAdsManagerPage() {
       {/* ========================================================================= */}
       {confirmModalData && (
         <div className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-surface-light border border-zinc-200 dark:border-white/15 rounded-2xl max-w-md w-full p-6 space-y-5 shadow-2xl relative animate-in fade-in zoom-in duration-150 text-zinc-900 dark:text-white">
+          <div className="bg-white dark:bg-slate-900 border border-zinc-200 dark:border-white/15 rounded-2xl max-w-md w-full p-6 space-y-5 shadow-2xl relative animate-in fade-in zoom-in duration-150 text-zinc-900 dark:text-white">
             {/* Header */}
             <div className="flex items-center gap-3 border-b border-zinc-200 dark:border-white/10 pb-4">
               <span className="p-2 rounded-xl bg-brand-orange/20 text-brand-orange">
@@ -4137,22 +4137,22 @@ export default function MetaAdsManagerPage() {
                 <h3 className="text-base font-bold text-zinc-900 dark:text-white">
                   {language === 'en' ? 'Confirm Action on Meta' : 'মেটাতে অ্যাকশন নিশ্চিত করুন'}
                 </h3>
-                <span className="text-xs text-zinc-500 dark:text-text-secondary">
+                <span className="text-xs text-zinc-500 dark:text-zinc-400">
                   {confirmModalData.campaignName}
                 </span>
               </div>
             </div>
 
             {/* Action Details */}
-            <div className="p-4 rounded-xl bg-zinc-50 dark:bg-surface border border-zinc-200 dark:border-white/10 space-y-2.5 text-xs">
+            <div className="p-4 rounded-xl bg-zinc-50 dark:bg-slate-800/60 border border-zinc-200 dark:border-white/10 space-y-2.5 text-xs">
               {confirmModalData.type === 'SCALE_BUDGET' ? (
                 <div>
-                  <span className="text-zinc-500 dark:text-text-secondary block mb-1">
+                  <span className="text-zinc-500 dark:text-zinc-400 block mb-1">
                     {language === 'en' ? 'Budget Adjustment:' : 'বাজেট পরিবর্তন:'}
                   </span>
                   <div className="flex items-center gap-2 font-mono">
                     <span className="text-zinc-900 dark:text-white font-bold">{currencySymbol} {confirmModalData.currentBudget}</span>
-                    <span className="text-zinc-500 dark:text-text-secondary">➔</span>
+                    <span className="text-zinc-500 dark:text-zinc-400">➔</span>
                     <span className={`font-bold ${
                       (confirmModalData.scalingPercentage || 0) > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'
                     }`}>
@@ -4162,19 +4162,19 @@ export default function MetaAdsManagerPage() {
                 </div>
               ) : (
                 <div className="space-y-1.5">
-                  <span className="text-zinc-500 dark:text-text-secondary block">
+                  <span className="text-zinc-500 dark:text-zinc-400 block">
                     {language === 'en' ? 'AI Optimization Action:' : 'এআই অপটিমাইজেশন পদক্ষেপ:'}
                   </span>
                   <span className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-brand-green/20 text-emerald-700 dark:text-emerald-300 border border-brand-green/30 inline-block">
                     {confirmModalData.actionType?.replace(/_/g, ' ')}
                   </span>
                   {confirmModalData.scalingPercentage && (
-                    <div className="text-zinc-500 dark:text-text-secondary text-[11px] pt-1">
+                    <div className="text-zinc-500 dark:text-zinc-400 text-[11px] pt-1">
                       Scaling Daily Budget by <span className="font-bold text-zinc-900 dark:text-white font-mono">{confirmModalData.scalingPercentage > 0 ? `+${confirmModalData.scalingPercentage}%` : `${confirmModalData.scalingPercentage}%`}</span>
                     </div>
                   )}
                   {confirmModalData.targeting && (
-                    <div className="text-zinc-500 dark:text-text-secondary text-[11px] pt-1 font-mono">
+                    <div className="text-zinc-500 dark:text-zinc-400 text-[11px] pt-1 font-mono">
                       Targeting: Age {confirmModalData.targeting.ageMin}-{confirmModalData.targeting.ageMax}, Countries: {confirmModalData.targeting.countries?.join(', ')}
                     </div>
                   )}
@@ -4209,7 +4209,7 @@ export default function MetaAdsManagerPage() {
                 type="button"
                 onClick={() => setConfirmModalData(null)}
                 disabled={applyingAiAction}
-                className="px-4 py-2 text-xs text-zinc-600 dark:text-text-secondary hover:text-zinc-900 dark:hover:text-white transition-colors disabled:opacity-50"
+                className="px-4 py-2 text-xs text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-900 dark:hover:text-white transition-colors disabled:opacity-50"
               >
                 {language === 'en' ? 'Cancel' : 'বাতিল'}
               </button>
