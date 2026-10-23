@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import Cookies from 'js-cookie';
 import { io, Socket } from 'socket.io-client';
 import { useLanguage } from '@/components/LanguageProvider';
@@ -12,12 +12,13 @@ import {
   MapPin, AlertCircle, Paperclip, File as FileIcon, Trash2, Bot, ToggleLeft, 
   ToggleRight, Wand2, RefreshCw, ChevronLeft, PanelRight, Eye, Star, Archive, 
   CheckCircle2, Flag, UserCheck, Sparkles, Calendar, Download, Reply, Share2, Ban, Filter, Globe, ChevronDown,
-  GitMerge, PauseCircle
+  GitMerge, PauseCircle, Mic, Volume2, VolumeX
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
 import LabelForm from '@/components/labels/LabelForm';
 import { ChannelBrandIcon, FacebookCommentBadgeIcon } from '@/components/BrandIcons';
+import { playNotificationSound, initSoundUnlock, toggleSound, isSoundEnabled } from '@/utils/sound';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -83,6 +84,12 @@ export default function InboxPage() {
   const [agents, setAgents] = useState<any[]>([]);
   const [aiAssistants, setAiAssistants] = useState<any[]>([]);
   const [tenantBusinessName, setTenantBusinessName] = useState<string>('ZiniChat');
+  const [soundOn, setSoundOn] = useState(true);
+
+  useEffect(() => {
+    setSoundOn(isSoundEnabled());
+    initSoundUnlock();
+  }, []);
 
   useEffect(() => {
     try {
@@ -322,10 +329,15 @@ export default function InboxPage() {
   }, [selectedCommentId]);
 
   useEffect(() => {
-    if (channelFilter === 'facebook_comments') {
-      fetchCommentLogs();
+    fetchCommentLogs();
+  }, [fetchCommentLogs]);
+
+  useEffect(() => {
+    if (channelFilter === 'facebook_comments' && commentLogs.length > 0 && !selectedCommentId) {
+      setSelectedCommentId(commentLogs[0].commentId);
+      markCommentAsRead(commentLogs[0].commentId);
     }
-  }, [channelFilter, fetchCommentLogs]);
+  }, [channelFilter, commentLogs, selectedCommentId, markCommentAsRead]);
 
   const handleSendHumanCommentReply = async (commentId: string) => {
     if (!humanReplyText.trim()) return;
@@ -376,6 +388,11 @@ export default function InboxPage() {
     socketRef.current = socket;
 
     socket.on('new_message', (data) => {
+      // Play sweet notification chime for incoming customer messages
+      if (data.message?.direction === 'inbound' || (!data.message?.direction && !data.message?.isOutbound)) {
+        playNotificationSound();
+      }
+
       setConversations(prev => {
         const convIndex = prev.findIndex(c => c.id === data.conversationId);
         if (convIndex > -1) {
@@ -715,6 +732,16 @@ export default function InboxPage() {
   } : null;
 
   const sidebarConv = activeConv || activeCommentConv;
+
+  const activeContactComments = useMemo(() => {
+    if (!activeConv?.contact) return [];
+    const extId = activeConv.contact.externalContactId;
+    const name = activeConv.contact.name?.toLowerCase().trim();
+    return commentLogs.filter(c => 
+      (extId && c.userExternalId && c.userExternalId === extId) ||
+      (name && c.userName && c.userName.toLowerCase().trim() === name)
+    );
+  }, [activeConv, commentLogs]);
 
   // Actions
   const handleToggleStar = async () => {
@@ -1376,17 +1403,54 @@ export default function InboxPage() {
             );
           })}
 
+          {/* Dedicated First-Class FB Comments Filter Button */}
+          {(() => {
+            const showFBComments = hasCommentAutomation || activeChannels.some((c: any) => ['messenger', 'instagram'].includes(c.channelType));
+            if (!showFBComments) return null;
+            const isFBCommentSelected = channelFilter === 'facebook_comments';
+            const unreadCommentsCount = commentLogs.filter(c => !readCommentIds.includes(c.commentId) && !c.isRead).length;
+
+            return (
+              <button
+                key="channel_btn_fb_comments"
+                onClick={() => {
+                  setChannelFilter('facebook_comments');
+                  setShowMoreChannelsMenu(false);
+                  if (commentLogs.length > 0 && !selectedCommentId) {
+                    setSelectedCommentId(commentLogs[0].commentId);
+                  }
+                }}
+                className={`px-3 py-1.5 rounded-lg text-[11px] whitespace-nowrap transition-all cursor-pointer border flex items-center gap-1.5 shrink-0 ${
+                  isFBCommentSelected 
+                    ? 'bg-orange-600 text-white font-semibold shadow-2xs border-orange-500 ring-2 ring-orange-500/20' 
+                    : 'text-muted-foreground bg-muted/30 hover:bg-muted/70 hover:text-foreground border-border/40'
+                }`}
+                title={language === 'en' ? 'Facebook Post Comments & Auto-Replies' : 'ফেসবুক পোস্ট কমেন্ট ও অটো-রিপ্লাই'}
+              >
+                <FacebookCommentBadgeIcon className="w-3.5 h-3.5 shrink-0" />
+                <span>{language === 'en' ? 'FB Comments' : 'FB কমেন্ট'}</span>
+                {commentLogs.length > 0 && (
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                    isFBCommentSelected 
+                      ? 'bg-white/20 text-white' 
+                      : unreadCommentsCount > 0 
+                        ? 'bg-red-500 text-white animate-pulse' 
+                        : 'bg-muted-foreground/20 text-muted-foreground'
+                  }`}>
+                    {unreadCommentsCount > 0 ? unreadCommentsCount : commentLogs.length}
+                  </span>
+                )}
+              </button>
+            );
+          })()}
+
           {/* Overflow Channels Dropdown ("More / আরো") */}
           {(() => {
             const overflowChannels = activeChannels.slice(2);
-            const showFBComments = hasCommentAutomation || activeChannels.some((c: any) => ['messenger', 'instagram'].includes(c.channelType));
-            const hasOverflowItems = overflowChannels.length > 0 || showFBComments;
-            if (!hasOverflowItems) return null;
+            if (overflowChannels.length === 0) return null;
 
             const selectedOverflowChannel = overflowChannels.find(c => c.channelType === channelFilter);
-            const isFBCommentSelected = channelFilter === 'facebook_comments';
-            const isOverflowActive = !!selectedOverflowChannel || isFBCommentSelected;
-            const unreadCommentsCount = commentLogs.filter(c => !readCommentIds.includes(c.commentId) && !c.isRead).length;
+            const isOverflowActive = !!selectedOverflowChannel;
 
             return (
               <div className="relative">
@@ -1399,15 +1463,13 @@ export default function InboxPage() {
                   }`}
                 >
                   <span>
-                    {isFBCommentSelected 
-                      ? (language === 'en' ? 'FB Comments' : 'FB কমেন্ট')
-                      : selectedOverflowChannel 
-                        ? (selectedOverflowChannel.displayName || selectedOverflowChannel.channelType) 
-                        : (language === 'en' ? 'More' : 'আরো')}
+                    {selectedOverflowChannel 
+                      ? (selectedOverflowChannel.displayName || selectedOverflowChannel.channelType) 
+                      : (language === 'en' ? 'More' : 'আরো')}
                   </span>
                   {!isOverflowActive && overflowChannels.length > 0 && (
                     <span className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[10px] px-1.5 py-0.2 rounded-full font-bold">
-                      +{overflowChannels.length + (showFBComments ? 1 : 0)}
+                      +{overflowChannels.length}
                     </span>
                   )}
                   <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showMoreChannelsMenu ? 'rotate-180' : ''}`} />
@@ -1467,36 +1529,44 @@ export default function InboxPage() {
                         </button>
                       );
                     })}
-
-                    {showFBComments && (
-                      <button
-                        onClick={() => {
-                          setChannelFilter('facebook_comments');
-                          setShowMoreChannelsMenu(false);
-                        }}
-                        className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer transition-colors ${
-                          channelFilter === 'facebook_comments'
-                            ? 'bg-orange-500/15 text-orange-600 dark:text-orange-400 font-semibold'
-                            : 'text-foreground hover:bg-muted/70'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2 truncate">
-                          <FacebookCommentBadgeIcon className="w-4 h-4 shrink-0" />
-                          <span className="truncate">{language === 'en' ? 'FB Comments' : 'FB কমেন্ট'}</span>
-                        </div>
-                        {unreadCommentsCount > 0 && (
-                          <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full shadow-2xs">
-                            {unreadCommentsCount}
-                          </span>
-                        )}
-                      </button>
-                    )}
                   </div>
                 </>
               )}
             </div>
           );
         })()}
+
+          {/* Sound Notification Mute / Unmute Toggle */}
+          <button
+            type="button"
+            onClick={() => {
+              const next = toggleSound();
+              setSoundOn(next);
+              toast.success(
+                next 
+                  ? (language === 'en' ? '🔔 Notification sound enabled' : '🔔 নোটিফিকেশন সাউন্ড চালু করা হয়েছে') 
+                  : (language === 'en' ? '🔕 Notification sound muted' : '🔕 নোটিফিকেশন সাউন্ড বন্ধ করা হয়েছে')
+              );
+            }}
+            className={`px-2.5 py-1.5 rounded-lg text-[11px] whitespace-nowrap transition-all cursor-pointer border flex items-center gap-1.5 shrink-0 ${
+              soundOn
+                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
+                : 'bg-muted/40 text-muted-foreground border-border/50 hover:bg-muted/70 hover:text-foreground'
+            }`}
+            title={soundOn ? (language === 'en' ? 'Mute Notification Sound' : 'সাউন্ড বন্ধ করুন') : (language === 'en' ? 'Enable Notification Sound' : 'সাউন্ড চালু করুন')}
+          >
+            {soundOn ? (
+              <>
+                <Volume2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                <span className="hidden sm:inline font-medium">{language === 'en' ? 'Sound' : 'সাউন্ড'}</span>
+              </>
+            ) : (
+              <>
+                <VolumeX className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                <span className="hidden sm:inline font-medium">{language === 'en' ? 'Muted' : 'মিউট'}</span>
+              </>
+            )}
+          </button>
         </div>
       </div>
     </div>
@@ -1901,8 +1971,22 @@ export default function InboxPage() {
                     <p className="text-xs text-foreground font-medium leading-relaxed">"{selectedComment.replyText}"</p>
                   </div>
                 ) : (
-                  <div className="p-3.5 bg-amber-500/10 rounded-xl border border-amber-500/20 text-xs text-amber-400 font-medium">
-                    Status: {selectedComment.replyStatus} ({selectedComment.skipReason || 'No reply generated yet'})
+                  <div className="p-3.5 bg-amber-500/10 rounded-xl border border-amber-500/25 text-xs text-amber-300 font-medium space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold flex items-center gap-1.5">
+                        <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
+                        Status: <span className="uppercase text-[10px] tracking-wide px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 font-bold">{selectedComment.replyStatus}</span>
+                      </span>
+                    </div>
+                    {selectedComment.skipReason && (
+                      <p className="text-[11px] text-muted-foreground leading-relaxed">
+                        {selectedComment.skipReason.includes('permission') || selectedComment.skipReason.includes('pages_manage_engagement')
+                          ? (language === 'en'
+                              ? '⚠️ Meta App Review Note: Public comments require "pages_manage_engagement" approval in Meta App. You can still reply directly to this customer using "Private DM" below.'
+                              : '⚠️ মেটা পারমিশন সতর্কতা: কমেন্টে পাবলিক উত্তরের জন্য মেটা অ্যাপে "pages_manage_engagement" পারমিশন প্রয়োজন। নিচে "প্রাইভেট মেসেঞ্জার" (Private DM) সিলেক্ট করে সরাসরি কাস্টমারকে ইনবক্সে রিপ্লাই দিন।')
+                          : selectedComment.skipReason}
+                      </p>
+                    )}
                   </div>
                 )}
               </div>
@@ -2050,6 +2134,21 @@ export default function InboxPage() {
                         title={language === 'en' ? 'Sync Meta Profile (Name & Photo)' : 'মেটা প্রোফাইল সিঙ্ক করুন'}
                       >
                         <RefreshCw className={`w-3 h-3 ${isSyncingMetaProfile ? 'animate-spin text-primary' : ''}`} />
+                      </span>
+                    )}
+                    {activeContactComments.length > 0 && (
+                      <span
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setChannelFilter('facebook_comments');
+                          setSelectedCommentId(activeContactComments[0].commentId);
+                          markCommentAsRead(activeContactComments[0].commentId);
+                        }}
+                        className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-500/15 text-orange-500 hover:bg-orange-500/25 border border-orange-500/30 flex items-center gap-1 shrink-0 transition-colors cursor-pointer"
+                        title={language === 'en' ? `View ${activeContactComments.length} Facebook Post Comment(s)` : `${activeContactComments.length}টি ফেসবুক পোস্ট কমেন্ট দেখুন`}
+                      >
+                        <FacebookCommentBadgeIcon className="w-3 h-3 shrink-0" />
+                        <span>{activeContactComments.length} {language === 'en' ? 'FB Comment' : 'কমেন্ট'}</span>
                       </span>
                     )}
                   </h3>
@@ -2523,6 +2622,47 @@ export default function InboxPage() {
             </div>
           )}
 
+          {/* Active Contact Facebook Post Comments Banner */}
+          {activeContactComments.length > 0 && (
+            <div className="mx-3 md:mx-4 mt-2 mb-1 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-orange-500/15 via-orange-500/10 to-transparent border border-orange-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs text-orange-200 shadow-sm shrink-0 backdrop-blur-md">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="p-1.5 rounded-lg bg-orange-500/20 text-orange-400 shrink-0 border border-orange-500/30">
+                  <FacebookCommentBadgeIcon className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-orange-400 text-xs">
+                      {language === 'en' ? 'Customer Facebook Post Comment' : 'কাস্টমারের ফেসবুক পোস্ট কমেন্ট'}
+                    </span>
+                    <span className={`px-1.5 py-0.2 rounded text-[9.5px] font-bold ${
+                      activeContactComments[0].replyStatus === 'replied' 
+                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
+                        : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                    }`}>
+                      {activeContactComments[0].replyStatus === 'replied' 
+                        ? (language === 'en' ? '✓ Replied' : '✓ উত্তর দেওয়া হয়েছে') 
+                        : (language === 'en' ? 'Pending Reply' : 'উত্তর দেওয়া বাকি')}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-foreground font-medium leading-tight mt-0.5 truncate max-w-md">
+                    "{activeContactComments[0].commentText}"
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setChannelFilter('facebook_comments');
+                  setSelectedCommentId(activeContactComments[0].commentId);
+                  markCommentAsRead(activeContactComments[0].commentId);
+                }}
+                className="px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-lg text-[11px] flex items-center justify-center gap-1.5 transition shrink-0 cursor-pointer shadow-xs"
+              >
+                <span>{language === 'en' ? 'View & Reply' : 'কমেন্ট দেখুন ও উত্তর দিন'}</span>
+              </button>
+            </div>
+          )}
+
           {/* Messages Feed */}
           <div 
             ref={messagesContainerRef}
@@ -2674,9 +2814,27 @@ export default function InboxPage() {
                             className="max-h-56 max-w-full rounded-lg cursor-pointer hover:opacity-90 object-cover shadow-sm" 
                           />
                         ) : m.type === 'audio' ? (
-                          <audio controls src={resolveMediaUrl(mediaUrl)} className="max-w-[220px] md:max-w-[280px] h-10 mt-1 outline-none">
-                            Your browser does not support the audio element.
-                          </audio>
+                          <div className="space-y-1.5 mt-1">
+                            <audio controls src={resolveMediaUrl(mediaUrl)} className="max-w-[220px] md:max-w-[280px] h-10 outline-none">
+                              Your browser does not support the audio element.
+                            </audio>
+                            {parsedContent?.transcript && (
+                              <div className="p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/25 text-xs shadow-sm max-w-[280px]">
+                                <div className="flex items-center justify-between text-[11px] font-bold text-purple-400 mb-1">
+                                  <span className="flex items-center gap-1.5">
+                                    <Mic className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                                    {language === 'en' ? 'Voice Transcription' : 'ভয়েস ট্রান্সক্রিপ্ট'}
+                                  </span>
+                                  <span className="bg-purple-500/20 text-purple-300 px-1.5 py-0.5 rounded text-[9px] font-mono border border-purple-500/30 shrink-0">
+                                    {language === 'en' ? '3 AI Credits (Audio Reading)' : '৩ ক্রেডিট (অডিও রিডিং)'}
+                                  </span>
+                                </div>
+                                <p className="italic text-foreground/90 font-sans text-[11px] leading-relaxed">
+                                  &ldquo;{parsedContent.transcript}&rdquo;
+                                </p>
+                              </div>
+                            )}
+                          </div>
                         ) : m.type === 'video' ? (
                           <video controls src={resolveMediaUrl(mediaUrl)} className="max-h-48 max-w-full rounded-lg object-cover outline-none" />
                         ) : (
@@ -2692,7 +2850,7 @@ export default function InboxPage() {
                     <div className={`flex items-center justify-between gap-3 mt-1.5 pt-1.5 border-t ${isInbound ? 'border-border/50' : isAi ? 'border-purple-500/20' : 'border-white/20'}`}>
                       {isAi ? (
                         <span className="text-[10px] md:text-[9px] font-bold text-purple-400 flex items-center gap-1">
-                          <Sparkles className="w-3 h-3" /> Replied by {tenantBusinessName} AI ✨
+                          <Sparkles className="w-3 h-3" /> Replied by {tenantBusinessName} AI ✨ (1 AI Credit)
                         </span>
                       ) : <div />}
                       <span className={`flex items-center gap-0.5 text-[11px] md:text-[9px] text-right ${isInbound || isAi ? 'text-muted-foreground' : 'text-white/70'}`}>

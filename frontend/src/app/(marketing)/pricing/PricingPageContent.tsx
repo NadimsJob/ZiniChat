@@ -590,8 +590,22 @@ export default function PricingPageContent() {
                 {plans.map((plan: any) => {
                   const mBdt = Number(plan.priceMonthlyBdt) || 0;
                   const mUsd = Number(plan.priceMonthlyUsd) > 0 ? Number(plan.priceMonthlyUsd) : Math.round(mBdt / (rate || 121));
-                  const yBdt = Number(plan.priceYearlyBdt) > 0 ? Number(plan.priceYearlyBdt) : Math.round(mBdt * 12 * 0.8334);
-                  const yUsd = Number(plan.priceYearlyUsd) > 0 ? Number(plan.priceYearlyUsd) : Math.round(mUsd * 12 * 0.8334);
+
+                  const rawYBdt = Number(plan.priceYearlyBdt) || 0;
+                  const rawYUsd = Number(plan.priceYearlyUsd) || 0;
+                  const discountPct = Number(plan.yearlyDiscountPercent) || 0;
+
+                  const computeDiscountedYearly = (rawY: number, monthly: number) => {
+                    if (rawY <= 0) return Math.round(monthly * 12 * (1 - discountPct / 100));
+                    const fullYear = monthly * 12;
+                    const isUndiscounted = fullYear > 0 && Math.abs(rawY - fullYear) < 1;
+                    return isUndiscounted && discountPct > 0
+                      ? Math.round(fullYear * (1 - discountPct / 100))
+                      : rawY;
+                  };
+
+                  const yBdt = mBdt > 0 ? computeDiscountedYearly(rawYBdt, mBdt) : rawYBdt;
+                  const yUsd = mUsd > 0 ? computeDiscountedYearly(rawYUsd, mUsd) : rawYUsd || Math.round(yBdt / (rate || 121));
                   const wBdt = (plan.allowWeekly && Number(plan.priceWeeklyBdt) > 0) ? Number(plan.priceWeeklyBdt) : (plan.allowWeekly ? Math.round(mBdt / 4) : 0);
                   const wUsd = (plan.allowWeekly && Number(plan.priceWeeklyUsd) > 0) ? Number(plan.priceWeeklyUsd) : (plan.allowWeekly ? Math.round(mUsd / 4) : 0);
 

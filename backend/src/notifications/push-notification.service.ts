@@ -99,7 +99,9 @@ export class PushNotificationService implements OnModuleInit {
         body,
         icon: '/logo.png', // Fallback PWA icon
         badge: '/icon.png', // Small PWA badge icon
-        vibrate: [100, 50, 100],
+        vibrate: [200, 100, 200],
+        silent: false,
+        sound: '/sounds/notification.mp3',
         data: dataPayload,
       },
     });

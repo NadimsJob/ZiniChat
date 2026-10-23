@@ -50,3 +50,8 @@ All AI agents MUST adhere to these workspace-specific behavioral and technical g
 
 ## 8. Documentation Sync Requirement
 * **Help Center Synchronization**: Whenever a new feature is built or an existing feature is modified in the Tenant Panel, the corresponding manual inside `frontend/src/data/help-docs/` MUST be updated. All changes must be fully documented with screenshots embedded via markdown.
+
+## 9. CRITICAL: Strict No Feature Development Without Prior Explicit Approval
+* **No Unsolicited Feature Development**: NEVER develop, invent, or implement ANY new feature, button, toggle, or capability (even a single minor feature) without explicit, direct user instructions and approval.
+* **Confirm Before Building**: If you identify potential enhancements or if the user asks a question/opinion, ONLY analyze and explain. DO NOT proactively build or code new features unless the user specifically and explicitly commands you to develop it ("proceed", "build this", "implement this").
+

@@ -246,29 +246,8 @@ export class TenantsService {
     const basePlan = activeSub?.plan || tenant.subscriptions[0]?.plan || null;
     const { periodStart } = await this.billingService.getActivePeriod(id);
 
-    const [directMessages, broadcastMessages, aiUsed, productsCount, contactsCount] = await Promise.all([
-      this.prisma.message.count({
-        where: {
-          direction: 'outbound',
-          conversation: { tenantId: id },
-          createdAt: { gte: periodStart },
-          NOT: {
-            OR: [
-              { content: { path: ['isExternalSync'], equals: true } },
-              {
-                AND: [
-                  { senderUserId: null },
-                  { aiAssistantId: null },
-                  { senderType: 'agent' }
-                ]
-              }
-            ]
-          }
-        }
-      }),
-      this.prisma.broadcastRecipient.count({
-        where: { broadcast: { tenantId: id, createdAt: { gte: periodStart } }, status: { notIn: ['pending', 'failed'] } }
-      }),
+    const [messagesUsed, aiUsed, productsCount, contactsCount] = await Promise.all([
+      this.billingService.getMessageUsage(id, periodStart),
       this.prisma.aiUsageLog.count({
         where: { tenantId: id, createdAt: { gte: periodStart } }
       }),
@@ -276,7 +255,6 @@ export class TenantsService {
       this.prisma.contact.count({ where: { tenantId: id } })
     ]);
 
-    const messagesUsed = directMessages + broadcastMessages;
     const seatsUsed = tenant.users.length;
     const storageUsedMb = Math.round(Number(tenant.storageUsedBytes) / (1024 * 1024));
 

@@ -5,6 +5,7 @@ import Cookies from 'js-cookie';
 import { io, Socket } from 'socket.io-client';
 import { Bell, Check, X, ShieldAlert, Sparkles, Inbox as InboxIcon, Info, MessageSquare } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageProvider';
+import { playNotificationSound, initSoundUnlock } from '@/utils/sound';
 
 interface Notification {
   id: string;
@@ -58,6 +59,8 @@ export default function NotificationBell() {
       transports: ['polling', 'websocket']
     });
 
+    initSoundUnlock();
+
     socketRef.current = socket;
 
     socket.on('connect', () => {
@@ -68,11 +71,8 @@ export default function NotificationBell() {
       setNotifications(prev => [newNotif, ...prev.slice(0, 19)]);
       setUnreadCount(prev => prev + 1);
 
-      // Play audio notification
-      try {
-        const audio = new Audio('/notification.mp3');
-        audio.play().catch(() => {});
-      } catch (err) {}
+      // Play audio notification chime
+      playNotificationSound();
     });
 
     // Close dropdown on click outside

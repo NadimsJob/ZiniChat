@@ -167,18 +167,28 @@ export class InboxController {
   ) {
     const tenantId = req.user.tenantId;
 
-    // 1. Check message quota first
-    await this.quotaService.checkMessageQuota(tenantId);
-
-    // 2. Upload, compress images via progressive JPEG, and track quota in tenant storage
+    // 1. Upload, compress images via progressive JPEG, and track quota in tenant storage
     const uploadResult = await this.storageService.uploadChatMedia(file, tenantId);
 
-    // 3. Derive channel message type
+    // 2. Derive channel message type
     const type = body.type || (
       uploadResult.mimeType.startsWith('video') ? 'video' :
       uploadResult.mimeType.startsWith('image') ? 'image' :
       uploadResult.mimeType.startsWith('audio') ? 'audio' : 'document'
     );
+
+    // 3. Quota calculation based on media type & duration/size:
+    // Text: 1, Image: 1, Long Audio (>250KB): 2, Short Audio (<=250KB): 1, Other media: 1
+    const isAudio = type === 'audio' || uploadResult.mimeType.startsWith('audio');
+    const isLongAudio = isAudio && (uploadResult.sizeBytes > 250 * 1024);
+    const quotaCost = isLongAudio ? 2 : 1;
+
+    // 4. Check message quota with required units
+    if (quotaCost > 1) {
+      await this.quotaService.checkMessageQuota(tenantId, quotaCost);
+    } else {
+      await this.quotaService.checkMessageQuota(tenantId);
+    }
 
     const contentPayload = {
       body: body.content || '',
@@ -186,6 +196,7 @@ export class InboxController {
       fileName: uploadResult.fileName,
       mimeType: uploadResult.mimeType,
       sizeBytes: uploadResult.sizeBytes,
+      quotaCost,
     };
 
     const { message, conversation } = await this.inboxService.saveOutboundMessage(

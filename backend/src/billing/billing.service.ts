@@ -132,35 +132,7 @@ export class BillingService {
 
     const activePeriod = await this.getActivePeriod(tenantId);
     const [messagesUsed, aiUsed] = await Promise.all([
-      this.prisma.message.count({
-        where: {
-          direction: 'outbound',
-          conversation: { tenantId },
-          createdAt: { gte: activePeriod.periodStart },
-          NOT: {
-            OR: [
-              { content: { path: ['isExternalSync'], equals: true } },
-              { senderType: 'ai' },
-              { aiAssistantId: { not: null } },
-              {
-                AND: [
-                  { senderUserId: null },
-                  { aiAssistantId: null },
-                  { senderType: 'agent' }
-                ]
-              }
-            ]
-          }
-        }
-      }).then(async (directCount) => {
-        const broadcastCount = await this.prisma.broadcastRecipient.count({
-          where: {
-            broadcast: { tenantId, createdAt: { gte: activePeriod.periodStart } },
-            status: { notIn: ['pending', 'failed'] }
-          }
-        });
-        return directCount + broadcastCount;
-      }),
+      this.getMessageUsage(tenantId, activePeriod.periodStart),
       this.prisma.aiUsageLog.count({
         where: {
           tenantId,
@@ -457,6 +429,78 @@ export class BillingService {
     }
 
     return { success: true, message: 'Subscription activated manually' };
+  }
+
+  /**
+   * Returns total outbound messages + broadcast recipients in the current billing period.
+   * Dedicated strictly to Human Agent Outbound Messages and WhatsApp Broadcasts.
+   * Weighted Quota Math:
+   * - Text message: 1 credit
+   * - Photo / Image message: 1 credit
+   * - Short Audio (<= 250KB): 1 credit
+   * - Long Audio (> 250KB / > 30s): 2 credits
+   * - Other media / doc / video: 1 credit
+   * - Broadcast: 1 credit per recipient
+   */
+  async getMessageUsage(tenantId: string, periodStart: Date): Promise<number> {
+    const outboundWhere: any = {
+      direction: 'outbound',
+      conversation: { tenantId },
+      createdAt: { gte: periodStart },
+      NOT: {
+        OR: [
+          { content: { path: ['isExternalSync'], equals: true } },
+          { senderType: 'ai' },
+          { aiAssistantId: { not: null } },
+          {
+            AND: [
+              { senderUserId: null },
+              { aiAssistantId: null },
+              { senderType: 'agent' }
+            ]
+          }
+        ]
+      }
+    };
+
+    const [directResult, broadcastCount] = await Promise.all([
+      typeof this.prisma.message.findMany === 'function'
+        ? this.prisma.message.findMany({
+            where: outboundWhere,
+            select: { type: true, content: true }
+          })
+        : this.prisma.message.count({ where: outboundWhere }),
+      this.prisma.broadcastRecipient.count({
+        where: {
+          broadcast: { 
+            tenantId,
+            createdAt: { gte: periodStart }
+          },
+          status: { notIn: ['pending', 'failed'] }
+        }
+      })
+    ]);
+
+    let directUnits = 0;
+    if (Array.isArray(directResult)) {
+      for (const msg of directResult) {
+        const cnt = typeof msg.content === 'object' && msg.content !== null ? (msg.content as any) : null;
+        if (cnt && typeof cnt.quotaCost === 'number' && cnt.quotaCost > 0) {
+          directUnits += cnt.quotaCost;
+        } else if (msg.type === 'audio') {
+          const sizeBytes = Number(cnt?.sizeBytes || 0);
+          const duration = Number(cnt?.duration || 0);
+          const isLongAudio = sizeBytes > 250 * 1024 || duration > 30;
+          directUnits += isLongAudio ? 2 : 1;
+        } else {
+          directUnits += 1;
+        }
+      }
+    } else {
+      directUnits = Number(directResult) || 0;
+    }
+
+    return directUnits + broadcastCount;
   }
 }
 

@@ -61,7 +61,7 @@ export default function ConnectFacebookPageButton({ onConnected }: { onConnected
         }
       },
       {
-        scope: 'public_profile,pages_messaging,pages_show_list,pages_manage_metadata,pages_read_engagement,pages_manage_engagement,business_management', // Required scopes for Messenger, Business Suite Pages & Comment Automation
+        scope: 'public_profile,pages_messaging,pages_show_list,pages_manage_metadata,pages_read_engagement,pages_manage_engagement,pages_read_user_content,business_management', // Required scopes for Messenger, Business Suite Pages & Comment Automation
         auth_type: 'rerequest',
         return_scopes: true,
       }

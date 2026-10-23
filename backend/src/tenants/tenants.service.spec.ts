@@ -64,6 +64,7 @@ describe('TenantsService - Plan Customization', () => {
 
     billingService = {
       getActivePeriod: jest.fn().mockResolvedValue({ periodStart: PERIOD_START }),
+      getMessageUsage: jest.fn().mockResolvedValue(20),
       getTenantQuotas: jest.fn().mockResolvedValue({
         whatsappLimit: 1,
         messengerLimit: 1,

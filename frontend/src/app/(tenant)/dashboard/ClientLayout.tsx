@@ -61,6 +61,7 @@ import {
 import NotificationBell from '@/components/NotificationBell';
 import SupportWidget from '@/components/SupportWidget';
 import { toast, Toaster } from 'react-hot-toast';
+import { playNotificationSound, initSoundUnlock } from '@/utils/sound';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -173,8 +174,9 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
  }, [pathname]);
 
   useEffect(() => {
-  setMounted(true);
-  if (typeof window !== 'undefined') {
+    setMounted(true);
+    initSoundUnlock();
+    if (typeof window !== 'undefined') {
     if (Cookies.get('impersonation_active') === 'true') {
       setIsImpersonating(true);
       setImpersonatedTenantName(Cookies.get('impersonation_tenant_name') || '');
@@ -330,6 +332,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
       socket.on('new_message', (data: any) => {
         if (!window.location.pathname.startsWith('/dashboard/inbox')) {
           setInboxUnreadCount(prev => prev + 1);
+          playNotificationSound();
 
           const senderName =
             data.contact?.name ||
@@ -403,6 +406,7 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
         transports: ['polling', 'websocket']
       });
       notifSocket.on('notification_received', (data: any) => {
+        playNotificationSound();
         if (data.type === 'ticket') {
           if (!window.location.pathname.startsWith('/dashboard/support')) {
             setTicketUnreadCount(prev => prev + 1);

@@ -23,7 +23,10 @@ self.addEventListener('push', function(event) {
     body: body || '',
     icon: icon || '/logo.png',
     badge: badge || '/icon.png',
-    vibrate: vibrate || [100, 50, 100],
+    vibrate: vibrate || [200, 100, 200],
+    silent: false,
+    renotify: true,
+    tag: (extraData && extraData.conversationId) || ('zinichat-alert-' + Date.now()),
     data: extraData || {},
   };
 

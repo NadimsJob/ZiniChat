@@ -270,10 +270,16 @@ export class OrchestratorService {
 
       const isVisionSupported = this.aiService.isVisionSupported(targetConfig?.provider, targetConfig?.modelName);
       const isImageMessage = message.type === 'image';
+      const isAudioMessage = (message.type as string) === 'audio';
       
       // Vision only runs if vision model supported AND image_reading tool is active
       const canRunVision = isImageMessage && isVisionSupported && isImageReadingActive;
-      const creditsNeeded = canRunVision ? 5 : 1;
+      
+      // Credit deduction calculation:
+      // - Customer sent Image with Vision analysis: 5 credits (4 vision reading + 1 reply)
+      // - Customer sent Audio note with Whisper STT: 4 credits (3 audio reading + 1 reply)
+      // - Standard text customer message: 1 credit
+      const creditsNeeded = canRunVision ? 5 : isAudioMessage ? 4 : 1;
 
       // 3. Check AI Quota
       const quotas = await this.billingService.getTenantQuotas(tenantId);
@@ -329,7 +335,6 @@ export class OrchestratorService {
       const actualImagePaths = canRunVision && imagePathsToPass.length > 0 ? imagePathsToPass : undefined;
 
       // --- Audio message handling ---
-      const isAudioMessage = (message.type as string) === 'audio';
       if (isAudioMessage) {
         const transcript = (message.content as any)?.transcript;
         if (!transcript || transcript.includes('[Audio transcription failed')) {

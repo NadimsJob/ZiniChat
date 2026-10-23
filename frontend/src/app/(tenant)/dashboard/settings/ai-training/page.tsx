@@ -9,7 +9,7 @@ import {
   Bot, Key, Save, AlertCircle, RefreshCw, MessageSquare, Plus, Edit2, 
   Trash2, X, Check, Wand2, Eye, Lock, Sliders, Sparkles, ShieldCheck, 
   FileText, AlertTriangle, Send, PlayCircle, HelpCircle, User, CornerDownLeft, Tag, Globe,
-  CreditCard, Truck, PlusCircle, CheckCircle2, PauseCircle, Clock
+  CreditCard, Truck, PlusCircle, CheckCircle2, PauseCircle, Clock, Mic
 } from 'lucide-react';
 import InstructionBanner from '@/components/InstructionBanner';
 import LabelForm from '@/components/labels/LabelForm';
@@ -807,6 +807,15 @@ export default function AiTrainingPage() {
       allowed: canImageReading
     },
     {
+      type: 'voice_reading',
+      titleEn: 'Voice Note & Audio Reading (Whisper STT)',
+      titleBn: 'ভয়েস নোট ও অডিও রিডিং (হুইস্পার)',
+      descEn: 'AI will listen to and understand voice notes customers send across WhatsApp, Messenger & Instagram. (Cost: 3 AI Credits for audio reading + 1 AI Credit for reply)',
+      descBn: 'কাস্টমারদের পাঠানো ভয়েস নোট শুনে এআই স্বয়ংক্রিয়ভাবে বুঝে উত্তর দেবে। (চার্জ: অডিও রিডিংয়ের জন্য ৩টি এআই ক্রেডিট + রিপ্লাইয়ের জন্য ১টি ক্রেডিট)',
+      allowed: true,
+      isBuiltIn: true
+    },
+    {
       type: 'support_detection',
       titleEn: 'Support Detection',
       titleBn: 'সাপোর্ট ডিটেকশন',
@@ -1294,6 +1303,7 @@ export default function AiTrainingPage() {
                         <div className="flex items-center gap-1.5 font-bold text-[12px] text-foreground">
                           {tool.type === 'order_placement' && <Sparkles className="w-3.5 h-3.5 text-emerald-600" />}
                           {tool.type === 'image_reading' && <Eye className="w-3.5 h-3.5 text-blue-600" />}
+                          {tool.type === 'voice_reading' && <Mic className="w-3.5 h-3.5 text-rose-500" />}
                           {tool.type === 'support_detection' && <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />}
                           {tool.type === 'product_matching' && <Wand2 className="w-3.5 h-3.5 text-purple-600" />}
                           {language === 'en' ? tool.titleEn : tool.titleBn}
@@ -1303,18 +1313,24 @@ export default function AiTrainingPage() {
                         </p>
                       </div>
 
-                      <label className="relative inline-flex items-center cursor-pointer shrink-0">
-                        <input 
-                          type="checkbox" 
-                          disabled={!isAllowed}
-                          checked={isAllowed && toolState.isEnabled}
-                          onChange={(e) => handleToggleTool(tool.type, e.target.checked, tool.type === 'order_placement' ? orderConfig : undefined)}
-                          className="sr-only peer" 
-                        />
-                        <div className={`w-8 h-4.5 bg-slate-300 dark:bg-zinc-700 peer-focus:outline-none rounded-full peer ${
-                          isAllowed ? 'peer-checked:after:translate-x-full peer-checked:bg-primary cursor-pointer' : 'cursor-not-allowed opacity-50'
-                        } after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all`}></div>
-                      </label>
+                      {tool.isBuiltIn ? (
+                        <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 border border-emerald-500/25 px-2 py-0.5 rounded-full shrink-0">
+                          {language === 'en' ? '✓ Always Active' : '✓ সর্বদা সক্রিয়'}
+                        </span>
+                      ) : (
+                        <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                          <input 
+                            type="checkbox" 
+                            disabled={!isAllowed}
+                            checked={isAllowed && toolState.isEnabled}
+                            onChange={(e) => handleToggleTool(tool.type, e.target.checked, tool.type === 'order_placement' ? orderConfig : undefined)}
+                            className="sr-only peer" 
+                          />
+                          <div className={`w-8 h-4.5 bg-slate-300 dark:bg-zinc-700 peer-focus:outline-none rounded-full peer ${
+                            isAllowed ? 'peer-checked:after:translate-x-full peer-checked:bg-primary cursor-pointer' : 'cursor-not-allowed opacity-50'
+                          } after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all`}></div>
+                        </label>
+                      )}
                     </div>
 
                     {/* Order Placement Payment Policy & Delivery Charges Configuration Panel */}

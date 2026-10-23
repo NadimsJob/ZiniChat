@@ -558,7 +558,14 @@ CRITICAL: Output ONLY a valid JSON object with NO MARKDOWN OR BACKTICKS:
     try {
       // 1. Check for Groq API Key first (Free Tier: 7,000 requests/day, 2,000 mins/month)
       const groqConfig = await this.prisma.aiConfig.findFirst({
-        where: { provider: 'groq', isActive: true }
+        where: {
+          OR: [
+            { provider: 'groq' },
+            { modelName: { contains: 'whisper', mode: 'insensitive' } }
+          ],
+          apiKey: { not: '' }
+        },
+        orderBy: { updatedAt: 'desc' }
       });
       const groqApiKey = groqConfig?.apiKey || process.env.GROQ_API_KEY;
 
@@ -581,7 +588,11 @@ CRITICAL: Output ONLY a valid JSON object with NO MARKDOWN OR BACKTICKS:
 
       // 2. Fallback to OpenAI Whisper
       let config = await this.prisma.aiConfig.findFirst({
-        where: { provider: 'openai', isActive: true }
+        where: {
+          provider: 'openai',
+          apiKey: { not: '' }
+        },
+        orderBy: { updatedAt: 'desc' }
       });
       const apiKey = config?.apiKey || process.env.OPENAI_API_KEY;
       

@@ -117,6 +117,7 @@ describe('InboxController', () => {
         fileName: 'chat_123.jpg',
         mimeType: 'image/jpeg',
         sizeBytes: 85000,
+        quotaCost: 1,
       },
       'image',
       'user1'

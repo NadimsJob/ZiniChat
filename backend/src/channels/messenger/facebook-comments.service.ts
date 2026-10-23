@@ -294,7 +294,16 @@ export class FacebookCommentsService {
 
       // Private Reply (Only allowed within 7 days of creation)
       const commentAgeDays = (Date.now() - createdTime.getTime()) / (1000 * 60 * 60 * 24);
-      if ((mode === 'private' || mode === 'both') && commentAgeDays <= 7) {
+      const isPublicPermissionFailure = !publicSuccess && (mode === 'public') && (
+        errorMessage.includes('permission') ||
+        errorMessage.includes('pages_manage_engagement') ||
+        errorMessage.includes('pages_read_user_content') ||
+        errorMessage.includes('sufficient permissions')
+      );
+
+      const shouldAttemptPrivate = ((mode === 'private' || mode === 'both') || isPublicPermissionFailure) && commentAgeDays <= 7;
+
+      if (shouldAttemptPrivate) {
         try {
           const res = await fetch(`https://graph.facebook.com/v21.0/${pageId}/messages`, {
             method: 'POST',
@@ -309,7 +318,7 @@ export class FacebookCommentsService {
           const data = await res.json();
           if (res.ok && data.message_id) {
             privateSuccess = true;
-            this.logger.log(`Posted private reply to comment ${commentId}: ${data.message_id}`);
+            this.logger.log(`Posted private reply to comment ${commentId}: ${data.message_id}${isPublicPermissionFailure ? ' (Fallback after public permission blocked)' : ''}`);
           } else {
             if (!errorMessage) errorMessage = data.error?.message || JSON.stringify(data);
             this.logger.error(`Failed posting private reply to comment ${commentId}: ${data.error?.message}`);
@@ -786,7 +795,16 @@ ${qnaContext ? `# STORE KNOWLEDGE BASE:\n${qnaContext}\n` : ''}`;
       }
 
       // 2. Private Message via Graph API (Syncs into Messenger Inbox Thread)
-      if (replyType === 'private' || replyType === 'both') {
+      const isPublicPermissionFailure = !publicSuccess && replyType === 'public' && (
+        errorMessage.includes('permission') ||
+        errorMessage.includes('pages_manage_engagement') ||
+        errorMessage.includes('pages_read_user_content') ||
+        errorMessage.includes('sufficient permissions')
+      );
+
+      const shouldSendPrivate = replyType === 'private' || replyType === 'both' || isPublicPermissionFailure;
+
+      if (shouldSendPrivate) {
         try {
           const res = await fetch(`https://graph.facebook.com/v21.0/${commentLog.pageId}/messages`, {
             method: 'POST',
@@ -801,7 +819,7 @@ ${qnaContext ? `# STORE KNOWLEDGE BASE:\n${qnaContext}\n` : ''}`;
           const data = await res.json();
           if (res.ok && data.message_id) {
             privateSuccess = true;
-            this.logger.log(`Human posted private DM to comment ${commentId}: ${data.message_id}`);
+            this.logger.log(`Human posted private DM to comment ${commentId}: ${data.message_id}${isPublicPermissionFailure ? ' (Fallback after public permission blocked)' : ''}`);
           } else {
             if (!errorMessage) errorMessage = data.error?.message || JSON.stringify(data);
             this.logger.error(`Failed posting private human reply to comment ${commentId}: ${data.error?.message}`);
@@ -818,7 +836,7 @@ ${qnaContext ? `# STORE KNOWLEDGE BASE:\n${qnaContext}\n` : ''}`;
     }
 
     // Sync Private Message into standard Messenger Inbox conversation thread (if private DM sent)
-    if ((replyType === 'private' || replyType === 'both') && commentLog.userExternalId) {
+    if (privateSuccess && commentLog.userExternalId) {
       try {
         let contact = await this.prisma.contact.findFirst({
           where: { tenantId, externalContactId: commentLog.userExternalId }

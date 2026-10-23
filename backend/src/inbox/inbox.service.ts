@@ -1507,7 +1507,12 @@ export class InboxService implements OnModuleInit {
             if (fs.existsSync(filePath)) {
               this.logger.log(`Transcribing audio from disk for tenant ${data.tenantId}: ${filePath}`);
               const transcript = await this.aiService.transcribeAudio(filePath, data.tenantId);
-              contentToSave = { ...contentToSave, transcript };
+              const isUsable = transcript && !transcript.includes('[Audio transcription failed');
+              contentToSave = { 
+                ...contentToSave, 
+                transcript,
+                audioReadingCredits: isUsable ? 3 : 0
+              };
               // Audio file kept on disk: counts toward tenant storage, agent can play it back
             } else {
               this.logger.warn(`Audio file not found on disk, skipping transcription: ${filePath}`);
@@ -1516,7 +1521,12 @@ export class InboxService implements OnModuleInit {
             // Messenger / Instagram: download to OS tmpdir, transcribe, auto-delete temp file
             this.logger.log(`Transcribing audio from CDN URL for tenant ${data.tenantId}`);
             const transcript = await this.aiService.transcribeFromUrl(remoteUrl, data.tenantId);
-            contentToSave = { ...contentToSave, transcript };
+            const isUsable = transcript && !transcript.includes('[Audio transcription failed');
+            contentToSave = { 
+              ...contentToSave, 
+              transcript,
+              audioReadingCredits: isUsable ? 3 : 0
+            };
           }
         }
 
@@ -1697,7 +1707,8 @@ export class InboxService implements OnModuleInit {
       throw new Error('Cannot send messages to a blocked contact');
     }
 
-    const senderType = aiAssistantId ? 'ai' : (senderUserId ? 'agent' : 'agent');
+    const isAi = Boolean(aiAssistantId);
+    const senderType = isAi ? 'ai' : 'agent';
 
     const message = await this.prisma.message.create({
       data: {
@@ -1707,8 +1718,8 @@ export class InboxService implements OnModuleInit {
         content: content,
         status: 'pending',
         senderType,
-        senderUserId: senderUserId || null,
-        aiAssistantId: aiAssistantId || (conversation as any).aiAssistantId || null,
+        senderUserId: isAi ? null : (senderUserId || null),
+        aiAssistantId: isAi ? aiAssistantId : null,
       } as any
     });
 

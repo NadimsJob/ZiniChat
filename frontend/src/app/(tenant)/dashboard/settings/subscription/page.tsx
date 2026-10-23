@@ -445,11 +445,13 @@ export default function SubscriptionSettingsPage() {
                 {language === 'en' ? 'Monthly' : 'মাসিক'}
               </button>
               <button onClick={() => setBillingCycle('yearly')}
-                className={`px-3 py-1 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 ${billingCycle === 'yearly' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
-                {language === 'en' ? 'Yearly' : 'বার্ষিক'}
+                className={`px-3 py-1 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1.5 ${billingCycle === 'yearly' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
+                <span>{language === 'en' ? 'Yearly' : 'বার্ষিক'}</span>
                 {maxDiscountPercent > 0 && (
-                  <span className="text-[9px] bg-green-500/20 text-green-500 px-1.5 py-0.5 rounded-full font-bold">
-                    Save {formatNumber(maxDiscountPercent)}%
+                  <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-full ${
+                    billingCycle === 'yearly' ? 'bg-white/20 text-white' : 'bg-emerald-500/20 text-emerald-500'
+                  }`}>
+                    -{Math.round(maxDiscountPercent)}%
                   </span>
                 )}
               </button>
@@ -485,32 +487,60 @@ export default function SubscriptionSettingsPage() {
             {visiblePlans.map(plan => {
               const isWeekly = billingCycle === 'weekly';
               const isYearly = billingCycle === 'yearly';
-              const wBdt = Number(plan.priceWeeklyBdt) || 0;
-              const wUsd = Math.round((wBdt / (rate || 121)) * 100) / 100;
+
               const mBdt = Number(plan.priceMonthlyBdt) || 0;
-              const mUsd = Number(plan.priceMonthlyUsd) > 0 ? Number(plan.priceMonthlyUsd) : Math.round((mBdt / (rate || 121)) * 100) / 100;
-              const yBdt = Number(plan.priceYearlyBdt) > 0 ? Number(plan.priceYearlyBdt) : Math.round(mBdt * 12 * 0.8334);
-              const yUsd = Number(plan.priceYearlyUsd) > 0 ? Number(plan.priceYearlyUsd) : Math.round(mUsd * 12 * 0.8334);
-              const baseMonthly = displayCurrency === 'USD' ? mUsd : mBdt;
-              const baseYearly = displayCurrency === 'USD' ? yUsd : yBdt;
-              const baseWeekly = displayCurrency === 'USD' ? wUsd : wBdt;
-              const promoMonthlyBdt = Number(plan.promoPriceMonthlyBdt) || 0;
-              const promoMonthlyUsd = Math.round((promoMonthlyBdt / (rate || 121)) * 100) / 100;
-              const promoPrice = displayCurrency === 'USD' ? promoMonthlyUsd : promoMonthlyBdt;
+              const mUsd = Number(plan.priceMonthlyUsd) > 0 ? Number(plan.priceMonthlyUsd) : Math.round(mBdt / (rate || 121));
+
+              const rawYBdt = Number(plan.priceYearlyBdt) || 0;
+              const rawYUsd = Number(plan.priceYearlyUsd) || 0;
+              const discountPct = Number(plan.yearlyDiscountPercent) || 0;
+
+              // If DB yearly price == monthly*12 (no discount applied), apply discountPct
+              // Otherwise use the stored yearly price as-is (already discounted)
+              const computeDiscountedYearly = (rawY: number, monthly: number) => {
+                if (rawY <= 0) return Math.round(monthly * 12 * (1 - discountPct / 100));
+                const fullYear = monthly * 12;
+                const isUndiscounted = fullYear > 0 && Math.abs(rawY - fullYear) < 1;
+                return isUndiscounted && discountPct > 0
+                  ? Math.round(fullYear * (1 - discountPct / 100))
+                  : rawY;
+              };
+
+              const yBdt = mBdt > 0 ? computeDiscountedYearly(rawYBdt, mBdt) : rawYBdt;
+              const yUsd = mUsd > 0 ? computeDiscountedYearly(rawYUsd, mUsd) : rawYUsd || Math.round(yBdt / (rate || 121));
+
+              const wBdt = (plan.allowWeekly && Number(plan.priceWeeklyBdt) > 0) ? Number(plan.priceWeeklyBdt) : (plan.allowWeekly ? Math.round(mBdt / 4) : 0);
+              const wUsd = (plan.allowWeekly && Number(plan.priceWeeklyUsd) > 0) ? Number(plan.priceWeeklyUsd) : (plan.allowWeekly ? Math.round(mUsd / 4) : 0);
+
+              const promoBdt = Number(plan.promoPriceMonthlyBdt) || 0;
+              const promoUsd = Number(plan.promoPriceMonthlyUsd) > 0 ? Number(plan.promoPriceMonthlyUsd) : Math.round(promoBdt / (rate || 121));
+
+              const isBdt = displayCurrency === 'BDT';
+              const currSymbol = isBdt ? '৳' : '$';
+
+              const baseWeekly = isBdt ? wBdt : wUsd;
+              const baseMonthly = isBdt ? mBdt : mUsd;
+              const baseYearly = isBdt ? yBdt : yUsd;
+              const promoPrice = isBdt ? promoBdt : promoUsd;
+
               const hasPromo = billingCycle === 'monthly' && Number(plan.promoMonths) > 0 && promoPrice > 0;
 
-              const displayPrice = isWeekly
-                ? baseWeekly
-                : isYearly && baseYearly > 0
-                ? (displayCurrency === 'USD' ? Math.round((baseYearly / 12) * 100) / 100 : Math.round(baseYearly / 12))
-                : hasPromo
-                ? promoPrice
-                : baseMonthly;
+              let displayPrice = baseMonthly;
+              if (isWeekly) {
+                displayPrice = baseWeekly;
+              } else if (isYearly) {
+                displayPrice = baseYearly > 0 ? (!isBdt ? Math.round((baseYearly / 12) * 100) / 100 : Math.round(baseYearly / 12)) : baseMonthly;
+              } else {
+                displayPrice = hasPromo ? promoPrice : baseMonthly;
+              }
 
-              let planDiscount = Number(plan.yearlyDiscountPercent) || 0;
+              let planDiscount = discountPct;
               if (!planDiscount && baseMonthly > 0 && baseYearly > 0) {
                 planDiscount = Math.round(((baseMonthly * 12 - baseYearly) / (baseMonthly * 12)) * 100 * 100) / 100;
               }
+              const yearlySavingsAmount = baseMonthly > 0 && planDiscount > 0
+                ? Math.round(baseMonthly * 12 * planDiscount / 100)
+                : 0;
 
               const isActive = activePlanId === plan.id;
               const features = parseFeaturesArray(plan.features);
@@ -533,19 +563,30 @@ export default function SubscriptionSettingsPage() {
                     {language === 'en' ? plan.name : (plan.nameBn || plan.name)}
                   </h3>
 
-                  <div className="mt-2 flex items-end gap-1">
-                    <span className="text-lg font-bold text-primary mt-1">{displayCurrency === 'BDT' ? '৳' : '$'}</span>
+                  <div className="mt-2 flex items-baseline gap-1 flex-wrap">
+                    <span className="text-lg font-bold text-primary mt-1">{currSymbol}</span>
                     <span className="text-4xl font-black text-primary leading-none">{formatNumber(displayPrice)}</span>
-                    {plan.name === 'Free' ? (
+                    {plan.name === 'Free' || Number(plan.priceMonthlyBdt) === 0 ? (
                       <span className="text-[12px] text-muted-foreground mb-1">
                         / {language === 'en' ? '7 Days' : '৭ দিন'}
                       </span>
                     ) : (
-                      <span className="text-[12px] text-muted-foreground mb-1">/{isWeekly ? (language === 'en' ? 'wk' : 'সপ্তাহ') : (language === 'en' ? 'mo' : 'মাস')}</span>
+                      <span className="text-[12px] text-muted-foreground mb-1">
+                        {isWeekly
+                          ? (language === 'en' ? '/wk' : '/সপ্তাহ')
+                          : isYearly
+                          ? (language === 'en' ? '/mo (billed yearly)' : '/মাস (বার্ষিক বিলিং)')
+                          : (language === 'en' ? '/mo' : '/মাস')}
+                      </span>
                     )}
                     {hasPromo && (
-                      <span className="text-[12px] text-muted-foreground line-through mb-1 ml-1">
-                        {displayCurrency === 'BDT' ? '৳' : '$'}{formatNumber(baseMonthly)}
+                      <span className="text-[12px] text-muted-foreground line-through mb-1 ml-1 font-medium">
+                        {currSymbol}{formatNumber(baseMonthly)}
+                      </span>
+                    )}
+                    {isYearly && planDiscount > 0 && baseMonthly > displayPrice && (
+                      <span className="text-[12px] text-muted-foreground line-through mb-1 ml-1.5 font-medium">
+                        {currSymbol}{formatNumber(baseMonthly)}
                       </span>
                     )}
                   </div>
@@ -554,8 +595,8 @@ export default function SubscriptionSettingsPage() {
                     <div className="mt-2 p-2 bg-primary/10 border border-primary/20 rounded-xl">
                       <div className="text-[11px] font-bold text-primary">
                         {language === 'en'
-                          ? `For the first ${plan.promoMonths} months, then ${displayCurrency === 'BDT' ? '৳' : '$'}${formatNumber(baseMonthly)}/mo`
-                          : `প্রথম ${plan.promoMonths} মাসের জন্য, তারপর ${displayCurrency === 'BDT' ? '৳' : '$'}${formatNumber(baseMonthly)}/মাস`}
+                          ? `For the first ${plan.promoMonths} months, then ${currSymbol}${formatNumber(baseMonthly)}/mo`
+                          : `প্রথম ${plan.promoMonths} মাসের জন্য, তারপর ${currSymbol}${formatNumber(baseMonthly)}/মাস`}
                       </div>
                     </div>
                   )}
@@ -564,8 +605,8 @@ export default function SubscriptionSettingsPage() {
                     <div className="mt-2 p-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
                       <div className="text-[11px] font-bold text-emerald-400">
                         {language === 'en'
-                          ? `Billed ${displayCurrency === 'BDT' ? '৳' : '$'}${formatNumber(displayPrice)}/week`
-                          : `প্রতি সপ্তাহে ${displayCurrency === 'BDT' ? '৳' : '$'}${formatNumber(displayPrice)} বিল`}
+                          ? `Billed ${currSymbol}${formatNumber(displayPrice)}/week`
+                          : `প্রতি সপ্তাহে ${currSymbol}${formatNumber(displayPrice)} বিল`}
                       </div>
                     </div>
                   )}
@@ -579,15 +620,21 @@ export default function SubscriptionSettingsPage() {
                   )}
 
                   {isYearly && baseYearly > 0 && (
-                    <div className="mt-2 p-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+                    <div className="mt-2 p-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
                       <div className="text-[11px] font-bold text-emerald-400">
                         {language === 'en'
-                          ? `Billed ${displayCurrency === 'BDT' ? '৳' : '$'}${formatNumber(baseYearly)}/year`
-                          : `বছরে ${displayCurrency === 'BDT' ? '৳' : '$'}${formatNumber(baseYearly)} বিল`}
+                          ? `Billed ${currSymbol}${formatNumber(baseYearly)} yearly`
+                          : `বছরে ${currSymbol}${formatNumber(baseYearly)} বিল করা হবে`}
                       </div>
                       {planDiscount > 0 && (
-                        <div className="text-[10px] text-emerald-500 font-bold mt-0.5">
-                          {language === 'en' ? `Save ${planDiscount}%` : `${formatNumber(planDiscount)}% সাশ্রয়`}
+                        <div className="text-[10px] font-extrabold text-emerald-500 uppercase tracking-wider mt-0.5">
+                          {yearlySavingsAmount > 0
+                            ? (language === 'en'
+                              ? `Save ${currSymbol}${formatNumber(yearlySavingsAmount)}/yr (${Math.round(planDiscount)}% off)`
+                              : `${currSymbol}${formatNumber(yearlySavingsAmount)} সাশ্রয় (${formatNumber(Math.round(planDiscount))}% ছাড়)`)
+                            : (language === 'en'
+                              ? `Save ${Math.round(planDiscount)}%`
+                              : `${formatNumber(Math.round(planDiscount))}% সাশ্রয়`)}
                         </div>
                       )}
                     </div>

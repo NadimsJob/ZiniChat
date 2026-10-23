@@ -142,6 +142,7 @@ export class MessengerAuthService {
     
     try {
       let granularTargetIds: string[] = [];
+      let grantedScopes: string[] = [];
       // Diagnostic: Check token scopes using Meta debug_token API
       try {
         const debugRes = await fetch(
@@ -149,6 +150,9 @@ export class MessengerAuthService {
         );
         const debugData = await debugRes.json();
         if (debugData.data) {
+          if (Array.isArray(debugData.data.scopes)) {
+            grantedScopes = debugData.data.scopes;
+          }
           this.logger.log(`Meta debug_token for tenant ${tenantId}: is_valid=${debugData.data.is_valid}, scopes=${JSON.stringify(debugData.data.scopes)}, granular_scopes=${JSON.stringify(debugData.data.granular_scopes)}`);
           if (Array.isArray(debugData.data.granular_scopes)) {
             for (const gs of debugData.data.granular_scopes) {
@@ -314,6 +318,9 @@ export class MessengerAuthService {
       const pageId = page.id;
       const pageToken = page.access_token;
       const pageName = page.name || 'Facebook Page';
+      const hasCommentPerms = grantedScopes.length > 0
+        ? (grantedScopes.includes('pages_manage_engagement') || grantedScopes.includes('pages_read_user_content'))
+        : true;
 
       const existing = await this.prisma.channelConnection.findFirst({
         where: { tenantId, channelType: 'messenger', externalAccountId: pageId }
@@ -332,7 +339,7 @@ export class MessengerAuthService {
             status: 'active',
             connectionMethod: 'facebook_login',
             isCommentAutoReplyEnabled: true,
-            hasCommentPermissions: true,
+            hasCommentPermissions: hasCommentPerms,
           }
         });
         isReconnected = true;
@@ -348,7 +355,7 @@ export class MessengerAuthService {
             connectionMethod: 'facebook_login',
             status: 'active',
             isCommentAutoReplyEnabled: true,
-            hasCommentPermissions: true,
+            hasCommentPermissions: hasCommentPerms,
           }
         });
       }
