@@ -519,10 +519,10 @@ export default function NewCampaignWizardPage() {
             onClick={() => setCurrentStep(1)}
             className={`py-2 px-1 rounded-xl transition-all ${
               currentStep === 1
-                ? 'bg-[#1F824A] text-white shadow-sm'
+                ? 'bg-[#1F824A] text-white shadow-sm font-bold'
                 : currentStep > 1
-                ? 'bg-emerald-500/10 text-emerald-500'
-                : 'text-muted-foreground hover:bg-surface-hover'
+                ? 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-400 border border-emerald-500/30 font-bold'
+                : 'text-zinc-600 dark:text-zinc-400 hover:bg-surface-hover font-medium'
             }`}
           >
             1. <span className="hidden sm:inline">{language === 'en' ? 'Audience & Sourcing' : 'টার্গেট অডিয়েন্স'}</span>
@@ -533,10 +533,10 @@ export default function NewCampaignWizardPage() {
             onClick={() => setCurrentStep(2)}
             className={`py-2 px-1 rounded-xl transition-all ${
               currentStep === 2
-                ? 'bg-[#1F824A] text-white shadow-sm'
+                ? 'bg-[#1F824A] text-white shadow-sm font-bold'
                 : currentStep > 2
-                ? 'bg-emerald-500/10 text-emerald-500'
-                : 'text-muted-foreground hover:bg-surface-hover'
+                ? 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-400 border border-emerald-500/30 font-bold'
+                : 'text-zinc-600 dark:text-zinc-400 hover:bg-surface-hover font-medium'
             }`}
           >
             2. <span className="hidden sm:inline">{language === 'en' ? 'Banner & Offer' : 'ব্যানার ও অফার'}</span>
@@ -547,10 +547,10 @@ export default function NewCampaignWizardPage() {
             onClick={() => setCurrentStep(3)}
             className={`py-2 px-1 rounded-xl transition-all ${
               currentStep === 3
-                ? 'bg-[#1F824A] text-white shadow-sm'
+                ? 'bg-[#1F824A] text-white shadow-sm font-bold'
                 : currentStep > 3
-                ? 'bg-emerald-500/10 text-emerald-500'
-                : 'text-muted-foreground hover:bg-surface-hover'
+                ? 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-400 border border-emerald-500/30 font-bold'
+                : 'text-zinc-600 dark:text-zinc-400 hover:bg-surface-hover font-medium'
             }`}
           >
             3. <span className="hidden sm:inline">{language === 'en' ? 'AI Vision & Preview' : 'এআই ভিশন ড্রাফট'}</span>
@@ -561,8 +561,8 @@ export default function NewCampaignWizardPage() {
             onClick={() => setCurrentStep(4)}
             className={`py-2 px-1 rounded-xl transition-all ${
               currentStep === 4
-                ? 'bg-[#1F824A] text-white shadow-sm'
-                : 'text-muted-foreground hover:bg-surface-hover'
+                ? 'bg-[#1F824A] text-white shadow-sm font-bold'
+                : 'text-zinc-600 dark:text-zinc-400 hover:bg-surface-hover font-medium'
             }`}
           >
             4. <span className="hidden sm:inline">{language === 'en' ? 'SMTP & Quota Launch' : 'কোটা ও লঞ্চ'}</span>
@@ -728,11 +728,11 @@ export default function NewCampaignWizardPage() {
                       onClick={() => toggleChannel(item.id)}
                       className={`p-3 rounded-xl border flex flex-col items-center gap-1.5 transition-all ${
                         active
-                          ? 'border-[#1F824A] bg-[#1F824A]/10 text-foreground'
-                          : 'border-border bg-surface text-muted-foreground hover:bg-surface-hover'
+                          ? 'border-[#1F824A] bg-[#1F824A]/15 text-zinc-900 dark:text-white font-bold shadow-xs'
+                          : 'border-border bg-surface text-zinc-600 dark:text-zinc-400 hover:bg-surface-hover'
                       }`}
                     >
-                      <Icon className={`w-5 h-5 ${active ? 'text-[#1F824A]' : 'text-muted-foreground'}`} />
+                      <Icon className={`w-5 h-5 ${active ? 'text-[#1F824A] dark:text-emerald-400' : 'text-zinc-400'}`} />
                       <span className="font-semibold text-[11px]">{item.label}</span>
                     </button>
                   );

@@ -16,6 +16,9 @@
   --color-surface-light: var(--surface-light);
   --color-text-secondary: var(--text-secondary);
   
+  --color-brand-green: #1F824A;
+  --color-brand-orange: #EE8D27;
+  
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -154,6 +157,26 @@ body {
 
   .shadow-glow {
     box-shadow: 0 0 20px -5px var(--primary);
+  }
+
+  /* Brand Color Utilities */
+  .bg-brand-green {
+    background-color: #1F824A;
+  }
+  .text-brand-green {
+    color: #1F824A;
+  }
+  .border-brand-green {
+    border-color: #1F824A;
+  }
+  .bg-brand-orange {
+    background-color: #EE8D27;
+  }
+  .text-brand-orange {
+    color: #EE8D27;
+  }
+  .border-brand-orange {
+    border-color: #EE8D27;
   }
 
   /* Native Mobile App Utilities */

@@ -653,13 +653,13 @@ export default function ZiniMailDashboardPage() {
                   onClick={() => setStatusFilter(pill.id)}
                   className={`px-3 py-1 rounded-xl text-[11px] font-semibold transition-all flex items-center gap-1.5 border ${
                     active
-                      ? 'bg-[#1F824A] text-white border-[#1F824A] shadow-sm'
-                      : 'bg-surface dark:bg-zinc-900/60 text-muted-foreground hover:text-foreground border-border dark:border-zinc-800 hover:border-[#1F824A]/40'
+                      ? 'bg-[#1F824A] text-white border-[#1F824A] shadow-sm font-bold'
+                      : 'bg-surface dark:bg-zinc-900/60 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white border-border dark:border-zinc-800 hover:border-[#1F824A]/40'
                   }`}
                 >
-                  <span>{language === 'en' ? pill.labelEn : pill.labelBn}</span>
+                  <span className={active ? 'text-white font-bold' : ''}>{language === 'en' ? pill.labelEn : pill.labelBn}</span>
                   <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-bold ${
-                    active ? 'bg-white/20 text-white' : 'bg-surface-hover text-muted-foreground'
+                    active ? 'bg-white/25 text-white' : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300'
                   }`}>
                     {pill.count}
                   </span>

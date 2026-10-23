@@ -603,8 +603,8 @@ export default function CampaignDetailsPage() {
           onClick={() => handleFilterChange('all')}
           className={`px-3 py-1.5 rounded-xl border transition-all shrink-0 ${
             activeFilter === 'all'
-              ? 'bg-foreground text-background border-foreground shadow-sm'
-              : 'bg-surface border-border text-muted-foreground hover:bg-surface-hover'
+              ? 'bg-foreground text-background border-foreground shadow-sm font-bold'
+              : 'bg-surface border-border text-zinc-700 dark:text-zinc-400 hover:bg-surface-hover'
           }`}
         >
           {language === 'en' ? 'All Leads' : 'সব লিড'} ({funnel.all ?? 0})
@@ -614,8 +614,8 @@ export default function CampaignDetailsPage() {
           onClick={() => handleFilterChange('sent')}
           className={`px-3 py-1.5 rounded-xl border transition-all shrink-0 ${
             activeFilter === 'sent'
-              ? 'bg-foreground text-background border-foreground shadow-sm'
-              : 'bg-surface border-border text-muted-foreground hover:bg-surface-hover'
+              ? 'bg-foreground text-background border-foreground shadow-sm font-bold'
+              : 'bg-surface border-border text-zinc-700 dark:text-zinc-400 hover:bg-surface-hover'
           }`}
         >
           {language === 'en' ? 'Emails Sent' : 'মেইল পাঠানো'} ({funnel.sent ?? 0})
@@ -625,8 +625,8 @@ export default function CampaignDetailsPage() {
           onClick={() => handleFilterChange('opened')}
           className={`px-3 py-1.5 rounded-xl border transition-all shrink-0 ${
             activeFilter === 'opened'
-              ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
-              : 'bg-surface border-border text-muted-foreground hover:bg-surface-hover'
+              ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm font-bold'
+              : 'bg-surface border-border text-zinc-700 dark:text-zinc-400 hover:bg-surface-hover'
           }`}
         >
           {language === 'en' ? 'Opened' : 'ওপেন করেছে'} ({funnel.opened ?? 0})
@@ -636,8 +636,8 @@ export default function CampaignDetailsPage() {
           onClick={() => handleFilterChange('clicked')}
           className={`px-3 py-1.5 rounded-xl border transition-all shrink-0 ${
             activeFilter === 'clicked'
-              ? 'bg-amber-600 text-white border-amber-600 shadow-sm'
-              : 'bg-surface border-border text-muted-foreground hover:bg-surface-hover'
+              ? 'bg-amber-600 text-white border-amber-600 shadow-sm font-bold'
+              : 'bg-surface border-border text-zinc-700 dark:text-zinc-400 hover:bg-surface-hover'
           }`}
         >
           {language === 'en' ? 'Banner Clicked' : 'ক্লিক করেছে'} ({funnel.clicked ?? 0})
@@ -648,8 +648,8 @@ export default function CampaignDetailsPage() {
           onClick={() => handleFilterChange('clicked_no_order')}
           className={`px-3.5 py-1.5 rounded-xl border flex items-center gap-1.5 transition-all shrink-0 ${
             activeFilter === 'clicked_no_order'
-              ? 'bg-amber-500 text-white border-amber-500 shadow-md ring-2 ring-amber-500/30'
-              : 'bg-amber-500/10 border-amber-500/30 text-amber-500 hover:bg-amber-500/20'
+              ? 'bg-amber-500 text-white border-amber-500 shadow-md ring-2 ring-amber-500/30 font-bold'
+              : 'bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-400 hover:bg-amber-500/20 font-bold'
           }`}
         >
           <Flame className="w-3.5 h-3.5 text-current animate-pulse" />
@@ -662,8 +662,8 @@ export default function CampaignDetailsPage() {
           onClick={() => handleFilterChange('ordered')}
           className={`px-3 py-1.5 rounded-xl border transition-all shrink-0 ${
             activeFilter === 'ordered'
-              ? 'bg-[#1F824A] text-white border-[#1F824A] shadow-sm'
-              : 'bg-surface border-border text-muted-foreground hover:bg-surface-hover'
+              ? 'bg-[#1F824A] text-white border-[#1F824A] shadow-sm font-bold'
+              : 'bg-surface border-border text-zinc-700 dark:text-zinc-400 hover:bg-surface-hover'
           }`}
         >
           {language === 'en' ? 'Ordered' : 'অর্ডার করেছে'} ({funnel.ordered ?? 0})
@@ -673,8 +673,8 @@ export default function CampaignDetailsPage() {
           onClick={() => handleFilterChange('phone_only')}
           className={`px-3 py-1.5 rounded-xl border transition-all shrink-0 ${
             activeFilter === 'phone_only'
-              ? 'bg-foreground text-background border-foreground shadow-sm'
-              : 'bg-surface border-border text-muted-foreground hover:bg-surface-hover'
+              ? 'bg-foreground text-background border-foreground shadow-sm font-bold'
+              : 'bg-surface border-border text-zinc-700 dark:text-zinc-400 hover:bg-surface-hover'
           }`}
         >
           {language === 'en' ? 'Phone Harvested' : 'ফোন নম্বর পাওয়া গেছে'} ({funnel.phoneOnly ?? 0})

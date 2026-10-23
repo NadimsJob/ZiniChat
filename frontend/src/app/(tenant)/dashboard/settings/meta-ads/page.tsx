@@ -1495,17 +1495,17 @@ export default function MetaAdsManagerPage() {
           onClick={() => setActiveTab('campaigns')}
           className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 shrink-0 whitespace-nowrap cursor-pointer ${
             activeTab === 'campaigns'
-              ? 'bg-brand-green text-white shadow-lg shadow-brand-green/30 border-2 border-emerald-400/50 ring-2 ring-brand-green/20 scale-[1.02]'
-              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10'
+              ? 'bg-[#1F824A] text-white shadow-lg shadow-[#1F824A]/30 border-2 border-emerald-400/60 ring-2 ring-[#1F824A]/20 scale-[1.02]'
+              : 'text-zinc-700 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10'
           }`}
         >
-          <Layers className="w-4 h-4" />
-          <span>{language === 'en' ? 'Active Campaigns & Scale Hub' : 'ক্যাম্পেইন ও স্কেলিং হাব'}</span>
+          <Layers className="w-4 h-4 text-white" />
+          <span className="text-white font-bold">{language === 'en' ? 'Active Campaigns & Scale Hub' : 'ক্যাম্পেইন ও স্কেলিং হাব'}</span>
           {activeTab === 'campaigns' && (
             <span className="w-2 h-2 rounded-full bg-emerald-300 animate-pulse" />
           )}
           {campaigns.length > 0 && (
-            <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-mono ${
+            <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold ${
               activeTab === 'campaigns' ? 'bg-white/25 text-white' : 'bg-zinc-200 dark:bg-white/10 text-zinc-700 dark:text-zinc-300'
             }`}>
               {campaigns.length}
@@ -1518,12 +1518,12 @@ export default function MetaAdsManagerPage() {
           onClick={() => setActiveTab('create')}
           className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 shrink-0 whitespace-nowrap cursor-pointer ${
             activeTab === 'create'
-              ? 'bg-brand-green text-white shadow-lg shadow-brand-green/30 border-2 border-emerald-400/50 ring-2 ring-brand-green/20 scale-[1.02]'
-              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10'
+              ? 'bg-[#1F824A] text-white shadow-lg shadow-[#1F824A]/30 border-2 border-emerald-400/60 ring-2 ring-[#1F824A]/20 scale-[1.02]'
+              : 'text-zinc-700 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10'
           }`}
         >
           <PlusCircle className={`w-4 h-4 ${activeTab === 'create' ? 'text-white' : 'text-emerald-500'}`} />
-          <span>{language === 'en' ? 'Create Campaign (Ads Manager)' : 'নতুন ক্যাম্পেইন (অ্যাড ম্যানেজার)'}</span>
+          <span className={activeTab === 'create' ? 'text-white font-bold' : ''}>{language === 'en' ? 'Create Campaign (Ads Manager)' : 'নতুন ক্যাম্পেইন (অ্যাড ম্যানেজার)'}</span>
           {activeTab === 'create' && (
             <span className="w-2 h-2 rounded-full bg-emerald-300 animate-pulse" />
           )}
@@ -1534,12 +1534,12 @@ export default function MetaAdsManagerPage() {
           onClick={() => setActiveTab('boost')}
           className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 shrink-0 whitespace-nowrap cursor-pointer ${
             activeTab === 'boost'
-              ? 'bg-brand-green text-white shadow-lg shadow-brand-green/30 border-2 border-emerald-400/50 ring-2 ring-brand-green/20 scale-[1.02]'
-              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10'
+              ? 'bg-[#1F824A] text-white shadow-lg shadow-[#1F824A]/30 border-2 border-emerald-400/60 ring-2 ring-[#1F824A]/20 scale-[1.02]'
+              : 'text-zinc-700 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10'
           }`}
         >
           <Sparkles className={`w-4 h-4 ${activeTab === 'boost' ? 'text-white' : 'text-brand-orange'}`} />
-          <span>{language === 'en' ? 'Boost Page Post' : 'পেইজ পোস্ট বুস্টিং'}</span>
+          <span className={activeTab === 'boost' ? 'text-white font-bold' : ''}>{language === 'en' ? 'Boost Page Post' : 'পেইজ পোস্ট বুস্টিং'}</span>
           {activeTab === 'boost' && (
             <span className="w-2 h-2 rounded-full bg-emerald-300 animate-pulse" />
           )}
@@ -1550,12 +1550,12 @@ export default function MetaAdsManagerPage() {
           onClick={() => setActiveTab('accounts')}
           className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 shrink-0 whitespace-nowrap cursor-pointer ${
             activeTab === 'accounts'
-              ? 'bg-brand-green text-white shadow-lg shadow-brand-green/30 border-2 border-emerald-400/50 ring-2 ring-brand-green/20 scale-[1.02]'
-              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10'
+              ? 'bg-[#1F824A] text-white shadow-lg shadow-[#1F824A]/30 border-2 border-emerald-400/60 ring-2 ring-[#1F824A]/20 scale-[1.02]'
+              : 'text-zinc-700 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10'
           }`}
         >
           <ShieldCheck className="w-4 h-4" />
-          <span>{language === 'en' ? 'Connected Accounts' : 'সংযুক্ত অ্যাকাউন্টস'}</span>
+          <span className={activeTab === 'accounts' ? 'text-white font-bold' : ''}>{language === 'en' ? 'Connected Accounts' : 'সংযুক্ত অ্যাকাউন্টস'}</span>
           {activeTab === 'accounts' && (
             <span className="w-2 h-2 rounded-full bg-emerald-300 animate-pulse" />
           )}
@@ -1605,19 +1605,19 @@ export default function MetaAdsManagerPage() {
                       onClick={() => setCampaignStatusFilter(filterKey)}
                       className={`px-3 py-1 rounded-lg text-xs font-semibold capitalize transition-all flex items-center gap-1.5 ${
                         campaignStatusFilter === filterKey
-                          ? 'bg-brand-green text-white shadow-sm'
-                          : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                          ? 'bg-[#1F824A] text-white shadow-sm font-bold'
+                          : 'text-zinc-700 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
                       }`}
                     >
-                      <span>
+                      <span className={campaignStatusFilter === filterKey ? 'text-white' : ''}>
                         {filterKey === 'all' 
                           ? (language === 'en' ? 'All' : 'সব')
                           : filterKey === 'active'
                           ? (language === 'en' ? 'Active' : 'সক্রিয়')
                           : (language === 'en' ? 'Paused' : 'বন্ধ')}
                       </span>
-                      <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-                        campaignStatusFilter === filterKey ? 'bg-white/20 text-white' : 'bg-zinc-200 dark:bg-white/10 text-zinc-600 dark:text-zinc-400'
+                      <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
+                        campaignStatusFilter === filterKey ? 'bg-white/25 text-white' : 'bg-zinc-200 dark:bg-white/10 text-zinc-700 dark:text-zinc-300'
                       }`}>
                         {count}
                       </span>
@@ -2151,12 +2151,12 @@ export default function MetaAdsManagerPage() {
                     onClick={() => setCustomCampForm(f => ({ ...f, objective: obj.id }))}
                     className={`p-3 rounded-xl text-left border transition-all ${
                       customCampForm.objective === obj.id
-                        ? 'bg-brand-green/20 border-brand-green text-white shadow-md shadow-brand-green/20'
-                        : 'bg-zinc-50 dark:bg-surface border-zinc-200 dark:border-white/10 text-zinc-600 dark:text-zinc-400 hover:border-brand-green/40 hover:text-zinc-900 dark:hover:text-white'
+                        ? 'bg-[#1F824A]/15 border-[#1F824A] shadow-md shadow-[#1F824A]/10 ring-1 ring-[#1F824A]/30'
+                        : 'bg-zinc-50 dark:bg-surface border-zinc-200 dark:border-white/10 text-zinc-600 dark:text-zinc-400 hover:border-[#1F824A]/40 hover:text-zinc-900 dark:hover:text-white'
                     }`}
                   >
-                    <span className="text-xs font-bold block text-zinc-900 dark:text-white">{obj.title}</span>
-                    <span className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1 block leading-tight">{obj.desc}</span>
+                    <span className={`text-xs font-bold block ${customCampForm.objective === obj.id ? 'text-[#1F824A] dark:text-emerald-300' : 'text-zinc-900 dark:text-white'}`}>{obj.title}</span>
+                    <span className="text-[10px] text-zinc-600 dark:text-zinc-400 mt-1 block leading-tight">{obj.desc}</span>
                   </button>
                 ))}
               </div>
@@ -2317,7 +2317,7 @@ export default function MetaAdsManagerPage() {
                           onClick={() => setCustomCampForm(f => ({ ...f, gender: g }))}
                           className={`flex-1 py-1.5 rounded-xl text-xs capitalize transition-colors ${
                             customCampForm.gender === g
-                              ? 'bg-brand-green text-white font-bold'
+                              ? 'bg-[#1F824A] text-white font-bold'
                               : 'bg-zinc-100 dark:bg-white/5 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white border border-zinc-200 dark:border-white/10'
                           }`}
                         >
@@ -2352,15 +2352,15 @@ export default function MetaAdsManagerPage() {
                       onClick={() => setCustomCampForm(f => ({ ...f, placementType: 'advantage_plus' }))}
                       className={`p-3 rounded-xl text-left border transition-all ${
                         customCampForm.placementType === 'advantage_plus'
-                          ? 'bg-brand-green/20 border-brand-green text-white'
-                          : 'bg-zinc-50 dark:bg-surface border-zinc-200 dark:border-white/10 text-zinc-600 dark:text-zinc-400 hover:border-brand-green/40'
+                          ? 'bg-[#1F824A]/15 border-[#1F824A] shadow-sm ring-1 ring-[#1F824A]/30'
+                          : 'bg-zinc-50 dark:bg-surface border-zinc-200 dark:border-white/10 hover:border-[#1F824A]/40'
                       }`}
                     >
-                      <span className="text-xs font-bold block text-white flex items-center gap-1.5">
+                      <span className={`text-xs font-bold block flex items-center gap-1.5 ${customCampForm.placementType === 'advantage_plus' ? 'text-[#1F824A] dark:text-emerald-300' : 'text-zinc-900 dark:text-white'}`}>
                         <Sparkles className="w-3.5 h-3.5 text-brand-orange" />
                         {language === 'en' ? 'Advantage+ Placements (Recommended)' : 'Advantage+ স্বয়ংক্রিয় প্লেসমেন্ট (সুপারিশকৃত)'}
                       </span>
-                      <span className="text-[10px] text-zinc-500 dark:text-zinc-400 block mt-1">
+                      <span className="text-[10px] text-zinc-600 dark:text-zinc-400 block mt-1">
                         {language === 'en' ? 'Maximizes budget across Facebook Feeds, Stories, Reels & Audience Network.' : 'ফেসবুক ফিড, রিলস, স্টোরি সব মাধ্যমে মেটার এলগরিদম স্বয়ংক্রিয়ভাবে দেখাবে।'}
                       </span>
                     </button>
@@ -2374,15 +2374,15 @@ export default function MetaAdsManagerPage() {
                       }))}
                       className={`p-3 rounded-xl text-left border transition-all ${
                         customCampForm.placementType === 'manual'
-                          ? 'bg-brand-green/20 border-brand-green text-white'
-                          : 'bg-zinc-50 dark:bg-surface border-zinc-200 dark:border-white/10 text-zinc-600 dark:text-zinc-400 hover:border-brand-green/40'
+                          ? 'bg-[#1F824A]/15 border-[#1F824A] shadow-sm ring-1 ring-[#1F824A]/30'
+                          : 'bg-zinc-50 dark:bg-surface border-zinc-200 dark:border-white/10 hover:border-[#1F824A]/40'
                       }`}
                     >
-                      <span className="text-xs font-bold block text-white flex items-center gap-1.5">
-                        <SlidersHorizontal className="w-3.5 h-3.5 text-emerald-400" />
+                      <span className={`text-xs font-bold block flex items-center gap-1.5 ${customCampForm.placementType === 'manual' ? 'text-[#1F824A] dark:text-emerald-300' : 'text-zinc-900 dark:text-white'}`}>
+                        <SlidersHorizontal className="w-3.5 h-3.5 text-emerald-500" />
                         {language === 'en' ? 'Manual Placements' : 'ম্যানুয়াল প্লেসমেন্ট'}
                       </span>
-                      <span className="text-[10px] text-zinc-500 dark:text-zinc-400 block mt-1">
+                      <span className="text-[10px] text-zinc-600 dark:text-zinc-400 block mt-1">
                         {language === 'en' ? 'Select specific platforms, feeds, stories and reels.' : 'নির্দিষ্ট কিছু ফিড বা প্ল্যাটফর্ম বেছে নিন।'}
                       </span>
                     </button>
@@ -2479,8 +2479,8 @@ export default function MetaAdsManagerPage() {
             {/* LEVEL 3: AD CREATIVE SETUP (MULTI-FORMAT & DYNAMIC COPY) */}
             <div className="bg-white dark:bg-surface/70 backdrop-blur-xl border border-zinc-200 dark:border-white/10 rounded-2xl p-5 space-y-4 shadow-sm">
               <div className="flex items-center justify-between">
-                <h4 className="text-sm font-semibold text-white flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-emerald-400" />
+                <h4 className="text-sm font-semibold text-zinc-900 dark:text-white flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-emerald-500" />
                   {language === 'en' ? 'Level 3: Ad Creative & Content Setup' : 'লেভেল ৩: বিজ্ঞাপন কনটেন্ট ও ক্রিয়েটিভ'}
                 </h4>
                 <span className="text-[10px] font-mono text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-500/20">
@@ -3055,7 +3055,7 @@ export default function MetaAdsManagerPage() {
 
                 {/* Suggested High-Converting Copy Variations */}
                 <div className="space-y-2.5 pt-2 border-t border-zinc-200 dark:border-white/10">
-                  <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
+                  <h4 className="text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-brand-orange" />
                     {language === 'en' ? 'AI Optimized Copy Variations (1-Click Apply)' : 'এআই প্রস্তাবিত হাই-কনভার্টিং কপি (১-ক্লিকে ব্যবহার করুন)'}
                   </h4>
@@ -3381,7 +3381,7 @@ export default function MetaAdsManagerPage() {
                     onClick={() => setBoostBudget(amt)}
                     className={`px-2.5 py-1 rounded-lg text-[11px] font-mono transition-colors ${
                       boostBudget === amt
-                        ? 'bg-brand-green text-white font-bold'
+                        ? 'bg-[#1F824A] text-white font-bold'
                         : 'bg-zinc-100 dark:bg-white/5 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white border border-zinc-200 dark:border-white/10'
                     }`}
                   >
@@ -3470,7 +3470,7 @@ export default function MetaAdsManagerPage() {
                       onClick={() => setBoostGender(g)}
                       className={`flex-1 py-1.5 rounded-xl text-xs capitalize transition-colors ${
                         boostGender === g
-                          ? 'bg-brand-green text-white font-bold'
+                          ? 'bg-[#1F824A] text-white font-bold'
                           : 'bg-zinc-100 dark:bg-white/5 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white border border-zinc-200 dark:border-white/10'
                       }`}
                     >
@@ -3917,8 +3917,8 @@ export default function MetaAdsManagerPage() {
                         onClick={() => setEditCampGender(g)}
                         className={`flex-1 py-1.5 rounded-xl text-xs capitalize transition-colors ${
                           editCampGender === g
-                            ? 'bg-brand-green text-white font-bold'
-                            : 'bg-zinc-100 dark:bg-white/5 text-zinc-600 dark:text-zinc-400'
+                            ? 'bg-[#1F824A] text-white font-bold'
+                            : 'bg-zinc-100 dark:bg-white/5 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white border border-zinc-200 dark:border-white/10'
                         }`}
                       >
                         {g}

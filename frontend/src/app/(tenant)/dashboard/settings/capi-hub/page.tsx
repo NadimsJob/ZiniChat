@@ -650,7 +650,7 @@ export default function CapiHubPage() {
                         type="button"
                         onClick={() => handleConnectDiscoveredPixel()}
                         disabled={connectingDiscovered || !selectedDiscoveredPixelId}
-                        className="w-full mt-2 py-2.5 bg-brand-green hover:bg-brand-green/90 text-white rounded-xl text-[11px] font-bold transition-all flex items-center justify-center gap-1.5 shadow-md shadow-brand-green/20 disabled:opacity-50"
+                        className="w-full mt-2 py-2.5 bg-[#1F824A] hover:bg-[#1F824A]/90 text-white rounded-xl text-[11px] font-bold transition-all flex items-center justify-center gap-1.5 shadow-md shadow-[#1F824A]/20 disabled:opacity-50"
                       >
                         {connectingDiscovered ? (
                           <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -1085,7 +1085,7 @@ export default function CapiHubPage() {
                         onClick={() => handleToggleEventConfig(config.eventName, 'sourceOrderCompleted', !config.sourceOrderCompleted)}
                         className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border flex items-center gap-1 transition-all ${
                           config.sourceOrderCompleted 
-                            ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300' 
+                            ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-800 dark:text-emerald-300 font-bold' 
                             : 'bg-muted/50 dark:bg-white/5 border-border dark:border-white/5 text-muted-foreground hover:bg-muted dark:hover:bg-white/10'
                         }`}
                       >
@@ -1098,7 +1098,7 @@ export default function CapiHubPage() {
                         onClick={() => handleToggleEventConfig(config.eventName, 'sourceInboxAiIntent', !config.sourceInboxAiIntent)}
                         className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border flex items-center gap-1 transition-all ${
                           config.sourceInboxAiIntent 
-                            ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300' 
+                            ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-800 dark:text-emerald-300 font-bold' 
                             : 'bg-muted/50 dark:bg-white/5 border-border dark:border-white/5 text-muted-foreground hover:bg-muted dark:hover:bg-white/10'
                         }`}
                       >
@@ -1111,7 +1111,7 @@ export default function CapiHubPage() {
                         onClick={() => handleToggleEventConfig(config.eventName, 'sourceLeadCreated', !config.sourceLeadCreated)}
                         className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border flex items-center gap-1 transition-all ${
                           config.sourceLeadCreated 
-                            ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300' 
+                            ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-800 dark:text-emerald-300 font-bold' 
                             : 'bg-muted/50 dark:bg-white/5 border-border dark:border-white/5 text-muted-foreground hover:bg-muted dark:hover:bg-white/10'
                         }`}
                       >
@@ -1124,7 +1124,7 @@ export default function CapiHubPage() {
                         onClick={() => handleToggleEventConfig(config.eventName, 'sourceWidgetForm', !config.sourceWidgetForm)}
                         className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border flex items-center gap-1 transition-all ${
                           config.sourceWidgetForm 
-                            ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300' 
+                            ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-800 dark:text-emerald-300 font-bold' 
                             : 'bg-muted/50 dark:bg-white/5 border-border dark:border-white/5 text-muted-foreground hover:bg-muted dark:hover:bg-white/10'
                         }`}
                       >
@@ -1137,7 +1137,7 @@ export default function CapiHubPage() {
                         onClick={() => handleToggleEventConfig(config.eventName, 'sourceExternalWebhook', !config.sourceExternalWebhook)}
                         className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border flex items-center gap-1 transition-all ${
                           config.sourceExternalWebhook 
-                            ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300' 
+                            ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-800 dark:text-emerald-300 font-bold' 
                             : 'bg-muted/50 dark:bg-white/5 border-border dark:border-white/5 text-muted-foreground hover:bg-muted dark:hover:bg-white/10'
                         }`}
                       >
