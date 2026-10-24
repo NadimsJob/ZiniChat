@@ -102,51 +102,94 @@ ZiniChat এই সমস্যার স্থায়ী সমাধান ক�
   },
   {
     id: 'capi-hub-setup',
-    titleEn: 'How to setup Meta CAPI (Conversion API)',
-    titleBn: 'মেটা CAPI (Conversion API) কিভাবে সেটআপ করবেন',
+    titleEn: 'Meta Conversions API (CAPI Hub) Complete Guide',
+    titleBn: 'মেটা কনভার্সন এপিআই (CAPI হাব) সম্পূর্ণ গাইড ও সেটআপ নির্দেশিকা',
     category: 'marketing-ads',
-    tags: ['CAPI', 'Meta', 'Pixel', 'Ads'],
-    excerptEn: 'Learn how to integrate Meta Conversion API to track sales and leads accurately.',
-    excerptBn: 'সঠিকভাবে সেলস এবং লিড ট্র্যাক করতে মেটা কনভার্শন এপিআই সেটআপ করার নিয়ম জানুন।',
-    planConditions: 'Available on all plans (Requires Rollout Access)',
-    aiCreditCost: '0.00 / setup',
+    tags: ['CAPI', 'Meta', 'Pixel', 'Ads', 'Tracking', 'Conversions', 'ROAS', 'Webhook'],
+    excerptEn: 'Learn how ZiniChat server-side CAPI Hub provides 100% conversion tracking, bypasses iOS/Adblockers, optimizes ROAS, and links your Meta Pixel in 1 click.',
+    excerptBn: 'কীভাবে ZiniChat সার্ভার CAPI দিয়ে ব্রাউজার অ্যাড-ব্লকার এড়িয়ে ১০০% সেলস ট্র্যাক করবেন, মেটা পিক্সেল ১-ক্লিকে যুক্ত করবেন এবং ফেসবুক অ্যাডের ROAS বৃদ্ধি করবেন তা জানুন।',
+    planConditions: 'Available on all active plans (Requires CAPI Hub access in package plan)',
+    aiCreditCost: '0.00 / free built-in server tracking',
     contentEn: `
-## What is Meta CAPI?
-Meta Conversions API (CAPI) is designed to create a direct and reliable connection between ZiniChat and Meta. This helps track events like new leads and completed orders on your website or chat.
+## Why Do You Need Meta CAPI (Server-Side Tracking)?
 
-### Steps to configure CAPI:
-1. Go to **Settings -> CAPI Hub**.
-2. Click on the **Connect Pixel & Dataset** section.
-3. Obtain your **Pixel ID** and **Dataset ID** from Meta Events Manager.
-4. Generate a **System User Access Token** in Meta Business Settings and paste it in the Access Token field.
-5. Click **Save Configuration**.
+Standard browser pixels rely entirely on the customer's web browser. Due to **Adblockers, browser privacy settings, and iOS 14.5+ restrictions**, **30% to 50% of purchases and leads are never delivered to Meta**. As a result, Meta Ads Manager cannot attribute which ads generated your sales, leading to higher ad costs and inaccurate ROAS.
 
-### Event Selection
-Once configured, you can individually enable or disable events like:
-- **Lead** (when a new contact is captured)
-- **Purchase** (when an order is marked as delivered)
+**ZiniChat CAPI Hub** solves this completely:
+- Customer actions are forwarded **directly from ZiniChat's cloud server to Meta's Graph API**.
+- **100% Event Delivery**: Immune to browser ad-blockers, cookie clearance, or iOS tracking limits.
+- **Higher Event Match Quality (EMQ)**: Automated Bangladeshi phone standardization to E.164 (+8801...) and SHA-256 cryptographic hashing of names and emails.
+- **Smart Deduplication**: Uses deterministic \`order_{id}\` matching so that browser pixel and server events never double-count revenue.
 
-> [!TIP]
-> Use the Event Logs tab to monitor the status of your events and troubleshoot failed requests.
+---
+
+## 3 Easy Steps to Set Up CAPI Hub:
+
+### Step 1: Connect Your Meta Pixel
+- **1-Click Auto-Discovery (Recommended)**: If your Facebook Page or Meta Ad Account is already connected in ZiniChat (**Settings > Connected Inboxes** or **Meta Ads**), navigate to **Settings > CAPI Hub**. All existing Pixels appear automatically under **Connected Meta Pixels**. Simply select your Pixel and click **1-Click Connect Selected Pixel** — zero token copy-pasting required!
+- **Advanced / Manual Setup**: If using an external Pixel, open the **Advanced / Manual Token Setup** accordion, input your Pixel ID and System User Access Token from Meta Events Manager, and click **Save**.
+
+### Step 2: Send 1-Click Test Ping to Meta
+1. In Meta Events Manager, navigate to the **Test Events** tab under your Pixel.
+2. *(Optional)* Copy the 5-character Test Event Code (e.g., \`TEST12345\`) into ZiniChat.
+3. Click **Send 1-Click Test Ping to Meta**.
+4. You will immediately see a green banner: \`Meta Graph API 200 OK — Test event acknowledged!\`.
+5. Check Meta Events Manager to verify the server event has appeared live!
+
+### Step 3: Verify Automated Trigger Sources
+ZiniChat automatically activates standard events (\`Purchase\`, \`Lead\`, \`Contact\`). You can customize the 5 trigger sources for each event:
+- 📦 **Order**: Fires when an order is created, confirmed, or completed in chat or online.
+- 🤖 **Inbox AI**: Fires when customer shows purchasing intent or shares details with AI.
+- 🎯 **Lead**: Fires when customer's name or mobile number is registered.
+- 💬 **Widget**: Fires when a customer submits forms or messages on your website widget.
+- 🌐 **Webhook**: Fires when your external Shopify/WooCommerce/Landing Page posts checkout data.
+
+---
+
+## External Webhook API for Custom Websites
+If you have an external custom landing page, Shopify store, or WooCommerce site:
+- **Endpoint**: Found in your CAPI Hub page: \`https://api.zinichat.com/capi-hub/webhook/{webhookToken}\`
+- **Header**: \`x-zinichat-secret: {webhookSecret}\`
+- Send standard JSON with \`event_name\`, \`event_id\`, \`user_data\` (\`ph\`, \`em\`), and \`custom_data\` (\`value\`, \`currency\`). ZiniChat handles all hashing, validation, and Meta forwarding for you!
     `,
     contentBn: `
-## Meta CAPI কি?
-মেটা কনভার্শনস এপিআই (CAPI) জিনিচ্যাট এবং মেটার মধ্যে একটি সরাসরি এবং নির্ভরযোগ্য সংযোগ তৈরি করার জন্য ডিজাইন করা হয়েছে। এটি আপনার ওয়েবসাইট বা চ্যাটে নতুন লিড এবং সম্পূর্ণ অর্ডারের মতো ইভেন্টগুলো ট্র্যাক করতে সহায়তা করে।
+## মেটা CAPI (সার্ভার-সাইড ট্র্যাকিং) কেন আপনার ব্যবসার জন্য অপরিহার্য?
 
-### CAPI কনফিগার করার ধাপসমূহ:
-১. **সেটিংস -> CAPI Hub**-এ যান।
-২. **Connect Pixel & Dataset** সেকশনে ক্লিক করুন।
-৩. মেটা ইভেন্ট ম্যানেজার থেকে আপনার **Pixel ID** এবং **Dataset ID** সংগ্রহ করুন।
-৪. মেটা বিজনেস সেটিংসে একটি **System User Access Token** জেনারেট করুন এবং সেটি অ্যাক্সেস টোকেন ফিল্ডে পেস্ট করুন।
-৫. **Save Configuration**-এ ক্লিক করুন।
+সাধারণ ফেসবুক পিক্সেল কাস্টমারের ব্রাউজারের ওপর নির্ভর করে। **ব্রাউজার অ্যাড-ব্লকার (Adblocker) এবং আইফোনের (iOS 14.5+) প্রাইভেসি ফিচারের কারণে ৩০% থেকে ৫০% সেলস বা লিডের তথ্য মেটা (ফেসবুক) পর্যন্ত পৌঁছায় না**। ফলে ফেসবুক বুঝতে পারে না আপনার কোন অ্যাড থেকে সেলস আসছে, যার কারণে বিজ্ঞাপনে বেশি খরচ করেও কাঙ্ক্ষিত সেলস পাওয়া যায় না।
 
-### ইভেন্ট নির্বাচন
-একবার কনফিগার করা হলে, আপনি আলাদাভাবে ইভেন্টগুলো এনাবল বা ডিজেবল করতে পারবেন:
-- **Lead** (যখন নতুন কন্টাক্ট সেভ হয়)
-- **Purchase** (যখন অর্ডার ডেলিভার করা হয়)
+**ZiniChat CAPI Hub এর মাধ্যমে এই সমস্যার স্থায়ী সমাধান:**
+- কাস্টমারের অর্ডার ও মেসেজের ডেটা ব্রাউজারের ওপর নির্ভর না করে **সরাসরি ZiniChat-এর ক্লাউড সার্ভার থেকে মেটার সার্ভারে (Graph API) চলে যায়**।
+- **১০০% ইভেন্ট ডেলিভারি**: কোনো অ্যাড-ব্লকার বা ব্রাউজার রেস্ট্রিকশন সার্ভারের ডেটা আটকাতে পারে না।
+- **উচ্চ ম্যাচ কোয়ালিটি (EMQ)**: প্রতিটি বাংলাদেশি মোবাইল নম্বর স্বয়ংক্রিয়ভাবে E.164 (+8801...) ফরম্যাটে এবং নাম/ইমেইল SHA-256 এনক্রিপ্ট হয়ে মেটাতে পাঠানো হয়।
+- **স্মার্ট ডিডুপ্লিকেশন**: \`order_{id}\` দিয়ে স্বয়ংক্রিয় ডিডুপ্লিকেশন থাকায় ফেসবুক ব্রাউজার পিক্সেল ও সার্ভারের ডেটা মিলিয়ে একটাই অর্ডার কাউন্ট করে, কখনোই ডাবল সেলস ধরে না।
 
-> [!TIP]
-> আপনার ইভেন্টের স্ট্যাটাস মনিটর করতে এবং ব্যর্থ রিকোয়েস্টের সমস্যা সমাধান করতে Event Logs ট্যাবটি ব্যবহার করুন।
+---
+
+## মাত্র ৩টি সহজ ধাপে CAPI হাব সেটআপ করুন:
+
+### ধাপ ১: মেটা পিক্সেল কানেক্ট করুন
+- **১-ক্লিক সংযোগ (সবচেয়ে সহজ)**: ZiniChat-এ আপনার ফেসবুক পেজ বা অ্যাড অ্যাকাউন্ট কানেক্ট করা থাকলে **Settings > CAPI Hub** পেজে প্রবেশ করলেই আপনার সব পিক্সেল স্বয়ংক্রিয়ভাবে ভেসে উঠবে। পছন্দের পিক্সেল সিলেক্ট করে **"১-ক্লিক সংযোগ"** বাটনে ক্লিক করুন। কোনো টোকেন কপি করার প্রয়োজন নেই!
+- **ম্যানুয়াল সেটআপ**: অন্য কোনো বিজনেস ম্যানেজারের পিক্সেল হলে **"ঐচ্ছিক ম্যানুয়াল টোকেন ও পিক্সেল সেটআপ"** ওপেন করে Pixel ID ও Access Token পেস্ট করে সেভ করুন।
+
+### ধাপ ২: ১-ক্লিক টেস্ট পিং পাঠান
+১. মেটা ইভেন্টস ম্যানেজার (Events Manager)-এ গিয়ে আপনার পিক্সেলের **Test Events** ট্যাবে যান।
+২. চাইলে সেখানে থাকা ৫ অক্ষরের Test Event Code (যেমন \`TEST12345\`) ZiniChat-এর টেস্ট কোড ঘরে দিতে পারেন।
+৩. **"মেটাতে ১-ক্লিক টেস্ট ইভেন্ট পাঠান"** বাটনে চাপ দিন।
+৪. সাথে সাথে স্ক্রিনে সবুজ কনফার্মেশন পাবেন: \`মেটা গ্রাফ API ২০০ ওকে — টেস্ট ইভেন্ট সফলভাবে পৌঁছেছে!\`।
+৫. মেটা ইভেন্টস ম্যানেজারে মুহূর্তের মধ্যে লাইভ টেস্ট ডেটা দৃশ্যমান হবে।
+
+### ধাপ ৩: ইভেন্ট ট্রিগার যাচাই করুন
+ZiniChat স্বয়ংক্রিয়ভাবে প্রয়োজনীয় স্ট্যান্ডার্ড ইভেন্টগুলো (\`Purchase\`, \`Lead\`, \`Contact\`) চালু রাখে। ৫টি সোর্সের মাধ্যমে ইভেন্ট মেটাতে যায়:
+- 📦 **Order (অর্ডার)**: ইনবক্সে বা চ্যাটে অর্ডার কনফার্ম বা ডেলিভারি হলে মোট টাকার পরিমাণ ও নম্বরসহ মেটাতে যাবে।
+- 🤖 **Inbox AI (এআই ইনবক্স)**: কাস্টমার ইনবক্সে এআই-এর সাথে কথা বলে কেনাকাটার আগ্রহ দেখালে বা তথ্য দিলে মেটাতে যাবে।
+- 🎯 **Lead (লিড)**: কাস্টমারের মোবাইল নম্বর ও নাম ডাটাবেসে সেভ হলে Lead হিসেবে মেটাতে যাবে।
+- 💬 **Widget (ওয়েব উইজেট)**: আপনার ওয়েবসাইটের চ্যাট উইজেট থেকে মেসেজ বা ফর্ম সাবমিট হলে।
+- 🌐 **Webhook (কাস্টম সাইট/ল্যান্ডিং পেজ)**: আপনার ওয়ার্ডপ্রেস, শপিফাই বা ল্যান্ডিং পেজ থেকে সরাসরি ইভেন্ট পাঠাতে।
+
+---
+
+## কাস্টম ওয়েবসাইটের জন্য Webhook API
+আপনার যদি নিজস্ব ওয়েবসাইট বা ল্যান্ডিং পেজ থাকে, তবে ZiniChat CAPI Hub-এর Webhook URL ও Secret ব্যবহার করে সরাসরি সেখান থেকেও মেটাতে ডেটা পাঠাতে পারবেন। ZiniChat সমস্ত ফোন নম্বর স্ট্যান্ডার্ডাইজেশন ও হ্যাশিং অটোমেটিক করে দেবে।
     `
   },
   /* ---------------- GETTING STARTED ---------------- */

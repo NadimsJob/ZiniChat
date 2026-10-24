@@ -28,7 +28,10 @@ import {
   Activity,
   ChevronDown,
   ChevronUp,
-  ExternalLink
+  ExternalLink,
+  BookOpen,
+  Lightbulb,
+  HelpCircle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useRolloutFlag } from '@/hooks/useRolloutFlag';
@@ -60,6 +63,10 @@ export default function CapiHubPage() {
   const [testResult, setTestResult] = useState<{ success: boolean; message: string; data?: any } | null>(null);
   const [refreshingLogs, setRefreshingLogs] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  // Interactive Onboarding & Workflow Guide State
+  const [showGuide, setShowGuide] = useState(true);
+  const [guideTab, setGuideTab] = useState<'why' | 'setup' | 'sources'>('why');
 
   // Subscription Plan Synchronization
   const [quotaData, setQuotaData] = useState<{ isSubscriptionActive?: boolean } | null>(null);
@@ -489,58 +496,307 @@ export default function CapiHubPage() {
     <div className="max-w-6xl mx-auto space-y-6 p-2 sm:p-6 pb-24 text-[13px]">
       
       {/* Page Header Banner */}
-      <div className="bg-surface/70 backdrop-blur-xl border border-border dark:border-white/10 rounded-2xl p-4 sm:p-6 shadow-sm relative overflow-hidden">
+      <div className="bg-white/90 dark:bg-surface/70 backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-2xl p-4 sm:p-6 shadow-sm relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <div className="p-2 bg-emerald-500/10 rounded-xl text-emerald-500 border border-emerald-500/20">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
+              <div className="p-2 bg-emerald-500/10 rounded-xl text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
                 <Server className="w-5 h-5" />
               </div>
-              <h1 className="text-lg sm:text-xl font-bold text-foreground">
+              <h1 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-foreground">
                 {language === 'en' ? 'Meta Conversions API (CAPI Hub)' : 'মেটা কনভার্সন এপিআই (CAPI হাব)'}
               </h1>
-              <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+              <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
                 Server-Side
               </span>
             </div>
-            <p className="text-[12px] sm:text-[13px] text-muted-foreground max-w-2xl mt-1 leading-relaxed">
+            <p className="text-[12px] sm:text-[13px] text-slate-600 dark:text-muted-foreground max-w-2xl mt-1 leading-relaxed">
               {language === 'en' 
                 ? 'Zero-hassle server-side tracking. Enter your Pixel ID & Access Token — ZiniChat handles all event firing, deduplication, E.164 phone standardization, and SHA-256 data hashing automatically.'
                 : 'কোনো হেসেল ছাড়া সার্ভার-সাইড ট্র্যাকিং। শুধু পিক্সেল আইডি এবং অ্যাক্সেস টোকেন দিন — সমস্ত ইভেন্ট, ডিডুপ্লিকেশন, E.164 ফোন স্ট্যান্ডার্ডাইজেশন এবং ডেটা হ্যাশিং অটোমেটিক্যালি হবে।'}
             </p>
           </div>
 
-          {integration?.isActive && (
-            <div className="flex items-center gap-2 shrink-0">
-              {isPlanActive ? (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setShowGuide(!showGuide)}
+              className={`px-3 py-2 rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition-all border ${
+                showGuide
+                  ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm'
+                  : 'bg-white dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 text-slate-700 dark:text-foreground border-slate-200 dark:border-white/10'
+              }`}
+            >
+              <BookOpen className="w-3.5 h-3.5" />
+              <span>{showGuide ? (language === 'en' ? 'Hide Guide' : 'নির্দেশিকা লুকান') : (language === 'en' ? 'Setup Guide' : 'সেটআপ নির্দেশিকা')}</span>
+            </button>
+
+            {integration?.isActive && (
+              isPlanActive ? (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                   {language === 'en' ? 'Active & Tracking' : 'সক্রিয় ও ট্র্যাকিং চালু'}
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/30">
-                  <span className="w-2 h-2 rounded-full bg-rose-400" />
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/30">
+                  <span className="w-2 h-2 rounded-full bg-rose-500" />
                   {language === 'en' ? 'Tracking Paused (Plan Expired)' : 'ট্র্যাকিং স্থগিত (মেয়াদ শেষ)'}
                 </span>
-              )}
-            </div>
-          )}
+              )
+            )}
+          </div>
         </div>
       </div>
 
+      {/* Interactive Quick Guide & Workflow Banner */}
+      {showGuide && (
+        <div className="bg-white/95 dark:bg-surface/80 backdrop-blur-xl border border-emerald-500/30 dark:border-emerald-500/20 rounded-2xl p-4 sm:p-5 shadow-sm relative overflow-hidden transition-all animate-in fade-in">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-white/10">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
+                <Lightbulb className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-foreground">
+                  {language === 'en' ? 'Interactive Guide: How CAPI Hub Works & 3-Step Setup' : 'ইন্টারেক্টিভ নির্দেশিকা: CAPI হাব কীভাবে কাজ করে ও ৩ ধাপে সেটআপ'}
+                </h3>
+                <p className="text-[11px] text-slate-600 dark:text-muted-foreground">
+                  {language === 'en'
+                    ? 'Understand server-side tracking, eliminate lost attribution, and optimize Meta Ad ROAS.'
+                    : 'সার্ভার-সাইড ট্র্যাকিং, বিজ্ঞাপনের অপচয় রোধ এবং মাত্র ৩ ধাপে ১০০% কনভার্সন ট্র্যাকিং চালুর সহজ গাইড।'}
+                </p>
+              </div>
+            </div>
+
+            {/* Navigation Tabs */}
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0">
+              <button
+                type="button"
+                onClick={() => setGuideTab('why')}
+                className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all shrink-0 flex items-center gap-1.5 ${
+                  guideTab === 'why'
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-muted-foreground border border-slate-200 dark:border-white/5'
+                }`}
+              >
+                <span>💡 {language === 'en' ? 'Why CAPI?' : 'কেন CAPI দরকার?'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setGuideTab('setup')}
+                className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all shrink-0 flex items-center gap-1.5 ${
+                  guideTab === 'setup'
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-muted-foreground border border-slate-200 dark:border-white/5'
+                }`}
+              >
+                <span>⚡ {language === 'en' ? '3-Step Setup' : '৩ ধাপে সেটআপ'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setGuideTab('sources')}
+                className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all shrink-0 flex items-center gap-1.5 ${
+                  guideTab === 'sources'
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-muted-foreground border border-slate-200 dark:border-white/5'
+                }`}
+              >
+                <span>🎯 {language === 'en' ? 'Trigger Sources' : '৫টি সোর্সের কাজ'}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Tab 1 Content: Why CAPI? */}
+          {guideTab === 'why' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-3.5">
+              <div className="p-3.5 rounded-xl bg-rose-50/80 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-500/20 text-rose-950 dark:text-rose-200 space-y-2">
+                <div className="flex items-center gap-2 font-bold text-xs text-rose-800 dark:text-rose-300">
+                  <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
+                  <span>{language === 'en' ? 'Standard Browser Pixel (30-50% Data Lost)' : 'সাধারণ ব্রাউজার পিক্সেল (৩০-৫০% ডেটা হারায়)'}</span>
+                </div>
+                <ul className="text-[11px] space-y-1.5 text-rose-900/90 dark:text-rose-200/90 list-disc list-inside leading-relaxed">
+                  <li>
+                    {language === 'en'
+                      ? 'Adblockers, cookie clearance, and iOS 14.5+ privacy block client-side scripts before reaching Meta.'
+                      : 'ব্রাউজার অ্যাড-ব্লকার (Adblocker) ও iOS 14+ প্রাইভেসির কারণে ব্রাউজার পিক্সেল ডেটা ব্লক হয়ে যায়।'}
+                  </li>
+                  <li>
+                    {language === 'en'
+                      ? 'Meta cannot accurately attribute sales to ads, leading to inflated ad costs and inaccurate ROAS.'
+                      : 'ফেসবুক জানতে পারে না কোন অ্যাড থেকে সেলস আসছে, ফলে বিজ্ঞাপনে বেশি খরচ করেও কাঙ্ক্ষিত সেলস পাওয়া যায় না।'}
+                  </li>
+                </ul>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-500/20 text-emerald-950 dark:text-emerald-200 space-y-2">
+                <div className="flex items-center gap-2 font-bold text-xs text-emerald-800 dark:text-emerald-300">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span>{language === 'en' ? 'ZiniChat Server CAPI (100% Reliable Tracking)' : 'ZiniChat সার্ভার CAPI (১০০% নির্ভুল ডেলিভারি)'}</span>
+                </div>
+                <ul className="text-[11px] space-y-1.5 text-emerald-900/90 dark:text-emerald-200/90 list-disc list-inside leading-relaxed">
+                  <li>
+                    {language === 'en'
+                      ? 'Orders & leads transmit directly from ZiniChat cloud server to Meta Graph API — 100% immune to blockers.'
+                      : 'অর্ডার ও লিডের ডেটা সরাসরি ZiniChat ক্লাউড সার্ভার থেকে মেটাতে যায় — কোনো অ্যাড-ব্লকার আটকাতে পারে না।'}
+                  </li>
+                  <li>
+                    {language === 'en'
+                      ? 'Auto E.164 phone normalization (+8801...) & SHA-256 cryptographic hashing maximize Event Match Quality (EMQ).'
+                      : 'স্বয়ংক্রিয় E.164 ফোন স্ট্যান্ডার্ডাইজেশন (+8801...) ও SHA-256 হ্যাশিং ফেসবুকের ম্যাচ কোয়ালিটি সর্বোচ্চ রাখে।'}
+                  </li>
+                  <li>
+                    {language === 'en'
+                      ? 'Deterministic order_{id} deduplication guarantees zero double-counting between pixel and server.'
+                      : 'অর্ডার আইডি দিয়ে ব্রাউজার ও সার্ভার ডেটা ডিডুপ্লিকেট হয়, তাই কোনো অর্ডার দুইবার কাউন্ট হয় না।'}
+                  </li>
+                </ul>
+              </div>
+            </div>
+          )}
+
+          {/* Tab 2 Content: 3-Step Setup */}
+          {guideTab === 'setup' && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-3.5">
+              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-emerald-600 text-white font-bold text-[10px] flex items-center justify-center shrink-0">1</span>
+                  <h4 className="text-xs font-bold text-slate-900 dark:text-foreground">
+                    {language === 'en' ? '1. Connect Meta Pixel' : '১. পিক্সেল কানেক্ট করুন'}
+                  </h4>
+                </div>
+                <p className="text-[11px] text-slate-600 dark:text-muted-foreground leading-relaxed">
+                  {language === 'en'
+                    ? 'Select your Pixel from the "Connected Meta Pixels" card on the left and click "1-Click Connect". No manual token copying needed!'
+                    : 'বাম পাশের "কানেক্টেড মেটা পিক্সেলসমূহ" বক্স থেকে আপনার পিক্সেল বেছে নিয়ে "১-ক্লিক সংযোগ" বাটনে চাপুন। আলাদা কোনো টোকেন লাগবেনা!'}
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-amber-500 text-white font-bold text-[10px] flex items-center justify-center shrink-0">2</span>
+                  <h4 className="text-xs font-bold text-slate-900 dark:text-foreground">
+                    {language === 'en' ? '2. Send Test Ping' : '২. ১-ক্লিক টেস্ট পিং পাঠান'}
+                  </h4>
+                </div>
+                <p className="text-[11px] text-slate-600 dark:text-muted-foreground leading-relaxed">
+                  {language === 'en'
+                    ? 'Click "Send 1-Click Test Ping to Meta". If connected, you will get a 200 OK acknowledgment and can check Meta Events Manager.'
+                    : '"মেটাতে ১-ক্লিক টেস্ট ইভেন্ট পাঠান" বাটনে ক্লিক করে পরীক্ষা করুন। মেটা গ্রাফ API ২০০ ওকে দেখালে বুঝবেন সার্ভার রেডি।'}
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-emerald-600 text-white font-bold text-[10px] flex items-center justify-center shrink-0">3</span>
+                  <h4 className="text-xs font-bold text-slate-900 dark:text-foreground">
+                    {language === 'en' ? '3. Automated Tracking' : '৩. অটো-ট্র্যাকিং চালু!'}
+                  </h4>
+                </div>
+                <p className="text-[11px] text-slate-600 dark:text-muted-foreground leading-relaxed">
+                  {language === 'en'
+                    ? 'Keep Purchase, Lead, and Contact active below. When customers place orders in chat or site, ZiniChat reports to Meta in real-time!'
+                    : 'নিচের টেবিলে Purchase, Lead ও Contact সচল রাখুন। ইনবক্সে চ্যাটে বা ওয়েবসাইটে কাস্টমার অর্ডার দিলে ZiniChat একা একাই মেটাতে পাঠাবে!'}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Tab 3 Content: Trigger Sources */}
+          {guideTab === 'sources' && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 pt-3.5">
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 space-y-1">
+                <div className="flex items-center gap-1.5 font-bold text-xs text-slate-900 dark:text-foreground">
+                  <ShoppingCart className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span>Order (অর্ডার)</span>
+                </div>
+                <p className="text-[11px] text-slate-600 dark:text-muted-foreground leading-relaxed">
+                  {language === 'en'
+                    ? 'Fires Purchase event with monetary value when an order is created or confirmed in chat.'
+                    : 'ইনবক্সে চ্যাটে কাস্টমার অর্ডার দিলে মোট টাকা ও ফোন নম্বরসহ মেটাতে Purchase ইভেন্ট যায়।'}
+                </p>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 space-y-1">
+                <div className="flex items-center gap-1.5 font-bold text-xs text-slate-900 dark:text-foreground">
+                  <Bot className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+                  <span>Inbox AI (এআই ইনবক্স)</span>
+                </div>
+                <p className="text-[11px] text-slate-600 dark:text-muted-foreground leading-relaxed">
+                  {language === 'en'
+                    ? 'Fires Contact or Lead when AI detects customer buying intent or contact details.'
+                    : 'গ্রাহক ইনবক্সে এআই-এর সাথে কথা বলে পণ্য কেনার আগ্রহ দেখালে বা তথ্য দিলে মেটাতে যায়।'}
+                </p>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 space-y-1">
+                <div className="flex items-center gap-1.5 font-bold text-xs text-slate-900 dark:text-foreground">
+                  <UserCheck className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 shrink-0" />
+                  <span>Lead (গ্রাহক লিড)</span>
+                </div>
+                <p className="text-[11px] text-slate-600 dark:text-muted-foreground leading-relaxed">
+                  {language === 'en'
+                    ? 'Fires Lead event when a new customer profile with mobile number is registered.'
+                    : 'নতুন কোনো কাস্টমারের নাম ও মোবাইল নম্বর ডাটাবেসে সেভ হলে Lead হিসেবে মেটাতে যায়।'}
+                </p>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 space-y-1">
+                <div className="flex items-center gap-1.5 font-bold text-xs text-slate-900 dark:text-foreground">
+                  <LayoutGrid className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                  <span>Widget (ওয়েব চ্যাট)</span>
+                </div>
+                <p className="text-[11px] text-slate-600 dark:text-muted-foreground leading-relaxed">
+                  {language === 'en'
+                    ? 'Fires when a website visitor submits contact details or messages in the chat widget.'
+                    : 'আপনার ওয়েবসাইটের চ্যাট উইজেট থেকে কোনো কাস্টমার ফর্ম পূরণ করলে বা মেসেজ পাঠালে।'}
+                </p>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 space-y-1 sm:col-span-2 lg:col-span-2">
+                <div className="flex items-center gap-1.5 font-bold text-xs text-slate-900 dark:text-foreground">
+                  <Globe className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span>Webhook (কাস্টম সাইট / শপিফাই / ওয়ার্ডপ্রেস)</span>
+                </div>
+                <p className="text-[11px] text-slate-600 dark:text-muted-foreground leading-relaxed">
+                  {language === 'en'
+                    ? 'Send checkout events from your external website or funnel via HTTP POST to the Webhook URL on the left.'
+                    : 'আপনার ওয়ার্ডপ্রেস, শপিফাই বা কাস্টম ওয়েবসাইটের চেকআউট থেকে সরাসরি মেটাতে ইভেন্ট পাঠাতে বাম পাশের Webhook URL ব্যবহার করুন।'}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Guide Footer */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-3 border-t border-slate-200 dark:border-white/10 mt-3.5 text-[11px]">
+            <p className="text-slate-600 dark:text-muted-foreground">
+              💡 {language === 'en' ? 'Tip: You can hide or show this guide anytime using the button above.' : 'টিপস: উপরের "নির্দেশিকা লুকান" বাটনে চাপ দিয়ে যেকোনো সময় এটি বন্ধ বা চালু করতে পারবেন।'}
+            </p>
+            <a
+              href="/dashboard/help?article=capi-hub-setup"
+              target="_blank"
+              rel="noreferrer"
+              className="text-emerald-700 dark:text-emerald-400 hover:underline font-bold flex items-center gap-1 shrink-0"
+            >
+              <span>{language === 'en' ? 'Read Full Documentation in Help Center' : 'সম্পূর্ণ হেল্প সেন্টার ম্যানুয়াল পড়ুন'}</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
+        </div>
+      )}
+
       {/* Plan Expired Warning Banner */}
       {!isPlanActive && (
-        <div className="bg-rose-500/10 border border-rose-500/30 rounded-2xl p-4 sm:p-5 backdrop-blur-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg shadow-rose-950/20">
+        <div className="bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 rounded-2xl p-4 sm:p-5 backdrop-blur-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
           <div className="flex items-start gap-3.5">
-            <div className="p-2.5 bg-rose-500/20 text-rose-400 rounded-xl mt-0.5 border border-rose-500/30 shrink-0">
+            <div className="p-2.5 bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 rounded-xl mt-0.5 border border-rose-200 dark:border-rose-500/30 shrink-0">
               <AlertCircle className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-rose-200 flex items-center gap-2">
+              <h3 className="text-sm font-semibold text-rose-900 dark:text-rose-200 flex items-center gap-2">
                 {language === 'en' ? '⚠️ Subscription Plan Expired — Server-Side Tracking Suspended' : '⚠️ সাবস্ক্রিপশন প্ল্যানের মেয়াদ শেষ — সার্ভার-সাইড ট্র্যাকিং স্থগিত'}
               </h3>
-              <p className="text-xs text-rose-300/80 mt-1 max-w-2xl leading-relaxed">
+              <p className="text-xs text-rose-800 dark:text-rose-300/80 mt-1 max-w-2xl leading-relaxed">
                 {language === 'en'
                   ? 'Your subscription plan has expired. Meta Conversions API (CAPI) real-time event forwarding, deduplication sync, test pings, and webhook triggers are paused. Renew your subscription to restore real-time ROAS tracking.'
                   : 'আপনার সাবস্ক্রিপশন প্ল্যানের মেয়াদ শেষ হয়ে গেছে। মেটা কনভার্শনস এপিআই (CAPI) রিয়েল-টাইম ইভেন্ট ফরোয়ার্ডিং, টেস্ট পিং এবং ওয়েবহুক সিঙ্ক স্থগিত করা হয়েছে। নির্ভুল ROAS ট্র্যাকিং সচল রাখতে প্ল্যান রিনিউ করুন।'}
@@ -549,7 +805,7 @@ export default function CapiHubPage() {
           </div>
           <button
             onClick={() => router.push('/dashboard/settings/subscription')}
-            className="px-4 py-2.5 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white rounded-xl text-xs font-semibold transition-all shadow-lg shadow-rose-900/40 flex items-center gap-2 shrink-0 active:scale-95"
+            className="px-4 py-2.5 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white rounded-xl text-xs font-semibold transition-all shadow-md shadow-rose-900/20 flex items-center gap-2 shrink-0 active:scale-95"
           >
             <Zap className="w-4 h-4 fill-white" />
             {language === 'en' ? 'Renew Plan Now' : 'প্ল্যান রিনিউ করুন'}
@@ -564,13 +820,13 @@ export default function CapiHubPage() {
         <div className="lg:col-span-4 space-y-6">
           
           {/* Pixel Setup Card */}
-          <div className="bg-surface/70 backdrop-blur-xl border border-border dark:border-white/10 rounded-2xl p-4 sm:p-5 shadow-sm">
+          <div className="bg-white dark:bg-surface/70 backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-2xl p-4 sm:p-5 shadow-sm">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-[14px] font-bold flex items-center gap-2 text-foreground">
-                <ShieldCheck className="w-4 h-4 text-emerald-500" />
+              <h2 className="text-[14px] font-bold flex items-center gap-2 text-slate-900 dark:text-foreground">
+                <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-500" />
                 {language === 'en' ? 'Meta Pixel & Token' : 'মেটা পিক্সেল ও টোকেন'}
               </h2>
-              <span className="text-[11px] text-muted-foreground">
+              <span className="text-[11px] text-slate-500 dark:text-muted-foreground font-semibold">
                 {language === 'en' ? 'Step 1' : 'ধাপ ১'}
               </span>
             </div>
@@ -578,17 +834,17 @@ export default function CapiHubPage() {
             <div className="space-y-4">
               {/* 1. AUTO-DISCOVERED PIXELS SECTION */}
               {discoveredData?.isMetaConnected ? (
-                <div className="p-3.5 rounded-xl bg-gradient-to-br from-emerald-500/15 via-surface/60 to-brand-green/10 border border-emerald-500/30">
+                <div className="p-3.5 rounded-xl bg-gradient-to-br from-emerald-500/10 via-slate-50/50 to-emerald-500/5 dark:from-emerald-500/15 dark:via-surface/60 dark:to-brand-green/10 border border-emerald-500/30">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                    <span className="text-xs font-bold text-slate-900 dark:text-foreground flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                       {language === 'en' ? 'Connected Meta Pixels' : 'কানেক্টেড মেটা পিক্সেলসমূহ'}
                     </span>
                     <button
                       type="button"
                       onClick={fetchDiscoveredPixels}
                       disabled={loadingDiscovered}
-                      className="text-[10px] text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
+                      className="text-[10px] text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 font-bold flex items-center gap-1"
                       title={language === 'en' ? 'Refresh Pixels' : 'রিফ্রেশ করুন'}
                     >
                       <RefreshCw className={`w-3 h-3 ${loadingDiscovered ? 'animate-spin' : ''}`} />
@@ -598,12 +854,12 @@ export default function CapiHubPage() {
 
                   {loadingDiscovered ? (
                     <div className="py-4 text-center">
-                      <RefreshCw className="w-4 h-4 animate-spin text-emerald-400 mx-auto mb-1" />
-                      <span className="text-[10px] text-muted-foreground">{language === 'en' ? 'Detecting pixels...' : 'পিক্সেল খোঁজা হচ্ছে...'}</span>
+                      <RefreshCw className="w-4 h-4 animate-spin text-emerald-600 dark:text-emerald-400 mx-auto mb-1" />
+                      <span className="text-[10px] text-slate-500 dark:text-muted-foreground">{language === 'en' ? 'Detecting pixels...' : 'পিক্সেল খোঁজা হচ্ছে...'}</span>
                     </div>
                   ) : discoveredData.pixels.length > 0 ? (
                     <div className="space-y-2.5">
-                      <p className="text-[10px] text-muted-foreground leading-relaxed">
+                      <p className="text-[11px] text-slate-600 dark:text-muted-foreground leading-relaxed">
                         {language === 'en'
                           ? 'Select your Pixel to start tracking. ZiniChat automatically uses your connected Facebook OAuth token — zero manual copy-pasting!'
                           : 'আপনার পিক্সেল নির্বাচন করুন। কোনো ম্যানুয়াল টোকেন কপি-পেস্ট ছাড়াই স্বয়ংক্রিয়ভাবে ট্র্যাকিং চালু হয়ে যাবে!'}
@@ -619,24 +875,24 @@ export default function CapiHubPage() {
                               onClick={() => setSelectedDiscoveredPixelId(p.id)}
                               className={`p-2.5 rounded-xl border cursor-pointer transition-all ${
                                 isSelected
-                                  ? 'bg-emerald-500/20 border-emerald-500 shadow-md shadow-emerald-950/20'
-                                  : 'bg-background/60 border-border hover:border-emerald-500/40'
+                                  ? 'bg-emerald-50 dark:bg-emerald-500/20 border-emerald-500 shadow-sm'
+                                  : 'bg-white dark:bg-background/60 border-slate-200 dark:border-border hover:border-emerald-500/40'
                               }`}
                             >
                               <div className="flex items-center justify-between gap-2">
                                 <div className="flex items-center gap-2.5 min-w-0">
                                   <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
-                                    isSelected ? 'border-emerald-400 bg-emerald-500' : 'border-border dark:border-white/30'
+                                    isSelected ? 'border-emerald-600 dark:border-emerald-400 bg-emerald-600' : 'border-slate-300 dark:border-white/30'
                                   }`}>
                                     {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                                   </div>
                                   <div className="min-w-0">
-                                    <p className="text-[11px] font-bold text-foreground truncate">{p.name}</p>
-                                    <p className="text-[10px] font-mono text-muted-foreground">ID: {p.id}</p>
+                                    <p className="text-[11px] font-bold text-slate-900 dark:text-foreground truncate">{p.name}</p>
+                                    <p className="text-[10px] font-mono text-slate-500 dark:text-muted-foreground">ID: {p.id}</p>
                                   </div>
                                 </div>
                                 {isCurrentActive && (
-                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shrink-0">
+                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/30 shrink-0">
                                     {language === 'en' ? 'Active' : 'চালু'}
                                   </span>
                                 )}
@@ -661,8 +917,8 @@ export default function CapiHubPage() {
                       </button>
                     </div>
                   ) : (
-                    <div className="p-3 bg-background/50 rounded-xl border border-border dark:border-white/5 text-center">
-                      <p className="text-[11px] text-muted-foreground">
+                    <div className="p-3 bg-slate-50 dark:bg-background/50 rounded-xl border border-slate-200 dark:border-white/5 text-center">
+                      <p className="text-[11px] text-slate-600 dark:text-muted-foreground">
                         {language === 'en'
                           ? 'No Pixels found under your Meta ad accounts. Create a Pixel in Meta Events Manager or enter manually below.'
                           : 'আপনার মেটা অ্যাকাউন্টে কোনো পিক্সেল পাওয়া যায়নি। মেটা ইভেন্টস ম্যানেজার থেকে পিক্সেল তৈরি করুন অথবা নিচে ম্যানুয়ালি লিখুন।'}
@@ -671,21 +927,21 @@ export default function CapiHubPage() {
                   )}
                 </div>
               ) : discoveredData && !discoveredData.isMetaConnected ? (
-                <div className="p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/30">
+                <div className="p-3.5 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30">
                   <div className="flex items-start gap-2.5">
-                    <AlertCircle className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+                    <AlertCircle className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
                     <div className="flex-1">
-                      <p className="text-xs font-semibold text-blue-900 dark:text-white">
+                      <p className="text-xs font-bold text-blue-900 dark:text-blue-100">
                         {language === 'en' ? 'Meta Account Not Connected' : 'মেটা অ্যাকাউন্ট যুক্ত নেই'}
                       </p>
-                      <p className="text-[11px] text-blue-200/80 mt-1 leading-relaxed">
+                      <p className="text-[11px] text-blue-800 dark:text-blue-200/90 mt-1 leading-relaxed">
                         {language === 'en'
                           ? 'Connect your Facebook Page or Meta Ad Account to auto-discover your Pixels with 1 click without manual tokens.'
                           : 'পিক্সেল স্বয়ংক্রিয়ভাবে পেতে এবং টোকেনের ঝামেলা ছাড়া ট্র্যাক করতে মেটা অ্যাড অ্যাকাউন্ট বা ফেসবুক পেজ কানেক্ট করুন।'}
                       </p>
                       <a
                         href="/dashboard/settings/meta-ads"
-                        className="inline-flex items-center gap-1 mt-2.5 px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-[10px] font-bold transition-colors"
+                        className="inline-flex items-center gap-1 mt-2.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-[10px] font-bold transition-colors"
                       >
                         {language === 'en' ? 'Connect Meta Account ↗' : 'মেটা অ্যাকাউন্ট কানেক্ট করুন ↗'}
                       </a>
@@ -695,11 +951,11 @@ export default function CapiHubPage() {
               ) : null}
 
               {/* 2. ADVANCED / MANUAL SETUP TOGGLE */}
-              <div className="border-t border-border dark:border-white/10 pt-3">
+              <div className="border-t border-slate-200 dark:border-white/10 pt-3">
                 <button
                   type="button"
                   onClick={() => setShowManualForm(!showManualForm)}
-                  className="w-full flex items-center justify-between text-[11px] font-semibold text-muted-foreground hover:text-foreground transition-colors py-1"
+                  className="w-full flex items-center justify-between text-[11px] font-bold text-slate-700 dark:text-muted-foreground hover:text-slate-900 dark:hover:text-foreground transition-colors py-1"
                 >
                   <span className="flex items-center gap-1.5">
                     <SlidersHorizontal className="w-3.5 h-3.5 text-brand-orange" />
@@ -711,28 +967,28 @@ export default function CapiHubPage() {
                 {showManualForm && (
                   <div className="space-y-3 pt-3 animate-in fade-in">
                     <div>
-                      <label className="text-[11px] font-semibold text-muted-foreground mb-1 block">
-                        Meta Pixel ID / Dataset ID <span className="text-red-400">*</span>
+                      <label className="text-[11px] font-semibold text-slate-700 dark:text-muted-foreground mb-1 block">
+                        Meta Pixel ID / Dataset ID <span className="text-red-500">*</span>
                       </label>
                       <input 
                         type="text" 
                         value={formData.pixelId}
                         onChange={e => setFormData({ ...formData, pixelId: e.target.value })}
-                        className="w-full bg-background/80 border border-border dark:border-white/10 rounded-xl px-3 py-2.5 text-[12px] text-foreground focus:outline-none focus:border-emerald-500/50 transition-colors font-mono"
+                        className="w-full bg-white dark:bg-background/80 border border-slate-300 dark:border-white/10 rounded-xl px-3 py-2.5 text-[12px] text-slate-900 dark:text-foreground placeholder:text-slate-400 dark:placeholder:text-muted-foreground focus:outline-none focus:border-emerald-500 transition-colors font-mono"
                         placeholder="e.g. 102938475610293"
                       />
                     </div>
 
                     <div>
                       <div className="flex items-center justify-between mb-1">
-                        <label className="text-[11px] font-semibold text-muted-foreground flex items-center gap-1">
-                          Conversions API Access Token <span className="text-red-400">*</span>
+                        <label className="text-[11px] font-semibold text-slate-700 dark:text-muted-foreground flex items-center gap-1">
+                          Conversions API Access Token <span className="text-red-500">*</span>
                         </label>
                         <a 
                           href="https://business.facebook.com/events_manager2" 
                           target="_blank" 
                           rel="noreferrer"
-                          className="text-[10px] text-emerald-400 hover:underline flex items-center gap-0.5"
+                          className="text-[10px] text-emerald-700 dark:text-emerald-400 hover:underline font-bold flex items-center gap-0.5"
                         >
                           Events Manager ↗
                         </a>
@@ -741,7 +997,7 @@ export default function CapiHubPage() {
                         type="password" 
                         value={formData.accessToken}
                         onChange={e => setFormData({ ...formData, accessToken: e.target.value })}
-                        className="w-full bg-background/80 border border-border dark:border-white/10 rounded-xl px-3 py-2.5 text-[12px] text-foreground focus:outline-none focus:border-emerald-500/50 transition-colors font-mono"
+                        className="w-full bg-white dark:bg-background/80 border border-slate-300 dark:border-white/10 rounded-xl px-3 py-2.5 text-[12px] text-slate-900 dark:text-foreground placeholder:text-slate-400 dark:placeholder:text-muted-foreground focus:outline-none focus:border-emerald-500 transition-colors font-mono"
                         placeholder="EAA..."
                       />
                     </div>
@@ -760,19 +1016,19 @@ export default function CapiHubPage() {
               </div>
 
               {/* 3. TEST EVENT CODE (Optional) & TEST PING */}
-              <div className="pt-2 border-t border-border dark:border-white/10 space-y-3">
+              <div className="pt-2 border-t border-slate-200 dark:border-white/10 space-y-3">
                 <div>
-                  <label className="text-[11px] font-semibold text-muted-foreground mb-1 block">
-                    Test Event Code <span className="text-[10px] text-muted-foreground font-normal">({language === 'en' ? 'Optional' : 'ঐচ্ছিক'})</span>
+                  <label className="text-[11px] font-semibold text-slate-700 dark:text-muted-foreground mb-1 block">
+                    Test Event Code <span className="text-[10px] text-slate-500 dark:text-muted-foreground font-normal">({language === 'en' ? 'Optional' : 'ঐচ্ছিক'})</span>
                   </label>
                   <input 
                     type="text" 
                     value={formData.testEventCode}
                     onChange={e => setFormData({ ...formData, testEventCode: e.target.value })}
-                    className="w-full bg-background/80 border border-border dark:border-white/10 rounded-xl px-3 py-2 text-[12px] text-foreground focus:outline-none focus:border-emerald-500/50 transition-colors font-mono uppercase"
+                    className="w-full bg-white dark:bg-background/80 border border-slate-300 dark:border-white/10 rounded-xl px-3 py-2 text-[12px] text-slate-900 dark:text-foreground placeholder:text-slate-400 dark:placeholder:text-muted-foreground focus:outline-none focus:border-emerald-500 transition-colors font-mono uppercase"
                     placeholder="e.g. TEST12345"
                   />
-                  <p className="text-[10px] text-muted-foreground mt-1">
+                  <p className="text-[10px] text-slate-500 dark:text-muted-foreground mt-1">
                     {language === 'en'
                       ? 'Found in Events Manager > Test Events tab to view server hits live in Meta.'
                       : 'মেটাতে সরাসরি রিয়েলটাইম দেখতে Events Manager > Test Events ট্যাব থেকে দিন।'}
@@ -784,9 +1040,9 @@ export default function CapiHubPage() {
                     type="button"
                     onClick={handleSendTestEvent}
                     disabled={testingPing}
-                    className="w-full py-2 bg-muted/60 dark:bg-white/5 hover:bg-muted dark:hover:bg-white/10 text-foreground border border-border dark:border-white/10 rounded-xl text-[12px] font-semibold transition-all flex justify-center items-center gap-2 disabled:opacity-50"
+                    className="w-full py-2 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-800 dark:text-foreground border border-slate-200 dark:border-white/10 rounded-xl text-[12px] font-bold transition-all flex justify-center items-center gap-2 disabled:opacity-50"
                   >
-                    {testingPing ? <RefreshCw className="w-4 h-4 animate-spin text-emerald-400" /> : <Zap className="w-4 h-4 text-emerald-400" />}
+                    {testingPing ? <RefreshCw className="w-4 h-4 animate-spin text-emerald-600 dark:text-emerald-400" /> : <Zap className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />}
                     {language === 'en' ? 'Send 1-Click Test Ping to Meta' : 'মেটাতে ১-ক্লিক টেস্ট ইভেন্ট পাঠান'}
                   </button>
                 )}
@@ -796,17 +1052,17 @@ export default function CapiHubPage() {
               {testResult && (
                 <div className={`p-3 rounded-xl border text-[11px] transition-all animate-in fade-in ${
                   testResult.success 
-                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' 
-                    : 'bg-red-500/10 border-red-500/30 text-red-300'
+                    ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-300 dark:border-emerald-500/30 text-emerald-900 dark:text-emerald-300' 
+                    : 'bg-rose-50 dark:bg-red-500/10 border-rose-300 dark:border-red-500/30 text-rose-900 dark:text-red-300'
                 }`}>
                   <div className="flex items-start gap-2">
                     {testResult.success ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                     ) : (
-                      <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                      <AlertCircle className="w-4 h-4 text-rose-600 dark:text-red-400 shrink-0 mt-0.5" />
                     )}
                     <div className="flex-1">
-                      <p className="font-semibold">{testResult.message}</p>
+                      <p className="font-bold">{testResult.message}</p>
                       {testResult.data?.fbtrace_id && (
                         <p className="text-[10px] opacity-75 font-mono mt-1">FBTrace: {testResult.data.fbtrace_id}</p>
                       )}
@@ -819,18 +1075,18 @@ export default function CapiHubPage() {
 
           {/* External Webhook Card */}
           {integration && (
-            <div className="bg-surface/70 backdrop-blur-xl border border-border dark:border-white/10 rounded-2xl p-4 sm:p-5 shadow-sm space-y-3.5">
+            <div className="bg-white dark:bg-surface/70 backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-2xl p-4 sm:p-5 shadow-sm space-y-3.5">
               <div className="flex items-center justify-between">
-                <h2 className="text-[14px] font-bold flex items-center gap-2 text-foreground">
+                <h2 className="text-[14px] font-bold flex items-center gap-2 text-slate-900 dark:text-foreground">
                   <Globe className="w-4 h-4 text-amber-500" />
                   {language === 'en' ? 'Custom Webhook API' : 'কাস্টম ওয়েবহুক এপিআই'}
                 </h2>
-                <span className="px-2 py-0.5 rounded text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold">
+                <span className="px-2 py-0.5 rounded text-[10px] bg-amber-100 dark:bg-amber-500/10 text-amber-800 dark:text-amber-400 border border-amber-300 dark:border-amber-500/20 font-bold">
                   External
                 </span>
               </div>
               
-              <p className="text-[11px] text-muted-foreground leading-relaxed">
+              <p className="text-[11px] text-slate-600 dark:text-muted-foreground leading-relaxed">
                 {language === 'en' 
                   ? 'Send custom events from your website or funnel into ZiniChat CAPI Hub via HTTP POST.'
                   : 'আপনার ওয়েবসাইট বা কাস্টম ফানেল থেকে সরাসরি HTTP POST দিয়ে ইভেন্ট পাঠাতে এই URL ব্যবহার করুন।'}
@@ -839,34 +1095,34 @@ export default function CapiHubPage() {
               <div className="space-y-3">
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] font-semibold text-muted-foreground uppercase">Webhook Endpoint URL</span>
+                    <span className="text-[10px] font-bold text-slate-600 dark:text-muted-foreground uppercase">Webhook Endpoint URL</span>
                     <button 
                       onClick={() => handleCopy(`${API}/capi-hub/webhook/${integration.webhookToken}`, 'webhook')}
-                      className="text-[10px] text-emerald-400 hover:text-emerald-300 flex items-center gap-1 font-semibold"
+                      className="text-[10px] text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 flex items-center gap-1 font-bold"
                     >
-                      {copiedField === 'webhook' ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                      {copiedField === 'webhook' ? <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" /> : <Copy className="w-3 h-3" />}
                       {copiedField === 'webhook' ? (language === 'en' ? 'Copied' : 'কপি হয়েছে') : (language === 'en' ? 'Copy URL' : 'কপি করুন')}
                     </button>
                   </div>
-                  <div className="bg-background/90 border border-border dark:border-white/10 rounded-xl p-2.5 text-[11px] break-all font-mono text-emerald-600 dark:text-emerald-400 select-all">
+                  <div className="bg-slate-100 dark:bg-background/90 border border-slate-200 dark:border-white/10 rounded-xl p-2.5 text-[11px] break-all font-mono text-emerald-800 dark:text-emerald-400 select-all font-semibold">
                     {`${API}/capi-hub/webhook/${integration.webhookToken}`}
                   </div>
                 </div>
                 
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] font-semibold text-muted-foreground uppercase">Header: x-zinichat-secret</span>
+                    <span className="text-[10px] font-bold text-slate-600 dark:text-muted-foreground uppercase">Header: x-zinichat-secret</span>
                     {integration.unhashedWebhookSecret && (
                       <button 
                         onClick={() => handleCopy(integration.unhashedWebhookSecret, 'secret')}
-                        className="text-[10px] text-emerald-400 hover:text-emerald-300 flex items-center gap-1 font-semibold"
+                        className="text-[10px] text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 flex items-center gap-1 font-bold"
                       >
-                        {copiedField === 'secret' ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                        {copiedField === 'secret' ? <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" /> : <Copy className="w-3 h-3" />}
                         {copiedField === 'secret' ? (language === 'en' ? 'Copied' : 'কপি হয়েছে') : (language === 'en' ? 'Copy Secret' : 'কপি করুন')}
                       </button>
                     )}
                   </div>
-                  <div className="bg-background/90 border border-border dark:border-white/10 rounded-xl p-2.5 text-[11px] break-all font-mono text-muted-foreground">
+                  <div className="bg-slate-100 dark:bg-background/90 border border-slate-200 dark:border-white/10 rounded-xl p-2.5 text-[11px] break-all font-mono text-slate-700 dark:text-muted-foreground">
                     {integration.unhashedWebhookSecret || '•••••••••••••••••••••••• (Securely Stored in DB)'}
                   </div>
                 </div>
@@ -875,9 +1131,9 @@ export default function CapiHubPage() {
           )}
 
           {/* EMQ Optimizer Info Card */}
-          <div className="bg-surface/50 border border-border dark:border-white/5 rounded-2xl p-4 text-[11px] text-muted-foreground space-y-1.5">
-            <div className="flex items-center gap-1.5 font-bold text-foreground">
-              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+          <div className="bg-slate-50 dark:bg-surface/50 border border-slate-200 dark:border-white/5 rounded-2xl p-4 text-[11px] text-slate-600 dark:text-muted-foreground space-y-1.5">
+            <div className="flex items-center gap-1.5 font-bold text-slate-900 dark:text-foreground">
+              <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
               <span>{language === 'en' ? 'High Event Match Quality (EMQ)' : 'উচ্চ ইভেন্ট ম্যাচ কোয়ালিটি (EMQ)'}</span>
             </div>
             <p className="leading-relaxed">
@@ -893,14 +1149,14 @@ export default function CapiHubPage() {
         <div className="lg:col-span-8 space-y-6">
           
           {/* Event Configurations Section */}
-          <div className="bg-surface/70 backdrop-blur-xl border border-border dark:border-white/10 rounded-2xl overflow-hidden shadow-sm">
-            <div className="p-4 sm:p-5 border-b border-border dark:border-white/10 flex flex-wrap items-center justify-between gap-3 bg-muted/20 dark:bg-white/[0.02]">
+          <div className="bg-white dark:bg-surface/70 backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm">
+            <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-white/10 flex flex-wrap items-center justify-between gap-3 bg-slate-50/50 dark:bg-white/[0.02]">
               <div>
-                <h2 className="text-[14px] font-bold flex items-center gap-2 text-foreground">
-                  <SlidersHorizontal className="w-4 h-4 text-emerald-500" />
+                <h2 className="text-[14px] font-bold flex items-center gap-2 text-slate-900 dark:text-foreground">
+                  <SlidersHorizontal className="w-4 h-4 text-emerald-600 dark:text-emerald-500" />
                   {language === 'en' ? 'Active Tracking Events' : 'অ্যাক্টিভ ট্র্যাকিং ইভেন্টসমূহ'}
                 </h2>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
+                <p className="text-[11px] text-slate-600 dark:text-muted-foreground mt-0.5">
                   {language === 'en' 
                     ? 'Automated triggers: Toggle which sources forward each event to Meta Conversions API.'
                     : 'স্বয়ংক্রিয় ট্রিগার: কোন সোর্স থেকে মেটা CAPI-তে ইভেন্ট যাবে তা নির্ধারণ করুন।'}
@@ -909,7 +1165,7 @@ export default function CapiHubPage() {
 
               <button 
                 onClick={() => setShowAddModal(true)}
-                className="px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl text-[11px] font-bold transition-all flex items-center gap-1.5"
+                className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/30 rounded-xl text-[11px] font-bold transition-all flex items-center gap-1.5 shadow-xs"
               >
                 <Plus className="w-3.5 h-3.5" />
                 {language === 'en' ? 'Add Event' : 'ইভেন্ট যোগ করুন'}
@@ -919,111 +1175,121 @@ export default function CapiHubPage() {
             {/* Desktop Table View (lg and above) */}
             <div className="hidden lg:block overflow-x-auto">
               <table className="w-full text-left text-[12px]">
-                <thead className="bg-muted/50 dark:bg-white/[0.03] text-[10px] text-muted-foreground uppercase font-bold tracking-wider border-b border-border dark:border-white/5">
+                <thead className="bg-slate-100 dark:bg-white/[0.03] text-[10px] text-slate-700 dark:text-muted-foreground uppercase font-bold tracking-wider border-b border-slate-200 dark:border-white/5">
                   <tr>
                     <th className="p-3.5 pl-5">Event</th>
                     <th className="p-3.5 text-center">Status</th>
-                    <th className="p-3.5 text-center">Order</th>
-                    <th className="p-3.5 text-center">Inbox AI</th>
-                    <th className="p-3.5 text-center">Lead</th>
-                    <th className="p-3.5 text-center">Widget</th>
-                    <th className="p-3.5 text-center">Webhook</th>
+                    <th className="p-3.5 text-center" title="ইনবক্স বা সিস্টেমে অর্ডার তৈরি হলে">Order 📦</th>
+                    <th className="p-3.5 text-center" title="ইনবক্সে এআই কাস্টমার ইনটেন্ট শনাক্ত করলে">Inbox AI 🤖</th>
+                    <th className="p-3.5 text-center" title="নতুন কাস্টমার লিড তৈরি হলে">Lead 🎯</th>
+                    <th className="p-3.5 text-center" title="ওয়েব চ্যাট উইজেট থেকে">Widget 💬</th>
+                    <th className="p-3.5 text-center" title="এক্সটার্নাল ওয়েবসাইট বা ল্যান্ডিং পেজ থেকে">Webhook 🌐</th>
                     <th className="p-3.5 text-center pr-5">Payload</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border dark:divide-white/5">
+                <tbody className="divide-y divide-slate-200 dark:divide-white/5">
                   {eventConfigs.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="p-8 text-center text-muted-foreground text-[12px]">
+                      <td colSpan={8} className="p-8 text-center text-slate-500 dark:text-muted-foreground text-[12px]">
                         {language === 'en' 
                           ? 'No events configured yet. Save your Pixel ID to auto-initialize default standard events.' 
                           : 'কোনো ইভেন্ট নেই। পিক্সেল আইডি সেভ করলেই স্বয়ংক্রিয়ভাবে প্রয়োজনীয় ইভেন্টগুলো যুক্ত হয়ে যাবে।'}
                       </td>
                     </tr>
-                  ) : eventConfigs.map(config => (
-                    <tr key={config.id} className="hover:bg-muted/30 dark:hover:bg-white/[0.02] transition-colors">
-                      <td className="p-3.5 pl-5 font-bold text-foreground">
-                        <div className="flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                          <span>{config.eventName}</span>
-                        </div>
-                      </td>
-                      
-                      {/* Master Active Toggle */}
-                      <td className="p-3.5 text-center">
-                        <label className="relative inline-flex items-center cursor-pointer">
+                  ) : eventConfigs.map(config => {
+                    const matchedPreset = STANDARD_EVENT_PRESETS.find(p => p.name === config.eventName);
+                    return (
+                      <tr key={config.id} className="hover:bg-slate-50/80 dark:hover:bg-white/[0.02] transition-colors">
+                        <td className="p-3.5 pl-5 font-bold">
+                          <div className="flex items-center gap-2.5">
+                            <span className={`w-2 h-2 rounded-full shrink-0 ${config.isEnabled ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-muted-foreground'}`} />
+                            <div>
+                              <span className="text-[13px] text-slate-900 dark:text-foreground font-bold">{config.eventName}</span>
+                              {matchedPreset && (
+                                <span className="block text-[10px] text-slate-500 dark:text-muted-foreground font-normal">
+                                  {language === 'en' ? matchedPreset.desc : matchedPreset.bnDesc}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        
+                        {/* Master Active Toggle */}
+                        <td className="p-3.5 text-center">
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input 
+                              type="checkbox" 
+                              className="sr-only peer" 
+                              checked={config.isEnabled} 
+                              onChange={(e) => handleToggleEventConfig(config.eventName, 'isEnabled', e.target.checked)} 
+                            />
+                            <div className="w-9 h-5 bg-slate-300 dark:bg-white/15 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+                          </label>
+                        </td>
+
+                        {/* Source: Order */}
+                        <td className="p-3.5 text-center">
                           <input 
                             type="checkbox" 
-                            className="sr-only peer" 
-                            checked={config.isEnabled} 
-                            onChange={(e) => handleToggleEventConfig(config.eventName, 'isEnabled', e.target.checked)} 
+                            checked={config.sourceOrderCompleted} 
+                            onChange={(e) => handleToggleEventConfig(config.eventName, 'sourceOrderCompleted', e.target.checked)} 
+                            className="rounded border-slate-300 dark:border-white/20 bg-white dark:bg-background/80 text-emerald-600 focus:ring-emerald-500/20 cursor-pointer w-4 h-4 accent-emerald-600" 
                           />
-                          <div className="w-9 h-5 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
-                        </label>
-                      </td>
+                        </td>
 
-                      {/* Source: Order */}
-                      <td className="p-3.5 text-center">
-                        <input 
-                          type="checkbox" 
-                          checked={config.sourceOrderCompleted} 
-                          onChange={(e) => handleToggleEventConfig(config.eventName, 'sourceOrderCompleted', e.target.checked)} 
-                          className="rounded border-border dark:border-white/20 bg-background/80 text-emerald-500 focus:ring-emerald-500/20 cursor-pointer w-4 h-4" 
-                        />
-                      </td>
+                        {/* Source: Inbox AI */}
+                        <td className="p-3.5 text-center">
+                          <input 
+                            type="checkbox" 
+                            checked={config.sourceInboxAiIntent} 
+                            onChange={(e) => handleToggleEventConfig(config.eventName, 'sourceInboxAiIntent', e.target.checked)} 
+                            className="rounded border-slate-300 dark:border-white/20 bg-white dark:bg-background/80 text-emerald-600 focus:ring-emerald-500/20 cursor-pointer w-4 h-4 accent-emerald-600" 
+                          />
+                        </td>
 
-                      {/* Source: Inbox AI */}
-                      <td className="p-3.5 text-center">
-                        <input 
-                          type="checkbox" 
-                          checked={config.sourceInboxAiIntent} 
-                          onChange={(e) => handleToggleEventConfig(config.eventName, 'sourceInboxAiIntent', e.target.checked)} 
-                          className="rounded border-border dark:border-white/20 bg-background/80 text-emerald-500 focus:ring-emerald-500/20 cursor-pointer w-4 h-4" 
-                        />
-                      </td>
+                        {/* Source: Lead */}
+                        <td className="p-3.5 text-center">
+                          <input 
+                            type="checkbox" 
+                            checked={config.sourceLeadCreated} 
+                            onChange={(e) => handleToggleEventConfig(config.eventName, 'sourceLeadCreated', e.target.checked)} 
+                            className="rounded border-slate-300 dark:border-white/20 bg-white dark:bg-background/80 text-emerald-600 focus:ring-emerald-500/20 cursor-pointer w-4 h-4 accent-emerald-600" 
+                          />
+                        </td>
 
-                      {/* Source: Lead */}
-                      <td className="p-3.5 text-center">
-                        <input 
-                          type="checkbox" 
-                          checked={config.sourceLeadCreated} 
-                          onChange={(e) => handleToggleEventConfig(config.eventName, 'sourceLeadCreated', e.target.checked)} 
-                          className="rounded border-border dark:border-white/20 bg-background/80 text-emerald-500 focus:ring-emerald-500/20 cursor-pointer w-4 h-4" 
-                        />
-                      </td>
+                        {/* Source: Widget */}
+                        <td className="p-3.5 text-center">
+                          <input 
+                            type="checkbox" 
+                            checked={config.sourceWidgetForm} 
+                            onChange={(e) => handleToggleEventConfig(config.eventName, 'sourceWidgetForm', e.target.checked)} 
+                            className="rounded border-slate-300 dark:border-white/20 bg-white dark:bg-background/80 text-emerald-600 focus:ring-emerald-500/20 cursor-pointer w-4 h-4 accent-emerald-600" 
+                          />
+                        </td>
 
-                      {/* Source: Widget */}
-                      <td className="p-3.5 text-center">
-                        <input 
-                          type="checkbox" 
-                          checked={config.sourceWidgetForm} 
-                          onChange={(e) => handleToggleEventConfig(config.eventName, 'sourceWidgetForm', e.target.checked)} 
-                          className="rounded border-border dark:border-white/20 bg-background/80 text-emerald-500 focus:ring-emerald-500/20 cursor-pointer w-4 h-4" 
-                        />
-                      </td>
+                        {/* Source: Webhook */}
+                        <td className="p-3.5 text-center">
+                          <input 
+                            type="checkbox" 
+                            checked={config.sourceExternalWebhook} 
+                            onChange={(e) => handleToggleEventConfig(config.eventName, 'sourceExternalWebhook', e.target.checked)} 
+                            className="rounded border-slate-300 dark:border-white/20 bg-white dark:bg-background/80 text-emerald-600 focus:ring-emerald-500/20 cursor-pointer w-4 h-4 accent-emerald-600" 
+                          />
+                        </td>
 
-                      {/* Source: Webhook */}
-                      <td className="p-3.5 text-center">
-                        <input 
-                          type="checkbox" 
-                          checked={config.sourceExternalWebhook} 
-                          onChange={(e) => handleToggleEventConfig(config.eventName, 'sourceExternalWebhook', e.target.checked)} 
-                          className="rounded border-border dark:border-white/20 bg-background/80 text-emerald-500 focus:ring-emerald-500/20 cursor-pointer w-4 h-4" 
-                        />
-                      </td>
-
-                      {/* Payload fields customize button */}
-                      <td className="p-3.5 text-center pr-5">
-                        <button 
-                          onClick={() => setActiveConfigModal(config)}
-                          className="p-1.5 rounded-lg bg-muted/60 dark:bg-white/5 hover:bg-muted dark:hover:bg-white/10 text-muted-foreground hover:text-foreground border border-border dark:border-transparent transition-all"
-                          title="Configure forwarded data fields"
-                        >
-                          <Info className="w-3.5 h-3.5" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                        {/* Payload fields customize button */}
+                        <td className="p-3.5 text-center pr-5">
+                          <button 
+                            onClick={() => setActiveConfigModal(config)}
+                            className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-muted-foreground hover:text-slate-900 dark:hover:text-foreground border border-slate-200 dark:border-transparent transition-all"
+                            title="Configure forwarded data fields"
+                          >
+                            <Info className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -1031,137 +1297,152 @@ export default function CapiHubPage() {
             {/* Mobile & Tablet Card View (< lg screens) */}
             <div className="lg:hidden p-3 space-y-3">
               {eventConfigs.length === 0 ? (
-                <div className="p-6 text-center text-muted-foreground text-[12px]">
+                <div className="p-6 text-center text-slate-500 dark:text-muted-foreground text-[12px]">
                   {language === 'en' 
                     ? 'No events configured yet. Save your Pixel ID to auto-initialize default standard events.' 
                     : 'কোনো ইভেন্ট নেই। পিক্সেল আইডি সেভ করলেই স্বয়ংক্রিয়ভাবে প্রয়োজনীয় ইভেন্টগুলো যুক্ত হয়ে যাবে।'}
                 </div>
-              ) : eventConfigs.map(config => (
-                <div 
-                  key={config.id} 
-                  className={`p-3.5 rounded-xl border transition-all ${
-                    config.isEnabled 
-                      ? 'bg-surface border-border shadow-sm' 
-                      : 'bg-muted/30 border-border/60 opacity-70'
-                  }`}
-                >
-                  {/* Card Header: Event name & Master Toggle */}
-                  <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-border dark:border-white/5">
-                    <div className="flex items-center gap-2">
-                      <span className={`w-2 h-2 rounded-full ${config.isEnabled ? 'bg-emerald-400' : 'bg-muted-foreground'}`} />
-                      <span className="font-bold text-[13px] text-foreground">{config.eventName}</span>
+              ) : eventConfigs.map(config => {
+                const matchedPreset = STANDARD_EVENT_PRESETS.find(p => p.name === config.eventName);
+                return (
+                  <div 
+                    key={config.id} 
+                    className={`p-3.5 rounded-xl border transition-all ${
+                      config.isEnabled 
+                        ? 'bg-white dark:bg-surface border-slate-200 dark:border-border shadow-xs' 
+                        : 'bg-slate-50 dark:bg-muted/30 border-slate-200/70 dark:border-border/60 opacity-75'
+                    }`}
+                  >
+                    {/* Card Header: Event name & Master Toggle */}
+                    <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-slate-200 dark:border-white/5">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className={`w-2 h-2 rounded-full ${config.isEnabled ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-muted-foreground'}`} />
+                          <span className="font-bold text-[13px] text-slate-900 dark:text-foreground">{config.eventName}</span>
+                        </div>
+                        {matchedPreset && (
+                          <p className="text-[10px] text-slate-500 dark:text-muted-foreground mt-0.5 pl-4">
+                            {language === 'en' ? matchedPreset.desc : matchedPreset.bnDesc}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button 
+                          onClick={() => setActiveConfigModal(config)}
+                          className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-white/5 text-slate-700 dark:text-muted-foreground hover:text-slate-900 dark:hover:text-foreground border border-slate-200 dark:border-transparent"
+                          title="Payload fields"
+                        >
+                          <Info className="w-3.5 h-3.5" />
+                        </button>
+
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            className="sr-only peer" 
+                            checked={config.isEnabled} 
+                            onChange={(e) => handleToggleEventConfig(config.eventName, 'isEnabled', e.target.checked)} 
+                          />
+                          <div className="w-9 h-5 bg-slate-300 dark:bg-white/15 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+                        </label>
+                      </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      <button 
-                        onClick={() => setActiveConfigModal(config)}
-                        className="p-1.5 rounded-lg bg-muted/60 dark:bg-white/5 text-muted-foreground hover:text-foreground border border-border dark:border-transparent"
-                        title="Payload fields"
-                      >
-                        <Info className="w-3.5 h-3.5" />
-                      </button>
+                    {/* Trigger Sources Pill Chips for Touch */}
+                    <div className="pt-2.5">
+                      <p className="text-[10px] text-slate-500 dark:text-muted-foreground font-bold uppercase mb-1.5">
+                        {language === 'en' ? 'Trigger Sources' : 'ট্রিগার সোর্সসমূহ'}
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        
+                        {/* Order Source Pill */}
+                        <button
+                          type="button"
+                          onClick={() => handleToggleEventConfig(config.eventName, 'sourceOrderCompleted', !config.sourceOrderCompleted)}
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border flex items-center gap-1 transition-all ${
+                            config.sourceOrderCompleted 
+                              ? 'bg-emerald-50 dark:bg-emerald-500/20 border-emerald-400 dark:border-emerald-500/50 text-emerald-800 dark:text-emerald-300 font-bold' 
+                              : 'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/5 text-slate-600 dark:text-muted-foreground hover:bg-slate-200 dark:hover:bg-white/10'
+                          }`}
+                        >
+                          <ShoppingCart className="w-3 h-3" />
+                          <span>Order</span>
+                        </button>
 
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input 
-                          type="checkbox" 
-                          className="sr-only peer" 
-                          checked={config.isEnabled} 
-                          onChange={(e) => handleToggleEventConfig(config.eventName, 'isEnabled', e.target.checked)} 
-                        />
-                        <div className="w-9 h-5 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
-                      </label>
+                        {/* Inbox AI Source Pill */}
+                        <button
+                          type="button"
+                          onClick={() => handleToggleEventConfig(config.eventName, 'sourceInboxAiIntent', !config.sourceInboxAiIntent)}
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border flex items-center gap-1 transition-all ${
+                            config.sourceInboxAiIntent 
+                              ? 'bg-emerald-50 dark:bg-emerald-500/20 border-emerald-400 dark:border-emerald-500/50 text-emerald-800 dark:text-emerald-300 font-bold' 
+                              : 'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/5 text-slate-600 dark:text-muted-foreground hover:bg-slate-200 dark:hover:bg-white/10'
+                          }`}
+                        >
+                          <Bot className="w-3 h-3" />
+                          <span>Inbox AI</span>
+                        </button>
+
+                        {/* Lead Source Pill */}
+                        <button
+                          type="button"
+                          onClick={() => handleToggleEventConfig(config.eventName, 'sourceLeadCreated', !config.sourceLeadCreated)}
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border flex items-center gap-1 transition-all ${
+                            config.sourceLeadCreated 
+                              ? 'bg-emerald-50 dark:bg-emerald-500/20 border-emerald-400 dark:border-emerald-500/50 text-emerald-800 dark:text-emerald-300 font-bold' 
+                              : 'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/5 text-slate-600 dark:text-muted-foreground hover:bg-slate-200 dark:hover:bg-white/10'
+                          }`}
+                        >
+                          <UserCheck className="w-3 h-3" />
+                          <span>Lead</span>
+                        </button>
+
+                        {/* Widget Source Pill */}
+                        <button
+                          type="button"
+                          onClick={() => handleToggleEventConfig(config.eventName, 'sourceWidgetForm', !config.sourceWidgetForm)}
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border flex items-center gap-1 transition-all ${
+                            config.sourceWidgetForm 
+                              ? 'bg-emerald-50 dark:bg-emerald-500/20 border-emerald-400 dark:border-emerald-500/50 text-emerald-800 dark:text-emerald-300 font-bold' 
+                              : 'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/5 text-slate-600 dark:text-muted-foreground hover:bg-slate-200 dark:hover:bg-white/10'
+                          }`}
+                        >
+                          <LayoutGrid className="w-3 h-3" />
+                          <span>Widget</span>
+                        </button>
+
+                        {/* Webhook Source Pill */}
+                        <button
+                          type="button"
+                          onClick={() => handleToggleEventConfig(config.eventName, 'sourceExternalWebhook', !config.sourceExternalWebhook)}
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border flex items-center gap-1 transition-all ${
+                            config.sourceExternalWebhook 
+                              ? 'bg-emerald-50 dark:bg-emerald-500/20 border-emerald-400 dark:border-emerald-500/50 text-emerald-800 dark:text-emerald-300 font-bold' 
+                              : 'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/5 text-slate-600 dark:text-muted-foreground hover:bg-slate-200 dark:hover:bg-white/10'
+                          }`}
+                        >
+                          <Globe className="w-3 h-3" />
+                          <span>Webhook</span>
+                        </button>
+
+                      </div>
                     </div>
                   </div>
-
-                  {/* Trigger Sources Pill Chips for Touch */}
-                  <div className="pt-2.5">
-                    <p className="text-[10px] text-muted-foreground font-semibold uppercase mb-1.5">
-                      {language === 'en' ? 'Trigger Sources' : 'ট্রিগার সোর্সসমূহ'}
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      
-                      {/* Order Source Pill */}
-                      <button
-                        onClick={() => handleToggleEventConfig(config.eventName, 'sourceOrderCompleted', !config.sourceOrderCompleted)}
-                        className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border flex items-center gap-1 transition-all ${
-                          config.sourceOrderCompleted 
-                            ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-800 dark:text-emerald-300 font-bold' 
-                            : 'bg-muted/50 dark:bg-white/5 border-border dark:border-white/5 text-muted-foreground hover:bg-muted dark:hover:bg-white/10'
-                        }`}
-                      >
-                        <ShoppingCart className="w-3 h-3" />
-                        <span>Order</span>
-                      </button>
-
-                      {/* Inbox AI Source Pill */}
-                      <button
-                        onClick={() => handleToggleEventConfig(config.eventName, 'sourceInboxAiIntent', !config.sourceInboxAiIntent)}
-                        className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border flex items-center gap-1 transition-all ${
-                          config.sourceInboxAiIntent 
-                            ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-800 dark:text-emerald-300 font-bold' 
-                            : 'bg-muted/50 dark:bg-white/5 border-border dark:border-white/5 text-muted-foreground hover:bg-muted dark:hover:bg-white/10'
-                        }`}
-                      >
-                        <Bot className="w-3 h-3" />
-                        <span>Inbox AI</span>
-                      </button>
-
-                      {/* Lead Source Pill */}
-                      <button
-                        onClick={() => handleToggleEventConfig(config.eventName, 'sourceLeadCreated', !config.sourceLeadCreated)}
-                        className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border flex items-center gap-1 transition-all ${
-                          config.sourceLeadCreated 
-                            ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-800 dark:text-emerald-300 font-bold' 
-                            : 'bg-muted/50 dark:bg-white/5 border-border dark:border-white/5 text-muted-foreground hover:bg-muted dark:hover:bg-white/10'
-                        }`}
-                      >
-                        <UserCheck className="w-3 h-3" />
-                        <span>Lead</span>
-                      </button>
-
-                      {/* Widget Source Pill */}
-                      <button
-                        onClick={() => handleToggleEventConfig(config.eventName, 'sourceWidgetForm', !config.sourceWidgetForm)}
-                        className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border flex items-center gap-1 transition-all ${
-                          config.sourceWidgetForm 
-                            ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-800 dark:text-emerald-300 font-bold' 
-                            : 'bg-muted/50 dark:bg-white/5 border-border dark:border-white/5 text-muted-foreground hover:bg-muted dark:hover:bg-white/10'
-                        }`}
-                      >
-                        <LayoutGrid className="w-3 h-3" />
-                        <span>Widget</span>
-                      </button>
-
-                      {/* Webhook Source Pill */}
-                      <button
-                        onClick={() => handleToggleEventConfig(config.eventName, 'sourceExternalWebhook', !config.sourceExternalWebhook)}
-                        className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border flex items-center gap-1 transition-all ${
-                          config.sourceExternalWebhook 
-                            ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-800 dark:text-emerald-300 font-bold' 
-                            : 'bg-muted/50 dark:bg-white/5 border-border dark:border-white/5 text-muted-foreground hover:bg-muted dark:hover:bg-white/10'
-                        }`}
-                      >
-                        <Globe className="w-3 h-3" />
-                        <span>Webhook</span>
-                      </button>
-
-                    </div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
           </div>
 
           {/* Recent Event Logs Section */}
-          <div className="bg-surface/70 backdrop-blur-xl border border-border dark:border-white/10 rounded-2xl overflow-hidden shadow-sm">
-            <div className="p-4 sm:p-5 border-b border-border dark:border-white/10 flex items-center justify-between bg-muted/20 dark:bg-white/[0.02]">
+          <div className="bg-white dark:bg-surface/70 backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm">
+            <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-white/10 flex items-center justify-between bg-slate-50/50 dark:bg-white/[0.02]">
               <div>
-                <h2 className="text-[14px] font-bold flex items-center gap-2 text-foreground">
-                  <Activity className="w-4 h-4 text-emerald-400" />
+                <h2 className="text-[14px] font-bold flex items-center gap-2 text-slate-900 dark:text-foreground">
+                  <Activity className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   {language === 'en' ? 'Recent Conversions Logs' : 'রিয়েলটাইম কনভার্সন লগসমূহ'}
                 </h2>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
+                <p className="text-[11px] text-slate-600 dark:text-muted-foreground mt-0.5">
                   {language === 'en' ? 'Live server activity dispatched to Meta Graph API' : 'মেটা এপিআই-তে প্রেরিত লাইভ ইভেন্ট অ্যাক্টিভিটি'}
                 </p>
               </div>
@@ -1169,18 +1450,18 @@ export default function CapiHubPage() {
               <button 
                 onClick={() => { setRefreshingLogs(true); fetchData(); }}
                 disabled={refreshingLogs}
-                className="p-2 rounded-xl bg-muted/60 dark:bg-white/5 hover:bg-muted dark:hover:bg-white/10 text-muted-foreground hover:text-foreground border border-border dark:border-transparent transition-all flex items-center gap-1 text-[11px] disabled:opacity-50"
+                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-muted-foreground hover:text-slate-900 dark:hover:text-foreground border border-slate-200 dark:border-transparent transition-all flex items-center gap-1 text-[11px] disabled:opacity-50"
                 title="Refresh logs"
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${refreshingLogs ? 'animate-spin text-emerald-400' : ''}`} />
-                <span className="hidden sm:inline">{language === 'en' ? 'Refresh' : 'রিফ্রেশ'}</span>
+                <RefreshCw className={`w-3.5 h-3.5 ${refreshingLogs ? 'animate-spin text-emerald-600 dark:text-emerald-400' : ''}`} />
+                <span className="hidden sm:inline font-bold">{language === 'en' ? 'Refresh' : 'রিফ্রেশ'}</span>
               </button>
             </div>
             
             {/* Desktop Table for Logs (lg and above) */}
             <div className="hidden lg:block overflow-x-auto max-h-[380px]">
               <table className="w-full text-left text-[12px]">
-                <thead className="bg-muted/50 dark:bg-white/[0.03] text-[10px] text-muted-foreground uppercase sticky top-0 z-10 font-bold backdrop-blur-md border-b border-border dark:border-white/5">
+                <thead className="bg-slate-100 dark:bg-white/[0.03] text-[10px] text-slate-700 dark:text-muted-foreground uppercase sticky top-0 z-10 font-bold backdrop-blur-md border-b border-slate-200 dark:border-white/5">
                   <tr>
                     <th className="p-3 pl-5">Timestamp</th>
                     <th className="p-3">Event</th>
@@ -1189,43 +1470,43 @@ export default function CapiHubPage() {
                     <th className="p-3 pr-5">Meta Response</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5">
+                <tbody className="divide-y divide-slate-200 dark:divide-white/5">
                   {logs.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="p-8 text-center text-muted-foreground text-[12px]">
+                      <td colSpan={5} className="p-8 text-center text-slate-500 dark:text-muted-foreground text-[12px]">
                         {language === 'en' ? 'No conversion events fired yet' : 'এখনো কোনো কনভার্সন ইভেন্ট লগ নেই'}
                       </td>
                     </tr>
                   ) : logs.map(log => (
-                    <tr key={log.id} className="hover:bg-muted/30 dark:hover:bg-white/[0.02] transition-colors">
-                      <td className="p-3 pl-5 text-muted-foreground whitespace-nowrap text-[11px]">
+                    <tr key={log.id} className="hover:bg-slate-50/80 dark:hover:bg-white/[0.02] transition-colors">
+                      <td className="p-3 pl-5 text-slate-500 dark:text-muted-foreground whitespace-nowrap text-[11px]">
                         {new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                        <span className="block text-[10px] opacity-60">
+                        <span className="block text-[10px] opacity-75">
                           {new Date(log.createdAt).toLocaleDateString()}
                         </span>
                       </td>
-                      <td className="p-3 font-bold text-foreground">
+                      <td className="p-3 font-bold text-slate-900 dark:text-foreground">
                         {log.eventName}
                       </td>
                       <td className="p-3">
-                        <span className="px-2 py-0.5 rounded text-[10px] bg-muted/60 dark:bg-white/5 border border-border dark:border-white/5 text-muted-foreground font-mono">
+                        <span className="px-2 py-0.5 rounded text-[10px] bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/5 text-slate-700 dark:text-muted-foreground font-mono">
                           {log.source}
                         </span>
                       </td>
                       <td className="p-3">
                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                           log.status === 'sent' 
-                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                            ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-800 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/20' :
                           log.status === 'suppressed_duplicate' 
-                            ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
+                            ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-800 dark:text-amber-400 border border-amber-300 dark:border-amber-500/20' :
                           log.status === 'pending'
-                            ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
-                            'bg-red-500/10 text-red-400 border border-red-500/20'
+                            ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-800 dark:text-blue-400 border border-blue-300 dark:border-blue-500/20' :
+                            'bg-rose-50 dark:bg-red-500/10 text-rose-800 dark:text-red-400 border border-rose-300 dark:border-red-500/20'
                         }`}>
                           {log.status === 'sent' ? '200 SENT' : log.status.toUpperCase()}
                         </span>
                       </td>
-                      <td className="p-3 pr-5 text-muted-foreground text-[11px] font-mono max-w-[200px] truncate" title={log.errorMessage || `Code ${log.responseCode}`}>
+                      <td className="p-3 pr-5 text-slate-600 dark:text-muted-foreground text-[11px] font-mono max-w-[200px] truncate" title={log.errorMessage || `Code ${log.responseCode}`}>
                         {log.responseCode ? `HTTP ${log.responseCode}` : log.errorMessage || '-'}
                       </td>
                     </tr>
@@ -1237,26 +1518,26 @@ export default function CapiHubPage() {
             {/* Mobile Cards for Logs (< lg screens) */}
             <div className="lg:hidden p-3 space-y-2.5 max-h-[420px] overflow-y-auto">
               {logs.length === 0 ? (
-                <div className="p-6 text-center text-muted-foreground text-[12px]">
+                <div className="p-6 text-center text-slate-500 dark:text-muted-foreground text-[12px]">
                   {language === 'en' ? 'No conversion events fired yet' : 'এখনো কোনো কনভার্সন ইভেন্ট লগ নেই'}
                 </div>
               ) : logs.map(log => (
-                <div key={log.id} className="p-3 rounded-xl bg-surface border border-border dark:border-white/5 space-y-1.5 shadow-xs">
+                <div key={log.id} className="p-3 rounded-xl bg-slate-50/80 dark:bg-surface border border-slate-200 dark:border-white/5 space-y-1.5 shadow-2xs">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-bold text-[12px] text-foreground">{log.eventName}</span>
+                    <span className="font-bold text-[12px] text-slate-900 dark:text-foreground">{log.eventName}</span>
                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                       log.status === 'sent' 
-                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                        ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-800 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/20' :
                       log.status === 'suppressed_duplicate' 
-                        ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
-                        'bg-red-500/10 text-red-400 border border-red-500/20'
+                        ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-800 dark:text-amber-400 border border-amber-300 dark:border-amber-500/20' :
+                        'bg-rose-50 dark:bg-red-500/10 text-rose-800 dark:text-red-400 border border-rose-300 dark:border-red-500/20'
                     }`}>
                       {log.status === 'sent' ? 'SENT' : log.status.toUpperCase()}
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                    <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-muted/60 dark:bg-white/5 border border-border/50 dark:border-transparent">
+                  <div className="flex items-center justify-between text-[11px] text-slate-600 dark:text-muted-foreground">
+                    <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-transparent text-slate-700 dark:text-muted-foreground">
                       {log.source}
                     </span>
                     <span className="text-[10px]">
@@ -1265,7 +1546,7 @@ export default function CapiHubPage() {
                   </div>
 
                   {(log.responseCode || log.errorMessage) && (
-                    <div className="pt-1 text-[10px] font-mono text-muted-foreground/80 truncate">
+                    <div className="pt-1 text-[10px] font-mono text-slate-500 dark:text-muted-foreground/80 truncate">
                       {log.responseCode ? `Meta HTTP ${log.responseCode}` : ''} {log.errorMessage ? `(${log.errorMessage})` : ''}
                     </div>
                   )}
@@ -1282,15 +1563,15 @@ export default function CapiHubPage() {
       {/* Modal: Add Event */}
       {showAddModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-card dark:bg-surface border border-border dark:border-white/15 rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl relative text-foreground">
-            <div className="flex items-center justify-between border-b border-border dark:border-white/10 pb-3">
-              <h3 className="font-bold text-[15px] flex items-center gap-2 text-foreground">
-                <Plus className="w-4 h-4 text-emerald-400" />
+          <div className="bg-white dark:bg-[#121216] border border-slate-200 dark:border-white/15 rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl relative text-slate-900 dark:text-foreground">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 pb-3">
+              <h3 className="font-bold text-[15px] flex items-center gap-2 text-slate-900 dark:text-foreground">
+                <Plus className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 {language === 'en' ? 'Add Meta Standard Event' : 'মেটা স্ট্যান্ডার্ড ইভেন্ট যোগ করুন'}
               </h3>
               <button 
                 onClick={() => setShowAddModal(false)}
-                className="text-muted-foreground hover:text-foreground p-1 rounded-lg hover:bg-muted dark:hover:bg-white/5"
+                className="text-slate-500 hover:text-slate-900 dark:text-muted-foreground dark:hover:text-foreground p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1298,13 +1579,13 @@ export default function CapiHubPage() {
 
             <div className="space-y-3">
               <div>
-                <label className="text-[11px] font-semibold text-muted-foreground mb-1 block">
+                <label className="text-[11px] font-bold text-slate-700 dark:text-muted-foreground mb-1 block">
                   {language === 'en' ? 'Select Standard Event' : 'স্ট্যান্ডার্ড ইভেন্ট নির্বাচন করুন'}
                 </label>
                 <select
                   value={newEventName}
                   onChange={e => setNewEventName(e.target.value)}
-                  className="w-full bg-background border border-border dark:border-white/15 rounded-xl px-3 py-2 text-[12px] text-foreground focus:outline-none focus:border-emerald-500/50"
+                  className="w-full bg-white dark:bg-background border border-slate-300 dark:border-white/15 rounded-xl px-3 py-2.5 text-[12px] text-slate-900 dark:text-foreground focus:outline-none focus:border-emerald-500"
                 >
                   {STANDARD_EVENT_PRESETS.map(preset => (
                     <option key={preset.name} value={preset.name}>
@@ -1317,7 +1598,7 @@ export default function CapiHubPage() {
 
               {newEventName === 'Custom' && (
                 <div>
-                  <label className="text-[11px] font-semibold text-muted-foreground mb-1 block">
+                  <label className="text-[11px] font-bold text-slate-700 dark:text-muted-foreground mb-1 block">
                     {language === 'en' ? 'Custom Event Name' : 'কাস্টম ইভেন্টের নাম'}
                   </label>
                   <input 
@@ -1325,16 +1606,16 @@ export default function CapiHubPage() {
                     value={customEventInput}
                     onChange={e => setCustomEventInput(e.target.value)}
                     placeholder="e.g. ScheduleAppointment"
-                    className="w-full bg-background border border-border dark:border-white/15 rounded-xl px-3 py-2 text-[12px] text-foreground focus:outline-none focus:border-emerald-500/50"
+                    className="w-full bg-white dark:bg-background border border-slate-300 dark:border-white/15 rounded-xl px-3 py-2 text-[12px] text-slate-900 dark:text-foreground focus:outline-none focus:border-emerald-500"
                   />
                 </div>
               )}
             </div>
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-border dark:border-white/10">
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-white/10">
               <button 
                 onClick={() => setShowAddModal(false)}
-                className="px-4 py-2 bg-muted/60 dark:bg-white/5 hover:bg-muted dark:hover:bg-white/10 text-muted-foreground hover:text-foreground border border-border dark:border-transparent rounded-xl text-[12px] font-medium"
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-muted-foreground hover:text-slate-900 dark:hover:text-foreground border border-slate-200 dark:border-transparent rounded-xl text-[12px] font-bold"
               >
                 {language === 'en' ? 'Cancel' : 'বাতিল'}
               </button>
@@ -1352,95 +1633,95 @@ export default function CapiHubPage() {
       {/* Modal: Configure Payload Fields */}
       {activeConfigModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-card dark:bg-surface border border-border dark:border-white/15 rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl relative text-foreground">
-            <div className="flex items-center justify-between border-b border-border dark:border-white/10 pb-3">
+          <div className="bg-white dark:bg-[#121216] border border-slate-200 dark:border-white/15 rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl relative text-slate-900 dark:text-foreground">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 pb-3">
               <div>
-                <h3 className="font-bold text-[15px] text-foreground flex items-center gap-2">
-                  <Info className="w-4 h-4 text-emerald-400" />
+                <h3 className="font-bold text-[15px] text-slate-900 dark:text-foreground flex items-center gap-2">
+                  <Info className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   {activeConfigModal.eventName} — {language === 'en' ? 'Data Payload' : 'ডেটা পেলোড'}
                 </h3>
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-[11px] text-slate-600 dark:text-muted-foreground">
                   {language === 'en' ? 'Configure parameters forwarded to Meta' : 'মেটাতে প্রেরিত প্যারামিটারসমূহ নির্ধারণ করুন'}
                 </p>
               </div>
               <button 
                 onClick={() => setActiveConfigModal(null)}
-                className="text-muted-foreground hover:text-foreground p-1 rounded-lg hover:bg-muted dark:hover:bg-white/5"
+                className="text-slate-500 hover:text-slate-900 dark:text-muted-foreground dark:hover:text-foreground p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="space-y-3 divide-y divide-white/5 text-[12px]">
+            <div className="space-y-3 divide-y divide-slate-200 dark:divide-white/5 text-[12px]">
               
               <div className="flex items-center justify-between pt-2">
                 <div>
-                  <p className="font-semibold text-foreground">Hashed User Data (Email / Phone)</p>
-                  <p className="text-[10px] text-muted-foreground">Auto-hashed with SHA-256 for privacy & matching</p>
+                  <p className="font-bold text-slate-900 dark:text-foreground">Hashed User Data (Email / Phone)</p>
+                  <p className="text-[10px] text-slate-500 dark:text-muted-foreground">Auto-hashed with SHA-256 for privacy & matching</p>
                 </div>
                 <input 
                   type="checkbox"
                   checked={activeConfigModal.includeUserData}
                   onChange={e => handleToggleEventConfig(activeConfigModal.eventName, 'includeUserData', e.target.checked)}
-                  className="rounded border-border dark:border-white/20 bg-background text-emerald-500 w-4 h-4 cursor-pointer"
+                  className="rounded border-slate-300 dark:border-white/20 bg-white dark:bg-background text-emerald-600 w-4 h-4 cursor-pointer accent-emerald-600"
                 />
               </div>
 
               <div className="flex items-center justify-between pt-2">
                 <div>
-                  <p className="font-semibold text-foreground">Order Value / Amount</p>
-                  <p className="text-[10px] text-muted-foreground">Pass transaction monetary total</p>
+                  <p className="font-bold text-slate-900 dark:text-foreground">Order Value / Amount</p>
+                  <p className="text-[10px] text-slate-500 dark:text-muted-foreground">Pass transaction monetary total</p>
                 </div>
                 <input 
                   type="checkbox"
                   checked={activeConfigModal.includeValue}
                   onChange={e => handleToggleEventConfig(activeConfigModal.eventName, 'includeValue', e.target.checked)}
-                  className="rounded border-border dark:border-white/20 bg-background text-emerald-500 w-4 h-4 cursor-pointer"
+                  className="rounded border-slate-300 dark:border-white/20 bg-white dark:bg-background text-emerald-600 w-4 h-4 cursor-pointer accent-emerald-600"
                 />
               </div>
 
               <div className="flex items-center justify-between pt-2">
                 <div>
-                  <p className="font-semibold text-foreground">Currency Code (BDT/USD)</p>
-                  <p className="text-[10px] text-muted-foreground">ISO Currency standard</p>
+                  <p className="font-bold text-slate-900 dark:text-foreground">Currency Code (BDT/USD)</p>
+                  <p className="text-[10px] text-slate-500 dark:text-muted-foreground">ISO Currency standard</p>
                 </div>
                 <input 
                   type="checkbox"
                   checked={activeConfigModal.includeCurrency}
                   onChange={e => handleToggleEventConfig(activeConfigModal.eventName, 'includeCurrency', e.target.checked)}
-                  className="rounded border-border dark:border-white/20 bg-background text-emerald-500 w-4 h-4 cursor-pointer"
+                  className="rounded border-slate-300 dark:border-white/20 bg-white dark:bg-background text-emerald-600 w-4 h-4 cursor-pointer accent-emerald-600"
                 />
               </div>
 
               <div className="flex items-center justify-between pt-2">
                 <div>
-                  <p className="font-semibold text-foreground">Order ID (Deduplication)</p>
-                  <p className="text-[10px] text-muted-foreground">Prevents double-counting with browser pixel</p>
+                  <p className="font-bold text-slate-900 dark:text-foreground">Order ID (Deduplication)</p>
+                  <p className="text-[10px] text-slate-500 dark:text-muted-foreground">Prevents double-counting with browser pixel</p>
                 </div>
                 <input 
                   type="checkbox"
                   checked={activeConfigModal.includeOrderId}
                   onChange={e => handleToggleEventConfig(activeConfigModal.eventName, 'includeOrderId', e.target.checked)}
-                  className="rounded border-border dark:border-white/20 bg-background text-emerald-500 w-4 h-4 cursor-pointer"
+                  className="rounded border-slate-300 dark:border-white/20 bg-white dark:bg-background text-emerald-600 w-4 h-4 cursor-pointer accent-emerald-600"
                 />
               </div>
 
               <div className="flex items-center justify-between pt-2">
                 <div>
-                  <p className="font-semibold text-foreground">Product Content IDs</p>
-                  <p className="text-[10px] text-muted-foreground">Enables dynamic product retargeting (DPA)</p>
+                  <p className="font-bold text-slate-900 dark:text-foreground">Product Content IDs</p>
+                  <p className="text-[10px] text-slate-500 dark:text-muted-foreground">Enables dynamic product retargeting (DPA)</p>
                 </div>
                 <input 
                   type="checkbox"
                   checked={activeConfigModal.includeContentIds}
                   onChange={e => handleToggleEventConfig(activeConfigModal.eventName, 'includeContentIds', e.target.checked)}
-                  className="rounded border-border dark:border-white/20 bg-background text-emerald-500 w-4 h-4 cursor-pointer"
+                  className="rounded border-slate-300 dark:border-white/20 bg-white dark:bg-background text-emerald-600 w-4 h-4 cursor-pointer accent-emerald-600"
                 />
               </div>
 
             </div>
 
-            <div className="flex justify-end pt-2 border-t border-border dark:border-white/10">
+            <div className="flex justify-end pt-2 border-t border-slate-200 dark:border-white/10">
               <button 
                 onClick={() => setActiveConfigModal(null)}
                 className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-[12px] font-bold"
