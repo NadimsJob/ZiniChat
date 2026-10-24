@@ -45,6 +45,9 @@ describe('OrchestratorService', () => {
       aiAssistant: {
         findFirst: jest.fn(),
       },
+      aiTool: {
+        findMany: jest.fn().mockResolvedValue([]),
+      },
       aiConfig: {
         findUnique: jest.fn(),
         findFirst: jest.fn().mockResolvedValue({ provider: 'gemini', modelName: 'gemini-1.5-flash' })
@@ -1578,6 +1581,225 @@ describe('OrchestratorService', () => {
       expect(inboxService.saveOutboundMessage).toHaveBeenCalled();
     });
 
+    it('should dispatch photos when user asks for pictures in Bengali using "কিছু পিক দেন"', async () => {
+      inboxService.saveOutboundMessage.mockClear();
+
+      prismaService.product.findMany.mockResolvedValue([
+        { id: 'p1', name: 'টি শার্ট', price: 550, imageUrl: 'https://example.com/tshirt1.jpg', isActive: true },
+        { id: 'p2', name: 'টি শার্ট', price: 499, imageUrl: 'https://example.com/tshirt2.jpg', isActive: true },
+        { id: 'p3', name: 'টি শার্ট', price: 500, imageUrl: 'https://example.com/tshirt3.jpg', isActive: true }
+      ]);
+      prismaService.message.findMany.mockResolvedValue([]);
+
+      const classification: any = {
+        intent: 'product_lookup',
+        replyText: 'আমাদের কালেকশনের টি-শার্টের ছবি ও বিবরণ দেওয়া হলো',
+        sendProductPhotoIds: ['p1', 'p2', 'p3']
+      };
+
+      await (service as any).handleProductMatching(
+        'tenant1',
+        'c1',
+        classification,
+        0.6,
+        5,
+        'ai1',
+        'কিছু পিক দেন'
+      );
+
+      // Verify all 3 photos were saved as outbound image messages
+      expect(inboxService.saveOutboundMessage).toHaveBeenCalledTimes(3);
+      expect(inboxService.saveOutboundMessage).toHaveBeenCalledWith(
+        'tenant1',
+        'c1',
+        expect.stringContaining('tshirt1.jpg'),
+        'image',
+        undefined,
+        'ai1'
+      );
+    });
+
+    it('should cap dispatched product photos to maximum 5 when multiple photos exist', async () => {
+      inboxService.saveOutboundMessage.mockClear();
+
+      const manyProducts = Array.from({ length: 8 }).map((_, i) => ({
+        id: `p${i + 1}`,
+        name: `T-Shirt ${i + 1}`,
+        price: 500 + i * 50,
+        imageUrl: `https://example.com/tshirt${i + 1}.jpg`,
+        isActive: true
+      }));
+
+      prismaService.product.findMany.mockResolvedValue(manyProducts);
+      prismaService.message.findMany.mockResolvedValue([]);
+
+      const classification: any = {
+        intent: 'product_lookup',
+        replyText: 'কালেকশনের ছবি দেওয়া হলো',
+        sendProductPhotoIds: manyProducts.map(p => p.id)
+      };
+
+      await (service as any).handleProductMatching(
+        'tenant1',
+        'c1',
+        classification,
+        0.6,
+        5, // configured limit 5
+        'ai1',
+        'টি শার্টের পিক দেখান'
+      );
+
+      // Verify capped strictly to max 5
+      expect(inboxService.saveOutboundMessage).toHaveBeenCalledTimes(5);
+    });
+
+    it('should allow up to 10 photos when tenant configures maxProductsToSend = 10', async () => {
+      inboxService.saveOutboundMessage.mockClear();
+
+      const twelveProducts = Array.from({ length: 12 }).map((_, i) => ({
+        id: `p_twelve_${i + 1}`,
+        name: `Panjabi ${i + 1}`,
+        price: 1000 + i * 50,
+        imageUrl: `https://example.com/panjabi${i + 1}.jpg`,
+        isActive: true
+      }));
+
+      prismaService.product.findMany.mockResolvedValue(twelveProducts);
+      prismaService.message.findMany.mockResolvedValue([]);
+
+      const classification: any = {
+        intent: 'product_lookup',
+        replyText: 'পাঞ্জাবির ছবি নিচে দেওয়া হলো',
+        sendProductPhotoIds: twelveProducts.map(p => p.id)
+      };
+
+      const count = await (service as any).handleProductMatching(
+        'tenant1',
+        'c1',
+        classification,
+        0.6,
+        10, // tenant configured 10
+        'ai1',
+        'পাঞ্জাবির পিক দেখান'
+      );
+
+      expect(count).toBe(10);
+      expect(inboxService.saveOutboundMessage).toHaveBeenCalledTimes(10);
+    });
+
+    it('should dispatch remaining unsent catalog photos when customer says "এগুলো পছন্দ হয়নি, আরও ছবি দিন" on follow-up', async () => {
+      inboxService.saveOutboundMessage.mockClear();
+
+      const tenCatalogProducts = Array.from({ length: 10 }).map((_, i) => ({
+        id: `prod_${i + 1}`,
+        name: `Exclusive Shirt ${i + 1}`,
+        price: 800 + i * 50,
+        imageUrl: `https://example.com/shirt${i + 1}.jpg`,
+        isActive: true
+      }));
+
+      prismaService.product.findMany.mockResolvedValue(tenCatalogProducts);
+
+      // Previous 5 photos already sent (prod_1 to prod_5)
+      prismaService.message.findMany.mockResolvedValue(
+        tenCatalogProducts.slice(0, 5).map(p => ({
+          id: `msg_${p.id}`,
+          type: 'image',
+          content: JSON.stringify({ productId: p.id, mediaUrl: p.imageUrl, productName: p.name })
+        }))
+      );
+
+      const classification: any = {
+        intent: 'product_lookup',
+        replyText: 'অবশ্যই! আমাদের কালেকশনের আরও কিছু ডিজাইন নিচে দেওয়া হলো:',
+        sendProductPhotoIds: []
+      };
+
+      // Customer expresses dissatisfaction and asks for other / more photos
+      const count = await (service as any).handleProductMatching(
+        'tenant1',
+        'c1',
+        classification,
+        0.6,
+        5,
+        'ai1',
+        'এগুলো পছন্দ হয়নি, আরও ছবি দিন'
+      );
+
+      // Verify exactly 5 new photos dispatched (prod_6 to prod_10)
+      expect(count).toBe(5);
+      expect(inboxService.saveOutboundMessage).toHaveBeenCalledTimes(5);
+
+      // Verify none of the first 5 products were re-sent
+      for (let i = 1; i <= 5; i++) {
+        expect(inboxService.saveOutboundMessage).not.toHaveBeenCalledWith(
+          'tenant1',
+          'c1',
+          expect.stringContaining(`shirt${i}.jpg`),
+          'image',
+          undefined,
+          'ai1'
+        );
+      }
+
+      // Verify the new 5 products (shirt6 to shirt10) were sent
+      for (let i = 6; i <= 10; i++) {
+        expect(inboxService.saveOutboundMessage).toHaveBeenCalledWith(
+          'tenant1',
+          'c1',
+          expect.stringContaining(`shirt${i}.jpg`),
+          'image',
+          undefined,
+          'ai1'
+        );
+      }
+    });
+
+    it('should re-dispatch photos when user repeats request with "পিক দেন" even if all were previously sent', async () => {
+      inboxService.saveOutboundMessage.mockClear();
+
+      prismaService.product.findMany.mockResolvedValue([
+        { id: 'p1', name: 'টি শার্ট', price: 550, imageUrl: 'https://example.com/tshirt1.jpg', isActive: true }
+      ]);
+
+      // p1 was already sent previously
+      prismaService.message.findMany.mockResolvedValue([
+        {
+          id: 'm_prev_1',
+          type: 'image',
+          content: JSON.stringify({ productId: 'p1', mediaUrl: 'https://example.com/tshirt1.jpg' })
+        }
+      ]);
+
+      const classification: any = {
+        intent: 'product_lookup',
+        replyText: 'ছবি পুনরায় নিচে দেওয়া হলো',
+        sendProductPhotoIds: ['p1']
+      };
+
+      // Customer asks again "পিক দেন"
+      await (service as any).handleProductMatching(
+        'tenant1',
+        'c1',
+        classification,
+        0.6,
+        5,
+        'ai1',
+        'পিক দেন'
+      );
+
+      // Verify re-sent gracefully instead of blocking with 0 photos
+      expect(inboxService.saveOutboundMessage).toHaveBeenCalledTimes(1);
+      expect(inboxService.saveOutboundMessage).toHaveBeenCalledWith(
+        'tenant1',
+        'c1',
+        expect.stringContaining('tshirt1.jpg'),
+        'image',
+        undefined,
+        'ai1'
+      );
+    });
+
     it('T-FS1: should trigger Flow 1.8 failsafe and create order when LLM replies that order is confirmed while pendingOrderProposal exists', async () => {
       const proposal = {
         status: 'AWAITING_PAYMENT_PROOF',
@@ -1800,6 +2022,255 @@ describe('OrchestratorService', () => {
 
       expect(ordersService.createOrder).toHaveBeenCalled();
       expect(output).toContain('ord_emer');
+    });
+  });
+
+  describe('Photo Dispatch AI Response Quota Deductions', () => {
+    it('should deduct 2 AI response credits when 5 photos are dispatched (Math.floor(5/2) = 2)', async () => {
+      aiService.recordUsageLog.mockClear();
+
+      const fiveProducts = Array.from({ length: 5 }).map((_, i) => ({
+        id: `p_quota_${i + 1}`,
+        name: `Polo Shirt ${i + 1}`,
+        price: 600,
+        imageUrl: `https://example.com/polo${i + 1}.jpg`,
+        isActive: true
+      }));
+
+      prismaService.message.findUnique.mockResolvedValue({
+        id: 'msg_photo_5',
+        direction: 'inbound',
+        type: 'text',
+        content: 'কিছু পিক দেন',
+        conversationId: 'c_quota_5',
+        conversation: {
+          id: 'c_quota_5',
+          tenantId: 'tenant1',
+          contactId: 'cnt_1',
+          contact: { id: 'cnt_1', name: 'Rakib' },
+          tenant: { id: 'tenant1', businessName: 'Rakib Fashion' },
+          channelConnection: { id: 'conn1', isAiAutoReplyEnabled: true }
+        }
+      });
+
+      prismaService.aiAssistant.findFirst.mockResolvedValue({
+        id: 'asst_1',
+        tenantId: 'tenant1',
+        isActive: true,
+        systemPrompt: 'You are an AI assistant',
+        tenant: { id: 'tenant1' }
+      });
+
+      prismaService.aiTool.findMany.mockResolvedValue([
+        {
+          type: 'product_matching',
+          isEnabled: true,
+          configJson: { maxProductsToSend: 5, minMatchConfidence: 0.6 }
+        }
+      ]);
+
+      prismaService.product.findMany.mockResolvedValue(fiveProducts);
+      prismaService.message.findMany.mockResolvedValue([]);
+
+      aiService.generateCompletionDetailed.mockResolvedValue({
+        text: JSON.stringify({
+          replyText: 'টি-শার্টের ছবি নিচে দেওয়া হলো:',
+          intent: 'product_lookup',
+          sendProductPhotoIds: fiveProducts.map(p => p.id)
+        }),
+        usage: { totalTokenCount: 150, promptTokenCount: 100, completionTokenCount: 50, cachedContentTokenCount: 0, costUsd: 0.001 }
+      });
+
+      await service.processMessage('msg_photo_5');
+
+      // Verify recordUsageLog called with multiplier = 2 (Math.floor(5 / 2) = 2)
+      expect(aiService.recordUsageLog).toHaveBeenCalledWith(
+        'tenant1',
+        'asst_1',
+        expect.any(Object),
+        2
+      );
+    });
+
+    it('should deduct 2 AI response credits when 4 photos are dispatched (Math.floor(4/2) = 2)', async () => {
+      aiService.recordUsageLog.mockClear();
+
+      const fourProducts = Array.from({ length: 4 }).map((_, i) => ({
+        id: `p_quota4_${i + 1}`,
+        name: `Shirt ${i + 1}`,
+        price: 700,
+        imageUrl: `https://example.com/shirt4_${i + 1}.jpg`,
+        isActive: true
+      }));
+
+      prismaService.message.findUnique.mockResolvedValue({
+        id: 'msg_photo_4',
+        direction: 'inbound',
+        type: 'text',
+        content: '৪টা পিক দেন',
+        conversationId: 'c_quota_4',
+        conversation: {
+          id: 'c_quota_4',
+          tenantId: 'tenant1',
+          contactId: 'cnt_1',
+          contact: { id: 'cnt_1', name: 'Customer' },
+          tenant: { id: 'tenant1', businessName: 'Fashion Hub' },
+          channelConnection: { id: 'conn1', isAiAutoReplyEnabled: true }
+        }
+      });
+
+      prismaService.aiAssistant.findFirst.mockResolvedValue({
+        id: 'asst_1',
+        tenantId: 'tenant1',
+        isActive: true,
+        systemPrompt: 'You are an AI assistant',
+        tenant: { id: 'tenant1' }
+      });
+
+      prismaService.aiTool.findMany.mockResolvedValue([
+        {
+          type: 'product_matching',
+          isEnabled: true,
+          configJson: { maxProductsToSend: 4, minMatchConfidence: 0.6 }
+        }
+      ]);
+
+      prismaService.product.findMany.mockResolvedValue(fourProducts);
+      prismaService.message.findMany.mockResolvedValue([]);
+
+      aiService.generateCompletionDetailed.mockResolvedValue({
+        text: JSON.stringify({
+          replyText: 'ছবি নিচে দেওয়া হলো:',
+          intent: 'product_lookup',
+          sendProductPhotoIds: fourProducts.map(p => p.id)
+        }),
+        usage: { totalTokenCount: 150, promptTokenCount: 100, completionTokenCount: 50, cachedContentTokenCount: 0, costUsd: 0.001 }
+      });
+
+      await service.processMessage('msg_photo_4');
+
+      // Verify recordUsageLog called with multiplier = 2
+      expect(aiService.recordUsageLog).toHaveBeenCalledWith(
+        'tenant1',
+        'asst_1',
+        expect.any(Object),
+        2
+      );
+    });
+
+    it('should deduct 1 AI response credit when 2 photos are dispatched (Math.floor(2/2) = 1)', async () => {
+      aiService.recordUsageLog.mockClear();
+
+      const twoProducts = Array.from({ length: 2 }).map((_, i) => ({
+        id: `p_quota2_${i + 1}`,
+        name: `Shoe ${i + 1}`,
+        price: 1200,
+        imageUrl: `https://example.com/shoe${i + 1}.jpg`,
+        isActive: true
+      }));
+
+      prismaService.message.findUnique.mockResolvedValue({
+        id: 'msg_photo_2',
+        direction: 'inbound',
+        type: 'text',
+        content: '২টা পিক দেখান',
+        conversationId: 'c_quota_2',
+        conversation: {
+          id: 'c_quota_2',
+          tenantId: 'tenant1',
+          contactId: 'cnt_1',
+          contact: { id: 'cnt_1', name: 'Customer' },
+          tenant: { id: 'tenant1', businessName: 'Shoe Store' },
+          channelConnection: { id: 'conn1', isAiAutoReplyEnabled: true }
+        }
+      });
+
+      prismaService.aiAssistant.findFirst.mockResolvedValue({
+        id: 'asst_1',
+        tenantId: 'tenant1',
+        isActive: true,
+        systemPrompt: 'You are an AI assistant',
+        tenant: { id: 'tenant1' }
+      });
+
+      prismaService.aiTool.findMany.mockResolvedValue([
+        {
+          type: 'product_matching',
+          isEnabled: true,
+          configJson: { maxProductsToSend: 2, minMatchConfidence: 0.6 }
+        }
+      ]);
+
+      prismaService.product.findMany.mockResolvedValue(twoProducts);
+      prismaService.message.findMany.mockResolvedValue([]);
+
+      aiService.generateCompletionDetailed.mockResolvedValue({
+        text: JSON.stringify({
+          replyText: 'ছবি নিচে দেওয়া হলো:',
+          intent: 'product_lookup',
+          sendProductPhotoIds: twoProducts.map(p => p.id)
+        }),
+        usage: { totalTokenCount: 100, promptTokenCount: 70, completionTokenCount: 30, cachedContentTokenCount: 0, costUsd: 0.001 }
+      });
+
+      await service.processMessage('msg_photo_2');
+
+      expect(aiService.recordUsageLog).toHaveBeenCalledWith(
+        'tenant1',
+        'asst_1',
+        expect.any(Object),
+        1
+      );
+    });
+
+    it('should deduct 1 AI response credit when 0 photos are dispatched in text reply', async () => {
+      aiService.recordUsageLog.mockClear();
+
+      prismaService.message.findUnique.mockResolvedValue({
+        id: 'msg_text_only',
+        direction: 'inbound',
+        type: 'text',
+        content: 'আপনাদের দোকান কোথায়?',
+        conversationId: 'c_text_only',
+        conversation: {
+          id: 'c_text_only',
+          tenantId: 'tenant1',
+          contactId: 'cnt_1',
+          contact: { id: 'cnt_1', name: 'Customer' },
+          tenant: { id: 'tenant1', businessName: 'Store' },
+          channelConnection: { id: 'conn1', isAiAutoReplyEnabled: true }
+        }
+      });
+
+      prismaService.aiAssistant.findFirst.mockResolvedValue({
+        id: 'asst_1',
+        tenantId: 'tenant1',
+        isActive: true,
+        systemPrompt: 'You are an AI assistant',
+        tenant: { id: 'tenant1' }
+      });
+
+      prismaService.aiTool.findMany.mockResolvedValue([]);
+      prismaService.product.findMany.mockResolvedValue([]);
+      prismaService.message.findMany.mockResolvedValue([]);
+
+      aiService.generateCompletionDetailed.mockResolvedValue({
+        text: JSON.stringify({
+          replyText: 'আমাদের দোকান ঢাকা ধানমন্ডিতে।',
+          intent: 'general',
+          sendProductPhotoIds: []
+        }),
+        usage: { totalTokenCount: 80, promptTokenCount: 60, completionTokenCount: 20, cachedContentTokenCount: 0, costUsd: 0.0005 }
+      });
+
+      await service.processMessage('msg_text_only');
+
+      expect(aiService.recordUsageLog).toHaveBeenCalledWith(
+        'tenant1',
+        'asst_1',
+        expect.any(Object),
+        1
+      );
     });
   });
 });

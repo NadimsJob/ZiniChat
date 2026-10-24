@@ -1580,27 +1580,44 @@ export default function AiTrainingPage() {
                       </div>
                     )}
 
-                    {tool.type === 'product_matching' && isAllowed && toolState.isEnabled && (
-                      <div className="mt-2.5 pt-2 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between gap-2">
-                        <span className="text-[11px] font-medium text-foreground">
-                          {language === 'en' ? 'Max items/photos sent at once:' : 'একবারে সর্বোচ্চ পাঠানো আইটেম/ছবি:'}
-                        </span>
-                        <select
-                          value={toolState.configJson?.maxProductsToSend ?? 10}
-                          onChange={(e) => handleToggleTool(tool.type, true, {
-                            ...toolState.configJson,
-                            maxProductsToSend: Number(e.target.value)
-                          })}
-                          className="bg-card border border-zinc-300 dark:border-zinc-700 rounded-lg px-2 py-0.5 text-xs font-semibold text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
-                        >
-                          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
-                            <option key={num} value={num} className="bg-card text-foreground">
-                              {num} {language === 'en' ? (num === 1 ? 'item' : 'items') : 'টি'}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
+                    {tool.type === 'product_matching' && isAllowed && toolState.isEnabled && (() => {
+                      const maxPhotos = toolState.configJson?.maxProductsToSend ?? 5;
+                      const quotaCost = Math.floor(maxPhotos / 2);
+                      return (
+                        <div className="mt-2.5 pt-2 border-t border-zinc-200 dark:border-zinc-800 space-y-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[11px] font-medium text-foreground">
+                              {language === 'en' ? 'Max items/photos sent at once:' : 'একবারে সর্বোচ্চ পাঠানো আইটেম/ছবি:'}
+                            </span>
+                            <select
+                              value={maxPhotos}
+                              onChange={(e) => handleToggleTool(tool.type, true, {
+                                ...toolState.configJson,
+                                maxProductsToSend: Number(e.target.value)
+                              })}
+                              className="bg-card border border-zinc-300 dark:border-zinc-700 rounded-lg px-2 py-0.5 text-xs font-semibold text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+                            >
+                              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+                                <option key={num} value={num} className="bg-card text-foreground">
+                                  {num} {language === 'en' ? (num === 1 ? 'item' : 'items') : 'টি'}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="p-2 rounded-lg bg-primary/10 dark:bg-primary/15 border border-primary/20 text-[11px] text-foreground font-sans">
+                            <div className="flex items-center gap-1.5 font-bold text-primary">
+                              <span>📸</span>
+                              <span>{language === 'en' ? 'Photo Quota Deduction Policy:' : 'ছবি পাঠানোর কোটা কর্তন পলিসি:'}</span>
+                            </div>
+                            <p className="mt-0.5 text-muted-foreground">
+                              {language === 'en'
+                                ? `1 AI Response deducted per 2 photos (${maxPhotos} photos = ${quotaCost} AI response${quotaCost === 1 ? '' : 's'}). Fractions round down to lowest number.`
+                                : `প্রতি ২টি ছবির জন্য ১টি এআই রেসপন্স কাটা হবে (${maxPhotos}টি ছবিতে = ${quotaCost}টি এআই রেসপন্স কোটা)। ভগ্নাংশের ক্ষেত্রে সর্বদা সর্বনিম্ন পূর্ণসংখ্যা প্রযোজ্য।`}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 );
               })}

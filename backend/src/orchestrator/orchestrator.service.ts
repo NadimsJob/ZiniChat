@@ -455,6 +455,7 @@ export class OrchestratorService {
       }
 
       // 4. Stage A — Structured Context & Prompt Building
+      const maxConfiguredPhotos = Math.min(Math.max(toolMap['product_matching']?.configJson?.maxProductsToSend ?? 5, 1), 10);
       const prompt = await this.buildContextPrompt(message.conversationId, assistant, {
         isImage: canRunVision && imagePathsToPass.length > 0,
         caption: userCaption,
@@ -472,6 +473,7 @@ export class OrchestratorService {
         retrievedProducts,
         retrievedQnas,
         retrievedChunks,
+        maxProductsToSend: maxConfiguredPhotos,
       });
 
       const fullPrompt = `${prompt}\n\nCustomer: ${userText}`;
@@ -571,16 +573,28 @@ export class OrchestratorService {
         assistant?.id
       );
 
+      // 5.95 False Photo Promise Guard (Anti-Hallucination)
+      const catalogHasPhotos = retrievedProducts?.some(p => p.imageUrl && p.imageUrl.trim() !== '') || false;
+      if (!catalogHasPhotos) {
+        finalReplyText = finalReplyText
+          .replace(/ছবি\s+নিচে\s+দেওয়া\s+হলো[:।]?/gi, 'বিবরণ নিচে দেওয়া হলো:')
+          .replace(/ছবিগুলো\s+নিচে\s+দেওয়া\s+হলো[:।]?/gi, 'কালেকশনের বিবরণ নিচে দেওয়া হলো:')
+          .replace(/ছবি\s+পাঠানো\s+হলো[:।]?/gi, 'বিবরণ দেওয়া হলো:');
+      }
+
       // 6. Response Dispatch (Text Reply First)
       if (finalReplyText && finalReplyText.trim() !== '') {
         await this.inboxService.saveOutboundMessage(tenantId, message.conversationId, finalReplyText, 'text', undefined, assistant.id);
       }
 
       // Handler 3: Product Photo Matching & Multi-Product Dispatch (Runs after text reply)
-      if (isProductMatchingActive || (classification.intent === 'product_lookup' && classification.sendProductPhotoIds?.length)) {
+      let photosDispatched = 0;
+      const hasPhotoIntentOrIds = (classification.intent === 'product_lookup' || (Array.isArray(classification.sendProductPhotoIds) && classification.sendProductPhotoIds.length > 0));
+      const isExplicitPhotoInquiry = /(ছবি|পিক|পিকস|পিকচার|photo|pic|image)/i.test(userText || '');
+      if (isProductMatchingActive || hasPhotoIntentOrIds || isExplicitPhotoInquiry) {
         const minConf = toolMap['product_matching']?.configJson?.minMatchConfidence ?? 0.6;
-        const maxPhotos = Math.min(Math.max(toolMap['product_matching']?.configJson?.maxProductsToSend ?? 10, 1), 10);
-        await this.handleProductMatching(tenantId, message.conversationId, classification, minConf, maxPhotos, assistant.id, userText);
+        const maxPhotos = Math.min(Math.max(toolMap['product_matching']?.configJson?.maxProductsToSend ?? 5, 1), 10);
+        photosDispatched = await this.handleProductMatching(tenantId, message.conversationId, classification, minConf, maxPhotos, assistant.id, userText);
       }
 
       // Handler 4: Auto-Tagging / Conversation Labels Sync
@@ -633,10 +647,17 @@ export class OrchestratorService {
       }
 
       // 7. Log AI Usage Credits
+      // Photo Quota Policy:
+      // Every 2 photos dispatched deducts 1 AI response credit (Math.floor(photosDispatched / 2)).
+      // Fractions round down to lowest integer (e.g., 2 photos = 1 credit, 4 photos = 2 credits, 5 photos = 2 credits, 6 photos = 3 credits, 10 photos = 5 credits).
+      // If 0 or 1 photo is dispatched, standard message turn credits apply (1 for text, 4 for audio STT, 5 for vision reading).
+      const photoCredits = Math.floor(photosDispatched / 2);
+      const finalCreditsNeeded = Math.max(creditsNeeded, photoCredits);
+
       if (llmResult?.usage) {
-        await this.aiService.recordUsageLog(tenantId, assistant.id, llmResult.usage, creditsNeeded);
+        await this.aiService.recordUsageLog(tenantId, assistant.id, llmResult.usage, finalCreditsNeeded);
       } else {
-        const logsToCreate = Array.from({ length: creditsNeeded }).map(() => ({
+        const logsToCreate = Array.from({ length: finalCreditsNeeded }).map(() => ({
           tenantId,
           assistantId: assistant.id,
           tokensUsed: 0,
@@ -649,7 +670,7 @@ export class OrchestratorService {
         });
       }
 
-      this.logger.log(`AI Orchestration completed for message ${messageId}. Deducted ${creditsNeeded} credit(s).`);
+      this.logger.log(`AI Orchestration completed for message ${messageId}. Deducted ${finalCreditsNeeded} credit(s) (base: ${creditsNeeded}, photos: ${photosDispatched}).`);
 
     } catch (error) {
       this.logger.error(`Error orchestrating message ${messageId}: ${error.message}`, error.stack);
@@ -1666,8 +1687,8 @@ export class OrchestratorService {
     maxProductsToSend: number = 10,
     assistantId?: string,
     userText?: string
-  ) {
-    const maxPhotos = Math.min(Math.max(maxProductsToSend || 10, 1), 10);
+  ): Promise<number> {
+    const maxPhotos = Math.min(Math.max(maxProductsToSend || 5, 1), 10);
     const searchQuery = classification.imageProductDescription;
     const isExplicitPhotoLookup = classification.intent === 'product_lookup';
     const hasExplicitPhotoIds = Array.isArray(classification.sendProductPhotoIds) && classification.sendProductPhotoIds.length > 0;
@@ -1686,12 +1707,13 @@ export class OrchestratorService {
     // Photos should ONLY be dispatched if the customer explicitly demanded photos in their caption/message!
     const explicitPhotoRequest = [
       'ছবি পাঠান', 'ছবি দিন', 'ছবি দেন', 'ছবি দেখান', 'আরও ছবি', 'আর ছবি', 'বাকি ছবি', 'অন্য কালার', 'অন্যান্য কালার',
+      'পিক পাঠান', 'পিক দিন', 'পিক দেন', 'পিক দেখান', 'আরও পিক', 'আর পিক', 'বাকি পিক', 'কিছু পিক', 'পিক দাও', 'পিকচার দেখান', 'পিক চাই', 'পিক দেখতে চাই',
       'send photo', 'send photos', 'send pic', 'send pics', 'show photo', 'show photos', 'send more', 'show more pictures'
     ].some(k => lowerUserText.includes(k));
 
     if (isCustomerInboundImage && !explicitPhotoRequest) {
       this.logger.log(`Skipping product photo matching for conversation ${conversationId}: Customer sent an inbound image without explicit photo request. Human-like discussion will be handled via replyText.`);
-      return;
+      return 0;
     }
 
     // RULE 2: Never dispatch photos during order placement / buying intent ("নিব / অর্ডার করব / confirm")
@@ -1702,19 +1724,26 @@ export class OrchestratorService {
 
     if (isOrderAction && !explicitPhotoRequest) {
       this.logger.log(`Skipping product photo matching for conversation ${conversationId}: Customer is in ordering flow without explicit photo request.`);
-      return;
+      return 0;
     }
+
+    // Follow-up request terms where customer requests more photos or indicates dissatisfaction with previous photos
+    const isMoreOrOtherPhotosDemand = [
+      'আরও', 'আরো', 'অন্য', 'অন্যান্য', 'বাকি', 'পছন্দ হয়নি', 'পছন্দ হয় নাই', 'পছন্দ না', 'ভালো লাগেনি', 'অন্য ডিজাইন',
+      'more', 'other', 'another', 'different', 'next'
+    ].some(k => lowerUserText.includes(k));
 
     // Check if user text asked for photos, catalog or product list
     const photoOrListTerms = [
       'ছবি', 'photo', 'photos', 'pic', 'pics', 'picture', 'pictures',
+      'পিক', 'পিকস', 'পিকচার', 'পিকচার্স', 'ইমেজ', 'ফটোগ্রাফ',
       'লিস্ট', 'তালিকা', 'list', 'catalog', 'ক্যাটালগ', 'collection', 'কালেকশন', 'সবগুলো',
       'কি কি আছে', 'কী কী আছে', 'what do you have', 'show'
     ];
     const isPhotoOrListInquiry = photoOrListTerms.some(term => lowerUserText.includes(term));
 
-    if (!searchQuery && !isExplicitPhotoLookup && !hasExplicitPhotoIds && !isPhotoOrListInquiry) {
-      return;
+    if (!searchQuery && !isExplicitPhotoLookup && !hasExplicitPhotoIds && !isPhotoOrListInquiry && !isMoreOrOtherPhotosDemand) {
+      return 0;
     }
 
     // Search tenant product catalog for active products with photos
@@ -1727,85 +1756,11 @@ export class OrchestratorService {
       orderBy: { createdAt: 'desc' }
     });
 
-    if (allProductsWithImages.length === 0) return;
+    const validProductsWithImages = allProductsWithImages.filter(p => p.imageUrl && p.imageUrl.trim() !== '');
+    if (validProductsWithImages.length === 0) return 0;
 
-    let matchedProducts: any[] = [];
-
-    // Strategy 1: Explicit IDs chosen by AI Stage A classification
-    if (hasExplicitPhotoIds) {
-      const explicitIds = classification.sendProductPhotoIds!;
-      for (const id of explicitIds) {
-        const found = allProductsWithImages.find(p => p.id === id || p.id.startsWith(id));
-        if (found && !matchedProducts.some(m => m.id === found.id)) {
-          matchedProducts.push(found);
-        }
-      }
-    }
-
-    // Strategy 2: If explicit IDs didn't yield enough, or not provided:
-    // Search by relevance tokens from searchQuery, userText, and classification.replyText
-    let moderateMatch: any = null;
-    let bestScore = 0;
-
-    if (matchedProducts.length === 0) {
-      const queryStr = searchQuery || (isPhotoOrListInquiry ? userText : classification.replyText) || '';
-      const qTokens = queryStr.toLowerCase()
-        .replace(/[^\w\s\u0980-\u09FF]/gi, ' ')
-        .split(/\s+/)
-        .filter(t => t.length > 2 && !['the', 'and', 'for', 'you', 'have', 'what', 'price', 'cost', 'dam', 'koto', 'naki', 'ache', 'apnader', 'আপনাদের', 'ছবি', 'photo', 'photos', 'image'].includes(t));
-
-      if (qTokens.length > 0) {
-        const scoredProducts: { product: any; score: number }[] = [];
-
-        for (const p of allProductsWithImages) {
-          const pText = `${p.name} ${p.description || ''} ${JSON.stringify(p.attributes || {})}`.toLowerCase();
-          const pTokens = pText.split(/\s+/).filter(t => t.length > 2);
-
-          let matches = 0;
-          for (const q of qTokens) {
-            if (pTokens.some(pt => pt.includes(q) || q.includes(pt))) {
-              matches++;
-            }
-          }
-
-          const score = matches / qTokens.length;
-          if (score > bestScore) {
-            bestScore = score;
-            if (score >= 0.6 && score < minConfidence) {
-              moderateMatch = p;
-            }
-          }
-          if (score >= minConfidence) {
-            scoredProducts.push({ product: p, score });
-          }
-        }
-
-        // Sort by score descending
-        scoredProducts.sort((a, b) => b.score - a.score);
-        matchedProducts = scoredProducts.map(s => s.product);
-      }
-    }
-
-    // Moderate confidence clarifying question (60% - 79%): Only if no high-confidence matches and not a general list/catalog inquiry
-    if (matchedProducts.length === 0 && moderateMatch && !isPhotoOrListInquiry && searchQuery) {
-      const priceStr = (!moderateMatch.price || Number(moderateMatch.price) <= 0) ? 'Price on Request' : `BDT ${moderateMatch.price}`;
-      await this.inboxService.saveOutboundMessage(
-        tenantId,
-        conversationId,
-        `আপনি কি '${moderateMatch.name}' প্রোডাক্টটি খুঁজছেন? (মূল্য: BDT ${moderateMatch.price})\n\nAre you looking for '${moderateMatch.name}' (Price: BDT ${moderateMatch.price})? Please confirm so I can share details.`
-      );
-      return;
-    }
-
-    // Strategy 3: If customer specifically asked for product list, catalog or photos ("লিস্ট", "ছবি", "catalog"),
-    // but specific keyword score was 0 (e.g. "আপনাদের সব প্রোডাক্টের ছবি দেখান"):
-    // Take top available products with photos up to maxPhotos!
-    if (matchedProducts.length === 0 && (isPhotoOrListInquiry || isExplicitPhotoLookup)) {
-      matchedProducts = allProductsWithImages.slice(0, maxPhotos);
-    }
-
-    // RULE 2: Photo Deduplication Check Against Conversation History
-    // "একবার পাঠালে ওই একই ইমেজ আর পাঠাবে না"
+    // RULE 3: Photo Deduplication Check Against Conversation History
+    // Identify photos already dispatched in this chat to avoid repeating them on follow-up requests
     const sentImageMessages = await this.prisma.message.findMany({
       where: {
         conversationId,
@@ -1838,16 +1793,118 @@ export class OrchestratorService {
       }
     }
 
-    // RULE 3: Resend ONLY on explicit, insistent customer demand ("খুব জোর করে চাইলে তবেই দিন")
-    const isExplicitResendDemand = ['আবার পাঠান', 'আবার দিন', 'আরেকবার দিন', 'আরেকবার পাঠান', 'আবার দেখান', 'আরেকবার দেখান', 'send again', 'resend', 'show again'].some(k => lowerUserText.includes(k));
+    const unsentCatalogProducts = validProductsWithImages.filter(p =>
+      !alreadySentProductIds.has(String(p.id)) && (!p.imageUrl || !alreadySentMediaUrls.has(String(p.imageUrl)))
+    );
 
-    // Filter out products that have already been sent to this customer unless explicitly demanded
-    let productsToDispatch = matchedProducts;
-    if (!isExplicitResendDemand && (alreadySentProductIds.size > 0 || alreadySentMediaUrls.size > 0)) {
-      productsToDispatch = matchedProducts.filter(p => !alreadySentProductIds.has(String(p.id)) && (!p.imageUrl || !alreadySentMediaUrls.has(String(p.imageUrl))));
+    let matchedProducts: any[] = [];
+
+    // Strategy 1: Explicit IDs chosen by AI Stage A classification
+    if (hasExplicitPhotoIds) {
+      const explicitIds = classification.sendProductPhotoIds!;
+      for (const id of explicitIds) {
+        const found = validProductsWithImages.find(p => p.id === id || p.id.startsWith(id));
+        if (found && !matchedProducts.some(m => m.id === found.id)) {
+          matchedProducts.push(found);
+        }
+      }
     }
 
-    // Limit to configured maxProductsToSend (1 to 10)
+    // Strategy 2: If explicit IDs didn't yield enough, or not provided:
+    // Search by relevance tokens from searchQuery, userText, and classification.replyText
+    let moderateMatch: any = null;
+    let bestScore = 0;
+
+    if (matchedProducts.length === 0) {
+      const queryStr = searchQuery || (isPhotoOrListInquiry ? userText : classification.replyText) || '';
+      const qTokens = queryStr.toLowerCase()
+        .replace(/[^\w\s\u0980-\u09FF]/gi, ' ')
+        .split(/\s+/)
+        .filter(t => t.length > 2 && !['the', 'and', 'for', 'you', 'have', 'what', 'price', 'cost', 'dam', 'koto', 'naki', 'ache', 'apnader', 'আপনাদের', 'ছবি', 'photo', 'photos', 'image', 'পিক', 'পিকস', 'কিছু', 'আরও', 'অন্য'].includes(t));
+
+      if (qTokens.length > 0) {
+        const candidatePool = (isMoreOrOtherPhotosDemand && unsentCatalogProducts.length > 0)
+          ? unsentCatalogProducts
+          : validProductsWithImages;
+
+        const scoredProducts: { product: any; score: number }[] = [];
+
+        for (const p of candidatePool) {
+          const pText = `${p.name} ${p.description || ''} ${JSON.stringify(p.attributes || {})}`.toLowerCase();
+          const pTokens = pText.split(/\s+/).filter(t => t.length > 2);
+
+          let matches = 0;
+          for (const q of qTokens) {
+            if (pTokens.some(pt => pt.includes(q) || q.includes(pt))) {
+              matches++;
+            }
+          }
+
+          const score = matches / qTokens.length;
+          if (score > bestScore) {
+            bestScore = score;
+            if (score >= 0.6 && score < minConfidence) {
+              moderateMatch = p;
+            }
+          }
+          if (score >= minConfidence) {
+            scoredProducts.push({ product: p, score });
+          }
+        }
+
+        // Sort by score descending
+        scoredProducts.sort((a, b) => b.score - a.score);
+        matchedProducts = scoredProducts.map(s => s.product);
+      }
+    }
+
+    // Moderate confidence clarifying question (60% - 79%): Only if no high-confidence matches and not a general list/catalog inquiry
+    if (matchedProducts.length === 0 && moderateMatch && !isPhotoOrListInquiry && !isMoreOrOtherPhotosDemand && searchQuery) {
+      const priceStr = (!moderateMatch.price || Number(moderateMatch.price) <= 0) ? 'Price on Request' : `BDT ${moderateMatch.price}`;
+      await this.inboxService.saveOutboundMessage(
+        tenantId,
+        conversationId,
+        `আপনি কি '${moderateMatch.name}' প্রোডাক্টটি খুঁজছেন? (মূল্য: BDT ${moderateMatch.price})\n\nAre you looking for '${moderateMatch.name}' (Price: BDT ${moderateMatch.price})? Please confirm so I can share details.`
+      );
+      return 0;
+    }
+
+    // Strategy 3: If customer specifically asked for product list, catalog or photos ("লিস্ট", "ছবি", "পিক", "catalog"),
+    // or if customer asked for more/other photos ("আরও ছবি", "পছন্দ হয়নি"):
+    // Take available unsent products with photos up to maxPhotos!
+    if (matchedProducts.length === 0 && (isPhotoOrListInquiry || isExplicitPhotoLookup || isMoreOrOtherPhotosDemand)) {
+      matchedProducts = unsentCatalogProducts.length > 0 ? unsentCatalogProducts : validProductsWithImages;
+    }
+
+    // RULE 4: Resend check & deduplication
+    const isExplicitResendDemand = [
+      'আবার পাঠান', 'আবার দিন', 'আরেকবার দিন', 'আরেকবার পাঠান', 'আবার দেখান', 'আরেকবার দেখান',
+      'পিক দেন', 'ছবি দেন', 'পিক দিন', 'ছবি দিন', 'send again', 'resend', 'show again'
+    ].some(k => lowerUserText.includes(k));
+
+    // Filter out products that have already been sent to this customer unless explicitly demanded or if no unsent products remain
+    let productsToDispatch = matchedProducts;
+    if (alreadySentProductIds.size > 0 || alreadySentMediaUrls.size > 0) {
+      const unsent = matchedProducts.filter(p => !alreadySentProductIds.has(String(p.id)) && (!p.imageUrl || !alreadySentMediaUrls.has(String(p.imageUrl))));
+      if (unsent.length > 0) {
+        productsToDispatch = unsent;
+      } else if (isMoreOrOtherPhotosDemand || isPhotoOrListInquiry) {
+        // Customer disliked previous photos or asked for more: find remaining unsent products from the catalog!
+        if (unsentCatalogProducts.length > 0) {
+          productsToDispatch = unsentCatalogProducts;
+        } else if (isExplicitResendDemand) {
+          productsToDispatch = matchedProducts;
+        } else {
+          productsToDispatch = [];
+        }
+      } else if (isExplicitResendDemand) {
+        productsToDispatch = matchedProducts;
+      } else {
+        productsToDispatch = [];
+      }
+    }
+
+    // Limit to configured maxProductsToSend (up to 10)
     const finalProductsToSend = productsToDispatch.slice(0, maxPhotos);
 
     if (finalProductsToSend.length > 0) {
@@ -1882,6 +1939,8 @@ export class OrchestratorService {
         }
       });
     }
+
+    return finalProductsToSend.length;
   }
 
   private async buildContextPrompt(
@@ -1904,6 +1963,7 @@ export class OrchestratorService {
       retrievedProducts?: any[];
       retrievedQnas?: any[];
       retrievedChunks?: any[];
+      maxProductsToSend?: number;
     }
   ): Promise<string> {
     const conversation = await this.prisma.conversation.findUnique({
@@ -1949,6 +2009,32 @@ export class OrchestratorService {
       orderBy: { createdAt: 'desc' },
       take: 10
     });
+
+    const sentImageMessages = await this.prisma.message.findMany({
+      where: {
+        conversationId,
+        direction: 'outbound',
+        type: 'image'
+      },
+      select: { content: true }
+    });
+    const sentImagesCount = sentImageMessages.length;
+    const deliveredProductNames: string[] = [];
+    for (const msg of sentImageMessages) {
+      if (typeof msg.content === 'string') {
+        try {
+          const parsed = JSON.parse(msg.content);
+          if (parsed.productName && !deliveredProductNames.includes(parsed.productName)) {
+            deliveredProductNames.push(parsed.productName);
+          }
+        } catch {
+          const m = msg.content.match(/"productName"\s*:\s*"([^"]+)"/);
+          if (m && !deliveredProductNames.includes(m[1])) {
+            deliveredProductNames.push(m[1]);
+          }
+        }
+      }
+    }
 
     const activeTags = await this.prisma.label.findMany({
       where: { tenantId: conversation.tenantId, isActive: true }
@@ -2015,13 +2101,17 @@ export class OrchestratorService {
     // MANDATORY PRODUCT CATALOG PRESENTATION & MULTI-PRODUCT DIRECTIVE
     // =========================================================================
     prompt += `\n=== MANDATORY PRODUCT CATALOG PRESENTATION & PHOTO DISPATCH DIRECTIVES ===\n`;
-    prompt += `1. MULTI-PRODUCT LISTING: When the customer asks for a product list, catalog, available items, collection, or what products you have (e.g. "প্রোডাক্ট লিস্ট দিন", "আপনাদের কী কী প্রোডাক্ট আছে", "show product list", "catalog", "collection", "সবগুলো দেখান", "সব প্রোডাক্ট দেখান", "ছবি পাঠান"):\n`;
+    prompt += `1. MULTI-PRODUCT LISTING: When the customer asks for a product list, catalog, available items, collection, or what products you have (e.g. "প্রোডাক্ট লিস্ট দিন", "আপনাদের কী কী প্রোডাক্ট আছে", "show product list", "catalog", "collection", "সবগুলো দেখান", "সব প্রোডাক্ট দেখান"):\n`;
     prompt += `   - You MUST list matching products from the PRODUCT CATALOG below (from 1 up to 10 products).\n`;
     prompt += `   - Format each product clearly with Name, Price, and Short description.\n`;
     prompt += `2. NEVER SEND PHOTOS ON ORDER INTENT ("নিব / অর্ডার করব"): When the customer says "নিব", "অর্ডার করব", "নিতে চাই", "কিনব", or is providing delivery details (name, phone, address), their intent is to BUY, NOT to browse. You MUST set "sendProductPhotoIds": []! Do NOT send photos during ordering.\n`;
-    prompt += `3. DO NOT RE-SEND ALREADY SENT PHOTOS ("একবার পাঠালে আর পাঠাবে না"): If a product photo was already sent earlier in the conversation history, do NOT request it again in "sendProductPhotoIds". Tell the customer politely: "প্রোডাক্টের ছবিটি ইতিমধ্যে উপরে পাঠানো হয়েছে, দয়া করে একটু উপরে স্ক্রল করে দেখে নিন। আর কোনো তথ্য জানার থাকলে বলুন।"\n`;
-    prompt += `4. ONLY SEND REMAINING UNSENT PHOTOS: If the customer asks for other or more pictures ("বাকিগুলো দেখান", "আরও ছবি দিন"), only provide product IDs in "sendProductPhotoIds" for items whose photos have NOT been sent yet.\n`;
-    prompt += `5. RESEND ONLY ON EXPLICIT DEMAND: Only if the customer explicitly and insistently demands to re-send the picture ("আবার পাঠান", "আবার দিন", "আরেকবার পাঠান", "send again", "resend"), then and only then include that photo ID.\n`;
+    const photoBatchLimit = options?.maxProductsToSend ?? 5;
+    prompt += `3. TRUTH IN PHOTO PROMISES & ANTI-RUDE POLICY:\n`;
+    prompt += `   - PHOTO DISPATCH: If the customer asks for pictures ("ছবি দেন", "পিক দেন", "কিছু পিক দেন", "show pics"), and matching products have photos (marked '📸 [Photo Available]'), you MUST populate "sendProductPhotoIds" with up to ${photoBatchLimit} product IDs so the system dispatches them automatically. In your replyText, warmly state: "অবশ্যই! আমাদের কালেকশনের ছবি ও বিবরণ নিচে দেওয়া হলো:"\n`;
+    prompt += `   - NO FALSE PHOTO PROMISES: If NO matching products have photos in the catalog, you MUST NEVER say "ছবি নিচে দেওয়া হলো" or "ছবি পাঠানো হলো"! Instead, state honestly and politely: "আমাদের স্টকে এই প্রোডাক্টগুলো রয়েছে। তবে ক্যাটালগে এই মুহূর্তে ছবি যুক্ত নেই, আমি এদের মূল্য, সাইজ ও বিস্তারিত বিবরণ দিচ্ছি..."\n`;
+    prompt += `   - NEVER BE RUDE OR TELL CUSTOMERS TO SCROLL UP: Never dismissively tell a customer "ছবি ইতিমধ্যে উপরে পাঠানো হয়েছে, উপরে স্ক্রল করে দেখে নিন". If a customer asks for pictures again ("পিক দেন", "ছবি দেন"), be warm, accommodating, and polite. If photos exist, include them in "sendProductPhotoIds" (up to ${photoBatchLimit}).\n`;
+    prompt += `4. FOLLOW-UP & DISLIKED PHOTOS ("পছন্দ হয়নি", "আরও ছবি দিন", "অন্য ছবি দেখান"): If the customer dislikes previous pictures or asks for more/other pictures, populate "sendProductPhotoIds" strictly with NEW, UNSENT catalog products that have NOT been delivered yet.\n`;
+    prompt += `5. RESEND UPON DEMAND: If the customer explicitly asks for pictures again ("পিক দেন", "আবার দিন", "ছবি দিন", "send again", "resend"), include those photo IDs (up to ${photoBatchLimit}) so they receive them immediately.\n`;
     prompt += `VIOLATION OF THIS PHOTO DISPATCH DIRECTIVE IS STRICTLY FORBIDDEN.\n`;
 
     // =========================================================================
@@ -2498,7 +2588,7 @@ export class OrchestratorService {
         products.forEach(p => {
           const attrs = (p.attributes as any) || {};
           const priceStr = (!p.price || Number(p.price) <= 0) ? 'Price on Request' : `BDT ${p.price.toString()}`;
-          const photoBadge = p.imageUrl ? ' | 📸 [Photo Available]' : '';
+          const photoBadge = p.imageUrl && p.imageUrl.trim() !== '' ? ' | 📸 [Photo Available]' : ' | 🚫 [No Photo]';
           prompt += `- [ID: ${p.id}] ${p.name} | 💰 ${priceStr}${photoBadge}`;
           if (p.sku) prompt += ` | SKU: ${p.sku}`;
           if (p.description) prompt += ` | 📝 ${p.description}`;
@@ -2514,6 +2604,8 @@ export class OrchestratorService {
       }
     }
 
+    const productsWithPhotosCount = (products || []).filter(p => p.imageUrl && p.imageUrl.trim() !== '').length;
+
     const now = new Date();
     const currentDateTimeStr = now.toLocaleString('en-US', {
       timeZone: 'Asia/Dhaka',
@@ -2528,6 +2620,14 @@ export class OrchestratorService {
 
     prompt += `\n=== CURRENT REAL-WORLD DATE & TIME ===\n`;
     prompt += `Current Timestamp: ${currentDateTimeStr} (Asia/Dhaka, GMT+6)\n`;
+    prompt += `[System Info: Delivered Photos in this chat so far: ${sentImagesCount} | Catalog items with photos: ${productsWithPhotosCount}]\n`;
+    if (deliveredProductNames.length > 0) {
+      prompt += `[Delivered Product Photos in this chat: ${deliveredProductNames.join(', ')}]\n`;
+      prompt += `[Follow-up & Disliked Photos Rule: If customer asks for more/other photos ("আরও ছবি", "বাকিগুলো দেখান", "পছন্দ হয়নি অন্য দেখান", "show more"), select NEW/UNSENT items from the catalog. If all available photos have already been delivered, explain warmly that all current designs have been shared and offer to help with sizing, fabric or details.]\n`;
+    }
+    if (sentImagesCount === 0) {
+      prompt += `[Notice: ZERO photos have been sent to this customer yet in this chat. You MUST NOT claim photos were already sent!]\n`;
+    }
 
     prompt += `\n--- CONVERSATION HISTORY ---\n`;
     const sortedHistory = [...history].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
